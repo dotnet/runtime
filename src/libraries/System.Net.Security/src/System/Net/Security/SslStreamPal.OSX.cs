@@ -260,7 +260,7 @@ namespace System.Net.Security
                     }
                 }
 
-                if (inputBuffer != null && inputBuffer.Length > 0)
+                if (inputBuffer.Length > 0)
                 {
                     sslContext.Write(inputBuffer);
                 }
