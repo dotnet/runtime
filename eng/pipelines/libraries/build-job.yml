@@ -5,7 +5,14 @@ parameters:
   archType: ''
   framework: netcoreapp
   isOfficialBuild: false
+
+  # When set to a non-empty value (Debug / Release), it determines CoreCLR
+  # build configuration to use for building libraries and tests. Setting this
+  # property implies a dependency of this job on the appropriate CoreCLR build
+  # and is used to construct the name of the Azure artifact representing
+  # CoreCLR build to use for building the libraries and library tests.
   liveCoreClrBuildConfig: ''
+
   timeoutInMinutes: 150
   preBuildSteps: []
   container: ''
@@ -50,7 +57,7 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) $(_coreClrOverridePathArg)
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
           displayName: Restore
 
         - ${{ if eq(parameters.isOfficialBuild, true) }}:

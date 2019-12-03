@@ -30,7 +30,7 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
-        - buildScriptFileName: libraries
+        - _buildScriptFileName: libraries
         - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
@@ -38,7 +38,7 @@ jobs:
         - _runtimeOSArg: ''
         - _portableArg: ''
         - _finalFrameworkArg: -framework ${{ parameters.framework }}
-        - _buildScript: $(buildScriptFileName)$(scriptExt)
+        - _buildScript: $(_buildScriptFileName)$(scriptExt)
         - _warnAsErrorArg: ''
         - _testScopeArg: ''
 
@@ -82,11 +82,11 @@ jobs:
 
         # Non-Windows variables
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - _buildScript: ./$(buildScriptFileName)$(scriptExt)
+          - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters) $(_coreClrOverridePathArg)
         - ${{ parameters.variables }}
 
       dependsOn:

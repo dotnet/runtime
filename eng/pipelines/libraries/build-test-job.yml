@@ -49,7 +49,7 @@ jobs:
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             cleanUnpackFolder: false
         
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) $(_coreClrOverridePathArg)
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
           displayName: Restore
 
         - script: $(_buildScript)

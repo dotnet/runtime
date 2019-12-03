@@ -5,7 +5,14 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
+
+  # When set to a non-empty value (Debug / Release), it determines libraries
+  # build configuration to use for the tests. Setting this property implies
+  # a dependency of this job on the appropriate libraries build and is used
+  # to construct the name of the Azure artifact representing libraries build
+  # to use for building the tests.
   liveLibrariesBuildConfig: ''
+
   displayNameArgs: ''
   condition: true
   stagedBuild: false
