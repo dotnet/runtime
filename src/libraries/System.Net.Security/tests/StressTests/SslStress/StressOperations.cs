@@ -247,7 +247,7 @@ namespace SslStress
                     while (!token.IsCancellationRequested && Volatile.Read(ref messagesInFlight) > 2000)
                     {
                         // only log if tx has been suspended for a while
-                        if (!isLogged && stopwatch.ElapsedMilliseconds < 1000)
+                        if (!isLogged && stopwatch.ElapsedMilliseconds >= 1000)
                         {
                             isLogged = true;
                             lock (Console.Out)
