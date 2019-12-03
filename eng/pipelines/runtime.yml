@@ -31,7 +31,7 @@ jobs:
       testGroup: innerloop
 
 #
-# Build CoreFX using live CoreLib from CoreCLR
+# Build libraries using live CoreLib from CoreCLR
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -51,7 +51,7 @@ jobs:
       liveCoreClrBuildConfig: checked
 
 #
-# Test builds using live CoreFX
+# Test builds using live libraries build
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -89,9 +89,10 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
+      condition: false
 
 #
-# CoreFX Test Build
+# Libraries Test Build
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -111,7 +112,7 @@ jobs:
       liveCoreClrBuildConfig: checked
 
 #
-# CoreFX Test Execution
+# Libraries Test Execution
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -134,3 +135,4 @@ jobs:
       testScope: innerloop
       liveCoreClrBuildConfig: checked
       dependsOnBuildConfiguration: Release
+      condition: false

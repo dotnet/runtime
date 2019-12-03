@@ -96,7 +96,7 @@ jobs:
           cleanUnpackFolder: false
           artifactFileName: '$(librariesArtifactName)$(archiveExtension)'
           artifactName: '$(librariesArtifactName)'
-          displayName: 'live-built CoreFX'
+          displayName: 'live-built libraries'
 
 
     # Download product binaries directory
