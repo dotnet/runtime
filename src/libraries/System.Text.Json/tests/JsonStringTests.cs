@@ -110,6 +110,21 @@ namespace System.Text.Json.Tests
             Assert.Equal(dateTimeOffset, dateTimeOffset2);
         }
 
+        [Theory]
+        [MemberData(nameof(JsonDateTimeTestData.InvalidISO8601Tests), MemberType = typeof(JsonDateTimeTestData))]
+        public static void TestInvalidDateTime(string testStr)
+        {
+            var jsonString = new JsonString(testStr);
+
+            Assert.False(jsonString.TryGetDateTime(out DateTime dateTimeVal));
+            Assert.Equal(default, dateTimeVal);
+            Assert.False(jsonString.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffsetVal));
+            Assert.Equal(default, dateTimeOffsetVal);
+
+            Assert.Throws<FormatException>(() => jsonString.GetDateTime());
+            Assert.Throws<FormatException>(() => jsonString.GetDateTimeOffset());
+        }
+
         [Fact]
         public static void TestChangingValue()
         {
