@@ -313,7 +313,8 @@ namespace ILCompiler
                     }
                     CompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath,
                         ibcTuning: _commandLineOptions.Tuning,
-                        resilient: _commandLineOptions.Resilient);
+                        resilient: _commandLineOptions.Resilient,
+                        parallelism: _commandLineOptions.Parallelism);
 
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);

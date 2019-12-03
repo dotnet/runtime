@@ -22,6 +22,7 @@ namespace ILCompiler
         private readonly EcmaModule _inputModule;
         private readonly bool _ibcTuning;
         private readonly bool _resilient;
+        private readonly int _parallelism;
         private string _jitPath;
 
         // These need to provide reasonable defaults so that the user can optionally skip
@@ -29,12 +30,13 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath, bool ibcTuning, bool resilient)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath, bool ibcTuning, bool resilient, int parallelism)
             : base(context, group, new CoreRTNameMangler())
         {
             _inputFilePath = inputFilePath;
             _ibcTuning = ibcTuning;
             _resilient = resilient;
+            _parallelism = parallelism;
 
             _inputModule = context.GetModuleFromPath(_inputFilePath);
 
@@ -167,7 +169,8 @@ namespace ILCompiler
                 jitConfig,
                 _inputFilePath,
                 new ModuleDesc[] { _inputModule },
-                _resilient);
+                _resilient,
+                _parallelism);
         }
     }
 }
