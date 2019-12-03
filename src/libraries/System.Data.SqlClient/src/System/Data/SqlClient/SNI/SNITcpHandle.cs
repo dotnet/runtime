@@ -216,8 +216,7 @@ namespace System.Data.SqlClient.SNI
 
             if (!isInfiniteTimeout)
             {
-                cts = new CancellationTokenSource();
-                cts.CancelAfter(timeout);
+                cts = new CancellationTokenSource(timeout);
                 cts.Token.Register(Cancel);
             }
 
