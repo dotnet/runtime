@@ -117,7 +117,13 @@ namespace JitDiffTools
 			// depends on objdump, let's use the whole line as a name if it ends with `:`
 			if (str.EndsWith (':'))
 			{
-				name = Regex.Replace(str, @"(?i)\b([a-f0-9]+){8,16}\b", m => "0xD1FFAB1E");
+				// Possible formats:
+				//   1) func_name:
+				//   2) p_%var%_func_name:
+				//   3) %var% <func_name>:
+				//   4) %var% <p_%var%_func_name>:
+				name = Regex.Replace (str, @"\b([a-f0-9]+)\b", m => "");
+				name = Regex.Replace (name, @"(p_\d+_)?", m => "");
 				return true;
 			}
 			name = null;
