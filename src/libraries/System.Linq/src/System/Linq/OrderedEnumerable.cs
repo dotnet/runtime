@@ -326,7 +326,7 @@ namespace System.Linq
 
         internal int[] Sort(TElement[] elements, int count)
         {
-            // check that we can use the layered sort. This adds (as a first level approximation) O(N) comparisons
+            // Check that we can use the layered sort. This adds (as a first level approximation) O(N) comparisons
             // to the sort, but this is offset by simpler comparers (i.e. removes a level of indirection),
             // Array.Sort optimizations (for primitives), removes level of indirection from objects (i.e. accessing
             // directly in array by sort, rather than an index into another array) and increases caching affects
