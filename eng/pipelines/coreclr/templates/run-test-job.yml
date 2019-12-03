@@ -9,7 +9,7 @@ parameters:
   testGroup: ''
   crossrootfsDir: ''
   readyToRun: false
-  useLiveLibraries: false
+  liveLibrariesBuildConfig: ''
   crossgen2: false
   helixQueues: ''
   # If true, run the corefx tests instead of the coreclr ones
@@ -39,7 +39,7 @@ jobs:
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     corefxTests: ${{ parameters.corefxTests }}
     stagedBuild: ${{ parameters.stagedBuild }}
-    useLiveLibraries: ${{ parameters.useLiveLibraries }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'build/tests/'
     pool: ${{ parameters.pool }}
 
@@ -108,7 +108,7 @@ jobs:
     steps:
 
     # Optionally download live-built libraries
-    - ${{ if eq(parameters.useLiveLibraries, true) }}:
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)

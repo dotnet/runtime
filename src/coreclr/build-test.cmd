@@ -581,10 +581,8 @@ REM ============================================================================
 
 if NOT "%__LocalCoreFXPath%"=="" (
     echo Patch CoreFX from %__LocalCoreFXPath%
-    set __CoreFXBuildType=Release
-    if "%__BuildType%" == "debug" (set __CoreFXBuildType=Debug)
     set NEXTCMD=python "%__ProjectDir%\tests\scripts\patch-corefx.py" -clr_core_root "%CORE_ROOT%"^
-    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type !__CoreFXBuildType!
+    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__BuildType%
     echo !NEXTCMD!
     !NEXTCMD!
 )

@@ -34,7 +34,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: checked
+    buildConfig: Release
     platforms:
     - OSX_x64
     - Linux_x64
@@ -44,7 +44,7 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       testScope: empty
-      useLiveCoreClr: true
+      liveCoreClrBuildConfig: checked
 
 #
 # Test builds using live CoreFX
@@ -61,7 +61,7 @@ jobs:
     - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
-      useLiveLibraries: true
+      liveLibrariesBuildConfig: Debug
 
 #
 # CoreCLR Test executions
@@ -80,7 +80,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: innerloop
-      useLiveLibraries: true
+      liveLibrariesBuildConfig: Debug
 
 #
 # CoreFX Test Build
@@ -88,7 +88,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-    buildConfig: checked
+    buildConfig: Release
     platforms:
     - OSX_x64
     - Linux_x64
@@ -98,7 +98,7 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       testScope: innerloop
-      useLiveCoreClr: true
+      liveCoreClrBuildConfig: checked
 
 #
 # CoreFX Test Execution
@@ -106,7 +106,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    buildConfig: checked
+    buildConfig: Release
     platforms:
     - OSX_x64
     - Linux_x64

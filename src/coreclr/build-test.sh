@@ -136,12 +136,7 @@ patch_corefx_libraries()
 {
     echo "${__MsgPrefix}Patching CORE_ROOT: '${CORE_ROOT}' with CoreFX libaries from enlistment '${__LocalCoreFXPath}"
 
-    __CoreFXBuildType=Release
-    if [ "$__BuildType" == "debug" ]; then
-        __CoreFXBuildType=Debug
-    fi
-
-    patchCoreFXArguments=("-clr_core_root" "${CORE_ROOT}" "-fx_root" "${__LocalCoreFXPath}" "-arch" "${__BuildArch}" "-build_type" "${__CoreFXBuildType}")
+    patchCoreFXArguments=("-clr_core_root" "${CORE_ROOT}" "-fx_root" "${__LocalCoreFXPath}" "-arch" "${__BuildArch}" "-build_type" "${__BuildType}")
     scriptPath="$__ProjectDir/tests/scripts"
     echo "python ${scriptPath}/patch-corefx.py ${patchCoreFXArguments[@]}"
     $__Python "${scriptPath}/patch-corefx.py" "${patchCoreFXArguments[@]}"

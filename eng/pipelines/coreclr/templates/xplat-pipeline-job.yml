@@ -11,7 +11,7 @@ parameters:
   testGroup: ''
   crossrootfsDir: ''
   corefxTests: false
-  useLiveLibraries: false
+  liveLibrariesBuildConfig: '';
   stagedBuild: false
   strategy: ''
   pool: ''
@@ -108,8 +108,8 @@ jobs:
     - librariesOverrideArg: ''
     - librariesDownloadDir: ''
 
-    - ${{ if eq(parameters.useLiveLibraries, true) }}:
-      - librariesArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - librariesArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
       - librariesDownloadDir: $(Build.SourcesDirectory)/artifacts
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - librariesOverrideArg: ' localcorefxpath $(Build.SourcesDirectory)'

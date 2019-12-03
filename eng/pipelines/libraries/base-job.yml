@@ -5,7 +5,7 @@ parameters:
   osSubgroup: ''
   framework: ''
   isOfficialBuild: false
-  useLiveCoreClr: false
+  liveCoreClrBuildConfig: ''
   timeoutInMinutes: 150
   container: ''
   steps: []
@@ -31,9 +31,7 @@ jobs:
       pool: ${{ parameters.pool }}
       variables:
         - buildScriptFileName: libraries
-        - _BuildConfig: Debug
-        - ${{ if eq(parameters.buildConfig, 'release') }}:
-          - _BuildConfig: Release
+        - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
         - _stripSymbolsArg: ''
@@ -73,9 +71,9 @@ jobs:
         - _coreClrDownloadPath: ''
         - _coreClrOverridePathArg: ''
 
-        - ${{ if eq(parameters.useLiveCoreClr, true) }}:
+        - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
           - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
-          - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
+          - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
           - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
 
         # Windows variables
@@ -88,7 +86,7 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration $(_BuildConfig) -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
         - ${{ parameters.variables }}
 
       dependsOn:

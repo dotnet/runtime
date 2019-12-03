@@ -5,7 +5,7 @@ parameters:
   archType: ''
   framework: netcoreapp
   isOfficialBuild: false
-  useLiveCoreClr: false
+  liveCoreClrBuildConfig: ''
   timeoutInMinutes: 150
   container: ''
   publishTestArtifacs: true
@@ -23,7 +23,7 @@ jobs:
       archType:  ${{ parameters.archType }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
-      useLiveCoreClr: ${{ parameters.useLiveCoreClr }}
+      liveCoreClrBuildConfig: ${{ parameters.liveCoreClrBuildConfig }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}
       pool: ${{ parameters.pool }}
