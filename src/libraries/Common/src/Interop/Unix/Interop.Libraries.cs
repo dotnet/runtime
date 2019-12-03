@@ -14,5 +14,7 @@ internal static partial class Interop
         internal const string CompressionNative = "System.IO.Compression.Native";
         internal const string IOPortsNative = "System.IO.Ports.Native";
         internal const string Libdl = "libdl";
+        internal const string MsQuic = "msquic";
+
     }
 }

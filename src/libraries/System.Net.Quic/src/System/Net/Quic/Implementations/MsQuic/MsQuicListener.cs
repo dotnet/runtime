@@ -33,7 +33,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private SslServerAuthenticationOptions _sslOptions;
 
         // To prevent multiple calls to StartAsync
-        private bool _started;
+        private volatile bool _started;
 
         private volatile bool _disposed;
 
@@ -147,7 +147,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     }
                     break;
                 default:
-                    return MsQuicConstants.InternalError;
+                    return MsQuicConstants.s_internalError;
             }
 
             return MsQuicConstants.Success;

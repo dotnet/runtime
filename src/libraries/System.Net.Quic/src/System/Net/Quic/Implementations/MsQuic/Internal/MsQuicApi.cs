@@ -16,7 +16,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal unsafe MsQuicApi()
         {
-            uint status = (uint)MsQuicNativeMethods.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration);
+            uint status = (uint)Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration);
             MsQuicStatusException.ThrowIfFailed(status);
 
             NativeRegistration = *registration;
@@ -188,7 +188,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             MsQuicSecurityConfig secConfig = null;
             var tcs = new TaskCompletionSource<object>();
-            uint secConfigCreateStatus = MsQuicConstants.InternalError;
+            uint secConfigCreateStatus = MsQuicConstants.s_internalError;
 
             uint status = SecConfigCreateDelegate(
                 _registrationContext,

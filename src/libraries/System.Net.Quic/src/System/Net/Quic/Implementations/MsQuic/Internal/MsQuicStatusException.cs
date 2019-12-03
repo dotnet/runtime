@@ -26,13 +26,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private static string GetMessage(uint status, string message)
         {
-            string errorCode = MsQuicConstants.ErrorTypeFromErrorCode(status);
+            string errorCode = MsQuicConstants.s_errorTypeFromErrorCode(status);
             return $"Quic Error: {errorCode}. " + message;
         }
 
         internal static void ThrowIfFailed(uint status, string message = null, Exception innerException = null)
         {
-            if (!MsQuicStatusHelper.Succeeded(status))
+            if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
             {
                 throw new MsQuicStatusException(status, message, innerException);
             }

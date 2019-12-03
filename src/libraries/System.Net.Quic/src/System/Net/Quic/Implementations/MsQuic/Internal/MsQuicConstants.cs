@@ -8,12 +8,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicConstants
     {
-        internal static uint InternalError = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Windows.InternalError : Linux.InternalError;
-        internal static uint Success = 0;
-        internal static uint Pending = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Windows.Pending : Linux.Pending;
-        private const uint SuccessConst = 0;
+        internal static readonly uint s_internalError = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Windows.InternalError : Linux.InternalError;
+        internal static readonly uint s_pending = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Windows.Pending : Linux.Pending;
+        internal const uint Success = 0;
 
-        internal static Func<uint, string> ErrorTypeFromErrorCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Windows.GetError : (Func<uint, string>)Linux.GetError;
+        internal static Func<uint, string> s_errorTypeFromErrorCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Windows.GetError : (Func<uint, string>)Linux.GetError;
 
         internal static class Windows
         {
@@ -41,7 +40,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 switch (status)
                 {
-                    case SuccessConst:
+                    case Success:
                         return "SUCCESS";
                     case Pending:
                         return "PENDING";
@@ -106,7 +105,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 switch (status)
                 {
-                    case SuccessConst:
+                    case Success:
                         return "SUCCESS";
                     case Pending:
                         return "PENDING";

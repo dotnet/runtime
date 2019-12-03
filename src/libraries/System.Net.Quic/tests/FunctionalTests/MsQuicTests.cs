@@ -12,7 +12,7 @@ namespace System.Net.Quic.Tests
     {
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
 
-        [Fact(Skip = "Unskip when MsQuic depenency is resolved")]
+        [Fact]
         public async Task BasicTest()
         {
             Task listenTask = Task.Run(async () =>
@@ -28,6 +28,7 @@ namespace System.Net.Quic.Tests
                         Assert.Equal(s_data.Length, bytesRead);
                         Assert.True(s_data.Span.SequenceEqual(buffer));
                         await stream.WriteAsync(s_data);
+                        stream.ShutdownWrite();
                     }
                 }
             });
@@ -50,7 +51,7 @@ namespace System.Net.Quic.Tests
             await Task.WhenAll(listenTask, clientTask);
         }
 
-        [Fact(Skip = "Unskip when MsQuic depenency is resolved")]
+        [Fact]
         public async Task MultipleReadsAndWrites()
         {
             Task listenTask = Task.Run(async () =>
@@ -84,31 +85,38 @@ namespace System.Net.Quic.Tests
             {
                 await using (QuicConnection connection = CreateQuicConnection(DefaultEndpoint))
                 {
-                    await connection.ConnectAsync();
-                    using (QuicStream stream = connection.OpenBidirectionalStream())
+                    try
                     {
-                        for (int i = 0; i < 100; i++)
+                        await connection.ConnectAsync();
+                        using (QuicStream stream = connection.OpenBidirectionalStream())
                         {
-                            await stream.WriteAsync(s_data);
-                        }
-
-                        stream.ShutdownWrite();
-
-                        byte[] memory = new byte[12];
-                        while (true)
-                        {
-                            int res = await stream.ReadAsync(memory);
-                            if (res == 0)
+                            for (int i = 0; i < 100; i++)
                             {
-                                break;
+                                await stream.WriteAsync(s_data);
                             }
-                            Assert.True(s_data.Span.SequenceEqual(memory));
+
+                            stream.ShutdownWrite();
+
+                            byte[] memory = new byte[12];
+                            while (true)
+                            {
+                                int res = await stream.ReadAsync(memory);
+                                if (res == 0)
+                                {
+                                    break;
+                                }
+                                Assert.True(s_data.Span.SequenceEqual(memory));
+                            }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
                     }
                 }
             });
 
-            await Task.WhenAll(listenTask, clientTask);
+            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 30000);
         }
     }
 }

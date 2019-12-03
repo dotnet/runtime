@@ -7,5 +7,8 @@
     <Compile Include="MsQuicTestBase.cs" />
     <Compile Include="MsQuicTests.cs" />
     <Compile Include="QuicConnectionTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
+      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>

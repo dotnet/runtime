@@ -36,10 +36,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         private bool _disposed;
 
         // Queue for accepted streams
-        private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateUnbounded<MsQuicStream>(new UnboundedChannelOptions
+        private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateBounded<MsQuicStream>(new BoundedChannelOptions(capacity: 512) // TODO configurable limit here.
         {
             SingleReader = true,
-            SingleWriter = true
+            SingleWriter = true,
         });
 
         // constructor for inbound connections
@@ -131,7 +131,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (Exception)
             {
-                return MsQuicConstants.InternalError;
+                return MsQuicConstants.s_internalError;
             }
 
             return status;
@@ -152,7 +152,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown begin {MsQuicConstants.ErrorTypeFromErrorCode(connectionEvent.ShutdownBeginStatus)}");;
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown begin {MsQuicConstants.s_errorTypeFromErrorCode(connectionEvent.ShutdownBeginStatus)}");;
 
             _connectTcs?.SetResult(null);
             _connectTcs = null;
@@ -185,11 +185,17 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             MsQuicStream msQuicStream = new MsQuicStream(_api, this, connectionEvent.StreamFlags, connectionEvent.Data.NewStream.Stream, inbound: true);
 
-            _acceptQueue.Writer.TryWrite(msQuicStream);
+            if (_acceptQueue.Writer.TryWrite(msQuicStream))
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-
-            return MsQuicConstants.Success;
+                return MsQuicConstants.Success;
+            }
+            else
+            {
+                // Backlog too large, can't accept connections.
+                return MsQuicConstants.s_internalError;
+            }
         }
 
         private uint HandleEventStreamsAvailable(ConnectionEvent connectionEvent)
@@ -304,7 +310,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 MsQuicStream.NativeCallbackHandler,
                 IntPtr.Zero,
                 out streamPtr);
-
+            // TODO this call is failing right now
             MsQuicStatusException.ThrowIfFailed(status);
 
             MsQuicStream stream = new MsQuicStream(_api, this, flags, streamPtr, inbound: false);

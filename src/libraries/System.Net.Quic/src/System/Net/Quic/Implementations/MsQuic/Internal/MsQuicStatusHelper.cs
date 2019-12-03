@@ -8,7 +8,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicStatusHelper
     {
-        internal static bool Succeeded(uint status)
+        internal static bool SuccessfulStatusCode(uint status)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

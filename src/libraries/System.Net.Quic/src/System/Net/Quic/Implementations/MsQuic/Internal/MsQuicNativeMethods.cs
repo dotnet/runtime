@@ -13,12 +13,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     /// </summary>
     internal static unsafe class MsQuicNativeMethods
     {
-        internal const string dllName = "msquic";
-
-#pragma warning disable BCL0015 // Disable Pinvoke analyzer errors for now
-        [DllImport(dllName)]
-        internal static extern int MsQuicOpen(int version, out NativeApi* registration);
-
         [StructLayout(LayoutKind.Sequential)]
         internal struct NativeApi
         {
@@ -168,19 +162,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal IntPtr Info;
             internal IntPtr Connection;
             internal IntPtr SecurityConfig;
-
-            internal static string BufferToString(IntPtr buffer, ushort bufferLength)
-            {
-                if (bufferLength == 0)
-                {
-                    return "";
-                }
-
-                byte[] utf8Bytes = new byte[bufferLength]; // TODO: Avoid extra alloc and copy.
-                Marshal.Copy(buffer, utf8Bytes, 0, bufferLength);
-                string str = Encoding.UTF8.GetString(utf8Bytes);
-                return str;
-            }
         }
 
         [StructLayout(LayoutKind.Sequential)]

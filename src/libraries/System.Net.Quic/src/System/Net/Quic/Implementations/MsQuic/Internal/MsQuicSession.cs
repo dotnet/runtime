@@ -18,7 +18,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             _api = new MsQuicApi();
 
-            _api.RegistrationOpen(Encoding.ASCII.GetBytes(registration));
+            _api.RegistrationOpen(Encoding.UTF8.GetBytes(registration));
         }
 
         public MsQuicConnection ConnectionOpen(IPEndPoint endpoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndpoint)
@@ -48,6 +48,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 _nativeObjPtr = _api.SessionOpen(sslServerAuthenticationOptions.ApplicationProtocols[0].Protocol.ToArray());
                 _opened = true;
+                // TODO figure out a story for configuration.
                 SetPeerBiDirectionalStreamCount(100);
                 SetPeerUnidirectionalStreamCount(100);
             }
