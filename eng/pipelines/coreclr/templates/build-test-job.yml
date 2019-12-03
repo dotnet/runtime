@@ -81,14 +81,14 @@ jobs:
         displayName: Install native dependencies
 
 
-    # Optionally download live-built CoreFX artifacts
+    # Optionally download live-built libraries
     - ${{ if eq(parameters.useLiveLibraries, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(coreFxDownloadDir)
+          unpackFolder: $(librariesDownloadDir)
           cleanUnpackFolder: false
-          artifactFileName: '$(coreFxArtifactName)$(archiveExtension)'
-          artifactName: '$(coreFxArtifactName)'
+          artifactFileName: '$(librariesArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesArtifactName)'
           displayName: 'live-built CoreFX'
 
 
@@ -102,7 +102,7 @@ jobs:
 
 
     # Build managed test components
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(coreFxOverrideArg)
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipnative skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
 

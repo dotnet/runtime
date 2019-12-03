@@ -107,14 +107,14 @@ jobs:
 
     steps:
 
-    # Optionally download live-built CoreFX artifacts
+    # Optionally download live-built libraries
     - ${{ if eq(parameters.useLiveLibraries, true) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(coreFxDownloadDir)
+          unpackFolder: $(librariesDownloadDir)
           cleanUnpackFolder: false
-          artifactFileName: '$(coreFxArtifactName)$(archiveExtension)'
-          artifactName: '$(coreFxArtifactName)'
+          artifactFileName: '$(librariesArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesArtifactName)'
           displayName: 'live-built CoreFX'
 
 
@@ -164,19 +164,19 @@ jobs:
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg) $(coreFxOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
         displayName: Copy native test components to test output folder
 
 
     # Generate test host
     - ${{ if eq(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(coreFxOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(testhostArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Generate test host
 
 
     # Crossgen framework assemblies prior to triggering readyToRun execution runs.
     - ${{ if eq(parameters.readyToRun, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(coreFxOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged skipnative $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
         displayName: Crossgen framework assemblies
 
 
