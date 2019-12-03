@@ -160,9 +160,12 @@ namespace Microsoft.NET.HostModel.Bundle
                 throw new ArgumentException("Invalid input specification: Must specify the host binary");
             }
 
-            if (fileSpecs.GroupBy(file => file.BundleRelativePath).Where(g => g.Count() > 1).Any())
+            var duplicateGroups = fileSpecs.GroupBy(file => file.BundleRelativePath).Where(g => g.Count() > 1);
+
+            if (duplicateGroups.Any())
             {
-                throw new ArgumentException("Invalid input specification: Found multiple entries with the same BundleRelativePath");
+                throw new ArgumentException("Invalid input specification: Found multiple entries with the same BundleRelativePath:"
+                    + string.Join("\n", duplicateGroups.SelectMany(o => o).Select(o => "  " + o.BundleRelativePath)));
             }
 
             string bundlePath = Path.Combine(OutputDir, HostName);
