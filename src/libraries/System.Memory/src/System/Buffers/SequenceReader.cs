@@ -125,7 +125,7 @@ namespace System.Buffers
         /// </summary>
         /// <param name="offset">The offset from current position.</param>
         /// <param name="value">The next value, or the default value if at the end of the reader.</param>
-        /// <returns><c>true</c> if the reader is not at its end and the peek operation succeeded; <c>false</c> if at the end of the reader.</returns>`
+        /// <returns><c>true</c> if the reader is not at its end and the peek operation succeeded; <c>false</c> if at the end of the reader.</returns>
         public readonly bool TryPeek(long offset, out T value)
         {
             if (offset < 0)
