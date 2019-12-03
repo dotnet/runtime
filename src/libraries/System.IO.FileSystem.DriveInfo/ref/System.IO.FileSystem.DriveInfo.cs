@@ -27,8 +27,8 @@ namespace System.IO
     {
         public DriveNotFoundException() { }
         protected DriveNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public DriveNotFoundException(string message) { }
-        public DriveNotFoundException(string message, System.Exception innerException) { }
+        public DriveNotFoundException(string? message) { }
+        public DriveNotFoundException(string? message, System.Exception? innerException) { }
     }
     public enum DriveType
     {
