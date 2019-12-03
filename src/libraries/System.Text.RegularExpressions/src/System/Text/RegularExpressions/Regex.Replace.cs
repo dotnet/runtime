@@ -20,7 +20,7 @@ namespace System.Text.RegularExpressions
         /// the first character in the input string.
         /// </summary>
         public static string Replace(string input, string pattern, string replacement) =>
-            new Regex(pattern, addToCache: true).Replace(input, replacement);
+            RegexCache.GetOrAdd(pattern).Replace(input, replacement);
 
         /// <summary>
         /// Replaces all occurrences of
@@ -28,10 +28,10 @@ namespace System.Text.RegularExpressions
         /// pattern, starting at the first character in the input string.
         /// </summary>
         public static string Replace(string input, string pattern, string replacement, RegexOptions options) =>
-            Replace(input, pattern, replacement, options, s_defaultMatchTimeout);
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Replace(input, replacement);
 
         public static string Replace(string input, string pattern, string replacement, RegexOptions options, TimeSpan matchTimeout) =>
-            new Regex(pattern, options, matchTimeout, true).Replace(input, replacement);
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).Replace(input, replacement);
 
         /// <summary>
         /// Replaces all occurrences of the previously defined pattern with the
@@ -83,17 +83,17 @@ namespace System.Text.RegularExpressions
         /// replacement pattern.
         /// </summary>
         public static string Replace(string input, string pattern, MatchEvaluator evaluator) =>
-            new Regex(pattern, addToCache: true).Replace(input, evaluator);
+            RegexCache.GetOrAdd(pattern).Replace(input, evaluator);
 
         /// <summary>
         /// Replaces all occurrences of the <paramref name="pattern"/> with the recent
         /// replacement pattern, starting at the first character.
         /// </summary>
         public static string Replace(string input, string pattern, MatchEvaluator evaluator, RegexOptions options) =>
-            Replace(input, pattern, evaluator, options, s_defaultMatchTimeout);
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Replace(input, evaluator);
 
         public static string Replace(string input, string pattern, MatchEvaluator evaluator, RegexOptions options, TimeSpan matchTimeout) =>
-            new Regex(pattern, options, matchTimeout, addToCache: true).Replace(input, evaluator);
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).Replace(input, evaluator);
 
         /// <summary>
         /// Replaces all occurrences of the previously defined pattern with the recent

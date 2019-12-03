@@ -137,8 +137,9 @@ namespace System.Text.RegularExpressions.Tests
 
         private int GetCachedItemsNum()
         {
-            return (int)typeof(Regex)
-                .GetField("s_cacheCount", BindingFlags.NonPublic | BindingFlags.Static)
+            return (int)typeof(Regex).Assembly
+                .GetType("System.Text.RegularExpressions.RegexCache")
+                .GetField("s_cacheCount", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
                 .GetValue(null);
         }
     }
