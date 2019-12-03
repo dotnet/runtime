@@ -49,6 +49,14 @@ The current solution to deal with cycles in the object graph while serializing i
 # Proposal
 
 ```cs
+namespace System.Text.Json
+{
+    public partial class JsonSerializerOptions
+    {
+        public ReferenceHandling ReferenceHandling { get; set; } = ReferenceHandling.Default;
+    }
+}
+
 namespace System.Text.Json.Serialization
 {
     /// <summary>
@@ -61,14 +69,6 @@ namespace System.Text.Json.Serialization
         public static ReferenceHandling Preserve { get; }
         // TODO: decide if we keep or remove this option.
         public static ReferenceHandling Ignore { get; }
-    }
-}
-
-namespace System.Text.Json
-{
-    public partial class JsonSerializerOptions
-    {
-        public ReferenceHandling ReferenceHandling { get; set; } = ReferenceHandling.Default;
     }
 }
 ```
@@ -111,7 +111,45 @@ Notes:
 
 # Examples
 
-Let's assume you have the following class:
+## Using Default on Deserialize
+```cs
+class Employee 
+{ 
+    [JsonPropertyName("$id")]
+    public string Identifier { get; set; }
+    public Employee Manager { get; set; }
+
+    [JsonExtensionData]
+    public IDictionary<string, object> ExtensionData { get; set; }
+}
+
+private const string json = 
+    @"{
+        ""$id"": ""1"",
+        ""Name"": ""Angela"",
+        ""Manager"": {
+            ""$id"": ""2"",
+            ""Name"": ""Bob"",
+            ""Manager"": {
+                ""$ref"": ""2""
+            }
+        }
+    }";
+```
+
+```cs
+public static void ReadObject()
+{
+    Employee angela = JsonSerializer.Deserialize<Employee>(json);
+    Console.WriteLine(angela.Identifier) //prints: "1".
+    Console.WriteLine(angela.Manager.Identifier) //prints: "2".
+    Console.WriteLine(angela.Manager.Manager.ExtensionData["$ref"]) //prints: "2".
+}
+```
+
+Note how you can annotate .Net properties to use properties that are meant for metadata and are added to the `JsonExtensionData` overflow dictionary, in case there is any, when opting-out of the `ReferenceHanding.Preserve` feature.
+
+For the next samples let's assume you have the following class:
 ```cs
 class Employee 
 { 
@@ -125,6 +163,9 @@ class Employee
 ```cs
 private Employee bob = new Employee { Name = "Bob" };
 private Employee angela = new Employee { Name = "Angela" };
+
+angela.Manager = bob;
+bob.Subordinates = new List<Employee>{ angela };
 
 public static void WriteObject()
 {
@@ -603,6 +644,9 @@ public static void TestDictionary_Collision()
 Since these types are created with the help of an internal converter, and they are not parsed until the entire block of JSON finishes; nested reference to these types is impossible to identify, unless you re-scan the resulting object, which is too expensive.
 
 With that said, the deserializer will throw when it reads `$id` on any of these types; but regardless of that, when writing those types, they are going to be preserved as any other collection type (`{ "$id": "1", "$values": [...] }`) since those types can still being parsed into a collection type that it is supported.
+
+Note: By the same principle, `Newtonsoft.Json` does not support parsing JSON arrays into immutables as well.
+Note 2: When using immutable types and `ReferenceHandling.Preserve`, you will not be able to generate payloads that are capables of round-tripping.
 
 * **Immutable types**: i.e: `ImmutableList` and `ImmutableDictionary`
 * **System.Array**
