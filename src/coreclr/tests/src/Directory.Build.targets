@@ -234,13 +234,11 @@
     <ProjectAssetsFile></ProjectAssetsFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true'">
+  <PropertyGroup>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
   <PropertyGroup>
-    <BuildCoreCLRDependency>false</BuildCoreCLRDependency>
-    <BuildLibrariesDependency>false</BuildLibrariesDependency>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
     <TargetArchitecture>$(BuildArch)</TargetArchitecture>
   </PropertyGroup>
