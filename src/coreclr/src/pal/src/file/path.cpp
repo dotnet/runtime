@@ -586,7 +586,7 @@ Function:
 Abstract:
   Change a DOS path to a Unix path.
 
-  Replaces '\' by '/', removes and changes '*.*' to be equal to '*'
+  Replaces '\' by '/'
 
 Parameter:
   IN/OUT lpPath: path to be modified
@@ -606,31 +606,10 @@ FILEDosToUnixPathA(
 
     for (p = lpPath; *p; p++)
     {
-        /* Make the \\ to / switch first */
+        /* Replace \ with / */
         if (*p == '\\')
         {
-            /* Replace \ with / */
             *p = '/';
-        }
-
-        if (*p == '*')
-        {
-            if ((p - lpPath) >= 3)
-            {
-                /* At this point, we know that there is 1 or more dots and
-                then a star.  AND we know the size of our string at this
-                point is at least 3 (so we can go backwards from our pointer
-                safely AND there could possilby be two characters back)
-                So lets check if there is a '*' and a '.' before, if there
-                is, replace just a '*'.  Otherwise, reset pPointAtDot to NULL
-                and do nothing */
-                if (p[-2] == '*' &&
-                    p[-1] == '.' &&
-                    p[0] == '*')
-                {
-                    memmove(&(p[-2]),p,(strlen(p)*sizeof(char))+1);
-                }
-            }
         }
     }
 
