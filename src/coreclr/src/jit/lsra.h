@@ -79,6 +79,14 @@ inline regMaskTP calleeSaveRegs(RegisterType rt)
 }
 
 //------------------------------------------------------------------------
+// registerTypesEquivalent: Get the set of callee-save registers of the given RegisterType
+//
+inline regMaskTP callerSaveRegs(RegisterType rt)
+{
+    return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
+}
+
+//------------------------------------------------------------------------
 // RefInfo: Captures the necessary information for a definition that is "in-flight"
 //          during `buildIntervals` (i.e. a tree-node definition has been encountered,
 //          but not its use). This includes the RefPosition and its associated
@@ -1372,6 +1380,7 @@ private:
 
     // A map from bbNum to the block information used during register allocation.
     LsraBlockInfo* blockInfo;
+
     BasicBlock* findPredBlockForLiveIn(BasicBlock* block, BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated));
 
     // The order in which the blocks will be allocated.
@@ -1399,6 +1408,8 @@ private:
     unsigned int curBBNum;
     // The current location
     LsraLocation currentLoc;
+    // The first location in a cold or funclet block.
+    LsraLocation firstColdLoc;
     // The ordinal of the block we're on (i.e. this is the curBBSeqNum-th block we've allocated).
     unsigned int curBBSeqNum;
     // The number of blocks that we've sequenced.
@@ -1640,6 +1651,7 @@ public:
         , isUpperVector(false)
         , isPartiallySpilled(false)
 #endif
+        , isWriteThru(false)
         , physReg(REG_COUNT)
 #ifdef DEBUG
         , intervalIndex(0)
@@ -1677,6 +1689,7 @@ public:
 
     RegisterType registerType;
     bool         isLocalVar : 1;
+
     // Indicates whether this interval has been assigned to different registers
     bool isSplit : 1;
     // Indicates whether this interval is ever spilled
@@ -1730,6 +1743,9 @@ public:
 
     // The register to which it is currently assigned.
     regNumber physReg;
+
+    // True if this interval is associated with a lclVar that is written to memory at each definition.
+    bool isWriteThru : 1;
 
 #ifdef DEBUG
     unsigned int intervalIndex;
@@ -1951,6 +1967,9 @@ public:
 
     unsigned char reload : 1;
     unsigned char spillAfter : 1;
+    unsigned char writeThru : 1; // true if this var is defined in a register and also spilled. spillAfter must NOT be
+                                 // set.
+
     unsigned char copyReg : 1;
     unsigned char moveReg : 1; // true if this var is moved to a new register
 
@@ -1995,6 +2014,7 @@ public:
         , lastUse(false)
         , reload(false)
         , spillAfter(false)
+        , writeThru(false)
         , copyReg(false)
         , moveReg(false)
         , isPhysRegRef(false)
@@ -2102,7 +2122,7 @@ public:
 
     RefPosition* getRangeEndRef()
     {
-        if (lastUse || nextRefPosition == nullptr)
+        if (lastUse || nextRefPosition == nullptr || spillAfter)
         {
             return this;
         }

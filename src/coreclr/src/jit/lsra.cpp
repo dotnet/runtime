@@ -186,7 +186,16 @@ unsigned LinearScan::getWeight(RefPosition* refPos)
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
-                weight -= BB_UNITY_WEIGHT;
+                if (varDsc->lvLiveInOutOfHndlr)
+                {
+                    // An EH var is always spilled at defs, and we'll decrease the weight by half,
+                    // since only the reload is needed.
+                    weight = weight / 2;
+                }
+                else
+                {
+                    weight -= compiler->fgFirstBB->getBBWeight(compiler);
+                }
             }
         }
         else
@@ -613,6 +622,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 {
 #ifdef DEBUG
     maxNodeLocation   = 0;
+    firstColdLoc      = MaxLocation;
     activeRefPosition = nullptr;
 
     // Get the value of the environment variable that controls stress for register allocation
@@ -849,9 +859,6 @@ void LinearScan::setBlockSequence()
             }
             if (block->isBBCallAlwaysPairTail() || (hasUniquePred && predBlock->hasEHBoundaryOut()))
             {
-                // Treat this as having incoming EH flow, since we can't insert resolution moves into
-                // the ALWAYS block of a BBCallAlwaysPair, and a unique pred with an EH out edge won't
-                // allow us to keep any variables enregistered.
                 blockInfo[block->bbNum].hasEHBoundaryIn = true;
             }
         }
@@ -1719,6 +1726,12 @@ void LinearScan::identifyCandidates()
                 newInt->isStructField = true;
             }
 
+            if (varDsc->lvLiveInOutOfHndlr)
+            {
+                newInt->isWriteThru = true;
+                setIntervalAsSpilled(newInt);
+            }
+
             INTRACK_STATS(regCandidateVarCount++);
 
             // We maintain two sets of FP vars - those that meet the first threshold of weighted ref Count,
@@ -2156,6 +2169,11 @@ void LinearScan::checkLastUses(BasicBlock* block)
 
     VARSET_TP liveInNotComputedLive(VarSetOps::Diff(compiler, block->bbLiveIn, computedLive));
 
+    // We may have exception vars in the liveIn set of exception blocks that are not computed live.
+    if (compiler->ehBlockHasExnFlowDsc(block))
+    {
+        VarSetOps::DiffD(compiler, liveInNotComputedLive, compiler->fgGetHandlerLiveVars(block));
+    }
     VarSetOps::Iter liveInNotComputedLiveIter(compiler, liveInNotComputedLive);
     unsigned        liveInNotComputedLiveIndex = 0;
     while (liveInNotComputedLiveIter.NextElem(&liveInNotComputedLiveIndex))
@@ -2510,8 +2528,8 @@ bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
     if (nextPhysReference != nullptr)
     {
         nextRefLocation = nextPhysReference->nodeLocation;
-        // if (nextPhysReference->refType == RefTypeFixedReg) nextRefLocation--;
     }
+    // if (nextPhysReference->refType == RefTypeFixedReg) nextRefLocation--;
     else if (!physRegRecord->isCalleeSave)
     {
         nextRefLocation = MaxLocation - 1;
@@ -2794,9 +2812,12 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
     Interval* rangeEndInterval     = relatedInterval;
     regMaskTP relatedPreferences   = (relatedInterval == nullptr) ? RBM_NONE : relatedInterval->getCurrentPreferences();
     LsraLocation rangeEndLocation  = refPosition->getRangeEndLocation();
-    bool         preferCalleeSave  = currentInterval->preferCalleeSave;
-    bool         avoidByteRegs     = false;
-#ifdef TARGET_X86
+    LsraLocation relatedLastLocation = rangeEndLocation;
+
+    bool preferCalleeSave = currentInterval->preferCalleeSave;
+
+    bool avoidByteRegs = false;
+#ifdef _TARGET_X86_
     if ((relatedPreferences & ~RBM_BYTE_REGS) != RBM_NONE)
     {
         avoidByteRegs = true;
@@ -2863,6 +2884,11 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         rangeEndRefPosition = refPosition;
         preferCalleeSave    = currentInterval->preferCalleeSave;
     }
+    else if (currentInterval->isWriteThru && refPosition->spillAfter)
+    {
+        // This is treated as a last use of the register, as there is an upcoming EH boundary.
+        rangeEndRefPosition = refPosition;
+    }
     else
     {
         rangeEndRefPosition = refPosition->getRangeEndRef();
@@ -2870,10 +2896,36 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         // is not currently occupying a register, and whose lifetime begins after this one,
         // we want to try to select a register that will cover its lifetime.
         if ((rangeEndInterval != nullptr) && (rangeEndInterval->assignedReg == nullptr) &&
+            !rangeEndInterval->isWriteThru &&
             (rangeEndInterval->getNextRefLocation() >= rangeEndRefPosition->nodeLocation))
         {
             lastRefPosition = rangeEndInterval->lastRefPosition;
         }
+        if ((relatedInterval != nullptr) && !relatedInterval->isWriteThru)
+        {
+            relatedLastLocation = relatedInterval->lastRefPosition->nodeLocation;
+        }
+    }
+
+    regMaskTP callerCalleePrefs;
+    if (preferCalleeSave)
+    {
+        regMaskTP calleeSaveCandidates = calleeSaveRegs(currentInterval->registerType);
+        if (currentInterval->isWriteThru)
+        {
+            // We'll only prefer a callee-save register if it's already been used.
+            regMaskTP unusedCalleeSaves = calleeSaveCandidates & ~(compiler->codeGen->regSet.rsGetModifiedRegsMask());
+            callerCalleePrefs           = calleeSaveCandidates & ~unusedCalleeSaves;
+            preferences &= ~unusedCalleeSaves;
+        }
+        else
+        {
+            callerCalleePrefs = calleeSaveCandidates;
+        }
+    }
+    else
+    {
+        callerCalleePrefs = callerSaveRegs(currentInterval->registerType);
     }
 
     // If this has a delayed use (due to being used in a rmw position of a
@@ -3057,7 +3109,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         if ((candidateBit & relatedPreferences) != RBM_NONE)
         {
             score |= RELATED_PREFERENCE;
-            if (nextPhysRefLocation > relatedInterval->lastRefPosition->nodeLocation)
+            if (nextPhysRefLocation > relatedLastLocation)
             {
                 score |= COVERS_RELATED;
             }
@@ -3071,7 +3123,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
             score |= RELATED_PREFERENCE;
         }
 
-        if (preferCalleeSave == physRegRecord->isCalleeSave)
+        if ((candidateBit & callerCalleePrefs) != RBM_NONE)
         {
             score |= CALLER_CALLEE;
         }
@@ -4087,7 +4139,8 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
     if (!fromRefPosition->lastUse)
     {
         // If not allocated a register, Lcl var def/use ref positions even if reg optional
-        // should be marked as spillAfter.
+        // should be marked as spillAfter. Note that if it is a WriteThru interval, the value is always
+        // written to the stack, but the WriteThru indicates that the register is no longer live.
         if (fromRefPosition->RegOptional() && !(interval->isLocalVar && fromRefPosition->IsActualRef()))
         {
             fromRefPosition->registerAssignment = RBM_NONE;
@@ -4822,11 +4875,34 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         regNumber    targetReg;
         Interval*    interval        = getIntervalForLocalVar(varIndex);
         RefPosition* nextRefPosition = interval->getNextRefPosition();
-        assert(nextRefPosition != nullptr);
+        assert((nextRefPosition != nullptr) || (interval->isWriteThru));
+
+        bool leaveOnStack = false;
+
+        // Special handling for variables live in/out of exception handlers.
+        if (interval->isWriteThru)
+        {
+            if (predBBNum == 0)
+            {
+                leaveOnStack = true;
+            }
+            // Variables that are live in or out of exception handlers may be conservatively live in other
+            // liveness sets. This can cause problems if we allocate a register for the regions where
+            // it is not actually live, because there isn't actually an associated end to the live range,
+            // so there is no place for codegen to record that the register is no longer occupied.
+            else if ((nextRefPosition == nullptr) || (RefTypeIsDef(nextRefPosition->refType)))
+            {
+                leaveOnStack = true;
+            }
+        }
 
         if (!allocationPassComplete)
         {
             targetReg = getVarReg(predVarToRegMap, varIndex);
+            if (leaveOnStack)
+            {
+                targetReg = REG_STK;
+            }
 #ifdef DEBUG
             regNumber newTargetReg = rotateBlockStartLocation(interval, targetReg, (~liveRegs | inactiveRegs));
             if (newTargetReg != targetReg)
@@ -4891,9 +4967,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         {
             // This can happen if we are using the locations from a basic block other than the
             // immediately preceding one - where the variable was in a different location.
-            if (targetReg != REG_STK)
+            if ((targetReg != REG_STK) || leaveOnStack)
             {
-                // Unassign it from the register (it will get a new register below).
+                // Unassign it from the register (it may get a new register below).
                 if (interval->assignedReg != nullptr && interval->assignedReg->assignedInterval == interval)
                 {
                     interval->isActive = false;
@@ -5199,9 +5275,18 @@ void LinearScan::allocateRegisters()
         }
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    bool firstBBExceptionEdge = enregisterLocalVars && blockInfo[compiler->fgFirstBB->bbNum].hasEHBoundaryIn;
     if (enregisterLocalVars)
     {
+#if DEBUG
+        BasicBlock* firstBB = compiler->fgFirstBB;
+        for (flowList* pred = firstBB->bbPreds; pred != nullptr; pred = pred->flNext)
+        {
+            assert(!blockInfo[pred->flBlock->bbNum].hasEHBoundaryOut || firstBBExceptionEdge);
+        }
+#endif // DEBUG
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         VarSetOps::Iter largeVectorVarsIter(compiler, largeVectorVars);
         unsigned        largeVectorVarIndex = 0;
         while (largeVectorVarsIter.NextElem(&largeVectorVarIndex))
@@ -5209,13 +5294,12 @@ void LinearScan::allocateRegisters()
             Interval* lclVarInterval           = getIntervalForLocalVar(largeVectorVarIndex);
             lclVarInterval->isPartiallySpilled = false;
         }
-    }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    }
 
     for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
     {
         getRegisterRecord(reg)->recentRefPosition = nullptr;
-        getRegisterRecord(reg)->isActive          = false;
     }
 
 #ifdef DEBUG
@@ -5439,33 +5523,35 @@ void LinearScan::allocateRegisters()
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_ZERO_REF, currentInterval));
                     currentRefPosition->lastUse = true;
                 }
-                if (refType == RefTypeParamDef)
+                LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
+                assert(varDsc != nullptr);
+                if (firstBBExceptionEdge)
                 {
-                    LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
-                    assert(varDsc != nullptr);
-                    if (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
-                    {
-                        // For a ParamDef with a weighted refCount less than unity, don't enregister it at entry.
-                        // TODO-CQ: Consider doing this only for stack parameters, since otherwise we may be needlessly
-                        // inserting a store.
-                        allocate = false;
-                    }
-                    else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))
-                    {
-                        // In the case of ABI mismatches, avoid allocating a register only to have to immediately move
-                        // it to a different register file.
-                        allocate = false;
-                    }
-                    if (!allocate)
-                    {
-                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
-                        didDump = true;
-                        setIntervalAsSpilled(currentInterval);
-                    }
+                    assert(currentInterval->isWriteThru);
+                    allocate = false;
+                }
+                else if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+                {
+                    // For a ParamDef with a weighted refCount less than unity, don't enregister it at entry.
+                    // TODO-CQ: Consider doing this only for stack parameters, since otherwise we may be needlessly
+                    // inserting a store.
+                    allocate = false;
+                }
+                else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))
+                {
+                    // In the case of ABI mismatches, avoid allocating a register only to have to immediately move
+                    // it to a different register file.
+                    allocate = false;
+                }
+                if (!allocate)
+                {
+                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
+                    didDump = true;
+                    setIntervalAsSpilled(currentInterval);
                 }
             }
-#ifdef FEATURE_SIMD
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    #ifdef FEATURE_SIMD
+    #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             else if (currentInterval->isUpperVector)
             {
                 // This is a save or restore of the upper half of a large vector lclVar.
@@ -5511,8 +5597,8 @@ void LinearScan::allocateRegisters()
                 currentRefPosition->registerAssignment = RBM_NONE;
                 continue;
             }
-#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-#endif // FEATURE_SIMD
+    #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    #endif // FEATURE_SIMD
 
             if (allocate == false)
             {
@@ -5753,8 +5839,29 @@ void LinearScan::allocateRegisters()
                     regNumber copyReg = assignCopyReg(currentRefPosition);
                     assert(copyReg != REG_NA);
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, copyReg));
-                    lastAllocatedRefPosition = currentRefPosition;
+                    lastAllocatedRefPosition     = currentRefPosition;
+                    bool         unassign        = false;
+                    RefPosition* nextRefPosition = currentRefPosition->nextRefPosition;
+                    if (currentInterval->isWriteThru)
+                    {
+                        if (currentRefPosition->refType == RefTypeDef)
+                        {
+                            currentRefPosition->writeThru = true;
+                        }
+                        if (!currentRefPosition->lastUse)
+                        {
+                            if (currentRefPosition->spillAfter)
+                            {
+                                unassign = true;
+                            }
+                        }
+                    }
                     if (currentRefPosition->lastUse)
+                    {
+                        assert(currentRefPosition->isIntervalRef());
+                        unassign = true;
+                    }
+                    if (unassign)
                     {
                         if (currentRefPosition->delayRegFree)
                         {
@@ -5800,6 +5907,14 @@ void LinearScan::allocateRegisters()
                 if (currentRefPosition->lastUse && currentRefPosition->reload)
                 {
                     allocateReg = false;
+                }
+                else if (currentInterval->isWriteThru)
+                {
+                    // Don't allocate if the next reference is in a cold block.
+                    if (nextRefPosition == nullptr || (nextRefPosition->nodeLocation >= firstColdLoc))
+                    {
+                        allocateReg = false;
+                    }
                 }
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && defined(TARGET_XARCH)
@@ -5921,36 +6036,57 @@ void LinearScan::allocateRegisters()
             // (it will be freed when it is used).
             if (!currentInterval->IsUpperVector())
             {
+                bool unassign = false;
+                if (currentInterval->isWriteThru)
+                {
+                    if (currentRefPosition->refType == RefTypeDef)
+                    {
+                        currentRefPosition->writeThru = true;
+                    }
+                    if (!currentRefPosition->lastUse)
+                    {
+                        if (currentRefPosition->spillAfter)
+                        {
+                            unassign = true;
+                        }
+                    }
+                }
                 if (currentRefPosition->lastUse || currentRefPosition->nextRefPosition == nullptr)
                 {
                     assert(currentRefPosition->isIntervalRef());
 
                     if (refType != RefTypeExpUse && currentRefPosition->nextRefPosition == nullptr)
                     {
-                        if (currentRefPosition->delayRegFree)
-                        {
-                            delayRegsToFree |= assignedRegBit;
-
-                            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
-                        }
-                        else
-                        {
-                            regsToFree |= assignedRegBit;
-
-                            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
-                        }
+                        unassign = true;
                     }
                     else
                     {
                         currentInterval->isActive = false;
                     }
-                    // Update the register preferences for the relatedInterval, if this is 'preferencedToDef'.
-                    // Don't propagate to subsequent relatedIntervals; that will happen as they are allocated, and we
-                    // don't know yet whether the register will be retained.
-                    if (currentInterval->relatedInterval != nullptr)
+                }
+                if (unassign)
+                {
+                    if (currentRefPosition->delayRegFree)
                     {
-                        currentInterval->relatedInterval->updateRegisterPreferences(assignedRegBit);
+                        delayRegsToFree |= assignedRegBit;
+
+                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
                     }
+                    else
+                    {
+                        regsToFree |= assignedRegBit;
+
+                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
+                    }
+                }
+
+                // Update the register preferences for the relatedInterval, if this is 'preferencedToDef'.
+                // Don't propagate to subsequent relatedIntervals; that will happen as they are allocated, and we
+                // don't know yet whether the register will be retained.
+                if ((currentRefPosition->lastUse || nextRefPosition == nullptr) &&
+                    (currentInterval->relatedInterval != nullptr))
+                {
+                    currentInterval->relatedInterval->updateRegisterPreferences(assignedRegBit);
                 }
             }
 
@@ -5975,8 +6111,16 @@ void LinearScan::allocateRegisters()
             }
             if (interval->isSpilled)
             {
+                unsigned prevBBNum = 0;
                 for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
                 {
+                    // For the resolution phase, we need to ensure that any block with exposed uses has the
+                    // incoming reg for 'this' as REG_STK.
+                    if (RefTypeIsUse(ref->refType) && (ref->bbNum != prevBBNum))
+                    {
+                        VarToRegMap inVarToRegMap = getInVarToRegMap(ref->bbNum);
+                        setVarReg(inVarToRegMap, thisVarDsc->lvVarIndex, REG_STK);
+                    }
                     if (ref->RegOptional())
                     {
                         ref->registerAssignment = RBM_NONE;
@@ -6003,6 +6147,7 @@ void LinearScan::allocateRegisters()
                         default:
                             break;
                     }
+                    prevBBNum = ref->bbNum;
                 }
             }
         }
@@ -6225,8 +6370,9 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
         }
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
-        if (treeNode != nullptr)
+        if (currentRefPosition->refType == RefTypeUse)
         {
+            assert(treeNode != nullptr);
             treeNode->SetContained();
         }
 
@@ -6266,6 +6412,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
 
     bool reload     = currentRefPosition->reload;
     bool spillAfter = currentRefPosition->spillAfter;
+    bool writeThru  = currentRefPosition->writeThru;
 
     // In the reload case we either:
     // - Set the register to REG_STK if it will be referenced only from the home location, or
@@ -6390,6 +6537,20 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
             assert(interval->isSpilled);
             interval->physReg = REG_NA;
             varDsc->SetRegNum(REG_STK);
+        }
+        if (writeThru && (treeNode != nullptr))
+        {
+            // This is a def of a write-thru EH var (only defs are marked 'writeThru').
+            treeNode->gtFlags |= GTF_SPILL;
+            // We also mark writeThru defs that are not last-use with GTF_SPILLED to indicate that they are conceptually
+            // spilled and immediately "reloaded", i.e. the register remains live.
+            // Note that we can have a "last use" write that has no exposed uses in the standard
+            // (non-eh) control flow, but that may be used on an exception path. Hence the need
+            // to retain these defs, and to ensure that they write.
+            if (!currentRefPosition->lastUse)
+            {
+                treeNode->gtFlags |= GTF_SPILLED;
+            }
         }
     }
 
@@ -7172,7 +7333,8 @@ void LinearScan::resolveRegisters()
                 continue;
             }
 
-            if (currentRefPosition->isIntervalRef() && currentRefPosition->getInterval()->isInternal)
+            assert(currentRefPosition->isIntervalRef());
+            if (currentRefPosition->getInterval()->isInternal)
             {
                 treeNode->gtRsvdRegs |= currentRefPosition->registerAssignment;
             }
@@ -7192,7 +7354,7 @@ void LinearScan::resolveRegisters()
                 else if (currentRefPosition->spillAfter || (currentRefPosition->nextRefPosition != nullptr &&
                                                             currentRefPosition->nextRefPosition->moveReg))
                 {
-                    if (treeNode != nullptr && currentRefPosition->isIntervalRef())
+                    if (treeNode != nullptr)
                     {
                         if (currentRefPosition->spillAfter)
                         {
@@ -7577,11 +7739,12 @@ void LinearScan::insertMove(
     else
     {
         // Put the copy at the bottom
+        GenTree* lastNode = blockRange.LastNode();
         if (block->bbJumpKind == BBJ_COND || block->bbJumpKind == BBJ_SWITCH)
         {
             noway_assert(!blockRange.IsEmpty());
 
-            GenTree* branch = blockRange.LastNode();
+            GenTree* branch = lastNode;
             assert(branch->OperIsConditionalJump() || branch->OperGet() == GT_SWITCH_TABLE ||
                    branch->OperGet() == GT_SWITCH);
 
@@ -7589,7 +7752,9 @@ void LinearScan::insertMove(
         }
         else
         {
-            assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS);
+            // These block kinds don't have a branch at the end.
+            assert((lastNode == nullptr) || (!lastNode->OperIsConditionalJump() &&
+                                             !lastNode->OperIs(GT_SWITCH_TABLE, GT_SWITCH, GT_RETURN, GT_RETFILT)));
             blockRange.InsertAtEnd(std::move(treeRange));
         }
     }
@@ -8120,7 +8285,30 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             }
             if (!VarSetOps::IsEmpty(compiler, edgeResolutionSet))
             {
-                resolveEdge(block, succBlock, ResolveCritical, edgeResolutionSet);
+                // For EH vars, we can always safely load them from the stack into the target for this block,
+                // so if we have only EH vars, we'll do that instead of splitting the edge.
+                if ((compiler->compHndBBtabCount > 0) && VarSetOps::IsSubset(compiler, edgeResolutionSet, exceptVars))
+                {
+                    GenTree*        insertionPoint = LIR::AsRange(succBlock).FirstNonPhiNode();
+                    VarSetOps::Iter edgeSetIter(compiler, edgeResolutionSet);
+                    unsigned        edgeVarIndex = 0;
+                    while (edgeSetIter.NextElem(&edgeVarIndex))
+                    {
+                        regNumber toReg = getVarReg(succInVarToRegMap, edgeVarIndex);
+                        setVarReg(succInVarToRegMap, edgeVarIndex, REG_STK);
+                        if (toReg != REG_STK)
+                        {
+                            Interval* interval = getIntervalForLocalVar(edgeVarIndex);
+                            assert(interval->isWriteThru);
+                            addResolution(succBlock, insertionPoint, interval, toReg, REG_STK);
+                            JITDUMP(" (EHvar)\n");
+                        }
+                    }
+                }
+                else
+                {
+                    resolveEdge(block, succBlock, ResolveCritical, edgeResolutionSet);
+                }
             }
         }
     }
@@ -8322,14 +8510,19 @@ void LinearScan::resolveEdges()
                 regNumber toReg   = getVarReg(toVarToRegMap, varIndex);
                 if (fromReg != toReg)
                 {
-                    if (!foundMismatch)
+                    Interval* interval = getIntervalForLocalVar(varIndex);
+                    // The fromReg and toReg may not match for a write-thru interval where the toReg is
+                    // REG_STK, since the stack value is always valid for that case (so no move is needed).
+                    if (!interval->isWriteThru || (toReg != REG_STK))
                     {
-                        foundMismatch = true;
-                        printf("Found mismatched var locations after resolution!\n");
+                        if (!foundMismatch)
+                        {
+                            foundMismatch = true;
+                            printf("Found mismatched var locations after resolution!\n");
+                        }
+                        printf(" V%02u: " FMT_BB " to " FMT_BB ": %s to %s\n", interval->varNum, predBlock->bbNum,
+                               block->bbNum, getRegName(fromReg), getRegName(toReg));
                     }
-
-                    printf(" V%02u: " FMT_BB " to " FMT_BB ": %s to %s\n", compiler->lvaTrackedIndexToLclNum(varIndex),
-                           predBlock->bbNum, block->bbNum, getRegName(fromReg), getRegName(toReg));
                 }
             }
         }
@@ -8473,6 +8666,29 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         insertionPoint = LIR::AsRange(block).FirstNonPhiNode();
     }
 
+    // If this is an edge between EH regions, we may have "extra" live-out EH vars.
+    // If we are adding resolution at the end of the block, we need to create "virtual" moves
+    // for these so that their registers are freed and can be reused.
+    if ((resolveType == ResolveJoin) && (compiler->compHndBBtabCount > 0))
+    {
+        VARSET_TP extraLiveSet(VarSetOps::Diff(compiler, block->bbLiveOut, toBlock->bbLiveIn));
+        VarSetOps::IntersectionD(compiler, extraLiveSet, registerCandidateVars);
+        VarSetOps::Iter iter(compiler, extraLiveSet);
+        unsigned        extraVarIndex = 0;
+        while (iter.NextElem(&extraVarIndex))
+        {
+            Interval* interval = getIntervalForLocalVar(extraVarIndex);
+            assert(interval->isWriteThru);
+            regNumber fromReg = getVarReg(fromVarToRegMap, extraVarIndex);
+            if (fromReg != REG_STK)
+            {
+                addResolution(block, insertionPoint, interval, REG_STK, fromReg);
+                JITDUMP(" (EH DUMMY)\n");
+                setVarReg(fromVarToRegMap, extraVarIndex, REG_STK);
+            }
+        }
+    }
+
     // First:
     //   - Perform all moves from reg to stack (no ordering needed on these)
     //   - For reg to reg moves, record the current location, associating their
@@ -8486,13 +8702,24 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
     {
-        regNumber fromReg = getVarReg(fromVarToRegMap, varIndex);
-        regNumber toReg   = getVarReg(toVarToRegMap, varIndex);
+        Interval* interval = getIntervalForLocalVar(varIndex);
+        regNumber fromReg  = getVarReg(fromVarToRegMap, varIndex);
+        regNumber toReg    = getVarReg(toVarToRegMap, varIndex);
         if (fromReg == toReg)
         {
             continue;
         }
-
+        if (interval->isWriteThru && (toReg == REG_STK))
+        {
+            // We don't actually move a writeThru var back to the stack, as its stack value is always valid.
+            // However, if this is a Join edge (i.e. the move is happening at the bottom of the block),
+            // and it is a "normal" flow edge, we will go ahead and generate a mov instruction, which will be
+            // a NOP but will cause the variable to be removed from being live in the register.
+            if ((resolveType == ResolveSplit) || block->hasEHBoundaryOut())
+            {
+                continue;
+            }
+        }
         // For Critical edges, the location will not change on either side of the edge,
         // since we'll add a new block to do the move.
         if (resolveType == ResolveSplit)
@@ -8506,8 +8733,6 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
         assert(fromReg < UCHAR_MAX && toReg < UCHAR_MAX);
 
-        Interval* interval = getIntervalForLocalVar(varIndex);
-
         if (fromReg == REG_STK)
         {
             stackToRegIntervals[toReg] = interval;
@@ -8517,7 +8742,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         {
             // Do the reg to stack moves now
             addResolution(block, insertionPoint, interval, REG_STK, fromReg);
-            JITDUMP(" (%s)\n", resolveTypeName[resolveType]);
+            JITDUMP(" (%s)\n",
+                    (interval->isWriteThru && (toReg == REG_STK)) ? "EH DUMMY" : resolveTypeName[resolveType]);
         }
         else
         {
@@ -8997,6 +9223,10 @@ void RefPosition::dump()
     {
         printf(" spillAfter");
     }
+    if (this->writeThru)
+    {
+        printf(" writeThru");
+    }
     if (this->moveReg)
     {
         printf(" move");
@@ -9083,6 +9313,10 @@ void Interval::dump()
     if (isConstant)
     {
         printf(" (constant)");
+    }
+    if (isWriteThru)
+    {
+        printf(" (writeThru)");
     }
 
     printf(" RefPositions {");
@@ -10398,7 +10632,11 @@ void LinearScan::verifyFinalAllocation()
                             }
                             regNumber regNum = getVarReg(outVarToRegMap, varIndex);
                             interval         = getIntervalForLocalVar(varIndex);
-                            assert(interval->physReg == regNum || (interval->physReg == REG_NA && regNum == REG_STK));
+                            if (interval->physReg != regNum)
+                            {
+                                assert(regNum == REG_STK);
+                                assert((interval->physReg == REG_NA) || interval->isWriteThru);
+                            }
                             interval->physReg     = REG_NA;
                             interval->assignedReg = nullptr;
                             interval->isActive    = false;
@@ -10555,7 +10793,7 @@ void LinearScan::verifyFinalAllocation()
                 {
                     dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, nullptr, regRecord->regNum, currentBlock);
                 }
-                if (currentRefPosition->lastUse || currentRefPosition->spillAfter)
+                if (currentRefPosition->lastUse || (currentRefPosition->spillAfter && !currentRefPosition->writeThru))
                 {
                     interval->isActive = false;
                 }
@@ -10576,7 +10814,14 @@ void LinearScan::verifyFinalAllocation()
                             }
                             dumpRegRecords();
                             dumpEmptyRefPosition();
-                            printf("Spill %-4s ", getRegName(spillReg));
+                            if (currentRefPosition->writeThru)
+                            {
+                                printf("WThru %-4s ", getRegName(spillReg));
+                            }
+                            else
+                            {
+                                printf("Spill %-4s ", getRegName(spillReg));
+                            }
                         }
                     }
                     else if (currentRefPosition->copyReg)
@@ -10737,7 +10982,10 @@ void LinearScan::verifyFinalAllocation()
                     }
                     regNumber regNum   = getVarReg(outVarToRegMap, varIndex);
                     Interval* interval = getIntervalForLocalVar(varIndex);
-                    assert(interval->physReg == regNum || (interval->physReg == REG_NA && regNum == REG_STK));
+                    // Either the register assignments match, or the outgoing assignment is on the stack
+                    // and this is a write-thru interval.
+                    assert(interval->physReg == regNum || (interval->physReg == REG_NA && regNum == REG_STK) ||
+                           (interval->isWriteThru && regNum == REG_STK));
                     interval->physReg     = REG_NA;
                     interval->assignedReg = nullptr;
                     interval->isActive    = false;
