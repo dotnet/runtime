@@ -6498,7 +6498,7 @@ void Compiler::impCheckForPInvokeCall(
         {
             if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
             {
-                // Raw PInvoke call in PInvoke IL stub generated with crossgen2 must be inlined to avoid infinite
+                // Raw PInvoke call in PInvoke IL stub generated must be inlined to avoid infinite
                 // recursive calls to the stub.
             }
             else
