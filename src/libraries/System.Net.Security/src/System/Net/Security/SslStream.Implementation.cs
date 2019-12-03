@@ -817,6 +817,8 @@ namespace System.Net.Security
                 }
             }
 
+            SetException(exception.SourceException);
+
             exception.Throw();
         }
 
