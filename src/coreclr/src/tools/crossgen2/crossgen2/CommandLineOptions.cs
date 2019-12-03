@@ -142,10 +142,9 @@ namespace ILCompiler
                     // We don't need to override arity here as 255 is the maximum number of generic arguments
                     Argument = new Argument<string[]>()
                 },
-                new Option(new[] { "--parallelism" }, "Number of threads to run")
+                new Option(new[] { "--parallelism" }, "Maximum number of threads to use during compilation")
                 { 
-                    // -1 sets no restriction on processor count
-                    Argument = new Argument<int>(() => -1)
+                    Argument = new Argument<int>(() => Environment.ProcessorCount)
                 },
             };
         }

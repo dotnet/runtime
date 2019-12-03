@@ -194,7 +194,7 @@ namespace ILCompiler
         /// We only need one CorInfoImpl per thread, and we don't want to unnecessarily construct them
         /// because their construction takes a significant amount of time.
         /// </summary>
-        private readonly ConditionalWeakTable<Thread, CorInfoImpl> corInfoImpls;
+        private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corInfoImpls;
 
         /// <summary>
         /// Name of the compilation input MSIL file.
@@ -231,7 +231,7 @@ namespace ILCompiler
 
             _inputFilePath = inputFilePath;
 
-            corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
+            _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             CorInfoImpl.RegisterJITModule(configProvider);
         }
 
@@ -280,8 +280,6 @@ namespace ILCompiler
                 {
                     MaxDegreeOfParallelism = _parallelism
                 };
-                Console.WriteLine("Parallelism");
-                Console.WriteLine(_parallelism);
                 Parallel.ForEach(obj, options, dependency =>
                 {
                     MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
@@ -297,7 +295,7 @@ namespace ILCompiler
                     {
                         using (PerfEventSource.StartStopEvents.JitMethodEvents())
                         {
-                            CorInfoImpl corInfoImpl = corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
+                            CorInfoImpl corInfoImpl = _corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                             corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
                         }
                     }
