@@ -4786,12 +4786,8 @@ public:
 protected:
     bool fgReachable(BasicBlock* b1, BasicBlock* b2); // Returns true if block b1 can reach block b2
 
-    void fgComputeDoms(); // Computes the immediate dominators for each basic block in the
-                          // flow graph.  We first assume the fields bbIDom on each
-                          // basic block are invalid. This computation is needed later
-                          // by fgBuildDomTree to build the dominance tree structure.
-                          // Based on: A Simple, Fast Dominance Algorithm
-                          // by Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy
+    // Compute immediate dominators, the dominator tree and and its pre/post-order travsersal numbers.
+    void fgComputeDoms();
 
     void fgCompDominatedByExceptionalEntryBlocks();
 
@@ -9771,7 +9767,7 @@ public:
 }; // end of class Compiler
 
 //---------------------------------------------------------------------------------------------------------------------
-// GenTreeVisitor: a flexible tree walker implemented using the curiosly-recurring-template pattern.
+// GenTreeVisitor: a flexible tree walker implemented using the curiously-recurring-template pattern.
 //
 // This class implements a configurable walker for IR trees. There are five configuration options (defaults values are
 // shown in parentheses):
@@ -10339,7 +10335,7 @@ public:
     }
 };
 
-// A dominator tree visitor implemented using the curiosly-recurring-template pattern, similar to GenTreeVisitor.
+// A dominator tree visitor implemented using the curiously-recurring-template pattern, similar to GenTreeVisitor.
 template <typename TVisitor>
 class DomTreeVisitor
 {

@@ -1709,8 +1709,6 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
     GenTree::DumpNodeSizes(fout);
 #endif
 
-    BasicBlock::DisplayStaticSizes(fout);
-
 #if EMITTER_STATS
     emitterStaticStats(fout);
 #endif
