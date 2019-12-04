@@ -1,10 +1,10 @@
 parameters:
   additionalMSBuildArguments: ''
-  displayName: ''
   publishRidAgnosticPackages: false
   skipTests: $(SkipTests)
   archType: null
   timeoutInMinutes: 120
+  platform: ''
 
 jobs:
   - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}

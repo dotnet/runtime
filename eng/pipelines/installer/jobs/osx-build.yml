@@ -1,5 +1,6 @@
 parameters:
   name: ''
+  platform: ''
 
 jobs:
 - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
