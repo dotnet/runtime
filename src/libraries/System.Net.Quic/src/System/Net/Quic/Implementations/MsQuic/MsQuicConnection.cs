@@ -173,7 +173,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown Complete");
 
-            _shutdownTcs?.SetResult(null);
+            _shutdownTcs.SetResult(null);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return MsQuicConstants.Success;

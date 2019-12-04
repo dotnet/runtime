@@ -32,9 +32,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Ssl listening options (ALPN, cert, etc)
         private SslServerAuthenticationOptions _sslOptions;
 
-        // To prevent multiple calls to StartAsync
-        private volatile bool _started;
-
         private volatile bool _disposed;
 
         private readonly Channel<MsQuicConnection> _acceptConnectionQueue = Channel.CreateUnbounded<MsQuicConnection>(new UnboundedChannelOptions
@@ -49,6 +46,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _sslOptions = sslServerAuthenticationOptions;
             ListenEndPoint = listenEndPoint;
             _nativeObjPtr = nativeObjPtr;
+
+            StartAsync().GetAwaiter().GetResult();
         }
 
         internal override IPEndPoint ListenEndPoint { get; }
@@ -56,12 +55,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(CancellationToken cancellationToken = default)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
-            if (!_started)
-            {
-                await StartAsync();
-                _started = true;
-            }
 
             if (await _acceptConnectionQueue.Reader.WaitToReadAsync())
             {

@@ -132,19 +132,22 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_readState == ReadState.ReadsCompleted)
                 {
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                     return 0;
                 }
                 else if (_readState == ReadState.ReadsAborted)
                 {
-                    return -1;
+                    throw new IOException("Reading has been aborted by the peer.");
                 }
+
+                _readState = ReadState.ReadAsync;
             }
 
             // TODO there could potentially be a perf gain by storing the buffer from the inital read
             // This reduces the amount of async calls, however it makes it so MsQuic holds onto the buffers
             // longer than it needs to. We will need to benchmark this.
-
             int length = (int)await _receiveResettableCompletionSource.GetValueTask();
+            if (NetEventSource.IsEnabled) NetEventSource.Info("Read completed");
 
             static unsafe void CopyToBuffer(Span<byte> buffer, QuicBuffer[] quicBuffers)
             {
@@ -169,6 +172,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             EnableReceive();
             ReceiveComplete(actual);
 
+            lock (_sync)
+            {
+                _readState = ReadState.None;
+            }
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return actual;
@@ -192,6 +200,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // TODO do anything to stop writes?
+            // TODO async?
             _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -221,6 +230,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         public override ValueTask DisposeAsync()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             if (_disposed)
             {
                 return default;
@@ -241,8 +251,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         public override void Dispose()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             Dispose(true);
             GC.SuppressFinalize(this);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         ~MsQuicStream()
@@ -367,7 +381,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private unsafe uint HandleEventRecv(ref MsQuicNativeMethods.StreamEvent evt)
         {
-            // TODO this buffer isn't valid after returing pending...
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             StreamEventDataRecv receieveEvent = evt.Data.Recv;
             _quicBuffer = new QuicBuffer[receieveEvent.BufferCount];
             for (int i = 0; i < receieveEvent.BufferCount; i++)
@@ -377,58 +392,98 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             DisableReceive();
             _receiveResettableCompletionSource.Complete((uint)receieveEvent.TotalBufferLength);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
             return MsQuicConstants.Pending;
         }
 
         private uint HandleEventPeerRecvAbort()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
             return MsQuicConstants.Success;
         }
 
         private uint HandleStartComplete()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             _started = StartState.Finished;
             _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
             return MsQuicConstants.Success;
         }
 
         private uint HandleEventSendShutdownComplete(ref MsQuicNativeMethods.StreamEvent evt)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
             return MsQuicConstants.Success;
         }
 
         private uint HandleEventShutdownComplete()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             // TODO use another cts here.
             _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
             return MsQuicConstants.Success;
         }
 
         private uint HandleEventPeerSendAborted()
         {
-            // TODO Need to make ReadAsync always throw an exception.
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             lock (_sync)
             {
-                _readState = ReadState.ReadsAborted;
+                //if (_readState != ReadState.ReadAsync)
+                //{
+                    _receiveResettableCompletionSource.CompleteException(new IOException("Reading has been aborted by the peer."));
+                //}
+                //_readState = ReadState.ReadsAborted;
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicConstants.Success;
         }
 
         private uint HandleEventPeerSendShutdown()
         {
-            // TODO need to make read async always return 0
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             lock (_sync)
             {
+                // TODO think about this.
+                //if (_readState != ReadState.ReadAsync)
+                //{
+                    if (NetEventSource.IsEnabled) NetEventSource.Info("Completing resettable event source.");
+                    _receiveResettableCompletionSource.Complete(0);
+                //}
                 _readState = ReadState.ReadsCompleted;
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicConstants.Success;
         }
 
         private uint HandleEventSendComplete(ref StreamEvent evt)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             _sendHandle.Free();
             foreach (MemoryHandle gchBufferArray in _bufferArrays)
             {
@@ -437,6 +492,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             // TODO throw if a write failed?
             uint errorCode = evt.Data.SendComplete.Canceled;
             _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicConstants.Success;
         }
@@ -550,7 +607,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private class UIntResettableCompletionSource : ResettableCompletionSource<uint>
         {
-
             internal UIntResettableCompletionSource()
             {
             }
@@ -582,6 +638,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private enum ReadState
         {
             None,
+            ReadAsync,
             ReadsCompleted,
             ReadsAborted
         }

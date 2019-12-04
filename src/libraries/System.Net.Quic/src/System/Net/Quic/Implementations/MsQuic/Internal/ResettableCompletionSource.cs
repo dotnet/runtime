@@ -41,5 +41,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             _valueTaskSource.SetResult(result);
         }
+
+        public void CompleteException(Exception ex)
+        {
+            _valueTaskSource.SetException(ex);
+        }
     }
 }

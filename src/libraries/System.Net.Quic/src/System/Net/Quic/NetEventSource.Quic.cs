@@ -6,7 +6,7 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net
 {
-    [EventSource(Name = "Microsoft-System-Net-Quic", LocalizationResources = "FxResources.System.Net.Http.SR")]
+    [EventSource(Name = "Microsoft-System-Net-Quic")]
     internal sealed partial class NetEventSource : EventSource
     {
     }

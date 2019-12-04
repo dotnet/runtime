@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -37,6 +38,7 @@ namespace System.Net.Quic.Tests
             {
                 await using (QuicConnection connection = CreateQuicConnection(DefaultEndpoint))
                 {
+                    await Task.Delay(100);
                     await connection.ConnectAsync();
                     using (QuicStream stream = connection.OpenBidirectionalStream())
                     {
@@ -48,71 +50,108 @@ namespace System.Net.Quic.Tests
                 }
             });
 
-            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 30000);
+            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 10000);
         }
 
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
+            ConsoleEventListener listener = new ConsoleEventListener("Microsoft-System-Net-Quic");
             Task listenTask = Task.Run(async () =>
             {
-                // Right now, AcceptConnections is required to start before staring a client connection.
-                // We can try to fix this by either 
-                using (QuicConnection connection = await DefaultListener.AcceptConnectionAsync())
+                try
                 {
-                    using (QuicStream stream = await connection.AcceptStreamAsync())
+                    // Right now, AcceptConnections is required to start before staring a client connection.
+                    // We can try to fix this by either 
+                    using (QuicConnection connection = await DefaultListener.AcceptConnectionAsync())
                     {
-                        byte[] buffer = new byte[s_data.Length];
-                        while (true)
+                        using (QuicStream stream = await connection.AcceptStreamAsync())
                         {
-                            int bytesRead = await stream.ReadAsync(buffer);
-                            if (bytesRead == 0)
+                            byte[] buffer = new byte[s_data.Length];
+                            try
                             {
-                                break;
+                                while (true)
+                                {
+                                    Console.WriteLine("Reading");
+                                    int bytesRead = await stream.ReadAsync(buffer);
+                                    if (bytesRead == 0)
+                                    {
+                                        Console.WriteLine("breaking out of loop");
+                                        break;
+                                    }
+                                    Assert.Equal(s_data.Length, bytesRead);
+                                    Assert.True(s_data.Span.SequenceEqual(buffer));
+                                }
+
                             }
-                            Assert.Equal(s_data.Length, bytesRead);
-                            Assert.True(s_data.Span.SequenceEqual(buffer));
-                        }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                            }
 
-                        for (int i = 0; i < 100; i++)
-                        {
-                            await stream.WriteAsync(s_data);
-                        }
+                            try
+                            {
+                                for (int i = 0; i < 5; i++)
+                                {
+                                    Console.WriteLine("Starting writes");
+                                    await stream.WriteAsync(s_data);
+                                }
 
-                        stream.ShutdownWrite();
+                                stream.ShutdownWrite();
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                            }
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
                 }
             });
 
             Task clientTask = Task.Run(async () =>
             {
-                await using (QuicConnection connection = CreateQuicConnection(DefaultEndpoint))
+                try
                 {
-                    await connection.ConnectAsync();
-                    using (QuicStream stream = connection.OpenBidirectionalStream())
+                    await using (QuicConnection connection = CreateQuicConnection(DefaultEndpoint))
                     {
-                        for (int i = 0; i < 100; i++)
+                        await Task.Delay(100);
+                        await connection.ConnectAsync();
+                        using (QuicStream stream = connection.OpenBidirectionalStream())
                         {
-                            await stream.WriteAsync(s_data);
-                        }
-
-                        stream.ShutdownWrite();
-
-                        byte[] memory = new byte[12];
-                        while (true)
-                        {
-                            int res = await stream.ReadAsync(memory);
-                            if (res == 0)
+                            for (int i = 0; i < 5; i++)
                             {
-                                break;
+                                await stream.WriteAsync(s_data);
                             }
-                            Assert.True(s_data.Span.SequenceEqual(memory));
+
+                            stream.ShutdownWrite();
+
+                            byte[] memory = new byte[12];
+                            while (true)
+                            {
+                                int res = await stream.ReadAsync(memory);
+                                if (res == 0)
+                                {
+                                    break;
+                                }
+                                Assert.True(s_data.Span.SequenceEqual(memory));
+                            }
                         }
                     }
+
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
                 }
             });
 
-            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 30000);
+            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
+
+            listener.Dispose();
         }
     }
 }
