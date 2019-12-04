@@ -548,8 +548,8 @@ namespace System.Threading
             //   is in start-up mode. That would just add to the "rush hour" traffic.
             private static int s_CalibrationToDo;
             private static int s_CalibrationDone;
-            // 25 is chosen to budget the sampling under 100 msec total, assuming 4 msec per sample.
-            private const int CalibrationSampleCount = 25;
+            // 10 is chosen to budget the sampling under 5 msec total, assuming 0.5 msec per sample.
+            private const int CalibrationSampleCount = 10;
             private static double[]? s_CalibrationSamples = new double[CalibrationSampleCount * 2];
 
             private static void CalibrateOnce(double[] calibrationSamples)
@@ -561,15 +561,15 @@ namespace System.Threading
                 if (sample >= CalibrationSampleCount)
                     return;
 
-                // Actual calibration step. Let's try to fit into ~4 msec.
+                // Actual calibration step. Let's try to fit into ~50 usec.
                 int id = 0;
                 long t1 = 0;
-                long oneMillisecond = Stopwatch.Frequency / 1000;
+                long twentyMicrosecond = Stopwatch.Frequency / 50000;
                 int iters = 1;
 
                 // double the sample size until it is 1 msec.
-                // we may spend up to 3 msec in this loop in a worst case.
-                while (t1 < oneMillisecond)
+                // we may spend up to 40 usec in this loop in a worst case.
+                while (t1 < twentyMicrosecond)
                 {
                     iters *= 2;
                     t1 = Stopwatch.GetTimestamp();
@@ -580,7 +580,7 @@ namespace System.Threading
                     t1 = Stopwatch.GetTimestamp() - t1;
                 }
 
-                // assuming TLS cannot be a lot slower than ID, this should take 1 msec
+                // assuming TLS takes 1/2 of CoreID time or less, this should take 10 usec or less
                 long t2 = Stopwatch.GetTimestamp();
                 for (int i = 0; i < iters; i++)
                 {
@@ -651,17 +651,17 @@ namespace System.Threading
 
             // warm up the code paths.
             int id = CoreIdCache.UninlinedThreadStatic() | GetCurrentProcessorNumber();
-            long halfMicrosecond = Stopwatch.Frequency / 1000000;
+            long oneMicrosecond = Stopwatch.Frequency / 1000000;
 
-            // limit quick test to 100 microseconds.
+            // this loop should take < 50 usec. limit it to 100 usec just in case.
             // If we are on slow hardware, we should calibrate anyways.
             long limit = Stopwatch.Frequency / 10000 + Stopwatch.GetTimestamp();
             for (int i = 0; i < 10; i++)
             {
                 int iters = 1;
                 long t1 = 0;
-                // double the sample size until it is 0.5 usec.
-                while (t1 < halfMicrosecond)
+                // double the sample size until it is 1 usec.
+                while (t1 < oneMicrosecond)
                 {
                     iters *= 2;
                     t1 = Stopwatch.GetTimestamp();
@@ -672,7 +672,7 @@ namespace System.Threading
                     t1 = Stopwatch.GetTimestamp() - t1;
                 }
 
-                // assuming TLS cannot be a lot slower than getting ID, this should take 1-5 usec
+                // assuming TLS cannot be a lot slower than getting ID, this should take 1-2 usec
                 long t2 = Stopwatch.GetTimestamp();
                 for (int j = 0; j < iters; j++)
                 {
