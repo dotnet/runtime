@@ -255,6 +255,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
+                // TODO call shutdown here.
+                //_api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
                 _api._streamCloseDelegate?.Invoke(_ptr);
             }
 
@@ -293,8 +295,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
-                // If we make Dispose not do a graceful shutdown, we can remove sync over async here
-                // as abortive shutdown isn't async.
+                // TODO call shutdown here.
+                //_api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
                 _api._streamCloseDelegate?.Invoke(_ptr);
             }
 

@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
@@ -106,6 +107,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             GetParamDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.GetParamDelegate>(
                     nativeRegistration.GetParam);
+
+            _registrationOpenDelegate(Encoding.UTF8.GetBytes("SystemNetQuic"), out IntPtr ctx);
+            _registrationContext = ctx;
         }
 
         internal static MsQuicApi Api { get; } = new MsQuicApi();
@@ -144,12 +148,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal readonly MsQuicNativeMethods.SetParamDelegate SetParamDelegate;
         internal readonly MsQuicNativeMethods.GetParamDelegate GetParamDelegate;
-
-        internal void RegistrationOpen(byte[] name)
-        {
-            MsQuicStatusException.ThrowIfFailed(_registrationOpenDelegate(name, out IntPtr ctx));
-            _registrationContext = ctx;
-        }
 
         internal unsafe uint UnsafeSetParam(
             IntPtr Handle,

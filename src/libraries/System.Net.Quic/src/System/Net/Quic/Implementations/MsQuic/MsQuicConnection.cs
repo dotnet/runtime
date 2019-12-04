@@ -351,8 +351,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref ConnectionEvent connectionEventStruct)
         {
-            var handle = GCHandle.FromIntPtr(context);
-            var quicConnection = (MsQuicConnection)handle.Target;
+            GCHandle handle = GCHandle.FromIntPtr(context);
+            MsQuicConnection quicConnection = (MsQuicConnection)handle.Target;
             // TODO quicConnection can be null
             return quicConnection.HandleEvent(ref connectionEventStruct);
         }
