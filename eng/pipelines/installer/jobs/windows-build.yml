@@ -1,42 +1,36 @@
 parameters:
   additionalMSBuildArguments: ''
-  displayName: ''
   publishRidAgnosticPackages: false
-  skipTests: $(SkipTests)
-  targetArchitecture: null
+  skipTests: false
+  archType: null
   timeoutInMinutes: 120
+  platform: ''
+  pool: ''
 
 jobs:
-  - job: ${{ parameters.name }}
-    displayName: ${{ parameters.name }}
+  - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
+    displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    pool:
-      # Use a hosted pool when possible.
-      ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        name: NetCorePublic-Pool
-        queue: buildpool.windows.10.amd64.vs2019.open
-      ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        name: NetCoreInternal-Pool
-        queue: buildpool.windows.10.amd64.vs2019
+    pool: ${{ parameters.pool }}
     strategy:
-      matrix: 
+      matrix:
         debug:
           _BuildConfig: Debug
         release:
           _BuildConfig: Release
     workspace:
       clean: all
-    variables: 
+    variables:
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
-        /p:OfficialBuildId=$(OfficialBuildId)
-        /p:TargetArchitecture=${{ parameters.targetArchitecture }}
+        /p:OfficialBuildId=$(Build.BuildNumber)
+        /p:TargetArchitecture=${{ parameters.archType }}
         /p:PortableBuild=true
         /p:SkipTests=${{ parameters.skipTests }}
       MsbuildSigningArguments: >-
         /p:CertificateId=400
         /p:DotNetSignType=$(SignType)
-      TargetArchitecture: ${{ parameters.targetArchitecture }}
+      TargetArchitecture: ${{ parameters.archType }}
 
     steps:
 
@@ -58,7 +52,7 @@ jobs:
       displayName: Clear NuGet http cache (if exists)
 
     - script: >-
-        $(buildScriptFileName).cmd -restore -build -ci -test
+        installer.cmd -restore -build -ci -test
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
       displayName: Build

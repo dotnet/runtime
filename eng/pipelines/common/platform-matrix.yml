@@ -135,6 +135,8 @@ jobs:
           managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# WebAssembly
+
 - ${{ if containsValue(parameters.platforms, 'WebAssembly_wasm') }}:
   - template: xplat-setup.yml
     parameters:

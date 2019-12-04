@@ -39,7 +39,7 @@ jobs:
           value: '/'
         - name: _msbuildCommand
           value: ./eng/common/msbuild.sh --warnaserror false --ci
-      
+
       - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
         # This is only required for cross builds.
         - name: ROOTFS_DIR
@@ -48,6 +48,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
+    platform: ${{ parameters.platform }}
 
     ${{ if ne(parameters.container, '') }}:
       ${{ if eq(parameters.container.registry, 'mcr') }}:
@@ -94,4 +95,3 @@ jobs:
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:
       jobTemplate: ${{ parameters.jobTemplate }}
       jobParameters: ${{ parameters.jobParameters }}
-      platform: ${{ parameters.platform }}

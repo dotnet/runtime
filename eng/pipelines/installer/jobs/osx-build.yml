@@ -1,22 +1,21 @@
 parameters:
   name: ''
+  platform: ''
+  pool: ''
 
 jobs:
-- job: ${{ parameters.name }}
-  pool:
-    ${{ if eq(variables['System.TeamProject'], 'public') }}:
-      name: Hosted macOS
-    ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      name: Hosted Mac internal
+- job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
+  displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
+  pool: ${{ parameters.pool }}
   strategy:
-    matrix: 
+    matrix:
       debug:
         _BuildConfig: Debug
       release:
         _BuildConfig: Release
   workspace:
     clean: all
-  variables: 
+  variables:
     CommonMSBuildArgs: >-
       /p:Configuration=$(_BuildConfig)
       /p:PortableBuild=true
@@ -26,11 +25,11 @@ jobs:
     - task: NuGetAuthenticate@0
 
   - script: >-
-      $(Build.SourcesDirectory)/$(buildScriptFileName).sh --restore --build --ci --test
-      /p:OfficialBuildId=$(OfficialBuildId)
+      $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+      /p:OfficialBuildId=$(Build.BuildNumber)
       /p:StripSymbols=true
       $(CommonMSBuildArgs)
-    displayName: Build 
+    displayName: Build
     condition: succeeded()
 
   - template: steps/upload-job-artifacts.yml
