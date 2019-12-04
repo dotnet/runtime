@@ -4,7 +4,7 @@ parameters:
   additionalRunArgs: ''
   crossBuild: false
   disableCrossgen: false
-  dockerImage: null
+  dockerImage: ''
   packageDistroList: null
   skipTests: $(SkipTests)
   strategy:
@@ -16,8 +16,8 @@ parameters:
   archType: x64
   timeoutInMinutes: 120
 jobs:
-  - job: ${{ format('installer_{0}', coalese(parameters.name, parameters.platform)) }}
-    displayName: ${{ format('Installer Build and Test {0}', coalese(parameters.name, parameters.platform)) }}
+  - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
+    displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
       ${{ if and(eq(parameters.name, 'FreeBSD_x64'), ne(variables['System.TeamProject'], 'public')) }}:
@@ -37,7 +37,7 @@ jobs:
         -e VSS_NUGET_URI_PREFIXES
         -e VSS_NUGET_ACCESSTOKEN
 
-      ${{ if ne(parameters.dockerImage, null) }}:
+      ${{ if ne(parameters.dockerImage, '') }}:
         RunArguments: >-
           docker run --privileged --rm
           -v "$(Build.SourcesDirectory):/root/runtime"
@@ -101,7 +101,7 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: NuGetAuthenticate@0
 
-    - ${{ if ne(parameters.dockerImage, null) }}:
+    - ${{ if ne(parameters.dockerImage, '') }}:
       # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
       # Clean up the build dirs ourselves in another Docker container to avoid failures.
       # Using hosted agents is tracked by https://github.com/dotnet/core-setup/issues/4997
@@ -155,7 +155,7 @@ jobs:
               packagingArgs: /p:BuildDistroIndependentInstallers=false
               subsetArg: $(installersSubsetArg)
 
-    - ${{ if ne(parameters.dockerImage, null) }}:
+    - ${{ if ne(parameters.dockerImage, '') }}:
       # Files may be owned by root because builds don't set user ID. The next AzDO step runs 'find' in
       # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step
       # prevents the failure by using chown to clean up our source tree.

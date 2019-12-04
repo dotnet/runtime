@@ -7,8 +7,8 @@ parameters:
   timeoutInMinutes: 120
 
 jobs:
-  - job: ${{ parameters.name }}
-    displayName: ${{ parameters.name }}
+  - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
+    displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
       # Use a hosted pool when possible.
