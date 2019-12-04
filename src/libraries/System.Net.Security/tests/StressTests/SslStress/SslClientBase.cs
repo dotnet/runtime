@@ -34,7 +34,7 @@ namespace SslStress
             _clientTask = new Lazy<Task>(Task.Run(StartCore));
         }
 
-        protected abstract Task HandleConnection(int workerId, SslStream stream, TcpClient client, Random random, CancellationToken token);
+        protected abstract Task HandleConnection(int workerId, SslStream stream, TcpClient client, Random random, TimeSpan duration, CancellationToken token);
 
         protected virtual async Task<SslStream> EstablishSslStream(Stream networkStream, Random random, CancellationToken token)
         {
@@ -101,7 +101,11 @@ namespace SslStress
                 {
                     TimeSpan duration = _config.MinConnectionLifetime + random.NextDouble() * (_config.MaxConnectionLifetime - _config.MinConnectionLifetime);
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
-                    cts.CancelAfter(duration);
+                    if (random.NextBoolean(probability: _config.CancellationProbability))
+                    {
+                        TimeSpan cancellationDelay = duration * random.NextDouble();
+                        cts.CancelAfter(cancellationDelay);
+                    }
 
                     try
                     {
@@ -109,13 +113,13 @@ namespace SslStress
                         await client.ConnectAsync(_config.ServerEndpoint.Address, _config.ServerEndpoint.Port);
                         var stream = new CountingStream(client.GetStream(), counter);
                         using SslStream sslStream = await EstablishSslStream(stream, random, cts.Token);
-                        await HandleConnection(workerId, sslStream, client, random, cts.Token);
+                        await HandleConnection(workerId, sslStream, client, random, duration, cts.Token);
 
                         _aggregator.RecordSuccess(workerId);
                     }
                     catch (OperationCanceledException) when (cts.IsCancellationRequested)
                     {
-                        _aggregator.RecordSuccess(workerId);
+                        _aggregator.RecordCancellatoin(workerId);
                     }
                     catch (Exception e)
                     {

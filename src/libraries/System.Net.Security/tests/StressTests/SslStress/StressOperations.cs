@@ -177,95 +177,100 @@ namespace SslStress
     {
         public StressClient(Configuration config) : base(config) { }
 
-        protected override async Task HandleConnection(int workerId, SslStream stream, TcpClient client, Random random, CancellationToken token)
+        protected override async Task HandleConnection(int workerId, SslStream stream, TcpClient client, Random random, TimeSpan duration, CancellationToken token)
         {
+            // token used for signalling cooperative cancellation; do not pass this to SslStream methods
+            using var connectionLifetimeToken = new CancellationTokenSource(duration);
+
             long messagesInFlight = 0;
             DateTime lastWrite = DateTime.Now;
             DateTime lastRead = DateTime.Now;
 
             await StressTaskExtensions.WhenAllThrowOnFirstException(token, Sender, Receiver, Monitor);
 
-            async Task Sender(CancellationToken taskToken)
+            async Task Sender(CancellationToken token)
             {
                 var serializer = new DataSegmentSerializer();
 
-                try
+                while (!token.IsCancellationRequested && !connectionLifetimeToken.IsCancellationRequested)
                 {
-                    while (!taskToken.IsCancellationRequested)
-                    {
-                        await ApplyBackpressure(taskToken);
+                    await ApplyBackpressure();
 
-                        DataSegment chunk = DataSegment.CreateRandom(random, _config.MaxBufferLength);
-                        try
+                    DataSegment chunk = DataSegment.CreateRandom(random, _config.MaxBufferLength);
+                    try
+                    {
+                        await serializer.SerializeAsync(stream, chunk, random, token);
+                        stream.WriteByte((byte)'\n');
+                        await stream.FlushAsync(token);
+                        Interlocked.Increment(ref messagesInFlight);
+                        lastWrite = DateTime.Now;
+                    }
+                    finally
+                    {
+                        chunk.Return();
+                    }
+                }
+
+                // write an empty line to signal completion to the server
+                stream.WriteByte((byte)'\n');
+                await stream.FlushAsync(token);
+
+                /// Polls until number of in-flight messages falls below threshold
+                async Task ApplyBackpressure()
+                {
+                    if (Volatile.Read(ref messagesInFlight) > 5000)
+                    {
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        bool isLogged = false;
+
+                        while (!token.IsCancellationRequested && !connectionLifetimeToken.IsCancellationRequested && Volatile.Read(ref messagesInFlight) > 2000)
                         {
-                            await serializer.SerializeAsync(stream, chunk, random, token);
-                            stream.WriteByte((byte)'\n');
-                            await stream.FlushAsync(token);
-                            Interlocked.Increment(ref messagesInFlight);
-                            lastWrite = DateTime.Now;
+                            // only log if tx has been suspended for a while
+                            if (!isLogged && stopwatch.ElapsedMilliseconds >= 1000)
+                            {
+                                isLogged = true;
+                                lock (Console.Out)
+                                {
+                                    Console.ForegroundColor = ConsoleColor.Yellow;
+                                    Console.WriteLine($"worker #{workerId}: applying backpressure");
+                                    Console.WriteLine();
+                                    Console.ResetColor();
+                                }
+                            }
+
+                            await Task.Delay(20);
                         }
-                        finally
+
+                        if(isLogged)
                         {
-                            chunk.Return();
+                            Console.WriteLine($"worker #{workerId}: resumed tx after {stopwatch.Elapsed}");
                         }
                     }
                 }
-                finally
-                {
-                    // write an empty line to signal completion to the server
-                    stream.WriteByte((byte)'\n');
-                    stream.WriteByte((byte)'\n');
-                    await stream.FlushAsync();
-                    await Task.Delay(1000);
-                }
             }
 
-            Task Receiver(CancellationToken token)
+            async Task Receiver(CancellationToken token)
             {
                 var serializer = new DataSegmentSerializer();
-                return stream.ReadLinesUsingPipesAsync(Callback, token, separator: '\n');
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                await stream.ReadLinesUsingPipesAsync(Callback, cts.Token, separator: '\n');
 
                 Task Callback(ReadOnlySequence<byte> buffer)
                 {
+                    if (buffer.Length == 0 && connectionLifetimeToken.IsCancellationRequested)
+                    {
+                        // server echoed back empty buffer sent by client,
+                        // signal cancellation and complete the connection.
+                        cts.Cancel();
+                        return Task.CompletedTask;
+                    }
+
                     // deserialize to validate the checksum, then discard
                     DataSegment chunk = serializer.Deserialize(buffer);
                     chunk.Return();
                     Interlocked.Decrement(ref messagesInFlight);
                     lastRead = DateTime.Now;
                     return Task.CompletedTask;
-                }
-            }
-
-            /// Polls until number of in-flight messages falls below threshold
-            async Task ApplyBackpressure(CancellationToken token)
-            {
-                if (Volatile.Read(ref messagesInFlight) > 5000)
-                {
-                    Stopwatch stopwatch = Stopwatch.StartNew();
-                    bool isLogged = false;
-
-                    while (!token.IsCancellationRequested && Volatile.Read(ref messagesInFlight) > 2000)
-                    {
-                        // only log if tx has been suspended for a while
-                        if (!isLogged && stopwatch.ElapsedMilliseconds >= 1000)
-                        {
-                            isLogged = true;
-                            lock (Console.Out)
-                            {
-                                Console.ForegroundColor = ConsoleColor.Yellow;
-                                Console.WriteLine($"worker #{workerId}: applying backpressure");
-                                Console.WriteLine();
-                                Console.ResetColor();
-                            }
-                        }
-
-                        await Task.Delay(20);
-                    }
-
-                    if(isLogged)
-                    {
-                        Console.WriteLine($"worker #{workerId}: resumed tx after {stopwatch.Elapsed}");
-                    }
                 }
             }
             
@@ -285,7 +290,7 @@ namespace SslStress
                         throw new Exception($"worker #{workerId} has stopped receiving bytes from server");
                     }
                 }
-                while(!token.IsCancellationRequested);
+                while(!token.IsCancellationRequested && !connectionLifetimeToken.IsCancellationRequested);
             }
         }
     }
@@ -311,9 +316,12 @@ namespace SslStress
             {
                 lastReadTime = DateTime.Now;
 
-                // got an empty line, client is closing the connection
                 if (buffer.Length == 0)
                 {
+                    // got an empty line, client is closing the connection
+                    // echo back the empty line and tear down.
+                    sslStream.WriteByte((byte)'\n');
+                    await sslStream.FlushAsync(token);
                     cts.Cancel();
                     return;
                 }

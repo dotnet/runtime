@@ -15,6 +15,7 @@ namespace SslStress
         public IPEndPoint ServerEndpoint { get; set; } = new IPEndPoint(IPAddress.Loopback, 0);
         public RunMode RunMode { get; set; }
         public int RandomSeed { get; set; }
+        public double CancellationProbability { get; set; }
         public int MaxConnections { get; set; }
         public int MaxBufferLength { get; set; }
         public TimeSpan? MaxExecutionTime { get; set; }

@@ -17,7 +17,7 @@ namespace SslStress
         private class StressResultAggregator
         {
             private long _totalConnections = 0;
-            private readonly long[] _successes, _failures;
+            private readonly long[] _successes, _failures, _cancellations;
             private readonly ErrorAggregator _errors = new ErrorAggregator();
             private readonly StreamCounter[] _currentCounters;
             private readonly StreamCounter[] _aggregateCounters;
@@ -28,6 +28,7 @@ namespace SslStress
                 _aggregateCounters = Enumerable.Range(0, workerCount).Select(_ => new StreamCounter()).ToArray();
                 _successes = new long[workerCount];
                 _failures = new long[workerCount];
+                _cancellations = new long[workerCount];
             }
 
             public long TotalConnections => _totalConnections;
@@ -38,6 +39,13 @@ namespace SslStress
             public void RecordSuccess(int workerId)
             {
                 _successes[workerId]++;
+                Interlocked.Increment(ref _totalConnections);
+                UpdateCounters(workerId);
+            }
+
+            public void RecordCancellatoin(int workerId)
+            {
+                _cancellations[workerId]++;
                 Interlocked.Increment(ref _totalConnections);
                 UpdateCounters(workerId);
             }
@@ -107,6 +115,10 @@ namespace SslStress
                     Console.Write($"\tPass: ");
                     Console.ResetColor();
                     Console.Write(_successes[i].ToString("N0"));
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.Write("\tCancel: ");
+                    Console.ResetColor();
+                    Console.Write(_cancellations[i].ToString("N0"));
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.Write("\tFail: ");
                     Console.ResetColor();
@@ -143,6 +155,10 @@ namespace SslStress
                 Console.Write($"\tPass: ");
                 Console.ResetColor();
                 Console.Write(_successes.Sum().ToString("N0"));
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.Write("\tCancel: ");
+                Console.ResetColor();
+                Console.Write(_cancellations.Sum().ToString("N0"));
                 Console.ForegroundColor = ConsoleColor.DarkRed;
                 Console.Write("\tFail: ");
                 Console.ResetColor();

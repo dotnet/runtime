@@ -46,6 +46,7 @@ namespace SslStress
             Console.WriteLine("  Min Conn. Lifetime: " + config.MinConnectionLifetime);
             Console.WriteLine("  Max Conn. Lifetime: " + config.MaxConnectionLifetime);
             Console.WriteLine("         Random Seed: " + config.RandomSeed);
+            Console.WriteLine("     Cancellation Pb: " + 100 * config.CancellationProbability + "%");
             Console.WriteLine();
 
             StressServer? server = null;
@@ -113,6 +114,7 @@ namespace SslStress
             var cmd = new RootCommand();
             cmd.AddOption(new Option(new[] { "--help", "-h" }, "Display this help text."));
             cmd.AddOption(new Option(new[] { "--mode", "-m" }, "Stress suite execution mode. Defaults to 'both'.") { Argument = new Argument<RunMode>("runMode", RunMode.both) });
+            cmd.AddOption(new Option(new[] { "--cancellation-probability", "-p"}, "Cancellation probability 0 <= p <= 1 for a given connection. Defaults to 0.1") { Argument = new Argument<double>("probability", 0.1)});
             cmd.AddOption(new Option(new[] { "--num-connections", "-n" }, "Max number of connections to open concurrently.") { Argument = new Argument<int>("connections", Environment.ProcessorCount) });
             cmd.AddOption(new Option(new[] { "--server-endpoint", "-e" }, "Endpoint to bind to if server, endpoint to listen to if client.") { Argument = new Argument<string>("ipEndpoint", "127.0.0.1:5002") });
             cmd.AddOption(new Option(new[] { "--max-execution-time", "-t" }, "Maximum stress suite execution time, in minutes. Defaults to infinity.") { Argument = new Argument<double?>("minutes", null) });
@@ -139,6 +141,7 @@ namespace SslStress
             {
                 RunMode = parseResult.ValueForOption<RunMode>("-m"),
                 MaxConnections = parseResult.ValueForOption<int>("-n"),
+                CancellationProbability = Math.Max(0, Math.Min(1, parseResult.ValueForOption<double>("-p"))),
                 ServerEndpoint = ParseEndpoint(parseResult.ValueForOption<string>("-e")),
                 MaxExecutionTime = parseResult.ValueForOption<double?>("-t")?.Pipe(TimeSpan.FromMinutes),
                 MaxBufferLength = parseResult.ValueForOption<int>("-b"),
