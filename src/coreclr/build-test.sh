@@ -645,7 +645,6 @@ __SkipRestore=""
 __SkipRestorePackages=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
-__LocalCoreFXPath=
 __LocalCoreFXConfig=${__BuildType}
 __UseNinja=0
 __VerboseBuild=0
