@@ -143,7 +143,6 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/windows-build.yml
-    buildConfig: Release
     platforms:
     - Windows_arm
     - Windows_arm64
@@ -153,14 +152,12 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/windows-build.yml
-    buildConfig: Release
     platforms:
     - Windows_x86
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/windows-build.yml
-    buildConfig: Release
     platforms:
     - Windows_x64
     jobParameters:
@@ -169,7 +166,6 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
-    buildConfig: Release
     platforms:
     - Linux_arm
     - Linux_arm64
@@ -181,7 +177,6 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
-    buildConfig: Release
     platforms:
     - Linux_musl_x64
     jobParameters:
@@ -191,7 +186,6 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
-    buildConfig: Release
     platforms:
     - Linux_musl_arm64
     jobParameters:
@@ -202,14 +196,12 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/osx-build.yml
-    buildConfig: Release
     platforms:
     - OSX_x64
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
-    buildConfig: Release
     platforms:
     - Linux_x64_raw
     jobParameters:
