@@ -5,13 +5,14 @@
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// Used to indicate to the compiler that the `.locals init` flag should not
-    /// be set in nested method headers when emitting to metadata. This attribute
-    /// is unsafe because it may reveal uninitialized memory to the application
-    /// in certain instances (e.g., reading from uninitialized stackalloc'd
-    /// memory). If applied to a method directly, the attribute applies to that
-    /// method and all nested functions (lambdas, local functions) below it. If
-    /// applied to a type or module, it applies to all methods nested inside.
+    /// Used to indicate to the compiler that the <c>.locals init</c> flag should
+    /// not be set in nested method headers when emitting to metadata. This
+    /// attribute is unsafe because it may reveal uninitialized memory to the
+    /// application in certain instances (e.g., reading from uninitialized
+    /// stackalloc'd memory). If applied to a method directly, the attribute
+    /// applies to that method and all nested functions (lambdas, local
+    /// functions) below it. If applied to a type or module, it applies to all
+    /// methods nested inside.
     /// </summary>
     /// <remarks>
     /// This attribute is intentionally not permitted on assemblies. Use at the
