@@ -23281,15 +23281,15 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     if (varTypeIsStruct(argType))
                     {
                         structHnd = gtGetStructHandleIfPresent(argNode);
-                        noway_assert((structHnd != NO_CLASS_HANDLE) || (argType != TYP_STRUCT));
+                        assert(structHnd != NO_CLASS_HANDLE);
                     }
 
                     // Unsafe value cls check is not needed for
                     // argTmpNum here since in-linee compiler instance
                     // would have iterated over these and marked them
                     // accordingly.
-                    impAssignTempGen(tmpNum, argNode, structHnd, (unsigned)CHECK_SPILL_NONE, &afterStmt, callILOffset,
-                                     block);
+                    impAssignTempGenStruct(tmpNum, argNode, structHnd, (unsigned)CHECK_SPILL_NONE, &afterStmt,
+                                           callILOffset, block);
 
                     // We used to refine the temp type here based on
                     // the actual arg, but we now do this up front, when
@@ -23504,8 +23504,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 {
                     // Unsafe value cls check is not needed here since in-linee compiler instance would have
                     // iterated over locals and marked accordingly.
-                    impAssignTempGen(tmpNum, gtNewZeroConNode(genActualType(lclTyp)), NO_CLASS_HANDLE,
-                                     (unsigned)CHECK_SPILL_NONE, &afterStmt, callILOffset, block);
+                    impAssignTempGen(tmpNum, gtNewZeroConNode(genActualType(lclTyp)), (unsigned)CHECK_SPILL_NONE,
+                                     &afterStmt, callILOffset, block);
                 }
                 else
                 {
