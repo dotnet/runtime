@@ -6,7 +6,7 @@ using System.Threading;
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
-    /// Allows consumers to be notified of application lifetime events.
+    /// Allows consumers to be notified of application lifetime events. This interface is not intended to be user-replaceable.
     /// </summary>
     public interface IHostApplicationLifetime
     {
