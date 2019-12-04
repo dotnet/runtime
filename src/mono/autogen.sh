@@ -104,12 +104,10 @@ if grep "^AM_PROG_LIBTOOL" configure.ac >/dev/null; then
   fi
 fi
 
-
-#
-# Plug in the extension module
-#
+# Parse parameters
 has_ext_mod=false
 ext_mod_args=''
+has_disable_boehm=false
 for PARAM; do
     if [[ $PARAM =~ "--enable-extension-module" ]] ; then
         has_ext_mod=true
@@ -117,8 +115,14 @@ for PARAM; do
             ext_mod_args=`echo $PARAM | cut -d= -f2`
         fi
     fi
+    if [[ $PARAM =~ "--disable-boehm" ]] ; then
+      has_disable_boehm=true
+    fi
 done
 
+#
+# Plug in the extension module
+#
 if test x$has_ext_mod = xtrue; then
 	pushd $top_srcdir../mono-extensions/scripts
 	sh ./prepare-repo.sh $ext_mod_args || exit 1
@@ -150,7 +154,12 @@ automake $am_opt ||
 echo "Running autoconf ..."
 autoconf || { echo "**Error**: autoconf failed."; exit 1; }
 
-if test -d $srcdir/external/bdwgc; then
+# Update all submodules recursively to ensure everything is checked out
+if test -e $srcdir/scripts/update_submodules.sh; then
+  (cd $srcdir && scripts/update_submodules.sh)
+fi
+
+if test x$has_disable_boehm = xfalse -a -d $srcdir/external/bdwgc; then
   echo Running external/bdwgc/autogen.sh ...
   (cd $srcdir/external/bdwgc ; NOCONFIGURE=1 ./autogen.sh "$@")
   echo Done running external/bdwgc/autogen.sh ...
