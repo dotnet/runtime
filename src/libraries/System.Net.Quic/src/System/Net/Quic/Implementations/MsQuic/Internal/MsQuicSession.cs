@@ -27,7 +27,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 _nativeObjPtr = _api.SessionOpen(sslClientAuthenticationOptions.ApplicationProtocols[0].Protocol.ToArray());
                 _opened = true;
-                SetPeerBiDirectionalStreamCount(100);
+                SetPeerBiDirectionalStreamCount(100); // TODO make these configurable.
                 SetPeerUnidirectionalStreamCount(100);
             }
 

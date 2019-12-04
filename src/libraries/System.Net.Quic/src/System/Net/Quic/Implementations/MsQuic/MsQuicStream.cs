@@ -32,9 +32,9 @@ namespace System.Net.Quic.Implementations.MsQuic
         private long _streamId = -1;
 
         // Resettable completions to be used for multiple calls to send, start, and shutdown.
-        internal ResettableCompletionSource<uint> _sendResettableCompletionSource;
+        private ResettableCompletionSource<uint> _sendResettableCompletionSource;
 
-        internal ResettableCompletionSource<uint> _receiveResettableCompletionSource;
+        private ResettableCompletionSource<uint> _receiveResettableCompletionSource;
 
         // Buffers to hold during a call to send.
         private MemoryHandle[] _bufferArrays;
@@ -141,11 +141,23 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
+            cancellationToken.Register(() =>
+            {
+                lock (_sync)
+                {
+                    if (_readState == ReadState.None)
+                    {
+                        _readState = ReadState.Canceled;
+                    }
+
+                    _receiveResettableCompletionSource.CompleteException(new TaskCanceledException("Operation was canceled"));
+                }
+            });
+
             // TODO there could potentially be a perf gain by storing the buffer from the inital read
             // This reduces the amount of async calls, however it makes it so MsQuic holds onto the buffers
             // longer than it needs to. We will need to benchmark this.
             int length = (int)await _receiveResettableCompletionSource.GetValueTask();
-            if (NetEventSource.IsEnabled) NetEventSource.Info("Read completed");
 
             static unsafe void CopyToBuffer(Span<byte> buffer, QuicBuffer[] quicBuffers)
             {
@@ -167,14 +179,17 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             CopyToBuffer(destination.Span, _quicBuffer);
 
-            EnableReceive();
-
             lock (_sync)
             {
                 if (_readState == ReadState.IndividualReadComplete)
                 {
                     // Don't call receive complete after the stream has been aborted or completed.
+                    EnableReceive();
                     ReceiveComplete(actual);
+                    _readState = ReadState.None;
+                }
+                else if (_readState == ReadState.Canceled)
+                {
                     _readState = ReadState.None;
                 }
             }
@@ -294,11 +309,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             uint status = _api._streamReceiveSetEnabledDelegate(_ptr, enabled: true);
         }
 
-        private void DisableReceive()
-        {
-            uint status = _api._streamReceiveSetEnabledDelegate(_ptr, enabled: false);
-        }
-
         internal static uint NativeCallbackHandler(
            IntPtr stream,
            IntPtr context,
@@ -394,7 +404,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (_sync)
             {
-                if (_readState != ReadState.ReadsAborted)
+                if (_readState == ReadState.None)
                 {
                     // Abort will complete the completion source already.
                     _receiveResettableCompletionSource.Complete((uint)receieveEvent.TotalBufferLength);
@@ -458,7 +468,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (_sync)
             {
-                if (_readState != ReadState.IndividualReadComplete && _readState != ReadState.ReadsCompleted)
+                if (_readState == ReadState.None)
                 {
                     _receiveResettableCompletionSource.CompleteException(new IOException("Reading has been aborted by the peer."));
                 }
@@ -479,7 +489,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 // This event won't occur within the middle of a receive.
                 if (NetEventSource.IsEnabled) NetEventSource.Info("Completing resettable event source.");
 
-                if (_readState != ReadState.ReadsAborted)
+                if (_readState == ReadState.None)
                 {
                     _receiveResettableCompletionSource.Complete(0);
                 }
@@ -617,6 +627,47 @@ namespace System.Net.Quic.Implementations.MsQuic
                 ref buf));
         }
 
+        /// <summary>
+        /// A resettable completion source which can be completed multiple times.
+        /// Used to make methods async between completed events and their associated async method.
+        /// </summary>
+        private abstract class ResettableCompletionSource<T> : IValueTaskSource<T>
+        {
+            protected ManualResetValueTaskSourceCore<T> _valueTaskSource;
+
+            public ResettableCompletionSource()
+            {
+                _valueTaskSource.RunContinuationsAsynchronously = true;
+            }
+
+            public ValueTask<T> GetValueTask()
+            {
+                return new ValueTask<T>(this, _valueTaskSource.Version);
+            }
+
+            public abstract T GetResult(short token);
+
+            public ValueTaskSourceStatus GetStatus(short token)
+            {
+                return _valueTaskSource.GetStatus(token);
+            }
+
+            public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags)
+            {
+                _valueTaskSource.OnCompleted(continuation, state, token, flags);
+            }
+
+            public void Complete(T result)
+            {
+                _valueTaskSource.SetResult(result);
+            }
+
+            public void CompleteException(Exception ex)
+            {
+                _valueTaskSource.SetException(ex);
+            }
+        }
+
         private class UIntResettableCompletionSource : ResettableCompletionSource<uint>
         {
             internal UIntResettableCompletionSource()
@@ -650,6 +701,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private enum ReadState
         {
             None,
+            Canceled,
             IndividualReadComplete,
             ReadsCompleted,
             ReadsAborted

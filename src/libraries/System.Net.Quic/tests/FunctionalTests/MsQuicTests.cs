@@ -38,7 +38,6 @@ namespace System.Net.Quic.Tests
             {
                 await using (QuicConnection connection = CreateQuicConnection(DefaultEndpoint))
                 {
-                    await Task.Delay(100);
                     await connection.ConnectAsync();
                     using (QuicStream stream = connection.OpenBidirectionalStream())
                     {
@@ -68,38 +67,23 @@ namespace System.Net.Quic.Tests
                         using (QuicStream stream = await connection.AcceptStreamAsync())
                         {
                             byte[] buffer = new byte[s_data.Length];
-                            try
+                            while (true)
                             {
-                                while (true)
+                                int bytesRead = await stream.ReadAsync(buffer);
+                                if (bytesRead == 0)
                                 {
-                                    int bytesRead = await stream.ReadAsync(buffer);
-                                    if (bytesRead == 0)
-                                    {
-                                        break;
-                                    }
-                                    Assert.Equal(s_data.Length, bytesRead);
-                                    Assert.True(s_data.Span.SequenceEqual(buffer));
+                                    break;
                                 }
-
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex.Message);
+                                Assert.Equal(s_data.Length, bytesRead);
+                                Assert.True(s_data.Span.SequenceEqual(buffer));
                             }
 
-                            try
+                            for (int i = 0; i < 5; i++)
                             {
-                                for (int i = 0; i < 5; i++)
-                                {
-                                    await stream.WriteAsync(s_data);
-                                }
+                                await stream.WriteAsync(s_data);
+                            }
 
-                                stream.ShutdownWrite();
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex.Message);
-                            }
+                            stream.ShutdownWrite();
                         }
                     }
                 }

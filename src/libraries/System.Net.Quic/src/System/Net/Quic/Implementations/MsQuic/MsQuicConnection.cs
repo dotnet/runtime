@@ -56,6 +56,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // constructor for outbound connections
+        // TODO eventually remove the MsQuicApi and nativeObjectPtr from this constructor as people will new this up.
         public MsQuicConnection(IPEndPoint remoteEndPoint, MsQuicApi api, IntPtr nativeObjPtr, SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -90,14 +91,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                         }
                         break;
 
-                    case QUIC_CONNECTION_EVENT.SHUTDOWN_BEGIN:
+                    case QUIC_CONNECTION_EVENT.SHUTDOWN_INITIATED_BY_TRANSPORT:
                         {
                             status = HandleEventShutdownBegin(
                                 connectionEvent);
                         }
                         break;
 
-                    case QUIC_CONNECTION_EVENT.SHUTDOWN_BEGIN_PEER:
+                    case QUIC_CONNECTION_EVENT.SHUTDOWN_INITIATED_BY_PEER:
                         {
                             status = HandleEventShutdownBeginPeer(
                                 connectionEvent);
@@ -111,7 +112,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         }
                         break;
 
-                    case QUIC_CONNECTION_EVENT.NEW_STREAM:
+                    case QUIC_CONNECTION_EVENT.PEER_STREAM_STARTED:
                         {
                             status = HandleEventNewStream(
                                 connectionEvent);

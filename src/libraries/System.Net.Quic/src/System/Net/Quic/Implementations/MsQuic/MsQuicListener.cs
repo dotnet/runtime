@@ -34,7 +34,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private volatile bool _disposed;
 
-        private readonly Channel<MsQuicConnection> _acceptConnectionQueue = Channel.CreateUnbounded<MsQuicConnection>(new UnboundedChannelOptions
+        private readonly Channel<MsQuicConnection> _acceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(512) // TODO make this configurable.
         {
             SingleReader = true,
             SingleWriter = true
@@ -47,6 +47,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ListenEndPoint = listenEndPoint;
             _nativeObjPtr = nativeObjPtr;
 
+            // TODO remove this.
             StartAsync().GetAwaiter().GetResult();
         }
 

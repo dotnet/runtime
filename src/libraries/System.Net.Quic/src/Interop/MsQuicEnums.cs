@@ -37,15 +37,15 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     internal enum QUIC_CONNECTION_EVENT : byte
     {
         CONNECTED = 0,
-        SHUTDOWN_BEGIN = 1,
-        SHUTDOWN_BEGIN_PEER = 2,
+        SHUTDOWN_INITIATED_BY_TRANSPORT = 1,
+        SHUTDOWN_INITIATED_BY_PEER = 2,
         SHUTDOWN_COMPLETE = 3,
-        LOCAL_ADDR_CHANGED = 4,
-        PEER_ADDR_CHANGED = 5,
-        NEW_STREAM = 6,
+        LOCAL_ADDRESS_CHANGED = 4,
+        PEER_ADDRESS_CHANGED = 5,
+        PEER_STREAM_STARTED = 6,
         STREAMS_AVAILABLE = 7,
         PEER_NEEDS_STREAMS = 8,
-        IDEAL_SEND_BUFFER = 9,
+        IDEAL_PROCESSOR_CHANGED = 9,
     }
 
     [Flags]

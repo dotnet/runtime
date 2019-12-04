@@ -84,37 +84,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal delegate void RegistrationCloseDelegate(IntPtr registrationContext);
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct CertHash
-        {
-            internal const int ShaHashLength = 20;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = ShaHashLength)]
-            internal byte[] ShaHash;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct CertHashStore
-        {
-            internal const int ShaHashLength = 20;
-            internal const int StoreNameLength = 128;
-
-            internal uint Flags;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = ShaHashLength)]
-            internal byte[] ShaHash;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = StoreNameLength)]
-            internal byte[] StoreName;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct CertFile
-        {
-            [MarshalAs(UnmanagedType.ByValArray)]
-            internal byte[] ShaHashUtf8;
-            [MarshalAs(UnmanagedType.ByValArray)]
-            internal byte[] StoreNameUtf8;
-        }
-
         internal delegate void SecConfigCreateCompleteDelegate(IntPtr context, uint status, IntPtr securityConfig);
 
         internal delegate uint SecConfigCreateDelegate(
