@@ -1,4 +1,4 @@
-include $(top_srcdir)/mk/common.mk
+MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 
 AM_CPPFLAGS = $(GLIB_CFLAGS) -I$(top_srcdir)
 

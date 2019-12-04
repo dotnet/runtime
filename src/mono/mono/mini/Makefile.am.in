@@ -1,4 +1,4 @@
-include $(top_srcdir)/mk/common.mk
+MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 
 ## Set the C++ linker based on configure settings, see comment in configure.ac
 ## about why we need to do this.

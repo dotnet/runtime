@@ -1,4 +1,4 @@
-include $(top_srcdir)/mk/common.mk
+MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 
 CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 

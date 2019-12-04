@@ -1,4 +1,4 @@
-include $(top_srcdir)/mk/common.mk
+MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 
 DIST_SUBDIRS = x86 ppc sparc arm arm64 s390x amd64 mips riscv
 

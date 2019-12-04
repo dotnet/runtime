@@ -14,7 +14,6 @@ AC_DEFUN([AC_MONO_OUTPUT], [
 	AC_OUTPUT([
 		Makefile
 		llvm/Makefile
-		mk/Makefile
 		mono/Makefile
 		mono/btls/Makefile
 		mono/native/Makefile

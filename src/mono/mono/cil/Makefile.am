@@ -1,4 +1,4 @@
-include $(top_srcdir)/mk/common.mk
+MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 
 # opcode.def is not built by default -- based on timestamps.
 # CI does not have the dependencies installed (perl, XML::Parser).

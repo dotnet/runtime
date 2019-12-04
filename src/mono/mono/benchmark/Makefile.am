@@ -1,4 +1,4 @@
-include $(top_srcdir)/mk/common.mk
+MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 
 TEST_PROG=../mini/mono
 RUNTIME_ARGS="-O=all"

@@ -1,3 +1,3 @@
-include $(top_srcdir)/mk/common.mk
+MAKEFLAGS := $(MAKEFLAGS) --no-builtin-rules
 
 EXTRA_DIST = ppc-codegen.h

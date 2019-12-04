@@ -6253,7 +6253,7 @@ fi
 
 # Top level Makefile.am subdirs
 if test "x$with_core" = "xonly"; then
-	MONO_SUBDIRS="mk llvm mono"
+	MONO_SUBDIRS="llvm mono"
 else
 	if test "x$support_boehm" = "xyes" -a "x$libgc" = "xincluded"; then
 		mono_subdirs_libgc=external/bdwgc
@@ -6276,7 +6276,7 @@ else
 		mono_subdirs_ikvm_native=ikvm-native
 	fi
 
-	MONO_SUBDIRS="mk po $mono_subdirs_libgc llvm mono $mono_subdirs_ikvm_native $mono_subdirs_support data runtime scripts man samples $mono_subdirs_tools $mono_subdirs_docs msvc acceptance-tests"
+	MONO_SUBDIRS="po $mono_subdirs_libgc llvm mono $mono_subdirs_ikvm_native $mono_subdirs_support data runtime scripts man samples $mono_subdirs_tools $mono_subdirs_docs msvc acceptance-tests"
 fi
 
 AC_SUBST(MONO_SUBDIRS)
