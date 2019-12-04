@@ -127,7 +127,7 @@ namespace System.ComponentModel
 
             _asyncOperation = AsyncOperationManager.CreateOperation(null);
             Task.Factory.StartNew(
-                        (arg) => WorkerThreadStart(arg!),
+                        arg => WorkerThreadStart(arg),
                         argument,
                         CancellationToken.None,
                         TaskCreationOptions.DenyChildAttach,
@@ -163,7 +163,7 @@ namespace System.ComponentModel
             }
         }
 
-        private void WorkerThreadStart(object argument)
+        private void WorkerThreadStart(object? argument)
         {
             Debug.Assert(_asyncOperation != null, "_asyncOperation not initialized");
 

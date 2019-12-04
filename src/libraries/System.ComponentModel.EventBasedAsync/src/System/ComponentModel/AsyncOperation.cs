@@ -9,7 +9,6 @@ namespace System.ComponentModel
     public sealed class AsyncOperation
     {
         private readonly SynchronizationContext _syncContext;
-        private readonly object? _userSuppliedState;
         private bool _alreadyCompleted;
 
         /// <summary>
@@ -18,7 +17,7 @@ namespace System.ComponentModel
         /// </summary>
         private AsyncOperation(object? userSuppliedState, SynchronizationContext syncContext)
         {
-            _userSuppliedState = userSuppliedState;
+            UserSuppliedState = userSuppliedState;
             _syncContext = syncContext;
             _alreadyCompleted = false;
             _syncContext.OperationStarted();
@@ -35,13 +34,7 @@ namespace System.ComponentModel
             }
         }
 
-        public object? UserSuppliedState
-        {
-            get
-            {
-                return _userSuppliedState;
-            }
-        }
+        public object? UserSuppliedState { get; }
 
         public SynchronizationContext SynchronizationContext
         {
