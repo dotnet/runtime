@@ -1,7 +1,7 @@
 parameters:
   additionalMSBuildArguments: ''
   publishRidAgnosticPackages: false
-  skipTests: $(SkipTests)
+  skipTests: false
   archType: null
   timeoutInMinutes: 120
   platform: ''
@@ -29,7 +29,7 @@ jobs:
     variables:
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
-        /p:OfficialBuildId=$(OfficialBuildId)
+        /p:OfficialBuildId=$(Build.BuildNumber)
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:PortableBuild=true
         /p:SkipTests=${{ parameters.skipTests }}
