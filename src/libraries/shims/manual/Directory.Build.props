@@ -3,7 +3,7 @@
     <!-- ensure these projects use a different intermediate and output directory than generated projects -->
     <OutDirName>manual.$(MSBuildProjectName)</OutDirName>
   </PropertyGroup>
-  
+
   <Import Project="..\Directory.Build.props" />
 
   <!-- import generated projects in order to share generated properties -->
@@ -19,5 +19,6 @@
     <ReferencePath
       Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
       Exclude="$(RefPath)$(MSBuildProjectName).dll" />
+    <ReferencePath Include="$(ArtifactsBinDir)/external.runtime/$(TargetGroup)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)/System.Private.CoreLib.dll" />
   </ItemGroup>
 </Project>
