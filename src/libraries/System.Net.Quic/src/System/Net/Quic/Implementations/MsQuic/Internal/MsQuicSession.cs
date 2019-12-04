@@ -16,9 +16,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal MsQuicSession(string registration)
         {
-            _api = new MsQuicApi();
-
-            _api.RegistrationOpen(Encoding.UTF8.GetBytes(registration));
+            _api = MsQuicApi.Api;
         }
 
         public MsQuicConnection ConnectionOpen(IPEndPoint endpoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndpoint)

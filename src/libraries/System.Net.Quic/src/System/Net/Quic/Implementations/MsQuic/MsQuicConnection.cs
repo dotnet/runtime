@@ -232,7 +232,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return StreamOpen(QUIC_STREAM_OPEN_FLAG.NONE);
         }
 
-        public unsafe void SetIdleTimeout(TimeSpan timeout)
+        private unsafe void SetIdleTimeout(TimeSpan timeout)
         {
             ulong msTime = (ulong)timeout.TotalMilliseconds;
             var buffer = new QuicBuffer()
@@ -243,27 +243,27 @@ namespace System.Net.Quic.Implementations.MsQuic
             SetParam(QUIC_PARAM_CONN.IDLE_TIMEOUT, buffer);
         }
 
-        public void SetPeerBiDirectionalStreamCount(ushort count)
+        private void SetPeerBiDirectionalStreamCount(ushort count)
         {
             SetUshortParamter(QUIC_PARAM_CONN.PEER_BIDI_STREAM_COUNT, count);
         }
 
-        public void SetPeerUnidirectionalStreamCount(ushort count)
+        private void SetPeerUnidirectionalStreamCount(ushort count)
         {
             SetUshortParamter(QUIC_PARAM_CONN.PEER_UNIDI_STREAM_COUNT, count);
         }
 
-        public void SetLocalBidirectionalStreamCount(ushort count)
+        private void SetLocalBidirectionalStreamCount(ushort count)
         {
             SetUshortParamter(QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT, count);
         }
 
-        public void SetLocalUnidirectionalStreamCount(ushort count)
+        private void SetLocalUnidirectionalStreamCount(ushort count)
         {
             SetUshortParamter(QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT, count);
         }
 
-        public unsafe void EnableBuffering()
+        private unsafe void EnableBuffering()
         {
             bool val = true;
             var buffer = new QuicBuffer()
@@ -274,7 +274,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             SetParam(QUIC_PARAM_CONN.USE_SEND_BUFFER, buffer);
         }
 
-        public unsafe void DisableBuffering()
+        private unsafe void DisableBuffering()
         {
             bool val = false;
             var buffer = new QuicBuffer()
@@ -299,7 +299,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return new ValueTask(_connectTcs.Task);
         }
 
-        public MsQuicStream StreamOpen(
+        private MsQuicStream StreamOpen(
             QUIC_STREAM_OPEN_FLAG flags)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -320,7 +320,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
-        public void SetCallbackHandler()
+        private void SetCallbackHandler()
         {
             _handle = GCHandle.Alloc(this);
             _connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
@@ -330,7 +330,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 GCHandle.ToIntPtr(_handle));
         }
 
-        public Task ShutdownAsync(
+        private Task ShutdownAsync(
             QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
             ushort ErrorCode)
         {

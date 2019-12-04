@@ -13,8 +13,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         private bool _disposed;
 
         private IntPtr _registrationContext;
-
-        internal unsafe MsQuicApi()
+        private unsafe MsQuicApi()
         {
             uint status = (uint)Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration);
             MsQuicStatusException.ThrowIfFailed(status);
@@ -108,6 +107,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.GetParamDelegate>(
                     nativeRegistration.GetParam);
         }
+
+        internal static MsQuicApi Api { get; } = new MsQuicApi();
 
         internal readonly MsQuicNativeMethods.RegistrationOpenDelegate _registrationOpenDelegate;
         internal readonly MsQuicNativeMethods.RegistrationCloseDelegate _registrationCloseDelegate;
