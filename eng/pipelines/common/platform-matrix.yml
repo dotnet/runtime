@@ -159,6 +159,8 @@ jobs:
           managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# WebAssembly
+
 - ${{ if containsValue(parameters.platforms, 'WebAssembly_wasm') }}:
   - template: xplat-setup.yml
     parameters:
@@ -170,6 +172,21 @@ jobs:
       container:
         image: ubuntu-16.04-a50a721-20191023143845
         registry: mcr
+      jobParameters:
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux x64 without a container
+
+- ${{ if containsValue(parameters.platforms, 'Linux_x64_raw') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: Linux
+      archType: x64
+      platform: Linux_x64
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}

@@ -1,9 +1,9 @@
 parameters:
+  platform: ''
   additionalMSBuildArgs: ''
   additionalRunArgs: ''
   crossBuild: false
   disableCrossgen: false
-  displayName: null
   dockerImage: null
   packageDistroList: null
   skipTests: $(SkipTests)
@@ -13,11 +13,11 @@ parameters:
         _BuildConfig: Debug
       release:
         _BuildConfig: Release
-  targetArchitecture: x64
+  archType: x64
   timeoutInMinutes: 120
 jobs:
-  - job: ${{ parameters.name }}
-    displayName: ${{ parameters.name }}
+  - job: ${{ format('installer_{0}', coalese(parameters.name, parameters.platform)) }}
+    displayName: ${{ format('Installer Build and Test {0}', coalese(parameters.name, parameters.platform)) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
       ${{ if and(eq(parameters.name, 'FreeBSD_x64'), ne(variables['System.TeamProject'], 'public')) }}:
@@ -37,7 +37,7 @@ jobs:
         -e VSS_NUGET_URI_PREFIXES
         -e VSS_NUGET_ACCESSTOKEN
 
-      ${{ if ne(parameters.name, 'FreeBSD_x64')}}:
+      ${{ if ne(parameters.dockerImage, null) }}:
         RunArguments: >-
           docker run --privileged --rm
           -v "$(Build.SourcesDirectory):/root/runtime"
@@ -60,7 +60,7 @@ jobs:
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
         /p:OfficialBuildId=$(OfficialBuildId)
-        /p:TargetArchitecture=${{ parameters.targetArchitecture }}
+        /p:TargetArchitecture=${{ parameters.archType }}
 
       # Don't put additionalMSBuildArgs as the last line. It may or may not have extra args. If the
       # parameter is empty, AzDO replaces it with empty space without chomping the extra newline.
@@ -101,20 +101,21 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: NuGetAuthenticate@0
 
-    # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
-    # Clean up the build dirs ourselves in another Docker container to avoid failures.
-    # Using hosted agents is tracked by https://github.com/dotnet/core-setup/issues/4997
-    - script: |
-        set -x
-        docker run --rm \
-          -v "$(Agent.BuildDirectory):/root/build" \
-          -w /root/build \
-          ${{ parameters.dockerImage }} \
-          bash -c '
-            rm -v -rf a b
-            cd s
-            git clean -xdf'
-      displayName: Clean up old artifacts owned by root
+    - ${{ if ne(parameters.dockerImage, null) }}:
+      # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
+      # Clean up the build dirs ourselves in another Docker container to avoid failures.
+      # Using hosted agents is tracked by https://github.com/dotnet/core-setup/issues/4997
+      - script: |
+          set -x
+          docker run --rm \
+            -v "$(Agent.BuildDirectory):/root/build" \
+            -w /root/build \
+            ${{ parameters.dockerImage }} \
+            bash -c '
+              rm -v -rf a b
+              cd s
+              git clean -xdf'
+        displayName: Clean up old artifacts owned by root
 
     # Build binary and nuget packages
     - script: |
@@ -149,24 +150,25 @@ jobs:
             parameters:
               distroRid: ${{ rid }}
               image: ${{ packageBuild.image }}
-              outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.targetArchitecture }}
+              outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.archType }}
               packageStepDescription: Runtime Deps installers
               packagingArgs: /p:BuildDistroIndependentInstallers=false
               subsetArg: $(installersSubsetArg)
 
-    # Files may be owned by root because builds don't set user ID. The next AzDO step runs 'find' in
-    # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step
-    # prevents the failure by using chown to clean up our source tree.
-    - script: |
-        set -x
-        docker run --rm \
-          -v "$(Agent.BuildDirectory):/root/build" \
-          -w /root/build \
-          ${{ parameters.dockerImage }} \
-          bash -c "chown -R $(id -u):$(id -g) *"
-      displayName: Update file ownership from root to build agent account
-      continueOnError: true
-      condition: succeededOrFailed()
+    - ${{ if ne(parameters.dockerImage, null) }}:
+      # Files may be owned by root because builds don't set user ID. The next AzDO step runs 'find' in
+      # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step
+      # prevents the failure by using chown to clean up our source tree.
+      - script: |
+          set -x
+          docker run --rm \
+            -v "$(Agent.BuildDirectory):/root/build" \
+            -w /root/build \
+            ${{ parameters.dockerImage }} \
+            bash -c "chown -R $(id -u):$(id -g) *"
+        displayName: Update file ownership from root to build agent account
+        continueOnError: true
+        condition: succeededOrFailed()
 
     - template: steps/upload-job-artifacts.yml
       parameters:

@@ -3,7 +3,7 @@ parameters:
   displayName: ''
   publishRidAgnosticPackages: false
   skipTests: $(SkipTests)
-  targetArchitecture: null
+  archType: null
   timeoutInMinutes: 120
 
 jobs:
@@ -19,24 +19,24 @@ jobs:
         name: NetCoreInternal-Pool
         queue: buildpool.windows.10.amd64.vs2019
     strategy:
-      matrix: 
+      matrix:
         debug:
           _BuildConfig: Debug
         release:
           _BuildConfig: Release
     workspace:
       clean: all
-    variables: 
+    variables:
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
         /p:OfficialBuildId=$(OfficialBuildId)
-        /p:TargetArchitecture=${{ parameters.targetArchitecture }}
+        /p:TargetArchitecture=${{ parameters.archType }}
         /p:PortableBuild=true
         /p:SkipTests=${{ parameters.skipTests }}
       MsbuildSigningArguments: >-
         /p:CertificateId=400
         /p:DotNetSignType=$(SignType)
-      TargetArchitecture: ${{ parameters.targetArchitecture }}
+      TargetArchitecture: ${{ parameters.archType }}
 
     steps:
 

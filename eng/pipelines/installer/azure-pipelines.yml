@@ -87,7 +87,7 @@ stages:
       additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm
       portableBuild: true
       skipTests: true
-      targetArchitecture: arm
+      archType: arm
 
   - template: ${{ variables['pipelinesPath'] }}/jobs/bash-build.yml
     parameters:
@@ -97,7 +97,7 @@ stages:
       additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm64
       portableBuild: true
       skipTests: true
-      targetArchitecture: arm64
+      archType: arm64
 
   # # Tizen build only for PR build
   # - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
@@ -111,7 +111,7 @@ stages:
   #       dockerImage: tizendotnet/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255-tizen-rootfs-5.0m1
   #       portableBuild: false
   #       skipTests: true
-  #       targetArchitecture: armel
+  #       archType: armel
 
   - template: ${{ variables['pipelinesPath'] }}/jobs/bash-build.yml
     parameters:
@@ -122,7 +122,7 @@ stages:
       additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm64
       portableBuild: false
       skipTests: true
-      targetArchitecture: arm64
+      archType: arm64
 
   - template: ${{ variables['pipelinesPath'] }}/jobs/bash-build.yml
     parameters:
@@ -130,7 +130,7 @@ stages:
       name: Linux_x64_Alpine39
       dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015
       portableBuild: false
-      targetArchitecture: x64
+      archType: x64
 
   - template: ${{ variables['pipelinesPath'] }}/jobs/bash-build.yml
     parameters:
@@ -149,7 +149,7 @@ stages:
         - oraclelinux.7
         - sles.12
       portableBuild: true
-      targetArchitecture: x64
+      archType: x64
 
   - template: ${{ variables['pipelinesPath'] }}/jobs/bash-build.yml
     parameters:
@@ -157,7 +157,7 @@ stages:
       name: Linux_x64_Rhel6
       dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-50f0d02-20190918213956
       portableBuild: false
-      targetArchitecture: x64
+      archType: x64
 
   # -------- Build OSX (macOS) leg --------
   - template: ${{ variables['pipelinesPath'] }}/jobs/osx-build.yml
@@ -170,27 +170,27 @@ stages:
     parameters:
       name: Windows_Arm
       skipTests: true
-      targetArchitecture: arm
+      archType: arm
 
   # Windows Arm64
   - template: ${{ variables['pipelinesPath'] }}/jobs/windows-build.yml
     parameters:
       name: Windows_Arm64
       skipTests: true
-      targetArchitecture: arm64
+      archType: arm64
 
   # Windows x64
   - template: ${{ variables['pipelinesPath'] }}/jobs/windows-build.yml
     parameters:
       name: Windows_x64
       publishRidAgnosticPackages: true
-      targetArchitecture: x64
+      archType: x64
 
   # Windows x86
   - template: ${{ variables['pipelinesPath'] }}/jobs/windows-build.yml
     parameters:
       name: Windows_x86
-      targetArchitecture: x86
+      archType: x86
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
   - stage: PrepareForPublish
