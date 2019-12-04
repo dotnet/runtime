@@ -1,15 +1,12 @@
 parameters:
   name: ''
   platform: ''
+  pool: ''
 
 jobs:
 - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
   displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
-  pool:
-    ${{ if eq(variables['System.TeamProject'], 'public') }}:
-      name: Hosted macOS
-    ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      name: Hosted Mac internal
+  pool: ${{ parameters.pool }}
   strategy:
     matrix:
       debug:
