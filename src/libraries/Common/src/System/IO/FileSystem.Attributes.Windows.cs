@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.IO;
-using System.Text;
 
 #if MS_IO_REDIST
 namespace Microsoft.IO
@@ -18,12 +15,12 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        public static bool DirectoryExists(string fullPath)
+        public static bool DirectoryExists(string? fullPath)
         {
             return DirectoryExists(fullPath, out int lastError);
         }
 
-        private static bool DirectoryExists(string path, out int lastError)
+        private static bool DirectoryExists(string? path, out int lastError)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             lastError = FillAttributeInfo(path, ref data, returnErrorOnNotFound: true);
@@ -52,7 +49,7 @@ namespace System.IO
         /// <param name="path">The file path from which the file attribute information will be filled.</param>
         /// <param name="data">A struct that will contain the attribute information.</param>
         /// <param name="returnErrorOnNotFound">Return the error code for not found errors?</param>
-        internal static int FillAttributeInfo(string path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
+        internal static int FillAttributeInfo(string? path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
         {
             int errorCode = Interop.Errors.ERROR_SUCCESS;
 
@@ -97,7 +94,7 @@ namespace System.IO
                         // cases that we know we don't want to retry on.
 
                         Interop.Kernel32.WIN32_FIND_DATA findData = default;
-                        using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(path, ref findData))
+                        using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(path!, ref findData))
                         {
                             if (handle.IsInvalid)
                             {

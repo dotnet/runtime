@@ -5,6 +5,7 @@
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>

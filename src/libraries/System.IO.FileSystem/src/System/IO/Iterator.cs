@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO
 {
@@ -14,13 +15,15 @@ namespace System.IO
     {
         private readonly int _threadId;
         internal int state;
-        internal TSource current;
+        [MaybeNull, AllowNull]
+        internal TSource current = default;
 
         public Iterator()
         {
             _threadId = Environment.CurrentManagedThreadId;
         }
 
+        [MaybeNull]
         public TSource Current
         {
             get { return current; }
@@ -36,7 +39,7 @@ namespace System.IO
 
         protected virtual void Dispose(bool disposing)
         {
-            current = default(TSource);
+            current = default(TSource)!;
             state = -1;
         }
 
@@ -55,7 +58,7 @@ namespace System.IO
 
         public abstract bool MoveNext();
 
-        object IEnumerator.Current
+        object? IEnumerator.Current
         {
             get { return Current; }
         }
