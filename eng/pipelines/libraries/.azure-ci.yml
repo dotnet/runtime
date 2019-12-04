@@ -72,7 +72,6 @@ jobs:
       - OSX_x64
       - Windows_NT_x64
       - Windows_NT_x86
-      - Linux_rhel6_x64
       - Linux_x64
       - Linux_arm
       - Linux_arm64
@@ -89,7 +88,6 @@ jobs:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
       buildConfig: Release
       platforms:
-      - Linux_rhel6_x64
       - Windows_NT_x86
       - ${{ if eq(variables['isFullMatrix'], true) }}:
         - OSX_x64
