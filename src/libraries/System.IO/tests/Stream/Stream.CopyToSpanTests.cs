@@ -40,7 +40,7 @@ namespace System.IO.Tests
             src.WriteByte(0);
             src.Position = 0;
 
-            var cancellationToken = new CancellationToken();
+            CancellationToken cancellationToken = new CancellationTokenSource().Token;
             await src.CopyToAsync(
                 (_, __, token) => new ValueTask(Task.Run(() => Assert.Equal(cancellationToken, token))),
                 null,
@@ -57,7 +57,7 @@ namespace System.IO.Tests
             src.WriteByte(0);
             src.Position = 0;
 
-            var expected = 42;
+            const int Expected = 42;
             await src.CopyToAsync(
                 (_, state, __) => new ValueTask(Task.Run(() => Assert.Equal(expected, state))),
                 expected,
