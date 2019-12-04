@@ -4,7 +4,7 @@ parameters:
   additionalRunArgs: ''
   crossBuild: false
   disableCrossgen: false
-  dockerImage: ''
+  productBuildDockerImage: ''
   packageDistroList: null
   skipTests: false
   strategy:
@@ -37,14 +37,14 @@ jobs:
         -e VSS_NUGET_URI_PREFIXES
         -e VSS_NUGET_ACCESSTOKEN
 
-      ${{ if ne(parameters.dockerImage, '') }}:
+      ${{ if ne(parameters.productBuildDockerImage, '') }}:
         RunArguments: >-
           docker run --privileged --rm
           -v "$(Build.SourcesDirectory):/root/runtime"
           -w="/root/runtime"
           $(PreserveNuGetAuthDockerArgs)
           ${{ parameters.additionalRunArgs }}
-          ${{ parameters.dockerImage }}
+          ${{ parameters.productBuildDockerImage }}
 
       ${{ if eq(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
@@ -101,7 +101,7 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: NuGetAuthenticate@0
 
-    - ${{ if ne(parameters.dockerImage, '') }}:
+    - ${{ if ne(parameters.productBuildDockerImage, '') }}:
       # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
       # Clean up the build dirs ourselves in another Docker container to avoid failures.
       # Using hosted agents is tracked by https://github.com/dotnet/core-setup/issues/4997
@@ -110,7 +110,7 @@ jobs:
           docker run --rm \
             -v "$(Agent.BuildDirectory):/root/build" \
             -w /root/build \
-            ${{ parameters.dockerImage }} \
+            ${{ parameters.productBuildDockerImage }} \
             bash -c '
               rm -v -rf a b
               cd s
@@ -155,7 +155,7 @@ jobs:
               packagingArgs: /p:BuildDistroIndependentInstallers=false
               subsetArg: $(installersSubsetArg)
 
-    - ${{ if ne(parameters.dockerImage, '') }}:
+    - ${{ if ne(parameters.productBuildDockerImage, '') }}:
       # Files may be owned by root because builds don't set user ID. The next AzDO step runs 'find' in
       # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step
       # prevents the failure by using chown to clean up our source tree.
@@ -164,7 +164,7 @@ jobs:
           docker run --rm \
             -v "$(Agent.BuildDirectory):/root/build" \
             -w /root/build \
-            ${{ parameters.dockerImage }} \
+            ${{ parameters.productBuildDockerImage }} \
             bash -c "chown -R $(id -u):$(id -g) *"
         displayName: Update file ownership from root to build agent account
         continueOnError: true
@@ -180,7 +180,7 @@ jobs:
       continueOnError: true
 
     # Force clean up machine in case any docker images are left behind
-    - ${{ if ne(parameters.dockerImage, '') }}:
+    - ${{ if ne(parameters.productBuildDockerImage, '') }}:
       - script: docker system prune -af && df -h
         displayName: Run Docker clean up
         condition: succeededOrFailed()
