@@ -35,10 +35,6 @@
 
 # fails on LLVM
 -nomethod System.Tests.StringTests.StartsWith
--nomethod System.Tests.SingleTests.ToStringRoundtrip
--nomethod System.Tests.SingleTests.ToStringRoundtrip_R
--nomethod System.Tests.DoubleTests.ToStringRoundtrip
--nomethod System.Tests.DoubleTests.ToStringRoundtrip_R
 -nomethod System.Reflection.Tests.BindingFlagsDoNotWrapTests.*
 -nomethod System.Tests.TypeTests.FilterName_Invoke_DelegateFiltersExpectedMembers
 
