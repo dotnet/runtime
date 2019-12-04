@@ -41,8 +41,9 @@ namespace System.IO.Tests
             src.Position = 0;
 
             CancellationToken cancellationToken = new CancellationTokenSource().Token;
+            CancellationToken expectedToken = (input is CustomMemoryStream cms && cms.Sync) ? default(CancellationToken) : cancellationToken;
             await src.CopyToAsync(
-                (_, __, token) => new ValueTask(Task.Run(() => Assert.Equal(cancellationToken, token))),
+                (_, __, token) => new ValueTask(Task.Run(() => Assert.Equal(expectedToken, token))),
                 null,
                 4096,
                 cancellationToken
@@ -57,7 +58,7 @@ namespace System.IO.Tests
             src.WriteByte(0);
             src.Position = 0;
 
-            const int Expected = 42;
+            const int expected = 42;
             await src.CopyToAsync(
                 (_, state, __) => new ValueTask(Task.Run(() => Assert.Equal(expected, state))),
                 expected,
@@ -118,8 +119,10 @@ namespace System.IO.Tests
             private readonly bool _spanCopy;
             private readonly bool _sync;
 
+            public bool Sync => _sync;
+
             public CustomMemoryStream(bool spanCopy, bool sync)
-            : base()
+                : base()
             {
                 _spanCopy = spanCopy;
                 _sync = sync;
@@ -147,7 +150,11 @@ namespace System.IO.Tests
                 {
                     try
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            return Task.FromCanceled(cancellationToken);
+                        }
+
                         CopyToInternal(destination, bufferSize);
                         return Task.CompletedTask;
                     }
