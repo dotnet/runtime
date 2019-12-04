@@ -44,8 +44,8 @@
 
   <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
     <!-- binplace to directories for the target vertical -->
-    <!-- In the NETCoreAppVertical case, we only want to binplace source and shim projects here, not depproj projects. -->
-    <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)" Condition="'$(BuildingNETCoreAppVertical)' != 'true' or '$(IsSourceProject)' == 'true' or '$(IsShimAssembly)' == 'true'">
+    <!-- In the NETCoreAppVertical case, we only want to binplace ref, source, and shim projects here, not depproj projects. -->
+    <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)" Condition="'$(BuildingNETCoreAppVertical)' != 'true' or '$(IsSourceProject)'== 'true' or '$(IsReferenceAssembly)' == 'true' or '$(IsShimAssembly)' == 'true'">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceConfiguration>
