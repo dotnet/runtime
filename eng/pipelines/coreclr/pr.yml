@@ -177,24 +177,6 @@ jobs:
       liveLibrariesBuildConfig: Release
 
 #
-# CoreFX test runs against CoreCLR
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
-    buildConfig: checked
-    platforms:
-    - Linux_x64
-    - Windows_NT_x64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: innerloop
-      corefxTests: true
-      displayNameArgs: CoreFX
-      liveLibrariesBuildConfig: Release
-
-#
 # Crossgen-comparison jobs
 #
 - template: /eng/pipelines/common/platform-matrix.yml
