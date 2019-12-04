@@ -139,7 +139,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             return (int)typeof(Regex).Assembly
                 .GetType("System.Text.RegularExpressions.RegexCache")
-                .GetField("s_cacheCount", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                .GetField("s_cacheCount", BindingFlags.NonPublic | BindingFlags.Static)
                 .GetValue(null);
         }
     }
