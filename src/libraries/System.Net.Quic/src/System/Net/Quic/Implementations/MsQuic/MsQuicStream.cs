@@ -139,8 +139,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     throw new IOException("Reading has been aborted by the peer.");
                 }
-
-                _readState = ReadState.ReadAsync;
             }
 
             // TODO there could potentially be a perf gain by storing the buffer from the inital read
@@ -170,11 +168,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             CopyToBuffer(destination.Span, _quicBuffer);
 
             EnableReceive();
-            ReceiveComplete(actual);
 
             lock (_sync)
             {
-                _readState = ReadState.None;
+                if (_readState == ReadState.IndividualReadComplete)
+                {
+                    // Don't call receive complete after the stream has been aborted or completed.
+                    ReceiveComplete(actual);
+                    _readState = ReadState.None;
+                }
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -390,8 +392,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _quicBuffer[i] = receieveEvent.Buffers[i];
             }
 
-            DisableReceive();
-            _receiveResettableCompletionSource.Complete((uint)receieveEvent.TotalBufferLength);
+            lock (_sync)
+            {
+                if (_readState != ReadState.ReadsAborted)
+                {
+                    // Abort will complete the completion source already.
+                    _receiveResettableCompletionSource.Complete((uint)receieveEvent.TotalBufferLength);
+                }
+                _readState = ReadState.IndividualReadComplete;
+            }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -435,6 +444,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // TODO use another cts here.
+
             _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -448,11 +458,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (_sync)
             {
-                //if (_readState != ReadState.ReadAsync)
-                //{
+                if (_readState != ReadState.IndividualReadComplete && _readState != ReadState.ReadsCompleted)
+                {
                     _receiveResettableCompletionSource.CompleteException(new IOException("Reading has been aborted by the peer."));
-                //}
-                //_readState = ReadState.ReadsAborted;
+                }
+                _readState = ReadState.ReadsAborted;
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -466,12 +476,14 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (_sync)
             {
-                // TODO think about this.
-                //if (_readState != ReadState.ReadAsync)
-                //{
-                    if (NetEventSource.IsEnabled) NetEventSource.Info("Completing resettable event source.");
+                // This event won't occur within the middle of a receive.
+                if (NetEventSource.IsEnabled) NetEventSource.Info("Completing resettable event source.");
+
+                if (_readState != ReadState.ReadsAborted)
+                {
                     _receiveResettableCompletionSource.Complete(0);
-                //}
+                }
+
                 _readState = ReadState.ReadsCompleted;
             }
 
@@ -638,7 +650,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private enum ReadState
         {
             None,
-            ReadAsync,
+            IndividualReadComplete,
             ReadsCompleted,
             ReadsAborted
         }

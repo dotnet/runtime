@@ -72,11 +72,9 @@ namespace System.Net.Quic.Tests
                             {
                                 while (true)
                                 {
-                                    Console.WriteLine("Reading");
                                     int bytesRead = await stream.ReadAsync(buffer);
                                     if (bytesRead == 0)
                                     {
-                                        Console.WriteLine("breaking out of loop");
                                         break;
                                     }
                                     Assert.Equal(s_data.Length, bytesRead);
@@ -93,7 +91,6 @@ namespace System.Net.Quic.Tests
                             {
                                 for (int i = 0; i < 5; i++)
                                 {
-                                    Console.WriteLine("Starting writes");
                                     await stream.WriteAsync(s_data);
                                 }
 
@@ -118,7 +115,6 @@ namespace System.Net.Quic.Tests
                 {
                     await using (QuicConnection connection = CreateQuicConnection(DefaultEndpoint))
                     {
-                        await Task.Delay(100);
                         await connection.ConnectAsync();
                         using (QuicStream stream = connection.OpenBidirectionalStream())
                         {
