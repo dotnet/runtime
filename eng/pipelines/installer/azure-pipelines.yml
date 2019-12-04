@@ -72,8 +72,6 @@ variables:
 
   - name: pipelinesPath
     value: /eng/pipelines/installer
-  - name: buildScriptFileName
-    value: installer
 
 stages:
 - stage: Build

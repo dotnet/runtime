@@ -6,7 +6,7 @@ parameters:
   disableCrossgen: false
   dockerImage: ''
   packageDistroList: null
-  skipTests: $(SkipTests)
+  skipTests: false
   strategy:
     matrix:
       debug:
@@ -54,12 +54,12 @@ jobs:
         MSBuildScript: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
       ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-        BuildScript: ./$(buildScriptFileName).sh
+        BuildScript: ./installer.sh
         MSBuildScript: /root/runtime/eng/common/msbuild.sh
 
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
-        /p:OfficialBuildId=$(OfficialBuildId)
+        /p:OfficialBuildId=$(Build.BuildNumber)
         /p:TargetArchitecture=${{ parameters.archType }}
 
       # Don't put additionalMSBuildArgs as the last line. It may or may not have extra args. If the
