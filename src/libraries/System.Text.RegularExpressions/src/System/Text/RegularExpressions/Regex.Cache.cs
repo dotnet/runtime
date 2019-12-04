@@ -2,46 +2,53 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using SysDebug = System.Diagnostics.Debug;  // as Regex.Debug
 using System.Collections.Generic;
-using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
     public partial class Regex
     {
+        public static int CacheSize
+        {
+            get => RegexCache.CacheSize;
+            set => RegexCache.CacheSize = value;
+        }
+    }
+
+    internal sealed class RegexCache
+    {
+        private const int DefaultMaxCacheSize = 15;
         private const int CacheDictionarySwitchLimit = 10;
 
-        private static int s_cacheSize = 15;
-        // the cache of code and factories that are currently loaded:
-        // Dictionary for large cache
-        private static readonly Dictionary<CachedCodeEntryKey, CachedCodeEntry> s_cache = new Dictionary<CachedCodeEntryKey, CachedCodeEntry>(s_cacheSize);
-        // linked list for LRU and for small cache
+        private static readonly Dictionary<Key, Node> s_cache = new Dictionary<Key, Node>(DefaultMaxCacheSize);
+        private static Node? s_cacheFirst, s_cacheLast; // linked list for LRU and for small cache
+        private static int s_maxCacheSize = DefaultMaxCacheSize;
         private static int s_cacheCount = 0;
-        private static CachedCodeEntry? s_cacheFirst;
-        private static CachedCodeEntry? s_cacheLast;
 
         public static int CacheSize
         {
-            get => s_cacheSize;
+            get => s_maxCacheSize;
             set
             {
                 if (value < 0)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value));
+                }
 
                 lock (s_cache)
                 {
-                    s_cacheSize = value;  // not to allow other thread to change it while we use cache
-                    while (s_cacheCount > s_cacheSize)
+                    s_maxCacheSize = value;  // not to allow other thread to change it while we use cache
+                    while (s_cacheCount > s_maxCacheSize)
                     {
-                        CachedCodeEntry last = s_cacheLast!;
+                        Node last = s_cacheLast!;
                         if (s_cacheCount >= CacheDictionarySwitchLimit)
                         {
-                            SysDebug.Assert(s_cache.ContainsKey(last.Key));
+                            Debug.Assert(s_cache.ContainsKey(last.Key));
                             s_cache.Remove(last.Key);
                         }
 
@@ -49,14 +56,14 @@ namespace System.Text.RegularExpressions
                         s_cacheLast = last.Next;
                         if (last.Next != null)
                         {
-                            SysDebug.Assert(s_cacheFirst != null);
-                            SysDebug.Assert(s_cacheFirst != last);
-                            SysDebug.Assert(last.Next.Previous == last);
+                            Debug.Assert(s_cacheFirst != null);
+                            Debug.Assert(s_cacheFirst != last);
+                            Debug.Assert(last.Next.Previous == last);
                             last.Next.Previous = null;
                         }
                         else // last one removed
                         {
-                            SysDebug.Assert(s_cacheFirst == last);
+                            Debug.Assert(s_cacheFirst == last);
                             s_cacheFirst = null;
                         }
 
@@ -66,123 +73,161 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>
-        ///  Find cache based on options+pattern+culture and optionally add new cache if not found
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private CachedCodeEntry? GetCachedCode(CachedCodeEntryKey key, bool isToAdd)
+        public static Regex GetOrAdd(string pattern)
         {
-            // to avoid lock:
-            CachedCodeEntry? first = s_cacheFirst;
-            if (first != null && first.Key.Equals(key))
-                return first;
+            Regex.ValidatePattern(pattern);
 
-            if (s_cacheSize == 0)
-                return null;
+            CultureInfo culture = CultureInfo.CurrentCulture;
+            Key key = new Key(pattern, culture.ToString(), RegexOptions.None, hasTimeout: false);
 
-            return GetCachedCodeEntryInternal(key, isToAdd);
+            if (!TryGet(key, out Regex? regex))
+            {
+                regex = new Regex(pattern, culture);
+                Add(key, regex);
+            }
+
+            return regex;
         }
 
-        private CachedCodeEntry? GetCachedCodeEntryInternal(CachedCodeEntryKey key, bool isToAdd)
+        public static Regex GetOrAdd(string pattern, RegexOptions options, TimeSpan matchTimeout)
+        {
+            Regex.ValidatePattern(pattern);
+            Regex.ValidateOptions(options);
+            Regex.ValidateMatchTimeout(matchTimeout);
+
+            CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+            Key key = new Key(pattern, culture.ToString(), options, matchTimeout != Regex.InfiniteMatchTimeout);
+
+            if (!TryGet(key, out Regex? regex))
+            {
+                regex = new Regex(pattern, options, matchTimeout, culture);
+                Add(key, regex);
+            }
+
+            return regex;
+        }
+
+        private static bool TryGet(Key key, [NotNullWhen(true)] out Regex? regex)
+        {
+            Node? cachedRegex = s_cacheFirst;
+            if (cachedRegex != null)
+            {
+                if (cachedRegex.Key.Equals(key))
+                {
+                    regex = cachedRegex.Regex;
+                    return true;
+                }
+
+                if (s_maxCacheSize != 0)
+                {
+                    lock (s_cache)
+                    {
+                        cachedRegex = LookupCachedAndPromote(key);
+                        if (cachedRegex != null)
+                        {
+                            regex = cachedRegex.Regex;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            regex = null;
+            return false;
+        }
+
+        private static void Add(Key key, Regex regex)
         {
             lock (s_cache)
             {
-                // first look for it in the cache and move it to the head
-                CachedCodeEntry? entry = LookupCachedAndPromote(key);
-
-                // it wasn't in the cache, so we'll add a new one
-                if (entry == null && isToAdd && s_cacheSize != 0) // check cache size again in case it changed
+                // If we're not supposed to cache, or if the entry is already cached, we're done.
+                if (s_maxCacheSize == 0 || LookupCachedAndPromote(key) != null)
                 {
-                    entry = new CachedCodeEntry(key, capnames!, capslist!, _code!, caps!, capsize, _runnerref!, _replref!);
-
-                    // put first in linked list:
-                    if (s_cacheFirst != null)
-                    {
-                        SysDebug.Assert(s_cacheFirst.Next == null);
-                        s_cacheFirst.Next = entry;
-                        entry.Previous = s_cacheFirst;
-                    }
-                    s_cacheFirst = entry;
-
-                    s_cacheCount++;
-                    if (s_cacheCount >= CacheDictionarySwitchLimit)
-                    {
-                        if (s_cacheCount == CacheDictionarySwitchLimit)
-                        {
-                            FillCacheDictionary();
-                        }
-                        else
-                        {
-                            s_cache.Add(key, entry);
-                        }
-
-                        SysDebug.Assert(s_cacheCount == s_cache.Count);
-                    }
-
-                    // update last in linked list:
-                    if (s_cacheLast == null)
-                    {
-                        s_cacheLast = entry;
-                    }
-                    else if (s_cacheCount > s_cacheSize) // remove last
-                    {
-                        CachedCodeEntry last = s_cacheLast;
-                        if (s_cacheCount >= CacheDictionarySwitchLimit)
-                        {
-                            SysDebug.Assert(s_cache[last.Key] == s_cacheLast);
-                            s_cache.Remove(last.Key);
-                        }
-
-                        SysDebug.Assert(last.Previous == null);
-                        SysDebug.Assert(last.Next != null);
-                        SysDebug.Assert(last.Next.Previous == last);
-                        last.Next.Previous = null;
-                        s_cacheLast = last.Next;
-                        s_cacheCount--;
-                    }
+                    return;
                 }
 
-                return entry;
+                // Create the entry for caching.
+                var entry = new Node(key, regex);
+
+                // Put it at the beginning of the linked list, as it is the most-recently used.
+                if (s_cacheFirst != null)
+                {
+                    Debug.Assert(s_cacheFirst.Next == null);
+                    s_cacheFirst.Next = entry;
+                    entry.Previous = s_cacheFirst;
+                }
+                s_cacheFirst = entry;
+                s_cacheCount++;
+
+                // If we've graduated to using the dictionary for lookups, add it to the dictionary.
+                if (s_cacheCount >= CacheDictionarySwitchLimit)
+                {
+                    if (s_cacheCount == CacheDictionarySwitchLimit)
+                    {
+                        // If we just hit the threshold, we need to populate the dictionary from the list.
+                        s_cache.Clear();
+                        for (Node? next = s_cacheFirst; next != null; next = next.Previous)
+                        {
+                            s_cache.Add(next.Key, next);
+                        }
+                    }
+                    else
+                    {
+                        // If we've already populated the dictionary, just add this one entry.
+                        s_cache.Add(key, entry);
+                    }
+
+                    Debug.Assert(s_cacheCount == s_cache.Count);
+                }
+
+                // Update the tail of the linked list.  If nothing was cached, just set the tail.
+                // If we're over our cache limit, remove the tail.
+                if (s_cacheLast == null)
+                {
+                    s_cacheLast = entry;
+                }
+                else if (s_cacheCount > s_maxCacheSize)
+                {
+                    Node last = s_cacheLast;
+                    if (s_cacheCount >= CacheDictionarySwitchLimit)
+                    {
+                        Debug.Assert(s_cache[last.Key] == s_cacheLast);
+                        s_cache.Remove(last.Key);
+                    }
+
+                    Debug.Assert(last.Previous == null);
+                    Debug.Assert(last.Next != null);
+                    Debug.Assert(last.Next.Previous == last);
+
+                    last.Next.Previous = null;
+                    s_cacheLast = last.Next;
+
+                    s_cacheCount--;
+                }
             }
         }
 
-        private void FillCacheDictionary()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // single call site, separated out for convenience
+        private static bool TryGetCacheValueAfterFirst(Key key, [NotNullWhen(true)] out Node? entry)
         {
-            s_cache.Clear();
-            CachedCodeEntry? next = s_cacheFirst;
-            while (next != null)
-            {
-                s_cache.Add(next.Key, next);
-                next = next.Previous;
-            }
-        }
+            Debug.Assert(Monitor.IsEntered(s_cache));
+            Debug.Assert(s_cacheFirst != null);
+            Debug.Assert(s_cacheLast != null);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // Unprofitable inline - JIT overly pessimistic
-        private static bool TryGetCacheValue(CachedCodeEntryKey key, [NotNullWhen(true)] out CachedCodeEntry? entry)
-        {
             if (s_cacheCount >= CacheDictionarySwitchLimit)
             {
-                SysDebug.Assert((s_cacheFirst != null && s_cacheLast != null && s_cache.Count > 0) ||
-                                (s_cacheFirst == null && s_cacheLast == null && s_cache.Count == 0),
-                                "Linked list and Dict should be synchronized");
+                Debug.Assert(s_cache.Count == s_cacheCount);
                 return s_cache.TryGetValue(key, out entry);
             }
 
-            return TryGetCacheValueSmall(key, out entry);
-        }
-
-        private static bool TryGetCacheValueSmall(CachedCodeEntryKey key, [NotNullWhen(true)] out CachedCodeEntry? entry)
-        {
-            CachedCodeEntry? current = s_cacheFirst; // first already checked
-            if (current != null)
+            for (Node? current = s_cacheFirst.Previous; // s_cacheFirst already checked by caller, so skip it here
+                 current != null;
+                 current = current.Previous)
             {
-                for (current = current.Previous; current != null; current = current.Previous)
+                if (current.Key.Equals(key))
                 {
-                    if (current.Key.Equals(key))
-                    {
-                        entry = current;
-                        return true;
-                    }
+                    entry = current;
+                    return true;
                 }
             }
 
@@ -190,31 +235,33 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
-        private static CachedCodeEntry? LookupCachedAndPromote(CachedCodeEntryKey key)
+        private static Node? LookupCachedAndPromote(Key key)
         {
-            SysDebug.Assert(Monitor.IsEntered(s_cache));
+            Debug.Assert(Monitor.IsEntered(s_cache));
 
-            CachedCodeEntry? entry = s_cacheFirst;
+            Node? entry = s_cacheFirst;
             if (entry != null &&
                 !entry.Key.Equals(key) && // again check this as could have been promoted by other thread
-                TryGetCacheValue(key, out entry))
+                TryGetCacheValueAfterFirst(key, out entry))
             {
-                // promote:
-                SysDebug.Assert(s_cacheFirst != entry, "key should not get s_livecode_first");
-                SysDebug.Assert(s_cacheFirst != null, "as Dict has at least one");
-                SysDebug.Assert(s_cacheFirst.Next == null);
-                SysDebug.Assert(s_cacheFirst.Previous != null);
-                SysDebug.Assert(entry.Next != null, "not first so Next should exist");
-                SysDebug.Assert(entry.Next.Previous == entry);
+                // We found the item and it wasn't the first; it needs to be promoted.
+
+                Debug.Assert(s_cacheFirst != entry, "key should not get s_livecode_first");
+                Debug.Assert(s_cacheFirst != null, "as Dict has at least one");
+                Debug.Assert(s_cacheFirst.Next == null);
+                Debug.Assert(s_cacheFirst.Previous != null);
+                Debug.Assert(entry.Next != null, "not first so Next should exist");
+                Debug.Assert(entry.Next.Previous == entry);
+
                 if (s_cacheLast == entry)
                 {
-                    SysDebug.Assert(entry.Previous == null, "last");
+                    Debug.Assert(entry.Previous == null, "last");
                     s_cacheLast = entry.Next;
                 }
                 else
                 {
-                    SysDebug.Assert(entry.Previous != null, "in middle");
-                    SysDebug.Assert(entry.Previous.Next == entry);
+                    Debug.Assert(entry.Previous != null, "in middle");
+                    Debug.Assert(entry.Previous.Next == entry);
                     entry.Previous.Next = entry.Next;
                 }
                 entry.Next.Previous = entry.Previous;
@@ -228,88 +275,60 @@ namespace System.Text.RegularExpressions
             return entry;
         }
 
-        /// <summary>
-        /// Used as a key for CacheCodeEntry
-        /// </summary>
-        internal readonly struct CachedCodeEntryKey : IEquatable<CachedCodeEntryKey>
+        /// <summary>Used as a key for <see cref="Node"/>.</summary>
+        internal readonly struct Key : IEquatable<Key>
         {
             private readonly string _pattern;
-            private readonly string _cultureKey;
+            private readonly string _culture;
             private readonly RegexOptions _options;
             private readonly bool _hasTimeout;
 
-            public CachedCodeEntryKey(string pattern, string cultureKey, RegexOptions options, bool hasTimeout)
+            public Key(string pattern, string culture, RegexOptions options, bool hasTimeout)
             {
-                SysDebug.Assert(pattern != null, "Pattern must be provided");
-                SysDebug.Assert(cultureKey != null, "Culture must be provided");
+                Debug.Assert(pattern != null, "Pattern must be provided");
+                Debug.Assert(culture != null, "Culture must be provided");
 
                 _pattern = pattern;
-                _cultureKey = cultureKey;
+                _culture = culture;
                 _options = options;
                 _hasTimeout = hasTimeout;
             }
 
             public override bool Equals(object? obj) =>
-                obj is CachedCodeEntryKey other && Equals(other);
+                obj is Key other && Equals(other);
 
-            public bool Equals(CachedCodeEntryKey other) =>
+            public bool Equals(Key other) =>
                 _pattern.Equals(other._pattern) &&
-                _cultureKey.Equals(other._cultureKey) &&
+                _culture.Equals(other._culture) &&
                 _options == other._options &&
                 _hasTimeout == other._hasTimeout;
 
-            public static bool operator ==(CachedCodeEntryKey left, CachedCodeEntryKey right) =>
+            public static bool operator ==(Key left, Key right) =>
                 left.Equals(right);
 
-            public static bool operator !=(CachedCodeEntryKey left, CachedCodeEntryKey right) =>
+            public static bool operator !=(Key left, Key right) =>
                 !left.Equals(right);
 
             public override int GetHashCode() =>
                 _pattern.GetHashCode() ^
-                _cultureKey.GetHashCode() ^
+                _culture.GetHashCode() ^
                 ((int)_options);
                 // no need to include timeout in the hashcode; it'll almost always be the same
         }
 
-        /// <summary>
-        /// Used to cache byte codes
-        /// </summary>
-        internal sealed class CachedCodeEntry
+        /// <summary>Used to cache Regex instances.</summary>
+        private sealed class Node
         {
-            public CachedCodeEntry? Next;
-            public CachedCodeEntry? Previous;
-            public readonly CachedCodeEntryKey Key;
-            public RegexCode? Code;
-            public readonly Hashtable Caps;
-            public readonly Hashtable Capnames;
-            public readonly string[] Capslist;
-#if FEATURE_COMPILED
-            public RegexRunnerFactory? Factory;
-#endif
-            public readonly int Capsize;
-            public readonly ExclusiveReference Runnerref;
-            public readonly WeakReference<RegexReplacement?> ReplRef;
+            public readonly Key Key;
+            public readonly Regex Regex;
+            public Node? Next;
+            public Node? Previous;
 
-            public CachedCodeEntry(CachedCodeEntryKey key, Hashtable capnames, string[] capslist, RegexCode code,
-                Hashtable caps, int capsize, ExclusiveReference runner, WeakReference<RegexReplacement?> replref)
+            public Node(Key key, Regex regex)
             {
                 Key = key;
-                Capnames = capnames;
-                Capslist = capslist;
-                Code = code;
-                Caps = caps;
-                Capsize = capsize;
-                Runnerref = runner;
-                ReplRef = replref;
+                Regex = regex;
             }
-
-#if FEATURE_COMPILED
-            public void AddCompiled(RegexRunnerFactory factory)
-            {
-                Factory = factory;
-                Code = null;
-            }
-#endif
         }
     }
 }
