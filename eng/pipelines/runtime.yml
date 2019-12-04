@@ -144,8 +144,8 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/windows-build.yml
     platforms:
-    - Windows_arm
-    - Windows_arm64
+    - Windows_NT_arm
+    - Windows_NT_arm64
     jobParameters:
       skipTests: true
 
@@ -153,13 +153,13 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/windows-build.yml
     platforms:
-    - Windows_x86
+    - Windows_NT_x86
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/windows-build.yml
     platforms:
-    - Windows_x64
+    - Windows_NT_x64
     jobParameters:
       publicRidAgnosticPackages: true
 
