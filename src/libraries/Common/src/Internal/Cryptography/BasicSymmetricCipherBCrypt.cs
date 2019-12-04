@@ -74,11 +74,11 @@ namespace Internal.Cryptography
             int numBytesWritten;
             if (_encrypting)
             {
-                numBytesWritten = _hKey.BCryptEncrypt(input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
+                numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
             }
             else
             {
-                numBytesWritten = _hKey.BCryptDecrypt(input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
+                numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
             }
 
             if (numBytesWritten != count)

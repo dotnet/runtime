@@ -79,6 +79,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptImportKey.cs">
       <Link>Interop\Windows\BCrypt\Interop.BCryptImportKey.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs</Link>
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
       <Link>Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
