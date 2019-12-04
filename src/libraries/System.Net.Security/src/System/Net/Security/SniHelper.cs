@@ -18,10 +18,10 @@ namespace System.Net.Security
 
         public static string GetServerName(byte[] clientHello, int offset, int count)
         {
-            return GetSniFromSslPlainText(new ReadOnlySpan<byte>(clientHello, offset, count));
+            return GetServerName(new ReadOnlySpan<byte>(clientHello, offset, count));
         }
 
-        private static string GetSniFromSslPlainText(ReadOnlySpan<byte> sslPlainText)
+        public static string GetServerName(ReadOnlySpan<byte> sslPlainText)
         {
             // https://tools.ietf.org/html/rfc6101#section-5.2.1
             // struct {

@@ -349,7 +349,7 @@ namespace System.Net.Security
 
             if (!receiveFirst)
             {
-                message =_context.NextMessage(buffer, 0, (buffer == null ? 0 : buffer.Length));
+                message = _context.NextMessage(buffer, 0, (buffer == null ? 0 : buffer.Length));
                 if (message.Failed)
                 {
                     // tracing done in NextMessage()
