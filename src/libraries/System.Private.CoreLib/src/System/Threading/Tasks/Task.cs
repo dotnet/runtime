@@ -2351,12 +2351,15 @@ namespace System.Threading.Tasks
             }
         }
 
-        private static readonly ContextCallback s_ecCallback = obj =>
+        private static readonly ContextCallback s_ecCallback = s_cachedCompleted.InvokeContextCallback;
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        private void InvokeContextCallback(object? obj)
         {
             Debug.Assert(obj is Task);
             // Only used privately to pass directly to EC.Run
             Unsafe.As<Task>(obj).InnerInvoke();
-        };
+        }
 
         /// <summary>
         /// The actual code which invokes the body of the task. This can be overridden in derived types.

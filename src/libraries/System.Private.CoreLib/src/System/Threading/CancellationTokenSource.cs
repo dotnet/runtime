@@ -30,11 +30,16 @@ namespace System.Threading
         internal static readonly CancellationTokenSource s_neverCanceledSource = new CancellationTokenSource();
 
         /// <summary>Delegate used with <see cref="Timer"/> to trigger cancellation of a <see cref="CancellationTokenSource"/>.</summary>
-        private static readonly TimerCallback s_timerCallback = obj =>
+        private static readonly TimerCallback s_timerCallback = s_canceledSource.InvokeCallback;
+        private static readonly SendOrPostCallback s_executeNodeCallback = s_canceledSource.ExecuteNodeCallback;
+        private static readonly Action<object?> s_whenCallbackCompletes = s_canceledSource.WhenCallbackCompletes;
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        private void InvokeCallback(object? state)
         {
-            Debug.Assert(obj is CancellationTokenSource, $"Expected {typeof(CancellationTokenSource)}, got {obj}");
-            ((CancellationTokenSource)obj).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
-        };
+            Debug.Assert(state is CancellationTokenSource, $"Expected {typeof(CancellationTokenSource)}, got {state}");
+            ((CancellationTokenSource)state).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
+        }
 
         /// <summary>The number of callback partitions to use in a <see cref="CancellationTokenSource"/>. Must be a power of 2.</summary>
         private static readonly int s_numPartitions = GetPartitionCount();
@@ -682,12 +687,7 @@ namespace System.Threading
                             if (node.SynchronizationContext != null)
                             {
                                 // Transition to the target syncContext and continue there.
-                                node.SynchronizationContext.Send(s =>
-                                {
-                                    var n = (CallbackNode)s!;
-                                    n.Partition.Source.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
-                                    n.ExecuteCallback();
-                                }, node);
+                                node.SynchronizationContext.Send(s_executeNodeCallback, node);
                                 ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId; // above may have altered ThreadIDExecutingCallbacks, so reset it
                             }
                             else
@@ -721,6 +721,14 @@ namespace System.Threading
                 Debug.Assert(exceptionList.Count > 0, $"Expected {exceptionList.Count} > 0");
                 throw new AggregateException(exceptionList);
             }
+        }
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        private void ExecuteNodeCallback(object? state)
+        {
+            var node = (CallbackNode)state!;
+            node.Partition.Source.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
+            node.ExecuteCallback();
         }
 
         /// <summary>Gets the number of callback partitions to use based on the number of cores.</summary>
@@ -820,12 +828,16 @@ namespace System.Threading
             // unfortunate thing to do.  However, we expect this to be a rare case (disposing while the associated
             // callback is running), and brief when it happens (so the polling will be minimal), and making
             // this work with a callback mechanism will add additional cost to other more common cases.
-            return new ValueTask(Task.Factory.StartNew(s =>
-            {
-                Debug.Assert(s is Tuple<CancellationTokenSource, long>);
-                var state = (Tuple<CancellationTokenSource, long>)s;
-                state.Item1.WaitForCallbackToComplete(state.Item2);
-            }, Tuple.Create(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default));
+            return new ValueTask(Task.Factory.StartNew(
+                s_whenCallbackCompletes, Tuple.Create(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default));
+        }
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        private void WhenCallbackCompletes(object? state)
+        {
+            Debug.Assert(state is Tuple<CancellationTokenSource, long>);
+            var tuple = (Tuple<CancellationTokenSource, long>)state;
+            tuple.Item1.WaitForCallbackToComplete(tuple.Item2);
         }
 
         private sealed class Linked1CancellationTokenSource : CancellationTokenSource
@@ -873,13 +885,17 @@ namespace System.Threading
             }
         }
 
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        private void LinkedTokenCancel(object? state)
+        {
+            Debug.Assert(state is CancellationTokenSource, $"Expected {typeof(CancellationTokenSource)}, got {state}");
+            ((CancellationTokenSource)state).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
+        }
+
         private sealed class LinkedNCancellationTokenSource : CancellationTokenSource
         {
-            internal static readonly Action<object?> s_linkedTokenCancelDelegate = s =>
-            {
-                Debug.Assert(s is CancellationTokenSource, $"Expected {typeof(CancellationTokenSource)}, got {s}");
-                ((CancellationTokenSource)s).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
-            };
+            internal static readonly Action<object?> s_linkedTokenCancelDelegate = s_canceledSource.LinkedTokenCancel;
+
             private CancellationTokenRegistration[]? _linkingRegistrations;
 
             internal LinkedNCancellationTokenSource(params CancellationToken[] tokens)

@@ -411,8 +411,8 @@ namespace System.Threading
         internal uint _period;
 
         // Info about the user's callback
-        private readonly TimerCallback _timerCallback;
-        private readonly object? _state;
+        internal readonly TimerCallback _timerCallback;
+        internal readonly object? _state;
         private readonly ExecutionContext? _executionContext;
 
         // When Timer.Dispose(WaitHandle) is used, we need to signal the wait handle only
@@ -639,12 +639,7 @@ namespace System.Threading
             }
         }
 
-        private static readonly ContextCallback s_callCallbackInContext = state =>
-        {
-            Debug.Assert(state is TimerQueueTimer);
-            var t = (TimerQueueTimer)state;
-            t._timerCallback(t._state);
-        };
+        private static readonly ContextCallback s_callCallbackInContext = Timer.s_staticDelegateInstance.InvokeCallback;
     }
 
     // TimerHolder serves as an intermediary between Timer and TimerQueueTimer, releasing the TimerQueueTimer
@@ -694,6 +689,7 @@ namespace System.Threading
     public sealed class Timer : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
         private const uint MAX_SUPPORTED_TIMEOUT = (uint)0xfffffffe;
+        internal static readonly Timer s_staticDelegateInstance = new Timer();
 
         private TimerHolder _timer = null!; // initialized in helper called by ctors
 
@@ -772,6 +768,11 @@ namespace System.Threading
                                 // potentially causing the callback to reference a bogus value (if passing the timer to the callback).
 
             TimerSetup(callback, this, DueTime, Period);
+        }
+
+        private Timer()
+        {
+            // Used for cached static delegate
         }
 
         private void TimerSetup(TimerCallback callback,
@@ -857,6 +858,14 @@ namespace System.Threading
         public ValueTask DisposeAsync()
         {
             return _timer.CloseAsync();
+        }
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        internal void InvokeCallback(object? state)
+        {
+            Debug.Assert(state is TimerQueueTimer);
+            var t = (TimerQueueTimer)state;
+            t._timerCallback(t._state);
         }
     }
 }

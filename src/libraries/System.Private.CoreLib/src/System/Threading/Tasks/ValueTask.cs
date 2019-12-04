@@ -201,7 +201,10 @@ namespace System.Threading.Tasks
         /// <summary>Type used to create a <see cref="Task"/> to represent a <see cref="IValueTaskSource"/>.</summary>
         private sealed class ValueTaskSourceAsTask : Task
         {
-            private static readonly Action<object?> s_completionAction = state =>
+            private static readonly Action<object?> s_completionAction = new ValueTaskSourceAsTask().InvokeCompletion;
+
+            // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+            private void InvokeCompletion(object? state)
             {
                 if (!(state is ValueTaskSourceAsTask vtst) ||
                     !(vtst._source is IValueTaskSource source))
@@ -238,7 +241,7 @@ namespace System.Threading.Tasks
                         vtst.TrySetException(exc);
                     }
                 }
-            };
+            }
 
             /// <summary>The associated <see cref="IValueTaskSource"/>.</summary>
             private IValueTaskSource? _source;
@@ -250,6 +253,11 @@ namespace System.Threading.Tasks
                 _token = token;
                 _source = source;
                 source.OnCompleted(s_completionAction, this, token, ValueTaskSourceOnCompletedFlags.None);
+            }
+
+            private ValueTaskSourceAsTask()
+            {
+                // Used for cached static delegate s_completionAction
             }
         }
 
@@ -593,7 +601,10 @@ namespace System.Threading.Tasks
         /// <summary>Type used to create a <see cref="Task{TResult}"/> to represent a <see cref="IValueTaskSource{TResult}"/>.</summary>
         private sealed class ValueTaskSourceAsTask : Task<TResult>
         {
-            private static readonly Action<object?> s_completionAction = state =>
+            private static readonly Action<object?> s_completionAction = new ValueTaskSourceAsTask().InvokeCompletion;
+
+            // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+            private void InvokeCompletion(object? state)
             {
                 if (!(state is ValueTaskSourceAsTask vtst) ||
                     !(vtst._source is IValueTaskSource<TResult> source))
@@ -629,7 +640,7 @@ namespace System.Threading.Tasks
                         vtst.TrySetException(exc);
                     }
                 }
-            };
+            }
 
             /// <summary>The associated <see cref="IValueTaskSource"/>.</summary>
             private IValueTaskSource<TResult>? _source;
@@ -641,6 +652,11 @@ namespace System.Threading.Tasks
                 _source = source;
                 _token = token;
                 source.OnCompleted(s_completionAction, this, token, ValueTaskSourceOnCompletedFlags.None);
+            }
+
+            private ValueTaskSourceAsTask()
+            {
+                // Used for cached static delegate s_completionAction
             }
         }
 

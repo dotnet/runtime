@@ -353,11 +353,8 @@ namespace System.Threading.Tasks
     internal sealed class SynchronizationContextAwaitTaskContinuation : AwaitTaskContinuation
     {
         /// <summary>SendOrPostCallback delegate to invoke the action.</summary>
-        private static readonly SendOrPostCallback s_postCallback = state =>
-        {
-            Debug.Assert(state is Action);
-            ((Action)state)();
-        };
+        private static readonly SendOrPostCallback s_postCallback = s_staticDelegateInstance.InvokeContextCallback;
+
         /// <summary>Cached delegate for PostAction</summary>
         private static ContextCallback? s_postActionCallback;
         /// <summary>The context with which to run the action.</summary>
@@ -509,6 +506,8 @@ namespace System.Threading.Tasks
     /// <summary>Base task continuation class used for await continuations.</summary>
     internal class AwaitTaskContinuation : TaskContinuation, IThreadPoolWorkItem
     {
+        protected static readonly AwaitTaskContinuation s_staticDelegateInstance = new AwaitTaskContinuation();
+
         /// <summary>The ExecutionContext with which to run the continuation.</summary>
         private readonly ExecutionContext? m_capturedContext;
         /// <summary>The action to invoke.</summary>
@@ -528,6 +527,14 @@ namespace System.Threading.Tasks
                 m_capturedContext = ExecutionContext.Capture();
             }
         }
+
+        private AwaitTaskContinuation()
+        {
+            // Used for cached static delegates
+            m_action = new Action(EmptyAction); // Non-nullable
+        }
+
+        private void EmptyAction() { }
 
         /// <summary>Creates a task to run the action with the specified state on the specified scheduler.</summary>
         /// <param name="action">The action to run. Must not be null.</param>
@@ -654,12 +661,19 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Cached delegate that invokes an Action passed as an object parameter.</summary>
-        private static readonly ContextCallback s_invokeContextCallback = (state) =>
+        private static readonly ContextCallback s_invokeContextCallback = s_staticDelegateInstance.InvokeContextCallback;
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        protected internal void InvokeContextCallback(object? state)
         {
             Debug.Assert(state is Action);
             ((Action)state)();
-        };
-        private static readonly Action<Action> s_invokeAction = (action) => action();
+        }
+
+        private static readonly Action<Action> s_invokeAction = s_staticDelegateInstance.InvokeAction;
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        private void InvokeAction(Action action) => action();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected static ContextCallback GetInvokeActionCallback() => s_invokeContextCallback;

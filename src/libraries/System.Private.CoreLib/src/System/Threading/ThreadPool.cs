@@ -30,7 +30,14 @@ namespace System.Threading
         public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
 
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
-        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = state =>
+        internal static readonly Action<object?> s_invokeAsyncStateMachineBox = workQueue.InvokeAsyncStateMachineBox;
+    }
+
+    [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
+    internal sealed class ThreadPoolWorkQueue
+    {
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        public void InvokeAsyncStateMachineBox(object? state)
         {
             if (!(state is IAsyncStateMachineBox box))
             {
@@ -39,12 +46,8 @@ namespace System.Threading
             }
 
             box.MoveNext();
-        };
-    }
+        }
 
-    [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
-    internal sealed class ThreadPoolWorkQueue
-    {
         internal static class WorkStealingQueueList
         {
 #pragma warning disable CA1825 // avoid the extra generic instantation for Array.Empty<T>(); this is the only place we'll ever create this array
@@ -794,14 +797,17 @@ namespace System.Threading
         private readonly object? _state;
         private readonly ExecutionContext _context;
 
-        private static readonly Action<QueueUserWorkItemCallback> s_executionContextShim = quwi =>
+        private static readonly Action<QueueUserWorkItemCallback> s_executionContextShim = new QueueUserWorkItemCallback().InvokeCallback;
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        private void InvokeCallback(QueueUserWorkItemCallback quwi)
         {
             Debug.Assert(quwi._callback != null);
             WaitCallback callback = quwi._callback;
             quwi._callback = null;
 
             callback(quwi._state);
-        };
+        }
 
         internal QueueUserWorkItemCallback(WaitCallback callback, object? state, ExecutionContext context)
         {
@@ -810,6 +816,12 @@ namespace System.Threading
             _callback = callback;
             _state = state;
             _context = context;
+        }
+
+        private QueueUserWorkItemCallback()
+        {
+            // Used for cached static delegate s_executionContextShim
+            _context = ExecutionContext.Default; // Non-nullable
         }
 
         public override void Execute()

@@ -17,7 +17,10 @@ namespace System.Runtime.CompilerServices
     public readonly struct ValueTaskAwaiter : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
     {
         /// <summary>Shim used to invoke an <see cref="Action"/> passed as the state argument to a <see cref="Action{Object}"/>.</summary>
-        internal static readonly Action<object?> s_invokeActionDelegate = state =>
+        internal static readonly Action<object?> s_invokeActionDelegate = default(ValueTaskAwaiter).InvokeAction;
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        private void InvokeAction(object? state)
         {
             if (!(state is Action action))
             {
@@ -26,7 +29,8 @@ namespace System.Runtime.CompilerServices
             }
 
             action();
-        };
+        }
+
         /// <summary>The value being awaited.</summary>
         private readonly ValueTask _value;
 

@@ -36,11 +36,14 @@ namespace System.Threading
         private readonly CancellationTokenSource? _source;
         // !! warning. If more fields are added, the assumptions in CreateLinkedToken may no longer be valid
 
-        private static readonly Action<object?> s_actionToActionObjShunt = obj =>
+        private static readonly Action<object?> s_actionToActionObjShunt = default(CancellationToken).InvokeAction;
+
+        // We use an instance method as delegates to instance methods are faster than delegates to static methods.
+        private void InvokeAction(object? obj)
         {
             Debug.Assert(obj is Action, $"Expected {typeof(Action)}, got {obj}");
             ((Action)obj)();
-        };
+        }
 
         /// <summary>
         /// Returns an empty CancellationToken value.
