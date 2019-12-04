@@ -28,7 +28,7 @@ jobs:
 
       enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
       container: ${{ parameters.container }}
-      condition: ${{ parameters.condition }}
+      condition: and(succeeded(), ${{ parameters.condition }})
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
