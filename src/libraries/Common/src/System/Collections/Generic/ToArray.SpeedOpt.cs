@@ -333,18 +333,135 @@ namespace System.Collections.Generic
             int bufferIdx;
             int arrayIdx;
 
-            for (arrayIdx = sourceIdx, bufferIdx = 0; arrayIdx < source.Length; ++arrayIdx)
+            for (arrayIdx = sourceIdx, bufferIdx = 0; arrayIdx < source.Length && bufferIdx < buffer.Length; ++arrayIdx)
             {
-                if (predicate(source[arrayIdx]))
-                {
-                    buffer[bufferIdx++] = source[arrayIdx];
+                var item = source[arrayIdx];
 
-                    if (bufferIdx >= buffer.Length)
-                    {
-                        ++arrayIdx;
-                        break;
-                    }
+                if (!predicate(item))
+                    continue;
+
+                buffer[bufferIdx++] = item;
+            }
+
+            sourceIdx = arrayIdx;
+            return bufferIdx;
+        }
+    }
+
+    internal class ToArrayList<T> : ToArrayBase<T>
+    {
+        public static readonly ToArrayList<T> Instance = new ToArrayList<T>();
+
+        private ToArrayList() { }
+
+        public T[] ToArray(List<T> source, Func<T, bool> predicate)
+        {
+            Debug.Assert(source != null);
+
+            return InitiallyTryWithNoAllocations(source, 0, predicate, 0);
+        }
+
+        protected T[] InitiallyTryWithNoAllocations(List<T> array, int arrayIdx, Func<T, bool> predicate, int count)
+        {
+            T[] result;
+            T item1, item2, item3, item4;
+
+            do
+            {
+                if (arrayIdx >= array.Count)
+                {
+                    return Allocate(count);
                 }
+
+                item1 = array[arrayIdx++];
+            } while (!predicate(item1));
+
+            ++count;
+
+            do
+            {
+                if (arrayIdx >= array.Count)
+                {
+                    return AllocateAndAssign(count, item1);
+                }
+                item2 = array[arrayIdx++];
+            }
+            while (!predicate(item2));
+
+            ++count;
+
+            do
+            {
+                if (arrayIdx >= array.Count)
+                {
+                    return AllocateAndAssign(count, item1, item2);
+                }
+                item3 = array[arrayIdx++];
+            }
+            while (!predicate(item3));
+
+            ++count;
+
+            do
+            {
+                if (arrayIdx >= array.Count)
+                {
+                    return AllocateAndAssign(count, item1, item2, item3);
+                }
+                item4 = array[arrayIdx++];
+            }
+            while (!predicate(item4));
+
+            ++count;
+
+            if (count >= maxSizeForNoAllocations)
+            {
+                if (arrayIdx < array.Count)
+                {
+                    result = FinishViaAllocations(array, ref arrayIdx, predicate, count);
+                }
+                else
+                {
+                    result = Allocate(count);
+                }
+            }
+            else
+            {
+                result = InitiallyTryWithNoAllocations(array, arrayIdx, predicate, count);
+            }
+
+            result[--count] = item4;
+            result[--count] = item3;
+            result[--count] = item2;
+            result[--count] = item1;
+
+            return result;
+        }
+
+        protected override (int, bool) PopulateBuffer(T[] buffer, object source, ref int sourceIdx, Func<T, bool>? predicate)
+        {
+            Debug.Assert(predicate != null);
+
+            List<T> array = (List<T>)source;
+
+            var bufferIdx = PopulateBuffer(buffer, array, ref sourceIdx, predicate);
+
+            return (bufferIdx, sourceIdx < array.Count);
+        }
+
+        private int PopulateBuffer(T[] buffer, List<T> source, ref int sourceIdx, Func<T, bool> predicate)
+        {
+            int bufferIdx;
+            int arrayIdx;
+
+            for (arrayIdx = sourceIdx, bufferIdx = 0; arrayIdx < source.Count && bufferIdx < buffer.Length; ++arrayIdx)
+            {
+                var item = source[arrayIdx];
+
+                if (!predicate(item))
+                    continue;
+
+                buffer[bufferIdx++] = item;
             }
 
             sourceIdx = arrayIdx;

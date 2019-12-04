@@ -120,21 +120,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TSource[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TSource>(_source.Count);
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        builder.Add(item);
-                    }
-                }
-
-                return builder.ToArray();
-            }
+            public TSource[] ToArray() => ToArrayList<TSource>.Instance.ToArray(_source, _predicate);
 
             public List<TSource> ToList()
             {
