@@ -926,8 +926,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	 * requires allocation on the stack, as this wouldn't be encoded in unwind
 	 * information for the caller frame.
 	 */
-	sp = (gpointer *)UCONTEXT_REG_RSP (sigctx);
-	g_assertf (((unsigned long) sp & 15) == 0, "sp: %p\n", sp);
+	sp = (gpointer *) ALIGN_DOWN_TO (UCONTEXT_REG_RSP (sigctx), 16);
 	sp [-1] = (gpointer)UCONTEXT_REG_RIP (sigctx);
 	mono_sigctx_to_monoctx (sigctx, copied_ctx);
 	/* at the return from the signal handler execution starts in altstack_handle_and_restore() */
