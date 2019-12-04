@@ -208,19 +208,14 @@ namespace System.Collections.Generic
             bool moveNext;
             int index;
 
-            for (moveNext = true, index = 0; moveNext;)
+            for (moveNext = true, index = 0; moveNext && index < buffer.Length; moveNext = e.MoveNext())
             {
                 var item = e.Current;
-                if (predicate(item))
-                {
-                    buffer[index++] = e.Current;
-                    if (index >= buffer.Length)
-                    {
-                        moveNext = e.MoveNext();
-                        break;
-                    }
-                }
-                moveNext = e.MoveNext();
+
+                if (!predicate(item))
+                    continue;
+
+                buffer[index++] = e.Current;
             }
 
             return (index, moveNext);
