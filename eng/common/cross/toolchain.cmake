@@ -79,7 +79,7 @@ if(TARGET_ARCH_NAME MATCHES "^(arm|armel)$")
   if (NOT DEFINED ARM_FPU_CAPABILITY)
     set(ARM_FPU_CAPABILITY 0x7)
   endif(NOT DEFINED ARM_FPU_CAPABILITY)
-  add_compile_options(-DCLR_FPU_CAPABILITY=${ARM_FPU_CAPABILITY})
+  add_definitions(-DCLR_FPU_CAPABILITY=${ARM_FPU_CAPABILITY})
 
  if(TARGET_ARCH_NAME STREQUAL "armel")
     add_compile_options(-mfloat-abi=softfp)

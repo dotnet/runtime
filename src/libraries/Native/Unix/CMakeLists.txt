@@ -67,7 +67,7 @@ elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
   if (NOT DEFINED ARM_FPU_CAPABILITY)
     set(ARM_FPU_CAPABILITY 0x7)
   endif(NOT DEFINED ARM_FPU_CAPABILITY)
-    add_compile_options(-DCLR_FPU_CAPABILITY=${ARM_FPU_CAPABILITY})
+    add_definitions(-DCLR_FPU_CAPABILITY=${ARM_FPU_CAPABILITY})
 
     add_compile_options(-march=armv7-a)
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
