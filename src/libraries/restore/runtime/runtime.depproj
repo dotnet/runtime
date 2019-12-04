@@ -8,6 +8,7 @@
     <ImportLiveBuildsTargets>true</ImportLiveBuildsTargets>
     <CoreCLROSGroup Condition="'$(CoreCLROSGroup)'==''">$(DefaultOSGroup)</CoreCLROSGroup>
     <CoreCLRConfiguration>$(ConfigurationGroup)</CoreCLRConfiguration>
+    <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
