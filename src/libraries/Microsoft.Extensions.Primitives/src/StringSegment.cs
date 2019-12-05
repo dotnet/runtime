@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="offset">The offset of the segment within the <paramref name="buffer"/>.</param>
         /// <param name="length">The length of the segment.</param>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="buffer"/> is <code>null</code>.
+        /// <paramref name="buffer"/> is <c>null</c>.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> +
@@ -171,7 +171,7 @@ namespace Microsoft.Extensions.Primitives
         /// Indicates whether the current object is equal to another object of the same type.
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
-        /// <returns><code>true</code> if the current object is equal to the other parameter; otherwise, <code>false</code>.</returns>
+        /// <returns><c>true</c> if the current object is equal to the other parameter; otherwise, <c>false</c>.</returns>
         public bool Equals(StringSegment other) => Equals(other, StringComparison.Ordinal);
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
-        /// <returns><code>true</code> if the current object is equal to the other parameter; otherwise, <code>false</code>.</returns>
+        /// <returns><c>true</c> if the current object is equal to the other parameter; otherwise, <c>false</c>.</returns>
         public bool Equals(StringSegment other, StringComparison comparisonType)
         {
             if (Length != other.Length)
@@ -199,7 +199,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="a">The first <see cref="StringSegment"/> to compare.</param>
         /// <param name="b">The second <see cref="StringSegment"/> to compare.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the comparison.</param>
-        /// <returns><code>true</code> if the objects are equal; otherwise, <code>false</code>.</returns>
+        /// <returns><c>true</c> if the objects are equal; otherwise, <c>false</c>.</returns>
         public static bool Equals(StringSegment a, StringSegment b, StringComparison comparisonType)
         {
             return a.Equals(b, comparisonType);
@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.Primitives
         /// Checks if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>.
         /// </summary>
         /// <param name="text">The <see cref="string"/> to compare with the current <see cref="StringSegment"/>.</param>
-        /// <returns><code>true</code> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <code>false</code>.</returns>
+        /// <returns><c>true</c> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <c>false</c>.</returns>
         public bool Equals(string text)
         {
             return Equals(text, StringComparison.Ordinal);
@@ -220,9 +220,9 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="text">The <see cref="string"/> to compare with the current <see cref="StringSegment"/>.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
-        /// <returns><code>true</code> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <code>false</code>.</returns>
+        /// <returns><c>true</c> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="text"/> is <code>null</code>.
+        /// <paramref name="text"/> is <c>null</c>.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(string text, StringComparison comparisonType)
@@ -261,17 +261,17 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Checks if two specified <see cref="StringSegment"/> have the same value.
         /// </summary>
-        /// <param name="left">The first <see cref="StringSegment"/> to compare, or <code>null</code>.</param>
-        /// <param name="right">The second <see cref="StringSegment"/> to compare, or <code>null</code>.</param>
-        /// <returns><code>true</code> if the value of <paramref name="left"/> is the same as the value of <paramref name="right"/>; otherwise, <code>false</code>.</returns>
+        /// <param name="left">The first <see cref="StringSegment"/> to compare, or <c>null</c>.</param>
+        /// <param name="right">The second <see cref="StringSegment"/> to compare, or <c>null</c>.</param>
+        /// <returns><c>true</c> if the value of <paramref name="left"/> is the same as the value of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator ==(StringSegment left, StringSegment right) => left.Equals(right);
 
         /// <summary>
         /// Checks if two specified <see cref="StringSegment"/> have different values.
         /// </summary>
-        /// <param name="left">The first <see cref="StringSegment"/> to compare, or <code>null</code>.</param>
-        /// <param name="right">The second <see cref="StringSegment"/> to compare, or <code>null</code>.</param>
-        /// <returns><code>true</code> if the value of <paramref name="left"/> is different from the value of <paramref name="right"/>; otherwise, <code>false</code>.</returns>
+        /// <param name="left">The first <see cref="StringSegment"/> to compare, or <c>null</c>.</param>
+        /// <param name="right">The second <see cref="StringSegment"/> to compare, or <c>null</c>.</param>
+        /// <returns><c>true</c> if the value of <paramref name="left"/> is different from the value of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
         public static bool operator !=(StringSegment left, StringSegment right) => !left.Equals(right);
 
         // PERF: Do NOT add a implicit converter from StringSegment to String. That would negate most of the perf safety.
@@ -298,9 +298,9 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="text">The <see cref="string"/>to compare.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
-        /// <returns><code>true</code> if <paramref name="text"/> matches the beginning of this <see cref="StringSegment"/>; otherwise, <code>false</code>.</returns>
+        /// <returns><c>true</c> if <paramref name="text"/> matches the beginning of this <see cref="StringSegment"/>; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="text"/> is <code>null</code>.
+        /// <paramref name="text"/> is <c>null</c>.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool StartsWith(string text, StringComparison comparisonType)
@@ -326,9 +326,9 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="text">The <see cref="string"/>to compare.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
-        /// <returns><code>true</code> if <paramref name="text"/> matches the end of this <see cref="StringSegment"/>; otherwise, <code>false</code>.</returns>
+        /// <returns><c>true</c> if <paramref name="text"/> matches the end of this <see cref="StringSegment"/>; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="text"/> is <code>null</code>.
+        /// <paramref name="text"/> is <c>null</c>.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool EndsWith(string text, StringComparison comparisonType)
@@ -484,7 +484,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The zero-based index position of the first occurrence in this instance where any character in <paramref name="anyOf"/>
         /// was found; -1 if no character in <paramref name="anyOf"/> was found.</returns>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="anyOf"/> is <code>null</code>.
+        /// <paramref name="anyOf"/> is <c>null</c>.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="startIndex"/> or <paramref name="count"/> is less than zero, or <paramref name="startIndex"/> + <paramref name="count"/> is
@@ -656,9 +656,9 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <summary>
-        /// Returns the <see cref="string"/> represented by this <see cref="StringSegment"/> or <code>String.Empty</code> if the <see cref="StringSegment"/> does not contain a value.
+        /// Returns the <see cref="string"/> represented by this <see cref="StringSegment"/> or <c>String.Empty</c> if the <see cref="StringSegment"/> does not contain a value.
         /// </summary>
-        /// <returns>The <see cref="string"/> represented by this <see cref="StringSegment"/> or <code>String.Empty</code> if the <see cref="StringSegment"/> does not contain a value.</returns>
+        /// <returns>The <see cref="string"/> represented by this <see cref="StringSegment"/> or <c>String.Empty</c> if the <see cref="StringSegment"/> does not contain a value.</returns>
         public override string ToString()
         {
             return Value ?? string.Empty;

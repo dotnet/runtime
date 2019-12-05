@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 namespace Microsoft.Extensions.Logging
@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="left">The first <see cref="EventId"/>.</param>
         /// <param name="right">The second <see cref="EventId"/>.</param>
-        /// <returns><code>true</code> if the objects are equal.</returns>
+        /// <returns><c>true</c> if the objects are equal.</returns>
         public static bool operator ==(EventId left, EventId right)
         {
             return left.Equals(right);
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="left">The first <see cref="EventId"/>.</param>
         /// <param name="right">The second <see cref="EventId"/>.</param>
-        /// <returns><code>true</code> if the objects are not equal.</returns>
+        /// <returns><c>true</c> if the objects are not equal.</returns>
         public static bool operator !=(EventId left, EventId right)
         {
             return !left.Equals(right);
@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Logging
         /// Indicates whether the current object is equal to another object of the same type. Two events are equal if they have the same id.
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
-        /// <returns><code>true</code> if the current object is equal to the other parameter; otherwise, <code>false</code>.</returns>
+        /// <returns><c>true</c> if the current object is equal to the other parameter; otherwise, <c>false</c>.</returns>
         public bool Equals(EventId other)
         {
             return Id == other.Id;

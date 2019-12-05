@@ -13,12 +13,12 @@ namespace Microsoft.Extensions.Logging.Console
         private ConsoleLoggerFormat _format = ConsoleLoggerFormat.Default;
 
         /// <summary>
-        /// Includes scopes when <code>true</code>.
+        /// Includes scopes when <c>true</c>.
         /// </summary>
         public bool IncludeScopes { get; set; }
 
         /// <summary>
-        /// Disables colors when <code>true</code>.
+        /// Disables colors when <c>true</c>.
         /// </summary>
         public bool DisableColors { get; set; }
 
