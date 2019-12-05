@@ -1508,15 +1508,11 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
             break;
 
 #ifdef FEATURE_SIMD
+        case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
             return !varDsc->lvPromoted;
-
-        // TODO-1stClassStructs: Move TYP_SIMD8 up with the other SIMD types, after handling the param issue
-        // (passing & returning as TYP_LONG).
-        case TYP_SIMD8:
-            return false;
 #endif // FEATURE_SIMD
 
         case TYP_STRUCT:
