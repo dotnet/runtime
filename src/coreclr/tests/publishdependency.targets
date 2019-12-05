@@ -1,9 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
+<Project>
   <ItemGroup>
-    <TestTargetFramework Include=".NETCoreApp,Version=v5.0">
-      <Folder>netcoreapp5.0</Folder>
+    <TestTargetFramework Include="$(NetCoreAppCurrentTargetFrameworkMoniker)">
+      <Folder>$(NetCoreAppCurrent)</Folder>
     </TestTargetFramework>
   </ItemGroup>
 
@@ -34,5 +32,4 @@
              Properties="Language=C#;RuntimeIdentifier=$(TargetRid)" />
 
   </Target>
-
 </Project>
