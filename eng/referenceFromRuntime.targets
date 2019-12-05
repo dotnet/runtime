@@ -3,10 +3,11 @@
           BeforeTargets="SetupDefaultReferences"
           Condition="'$(IsTestProject)'=='true' and '@(ReferenceFromRuntime)' != ''">
     <ItemGroup>
-      <Reference Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" />
+      <Reference Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" Condition="'%(Identity)' != 'System.Private.CoreLib'" />
+      <Reference Include="@(ReferenceFromRuntime->'$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'external.runtime', '$(_bc_TargetGroup)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)', '%(ReferenceFromRuntime.Identity).dll'))')" Condition="'%(Identity)' == 'System.Private.CoreLib'" />
     </ItemGroup>
   </Target>
-  
+
   <PropertyGroup>
     <PrepareProjectReferencesDependsOn>
       AddRuntimeProjectReference;

@@ -107,19 +107,25 @@ jobs:
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
-          
+
+          - task: CopyFiles@2
+            displayName: Prepare external.runtime folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/external.runtime
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/external.runtime
+
           - task: CopyFiles@2
             displayName: Prepare testhost folder to publish
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
-          
+
           - task: CopyFiles@2
             displayName: Prepare artifacts toolset folder to publish
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/toolset
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/toolset
-        
+
           - template: /eng/pipelines/common/upload-artifact-step.yml
             parameters:
               rootFolder: $(Build.ArtifactStagingDirectory)/artifacts
@@ -129,7 +135,7 @@ jobs:
               tarCompression: $(tarCompression)
               artifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
               displayName: Build Assets
-        
+
         - ${{ if eq(parameters.runTests, true) }}:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
