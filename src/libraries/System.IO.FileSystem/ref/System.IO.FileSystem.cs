@@ -173,7 +173,7 @@ namespace System.IO
         public static void WriteAllText(string path, string? contents) { }
         public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class FileInfo : System.IO.FileSystemInfo
     {

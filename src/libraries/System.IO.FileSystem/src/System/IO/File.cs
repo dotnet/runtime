@@ -733,7 +733,7 @@ namespace System.IO
             }
         }
 
-        public static Task WriteAllTextAsync(string path, string contents, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task WriteAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
             => WriteAllTextAsync(path, contents, UTF8NoBOM, cancellationToken);
 
         public static Task WriteAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))

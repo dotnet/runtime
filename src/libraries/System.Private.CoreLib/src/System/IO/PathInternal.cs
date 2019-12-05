@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.IO
@@ -220,6 +221,7 @@ namespace System.IO
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.
         /// </summary>
+        [return: NotNullIfNotNull("path")]
         internal static string? TrimEndingDirectorySeparator(string? path) =>
             EndsInDirectorySeparator(path) && !IsRoot(path.AsSpan()) ?
                 path!.Substring(0, path.Length - 1) :
