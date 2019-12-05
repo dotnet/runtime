@@ -2,7 +2,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       net461;
-      netfx;
+      net472;
       netstandard1.1;
       netstandard1.2;
       netstandard1.3;

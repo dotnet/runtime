@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netfx;
+      net472;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

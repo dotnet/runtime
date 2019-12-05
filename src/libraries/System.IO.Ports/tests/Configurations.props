@@ -5,7 +5,7 @@
       $(NetCoreAppCurrent)-Linux;
       $(NetCoreAppCurrent)-OSX;
       $(NetCoreAppCurrent)-FreeBSD;
-      netfx;
+      net472;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -9,7 +9,7 @@
       net462;
       net47;
       net471;
-      netfx;
+      net472;
       $(NetCoreAppCurrent);
     </BuildConfigurations>
   </PropertyGroup>

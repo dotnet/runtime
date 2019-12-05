@@ -9,7 +9,7 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       $(NetCoreAppCurrent);
-      netfx;
+      net472;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

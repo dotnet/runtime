@@ -3,7 +3,7 @@
     <BuildConfigurations>
       netstandard2.0;
       $(NetCoreAppCurrent);
-      netfx;
+      net472;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

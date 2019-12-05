@@ -8,7 +8,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netfx;
+      net472;
       $(NetCoreAppCurrent)-Windows_NT;
       $(NetCoreAppCurrent)-Unix;
     </BuildConfigurations>
