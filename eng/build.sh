@@ -87,6 +87,8 @@ while [[ $# > 0 ]]; do
       val="$(echo "$2" | awk '{print tolower($0)}')"
       if [ "$val" == "netcoreapp" ]; then
         val=netcoreapp5.0
+      elif [ "$val" == "netfx" ]; then
+        val=net472
       fi
       arguments="$arguments /p:TargetGroup=$val"
       shift 2
