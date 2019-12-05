@@ -1084,6 +1084,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_str:
         case INS_ldur:
         case INS_stur:
+        case INS_ld1:
             result = id->idOpSize();
             break;
 
