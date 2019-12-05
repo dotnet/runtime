@@ -39,6 +39,7 @@ namespace System.Collections.Generic
             }
 
             Array.Copy(buffer, 0, result, count, index);
+
             return result;
         }
 
@@ -55,24 +56,40 @@ namespace System.Collections.Generic
         protected static T[] AllocateAndAssign(int count, T item1)
         {
             T[] result = new T[count];
+
             result[--count] = item1;
+
             return result;
         }
 
         protected static T[] AllocateAndAssign(int count, T item1, T item2)
         {
             T[] result = new T[count];
+
             result[--count] = item2;
             result[--count] = item1;
+
             return result;
         }
 
         protected static T[] AllocateAndAssign(int count, T item1, T item2, T item3)
         {
             T[] result = new T[count];
+
             result[--count] = item3;
             result[--count] = item2;
             result[--count] = item1;
+
+            return result;
+        }
+
+        protected static T[] Assign(T[] result, ref (T, T, T, T) items, int count)
+        {
+            result[--count] = items.Item4;
+            result[--count] = items.Item3;
+            result[--count] = items.Item2;
+            result[--count] = items.Item1;
+
             return result;
         }
     }
@@ -111,76 +128,77 @@ namespace System.Collections.Generic
             return InitiallyTryWithNoAllocations(e, predicate, 0);
         }
 
-        protected T[] InitiallyTryWithNoAllocations(IEnumerator<T> e, Func<T, bool>? predicate, int count)
+        protected T[] InitiallyTryWithNoAllocations(IEnumerator<T> source, Func<T, bool>? predicate, int count)
         {
-            T[] result;
-            T item1, item2, item3, item4;
+            (T, T, T, T) items;
 
             do
             {
-                if (!e.MoveNext())
+                if (!source.MoveNext())
                 {
                     return Allocate(count);
                 }
-                item1 = e.Current;
+                items.Item1 = source.Current;
             }
-            while (predicate != null && !predicate(item1));
+            while (predicate != null && !predicate(items.Item1));
 
             ++count;
 
             do
             {
-                if (!e.MoveNext())
+                if (!source.MoveNext())
                 {
-                    return AllocateAndAssign(count, item1);
+                    return AllocateAndAssign(count, items.Item1);
                 }
-                item2 = e.Current;
-            } while (predicate != null && !predicate(item2));
+                items.Item2 = source.Current;
+            } while (predicate != null && !predicate(items.Item2));
 
             ++count;
 
             do
             {
-                if (!e.MoveNext())
+                if (!source.MoveNext())
                 {
-                    return AllocateAndAssign(count, item1, item2);
+                    return AllocateAndAssign(count, items.Item1, items.Item2);
                 }
-                item3 = e.Current;
+                items.Item3 = source.Current;
             }
-            while (predicate != null && !predicate(item3));
+            while (predicate != null && !predicate(items.Item3));
 
             ++count;
 
             do
             {
-                if (!e.MoveNext())
+                if (!source.MoveNext())
                 {
-                    return AllocateAndAssign(count, item1, item2, item3);
+                    return AllocateAndAssign(count, items.Item1, items.Item2, items.Item3);
                 }
-                item4 = e.Current;
+                items.Item4 = source.Current;
             }
-            while (predicate != null && !predicate(item4));
+            while (predicate != null && !predicate(items.Item4));
 
             ++count;
 
+            T[] result;
             if (count >= maxSizeForNoAllocations)
             {
-                if (e.MoveNext())
-                    result = FinishViaAllocations(e, ref count, predicate, count);
+                if (source.MoveNext())
+                    result = FinishViaAllocations(source, predicate, count);
                 else
                     result = Allocate(count);
             }
             else
             {
-                result = InitiallyTryWithNoAllocations(e, predicate, count);
+                result = InitiallyTryWithNoAllocations(source, predicate, count);
             }
 
-            result[--count] = item4;
-            result[--count] = item3;
-            result[--count] = item2;
-            result[--count] = item1;
+            return Assign(result, ref items, count);
+        }
 
-            return result;
+        private T[] FinishViaAllocations(IEnumerator<T> source, Func<T, bool>? predicate, int count)
+        {
+            int dummyIdx = 0;
+            return FinishViaAllocations(source, ref dummyIdx, predicate, count);
         }
 
         protected override (int, bool) PopulateBuffer(T[] buffer, object source, ref int sourceIdx, Func<T, bool>? predicate)
@@ -194,10 +212,9 @@ namespace System.Collections.Generic
             bool moveNext;
             int index;
 
-            for (moveNext = true, index = 0; moveNext && index < buffer.Length; ++index)
+            for (moveNext = true, index = 0; moveNext && index < buffer.Length; moveNext = e.MoveNext(), ++index)
             {
                 buffer[index] = e.Current;
-                moveNext = e.MoveNext();
             }
 
             return (index, moveNext);
@@ -215,7 +232,7 @@ namespace System.Collections.Generic
                 if (!predicate(item))
                     continue;
 
-                buffer[index++] = e.Current;
+                buffer[index++] = item;
             }
 
             return (index, moveNext);
@@ -235,64 +252,64 @@ namespace System.Collections.Generic
             return InitiallyTryWithNoAllocations(source, 0, predicate, 0);
         }
 
-        protected T[] InitiallyTryWithNoAllocations(T[] array, int arrayIdx, Func<T, bool> predicate, int count)
+        protected T[] InitiallyTryWithNoAllocations(T[] source, int sourceIdx, Func<T, bool> predicate, int count)
         {
-            T[] result;
-            T item1, item2, item3, item4;
+            (T, T, T, T) items;
 
             do
             {
-                if (arrayIdx >= array.Length)
+                if (sourceIdx >= source.Length)
                 {
                     return Allocate(count);
                 }
 
-                item1 = array[arrayIdx++];
-            } while (!predicate(item1));
+                items.Item1 = source[sourceIdx++];
+            } while (!predicate(items.Item1));
 
             ++count;
 
             do
             {
-                if (arrayIdx >= array.Length)
+                if (sourceIdx >= source.Length)
                 {
-                    return AllocateAndAssign(count, item1);
+                    return AllocateAndAssign(count, items.Item1);
                 }
-                item2 = array[arrayIdx++];
+                items.Item2 = source[sourceIdx++];
             }
-            while (!predicate(item2));
+            while (!predicate(items.Item2));
 
             ++count;
 
             do
             {
-                if (arrayIdx >= array.Length)
+                if (sourceIdx >= source.Length)
                 {
-                    return AllocateAndAssign(count, item1, item2);
+                    return AllocateAndAssign(count, items.Item1, items.Item2);
                 }
-                item3 = array[arrayIdx++];
+                items.Item3 = source[sourceIdx++];
             }
-            while (!predicate(item3));
+            while (!predicate(items.Item3));
 
             ++count;
 
             do
             {
-                if (arrayIdx >= array.Length)
+                if (sourceIdx >= source.Length)
                 {
-                    return AllocateAndAssign(count, item1, item2, item3);
+                    return AllocateAndAssign(count, items.Item1, items.Item2, items.Item3);
                 }
-                item4 = array[arrayIdx++];
+                items.Item4 = source[sourceIdx++];
             }
-            while (!predicate(item4));
+            while (!predicate(items.Item4));
 
             ++count;
 
+            T[] result;
             if (count >= maxSizeForNoAllocations)
             {
-                if (arrayIdx < array.Length)
+                if (sourceIdx < source.Length)
                 {
-                    result = FinishViaAllocations(array, ref arrayIdx, predicate, count);
+                    result = FinishViaAllocations(source, ref sourceIdx, predicate, count);
                 }
                 else
                 {
@@ -301,13 +318,13 @@ namespace System.Collections.Generic
             }
             else
             {
-                result = InitiallyTryWithNoAllocations(array, arrayIdx, predicate, count);
+                result = InitiallyTryWithNoAllocations(source, sourceIdx, predicate, count);
             }
 
-            result[--count] = item4;
-            result[--count] = item3;
-            result[--count] = item2;
-            result[--count] = item1;
+            result[--count] = items.Item4;
+            result[--count] = items.Item3;
+            result[--count] = items.Item2;
+            result[--count] = items.Item1;
 
             return result;
         }
@@ -356,64 +373,64 @@ namespace System.Collections.Generic
             return InitiallyTryWithNoAllocations(source, 0, predicate, 0);
         }
 
-        protected T[] InitiallyTryWithNoAllocations(List<T> array, int arrayIdx, Func<T, bool> predicate, int count)
+        protected T[] InitiallyTryWithNoAllocations(List<T> source, int sourceIdx, Func<T, bool> predicate, int count)
         {
-            T[] result;
-            T item1, item2, item3, item4;
+            (T, T, T, T) items;
 
             do
             {
-                if (arrayIdx >= array.Count)
+                if (sourceIdx >= source.Count)
                 {
                     return Allocate(count);
                 }
 
-                item1 = array[arrayIdx++];
-            } while (!predicate(item1));
+                items.Item1 = source[sourceIdx++];
+            } while (!predicate(items.Item1));
 
             ++count;
 
             do
             {
-                if (arrayIdx >= array.Count)
+                if (sourceIdx >= source.Count)
                 {
-                    return AllocateAndAssign(count, item1);
+                    return AllocateAndAssign(count, items.Item1);
                 }
-                item2 = array[arrayIdx++];
+                items.Item2 = source[sourceIdx++];
             }
-            while (!predicate(item2));
+            while (!predicate(items.Item2));
 
             ++count;
 
             do
             {
-                if (arrayIdx >= array.Count)
+                if (sourceIdx >= source.Count)
                 {
-                    return AllocateAndAssign(count, item1, item2);
+                    return AllocateAndAssign(count, items.Item1, items.Item2);
                 }
-                item3 = array[arrayIdx++];
+                items.Item3 = source[sourceIdx++];
             }
-            while (!predicate(item3));
+            while (!predicate(items.Item3));
 
             ++count;
 
             do
             {
-                if (arrayIdx >= array.Count)
+                if (sourceIdx >= source.Count)
                 {
-                    return AllocateAndAssign(count, item1, item2, item3);
+                    return AllocateAndAssign(count, items.Item1, items.Item2, items.Item3);
                 }
-                item4 = array[arrayIdx++];
+                items.Item4 = source[sourceIdx++];
             }
-            while (!predicate(item4));
+            while (!predicate(items.Item4));
 
             ++count;
 
+            T[] result;
             if (count >= maxSizeForNoAllocations)
             {
-                if (arrayIdx < array.Count)
+                if (sourceIdx < source.Count)
                 {
-                    result = FinishViaAllocations(array, ref arrayIdx, predicate, count);
+                    result = FinishViaAllocations(source, ref sourceIdx, predicate, count);
                 }
                 else
                 {
@@ -422,13 +439,13 @@ namespace System.Collections.Generic
             }
             else
             {
-                result = InitiallyTryWithNoAllocations(array, arrayIdx, predicate, count);
+                result = InitiallyTryWithNoAllocations(source, sourceIdx, predicate, count);
             }
 
-            result[--count] = item4;
-            result[--count] = item3;
-            result[--count] = item2;
-            result[--count] = item1;
+            result[--count] = items.Item4;
+            result[--count] = items.Item3;
+            result[--count] = items.Item2;
+            result[--count] = items.Item1;
 
             return result;
         }
