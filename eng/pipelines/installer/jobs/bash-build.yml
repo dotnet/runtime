@@ -94,8 +94,6 @@ jobs:
 
     steps:
 
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
-
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: NuGetAuthenticate@0
 
@@ -110,10 +108,10 @@ jobs:
             -w /root/build \
             ${{ parameters.container }} \
             bash -c '
-              rm -v -rf a b
-              cd s
-              git clean -xdf'
+              rm -v -rf a b s'
         displayName: Clean up old artifacts owned by root
+
+    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     # Build binary and nuget packages
     - script: |
