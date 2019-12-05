@@ -171,6 +171,7 @@ jobs:
     - template: steps/upload-job-artifacts.yml
       parameters:
         name: ${{ coalesce(parameters.name, parameters.platform) }}
+        skipTests: ${{ parameters.skipTests }}
 
     - script: df -h
       displayName: Check space (df -h)

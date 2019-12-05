@@ -39,3 +39,4 @@ jobs:
   - template: steps/upload-job-artifacts.yml
     parameters:
       name: ${{ coalesce(parameters.name, parameters.platform) }}
+      skipTests: ${{ parameters.skipTests }}
