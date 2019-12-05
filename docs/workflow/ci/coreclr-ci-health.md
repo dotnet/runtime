@@ -4,7 +4,7 @@
 
 Note that this document focuses on coreclr testing in `dotnet/runtime`.
 
-https://github.com/dotnet/runtime/issues/27231 was opened as a way to simply view in one place all issues that are affecting `dotnet/runtime`'s CI.
+https://github.com/dotnet/coreclr/issues/27231 was opened as a way to simply view in one place all issues that are affecting `dotnet/runtime`'s CI.
 
 ## TOC
 
@@ -16,7 +16,7 @@ https://github.com/dotnet/runtime/issues/27231 was opened as a way to simply vie
 
 #### Terminology
 
-In order to follow some of the terminology used, there is an expectated familiarity of Azure DevOps required. For an in depth guide with Azure DevOps pipeline definitions, please see: https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema. 
+In order to follow some of the terminology used, there is an expected familiarity of Azure DevOps required. For an in depth guide with Azure DevOps pipeline definitions, please see: https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema. 
 
 The most common terminology and most important are the different containers work happens in.
 
@@ -26,7 +26,7 @@ The most common terminology and most important are the different containers work
 
 `Job`: Jobs are the smallest unit of work which happen on a unique machine. Jobs by default run in parallel, but may be set to depend on another job. **Every job executes its work on a unique machine**.
 
-`Steps`: Steps are the smallest unit of work, they generally correspond to one command that will happen in a job. Normally a job contains steps, all which execute serially. 
+`Steps`: Steps are the smallest unit of work, they generally correspond to one command that will happen in a job. Normally a job contains steps, which execute serially. 
 
 ## CI Overview
 
@@ -34,11 +34,11 @@ Coreclr has many different pipelines. These exist to test stress configurations 
 
 #### **Inner Loop**
 
-Our innerloop CI runs on each PR where `src/coreclr/*`, `eng/*` has been modified. The build definition that is run is [runtime-coreclr](https://dev.azure.com/dnceng/public/_build?definitionId=649). Currently this is defined to run the following builds and tests. Note that each row in the column runs on one build machine, and if there are tests runs, the scale to many test machines in helix. For each test run we current run with TieredCompilation and TieredCompilation off. Therefore if we have 2,000 innerloop tests we will run 4,000 tests total for that architecture/os. If we also run R2R testing for the platform, it is another 2,000 innerloop tests that run by running crossgen on the test, then invoking the R2R compiled executable. In the table the Test Count is an aggregate of all tests run for the platform.
+Our innerloop CI runs on each PR where `src/coreclr/*` is modified. The build definition that is run is [runtime-coreclr](https://dev.azure.com/dnceng/public/_build?definitionId=649). Currently this is defined to run the following builds and tests. Note that each row in the column runs on one build machine, and if there are tests runs, they scale to many test machines in Helix. For each test run we currently run with TieredCompilation and TieredCompilation off. Therefore if we have 2,000 innerloop tests we will run 4,000 tests total for that architecture/os. If we also run R2R testing for the platform, it is another 2,000 innerloop tests that run by running crossgen on the test, then invoking the R2R compiled executable. In the table the Test Count is an aggregate of all tests run for the platform.
 
 *Note*
 
-The **Build Test** column is important to call out as one of the most important long running jobs. If there is
+The **Build Tests** column is important to call out as one of the most important long running jobs. If there is
 a "Shared" comment it signifies that our tests are built on OSX in ~15 minutes instead of the platform they run on and share the managed components with every other shared test platform. If "Shared" is missing, the platform takes ~25 minutes and happens in parallel with other platforms.
 
 *Special Jobs*
@@ -96,23 +96,21 @@ a "Shared" comment it signifies that our tests are built on OSX in ~15 minutes i
 
 Azure Dev ops gives per pipeline analysis of pass rates. The unfortunate problem about how metrics are measured is the entire pipeline has to complete with a success. If there is a single failure, then the entire pipeline will be marked as a failure and analytics will track a failure.
 
-Therefore a 50% pass rate of a specific pipeline will mean that every job inside a pipeline completed successfully.
-
-runtime's pipeline is complex in that it runs on a distributed system between 50 and 100 machines. This distributed nature makes the end to end success of the pipeline very vulnerable to machine issues.
+Coreclr's pipeline is complex in that it runs on a distributed system between 50 and 100 machines. This distributed nature makes the end to end success of the pipeline very vulnerable to machine issues.
 
 Azure Dev Ops provides analytics which can help bucket failures into categories. This bucketing requires logging in our build and test steps to be correctly reported.
 
-In order to view the analytics of the pipeline navigate to [runtime-ci](https://dev.azure.com/dnceng/public/_build?definitionId=228) and click the [analytics tab](https://dev.azure.com/dnceng/public/_build?definitionId=228&view=ms.vss-pipelineanalytics-web.new-build-definition-pipeline-analytics-view-cardmetrics). There are three different tabs all useful for different reasons. The first one should analytics at the pipeline level.
+In order to view the analytics of the pipeline navigate to [runtime-coreclr](https://dev.azure.com/dnceng/public/_build?definitionId=649) and click the [analytics tab](https://dev.azure.com/dnceng/public/_build?definitionId=649&view=ms.vss-pipelineanalytics-web.new-build-definition-pipeline-analytics-view-cardmetrics). There are three different tabs all useful for different reasons.
 
 **Pipeline Pass Rate**
 
-This is tracking the pipeline pass rate generally over two weeks. This view is not very useful for [runtime-ci](https://dev.azure.com/dnceng/public/_build?definitionId=228) as the PR pipeline is expected to break during PR validation. Therefore, it is generally recommended to view [runtime-outerloop](https://dev.azure.com/dnceng/public/_build?definitionId=98) to get a better idea of what the overall success rate is for [runtime-ci](https://dev.azure.com/dnceng/public/_build?definitionId=228). Note that this is not exactly a fair comparison as we run signicantly more tests in [runtime-outerloop](https://dev.azure.com/dnceng/public/_build?definitionId=98) accross more platforms. It is however, a good proxy to see what the overall CI health.
+This is tracking the pipeline pass rate generally over two weeks. This view is not very useful for [runtime-coreclr](https://dev.azure.com/dnceng/public/_build?definitionId=649) as the PR pipeline is expected to break during PR validation. Therefore, it is generally recommended to view [runtime-coreclr outerloop](https://dev.azure.com/dnceng/public/_build?definitionId=655) to get a better idea of what the overall success rate is for [runtime-coreclr](https://dev.azure.com/dnceng/public/_build?definitionId=228). Note that this is not exactly a fair comparison as we run signicantly more tests in [runtime-outerloop](https://dev.azure.com/dnceng/public/_build?definitionId=655) accross more platforms. It is however, a good proxy to see the overall CI health.
 
-Opening the [runtime-outerloop Pipeline Pass Rate](https://dev.azure.com/dnceng/public/_pipeline/analytics/stageawareoutcome?definitionId=98&contextType=build) there is a presentation of a line graph of the end to end success rate for the pipeline over time.
+Opening the [runtime-outerloop Pipeline Pass Rate](https://dev.azure.com/dnceng/public/_pipeline/analytics/stageawareoutcome?definitionId=655&contextType=build) there is a presentation of a line graph of the end to end success rate for the pipeline over time.
 
-The next graph attempts to show what is failing in bar graph and give a small insight into what is generally failing.
+The **Failure Tend** graph attempts to show what is failing in bar graph and give a small insight into what is generally failing.
 
-The last graph is the most interesting for finding specific issues. As of writing the `Top 10 failing tasks` are:
+The **Failed Runs** graph is the most interesting for finding specific issues. As of writing the `Top 10 failing tasks` are:
 
 *Note* that any one of these buckets can include random one off infrastructure failures or systimatic Azure Dev Ops failures. For example the build bucket can include issues like:
 
@@ -121,15 +119,15 @@ The last graph is the most interesting for finding specific issues. As of writin
 **Failure Buckets**
 
 1. Default\Send tests to Helix
-    - This set can be one of two problems. Either we have tests that failed or helix has failed with some infrastructure issue.
+    - This set can be one of two problems. Either we have tests that failed or Helix has failed with some infrastructure issue.
 2. Default\Build product
     - Build related failures
 3. Default\Build managed test components
-    - Build failures while build the managed components of our tests
+    - Build failures while building the managed components of our tests
 4. Default\Initialize containers
-    - This is an azure dev ops infrastructure issue. It manifests while setting up the docker container and fails to start the environemnt correctly.
+    - This is an Azure DevOps infrastructure issue. It manifests while setting up the docker container and fails to start the environment correctly.
 5. Send Helix End Telemetry
-    - This is a helix infrastructure issue
+    - This is a Helix infrastructure issue
 6. Default\Build native test components
     - This is a failure in the native test build. Generally this is an Azure Dev Ops issue because we do little work inside this step.
 7. Default\Download product build
@@ -137,21 +135,25 @@ The last graph is the most interesting for finding specific issues. As of writin
 8. Default\Unsize GIT Repository
     - Generally this is an Azure Dev Ops issue because we do little work inside this step.
 9. Default\Component Detection
-    - This is an azure dev ops issue
+    - This is an Azure DevOps issue
 
 Below each of these buckets are tabs which show individual runs which can be drilled through to find specific instances of each failure.
 
 **Test Pass rate**
 
-This drill through is extremely useful for finding individual flakey tests. Our idealogy is that tests should be 100% reliable. Tests which appear on this list should be disabled **and** fixed. As even a small amount of unreliability in the tests will equate to a significant percentage of pipeline failiure percentage.
+This drill through is extremely useful for finding individual flakey tests. Coreclr works to keep tests 100% reliable. Tests which appear on this list should be disabled **and** fixed. As even a small amount of unreliability in the tests will equate to a significant percentage of pipeline failure.
 
-Clicking on an invidiual test will show its pass/failures for every run. **Looking back through this history is useful for finding a change that may have caused a test to become flakey.**
+Clicking on an individual test will show its pass/failures for every run. **Looking back through this history is useful for finding a change that may have caused a test to become flakey.**
+
+**Pipeline Duration**
+
+This tracks the overall end to end run time of a pipeline. This graph is useful for looking at machine utilization on a daily cadence. Coreclr has a generous timeout, which generally means that when our pipeline time goes up significantly, we have hit machine load, either with the build or tests.
 
 ## Resources
 
 **Kusto**
 
-[Kusto](https://dataexplorer.azure.com/clusters/engsrvprod/databases/engineeringdata) is a hot data storage we have access to, to help query information from several different locations. There are many uses for helix, but it involves heavy use of query language. For example below is a query which graphs machine utilization by day.
+[Kusto](https://dataexplorer.azure.com/clusters/engsrvprod/databases/engineeringdata) is a hot data storage we have access to, to help query information from several different locations. There are many uses for Helix, but it involves heavy use of query language. For example below is a query which graphs machine utilization by day.
 
 Specifically the query is useful for finding out whether a specific Helix Queue (a group of machines) is overloaded or not. This is useful for diagnosing arm hardware issues, because we have a fixed amount that is easily overloaded.
 
@@ -165,3 +167,4 @@ WorkItems
 | sort by DaysAgo asc
 | render columnchart
 ```
+
