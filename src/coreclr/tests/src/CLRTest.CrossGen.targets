@@ -27,6 +27,8 @@ WARNING:   When setting properties based on their current state (for example:
     <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'true'" Include = "set RunCrossGen=1"/>
     <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'false'" Include = "unset RunCrossGen"/>
     <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'false'" Include = "set RunCrossGen="/>
+    <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'false'" Include = "unset RunCrossGen2"/>
+    <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'false'" Include = "set RunCrossGen2="/>
   </ItemGroup>
 
   <!--
