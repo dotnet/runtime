@@ -72,4 +72,4 @@ jobs:
 
     - template: steps/upload-job-artifacts.yml
       parameters:
-        name: ${{ parameters.name }}
+        name: ${{ coalesce(parameters.name, parameters.platform) }}

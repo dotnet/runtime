@@ -31,7 +31,7 @@ steps:
     testResultsFiles: '*.xml'
     searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
     mergeTestResults: true
-    testRunTitle: ${{ parameters.name }}-$(_BuildConfig)
+    testRunTitle: Installer-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: always()
 
@@ -51,6 +51,6 @@ steps:
   displayName: Publish BuildLogs
   inputs:
     PathtoPublish: '$(Build.StagingDirectory)/BuildLogs'
-    ArtifactName: Logs-${{ parameters.name }}-$(_BuildConfig)
+    ArtifactName: Installer-Logs-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: succeededOrFailed()
