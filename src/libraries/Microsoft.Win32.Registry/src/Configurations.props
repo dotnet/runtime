@@ -10,7 +10,7 @@
       $(PackageConfigurations);
       $(NetCoreAppCurrent)-Windows_NT;
       $(NetCoreAppCurrent)-Unix;
-      netfx-Windows_NT;
+      net472-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
