@@ -311,11 +311,7 @@ namespace ILCompiler
                         inputFilePath = input.Value;
                         break;
                     }
-                    CompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath,
-                        ibcTuning: _commandLineOptions.Tuning,
-                        resilient: _commandLineOptions.Resilient,
-                        parallelism: _commandLineOptions.Parallelism);
-
+                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
@@ -325,6 +321,9 @@ namespace ILCompiler
                         DependencyTrackingLevel.None : (_commandLineOptions.GenerateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
                     builder
+                        .UseIbcTuning(_commandLineOptions.Tuning)
+                        .UseResilience(_commandLineOptions.Resilient)
+                        .UseParallelism(_commandLineOptions.Parallelism)
                         .UseILProvider(ilProvider)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)

@@ -20,9 +20,9 @@ namespace ILCompiler
     {
         private readonly string _inputFilePath;
         private readonly EcmaModule _inputModule;
-        private readonly bool _ibcTuning;
-        private readonly bool _resilient;
-        private readonly int _parallelism;
+        private bool _ibcTuning;
+        private bool _resilient;
+        private int _parallelism;
         private string _jitPath;
 
         // These need to provide reasonable defaults so that the user can optionally skip
@@ -30,14 +30,10 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath, bool ibcTuning, bool resilient, int parallelism)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
             : base(context, group, new CoreRTNameMangler())
         {
             _inputFilePath = inputFilePath;
-            _ibcTuning = ibcTuning;
-            _resilient = resilient;
-            _parallelism = parallelism;
-
             _inputModule = context.GetModuleFromPath(_inputFilePath);
 
             // R2R field layout needs compilation group information
@@ -85,6 +81,25 @@ namespace ILCompiler
             _jitPath = jitPath;
             return this;
         }
+
+        public ReadyToRunCodegenCompilationBuilder UseIbcTuning(bool ibcTuning)
+        {
+            _ibcTuning = ibcTuning;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseResilience(bool resilient)
+        {
+            _resilient = resilient;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseParallelism(int parallelism)
+        {
+            _parallelism = parallelism;
+            return this;
+        }
+
 
         public override ICompilation ToCompilation()
         {
