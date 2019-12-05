@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions
@@ -15,24 +15,7 @@ namespace System.Text.RegularExpressions
     {
         public static int CacheSize
         {
-            get => RegexCache.CacheSize;
-            set => RegexCache.CacheSize = value;
-        }
-    }
-
-    internal sealed class RegexCache
-    {
-        private const int DefaultMaxCacheSize = 15;
-        private const int CacheDictionarySwitchLimit = 10;
-
-        private static readonly Dictionary<Key, Node> s_cache = new Dictionary<Key, Node>(DefaultMaxCacheSize);
-        private static Node? s_cacheFirst, s_cacheLast; // linked list for LRU and for small cache
-        private static int s_maxCacheSize = DefaultMaxCacheSize;
-        private static int s_cacheCount = 0;
-
-        public static int CacheSize
-        {
-            get => s_maxCacheSize;
+            get => RegexCache.MaxCacheSize;
             set
             {
                 if (value < 0)
@@ -40,34 +23,80 @@ namespace System.Text.RegularExpressions
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                lock (s_cache)
+                RegexCache.MaxCacheSize = value;
+            }
+        }
+    }
+
+    /// <summary>Cache used to store Regex instances used by the static methods on Regex.</summary>
+    internal sealed class RegexCache
+    {
+        // The implementation is optimized to make cache hits fast and lock-free, only taking a global lock
+        // when adding a new Regex to the cache.  Previous implementations of the cache took a global lock
+        // on all accesses, negatively impacting scalability, in order to minimize costs when the cache
+        // limit was hit and items needed to be dropped.  In such situations, however, we're having to
+        // pay the relatively hefty cost of creating a new Regex, anyway, and if the consuming app cares
+        // about such costs, it should either increase Regex.CacheSize or do its own Regex instance caching.
+
+        /// <summary>The default maximum number of items to store in the cache.</summary>
+        private const int DefaultMaxCacheSize = 15;
+        /// <summary>The maximum number of cached items to examine when we need to replace an existing one in the cache with a new one.</summary>
+        /// <remarks>This is a somewhat arbitrary value, chosen to be small but at least as large as DefaultMaxCacheSize.</remarks>
+        private const int MaxExamineOnDrop = 30;
+
+        /// <summary>A read-through cache of one element, representing the most recently used regular expression.</summary>
+        private static volatile Node? s_lastAccessed;
+        /// <summary>The thread-safe dictionary storing all the items in the cache.</summary>
+        /// <remarks>
+        /// The concurrency level is initialized to 1 as we're using our own global lock for all mutations, so we don't need ConcurrentDictionary's
+        /// striped locking.  Capacity is initialized to 31, which is the same as (the private) ConcurrentDictionary.DefaultCapacity.
+        /// </remarks>
+        private static readonly ConcurrentDictionary<Key, Node> s_cacheDictionary = new ConcurrentDictionary<Key, Node>(concurrencyLevel: 1, capacity: 31);
+        /// <summary>A list of all the items in the cache.  Protected by <see cref="SyncObj"/>.</summary>
+        private static readonly List<Node> s_cacheList = new List<Node>(DefaultMaxCacheSize);
+        /// <summary>Random number generator used to examine a subset of items when we need to drop one from a large list.  Protected by <see cref="SyncObj"/>.</summary>
+        private static readonly Random s_random = new Random();
+        /// <summary>The current maximum number of items allowed in the cache.  This rarely changes.  Mostly protected by <see cref="SyncObj"/>.</summary>
+        private static int s_maxCacheSize = DefaultMaxCacheSize;
+
+        /// <summary>Lock used to protect shared state on mutations.</summary>
+        private static object SyncObj => s_cacheDictionary;
+
+        /// <summary>Gets or sets the maximum size of the cache.</summary>
+        public static int MaxCacheSize
+        {
+            get => s_maxCacheSize;
+            set
+            {
+                Debug.Assert(value >= 0);
+
+                lock (SyncObj)
                 {
-                    s_maxCacheSize = value;  // not to allow other thread to change it while we use cache
-                    while (s_cacheCount > s_maxCacheSize)
+                    // Store the new max cache size
+                    s_maxCacheSize = value;
+
+                    if (value == 0)
                     {
-                        Node last = s_cacheLast!;
-                        if (s_cacheCount >= CacheDictionarySwitchLimit)
+                        // If the value is being changed to zero, just clear out the cache.
+                        s_cacheDictionary.Clear();
+                        s_cacheList.Clear();
+                        s_lastAccessed = null;
+                    }
+                    else if (value < s_cacheList.Count)
+                    {
+                        // If the value is being changed to less than the number of items we're currently storing,
+                        // sort the entries descending by last access stamp, and remove the excess.  This is expensive, but
+                        // this should be exceedingly rare, as CacheSize is generally set once (if at all) and then left unchanged.
+                        s_cacheList.Sort((n1, n2) => Volatile.Read(ref n2.LastAccessStamp).CompareTo(Volatile.Read(ref n1.LastAccessStamp)));
+                        s_lastAccessed = s_cacheList[0];
+                        for (int i = value; i < s_cacheList.Count; i++)
                         {
-                            Debug.Assert(s_cache.ContainsKey(last.Key));
-                            s_cache.Remove(last.Key);
+                            s_cacheDictionary.TryRemove(s_cacheList[i].Key, out _);
                         }
+                        s_cacheList.RemoveRange(value, s_cacheList.Count - value);
 
-                        // update linked list:
-                        s_cacheLast = last.Next;
-                        if (last.Next != null)
-                        {
-                            Debug.Assert(s_cacheFirst != null);
-                            Debug.Assert(s_cacheFirst != last);
-                            Debug.Assert(last.Next.Previous == last);
-                            last.Next.Previous = null;
-                        }
-                        else // last one removed
-                        {
-                            Debug.Assert(s_cacheFirst == last);
-                            s_cacheFirst = null;
-                        }
-
-                        s_cacheCount--;
+                        Debug.Assert(s_cacheList.Count == value);
+                        Debug.Assert(s_cacheDictionary.Count == value);
                     }
                 }
             }
@@ -75,6 +104,10 @@ namespace System.Text.RegularExpressions
 
         public static Regex GetOrAdd(string pattern)
         {
+            // Does not delegate to GetOrAdd(..., RegexOptions, ...) in order to avoid having
+            // a statically-reachable path to the 'new Regex(..., RegexOptions, ...)', which
+            // will force the Regex compiler to be reachable and thus rooted for the linker.
+
             Regex.ValidatePattern(pattern);
 
             CultureInfo culture = CultureInfo.CurrentCulture;
@@ -109,170 +142,122 @@ namespace System.Text.RegularExpressions
 
         private static bool TryGet(Key key, [NotNullWhen(true)] out Regex? regex)
         {
-            Node? cachedRegex = s_cacheFirst;
-            if (cachedRegex != null)
+            long lastAccessedStamp = 0;
+
+            // We optimize for repeated usage of the same regular expression over and over,
+            // by having a fast-path that stores the most recently used instance.  Check
+            // to see if that instance is the one we want; if it is, we're done.
+            Node? lastAccessed = s_lastAccessed;
+            if (lastAccessed != null)
             {
-                if (cachedRegex.Key.Equals(key))
+                if (lastAccessed.Key.Equals(key))
                 {
-                    regex = cachedRegex.Regex;
+                    regex = lastAccessed.Regex;
                     return true;
                 }
 
-                if (s_maxCacheSize != 0)
-                {
-                    lock (s_cache)
-                    {
-                        cachedRegex = LookupCachedAndPromote(key);
-                        if (cachedRegex != null)
-                        {
-                            regex = cachedRegex.Regex;
-                            return true;
-                        }
-                    }
-                }
+                // We had a last accessed item, but it didn't match the one being requested.
+                // In case we need to replace the last accessed node, remember this one's stamp;
+                // we'll use it to compute the new access value for the new node replacing it.
+                lastAccessedStamp = Volatile.Read(ref lastAccessed.LastAccessStamp);
             }
 
+            // Now consult the full cache.
+            if (s_maxCacheSize != 0 && // hot-read of s_maxCacheSize to try to avoid the cost of the dictionary lookup if the cache is disabled
+                s_cacheDictionary.TryGetValue(key, out Node? node))
+            {
+                // We found our item in the cache. Make this node's last access stamp one higher than
+                // the previous one.  It's ok if multiple threads racing to update the last access cause
+                // multiple nodes to have the same value; it's an approximate value meant only to help
+                // remove the least valuable items when an item needs to be dropped from the cache.  We
+                // do, however, need to read the old value and write the new value using Volatile.Read/Write,
+                // in order to prevent tearing of the 64-bit value on 32-bit platforms, and to help ensure
+                // that another thread subsequently sees this updated value.
+                Volatile.Write(ref node.LastAccessStamp, lastAccessedStamp + 1);
+
+                //  Update our fast-path single-field cache.
+                s_lastAccessed = node;
+
+                // Return the cached regex.
+                regex = node.Regex;
+                return true;
+            }
+
+            // Not in the cache.
             regex = null;
             return false;
         }
 
         private static void Add(Key key, Regex regex)
         {
-            lock (s_cache)
+            lock (SyncObj)
             {
-                // If we're not supposed to cache, or if the entry is already cached, we're done.
-                if (s_maxCacheSize == 0 || LookupCachedAndPromote(key) != null)
+                Debug.Assert(s_cacheList.Count == s_cacheDictionary.Count);
+
+                // If the cache has been disabled, there's nothing to add. And if between just checking
+                // the cache in the caller and taking the lock, another thread could have added the regex.
+                // If that occurred, there's also nothing to add, and we don't bother to update any of the
+                // time stamp / fast-path field information, because hitting this race condition means it
+                // was just updated, and we gain little by updating it again.
+                if (s_maxCacheSize == 0 || s_cacheDictionary.TryGetValue(key, out _))
                 {
                     return;
                 }
 
-                // Create the entry for caching.
-                var entry = new Node(key, regex);
-
-                // Put it at the beginning of the linked list, as it is the most-recently used.
-                if (s_cacheFirst != null)
+                // If the cache is full, remove an item to make room for the new one.
+                if (s_cacheList.Count == s_maxCacheSize)
                 {
-                    Debug.Assert(s_cacheFirst.Next == null);
-                    s_cacheFirst.Next = entry;
-                    entry.Previous = s_cacheFirst;
-                }
-                s_cacheFirst = entry;
-                s_cacheCount++;
+                    int itemsToExamine;
+                    bool useRandom;
 
-                // If we've graduated to using the dictionary for lookups, add it to the dictionary.
-                if (s_cacheCount >= CacheDictionarySwitchLimit)
-                {
-                    if (s_cacheCount == CacheDictionarySwitchLimit)
+                    if (s_maxCacheSize <= MaxExamineOnDrop)
                     {
-                        // If we just hit the threshold, we need to populate the dictionary from the list.
-                        s_cache.Clear();
-                        for (Node? next = s_cacheFirst; next != null; next = next.Previous)
-                        {
-                            s_cache.Add(next.Key, next);
-                        }
+                        // Our maximum cache size is <= the number of items we're willing to examine (which is kept small simply
+                        // to avoid spending a lot of time).  As such, we can just examine the whole list.
+                        itemsToExamine = s_cacheList.Count;
+                        useRandom = false;
                     }
                     else
                     {
-                        // If we've already populated the dictionary, just add this one entry.
-                        s_cache.Add(key, entry);
+                        // Our maximum cache size is > the number of items we're willing to examine, so we'll instead
+                        // examine a random subset.  This isn't perfect: if the size of the list is only a tiny bit
+                        // larger than the max we're willing to examine, there's a good chance we'll look at some of
+                        // the same items twice.  That's fine; this doesn't need to be perfect.  We do not need a perfect LRU
+                        // cache, just one that generally gets rid of older things when new things come in.
+                        itemsToExamine = MaxExamineOnDrop;
+                        useRandom = true;
                     }
 
-                    Debug.Assert(s_cacheCount == s_cache.Count);
-                }
+                    // Pick the first item to use as the min.
+                    int minListIndex = useRandom ? s_random.Next(s_cacheList.Count) : 0;
+                    long min = Volatile.Read(ref s_cacheList[minListIndex].LastAccessStamp);
 
-                // Update the tail of the linked list.  If nothing was cached, just set the tail.
-                // If we're over our cache limit, remove the tail.
-                if (s_cacheLast == null)
-                {
-                    s_cacheLast = entry;
-                }
-                else if (s_cacheCount > s_maxCacheSize)
-                {
-                    Node last = s_cacheLast;
-                    if (s_cacheCount >= CacheDictionarySwitchLimit)
+                    // Now examine the rest, keeping track of the smallest access stamp we find.
+                    for (int i = 1; i < itemsToExamine; i++)
                     {
-                        Debug.Assert(s_cache[last.Key] == s_cacheLast);
-                        s_cache.Remove(last.Key);
+                        int nextIndex = useRandom ? s_random.Next(s_cacheList.Count) : i;
+                        long next = Volatile.Read(ref s_cacheList[nextIndex].LastAccessStamp);
+                        if (next < min)
+                        {
+                            minListIndex = nextIndex;
+                            min = next;
+                        }
                     }
 
-                    Debug.Assert(last.Previous == null);
-                    Debug.Assert(last.Next != null);
-                    Debug.Assert(last.Next.Previous == last);
-
-                    last.Next.Previous = null;
-                    s_cacheLast = last.Next;
-
-                    s_cacheCount--;
+                    // Remove the key found to have the smallest access stamp.
+                    s_cacheDictionary.TryRemove(s_cacheList[minListIndex].Key, out _);
+                    s_cacheList.RemoveAt(minListIndex);
                 }
+
+                // Finally add the regex.
+                var node = new Node(key, regex);
+                s_lastAccessed = node;
+                s_cacheList.Add(node);
+                s_cacheDictionary.TryAdd(key, node);
+
+                Debug.Assert(s_cacheList.Count <= s_maxCacheSize);
+                Debug.Assert(s_cacheList.Count == s_cacheDictionary.Count);
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // single call site, separated out for convenience
-        private static bool TryGetCacheValueAfterFirst(Key key, [NotNullWhen(true)] out Node? entry)
-        {
-            Debug.Assert(Monitor.IsEntered(s_cache));
-            Debug.Assert(s_cacheFirst != null);
-            Debug.Assert(s_cacheLast != null);
-
-            if (s_cacheCount >= CacheDictionarySwitchLimit)
-            {
-                Debug.Assert(s_cache.Count == s_cacheCount);
-                return s_cache.TryGetValue(key, out entry);
-            }
-
-            for (Node? current = s_cacheFirst.Previous; // s_cacheFirst already checked by caller, so skip it here
-                 current != null;
-                 current = current.Previous)
-            {
-                if (current.Key.Equals(key))
-                {
-                    entry = current;
-                    return true;
-                }
-            }
-
-            entry = null;
-            return false;
-        }
-
-        private static Node? LookupCachedAndPromote(Key key)
-        {
-            Debug.Assert(Monitor.IsEntered(s_cache));
-
-            Node? entry = s_cacheFirst;
-            if (entry != null &&
-                !entry.Key.Equals(key) && // again check this as could have been promoted by other thread
-                TryGetCacheValueAfterFirst(key, out entry))
-            {
-                // We found the item and it wasn't the first; it needs to be promoted.
-
-                Debug.Assert(s_cacheFirst != entry, "key should not get s_livecode_first");
-                Debug.Assert(s_cacheFirst != null, "as Dict has at least one");
-                Debug.Assert(s_cacheFirst.Next == null);
-                Debug.Assert(s_cacheFirst.Previous != null);
-                Debug.Assert(entry.Next != null, "not first so Next should exist");
-                Debug.Assert(entry.Next.Previous == entry);
-
-                if (s_cacheLast == entry)
-                {
-                    Debug.Assert(entry.Previous == null, "last");
-                    s_cacheLast = entry.Next;
-                }
-                else
-                {
-                    Debug.Assert(entry.Previous != null, "in middle");
-                    Debug.Assert(entry.Previous.Next == entry);
-                    entry.Previous.Next = entry.Next;
-                }
-                entry.Next.Previous = entry.Previous;
-
-                s_cacheFirst.Next = entry;
-                entry.Previous = s_cacheFirst;
-                entry.Next = null;
-                s_cacheFirst = entry;
-            }
-
-            return entry;
         }
 
         /// <summary>Used as a key for <see cref="Node"/>.</summary>
@@ -316,13 +301,15 @@ namespace System.Text.RegularExpressions
                 // no need to include timeout in the hashcode; it'll almost always be the same
         }
 
-        /// <summary>Used to cache Regex instances.</summary>
+        /// <summary>Node for a cached Regex instance.</summary>
         private sealed class Node
         {
+            /// <summary>The key associated with this cached instance.</summary>
             public readonly Key Key;
+            /// <summary>The cached Regex instance.</summary>
             public readonly Regex Regex;
-            public Node? Next;
-            public Node? Previous;
+            /// <summary>A "time" stamp representing the approximate last access time for this Regex.</summary>
+            public long LastAccessStamp;
 
             public Node(Key key, Regex regex)
             {

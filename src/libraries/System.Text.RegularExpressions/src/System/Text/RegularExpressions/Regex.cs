@@ -11,6 +11,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 #endif
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
@@ -31,7 +32,7 @@ namespace System.Text.RegularExpressions
         protected internal int capsize;                       // the size of the capture array
 
         internal WeakReference<RegexReplacement?>? _replref;  // cached parsed replacement pattern
-        private ExclusiveReference? _runnerref;               // cached runner
+        private volatile RegexRunner? _runner;                // cached runner
         private RegexCode? _code;                             // if interpreted, this is the code for RegexInterpreter
         private bool _refsInitialized = false;
 
@@ -64,7 +65,8 @@ namespace System.Text.RegularExpressions
         internal Regex(string pattern, CultureInfo? culture)
         {
             // Call Init directly rather than delegating to a Regex ctor that takes
-            // options to avoid rooting the Regex compiler unless necessary.
+            // options to enable linking / tree shaking to remove the Regex compiler
+            // if it may not be used.
             Init(pattern, RegexOptions.None, s_defaultMatchTimeout, culture);
         }
 
@@ -85,8 +87,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Initializes the instance.</summary>
         /// <remarks>
-        /// This is separated out of the constructor to allow the Regex ctor that doesn't
-        /// take a RegexOptions to avoid rooting the regex compiler, such that it can be trimmed away.
+        /// This is separated out of the constructor so that an app only using 'new Regex(pattern)'
+        /// rather than 'new Regex(pattern, options)' can avoid statically referencing the Regex
+        /// compiler, such that a tree shaker / linker can trim it away if it's not otherwise used.
         /// </remarks>
         private void Init(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
         {
@@ -412,7 +415,6 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException(SR.OnlyAllowedOnce);
 
             _refsInitialized = true;
-            _runnerref = new ExclusiveReference();
             _replref = new WeakReference<RegexReplacement?>(null);
         }
 
@@ -428,35 +430,24 @@ namespace System.Text.RegularExpressions
             if (length < 0 || length > input.Length)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
 
-            // There may be a cached runner; grab ownership of it if we can.
-            RegexRunner? runner = _runnerref!.Get();
-
-            // Create a RegexRunner instance if we need to
-            if (runner == null)
-            {
-                // Use the compiled RegexRunner factory if the code was compiled to MSIL
-                runner = factory != null ?
-                    factory.CreateInstance() :
-                    new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
-            }
-
-            Match? match;
+            RegexRunner runner =
+                Interlocked.Exchange(ref _runner, null) ?? // use a cached runner if there is one
+                (factory != null ? factory.CreateInstance() : // use the compiled RegexRunner factory if there is one
+                 new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
             try
             {
                 // Do the scan starting at the requested position
-                match = runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
+                Match? match = runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
+#if DEBUG
+                if (Debug) match?.Dump();
+#endif
+                return match;
             }
             finally
             {
-                // Release or fill the cache slot
-                _runnerref.Release(runner);
+                // Release the runner back to the cache
+                _runner = runner;
             }
-
-#if DEBUG
-            if (Debug && match != null)
-                match.Dump();
-#endif
-            return match;
         }
 
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
