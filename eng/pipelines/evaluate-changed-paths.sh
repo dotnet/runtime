@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+: '
+Scenarios:
+  1. exclude paths are specified
+      Will include all paths except the ones in the exclude list.
+  2. include paths are specified
+      Will only include paths specified in the list.
+  3. exclude + include:
+      1st we evaluate changes for all paths except ones in excluded list. If we can not find
+      any applicable changes like that, then we evaluate changes for incldued paths
+      if any of these two finds changes, then a variable will be set to true.
+  In order to consume this variable you need to reference it via: $[ dependencies.checkout.outputs["SetPathVars_<subset>.containschange"] ]
+
+  Example:
+  -difftarget ''HEAD^1'' -subset coreclr -includepaths ''src/libraries/System.Private.CoreLib/*'' -excludepaths ''src/libraries/*+src/installer/*''
+
+  This example will include ALL path changes except the ones under src/libraries/*!System.Private.CoreLib/*
+'
+
+# Disable globbing in this bash script since we iterate over path patterns
+set -f
+
+usage()
+{
+  echo "Script that evaluates changed paths and emits an azure devops variable if the changes contained in the current HEAD against the difftarget meet the includepahts/excludepaths filters:"
+  echo "  --difftarget <value>       SHA or branch to diff against. (i.e: HEAD^1, origin/master, 0f4hd36, etc.)"
+  echo "  --excludepaths <value>     Escaped list of paths to exclude from diff separated by '+'. (i.e: 'src/libraries/*+'src/installer/*')"
+  echo "  --includepaths <value>     Escaped list of paths to include on diff separated by '+'. (i.e: 'src/libraries/System.Private.CoreLib/*')"
+  echo "  --subset                   Subset name for which we're evaluating in order to include it in logs"
+  echo "  --azurevariable            Name of azure devops variable to create if change meets filter criteria (Default: containschange)"
+  echo ""
+
+  echo "Arguments can also be passed in with a single hyphen."
+}
+
+source="${BASH_SOURCE[0]}"
+
+# resolve $source until the file is no longer a symlink
+while [[ -h "$source" ]]; do
+  scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
+  source="$(readlink "$source")"
+  # if $source was a relative symlink, we need to resolve it relative to the path where the
+  # symlink file was located
+  [[ $source != /* ]] && source="$scriptroot/$source"
+done
+
+scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
+eng_root=`cd -P "$scriptroot/.." && pwd`
+
+exclude_paths=()
+include_paths=()
+subset_name=''
+azure_variable="containschange"
+ci=true
+diff_target=""
+
+while [[ $# > 0 ]]; do
+  opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
+  case "$opt" in
+    -help|-h)
+      usage
+      exit 0
+      ;;
+    -difftarget)
+      diff_target=$2
+      shift
+      ;;
+    -excludepaths)
+      IFS='+' read -r -a tmp <<< $2
+      exclude_paths+=($tmp)
+      shift
+      ;;
+    -includepaths)
+      IFS='+' read -r -a tmp <<< $2
+      include_paths+=($tmp)
+      shift
+      ;;
+    -subset)
+      subset_name=$2
+      shift
+      ;;
+    -azurevariable)
+      azure_variable=$2
+      shift
+      ;;
+  esac
+
+  shift
+done
+
+. "$eng_root/common/pipeline-logging-functions.sh"
+
+# expected args
+# $@: filter string
+function runGitDiff {
+  local _filter=$@
+  echo ""
+  echo "git diff -M -C -b --ignore-cr-at-eol --ignore-space-at-eol --exit-code --quiet $diff_target -- $_filter"
+  git diff -M -C -b --ignore-cr-at-eol --ignore-space-at-eol --exit-code --quiet $diff_target -- $_filter
+  git_diff_exit_code=$?
+}
+
+# expected args
+# $@: filter string
+function printMatchedPaths {
+  local _subset=$subset_name
+  local _filter=$@
+  echo ""
+  echo "----- Matching files for $_subset -----"
+  git diff -M -C -b --ignore-cr-at-eol --ignore-space-at-eol --name-only $diff_target -- $_filter
+}
+
+function probePaths {
+  local _subset=$subset_name
+  local _azure_devops_var_name=$azure_variable
+  local exclude_path_string=""
+  local include_path_string=""
+  local found_applying_changes=false
+  
+  if [[ ${#exclude_paths[@]} -gt 0 ]]; then
+    echo ""
+    echo "******* Probing $_subset exclude paths *******";
+    for _path in "${exclude_paths[@]}"; do
+      echo "$_path"
+      if [[ "$exclude_path_string" == "" ]]; then
+        exclude_path_string=":!$_path"
+      else
+        exclude_path_string="$exclude_path_string :!$_path"
+      fi
+    done
+
+    runGitDiff $exclude_path_string
+    if [[ "$git_diff_exit_code" == "1" ]]; then
+      found_applying_changes=true
+      printMatchedPaths $exclude_path_string
+    fi
+  fi
+
+  if [[ $found_applying_changes != true && ${#include_paths[@]} -gt 0 ]]; then
+    echo ""
+    echo "******* Probing $_subset include paths *******";
+    for _path in "${include_paths[@]}"; do
+      echo "$_path"
+      if [[ "$include_path_string" == "" ]]; then
+        include_path_string=":$_path"
+      else
+        include_path_string="$exclude_path_string :$_path"
+      fi
+    done
+
+    runGitDiff $include_path_string
+    if [[ "$git_diff_exit_code" == "1" ]]; then
+      found_applying_changes=true
+      printMatchedPaths $include_path_string
+    fi
+  fi
+
+  if [[ $found_applying_changes == true ]]; then
+    echo ""
+    echo "Setting pipeline variable $_azure_devops_var_name=true"
+    Write-PipelineSetVariable -name $_azure_devops_var_name -value true
+  else
+    echo ""
+    echo "No changed files for $_subset"
+  fi
+}
+
+probePaths

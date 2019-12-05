@@ -1,0 +1,11 @@
+parameters:
+  subsetName: ''
+  arguments: ''
+
+steps:
+  - ${{ if ne(parameters.arguments[0], '') }}:
+    - script: eng/pipelines/evaluate-changed-paths.sh
+              -azurevariable containschange
+              ${{ join(' ', parameters.arguments) }}
+      displayName: Evaluate paths for ${{ parameters.subsetName }}
+      name: ${{ format('SetPathVars_{0}', parameters.subsetName) }} # need a name to access output variable
