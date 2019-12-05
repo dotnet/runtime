@@ -3,6 +3,7 @@ parameters:
   variables: {}
   osGroup: ''
   osSubgroup: ''
+  buildConfig: ''
   archType: ''
   container: ''
   pool: ''
@@ -16,6 +17,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
+    buildConfig: ${{ parameters.buildConfig }}
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
     helixQueues:

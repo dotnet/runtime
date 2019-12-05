@@ -32,13 +32,13 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Linux
       archType: arm
+      buildConfig: ${{ parameters.buildConfig }}
       platform: Linux_arm
       container:
         image: ubuntu-16.04-cross-14.04-23cacb0-20191023143847
         registry: mcr
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Linux
         crossrootfsDir: '/crossrootfs/arm'
@@ -53,13 +53,13 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Linux
       archType: arm64
+      buildConfig: ${{ parameters.buildConfig }}
       platform: Linux_arm64
       container:
         image: ubuntu-16.04-cross-arm64-cfdd435-20191023143847
         registry: mcr
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Linux
         crossrootfsDir: '/crossrootfs/arm64'
@@ -75,13 +75,13 @@ jobs:
       osGroup: Linux
       osSubgroup: _musl
       archType: x64
+      buildConfig: ${{ parameters.buildConfig }}
       platform: Linux_musl_x64
       container:
         image: alpine-3.9-WithNode-0fc54a3-20190918214015
         registry: mcr
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ if ne(parameters.managedOsxBuild, true) }}:
           managedTestBuildOsGroup: Linux
@@ -100,13 +100,13 @@ jobs:
       osGroup: Linux
       osSubgroup: _musl
       archType: arm64
+      buildConfig: ${{ parameters.buildConfig }}
       platform: Linux_musl_arm64
       container:
         image: ubuntu-16.04-cross-arm64-alpine-406629a-20191023143847
         registry: mcr
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Linux
         crossrootfsDir: '/crossrootfs/arm64'
@@ -121,13 +121,13 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Linux
       archType: x64
+      buildConfig: ${{ parameters.buildConfig }}
       platform: Linux_x64
       container:
         image: centos-7-f39df28-20191023143754
         registry: mcr
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ if ne(parameters.managedOsxBuild, true) }}:
           managedTestBuildOsGroup: Linux
@@ -142,13 +142,13 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: WebAssembly
       archType: wasm
+      buildConfig: ${{ parameters.buildConfig }}
       platform: WebAssembly_wasm
       container:
         image: ubuntu-16.04-a50a721-20191023143845
         registry: mcr
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # FreeBSD
@@ -161,8 +161,8 @@ jobs:
 #     jobTemplate: ${{ parameters.jobTemplate }}
 #     osGroup: FreeBSD
 #     archType: x64
+#     buildConfig: ${{ parameters.buildConfig }}
 #     jobParameters:
-#       buildConfig: ${{ parameters.buildConfig }}
 #       # There are no FreeBSD helix queues, so we don't run tests at the moment.
 #       helixQueues:
 #         asString: ''
@@ -178,10 +178,10 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: OSX
       archType: x64
+      buildConfig: ${{ parameters.buildConfig }}
       platform: OSX_x64
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -195,10 +195,10 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Windows_NT
       archType: x64
+      buildConfig: ${{ parameters.buildConfig }}
       platform: Windows_NT_x64
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -212,10 +212,10 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Windows_NT
       archType: x86
+      buildConfig: ${{ parameters.buildConfig }}
       platform: Windows_NT_x86
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -229,9 +229,9 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Windows_NT
       archType: arm
+      buildConfig: ${{ parameters.buildConfig }}
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -245,10 +245,10 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Windows_NT
       archType: arm64
+      buildConfig: ${{ parameters.buildConfig }}
       platform: Windows_NT_arm64
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
