@@ -5,6 +5,7 @@
     <!-- These should not run in Helix: they produce no outputs and are only run manually -->
     <ArchiveTest>false</ArchiveTest>
     <Configurations>$(netcoreappCurrent)-Unix-Debug;$(netcoreappCurrent)-Unix-Release;$(netcoreappCurrent)-Windows_NT-Debug;$(netcoreappCurrent)-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
+    <IgnoreForCI>true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\System.Data.StressRunner\System.Data.StressRunner.csproj" />

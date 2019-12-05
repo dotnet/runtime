@@ -49,6 +49,7 @@ Things are generally easier when looking at return values (and `out` parameters)
 - **DO** define a return value or out parameter as nullable if it may be assigned `null` under any circumstance.
 - **DO** define all other return values or out parameters as non-nullable.
 - **DO** define the type of events as nullable.  (The only incredibly rare exception to this is if the implementation guarantees that the event will always have at least one delegate registered with it.)
+- **DO NOT** be concerned with the validity of annotations after an object has been Dispose'd.  In general in .NET, using an instance after it's been disposed is a violation of its contract, and so similarly we generally (if the object isn't supposed to be used after disposal) don't consider the nullable annotations to be meaningful after disposal.  This means, for example, that if a property is initialized in a ctor and is always non-null until disposal but then may return null after disposal, it should still be annotated as non-nullable.
 
 Annotating one of our return types as non-nullable is equivalent to documenting a guarantee that it will never return `null`.  Violations of that guarantee are bugs to be fixed in the implementation. However, there is a huge gap here, in the form of overridable members…
 

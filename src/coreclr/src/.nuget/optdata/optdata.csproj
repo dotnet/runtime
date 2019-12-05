@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <OptimizationDataSupported Condition="'$(BuildOS)' == 'Windows_NT' And ('$(BuildArch)' == 'x64' Or '$(BuildArch)' == 'x86')">True</OptimizationDataSupported>
     <OptimizationDataSupported Condition="'$(BuildOS)' == 'Linux' And '$(BuildArch)' == 'x64'">True</OptimizationDataSupported>

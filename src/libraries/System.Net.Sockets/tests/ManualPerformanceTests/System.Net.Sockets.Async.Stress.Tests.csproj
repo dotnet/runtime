@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configurations>$(netcoreappCurrent)-Unix-Debug;$(netcoreappCurrent)-Unix-Release;$(netcoreappCurrent)-Windows_NT-Debug;$(netcoreappCurrent)-Windows_NT-Release</Configurations>
     <!-- Manual test, don't run on CI -->
-    <ArchiveTest>false</ArchiveTest>
+    <IgnoreForCI>true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SocketPerformanceAsyncTests.cs" />

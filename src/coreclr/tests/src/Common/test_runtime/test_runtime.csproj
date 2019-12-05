@@ -2,8 +2,7 @@
   <PropertyGroup>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>false</IsTestProject>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <TargetFramework Condition="'$(SetTFMForRestore)'=='true'">netcoreapp5.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
     <AssetTargetFallback>$(AssetTargetFallback);dnxcore50;netcoreapp1.1;portable-net45+win8</AssetTargetFallback>
     <NoWarn>$(NoWarn);NU1603</NoWarn>
