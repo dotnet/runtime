@@ -65,10 +65,6 @@ namespace ILCompiler
 
         protected virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)
         {
-            // Quick check: if decl matches impl, we're done.
-            if (declMethod.OwningType == implType)
-                return declMethod;
-
             MethodDesc impl;
 
             if (declMethod.OwningType.IsInterface)
