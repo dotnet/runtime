@@ -408,7 +408,7 @@ namespace System.Runtime.Serialization
         /// BinaryFormatter
         ///
         /// This should not be used by clients: exposing out this functionality would allow children
-        /// to overwrite their parent's values. It is public in order to give libraries access to it for
+        /// to overwrite their parent's values. It is public in order to give other runtime libraries access to it for
         /// its ObjectManager implementation, but it should not be exposed out of a contract.
         /// </summary>
         /// <param name="name"> The name of the data to be updated.</param>
