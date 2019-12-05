@@ -72,7 +72,6 @@ jobs:
     platforms:
     - Linux_arm64
     - Linux_musl_x64
-    - Linux_rhel6_x64
     - OSX_x64
     - Windows_NT_arm
     - Windows_NT_arm64

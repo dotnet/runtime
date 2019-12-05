@@ -41,7 +41,10 @@ jobs:
 
       ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
         dependsOn:
-        - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveCoreClrBuildConfig) }}
+        - ${{ if ne(parameters.osGroup, 'WebAssembly') }}:
+          - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveCoreClrBuildConfig) }}
+        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', 'linux', parameters.osSubgroup, 'x64', parameters.liveCoreClrBuildConfig) }}
 
       variables:
         - _skipTestRestoreArg: /p:SkipTestRestore=true
