@@ -43,20 +43,6 @@ jobs:
       testGroup: innerloop
 
 #
-# Debug library builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Debug
-    platforms:
-    - Windows_NT_x64
-    - Windows_NT_x86
-    jobParameters:
-      isOfficialBuild: false
-      liveCoreClrBuildConfig: debug
-
-#
 # Checked builds
 #
 - template: /eng/pipelines/common/platform-matrix.yml
