@@ -13,7 +13,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Initializes a new instance of the <see cref="DefaultServiceProviderFactory"/> class
         /// with default options.
         /// </summary>
-        /// <seealso cref="ServiceProviderOptions.Default"/>
         public DefaultServiceProviderFactory() : this(ServiceProviderOptions.Default)
         {
 
