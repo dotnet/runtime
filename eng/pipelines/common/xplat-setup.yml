@@ -3,7 +3,6 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
-  buildConfig: ''
   container: ''
   helixQueuesTemplate: ''
   platform: ''
@@ -46,13 +45,9 @@ jobs:
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
 
-      - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
-    buildConfig: ${{ parameters.buildConfig }}
 
     ${{ if ne(parameters.container, '') }}:
       ${{ if eq(parameters.container.registry, 'mcr') }}:
