@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// The Regex class represents a single compiled instance of a regular
-// expression.
-
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -14,18 +11,16 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 #endif
 using System.Runtime.Serialization;
-using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
     /// <summary>
-    /// Represents an immutable, compiled regular expression. Also
-    /// contains static methods that allow use of regular expressions without instantiating
-    /// a Regex explicitly.
+    /// Represents an immutable regular expression. Also contains static methods that
+    /// allow use of regular expressions without instantiating a Regex explicitly.
     /// </summary>
     public partial class Regex : ISerializable
     {
-        internal const int MaxOptionShift = 10;
+        private const int MaxOptionShift = 10;
 
         protected internal string? pattern;                   // The string pattern provided
         protected internal RegexOptions roptions;             // the top-level options from the options string
@@ -35,10 +30,10 @@ namespace System.Text.RegularExpressions
         protected internal string[]? capslist;                // if captures are sparse or named captures are used, this is the sorted list of names
         protected internal int capsize;                       // the size of the capture array
 
-        internal ExclusiveReference? _runnerref;              // cached runner
         internal WeakReference<RegexReplacement?>? _replref;  // cached parsed replacement pattern
-        internal RegexCode? _code;                            // if interpreted, this is the code for RegexInterpreter
-        internal bool _refsInitialized = false;
+        private ExclusiveReference? _runnerref;               // cached runner
+        private RegexCode? _code;                             // if interpreted, this is the code for RegexInterpreter
+        private bool _refsInitialized = false;
 
         protected Regex()
         {
@@ -46,136 +41,122 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Creates and compiles a regular expression object for the specified regular
-        /// expression.
+        /// Creates a regular expression object for the specified regular expression.
         /// </summary>
-        public Regex(string pattern) =>
-            Init(pattern, RegexOptions.None, s_defaultMatchTimeout, addToCache: false);
+        public Regex(string pattern) :
+            this(pattern, culture: null)
+        {
+        }
 
         /// <summary>
-        /// Creates and compiles a regular expression object for the specified regular
-        /// expression, and adds it to the cache.
+        /// Creates a regular expression object for the specified regular expression, with options that modify the pattern.
         /// </summary>
-        private Regex(string pattern, bool addToCache) =>
-            Init(pattern, RegexOptions.None, s_defaultMatchTimeout, addToCache);
+        public Regex(string pattern, RegexOptions options) :
+            this(pattern, options, s_defaultMatchTimeout, culture: null)
+        {
+        }
 
-        /// <summary>
-        /// Creates and compiles a regular expression object for the
-        /// specified regular expression with options that modify the pattern.
-        /// </summary>
-        public Regex(string pattern, RegexOptions options) =>
-            InitWithPossibleCompilation(pattern, options, s_defaultMatchTimeout, addToCache: false);
+        public Regex(string pattern, RegexOptions options, TimeSpan matchTimeout) :
+            this(pattern, options, matchTimeout, culture: null)
+        {
+        }
 
-        public Regex(string pattern, RegexOptions options, TimeSpan matchTimeout) =>
-            InitWithPossibleCompilation(pattern, options, matchTimeout, addToCache: false);
+        internal Regex(string pattern, CultureInfo? culture)
+        {
+            // Call Init directly rather than delegating to a Regex ctor that takes
+            // options to avoid rooting the Regex compiler unless necessary.
+            Init(pattern, RegexOptions.None, s_defaultMatchTimeout, culture);
+        }
 
-        private Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, bool addToCache) =>
-            InitWithPossibleCompilation(pattern, options, matchTimeout, addToCache);
+        internal Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
+        {
+            Init(pattern, options, matchTimeout, culture);
+
+#if FEATURE_COMPILED
+            // if the compile option is set, then compile the code
+            if (UseOptionC())
+            {
+                // Storing into this Regex's factory will also implicitly update the cache
+                factory = Compile(_code!, options, matchTimeout != InfiniteMatchTimeout);
+                _code = null;
+            }
+#endif
+        }
 
         /// <summary>Initializes the instance.</summary>
         /// <remarks>
         /// This is separated out of the constructor to allow the Regex ctor that doesn't
         /// take a RegexOptions to avoid rooting the regex compiler, such that it can be trimmed away.
-        /// If <paramref name="options"/> may possibly include RegexOptions.Compiled, InitWithPossibleCompilation
-        /// must be invoked instead.
         /// </remarks>
-        private CachedCodeEntry? Init(string pattern, RegexOptions options, TimeSpan matchTimeout, bool addToCache)
+        private void Init(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
         {
-            if (pattern == null)
+            ValidatePattern(pattern);
+            ValidateOptions(options);
+            ValidateMatchTimeout(matchTimeout);
+
+            this.pattern = pattern;
+            roptions = options;
+            internalMatchTimeout = matchTimeout;
+
+            // Parse the input
+            RegexTree tree = RegexParser.Parse(pattern, roptions, culture ?? ((options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
+
+            // Extract the relevant information
+            capnames = tree.CapNames;
+            capslist = tree.CapsList;
+            _code = RegexWriter.Write(tree);
+            caps = _code.Caps;
+            capsize = _code.CapSize;
+
+            InitializeReferences();
+        }
+
+        internal static void ValidatePattern(string pattern)
+        {
+            if (pattern is null)
             {
                 throw new ArgumentNullException(nameof(pattern));
             }
+        }
 
+        internal static void ValidateOptions(RegexOptions options)
+        {
             if (options < RegexOptions.None || (((int)options) >> MaxOptionShift) != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(options));
             }
 
-            if ((options & RegexOptions.ECMAScript) != 0
-             && (options & ~(RegexOptions.ECMAScript |
+            if ((options & RegexOptions.ECMAScript) != 0 &&
+                (options & ~(RegexOptions.ECMAScript |
                              RegexOptions.IgnoreCase |
                              RegexOptions.Multiline |
                              RegexOptions.Compiled |
-                             RegexOptions.CultureInvariant
 #if DEBUG
-                           | RegexOptions.Debug
+                             RegexOptions.Debug |
 #endif
-                                               )) != 0)
+                             RegexOptions.CultureInvariant)) != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(options));
             }
-
-            ValidateMatchTimeout(matchTimeout);
-
-            // After parameter validation assign
-            this.pattern = pattern;
-            roptions = options;
-            internalMatchTimeout = matchTimeout;
-
-            // Cache handling. Try to look up this regex in the cache.
-            CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ?
-                CultureInfo.InvariantCulture :
-                CultureInfo.CurrentCulture;
-            var key = new CachedCodeEntryKey(pattern, culture.ToString(), options, matchTimeout != InfiniteMatchTimeout);
-            CachedCodeEntry? cached = GetCachedCode(key, isToAdd: false);
-
-            if (cached == null)
-            {
-                // Parse the input
-                RegexTree? tree = RegexParser.Parse(pattern, roptions, culture);
-
-                // Extract the relevant information
-                capnames = tree.CapNames;
-                capslist = tree.CapsList;
-                _code = RegexWriter.Write(tree);
-                caps = _code.Caps;
-                capsize = _code.CapSize;
-
-                InitializeReferences();
-
-                tree = null;
-                if (addToCache)
-                    cached = GetCachedCode(key, true);
-            }
-            else
-            {
-                caps = cached.Caps;
-                capnames = cached.Capnames;
-                capslist = cached.Capslist;
-                capsize = cached.Capsize;
-                _code = cached.Code;
-#if FEATURE_COMPILED
-                factory = cached.Factory;
-#endif
-
-                // Cache runner and replacement
-                _runnerref = cached.Runnerref;
-                _replref = cached.ReplRef;
-                _refsInitialized = true;
-            }
-
-            return cached;
         }
 
-        /// <summary>Initializes the instance.</summary>
-        private void InitWithPossibleCompilation(string pattern, RegexOptions options, TimeSpan matchTimeout, bool addToCache)
+        /// <summary>
+        /// Validates that the specified match timeout value is valid.
+        /// The valid range is <code>TimeSpan.Zero &lt; matchTimeout &lt;= Regex.MaximumMatchTimeout</code>.
+        /// </summary>
+        /// <param name="matchTimeout">The timeout value to validate.</param>
+        /// <exception cref="ArgumentOutOfRangeException">If the specified timeout is not within a valid range.
+        /// </exception>
+        protected internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
         {
-            CachedCodeEntry? cached = Init(pattern, options, matchTimeout, addToCache);
+            if (InfiniteMatchTimeout == matchTimeout)
+                return;
 
-#if FEATURE_COMPILED
-            // if the compile option is set, then compile the code if it's not already
-            if (UseOptionC() && factory == null)
-            {
-                factory = Compile(_code!, roptions, matchTimeout != InfiniteMatchTimeout);
+            // make sure timeout is not longer then Environment.Ticks cycle length:
+            if (TimeSpan.Zero < matchTimeout && matchTimeout <= s_maximumMatchTimeout)
+                return;
 
-                if (addToCache && cached != null)
-                {
-                    cached.AddCompiled(factory);
-                }
-
-                _code = null;
-            }
-#endif
+            throw new ArgumentOutOfRangeException(nameof(matchTimeout));
         }
 
         protected Regex(SerializationInfo info, StreamingContext context) =>
@@ -217,9 +198,9 @@ namespace System.Text.RegularExpressions
         /// instantiating a non-compiled regex.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private RegexRunnerFactory Compile(RegexCode code, RegexOptions roptions, bool hasTimeout)
+        private static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout)
         {
-            return RegexCompiler.Compile(code!, roptions, hasTimeout);
+            return RegexCompiler.Compile(code, options, hasTimeout);
         }
 #endif
 

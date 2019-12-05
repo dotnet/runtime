@@ -10,7 +10,7 @@ namespace System.Text.RegularExpressions
         /// Searches the input string for one or more occurrences of the text supplied in the given pattern.
         /// </summary>
         public static bool IsMatch(string input, string pattern) =>
-            new Regex(pattern, addToCache: true).IsMatch(input);
+            RegexCache.GetOrAdd(pattern).IsMatch(input);
 
         /// <summary>
         /// Searches the input string for one or more occurrences of the text
@@ -18,10 +18,10 @@ namespace System.Text.RegularExpressions
         /// parameter.
         /// </summary>
         public static bool IsMatch(string input, string pattern, RegexOptions options) =>
-            IsMatch(input, pattern, options, s_defaultMatchTimeout);
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).IsMatch(input);
 
         public static bool IsMatch(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
-            new Regex(pattern, options, matchTimeout, addToCache: true).IsMatch(input);
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).IsMatch(input);
 
         /*
          * Returns true if the regex finds a match within the specified string
@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions
         /// supplied in the pattern parameter.
         /// </summary>
         public static Match Match(string input, string pattern) =>
-            new Regex(pattern, addToCache: true).Match(input);
+            RegexCache.GetOrAdd(pattern).Match(input);
 
         /// <summary>
         /// Searches the input string for one or more occurrences of the text
@@ -67,10 +67,10 @@ namespace System.Text.RegularExpressions
         /// string.
         /// </summary>
         public static Match Match(string input, string pattern, RegexOptions options) =>
-            Match(input, pattern, options, s_defaultMatchTimeout);
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Match(input);
 
         public static Match Match(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
-            new Regex(pattern, options, matchTimeout, addToCache: true).Match(input);
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).Match(input);
 
         /*
          * Finds the first match for the regular expression starting at the beginning
@@ -123,16 +123,16 @@ namespace System.Text.RegularExpressions
         /// Returns all the successful matches as if Match were called iteratively numerous times.
         /// </summary>
         public static MatchCollection Matches(string input, string pattern) =>
-            new Regex(pattern, addToCache: true).Matches(input);
+            RegexCache.GetOrAdd(pattern).Matches(input);
 
         /// <summary>
         /// Returns all the successful matches as if Match were called iteratively numerous times.
         /// </summary>
         public static MatchCollection Matches(string input, string pattern, RegexOptions options) =>
-            Matches(input, pattern, options, s_defaultMatchTimeout);
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Matches(input);
 
         public static MatchCollection Matches(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
-            new Regex(pattern, options, matchTimeout, addToCache: true).Matches(input);
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).Matches(input);
 
         /*
          * Finds the first match for the regular expression starting at the beginning

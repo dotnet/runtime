@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.ComponentModel.EventBasedAsync</RootNamespace>
     <AssemblyName>System.ComponentModel.EventBasedAsync</AssemblyName>
+    <Nullable>enable</Nullable>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

@@ -2524,13 +2524,12 @@ namespace Internal.JitInterface
         private byte* findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException("findNameOfToken"); }
 
-        SystemVStructClassificator _systemVStructClassificator = new SystemVStructClassificator();
-
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         {
             TypeDesc typeDesc = HandleToObject(structHnd);
 
-            return _systemVStructClassificator.getSystemVAmd64PassStructInRegisterDescriptor(typeDesc, structPassInRegDescPtr);
+            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(typeDesc, out *structPassInRegDescPtr);
+            return true;
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
