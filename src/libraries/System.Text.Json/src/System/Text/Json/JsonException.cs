@@ -89,7 +89,7 @@ namespace System.Text.Json
         {
             LineNumber = (long?)info.GetValue("LineNumber", typeof(long?));
             BytePositionInLine = (long?)info.GetValue("BytePositionInLine", typeof(long?));
-            Path = info.GetString("Path");
+            Path = info.GetString("Path")!;
             SetMessage(info.GetString("ActualMessage"));
         }
 
@@ -125,7 +125,7 @@ namespace System.Text.Json
         /// <summary>
         /// The path within the JSON where the exception was encountered.
         /// </summary>
-        public string? Path { get; internal set; }
+        public string Path { get; internal set; } = string.Empty;
 
         /// <summary>
         /// Gets a message that describes the current exception.

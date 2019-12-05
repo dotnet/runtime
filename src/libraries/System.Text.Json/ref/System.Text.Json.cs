@@ -139,14 +139,14 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public sbyte GetSByte() { throw null; }
         public float GetSingle() { throw null; }
-        public string GetString() { throw null; }
+        public string? GetString() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public ushort GetUInt16() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public uint GetUInt32() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public ulong GetUInt64() { throw null; }
-        public override string ToString() { throw null; }
+        public override string? ToString() { throw null; }
         public bool TryGetByte(out byte value) { throw null; }
         public bool TryGetBytesFromBase64([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out byte[]? value) { throw null; }
         public bool TryGetDateTime(out System.DateTime value) { throw null; }
@@ -219,12 +219,12 @@ namespace System.Text.Json
         protected JsonException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public JsonException(string? message) { }
         public JsonException(string? message, System.Exception? innerException) { }
-        public JsonException(string? message, string? path, long? lineNumber, long? bytePositionInLine) { }
-        public JsonException(string? message, string? path, long? lineNumber, long? bytePositionInLine, System.Exception? innerException) { }
+        public JsonException(string? message, string path, long? lineNumber, long? bytePositionInLine) { }
+        public JsonException(string? message, string path, long? lineNumber, long? bytePositionInLine, System.Exception? innerException) { }
         public long? BytePositionInLine { get { throw null; } }
         public long? LineNumber { get { throw null; } }
         public override string Message { get { throw null; } }
-        public string? Path { get { throw null; } }
+        public string Path { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class JsonNamingPolicy
@@ -419,7 +419,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonElement Value { get { throw null; } }
         public bool NameEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
         public bool NameEquals(System.ReadOnlySpan<char> text) { throw null; }
-        public bool NameEquals(string text) { throw null; }
+        public bool NameEquals(string? text) { throw null; }
         public override string ToString() { throw null; }
         public void WriteTo(System.Text.Json.Utf8JsonWriter writer) { }
     }
