@@ -115,6 +115,24 @@ jobs:
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/external.runtime
 
           - task: CopyFiles@2
+            displayName: Prepare shared framework ref assemblies to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref/microsoft.netcore.app
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref/microsoft.netcore.app
+
+          - task: CopyFiles@2
+            displayName: Prepare shared framework implementation assemblies to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg/netcoreapp/runtime
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg/netcoreapp/runtime
+
+          - task: CopyFiles@2
+            displayName: Prepare native folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/native
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/native
+
+          - task: CopyFiles@2
             displayName: Prepare testhost folder to publish
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
