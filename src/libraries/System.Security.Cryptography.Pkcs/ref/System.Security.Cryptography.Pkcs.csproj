@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <Configurations>net461-Debug;net461-Release;$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netfx-Debug;netfx-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;net472-Debug;net472-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Pkcs.cs" />

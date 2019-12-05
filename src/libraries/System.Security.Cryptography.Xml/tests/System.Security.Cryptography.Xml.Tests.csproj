@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;net472-Debug;net472-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <RootNamespace>System.Security.Cryptography.Xml.Tests</RootNamespace>

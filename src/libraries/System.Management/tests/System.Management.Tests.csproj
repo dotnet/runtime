@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;net472-Debug;net472-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MofHelpers\MofCollection.cs" />
