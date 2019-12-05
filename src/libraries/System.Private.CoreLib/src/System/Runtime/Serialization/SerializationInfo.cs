@@ -402,7 +402,7 @@ namespace System.Runtime.Serialization
         /// ObjectManager when it's performing fixups.
         ///
         /// All error checking is done with asserts. Although public in coreclr,
-        /// it's not exposed in a contract and is only meant to be used by libraries.
+        /// it's not exposed in a contract and is only meant to be used by other runtime libraries.
         ///
         /// This isn't a public API, but it gets invoked dynamically by
         /// BinaryFormatter
