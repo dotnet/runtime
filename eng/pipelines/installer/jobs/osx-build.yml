@@ -6,6 +6,8 @@ parameters:
 jobs:
 - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
   displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
+  dependsOn:
+  - checkout
   pool: ${{ parameters.pool }}
   strategy:
     matrix:
