@@ -45,7 +45,7 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type? propertyType, string? path, Exception? innerException = null)
+        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type? propertyType, string path, Exception? innerException = null)
         {
             string message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType) + $" Path: {path}.";
             throw new JsonException(message, path, null, null, innerException);
@@ -141,8 +141,6 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ReThrowWithPath(in ReadStack readStack, JsonReaderException ex)
         {
-            Debug.Assert(ex.Path == null);
-
             string path = readStack.JsonPath();
             string message = ex.Message;
 
