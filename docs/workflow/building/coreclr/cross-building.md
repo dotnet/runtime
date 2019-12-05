@@ -107,7 +107,7 @@ CoreCLR JIT requires 16 64-bit or 32 32-bit FPU registers.
 A set of FPU configuration options have been provided via build.sh to accommodate different CPU types.
 These FPU configuration options are: CLR_ARM_FPU_CAPABILITY and CLR_ARM_FPU_TYPE.
 
-CLR_ARM_FPU_TYPE translates to a value given to -mfpu compiler option. Please refere to
+CLR_ARM_FPU_TYPE translates to a value given to -mfpu compiler option. Please refer to
 your compiler documentation for possible options.
 
 CLR_ARM_FPU_CAPABILITY is used by the PAL code to decide which FPU registers should be saved and
