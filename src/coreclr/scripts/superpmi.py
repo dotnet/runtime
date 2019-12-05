@@ -517,19 +517,47 @@ class SuperPMICollect:
                     
                     return assemblies
 
+                def make_safe_filename(s):
+                    def safe_char(c):
+                        if c.isalnum():
+                            return c
+                        else:
+                            return "_"
+                    return "".join(safe_char(c) for c in s)
+
+                def is_zero_length_file(fpath):  
+                    return os.path.isfile(fpath) and os.stat(fpath).st_size == 0
+
                 async def run_pmi(print_prefix, assembly, self):
                     """ Run pmi over all dlls
                     """
 
                     command = [self.corerun, self.pmi_location, "DRIVEALL", assembly]
-                    print("{}{}".format(print_prefix, " ".join(command)))
-                    
+                    command_string = " ".join(command)
+                    print("{}{}".format(print_prefix, command_string))
+
+                    # Save the stdout and stderr to files, so we can see if PMI wrote any interesting messages.
+                    # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
+                    # is unique.
+                    root_output_filename = make_safe_filename("pmi_" + assembly + "_")
+                    stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
+                    stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
+
                     proc = await asyncio.create_subprocess_shell(
-                        " ".join(command),
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE)
+                        command_string,
+                        stdout=stdout_file_handle,
+                        stderr=stderr_file_handle)
 
                     await proc.communicate()
+
+                    os.close(stdout_file_handle)
+                    os.close(stderr_file_handle)
+
+                    # No need to keep zero-length files
+                    if is_zero_length_file(stdout_filepath):
+                        os.remove(stdout_filepath)
+                    if is_zero_length_file(stderr_filepath):
+                        os.remove(stderr_filepath)
 
                 assemblies = []
                 for item in self.pmi_assemblies:
