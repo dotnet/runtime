@@ -5,6 +5,7 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,7 +31,8 @@ namespace System.Net.Quic
         public QuicListener(IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
         public IPEndPoint ListenEndPoint => throw null;
         public System.Threading.Tasks.ValueTask<QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public void Close() => throw null;
+        public ValueTask StartAsync() => throw null;
+        public ValueTask CloseAsync() => throw null;
         public void Dispose() => throw null;
         public ValueTask DisposeAsync() => throw null;
     }
@@ -50,5 +52,21 @@ namespace System.Net.Quic
         public long StreamId => throw null;
         public void ShutdownRead() => throw null;
         public void ShutdownWrite() => throw null;
+    }
+    public class QuicClientConnectionOptions
+    {
+        public SslClientAuthenticationOptions ClientAuthenticationOptions { get => throw null; set => throw null; }
+        public IPEndPoint LocalEndPoint { get => throw null; set => throw null; }
+        public IPEndPoint RemoteEndPoint { get => throw null; set => throw null; }
+        public short MaxBidirectionalStreams { get => throw null; set => throw null; }
+        public short MaxUnidirectionalStreams { get => throw null; set => throw null; }
+    }
+    public class QuicListenerOptions
+    {
+        public SslServerAuthenticationOptions ServerAuthenticationOptions { get => throw null; set => throw null; }
+        public IPEndPoint ListenEndPoint { get => throw null; set => throw null; }
+        public int ListenBacklog { get => throw null; set => throw null; }
+        public short MaxBidirectionalStreams { get => throw null; set => throw null; }
+        public short MaxUnidirectionalStreams { get => throw null; set => throw null; }
     }
 }

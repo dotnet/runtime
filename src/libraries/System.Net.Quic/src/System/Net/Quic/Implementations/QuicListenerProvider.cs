@@ -13,7 +13,9 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask<QuicConnectionProvider> AcceptConnectionAsync(CancellationToken cancellationToken = default);
 
-        internal abstract void Close();
+        internal abstract ValueTask StartAsync();
+
+        internal abstract ValueTask CloseAsync();
 
         public abstract void Dispose();
 

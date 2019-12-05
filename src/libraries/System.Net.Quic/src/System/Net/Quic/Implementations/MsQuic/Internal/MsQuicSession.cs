@@ -19,14 +19,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             _api = MsQuicApi.Api;
         }
 
-        public MsQuicConnection ConnectionOpen(IPEndPoint endpoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndpoint)
+        public MsQuicConnection ConnectionOpen(QuicClientConnectionOptions options)
         {
             if (!_opened)
             {
-                _nativeObjPtr = _api.SessionOpen(sslClientAuthenticationOptions.ApplicationProtocols[0].Protocol.ToArray());
-                _opened = true;
-                SetPeerBiDirectionalStreamCount(100); // TODO make these configurable.
-                SetPeerUnidirectionalStreamCount(100);
+                OpenSession(options.ClientAuthenticationOptions.ApplicationProtocols[0].Protocol.ToArray(),
+                    options.MaxBidirectionalStreams,
+                    options.MaxUnidirectionalStreams);
             }
 
             uint status = _api._connectionOpenDelegate(
@@ -37,29 +36,34 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             MsQuicStatusException.ThrowIfFailed(status);
 
-            return new MsQuicConnection(endpoint, _api, connectionPtr, sslClientAuthenticationOptions);
+            return new MsQuicConnection(options.RemoteEndPoint, _api, connectionPtr, options.ClientAuthenticationOptions);
+        }
+
+        private void OpenSession(byte[] alpn, short bidirectionalStreamCount, short undirectionalStreamCount)
+        {
+            _opened = true;
+            _nativeObjPtr = _api.SessionOpen(alpn);
+            SetPeerBiDirectionalStreamCount((ushort)bidirectionalStreamCount); // TODO make these configurable.
+            SetPeerUnidirectionalStreamCount((ushort)undirectionalStreamCount);
         }
 
         // TODO allow for a callback to select the certificate (SNI).
-        public MsQuicListener ListenerOpen(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        public MsQuicListener ListenerOpen(QuicListenerOptions options)
         {
             if (!_opened)
             {
-                _nativeObjPtr = _api.SessionOpen(sslServerAuthenticationOptions.ApplicationProtocols[0].Protocol.ToArray());
-                _opened = true;
-                // TODO figure out a story for configuration.
-                SetPeerBiDirectionalStreamCount(100);
-                SetPeerUnidirectionalStreamCount(100);
+                OpenSession(options.ServerAuthenticationOptions.ApplicationProtocols[0].Protocol.ToArray(),
+                                    options.MaxBidirectionalStreams,
+                                    options.MaxUnidirectionalStreams);
             }
 
             uint status = _api._listenerOpenDelegate(
                 _nativeObjPtr,
                 MsQuicListener.NativeCallbackHandler,
                 IntPtr.Zero,
-                out IntPtr listenerPointer
-                );
+                out IntPtr listenerPointer);
 
-            var listener = new MsQuicListener(listenEndPoint, sslServerAuthenticationOptions, _api, listenerPointer);
+            var listener = new MsQuicListener(options.ListenEndPoint, options.ServerAuthenticationOptions, _api, listenerPointer);
 
             return listener;
         }

@@ -16,10 +16,10 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task BasicTest()
         {
+            await DefaultListener.StartAsync();
+
             Task listenTask = Task.Run(async () =>
             {
-                // Right now, AcceptConnections is required to start before staring a client connection.
-                // We can try to fix this by either 
                 await using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
                 await using QuicStream stream = await connection.AcceptStreamAsync();
 
@@ -31,7 +31,6 @@ namespace System.Net.Quic.Tests
 
                 await stream.WriteAsync(s_data);
                 stream.ShutdownWrite();
-
             });
 
             Task clientTask = Task.Run(async () =>
@@ -42,6 +41,7 @@ namespace System.Net.Quic.Tests
 
                 await stream.WriteAsync(s_data);
                 byte[] memory = new byte[12];
+                // TODO hit a stress bug where this read was aborted.
                 int res = await stream.ReadAsync(memory);
 
                 Assert.True(s_data.Span.SequenceEqual(memory));
@@ -53,6 +53,8 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
+            await DefaultListener.StartAsync();
+
             Task listenTask = Task.Run(async () =>
             {
                 await using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();

@@ -21,7 +21,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private MsQuicSecurityConfig _secConfig;
 
         // Pointer to the underlying listener
-        private IntPtr _nativeObjPtr;
+        private IntPtr _ptr;
 
         // Handle to this object for native callbacks.
         private GCHandle _handle;
@@ -45,10 +45,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _api = api;
             _sslOptions = sslServerAuthenticationOptions;
             ListenEndPoint = listenEndPoint;
-            _nativeObjPtr = nativeObjPtr;
-
-            // TODO remove this.
-            StartAsync().GetAwaiter().GetResult();
+            _ptr = nativeObjPtr;
         }
 
         internal override IPEndPoint ListenEndPoint { get; }
@@ -98,23 +95,24 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             StopAcceptingConnections();
 
-            if (_nativeObjPtr != IntPtr.Zero)
+            if (_ptr != IntPtr.Zero)
             {
-                _api._listenerStopDelegate(_nativeObjPtr);
-                _api._listenerCloseDelegate(_nativeObjPtr);
+                _api._listenerStopDelegate(_ptr);
+                _api._listenerCloseDelegate(_ptr);
             }
 
-            _nativeObjPtr = IntPtr.Zero;
+            _ptr = IntPtr.Zero;
             _api = null;
             _disposed = true;
         }
 
-        internal override void Close()
+        internal override ValueTask CloseAsync()
         {
-            Dispose();
+            _api._listenerStopDelegate(_ptr);
+            return default;
         }
 
-        private async ValueTask StartAsync()
+        internal override async ValueTask StartAsync()
         {
             _secConfig = await _api.CreateSecurityConfig(_sslOptions.ServerCertificate);
 
@@ -123,7 +121,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             SOCKADDR_INET address = MsQuicNativeMethods.Convert(ListenEndPoint);
 
             uint status = _api._listenerStartDelegate(
-                _nativeObjPtr,
+                _ptr,
                 ref address);
             MsQuicStatusException.ThrowIfFailed(status);
         }
@@ -168,7 +166,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _handle = GCHandle.Alloc(this);
             _listenerDelegate = new ListenerCallbackDelegate(NativeCallbackHandler);
             _api._setCallbackHandlerDelegate(
-                _nativeObjPtr,
+                _ptr,
                 _listenerDelegate,
                 GCHandle.ToIntPtr(_handle));
         }

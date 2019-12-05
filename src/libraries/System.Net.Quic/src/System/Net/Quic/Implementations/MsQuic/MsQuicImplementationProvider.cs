@@ -14,14 +14,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         private MsQuicSession _clientSession = new MsQuicSession("client");
         private MsQuicSession _serverSession = new MsQuicSession("server");
 
-        internal override QuicListenerProvider CreateListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        internal override QuicListenerProvider CreateListener(QuicListenerOptions options)
         {
-            return _serverSession.ListenerOpen(listenEndPoint, sslServerAuthenticationOptions);
+            return _serverSession.ListenerOpen(options);
         }
 
-        internal override QuicConnectionProvider CreateConnection(IPEndPoint remoteEndPoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint)
+        internal override QuicConnectionProvider CreateConnection(QuicClientConnectionOptions options)
         {
-            return _clientSession.ConnectionOpen(remoteEndPoint, sslClientAuthenticationOptions, localEndPoint);
+            return _clientSession.ConnectionOpen(options);
         }
     }
 }

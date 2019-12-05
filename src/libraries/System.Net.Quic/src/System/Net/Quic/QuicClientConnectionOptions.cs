@@ -7,36 +7,36 @@ using System.Net.Security;
 namespace System.Net.Quic
 {
     /// <summary>
-    /// Options to provide to the <see cref="QuicListener"/>.
+    /// Options to provide to the <see cref="QuicConnection"/> when connecting to a Listener.
     /// </summary>
-    public class QuicListenerOptions
+    public class QuicClientConnectionOptions
     {
         /// <summary>
-        /// Server Ssl options to use for ALPN, SNI, etc.
+        /// Client authentication options to use when establishing a <see cref="QuicConnection"/>.
         /// </summary>
-        public SslServerAuthenticationOptions ServerAuthenticationOptions { get; set; }
+        public SslClientAuthenticationOptions ClientAuthenticationOptions { get; set; }
 
         /// <summary>
-        /// The endpoint to listen on.
+        /// The endpoint to connect to.
         /// </summary>
-        public IPEndPoint ListenEndPoint { get; set; }
+        public IPEndPoint LocalEndPoint { get; set; }
 
         /// <summary>
-        /// Number of connections to be held without accepting the connection.
+        /// The endpoint to connect to.
         /// </summary>
-        public int ListenBacklog { get; set; } = 512;
+        public IPEndPoint RemoteEndPoint { get; set; }
 
         /// <summary>
-        /// Limit on the number of bidirectional streams an accepted connection can create
-        /// back to the client.
+        /// Limit on the number of bidirectional streams a connection can create
+        /// to the listener.
         /// Default is 100.
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.
         public short MaxBidirectionalStreams { get; set; } = 100;
 
         /// <summary>
-        /// Limit on the number of unidirectional streams an accepted connection can create
-        /// back to the client.
+        /// Limit on the number of unidirectional streams a connection can create
+        /// to the listener.
         /// Default is 100.
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.
