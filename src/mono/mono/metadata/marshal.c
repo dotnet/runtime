@@ -5149,8 +5149,14 @@ copy_managed_common (MonoArrayHandle managed, gconstpointer native, gint32 start
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArrayHandle src, gint32 start_index,
+		gpointer dest, gint32 length, gconstpointer managed_source_addr, MonoError *error);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArrayHandle src, gint32 start_index,
 		gpointer dest, gint32 length, gconstpointer managed_source_addr, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	guint32 gchandle = 0;
 	gsize const bytes = copy_managed_common (src, dest, start_index, length, (gpointer*)&managed_source_addr, &gchandle, error);
 	if (bytes)
@@ -5160,8 +5166,14 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArrayHan
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gconstpointer src, gint32 start_index,
+		MonoArrayHandle dest, gint32 length, gpointer managed_dest_addr, MonoError *error);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gconstpointer src, gint32 start_index,
 		MonoArrayHandle dest, gint32 length, gpointer managed_dest_addr, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	guint32 gchandle = 0;
 	gsize const bytes = copy_managed_common (dest, src, start_index, length, &managed_dest_addr, &gchandle, error);
 	if (bytes)
@@ -5170,16 +5182,26 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gconstpoin
 }
 
 MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (const char *ptr, MonoError *error);
+
+MonoStringHandle
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi (const char *ptr, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	if (!ptr)
 		return NULL_HANDLE_STRING;
 	return mono_string_new_handle (mono_domain_get (), ptr, error);
 }
 
 MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (const char *ptr, gint32 len, MonoError *error);
+
+MonoStringHandle
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (const char *ptr, gint32 len, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	if (!ptr) {
 		mono_error_set_argument_null (error, "ptr", "");
 		return NULL_HANDLE_STRING;
@@ -5188,8 +5210,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (const char
 }
 
 MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (const gunichar2 *ptr, MonoError *error);
+
+MonoStringHandle
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (const gunichar2 *ptr, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	gsize len = 0;
 	const gunichar2 *t = ptr;
 
@@ -5206,8 +5233,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (const gunichar2
 }
 
 MonoStringHandle
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (const gunichar2 *ptr, gint32 len, MonoError *error);
+
+MonoStringHandle
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (const gunichar2 *ptr, gint32 len, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	if (!ptr) {
 		mono_error_set_argument_null (error, "ptr", "");
 		return NULL_HANDLE_STRING;
@@ -5435,9 +5467,15 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 }
 
 #ifndef HOST_WIN32
+
+char*
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error);
+
 char*
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	return mono_utf16_to_utf8 (s, length, error);
 }
 
@@ -5452,8 +5490,13 @@ mono_marshal_alloc_hglobal (size_t size, MonoError *error)
 #endif /* !HOST_WIN32 */
 
 gunichar2*
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length, MonoError *error);
+
+gunichar2*
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	if (!s)
 		return NULL;
 
@@ -5603,8 +5646,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size, MonoE
 }
 
 void*
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gsize size, MonoError *error);
+
+void*
 ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gsize size, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	void *res = mono_marshal_alloc_co_task_mem (size);
 
 	if (!res)

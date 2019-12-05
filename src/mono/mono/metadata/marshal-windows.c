@@ -57,8 +57,13 @@ mono_marshal_realloc_co_task_mem (gpointer ptr, size_t size)
 }
 
 char*
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error);
+
+char*
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	// FIXME pass mono_utf16_to_utf8 an allocator to avoid double alloc/copy.
 
 	char* tres = mono_utf16_to_utf8 (s, length, error);

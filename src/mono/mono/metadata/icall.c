@@ -8590,8 +8590,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_Prelink (MonoReflectionMethodHa
 }
 
 void
+ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionTypeHandle type, MonoError *error);
+
+void
 ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionTypeHandle type, MonoError *error)
 {
+	g_assert_not_netcore ();
+
 	error_init (error);
 	MonoClass *klass = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (type, type));
 	MonoMethod* m;
