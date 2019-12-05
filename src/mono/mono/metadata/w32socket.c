@@ -808,12 +808,11 @@ ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal (void)
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Available_internal (gsize sock, gint32 *werror, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Available_internal (gsize sock, gint32 *werror)
 {
 	int ret;
 	guint64 amount;
-	
-	error_init (error);
+
 	*werror = 0;
 
 	/* FIXME: this might require amount to be unsigned long. */
@@ -840,11 +839,10 @@ ves_icall_System_Net_Sockets_Socket_Blocking_internal (gsize sock, MonoBoolean b
 }
 
 gpointer
-ves_icall_System_Net_Sockets_Socket_Accept_internal (gsize sock, gint32 *werror, MonoBoolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Accept_internal (gsize sock, gint32 *werror, MonoBoolean blocking)
 {
 	SOCKET newsock;
 
-	error_init (error);
 	*werror = 0;
 
 	newsock = mono_w32socket_accept (sock, NULL, 0, blocking);
