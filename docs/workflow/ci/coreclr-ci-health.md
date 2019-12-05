@@ -108,7 +108,7 @@ This is tracking the pipeline pass rate generally over two weeks. This view is n
 
 Opening the [runtime-outerloop Pipeline Pass Rate](https://dev.azure.com/dnceng/public/_pipeline/analytics/stageawareoutcome?definitionId=655&contextType=build) there is a presentation of a line graph of the end to end success rate for the pipeline over time.
 
-The **Failure Tend** graph attempts to show what is failing in bar graph and give a small insight into what is generally failing.
+The **Failure Trend** graph attempts to show what is failing in bar graph and give a small insight into what is generally failing.
 
 The **Failed Runs** graph is the most interesting for finding specific issues. As of writing the `Top 10 failing tasks` are:
 
