@@ -2516,9 +2516,7 @@ bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
                                      LsraLocation* nextRefLocationPtr,
                                      RegisterType  regType)
 {
-    *nextRefLocationPtr          = MaxLocation;
     LsraLocation nextRefLocation = MaxLocation;
-    regMaskTP    regMask         = genRegMask(physRegRecord->regNum);
     if (physRegRecord->isBusyUntilNextKill)
     {
         return false;
@@ -2529,11 +2527,11 @@ bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
     {
         nextRefLocation = nextPhysReference->nodeLocation;
     }
-    // if (nextPhysReference->refType == RefTypeFixedReg) nextRefLocation--;
     else if (!physRegRecord->isCalleeSave)
     {
         nextRefLocation = MaxLocation - 1;
     }
+    *nextRefLocationPtr = nextRefLocation;
 
     Interval* assignedInterval = physRegRecord->assignedInterval;
 
@@ -2564,7 +2562,8 @@ bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
             // (Note that it is unlikely that we have a recent copy or move to a different register,
             // where this physRegRecord is still pointing at an earlier copy or move, but it is possible,
             // especially in stress modes.)
-            if ((recentReference->registerAssignment == regMask) && copyOrMoveRegInUse(recentReference, currentLoc))
+            if ((recentReference->registerAssignment == genRegMask(physRegRecord->regNum)) &&
+                copyOrMoveRegInUse(recentReference, currentLoc))
             {
                 return false;
             }
@@ -2587,22 +2586,19 @@ bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
             {
                 if (nextReference->nodeLocation < nextRefLocation)
                 {
-                    nextRefLocation = nextReference->nodeLocation;
+                    *nextRefLocationPtr = nextReference->nodeLocation;
                 }
             }
             else
             {
-                assert(recentReference->copyReg && recentReference->registerAssignment != regMask);
+                assert(recentReference->copyReg &&
+                       (recentReference->registerAssignment != genRegMask(physRegRecord->regNum)));
             }
         }
         else
         {
             return false;
         }
-    }
-    if (nextRefLocation < *nextRefLocationPtr)
-    {
-        *nextRefLocationPtr = nextRefLocation;
     }
 
 #ifdef TARGET_ARM
@@ -2611,11 +2607,10 @@ bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
         // Recurse, but check the other half this time (TYP_FLOAT)
         if (!registerIsAvailable(findAnotherHalfRegRec(physRegRecord), currentLoc, nextRefLocationPtr, TYP_FLOAT))
             return false;
-        nextRefLocation = *nextRefLocationPtr;
     }
 #endif // TARGET_ARM
 
-    return (nextRefLocation >= currentLoc);
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -5359,7 +5354,7 @@ void LinearScan::allocateRegisters()
 
         currentReferent = currentRefPosition->referent;
 
-        if (spillAlways() && lastAllocatedRefPosition != nullptr && !lastAllocatedRefPosition->isPhysRegRef &&
+        if (spillAlways() && lastAllocatedRefPosition != nullptr && !lastAllocatedRefPosition->IsPhysRegRef() &&
             !lastAllocatedRefPosition->getInterval()->isInternal &&
             (RefTypeIsDef(lastAllocatedRefPosition->refType) || lastAllocatedRefPosition->getInterval()->isLocalVar))
         {
@@ -5491,6 +5486,18 @@ void LinearScan::allocateRegisters()
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition->assignedReg()));
             continue;
         }
+        if (refType == RefTypeKill)
+        {
+            RegRecord* currentReg       = currentRefPosition->getReg();
+            Interval*  assignedInterval = currentReg->assignedInterval;
+
+            if (assignedInterval != nullptr)
+            {
+                unassignPhysReg(currentReg, assignedInterval->recentRefPosition);
+            }
+            currentReg->isBusyUntilNextKill = false;
+            continue;
+        }
 
         // If this is an exposed use, do nothing - this is merely a placeholder to attempt to
         // ensure that a register is allocated for the full lifetime.  The resolution logic
@@ -5504,14 +5511,14 @@ void LinearScan::allocateRegisters()
 
         regNumber assignedRegister = REG_NA;
 
-        if (currentRefPosition->isIntervalRef())
-        {
-            currentInterval  = currentRefPosition->getInterval();
-            assignedRegister = currentInterval->physReg;
+        assert(currentRefPosition->isIntervalRef());
+        currentInterval = currentRefPosition->getInterval();
+        assert(currentInterval != nullptr);
+        assignedRegister = currentInterval->physReg;
 
-            // Identify the special cases where we decide up-front not to allocate
-            bool allocate = true;
-            bool didDump  = false;
+        // Identify the special cases where we decide up-front not to allocate
+        bool allocate = true;
+        bool didDump  = false;
 
             if (refType == RefTypeParamDef || refType == RefTypeZeroInit)
             {
@@ -5600,75 +5607,74 @@ void LinearScan::allocateRegisters()
     #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     #endif // FEATURE_SIMD
 
-            if (allocate == false)
+        if (allocate == false)
+        {
+            if (assignedRegister != REG_NA)
             {
-                if (assignedRegister != REG_NA)
-                {
-                    unassignPhysReg(getRegisterRecord(assignedRegister), currentRefPosition);
-                }
-                else if (!didDump)
-                {
-                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
-                    didDump = true;
-                }
-                currentRefPosition->registerAssignment = RBM_NONE;
-                continue;
+                unassignPhysReg(getRegisterRecord(assignedRegister), currentRefPosition);
             }
+            else if (!didDump)
+            {
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
+                didDump = true;
+            }
+            currentRefPosition->registerAssignment = RBM_NONE;
+            continue;
+        }
 
+        if (currentInterval->isSpecialPutArg)
+        {
+            assert(!currentInterval->isLocalVar);
+            Interval* srcInterval = currentInterval->relatedInterval;
+            assert(srcInterval != nullptr && srcInterval->isLocalVar);
+            if (refType == RefTypeDef)
+            {
+                assert(srcInterval->recentRefPosition->nodeLocation == currentLocation - 1);
+                RegRecord* physRegRecord = srcInterval->assignedReg;
+
+                // For a putarg_reg to be special, its next use location has to be the same
+                // as fixed reg's next kill location. Otherwise, if source lcl var's next use
+                // is after the kill of fixed reg but before putarg_reg's next use, fixed reg's
+                // kill would lead to spill of source but not the putarg_reg if it were treated
+                // as special.
+                if (srcInterval->isActive &&
+                    genRegMask(srcInterval->physReg) == currentRefPosition->registerAssignment &&
+                    currentInterval->getNextRefLocation() == physRegRecord->getNextRefLocation())
+                {
+                    assert(physRegRecord->regNum == srcInterval->physReg);
+
+                    // Special putarg_reg acts as a pass-thru since both source lcl var
+                    // and putarg_reg have the same register allocated.  Physical reg
+                    // record of reg continue to point to source lcl var's interval
+                    // instead of to putarg_reg's interval.  So if a spill of reg
+                    // allocated to source lcl var happens, to reallocate to another
+                    // tree node, before its use at call node it will lead to spill of
+                    // lcl var instead of putarg_reg since physical reg record is pointing
+                    // to lcl var's interval. As a result, arg reg would get trashed leading
+                    // to bad codegen. The assumption here is that source lcl var of a
+                    // special putarg_reg doesn't get spilled and re-allocated prior to
+                    // its use at the call node.  This is ensured by marking physical reg
+                    // record as busy until next kill.
+                    physRegRecord->isBusyUntilNextKill = true;
+                }
+                else
+                {
+                    currentInterval->isSpecialPutArg = false;
+                }
+            }
+            // If this is still a SpecialPutArg, continue;
             if (currentInterval->isSpecialPutArg)
             {
-                assert(!currentInterval->isLocalVar);
-                Interval* srcInterval = currentInterval->relatedInterval;
-                assert(srcInterval != nullptr && srcInterval->isLocalVar);
-                if (refType == RefTypeDef)
-                {
-                    assert(srcInterval->recentRefPosition->nodeLocation == currentLocation - 1);
-                    RegRecord* physRegRecord = srcInterval->assignedReg;
-
-                    // For a putarg_reg to be special, its next use location has to be the same
-                    // as fixed reg's next kill location. Otherwise, if source lcl var's next use
-                    // is after the kill of fixed reg but before putarg_reg's next use, fixed reg's
-                    // kill would lead to spill of source but not the putarg_reg if it were treated
-                    // as special.
-                    if (srcInterval->isActive &&
-                        genRegMask(srcInterval->physReg) == currentRefPosition->registerAssignment &&
-                        currentInterval->getNextRefLocation() == physRegRecord->getNextRefLocation())
-                    {
-                        assert(physRegRecord->regNum == srcInterval->physReg);
-
-                        // Special putarg_reg acts as a pass-thru since both source lcl var
-                        // and putarg_reg have the same register allocated.  Physical reg
-                        // record of reg continue to point to source lcl var's interval
-                        // instead of to putarg_reg's interval.  So if a spill of reg
-                        // allocated to source lcl var happens, to reallocate to another
-                        // tree node, before its use at call node it will lead to spill of
-                        // lcl var instead of putarg_reg since physical reg record is pointing
-                        // to lcl var's interval. As a result, arg reg would get trashed leading
-                        // to bad codegen. The assumption here is that source lcl var of a
-                        // special putarg_reg doesn't get spilled and re-allocated prior to
-                        // its use at the call node.  This is ensured by marking physical reg
-                        // record as busy until next kill.
-                        physRegRecord->isBusyUntilNextKill = true;
-                    }
-                    else
-                    {
-                        currentInterval->isSpecialPutArg = false;
-                    }
-                }
-                // If this is still a SpecialPutArg, continue;
-                if (currentInterval->isSpecialPutArg)
-                {
-                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_SPECIAL_PUTARG, currentInterval,
-                                                    currentRefPosition->assignedReg()));
-                    continue;
-                }
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_SPECIAL_PUTARG, currentInterval,
+                                                currentRefPosition->assignedReg()));
+                continue;
             }
+        }
 
-            if (assignedRegister == REG_NA && RefTypeIsUse(refType))
-            {
-                currentRefPosition->reload = true;
-                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_RELOAD, currentInterval, assignedRegister));
-            }
+        if (assignedRegister == REG_NA && RefTypeIsUse(refType))
+        {
+            currentRefPosition->reload = true;
+            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_RELOAD, currentInterval, assignedRegister));
         }
 
         regMaskTP assignedRegBit = RBM_NONE;
@@ -5698,25 +5704,7 @@ void LinearScan::allocateRegisters()
                    currentInterval->assignedReg->assignedInterval == currentInterval);
         }
 
-        // If this is a physical register, we unconditionally assign it to itself!
-        if (currentRefPosition->isPhysRegRef)
-        {
-            RegRecord* currentReg       = currentRefPosition->getReg();
-            Interval*  assignedInterval = currentReg->assignedInterval;
-
-            if (assignedInterval != nullptr)
-            {
-                unassignPhysReg(currentReg, assignedInterval->recentRefPosition);
-            }
-            currentReg->isActive = true;
-            assignedRegister     = currentReg->regNum;
-            assignedRegBit       = genRegMask(assignedRegister);
-            if (refType == RefTypeKill)
-            {
-                currentReg->isBusyUntilNextKill = false;
-            }
-        }
-        else if (previousRefPosition != nullptr)
+        if (previousRefPosition != nullptr)
         {
             assert(previousRefPosition->nextRefPosition == currentRefPosition);
             assert(assignedRegister == REG_NA || assignedRegBit == previousRefPosition->registerAssignment ||
@@ -5812,14 +5800,14 @@ void LinearScan::allocateRegisters()
             else if ((genRegMask(assignedRegister) & currentRefPosition->registerAssignment) != 0)
             {
                 currentRefPosition->registerAssignment = assignedRegBit;
-                if (!currentReferent->isActive)
+                if (!currentInterval->isActive)
                 {
                     // If we've got an exposed use at the top of a block, the
                     // interval might not have been active.  Otherwise if it's a use,
                     // the interval must be active.
                     if (refType == RefTypeDummyDef)
                     {
-                        currentReferent->isActive = true;
+                        currentInterval->isActive = true;
                         assert(getRegisterRecord(assignedRegister)->assignedInterval == currentInterval);
                     }
                     else
@@ -5831,8 +5819,6 @@ void LinearScan::allocateRegisters()
             }
             else
             {
-                assert(currentInterval != nullptr);
-
                 // It's already in a register, but not one we need.
                 if (!RefTypeIsDef(currentRefPosition->refType))
                 {
@@ -9191,7 +9177,7 @@ void RefPosition::dump()
 
     printf(" %s ", getRefTypeName(refType));
 
-    if (this->isPhysRegRef)
+    if (this->IsPhysRegRef())
     {
         this->getReg()->tinyDump();
     }
@@ -9793,7 +9779,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                     switch (currentRefPosition->refType)
                     {
                         case RefTypeUse:
-                            if (currentRefPosition->isPhysRegRef)
+                            if (currentRefPosition->IsPhysRegRef())
                             {
                                 printf("\n                               Use:R%d(#%d)",
                                        currentRefPosition->getReg()->regNum, currentRefPosition->rpNum);
@@ -10421,7 +10407,7 @@ void LinearScan::dumpRefPositionShort(RefPosition* refPosition, BasicBlock* curr
         }
         printf("  %s%c%c ", getRefTypeShortName(refPosition->refType), lastUseChar, delayChar);
     }
-    else if (refPosition->isPhysRegRef)
+    else if (refPosition->IsPhysRegRef())
     {
         RegRecord* regRecord = refPosition->getReg();
         printf(regNameFormat, getRegName(regRecord->regNum));
@@ -10549,7 +10535,7 @@ void LinearScan::verifyFinalAllocation()
         }
         else
         {
-            if (currentRefPosition->isPhysRegRef)
+            if (currentRefPosition->IsPhysRegRef())
             {
                 regRecord                    = currentRefPosition->getReg();
                 regRecord->recentRefPosition = currentRefPosition;

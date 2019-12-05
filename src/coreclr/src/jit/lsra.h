@@ -455,7 +455,6 @@ public:
         firstRefPosition  = nullptr;
         recentRefPosition = nullptr;
         lastRefPosition   = nullptr;
-        isActive          = false;
     }
 
     // A linked list of RefPositions.  These are only traversed in the forward
@@ -465,8 +464,6 @@ public:
     RefPosition* firstRefPosition;
     RefPosition* recentRefPosition;
     RefPosition* lastRefPosition;
-
-    bool isActive;
 
     // Get the position of the next reference which is at or greater than
     // the current location (relies upon recentRefPosition being udpated
@@ -1635,7 +1632,10 @@ public:
         : registerPreferences(registerPreferences)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
+        , varNum(0)
+        , physReg(REG_COUNT)
         , registerType(registerType)
+        , isActive(false)
         , isLocalVar(false)
         , isSplit(false)
         , isSpilled(false)
@@ -1652,11 +1652,9 @@ public:
         , isPartiallySpilled(false)
 #endif
         , isWriteThru(false)
-        , physReg(REG_COUNT)
 #ifdef DEBUG
         , intervalIndex(0)
 #endif
-        , varNum(0)
     {
     }
 
@@ -1684,12 +1682,17 @@ public:
     // register it currently occupies.
     RegRecord* assignedReg;
 
-    // DECIDE : put this in a union or do something w/ inheritance?
-    // this is an interval for a physical register, not a allocatable entity
+    unsigned int varNum; // This is the "variable number": the index into the lvaTable array
+
+    // The register to which it is currently assigned.
+    regNumber physReg;
 
     RegisterType registerType;
-    bool         isLocalVar : 1;
 
+    // Is this Interval currently in a register and live?
+    bool isActive;
+
+    bool isLocalVar : 1;
     // Indicates whether this interval has been assigned to different registers
     bool isSplit : 1;
     // Indicates whether this interval is ever spilled
@@ -1741,17 +1744,12 @@ public:
     }
 #endif
 
-    // The register to which it is currently assigned.
-    regNumber physReg;
-
     // True if this interval is associated with a lclVar that is written to memory at each definition.
     bool isWriteThru : 1;
 
 #ifdef DEBUG
     unsigned int intervalIndex;
 #endif // DEBUG
-
-    unsigned int varNum; // This is the "variable number": the index into the lvaTable array
 
     LclVarDsc* getLocalVar(Compiler* comp)
     {
@@ -1902,8 +1900,8 @@ class RefPosition
 {
 public:
     // A RefPosition refers to either an Interval or a RegRecord. 'referent' points to one
-    // of these types. If it refers to a RegRecord, then 'isPhysRegRef' is true. If it
-    // refers to an Interval, then 'isPhysRegRef' is false.
+    // of these types. If it refers to a RegRecord, then 'isPhysRegRef()' is true. If it
+    // refers to an Interval, then 'isPhysRegRef()' is false.
     // referent can never be null.
 
     Referenceable* referent;
@@ -2088,6 +2086,11 @@ public:
         }
     }
 
+    bool IsPhysRegRef()
+    {
+        return ((refType == RefTypeFixedReg) || (refType == RefTypeKill));
+    }
+
     void setRegOptional(bool val)
     {
         regOptional = val;
@@ -2140,14 +2143,7 @@ public:
 
     bool isIntervalRef()
     {
-        return (!isPhysRegRef && (referent != nullptr));
-    }
-
-    // isTrueDef indicates that the RefPosition is a non-update def of a non-internal
-    // interval
-    bool isTrueDef()
-    {
-        return (refType == RefTypeDef && isIntervalRef() && !getInterval()->isInternal);
+        return (!IsPhysRegRef() && (referent != nullptr));
     }
 
     // isFixedRefOfRegMask indicates that the RefPosition has a fixed assignment to the register
