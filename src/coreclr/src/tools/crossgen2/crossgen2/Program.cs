@@ -226,14 +226,19 @@ namespace ILCompiler
                         catch { } // Ignore non-managed pe files
                     }
 
-                    foreach (var referenceFile in _referenceFilePaths.Values)
+                    // References could be numerous, so multi-threaded loading is pretty beneficial
+                    Parallel.ForEach(_referenceFilePaths.Values, referenceFile =>
                     {
                         try
                         {
-                            referenceableModules.Add(typeSystemContext.GetModuleFromPath(referenceFile));
+                            ModuleDesc refModule = typeSystemContext.GetModuleFromPath(referenceFile);
+                            lock (referenceableModules)
+                            {
+                                referenceableModules.Add(refModule);
+                            }
                         }
                         catch { } // Ignore non-managed pe files
-                    }
+                    });
 
                     ProfileDataManager profileDataManager = new ProfileDataManager(logger, referenceableModules);
 

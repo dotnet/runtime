@@ -145,11 +145,14 @@ namespace ILCompiler
 
         private EcmaModule GetOrAddModuleFromPath(string filePath, bool useForBinding)
         {
-            // This method is not expected to be called frequently. Linear search is acceptable.
-            foreach (var entry in ModuleHashtable.Enumerator.Get(_moduleHashtable))
+            lock (this)
             {
-                if (entry.FilePath == filePath)
-                    return entry.Module;
+                // This method is not expected to be called frequently. Linear search is acceptable.
+                foreach (var entry in ModuleHashtable.Enumerator.Get(_moduleHashtable))
+                {
+                    if (entry.FilePath == filePath)
+                        return entry.Module;
+                }
             }
 
             return AddModule(filePath, null, useForBinding);
