@@ -35,6 +35,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Resettable completions to be used for multiple calls to send, start, and shutdown.
         private ResettableCompletionSource<uint> _sendResettableCompletionSource;
 
+        // Resettable completions to be used for multiple calls to receive.
         private ResettableCompletionSource<uint> _receiveResettableCompletionSource;
 
         // Buffers to hold during a call to send.
@@ -150,10 +151,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                     _readState = ReadState.Canceled;
                 }
+
                 if (shouldComplete)
                 {
                     _receiveResettableCompletionSource.CompleteException(new TaskCanceledException("Operation was canceled"));
-
                 }
             });
 
@@ -558,11 +559,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 GCHandle.ToIntPtr(_handle));
         }
 
-        public unsafe ValueTask<uint> SendAsync(
+        // TODO prevent overlapping sends.
+        // TODO consider allowing overlapped reads.
+        internal unsafe ValueTask<uint> SendAsync(
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAG flags)
         {
-            // TODO prevent overlapping sends.
             MemoryHandle handle = buffer.Pin();
             _sendQuicBuffers[0].Length = (uint)buffer.Length;
             _sendQuicBuffers[0].Buffer = (byte*)handle.Pointer;
