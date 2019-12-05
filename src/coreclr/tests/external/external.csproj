@@ -12,9 +12,9 @@
          This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
     -->
     <OutputPath>$(TargetingPackPath)</OutputPath>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <NuGetTargetMoniker>.NETCoreApp,Version=v3.0</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>netcoreapp3.0</NuGetTargetMonikerShort>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
     <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
     <XUnitRunnerTargetFramework>netcoreapp2.1</XUnitRunnerTargetFramework>
     <CLRTestKind>SharedLibrary</CLRTestKind>

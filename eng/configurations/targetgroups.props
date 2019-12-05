@@ -100,8 +100,8 @@
     </TargetGroups>
     <!-- netcoreapp is an alias for netcoreapp5.0 -->
     <TargetGroups Include="netcoreapp">
-      <TargetFramework>netcoreapp5.0</TargetFramework>
-      <Imports>netcoreapp5.0</Imports>
+      <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+      <Imports>$(NetCoreAppCurrent)</Imports>
       <CompatibleWith>netstandard2.1</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="net45">
