@@ -283,7 +283,7 @@ namespace System.Net.Security
         //
         // This is used to reply on re-handshake when received SEC_I_RENEGOTIATE on Read().
         //
-        private async Task ReplyOnReAuthentication(byte[] buffer, CancellationToken cancellationToken)
+        private async Task ReplyOnReAuthenticationAsync(byte[] buffer, CancellationToken cancellationToken)
         {
             lock (SyncLock)
             {
@@ -310,12 +310,12 @@ namespace System.Net.Security
                 if (receiveFirst)
                 {
                     // Listen for a client blob.
-                    StartReceiveBlob(buffer);
+                    ReceiveBlob(buffer);
                 }
                 else
                 {
                     // We start with the first blob.
-                    StartSendBlob(buffer, (buffer == null ? 0 : buffer.Length));
+                    SendBlob(buffer, (buffer == null ? 0 : buffer.Length));
                 }
             }
             catch (Exception e)
@@ -377,14 +377,14 @@ namespace System.Net.Security
             ProtocolToken alertToken = null;
             if (!CompleteHandshake(ref alertToken))
             {
-                StartSendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
+                SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
             }
         }
 
         //
         // Client side starts here, but server also loops through this method.
         //
-        private void StartSendBlob(byte[] incoming, int count)
+        private void SendBlob(byte[] incoming, int count)
         {
             ProtocolToken message = _context.NextMessage(incoming, 0, count);
             _securityStatus = message.Status;
@@ -418,7 +418,7 @@ namespace System.Net.Security
         {
             if (message.Failed)
             {
-                StartSendAuthResetSignal(null, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_auth_SSPI, message.GetException())));
+                SendAuthResetSignal(null, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_auth_SSPI, message.GetException())));
                 return;
             }
             else if (message.Done)
@@ -427,7 +427,7 @@ namespace System.Net.Security
 
                 if (!CompleteHandshake(ref alertToken))
                 {
-                    StartSendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
+                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
                     return;
                 }
 
@@ -437,25 +437,19 @@ namespace System.Net.Security
                 return;
             }
 
-            StartReceiveBlob(message.Payload);
+            ReceiveBlob(message.Payload);
         }
 
         //
         // Server side starts here, but client also loops through this method.
         //
-        private void StartReceiveBlob(byte[] buffer)
+        private void ReceiveBlob(byte[] buffer)
         {
             //This is first server read.
             buffer = EnsureBufferSize(buffer, 0, SecureChannel.ReadHeaderSize);
 
             int readBytes = FixedSizeReader.ReadPacket(_innerStream, buffer, 0, SecureChannel.ReadHeaderSize);
 
-            StartReadFrame(buffer, readBytes);
-        }
-
-        //
-        private void StartReadFrame(byte[] buffer, int readBytes)
-        {
             if (readBytes == 0)
             {
                 // EOF received
@@ -484,7 +478,7 @@ namespace System.Net.Security
 
             restBytes = FixedSizeReader.ReadPacket(_innerStream, buffer, readBytes, restBytes);
 
-            ProcessReceivedBlob(buffer, readBytes + restBytes);
+            SendBlob(buffer, readBytes + restBytes);
         }
 
         private async ValueTask<ProtocolToken> ReceiveBlobAsync(SslReadAsync adapter, byte[] buffer, CancellationToken cancellationToken)
@@ -519,34 +513,17 @@ namespace System.Net.Security
                 }
             }
 
-            ProtocolToken token = ProcessBlob(_internalBuffer, _internalOffset, frameSize);
+            ProtocolToken token = _context.NextMessage(_internalBuffer, _internalOffset, frameSize);
             ConsumeBufferedBytes(frameSize);
 
             return token;
         }
 
-        private void ProcessReceivedBlob(byte[] buffer, int count)
-        {
-            if (count == 0)
-            {
-                // EOF received.
-                throw new AuthenticationException(SR.net_auth_eof, null);
-            }
-
-            StartSendBlob(buffer, count);
-        }
-
-        private ProtocolToken ProcessBlob(byte[] buffer, int bufferOffset, int count)
-        {
-            return _context.NextMessage(buffer, bufferOffset, count);
-        }
-
-
         //
         //  This is to reset auth state on remote side.
         //  If this write succeeds we will allow auth retrying.
         //
-        private void StartSendAuthResetSignal(ProtocolToken message, ExceptionDispatchInfo exception)
+        private void SendAuthResetSignal(ProtocolToken message, ExceptionDispatchInfo exception)
         {
             SetException(exception.SourceException);
 
@@ -607,7 +584,6 @@ namespace System.Net.Security
                 }
 
                 _lockReadState = LockRead;
-                //HandleQueuedCallback(ref _queuedReadStateRequest);
             }
         }
 
@@ -970,7 +946,7 @@ namespace System.Net.Security
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
 
-                            await ReplyOnReAuthentication(extraBuffer, adapter.CancellationToken).ConfigureAwait(false);
+                            await ReplyOnReAuthenticationAsync(extraBuffer, adapter.CancellationToken).ConfigureAwait(false);
                             // Loop on read.
                             continue;
                         }

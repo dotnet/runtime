@@ -418,7 +418,7 @@ namespace System.Net.Security
 
             ProtocolToken message = _context.CreateShutdownToken();
             _shutdown = true;
-            return InnerStream.WriteAsync(message.Payload, 0, message.Payload.Length);
+            return InnerStream.WriteAsync(message.Payload, default).AsTask();
         }
         #endregion
 

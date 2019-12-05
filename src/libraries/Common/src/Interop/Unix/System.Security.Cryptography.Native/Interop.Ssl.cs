@@ -72,9 +72,6 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite")]
-        internal static extern unsafe int SslWrite(SafeSslHandle ssl, byte* buf, int num);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite")]
         internal static extern unsafe int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead")]

@@ -12,7 +12,7 @@ namespace System.Net.Security.Tests
 {
     public static class TestHelper
     {
-        public static (Stream, Stream) GetConnectedStreams()
+        public static (Stream ClientStream, Stream ServerStream) GetConnectedStreams()
         {
             if (Capability.SecurityForceSocketStreams())
             {
@@ -22,7 +22,7 @@ namespace System.Net.Security.Tests
             return GetConnectedVirtualStreams();
         }
 
-        internal static (NetworkStream, NetworkStream) GetConnectedTcpStreams()
+        internal static (NetworkStream ClientStream, NetworkStream ServerStream) GetConnectedTcpStreams()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
@@ -33,12 +33,12 @@ namespace System.Net.Security.Tests
                 clientSocket.Connect(listener.LocalEndPoint);
                 Socket serverSocket = listener.Accept();
 
-                return (new NetworkStream(serverSocket, ownsSocket: true), new NetworkStream(clientSocket, ownsSocket: true));
+                return (new NetworkStream(clientSocket, ownsSocket: true), new NetworkStream(serverSocket, ownsSocket: true));
             }
 
         }
 
-        internal static (VirtualNetworkStream, VirtualNetworkStream) GetConnectedVirtualStreams()
+        internal static (VirtualNetworkStream ClientStream, VirtualNetworkStream ServerStream) GetConnectedVirtualStreams()
         {
             VirtualNetwork vn = new VirtualNetwork();
 
