@@ -10,17 +10,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         internal static bool SuccessfulStatusCode(uint status)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return status < 0x80000000;
-            }
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return (int)status <= 0;
-            }
-
-            return false;
+            return (int)status <= 0;
         }
     }
 }

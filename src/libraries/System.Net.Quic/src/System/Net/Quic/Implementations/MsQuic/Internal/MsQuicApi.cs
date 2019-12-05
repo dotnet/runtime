@@ -13,7 +13,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         private bool _disposed;
 
-        private IntPtr _registrationContext;
+        private readonly IntPtr _registrationContext;
 
         private unsafe MsQuicApi()
         {
