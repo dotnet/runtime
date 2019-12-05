@@ -424,6 +424,19 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
 
     while (sysctl(routeDumpName, 6, buffer, &byteCount, NULL, 0) != 0)
     {
+        if (errno != ENOMEM)
+        {
+            return -1;
+        }
+
+        size_t tmpEstimatedSize;
+        if (!multiply_s(byteCount, (size_t)2, &tmpEstimatedSize))
+        {
+            errno = ENOMEM;
+            return -1;
+        }
+
+        byteCount = tmpEstimatedSize;
         buffer = realloc(buffer, byteCount);
         if (buffer == NULL)
         {
