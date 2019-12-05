@@ -633,7 +633,7 @@ echo     win7-x64: Builds overlay for Windows 7
 echo crossgen: Precompiles the framework managed assemblies
 echo copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
 echo skipgeneratelayout: Do not generate the Core_Root layout or the CoreFX testhost.
-echo -generatelayoutonly: Generate the Core_Root layout without build managed or native test components
+echo generatelayoutonly: Generate the Core_Root layout without building managed or native test components
 echo targetsNonWindows:
 echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
 echo     Set to "" to disable default exclusion file.
