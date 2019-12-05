@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public Type Type { get; }
 
         /// <summary>
-        /// Reverse index of the service when resolved in <code>IEnumerable&lt;Type&gt;</code> where default instance gets slot 0.
+        /// Reverse index of the service when resolved in <c>IEnumerable&lt;Type&gt;</c> where default instance gets slot 0.
         /// For example for service collection
         ///  IService Impl1
         ///  IService Impl2
