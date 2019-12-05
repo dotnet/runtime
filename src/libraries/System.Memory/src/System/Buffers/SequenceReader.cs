@@ -54,7 +54,6 @@ namespace System.Buffers
         /// </summary>
         public readonly ReadOnlySequence<T> UnreadSequence
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Sequence.Slice(Position);
         }
 
