@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:3.0.100-bionic
+FROM ubuntu:18.04
 
 COPY ./kdc/kadm5.acl /etc/krb5kdc/
 COPY ./kdc/kdc.conf /etc/krb5kdc/

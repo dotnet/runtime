@@ -59,7 +59,7 @@ Now you can run the enterprise tests. Currently, there are tests for System.Net.
 
 ```bash
 cd /repo/src/libraries/System.Net.Http/tests/EnterpriseTests
-/repo/.dotnet/dotnet msbuild /t:rebuilandtest
+/repo/.dotnet/dotnet msbuild /t:rebuildandtest
 ```
 
 You can exit from the container bash shell:
