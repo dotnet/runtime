@@ -92,6 +92,8 @@ jobs:
 
     steps:
 
+    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: NuGetAuthenticate@0
 
