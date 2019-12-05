@@ -9,7 +9,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
-      $(netcoreappCurrent);
+      $(NetCoreAppCurrent);
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

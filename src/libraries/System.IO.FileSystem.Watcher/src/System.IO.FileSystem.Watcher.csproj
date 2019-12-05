@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(netcoreappCurrent)-FreeBSD-Debug;$(netcoreappCurrent)-FreeBSD-Release;$(netcoreappCurrent)-Linux-Debug;$(netcoreappCurrent)-Linux-Release;$(netcoreappCurrent)-OSX-Debug;$(netcoreappCurrent)-OSX-Release;$(netcoreappCurrent)-Windows_NT-Debug;$(netcoreappCurrent)-Windows_NT-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-FreeBSD-Debug;$(NetCoreAppCurrent)-FreeBSD-Release;$(NetCoreAppCurrent)-Linux-Debug;$(NetCoreAppCurrent)-Linux-Release;$(NetCoreAppCurrent)-OSX-Debug;$(NetCoreAppCurrent)-OSX-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

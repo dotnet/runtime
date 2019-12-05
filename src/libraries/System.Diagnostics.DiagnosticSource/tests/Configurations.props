@@ -1,7 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      $(netcoreappCurrent);
+      $(NetCoreAppCurrent);
       netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

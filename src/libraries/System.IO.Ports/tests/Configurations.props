@@ -1,10 +1,10 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      $(netcoreappCurrent)-Windows_NT;
-      $(netcoreappCurrent)-Linux;
-      $(netcoreappCurrent)-OSX;
-      $(netcoreappCurrent)-FreeBSD;
+      $(NetCoreAppCurrent)-Windows_NT;
+      $(NetCoreAppCurrent)-Linux;
+      $(NetCoreAppCurrent)-OSX;
+      $(NetCoreAppCurrent)-FreeBSD;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>

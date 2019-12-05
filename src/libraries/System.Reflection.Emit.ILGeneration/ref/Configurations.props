@@ -5,7 +5,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      $(netcoreappCurrent);
+      $(NetCoreAppCurrent);
       <!-- Use inbox facade on netfx -->
       _netfx;
     </BuildConfigurations>

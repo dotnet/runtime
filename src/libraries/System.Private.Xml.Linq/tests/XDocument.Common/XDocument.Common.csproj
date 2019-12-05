@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>XDocument.Common</AssemblyName>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
-    <Configurations>$(netcoreappCurrent)-Debug;$(netcoreappCurrent)-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BridgeHelpers.cs" />

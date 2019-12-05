@@ -2,8 +2,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       netfx-Windows_NT;
-      $(netcoreappCurrent)-Unix;
-      $(netcoreappCurrent)-Windows_NT;
+      $(NetCoreAppCurrent)-Unix;
+      $(NetCoreAppCurrent)-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

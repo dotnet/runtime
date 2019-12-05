@@ -10,7 +10,7 @@
       net47;
       net471;
       netfx;
-      $(netcoreappCurrent);
+      $(NetCoreAppCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

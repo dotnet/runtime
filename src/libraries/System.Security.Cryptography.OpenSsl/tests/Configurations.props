@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      $(netcoreappCurrent)-Unix;
+      $(NetCoreAppCurrent)-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

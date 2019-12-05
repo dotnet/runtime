@@ -153,7 +153,7 @@
 
   <!-- set properties for each vertical -->
   <PropertyGroup>
-    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)'=='$(netcoreappCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
+    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)'=='$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
     <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)'=='netfx' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
   </PropertyGroup>
 
@@ -269,8 +269,8 @@
     <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj</RuntimeProjectFile>
 
     <!-- Paths to binplace package content -->
-    <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(netcoreappCurrent)\ref</NETCoreAppPackageRefPath>
-    <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(netcoreappCurrent)\lib</NETCoreAppPackageRuntimePath>
+    <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
+    <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
     <NetFxPackageRefPath>$(ArtifactsBinDir)pkg\netfx\ref</NetFxPackageRefPath>
     <NetFxPackageRuntimePath>$(ArtifactsBinDir)pkg\netfx\lib</NetFxPackageRuntimePath>
 
@@ -304,7 +304,7 @@
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == '$(netcoreappCurrent)'">true</BinPlaceTestSharedFramework>
+    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
     <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'netfx'">true</BinPlaceNETFXRuntime>
 
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>

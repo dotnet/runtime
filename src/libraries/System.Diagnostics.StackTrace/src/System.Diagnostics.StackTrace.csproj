@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
     <NoWarn>$(NoWarn);1685</NoWarn>
-    <Configurations>$(netcoreappCurrent)-Unix-Debug;$(netcoreappCurrent)-Unix-Release;$(netcoreappCurrent)-Windows_NT-Debug;$(netcoreappCurrent)-Windows_NT-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />

@@ -12,8 +12,8 @@
     <BuildConfigurations>
       $(PackageConfigurations)
       netfx-Windows_NT;
-      $(netcoreappCurrent)-Windows_NT;
-      $(netcoreappCurrent);
+      $(NetCoreAppCurrent)-Windows_NT;
+      $(NetCoreAppCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

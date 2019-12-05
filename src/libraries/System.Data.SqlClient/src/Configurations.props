@@ -9,9 +9,9 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
-      $(netcoreappCurrent);
-      $(netcoreappCurrent)-Unix;
-      $(netcoreappCurrent)-Windows_NT;
+      $(NetCoreAppCurrent);
+      $(NetCoreAppCurrent)-Unix;
+      $(NetCoreAppCurrent)-Windows_NT;
       _netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

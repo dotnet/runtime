@@ -6,7 +6,7 @@
       tell Microsoft.Common.props not to import Directory.Build.props again
     -->
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
-    <netcoreappCurrent>netcoreapp5.0</netcoreappCurrent>
+    <NetCoreAppCurrent>netcoreapp5.0</NetCoreAppCurrent>
   </PropertyGroup>
 
   <!--
