@@ -1,8 +1,8 @@
-# Microsoft.CSharp package
+# Microsoft.CSharp library
 
 We are not accepting feature contributions to Microsoft.CSharp.
-The package is effectively archived.
+The library is effectively archived.
 
-The package and supporting language features are mature and no longer evolving, and the risk of code change likely exceeds the benefit.
+The library and supporting language features are mature and no longer evolving, and the risk of code change likely exceeds the benefit.
 We will consider changes that address significant bugs or regressions, or changes that are necessary to continue shipping the binaries.
 Other changes will be rejected.
