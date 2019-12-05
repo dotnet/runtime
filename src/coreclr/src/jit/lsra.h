@@ -471,12 +471,11 @@ class RegRecord : public Referenceable
 public:
     RegRecord()
     {
-        assignedInterval    = nullptr;
-        previousInterval    = nullptr;
-        regNum              = REG_NA;
-        isCalleeSave        = false;
-        registerType        = IntRegisterType;
-        isBusyUntilNextKill = false;
+        assignedInterval = nullptr;
+        previousInterval = nullptr;
+        regNum           = REG_NA;
+        isCalleeSave     = false;
+        registerType     = IntRegisterType;
     }
 
     void init(regNumber reg)
@@ -511,8 +510,6 @@ public:
     void tinyDump();
 #endif // DEBUG
 
-    bool isFree();
-
     // RefPosition   * getNextRefPosition();
     // LsraLocation    getNextRefLocation();
 
@@ -528,15 +525,10 @@ public:
     // assignedInterval becomes inactive.
     Interval* previousInterval;
 
-    regNumber    regNum;
-    bool         isCalleeSave;
-    RegisterType registerType;
-    // This register must be considered busy until the next time it is explicitly killed.
-    // This is used so that putarg_reg can avoid killing its lclVar source, while avoiding
-    // the problem with the reg becoming free if the last-use is encountered before the call.
-    bool isBusyUntilNextKill;
-
-    bool conflictingFixedRegReference(RefPosition* refPosition);
+    regNumber     regNum;
+    bool          isCalleeSave;
+    RegisterType  registerType;
+    unsigned char regOrder;
 };
 
 inline bool leafInRange(GenTree* leaf, int lower, int upper)
@@ -976,9 +968,7 @@ private:
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* getSecondHalfRegRec(RegRecord* regRec);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
-    bool canSpillDoubleReg(RegRecord*            physRegRecord,
-                           LsraLocation          refLocation,
-                           BasicBlock::weight_t* recentAssignedRefWeight);
+    bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
@@ -986,7 +976,8 @@ private:
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
     bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
-    bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, BasicBlock::weight_t* recentAssignedRefWeight);
+    bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation);
+    unsigned getSpillWeight(RegRecord* physRegRecord);
     bool isRegInUse(RegRecord* regRec, RefPosition* refPosition);
 
     // insert refpositions representing prolog zero-inits which will be added later
@@ -1056,11 +1047,11 @@ private:
     regMaskTP allSIMDRegs();
     regMaskTP internalFloatRegCandidates();
 
-    bool registerIsFree(regNumber regNum, RegisterType regType);
     bool registerIsAvailable(RegRecord*    physRegRecord,
                              LsraLocation  currentLoc,
                              LsraLocation* nextRefLocationPtr,
                              RegisterType  regType);
+    void makeRegisterInactive(RegRecord* physRegRecord);
     void freeRegister(RegRecord* physRegRecord);
     void freeRegisters(regMaskTP regsToFree);
 
@@ -1143,15 +1134,11 @@ private:
      * Register management
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
-    regNumber tryAllocateFreeReg(Interval* current, RefPosition* refPosition);
-    regNumber allocateBusyReg(Interval* current, RefPosition* refPosition, bool allocateIfProfitable);
+    regNumber allocateReg(Interval* current, RefPosition* refPosition);
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
-    bool isSpillCandidate(Interval*     current,
-                          RefPosition*  refPosition,
-                          RegRecord*    physRegRecord,
-                          LsraLocation& nextLocation);
+    bool isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord);
     void checkAndAssignInterval(RegRecord* regRec, Interval* interval);
     void assignPhysReg(RegRecord* regRec, Interval* interval);
     void assignPhysReg(regNumber reg, Interval* interval)
@@ -1316,8 +1303,7 @@ private:
         // Allocation decisions
         LSRA_EVENT_FIXED_REG, LSRA_EVENT_EXP_USE, LSRA_EVENT_ZERO_REF, LSRA_EVENT_NO_ENTRY_REG_ALLOCATED,
         LSRA_EVENT_KEPT_ALLOCATION, LSRA_EVENT_COPY_REG, LSRA_EVENT_MOVE_REG, LSRA_EVENT_ALLOC_REG,
-        LSRA_EVENT_ALLOC_SPILLED_REG, LSRA_EVENT_NO_REG_ALLOCATED, LSRA_EVENT_RELOAD, LSRA_EVENT_SPECIAL_PUTARG,
-        LSRA_EVENT_REUSE_REG,
+        LSRA_EVENT_NO_REG_ALLOCATED, LSRA_EVENT_RELOAD, LSRA_EVENT_SPECIAL_PUTARG, LSRA_EVENT_REUSE_REG,
     };
     void dumpLsraAllocationEvent(LsraDumpEvent event,
                                  Interval*     interval     = nullptr,
@@ -1489,6 +1475,141 @@ private:
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     //-----------------------------------------------------------------------
+    // Register status
+    //-----------------------------------------------------------------------
+
+    regMaskTP m_AvailableRegs;
+    regNumber getRegForType(regNumber reg, var_types regType)
+    {
+#ifdef TARGET_ARM
+        if ((regType == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
+        {
+            reg = REG_PREV(reg);
+        }
+#endif // TARGET_ARM
+        return reg;
+    }
+
+    regMaskTP getRegMask(regNumber reg, var_types regType)
+    {
+        reg               = getRegForType(reg, regType);
+        regMaskTP regMask = genRegMask(reg);
+#ifdef TARGET_ARM
+        if (regType == TYP_DOUBLE)
+        {
+            assert(genIsValidDoubleReg(reg));
+            regMask |= (regMask << 1);
+        }
+#endif // TARGET_ARM
+        return regMask;
+    }
+
+    void resetAvailableRegs()
+    {
+        m_AvailableRegs          = (availableIntRegs | availableFloatRegs);
+        m_RegistersWithConstants = RBM_NONE;
+    }
+
+    bool isRegAvailable(regNumber reg, var_types regType)
+    {
+        regMaskTP regMask = getRegMask(reg, regType);
+        return (m_AvailableRegs & regMask) == regMask;
+    }
+    void setRegsInUse(regMaskTP regMask)
+    {
+        m_AvailableRegs &= ~regMask;
+    }
+    void setRegInUse(regNumber reg, var_types regType)
+    {
+        regMaskTP regMask = getRegMask(reg, regType);
+        setRegsInUse(regMask);
+    }
+    void makeRegsAvailable(regMaskTP regMask)
+    {
+        m_AvailableRegs |= regMask;
+    }
+    void makeRegAvailable(regNumber reg, var_types regType)
+    {
+        regMaskTP regMask = getRegMask(reg, regType);
+        makeRegsAvailable(regMask);
+    }
+
+    void clearNextIntervalRef(regNumber reg, var_types regType);
+    void updateNextIntervalRef(regNumber reg, Interval* interval);
+    LsraLocation getNextIntervalRefLocation(regNumber reg ARM_ARG(var_types theRegType))
+    {
+        LsraLocation nextLocation = nextIntervalRef[reg];
+#ifdef TARGET_ARM
+        if (theRegType == TYP_DOUBLE)
+        {
+            nextLocation = Min(nextLocation, nextIntervalRef[REG_NEXT(reg)]);
+        }
+#endif
+        return nextLocation;
+    }
+
+    void clearSpillCost(regNumber reg, var_types regType);
+    void updateSpillCost(regNumber reg, Interval* interval);
+
+    regMaskTP m_RegistersWithConstants;
+    void clearConstantReg(regNumber reg, var_types regType)
+    {
+        m_RegistersWithConstants &= ~getRegMask(reg, regType);
+    }
+    void setConstantReg(regNumber reg, var_types regType)
+    {
+        m_RegistersWithConstants |= getRegMask(reg, regType);
+    }
+    bool isRegConstant(regNumber reg, var_types regType)
+    {
+        reg               = getRegForType(reg, regType);
+        regMaskTP regMask = getRegMask(reg, regType);
+        return (m_RegistersWithConstants & regMask) == regMask;
+    }
+
+    LsraLocation nextFixedRef[REG_COUNT];
+    void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
+
+    LsraLocation nextIntervalRef[REG_COUNT];
+    unsigned int spillCost[REG_COUNT];
+
+    regMaskTP regsBusyUntilKill;
+    regMaskTP regsInUseThisLocation;
+    regMaskTP regsInUseNextLocation;
+    bool isRegBusy(regNumber reg, var_types regType)
+    {
+        regMaskTP regMask = getRegMask(reg, regType);
+        return (regsBusyUntilKill & regMask) != RBM_NONE;
+    }
+    void setRegBusyUntilKill(regNumber reg, var_types regType)
+    {
+        regsBusyUntilKill |= getRegMask(reg, regType);
+    }
+    void clearRegBusyUntilKill(regNumber reg)
+    {
+        regsBusyUntilKill &= ~genRegMask(reg);
+    }
+
+    bool isRegInUse(regNumber reg, var_types regType)
+    {
+        regMaskTP regMask = getRegMask(reg, regType);
+        return (regsInUseThisLocation & regMask) != RBM_NONE;
+    }
+
+    void resetRegState()
+    {
+        resetAvailableRegs();
+        regsBusyUntilKill = RBM_NONE;
+    }
+
+    bool conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition);
+
+    // This method should not be used and is here to retain old behavior.
+    // It should be replaced by isRegAvailable().
+    // See comment in allocateReg();
+    bool isFree(RegRecord* regRecord);
+
+    //-----------------------------------------------------------------------
     // Build methods
     //-----------------------------------------------------------------------
 
@@ -1551,7 +1672,7 @@ private:
 
     int BuildSimple(GenTree* tree);
     int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
-    int BuildDelayFreeUses(GenTree* node, regMaskTP candidates = RBM_NONE);
+    int BuildDelayFreeUses(GenTree* node, GenTree* rmwNode = nullptr, regMaskTP candidates = RBM_NONE);
     int BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
     int BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
@@ -1728,7 +1849,7 @@ public:
     // True if this interval is defined by a putArg, whose source is a non-last-use lclVar.
     // During allocation, this flag will be cleared if the source is not already in the required register.
     // Othewise, we will leave the register allocated to the lclVar, but mark the RegRecord as
-    // isBusyUntilNextKill, so that it won't be reused if the lclVar goes dead before the call.
+    // isBusyUntilKill, so that it won't be reused if the lclVar goes dead before the call.
     bool isSpecialPutArg : 1;
 
     // True if this interval interferes with a call.
