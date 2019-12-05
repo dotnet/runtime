@@ -3,6 +3,11 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
+
+    <!-- Not useful for crossgen testing, especially with crossgen2, given how the TypeSystem doesn't have all the type checks that
+         exist in the runtime's type system. -->
+    <CrossGenTest>false</CrossGenTest>
+    
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="notimplemented.il" />
