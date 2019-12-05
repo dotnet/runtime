@@ -82,7 +82,7 @@ stages:
       crossBuild: true
       name: Linux_Arm
       productBuildDockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20190923200213
-      additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm
+      crossrootfsDir: /crossrootfs/arm
       portableBuild: true
       skipTests: true
       archType: arm
@@ -92,7 +92,7 @@ stages:
       crossBuild: true
       name: Linux_Arm64
       productBuildDockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-cfdd435-20190923200213
-      additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm64
+      crossrootfsDir: /crossrootfs/arm64
       portableBuild: true
       skipTests: true
       archType: arm64
@@ -102,7 +102,7 @@ stages:
   #   - template: ${{ variables['pipelinesPath'] }}/jobs/bash-build.yml
   #     parameters:
   #       additionalMSBuildArgs: /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json /p:OutputRid=tizen.5.0.0-armel
-  #       additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/armel.tizen.build
+  #       crossrootfsDir: /crossrootfs/armel.tizen.build
   #       crossBuild: true
   #       name: Linux_ArmRel_Tizen
   #       disableCrossgen: true
@@ -117,7 +117,7 @@ stages:
       crossBuild: true
       name: Linux_Arm64_Alpine37
       productBuildDockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-406629a-20190923200213
-      additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm64
+      crossrootfsDir: /crossrootfs/arm64
       portableBuild: false
       skipTests: true
       archType: arm64

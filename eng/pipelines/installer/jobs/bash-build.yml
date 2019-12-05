@@ -16,6 +16,7 @@ parameters:
   archType: x64
   timeoutInMinutes: 120
   pool: ''
+  crossrootfsDir: ''
 
 jobs:
   - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
@@ -36,7 +37,7 @@ jobs:
           -v "$(Build.SourcesDirectory):/root/runtime"
           -w="/root/runtime"
           $(PreserveNuGetAuthDockerArgs)
-          ${{ parameters.additionalRunArgs }}
+          -e ROOTFS_DIR=${{ parameters.crossrootfsDir }}
           ${{ parameters.container }}
 
       ${{ if eq(parameters.name, 'FreeBSD_x64')}}:
