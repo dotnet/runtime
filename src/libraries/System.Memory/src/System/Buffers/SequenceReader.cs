@@ -52,10 +52,7 @@ namespace System.Buffers
         /// <summary>
         /// The unread portion of the <see cref="Sequence"/>.
         /// </summary>
-        public readonly ReadOnlySequence<T> UnreadSequence
-        {
-            get => Sequence.Slice(Position);
-        }
+        public readonly ReadOnlySequence<T> UnreadSequence => Sequence.Slice(Position);
 
         /// <summary>
         /// The current position in the <see cref="Sequence"/>.
