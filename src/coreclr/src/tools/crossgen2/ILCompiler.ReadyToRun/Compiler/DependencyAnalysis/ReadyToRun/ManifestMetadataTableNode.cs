@@ -48,6 +48,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly List<ISignatureEmitter> _signatureEmitters;
 
         /// <summary>
+        /// Number of assembly references in the input module
+        /// </summary>
+        private int _assemblyRefCount;
+
+        /// <summary>
         /// ID corresponding to the next manifest metadata assemblyref entry.
         /// </summary>
         private int _nextModuleId;
@@ -77,8 +82,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             _inputModuleName = inputModule.Assembly.GetName().Name;
 
-            int assemblyRefCount = inputModule.MetadataReader.GetTableRowCount(TableIndex.AssemblyRef);
-            for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
+            _assemblyRefCount = inputModule.MetadataReader.GetTableRowCount(TableIndex.AssemblyRef);
+            for (int assemblyRefIndex = 1; assemblyRefIndex <= _assemblyRefCount; assemblyRefIndex++)
             {
                 AssemblyReferenceHandle assemblyRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
                 AssemblyReference assemblyRef = inputModule.MetadataReader.GetAssemblyReference(assemblyRefHandle);
@@ -87,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // AssemblyRefCount + 1 corresponds to ROWID 0 in the manifest metadata
-            _nextModuleId = assemblyRefCount + 2;
+            _nextModuleId = _assemblyRefCount + 2;
         }
 
         public void RegisterEmitter(ISignatureEmitter emitter)
@@ -112,7 +117,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _assemblyRefToModuleIdMap.Add(assemblyName.Name, assemblyRefIndex);
             }
 
-            if (!_moduleIdToAssemblyNameMap.ContainsKey(assemblyRefIndex))
+            if ((assemblyRefIndex >= _assemblyRefCount + 2) && !_moduleIdToAssemblyNameMap.ContainsKey(assemblyRefIndex))
             {
                 if (_emissionCompleted)
                 {

@@ -18,14 +18,18 @@
   -->
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
 
-  <!-- Common paths -->
-
   <!-- Set these properties early enough for libraries as they import the Arcade SDK not early enough.  -->
   <PropertyGroup Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true'">
     <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
     <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
     <ArtifactsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</ArtifactsDir>
     <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin'))</ArtifactsBinDir>
+  </PropertyGroup>
+
+  <!-- The NetCoreApp TFM to build and test against. -->
+  <PropertyGroup>
+    <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v5.0</NetCoreAppCurrentTargetFrameworkMoniker>
+    <NetCoreAppCurrent>netcoreapp5.0</NetCoreAppCurrent>
   </PropertyGroup>
 
   <!--

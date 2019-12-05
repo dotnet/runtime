@@ -54,14 +54,6 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Alpine.38.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
 
-    # Linux rhel6 x64
-    - ${{ if eq(parameters.platform, 'Linux_rhel6_x64') }}:
-      # TODO: enable RedHat.6.Amd64.Open once https://github.com/dotnet/runtime/issues/168 is resolved
-      # - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-      #   - RedHat.6.Amd64.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - RedHat.6.Amd64
-
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:

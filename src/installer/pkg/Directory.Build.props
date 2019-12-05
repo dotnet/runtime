@@ -33,7 +33,7 @@
       deb-tool" commands, after depending on InitializeDotnetDebTool target.
     -->
     <DebToolBinDir>$(ArtifactsBinDir)dotnet-deb-tool\</DebToolBinDir>
-    <DebtoolAssemblyFile>$(DebToolBinDir)$(Configuration)\netcoreapp3.0\dotnet-deb-tool.dll</DebtoolAssemblyFile>
+    <DebtoolAssemblyFile>$(DebToolBinDir)$(Configuration)\$(NetCoreAppCurrent)\dotnet-deb-tool.dll</DebtoolAssemblyFile>
     <DotnetDebToolSourceDir>$(RepoRoot)tools-local/dotnet-deb-tool/</DotnetDebToolSourceDir>
 
     <IsDebianBasedDistro

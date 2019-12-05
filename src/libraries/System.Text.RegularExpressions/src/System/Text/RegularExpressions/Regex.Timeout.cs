@@ -36,26 +36,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public TimeSpan MatchTimeout => internalMatchTimeout;
 
-        // Note: "&lt;" is the XML entity for smaller ("<").
-        /// <summary>
-        /// Validates that the specified match timeout value is valid.
-        /// The valid range is <code>TimeSpan.Zero &lt; matchTimeout &lt;= Regex.MaximumMatchTimeout</code>.
-        /// </summary>
-        /// <param name="matchTimeout">The timeout value to validate.</param>
-        /// <exception cref="ArgumentOutOfRangeException">If the specified timeout is not within a valid range.
-        /// </exception>
-        protected internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
-        {
-            if (InfiniteMatchTimeout == matchTimeout)
-                return;
-
-            // Change this to make sure timeout is not longer then Environment.Ticks cycle length:
-            if (TimeSpan.Zero < matchTimeout && matchTimeout <= s_maximumMatchTimeout)
-                return;
-
-            throw new ArgumentOutOfRangeException(nameof(matchTimeout));
-        }
-
         /// <summary>
         /// Specifies the default RegEx matching timeout value (i.e. the timeout that will be used if no
         /// explicit timeout is specified).

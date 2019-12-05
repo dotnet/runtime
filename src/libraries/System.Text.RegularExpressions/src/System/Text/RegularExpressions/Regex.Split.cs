@@ -13,16 +13,16 @@ namespace System.Text.RegularExpressions
         /// by <paramref name="pattern"/>.
         /// </summary>
         public static string[] Split(string input, string pattern) =>
-            new Regex(pattern, addToCache: true).Split(input);
+            RegexCache.GetOrAdd(pattern).Split(input);
 
         /// <summary>
         /// Splits the <paramref name="input "/>string at the position defined by <paramref name="pattern"/>.
         /// </summary>
         public static string[] Split(string input, string pattern, RegexOptions options) =>
-            Split(input, pattern, options, s_defaultMatchTimeout);
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Split(input);
 
         public static string[] Split(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
-            new Regex(pattern, options, matchTimeout, addToCache: true).Split(input);
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).Split(input);
 
         /// <summary>
         /// Splits the <paramref name="input"/> string at the position defined by a
