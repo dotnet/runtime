@@ -271,7 +271,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 Length = sizeof(bool),
                 Buffer = (byte*)&val
             };
-            SetParam(QUIC_PARAM_CONN.USE_SEND_BUFFER, buffer);
+            SetParam(QUIC_PARAM_CONN.SEND_BUFFERING, buffer);
         }
 
         private unsafe void DisableBuffering()
@@ -282,7 +282,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 Length = sizeof(bool),
                 Buffer = (byte*)&val
             };
-            SetParam(QUIC_PARAM_CONN.USE_SEND_BUFFER, buffer);
+            SetParam(QUIC_PARAM_CONN.SEND_BUFFERING, buffer);
         }
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
@@ -377,7 +377,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_nativeObjPtr != IntPtr.Zero)
             {
-                ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0).GetAwaiter().GetResult();
                 _api._connectionCloseDelegate?.Invoke(_nativeObjPtr);
             }
 
@@ -411,19 +410,19 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override void Close()
         {
-            Dispose(false);
+            // TODO make this async
+            ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0).GetAwaiter().GetResult();
         }
 
-        public override async ValueTask DisposeAsync()
+        public override ValueTask DisposeAsync()
         {
             if (_disposed)
             {
-                return;
+                return default;
             }
 
             if (_nativeObjPtr != IntPtr.Zero)
             {
-                await ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0).ConfigureAwait(false);
                 _api._connectionCloseDelegate?.Invoke(_nativeObjPtr);
             }
 
@@ -432,6 +431,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _handle.Free();
             _disposed = true;
+            return default;
         }
     }
 }

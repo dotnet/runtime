@@ -14,6 +14,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         private bool _disposed;
 
         private IntPtr _registrationContext;
+
         private unsafe MsQuicApi()
         {
             uint status = (uint)Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration);

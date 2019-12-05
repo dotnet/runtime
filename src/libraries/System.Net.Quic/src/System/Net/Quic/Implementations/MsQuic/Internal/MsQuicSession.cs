@@ -40,6 +40,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return new MsQuicConnection(endpoint, _api, connectionPtr, sslClientAuthenticationOptions);
         }
 
+        // TODO allow for a callback to select the certificate (SNI).
         public MsQuicListener ListenerOpen(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
             if (!_opened)
@@ -63,6 +64,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return listener;
         }
 
+        // TODO call this for graceful shutdown.
         public void ShutDown(
             QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
             ushort ErrorCode)

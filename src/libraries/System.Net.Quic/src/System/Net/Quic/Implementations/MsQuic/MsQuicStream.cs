@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
@@ -37,7 +38,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         private ResettableCompletionSource<uint> _receiveResettableCompletionSource;
 
         // Buffers to hold during a call to send.
-        private MemoryHandle[] _bufferArrays;
+        private readonly MemoryHandle[] _bufferArrays = new MemoryHandle[1];
+        private readonly QuicBuffer[] _sendQuicBuffers = new QuicBuffer[1];
 
         // Handle to hold when sending.
         private GCHandle _sendHandle;
@@ -55,7 +57,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private volatile bool _disposed = false;
 
-        private QuicBuffer[] _quicBuffer = default;
+        private List<QuicBuffer> _receiveQuicBuffers = new List<QuicBuffer>();
 
         private object _sync = new object();
 
@@ -82,10 +84,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
             }
 
-            // Options to effectively have a single buffer pipe
-            // Effectively this is a synchronization mechanism between calls to ReadAsync and Recv callbacks
-            // However, having a pipe here is nice for calling Complete,
-            // handing buffering, and handling synchronization.
             _sendResettableCompletionSource = new UIntResettableCompletionSource();
             _receiveResettableCompletionSource = new UIntResettableCompletionSource();
             SetCallbackHandler();
@@ -118,7 +116,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 await StartAsync();
             }
 
-            await SendAsync(new ReadOnlySequence<byte>(buffer), QUIC_SEND_FLAG.NONE);
+            await SendAsync(buffer, QUIC_SEND_FLAG.NONE);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -127,7 +125,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            // TODO is there anything we can do with cancellation token?
             lock (_sync)
             {
                 if (_readState == ReadState.ReadsCompleted)
@@ -143,14 +140,20 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             cancellationToken.Register(() =>
             {
+                bool shouldComplete = false;
                 lock (_sync)
                 {
                     if (_readState == ReadState.None)
                     {
-                        _readState = ReadState.Canceled;
+                        shouldComplete = true;
                     }
 
+                    _readState = ReadState.Canceled;
+                }
+                if (shouldComplete)
+                {
                     _receiveResettableCompletionSource.CompleteException(new TaskCanceledException("Operation was canceled"));
+
                 }
             });
 
@@ -159,12 +162,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             // longer than it needs to. We will need to benchmark this.
             int length = (int)await _receiveResettableCompletionSource.GetValueTask();
 
-            static unsafe void CopyToBuffer(Span<byte> buffer, QuicBuffer[] quicBuffers)
+            static unsafe void CopyToBuffer(Span<byte> destinationBuffer, List<QuicBuffer> sourceBuffers)
             {
-                Span<byte> slicedBuffer = buffer;
-                for (int i = 0; i < quicBuffers.Length; i++)
+                Span<byte> slicedBuffer = destinationBuffer;
+                for (int i = 0; i < sourceBuffers.Count; i++)
                 {
-                    QuicBuffer nativeBuffer = quicBuffers[i];
+                    QuicBuffer nativeBuffer = sourceBuffers[i];
                     int length = Math.Min((int)nativeBuffer.Length, slicedBuffer.Length);
                     new Span<byte>(nativeBuffer.Buffer, length).CopyTo(slicedBuffer);
                     if (length < slicedBuffer.Length)
@@ -177,7 +180,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             int actual = Math.Min(length, destination.Length);
 
-            CopyToBuffer(destination.Span, _quicBuffer);
+            CopyToBuffer(destination.Span, _receiveQuicBuffers);
 
             lock (_sync)
             {
@@ -199,14 +202,17 @@ namespace System.Net.Quic.Implementations.MsQuic
             return actual;
         }
 
+        // TODO do we want this to be a synchronization mechanism to cancel a pending read
+        // If so, we need to complete the read here as well.
         internal override void ShutdownRead()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            // TODO how should this affect ReadAsync? Should it start throwing?
+            lock (_sync)
+            {
+                _readState = ReadState.ReadsAborted;
+            }
 
-            // TODO do we need to check if we have already gotten PEER_SEND_SHUTDOWN.
-            _readState = ReadState.ReadsCompleted;
             _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -398,20 +404,24 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             StreamEventDataRecv receieveEvent = evt.Data.Recv;
-            _quicBuffer = new QuicBuffer[receieveEvent.BufferCount];
             for (int i = 0; i < receieveEvent.BufferCount; i++)
             {
-                _quicBuffer[i] = receieveEvent.Buffers[i];
+                _receiveQuicBuffers.Add(receieveEvent.Buffers[i]);
             }
 
+            bool shouldComplete = false;
             lock (_sync)
             {
                 if (_readState == ReadState.None)
                 {
-                    // Abort will complete the completion source already.
-                    _receiveResettableCompletionSource.Complete((uint)receieveEvent.TotalBufferLength);
+                    shouldComplete = true;
                 }
                 _readState = ReadState.IndividualReadComplete;
+            }
+
+            if (shouldComplete)
+            {
+                _receiveResettableCompletionSource.Complete((uint)receieveEvent.TotalBufferLength);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -468,13 +478,19 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
+            bool shouldComplete = false;
             lock (_sync)
             {
                 if (_readState == ReadState.None)
                 {
-                    _receiveResettableCompletionSource.CompleteException(new IOException("Reading has been aborted by the peer."));
+                    shouldComplete = true;
                 }
                 _readState = ReadState.ReadsAborted;
+            }
+
+            if (shouldComplete)
+            {
+                _receiveResettableCompletionSource.CompleteException(new IOException("Reading has been aborted by the peer."));
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -486,6 +502,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
+            bool shouldComplete = false;
+
             lock (_sync)
             {
                 // This event won't occur within the middle of a receive.
@@ -493,10 +511,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (_readState == ReadState.None)
                 {
-                    _receiveResettableCompletionSource.Complete(0);
+                    shouldComplete = true;
                 }
 
                 _readState = ReadState.ReadsCompleted;
+            }
+
+            if (shouldComplete)
+            {
+                _receiveResettableCompletionSource.Complete(0);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -508,11 +531,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            _sendHandle.Free();
-            foreach (MemoryHandle gchBufferArray in _bufferArrays)
-            {
-                gchBufferArray.Dispose();
-            }
+            CleanupSendState();
             // TODO throw if a write failed?
             uint errorCode = evt.Data.SendComplete.Canceled;
             _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
@@ -520,6 +539,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicConstants.Success;
+        }
+
+        private void CleanupSendState()
+        {
+            _sendHandle.Free();
+            _bufferArrays[0].Dispose();
         }
 
         private void SetCallbackHandler()
@@ -533,42 +558,33 @@ namespace System.Net.Quic.Implementations.MsQuic
                 GCHandle.ToIntPtr(_handle));
         }
 
-        // TODO this probably can be ReadOnlyMemory
         public unsafe ValueTask<uint> SendAsync(
-           ReadOnlySequence<byte> buffers,
+           ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAG flags)
         {
-            int bufferCount = 0;
-            foreach (ReadOnlyMemory<byte> memory in buffers)
-            {
-                bufferCount++;
-            }
+            // TODO prevent overlapping sends.
+            MemoryHandle handle = buffer.Pin();
+            _sendQuicBuffers[0].Length = (uint)buffer.Length;
+            _sendQuicBuffers[0].Buffer = (byte*)handle.Pointer;
 
-            var quicBufferArray = new QuicBuffer[bufferCount];
-            _bufferArrays = new MemoryHandle[bufferCount];
+            _bufferArrays[0] = handle;
 
-            int i = 0;
-            foreach (ReadOnlyMemory<byte> memory in buffers)
-            {
-                MemoryHandle handle = memory.Pin();
-                _bufferArrays[i] = handle;
-                quicBufferArray[i].Length = (uint)memory.Length;
-                quicBufferArray[i].Buffer = (byte*)handle.Pointer;
-                i++;
-            }
+            _sendHandle = GCHandle.Alloc(_sendQuicBuffers, GCHandleType.Pinned);
 
-            _sendHandle = GCHandle.Alloc(quicBufferArray, GCHandleType.Pinned);
-
-            var quicBufferPointer = (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(quicBufferArray, 0);
+            var quicBufferPointer = (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(_sendQuicBuffers, 0);
 
             uint status = _api._streamSendDelegate(
                 _ptr,
                 quicBufferPointer,
-                (uint)bufferCount,
+                bufferCount: 1,
                 (uint)flags,
                 _ptr);
 
-            MsQuicStatusException.ThrowIfFailed(status);
+            if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
+            {
+                CleanupSendState();
+                MsQuicStatusException.ThrowIfFailed(status);
+            }
 
             return _sendResettableCompletionSource.GetValueTask();
         }
