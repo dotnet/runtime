@@ -49,6 +49,9 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     archType:  ${{ parameters.archType }}
 
+    librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
     ${{ if ne(parameters.container, '') }}:
       ${{ if eq(parameters.container.registry, 'mcr') }}:
         container: ${{ format('{0}:{1}', 'mcr.microsoft.com/dotnet-buildtools/prereqs', parameters.container.image) }}
