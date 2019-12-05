@@ -13,8 +13,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libapache2-mod-auth-kerb procps krb5-user iputils-ping dnsutils nano
 
-# Copy apache2 kerb module to the right place since the apt-get install puts it in the wrong place for this docker image
-RUN cp /usr/lib/apache2/modules/mod_auth_kerb.so /usr/local/apache2/modules
+# Link apache2 kerb module to the right place since the apt-get install puts it in the wrong place for this docker image
+RUN ln -s /usr/lib/apache2/modules/mod_auth_kerb.so /usr/local/apache2/modules
 
 # Modify httpd.conf to add Negotiate auth as required
 RUN echo "LoadModule auth_kerb_module modules/mod_auth_kerb.so" >> /usr/local/apache2/conf/httpd.conf && \
