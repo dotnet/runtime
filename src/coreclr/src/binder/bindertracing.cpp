@@ -85,6 +85,18 @@ namespace
 #ifdef CROSSGEN_COMPILE
         alcName.Set(W("Custom"));
 #else // CROSSGEN_COMPILE
+        // Keeping a per-thread INT_PTR reference to a managed AssemblyLoadContext is
+        // sufficient to avoid repeatedly calling into managed code, as managedALC does not
+        // change between each resolve+bind operations.
+        static thread_local INT_PTR prevManagedALC;
+        static thread_local SString prevManagedALCName;
+
+        if (prevManagedALC == managedALC)
+        {
+            alcName.Set(prevManagedALCName);
+            return;
+        }
+
         OBJECTREF *alc = reinterpret_cast<OBJECTREF *>(managedALC);
 
         GCX_COOP();
@@ -102,6 +114,9 @@ namespace
         gc.alcName->GetSString(alcName);
 
         GCPROTECT_END();
+
+        prevManagedALC = managedALC;
+        prevManagedALCName = alcName;
 #endif // CROSSGEN_COMPILE
     }
 
