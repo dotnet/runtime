@@ -841,7 +841,8 @@ ves_icall_System_Array_InternalCreate (MonoArray *volatile* result, MonoType* ty
 		goto exit;
 	}
 
-	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
+	MonoGenericClass *gklass;
+	gklass = mono_class_try_get_generic_class (klass);
 	if (is_generic_parameter (type) || mono_class_is_gtd (klass) || (gklass && gklass->context.class_inst->is_open)) {
 		mono_error_set_not_supported (error, NULL);
 		goto exit;
