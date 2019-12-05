@@ -6,8 +6,8 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       $(NetCoreAppCurrent);
-      <!-- Use inbox facade on netfx -->
-      _netfx;
+      <!-- Use inbox facade on net472 -->
+      _net472;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

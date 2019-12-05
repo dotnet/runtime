@@ -12,7 +12,7 @@
       $(NetCoreAppCurrent);
       $(NetCoreAppCurrent)-Unix;
       $(NetCoreAppCurrent)-Windows_NT;
-      _netfx-Windows_NT;
+      _net472-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -151,13 +151,6 @@
       <Imports>net471</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
-    <!-- netfx is an alias for net472 -->
-    <TargetGroups Include="netfx">
-      <TargetFramework>net472</TargetFramework>
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
-      <Imports>net472</Imports>
-      <CompatibleWith>netstandard2.0</CompatibleWith>
-    </TargetGroups>
     <TargetGroups Include="win8">
       <TargetFramework>win8</TargetFramework>
       <TargetFrameworkIdentifier>Windows</TargetFrameworkIdentifier>

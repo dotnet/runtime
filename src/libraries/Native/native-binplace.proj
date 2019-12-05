@@ -3,7 +3,7 @@
     <BuildConfigurations>
       netcoreapp5.0;
       netstandard2.0;
-      netfx;
+      net472;
     </BuildConfigurations>
   </PropertyGroup>
   <Import Project="..\Directory.Build.props" />
