@@ -1,9 +1,8 @@
 
-// Disable pipeline for ordinary pushes to the branches
-trigger:
-  none
+# Disable pipeline for ordinary pushes to the branches
+trigger: none
 
-// To reduce load on the pipeline, enable it only for PRs that affect critical networking code
+# To reduce load on the pipeline, enable it only for PRs that affect critical networking code
 pr:
   branches:
     include:
