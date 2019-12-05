@@ -4,39 +4,26 @@ parameters:
   pool: ''
 
 jobs:
-- job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
-  displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
-  dependsOn:
-  - checkout
-  pool: ${{ parameters.pool }}
-  strategy:
-    matrix:
-      debug:
-        _BuildConfig: Debug
-      release:
-        _BuildConfig: Release
-  workspace:
-    clean: all
-  variables:
-    CommonMSBuildArgs: >-
-      /p:Configuration=$(_BuildConfig)
-      /p:PortableBuild=true
-  steps:
+- template: base-job.yml
+  parameters:
+    ${{ insert }}: ${{ parameters }}
+    strategy:
+      matrix:
+        debug:
+          _BuildConfig: Debug
+        release:
+          _BuildConfig: Release
+    variables:
+      CommonMSBuildArgs: >-
+        /p:Configuration=$(_BuildConfig)
+        /p:PortableBuild=true
 
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    buildSteps:
 
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-    - task: NuGetAuthenticate@0
-
-  - script: >-
-      $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
-      /p:OfficialBuildId=$(Build.BuildNumber)
-      /p:StripSymbols=true
-      $(CommonMSBuildArgs)
-    displayName: Build
-    condition: succeeded()
-
-  - template: steps/upload-job-artifacts.yml
-    parameters:
-      name: ${{ coalesce(parameters.name, parameters.platform) }}
-      skipTests: ${{ parameters.skipTests }}
+    - script: >-
+        $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        /p:OfficialBuildId=$(Build.BuildNumber)
+        /p:StripSymbols=true
+        $(CommonMSBuildArgs)
+      displayName: Build
+      condition: succeeded()

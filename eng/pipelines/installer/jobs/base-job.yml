@@ -1,0 +1,88 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  archType: ''
+  osSubgroup: ''
+  isOfficialBuild: false
+  liveCoreClrBuildConfig: ''
+  liveLibrariesBuildConfig: ''
+  timeoutInMinutes: 120
+  condition: true
+  container: ''
+  prepareSteps: []
+  buildSteps: []
+  dependsOn: []
+  variables: {}
+  name: ''
+  displayName: ''
+  pool: ''
+  strategy: {}
+
+variables:
+  commonVariables:
+    # Live artifact download
+    - _coreClrArtifactName: ''
+    - _coreClrDownloadPath: ''
+    - _coreClrOverridePathArg: ''
+
+    - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+      - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
+      - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
+      - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
+
+jobs:
+- job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
+  displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
+
+  condition: and(succeeded(), ${{ parameters.condition }})
+  pool: ${{ parameters.pool }}
+  strategy: ${{ parameters.strategy }}
+
+  variables:
+  - ${{ each variable in variables.commonVariables }}:
+    - name: ${{ variable.key }}
+      value: ${{ variable.value }}
+  - ${{ each variable in parameters.variables }}:
+    - name: ${{ variable.key }}
+      value: ${{ variable.value }}
+
+  dependsOn:
+  - checkout
+  - ${{ parameters.dependsOn }}
+
+  workspace:
+    clean: all
+
+  timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+  steps:
+
+  - ${{ parameters.prepareSteps }}
+
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - task: NuGetAuthenticate@0
+
+  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+  - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(_coreClrDownloadPath)
+        artifactFileName: '$(_coreClrArtifactName)$(archiveExtension)'
+        artifactName: '$(_coreClrArtifactName)'
+        displayName: 'CoreCLR build drop'
+
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(librariesDownloadDir)
+        artifactFileName: '$(librariesArtifactName)$(archiveExtension)'
+        artifactName: '$(librariesArtifactName)'
+        displayName: 'Libraries artifacts'
+
+  - ${{ parameters.buildSteps }}
+
+  - template: steps/upload-job-artifacts.yml
+    parameters:
+      name: ${{ coalesce(parameters.name, parameters.platform) }}
+      skipTests: ${{ parameters.skipTests }}
