@@ -192,6 +192,7 @@ jobs:
       additionalMSBuildArgs: /p:OutputRid=linux-musl-arm64
       portableBuild: false
       crossBuild: true
+      skipTests: true
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
