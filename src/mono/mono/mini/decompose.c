@@ -1273,7 +1273,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				case OP_STOREV_MEMBASE: {
 					src_var = get_vreg_to_inst (cfg, ins->sreg1);
 
-					if (COMPILE_LLVM (cfg) && !mini_is_gsharedvt_klass (ins->klass) && !cfg->gen_write_barriers)
+					mono_class_init_sizes (ins->klass);
+
+					if (COMPILE_LLVM (cfg) && !mini_is_gsharedvt_klass (ins->klass) && !(cfg->gen_write_barriers && m_class_has_references (ins->klass)))
 						break;
 
 					if (!src_var) {
