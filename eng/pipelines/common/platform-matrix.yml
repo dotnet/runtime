@@ -177,21 +177,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux x64 without a container
-
-- ${{ if containsValue(parameters.platforms, 'Linux_x64_raw') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      osGroup: Linux
-      archType: x64
-      platform: Linux_x64
-      jobParameters:
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
 # FreeBSD
 
 # FreeBSD machines are currently offline. Re-enable in the official build when
