@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="left">The first <see cref="EventId"/>.</param>
         /// <param name="right">The second <see cref="EventId"/>.</param>
-        /// <returns><c>true</c> if the objects are equal.</returns>
+        /// <returns><see langword="true" /> if the objects are equal.</returns>
         public static bool operator ==(EventId left, EventId right)
         {
             return left.Equals(right);
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="left">The first <see cref="EventId"/>.</param>
         /// <param name="right">The second <see cref="EventId"/>.</param>
-        /// <returns><c>true</c> if the objects are not equal.</returns>
+        /// <returns><see langword="true" /> if the objects are not equal.</returns>
         public static bool operator !=(EventId left, EventId right)
         {
             return !left.Equals(right);
@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Logging
         /// Indicates whether the current object is equal to another object of the same type. Two events are equal if they have the same id.
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
-        /// <returns><c>true</c> if the current object is equal to the other parameter; otherwise, <c>false</c>.</returns>
+        /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
         public bool Equals(EventId other)
         {
             return Id == other.Id;
