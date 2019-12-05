@@ -18,7 +18,6 @@
          Package testing doesn't run on xunit. -->
     <EnableXunitReporter Condition="'$(TargetGroup)' != 'AllConfigurations'">true</EnableXunitReporter>
     
-    <BuildConfiguration Condition="'$(TargetGroup)' != 'netcoreapp'">netcoreapp5.0</BuildConfiguration>
     <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildConfiguration).zip</TestArchiveRuntimeFile>
     <TestArchiveRuntimeFile Condition="'$(TargetGroup)' == 'AllConfigurations'">$(TestArchiveRuntimeRoot)packages-testPayload-$(ConfigurationGroup).zip</TestArchiveRuntimeFile>
 
