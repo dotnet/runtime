@@ -37,7 +37,7 @@ jobs:
     jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
     platforms:
     - Linux_arm
-    - ${{ if not(containsValue(parameters.skipPlatforms, 'Linux_arm64')) }}
+    - ${{ if not(containsValue(parameters.skipPlatforms, 'Linux_arm64')) }}:
       - Linux_arm64
     jobParameters:
       portableBuild: true
@@ -49,7 +49,7 @@ jobs:
     ${{ insert }}: ${{ parameters }}
     jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
     platforms:
-    - ${{ if not(containsValue(parameters.skipPlatforms, 'Linux_musl_x64')) }}
+    - ${{ if not(containsValue(parameters.skipPlatforms, 'Linux_musl_x64')) }}:
       - Linux_musl_x64
     jobParameters:
       additionalMSBuildArgs: /p:OutputRid=linux-musl-x64
@@ -60,7 +60,7 @@ jobs:
     ${{ insert }}: ${{ parameters }}
     jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
     platforms:
-    - ${{ if not(containsValue(parameters.skipPlatforms, 'Linux_musl_arm64')) }}
+    - ${{ if not(containsValue(parameters.skipPlatforms, 'Linux_musl_arm64')) }}:
       - Linux_musl_arm64
     jobParameters:
       additionalMSBuildArgs: /p:OutputRid=linux-musl-arm64
