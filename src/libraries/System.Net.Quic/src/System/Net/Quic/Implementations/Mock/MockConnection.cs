@@ -168,9 +168,10 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockStream(socket, streamId, bidirectional: bidirectional);
         }
 
-        internal override void Close()
+        internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
         {
             Dispose();
+            return default;
         }
 
         private void CheckDisposed()

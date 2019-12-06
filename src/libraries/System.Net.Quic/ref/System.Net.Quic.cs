@@ -22,7 +22,7 @@ namespace System.Net.Quic
         public QuicStream OpenBidirectionalStream() => throw null;
         public System.Threading.Tasks.ValueTask<QuicStream> AcceptStreamAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol => throw null;
-        public void Close() => throw null;
+        public ValueTask CloseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() => throw null;
         public ValueTask DisposeAsync() => throw null;
     }
@@ -31,8 +31,8 @@ namespace System.Net.Quic
         public QuicListener(IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
         public IPEndPoint ListenEndPoint => throw null;
         public System.Threading.Tasks.ValueTask<QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
-        public ValueTask StartAsync() => throw null;
-        public ValueTask CloseAsync() => throw null;
+        public ValueTask StartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public ValueTask CloseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() => throw null;
         public ValueTask DisposeAsync() => throw null;
     }
@@ -51,7 +51,7 @@ namespace System.Net.Quic
         public override void Write(byte[] buffer, int offset, int count) => throw null;
         public long StreamId => throw null;
         public void AbortRead() => throw null;
-        public ValueTask ShutdownWriteAsync() => throw null;
+        public ValueTask ShutdownWriteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
     public class QuicClientConnectionOptions
     {

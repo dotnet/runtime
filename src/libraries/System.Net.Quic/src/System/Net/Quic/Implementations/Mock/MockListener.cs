@@ -63,7 +63,7 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockConnection(socket, peerListenEndPoint, inboundListener);
         }
 
-        internal override ValueTask StartAsync()
+        internal override ValueTask StartAsync(CancellationToken cancellationToken = default)
         {
             _tcpListener.Start();
 
@@ -76,7 +76,7 @@ namespace System.Net.Quic.Implementations.Mock
             return default;
         }
 
-        internal override ValueTask CloseAsync()
+        internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
         {
             Dispose();
             return default;

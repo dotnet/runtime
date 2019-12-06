@@ -38,6 +38,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Resettable completions to be used for multiple calls to receive.
         private ResettableCompletionSource<uint> _receiveResettableCompletionSource;
 
+        private ResettableCompletionSource<uint> _shutdownResettableCompletionSource;
+
         // Buffers to hold during a call to send.
         private readonly MemoryHandle[] _bufferArrays = new MemoryHandle[1];
         private readonly QuicBuffer[] _sendQuicBuffers = new QuicBuffer[1];
@@ -49,6 +51,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         private StartState _started;
 
         private ReadState _readState;
+
+        private ShutdownState _shutdownState;
+
+        private SendState _sendState;
 
         // Used by the class to indicate that the stream is m_Readable.
         private bool _canRead;
@@ -85,8 +91,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
             }
 
-            _sendResettableCompletionSource = new UIntResettableCompletionSource();
-            _receiveResettableCompletionSource = new UIntResettableCompletionSource();
+            _sendResettableCompletionSource = new ResettableCompletionSource<uint>();
+            _receiveResettableCompletionSource = new ResettableCompletionSource<uint>();
+            _shutdownResettableCompletionSource = new ResettableCompletionSource<uint>();
+
             SetCallbackHandler();
         }
 
@@ -113,8 +121,26 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!_canWrite)
             {
-                throw new InvalidOperationException("Writing is not allowed on stream");
+                throw new InvalidOperationException("Writing is not allowed on stream.");
             }
+
+            cancellationToken.Register(() =>
+            {
+                bool shouldComplete = false;
+                lock (_sync)
+                {
+                    if (_sendState == SendState.None)
+                    {
+                        _sendState = SendState.Aborted;
+                        shouldComplete = true;
+                    }
+                }
+
+                if (shouldComplete)
+                {
+                    _sendResettableCompletionSource.CompleteException(new OperationCanceledException("Write was canceled"));
+                }
+            });
 
             if (_started == StartState.None)
             {
@@ -124,6 +150,16 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             await SendAsync(buffer, QUIC_SEND_FLAG.NONE);
 
+            lock (_sync)
+            {
+                // TODO confirm the expected behavior when we cancel sending.
+                // do we want to make it so write async always throws?
+                if (_sendState == SendState.Finished)
+                {
+                    _sendState = SendState.None;
+                }
+            }
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
@@ -132,7 +168,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             if (!_canRead)
             {
-                throw new InvalidOperationException("Reading is not allowed on stream");
+                throw new InvalidOperationException("Reading is not allowed on stream.");
             }
 
             lock (_sync)
@@ -142,7 +178,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                     return 0;
                 }
-                else if (_readState == ReadState.ReadsAborted)
+                else if (_readState == ReadState.Aborted)
                 {
                     throw new IOException("Reading has been aborted by the peer.");
                 }
@@ -158,12 +194,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                         shouldComplete = true;
                     }
 
-                    _readState = ReadState.Canceled;
+                    _readState = ReadState.Aborted;
                 }
 
                 if (shouldComplete)
                 {
-                    _receiveResettableCompletionSource.CompleteException(new TaskCanceledException("Operation was canceled"));
+                    _receiveResettableCompletionSource.CompleteException(new OperationCanceledException("Read was canceled"));
                 }
             });
 
@@ -201,10 +237,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     ReceiveComplete(actual);
                     _readState = ReadState.None;
                 }
-                else if (_readState == ReadState.Canceled)
-                {
-                    _readState = ReadState.None;
-                }
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -220,7 +252,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (_sync)
             {
-                _readState = ReadState.ReadsAborted;
+                _readState = ReadState.Aborted;
             }
 
             _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
@@ -228,17 +260,34 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal override ValueTask ShutdownWriteAsync()
+        internal override ValueTask ShutdownWriteAsync(CancellationToken cancellationToken = default)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // TODO do anything to stop writes?
-            // TODO async?
+            cancellationToken.Register(() =>
+            {
+                bool shouldComplete = false;
+                lock (_sync)
+                {
+                    if (_shutdownState == ShutdownState.None)
+                    {
+                        _shutdownState = ShutdownState.Canceled;
+                        shouldComplete = true;
+                    }
+                }
+
+                if (shouldComplete)
+                {
+                    _shutdownResettableCompletionSource.CompleteException(new OperationCanceledException("Shutdown was canceled"));
+                }
+            });
+
             _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return new ValueTask(_sendResettableCompletionSource.GetValueTask().AsTask());
+            return _shutdownResettableCompletionSource.GetTypelessValueTask();
         }
 
         // TODO consider removing sync-over-async with blocking calls.
@@ -288,12 +337,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         public override void Dispose()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             Dispose(true);
             GC.SuppressFinalize(this);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         ~MsQuicStream()
@@ -454,8 +499,22 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            _started = StartState.Finished;
-            _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+            bool shouldComplete = false;
+            lock (_sync)
+            {
+                _started = StartState.Finished;
+
+                // Check send state before completing as send cancellation is shared between start and send.
+                if (_sendState == SendState.None)
+                {
+                    shouldComplete = true;
+                }
+            }
+
+            if (shouldComplete)
+            {
+                _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+            }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -466,7 +525,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+            _shutdownResettableCompletionSource.Complete(MsQuicConstants.Success);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -478,6 +537,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // TODO use another cts here? This is when both sides are shutdown.
+            // IDK if there is anything useful to do here.
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -495,7 +555,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     shouldComplete = true;
                 }
-                _readState = ReadState.ReadsAborted;
+                _readState = ReadState.Aborted;
             }
 
             if (shouldComplete)
@@ -544,7 +604,21 @@ namespace System.Net.Quic.Implementations.MsQuic
             CleanupSendState();
             // TODO throw if a write failed?
             uint errorCode = evt.Data.SendComplete.Canceled;
-            _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+
+            bool shouldComplete = false;
+            lock (_sync)
+            {
+                if (_sendState == SendState.None)
+                {
+                    _sendState = SendState.Finished;
+                    shouldComplete = true;
+                }
+            }
+
+            if (shouldComplete)
+            {
+                _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+            }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -570,7 +644,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // TODO prevent overlapping sends.
         // TODO consider allowing overlapped reads.
-        internal unsafe ValueTask<uint> SendAsync(
+        internal unsafe ValueTask SendAsync(
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAG flags)
         {
@@ -597,13 +671,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 MsQuicStatusException.ThrowIfFailed(status);
             }
 
-            return _sendResettableCompletionSource.GetValueTask();
+            return _sendResettableCompletionSource.GetTypelessValueTask();
         }
 
-        // StartAsync can optionally be called synchornously.
-        // StartAsync doesn't do networking calls, however it needs to wait for all work items in
-        // the connection queue to be processed. It's generally better to do start asynchronously
-        // as it doesn't block a thread.
         private ValueTask<uint> StartAsync()
         {
             uint status = _api._streamStartDelegate(
@@ -638,70 +708,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             return *(long*)ptr;
         }
 
-        /// <summary>
-        /// A resettable completion source which can be completed multiple times.
-        /// Used to make methods async between completed events and their associated async method.
-        /// </summary>
-        private abstract class ResettableCompletionSource<T> : IValueTaskSource<T>
-        {
-            protected ManualResetValueTaskSourceCore<T> _valueTaskSource;
-
-            public ResettableCompletionSource()
-            {
-                _valueTaskSource.RunContinuationsAsynchronously = true;
-            }
-
-            public ValueTask<T> GetValueTask()
-            {
-                return new ValueTask<T>(this, _valueTaskSource.Version);
-            }
-
-            public abstract T GetResult(short token);
-
-            public ValueTaskSourceStatus GetStatus(short token)
-            {
-                return _valueTaskSource.GetStatus(token);
-            }
-
-            public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags)
-            {
-                _valueTaskSource.OnCompleted(continuation, state, token, flags);
-            }
-
-            public void Complete(T result)
-            {
-                _valueTaskSource.SetResult(result);
-            }
-
-            public void CompleteException(Exception ex)
-            {
-                _valueTaskSource.SetException(ex);
-            }
-        }
-
-        private class UIntResettableCompletionSource : ResettableCompletionSource<uint>
-        {
-            internal UIntResettableCompletionSource()
-            {
-            }
-
-            public override uint GetResult(short token)
-            {
-                bool isValid = token == _valueTaskSource.Version;
-                try
-                {
-                    return _valueTaskSource.GetResult(token);
-                }
-                finally
-                {
-                    if (isValid)
-                    {
-                        _valueTaskSource.Reset();
-                    }
-                }
-            }
-        }
-
         private enum StartState
         {
             None,
@@ -712,10 +718,23 @@ namespace System.Net.Quic.Implementations.MsQuic
         private enum ReadState
         {
             None,
-            Canceled,
             IndividualReadComplete,
             ReadsCompleted,
-            ReadsAborted
+            Aborted
+        }
+
+        private enum ShutdownState
+        {
+            None,
+            Canceled,
+            Finished
+        }
+
+        private enum SendState
+        {
+            None,
+            Aborted,
+            Finished
         }
     }
 }

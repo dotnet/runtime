@@ -120,13 +120,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             _disposed = true;
         }
 
-        internal override ValueTask CloseAsync()
+        internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
         {
             _api._listenerStopDelegate(_ptr);
             return default;
         }
 
-        internal override async ValueTask StartAsync()
+        internal override async ValueTask StartAsync(CancellationToken cancellationToken = default)
         {
             _secConfig = await _api.CreateSecurityConfig(_sslOptions?.ServerCertificate);
 

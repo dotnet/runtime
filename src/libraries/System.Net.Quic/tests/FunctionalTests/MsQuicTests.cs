@@ -38,7 +38,7 @@ namespace System.Net.Quic.Tests
 
             Task clientTask = Task.Run(async () =>
             {
-                await using QuicConnection connection = CreateQuicConnection(DefaultEndpoint);
+                await using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
                 await connection.ConnectAsync();
                 await using QuicStream stream = connection.OpenBidirectionalStream();
 
@@ -86,7 +86,7 @@ namespace System.Net.Quic.Tests
 
             Task clientTask = Task.Run(async () =>
             {
-                await using QuicConnection connection = CreateQuicConnection(DefaultEndpoint);
+                await using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
                 await connection.ConnectAsync();
                 await using QuicStream stream = connection.OpenBidirectionalStream();
 
@@ -157,7 +157,7 @@ namespace System.Net.Quic.Tests
 
             Task clientTask = Task.Run(async () =>
             {
-                await using QuicConnection connection = CreateQuicConnection(DefaultEndpoint);
+                await using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
                 await connection.ConnectAsync();
                 await using QuicStream stream = connection.OpenBidirectionalStream();
                 await using QuicStream stream2 = connection.OpenBidirectionalStream();
@@ -190,13 +190,29 @@ namespace System.Net.Quic.Tests
 
             });
 
-            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 10000);
+            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 60000);
+        }
+
+        [Fact]
+        public async Task AbortiveConnectionFromClient()
+        {
+            await DefaultListener.StartAsync();
+            await using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+            await clientConnection.ConnectAsync();
+            await using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+
+            // Close connection on client, verifying server connection is aborted.
+            await clientConnection.CloseAsync();
+            var stream = await serverConnection.AcceptStreamAsync();
+
+            // Providers are alaways wrapped right now by a QuicStream. All fields are null here.
+            // TODO make sure this returns null.
+            Assert.Throws<NullReferenceException>(() => stream.CanRead);
         }
 
         [Fact]
         public async Task TestStreams()
         {
-            ConsoleEventListener l = new ConsoleEventListener("Microsoft-System-Net-Quic");
             using (QuicListener listener = new QuicListener(
                 QuicImplementationProviders.MsQuic,
                 new IPEndPoint(IPAddress.Loopback, 0),

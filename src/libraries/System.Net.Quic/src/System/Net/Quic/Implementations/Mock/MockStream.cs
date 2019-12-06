@@ -136,7 +136,7 @@ namespace System.Net.Quic.Implementations.Mock
             throw new NotImplementedException();
         }
 
-        internal override ValueTask ShutdownWriteAsync()
+        internal override ValueTask ShutdownWriteAsync(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 

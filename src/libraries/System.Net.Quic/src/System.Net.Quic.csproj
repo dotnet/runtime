@@ -12,6 +12,7 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicStatusException.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\MsQuicConnection.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\MsQuicListener.cs" />

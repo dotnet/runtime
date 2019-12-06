@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Quic.Tests
 {
@@ -8,11 +7,10 @@ namespace System.Net.Quic.Tests
     {
         public MsQuicTestBase()
         {
-            DefaultEndpoint = new IPEndPoint(IPAddress.Loopback, 8000);
-            DefaultListener = CreateQuicListener(DefaultEndpoint);
+            IPEndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 8000);
+            DefaultListener = CreateQuicListener(endpoint);
         }
 
-        public IPEndPoint DefaultEndpoint { get; }
         public QuicListener DefaultListener { get; }
 
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()

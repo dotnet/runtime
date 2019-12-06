@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -30,9 +31,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         private IPEndPoint _localEndPoint;
         private readonly IPEndPoint _remoteEndPoint;
 
-        // Some TCSs for making Connect and Shutdown "async" from callbacks. TODO replace with IValueTaskSource
-        private TaskCompletionSource<object> _connectTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-        private TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private ResettableCompletionSource<uint> _connectTcs = new ResettableCompletionSource<uint>();
+        private ResettableCompletionSource<uint> _shutdownTcs = new ResettableCompletionSource<uint>();
 
         private bool _disposed;
         private bool _connected;
@@ -99,6 +99,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 switch (connectionEvent.Type)
                 {
+                    // Connection is connected, can start to create streams.
                     case QUIC_CONNECTION_EVENT.CONNECTED:
                         {
                             status = HandleEventConnected(
@@ -106,20 +107,23 @@ namespace System.Net.Quic.Implementations.MsQuic
                         }
                         break;
 
+                    // Connection is being closed by the transport
                     case QUIC_CONNECTION_EVENT.SHUTDOWN_INITIATED_BY_TRANSPORT:
                         {
-                            status = HandleEventShutdownBegin(
+                            status = HandleEventShutdownInitiatedByTransport(
                                 connectionEvent);
                         }
                         break;
 
+                    // Connection is being closed by the peer
                     case QUIC_CONNECTION_EVENT.SHUTDOWN_INITIATED_BY_PEER:
                         {
-                            status = HandleEventShutdownBeginPeer(
+                            status = HandleEventShutdownInitiatedByPeer(
                                 connectionEvent);
                         }
                         break;
 
+                    // Connection has been shutdown
                     case QUIC_CONNECTION_EVENT.SHUTDOWN_COMPLETE:
                         {
                             status = HandleEventShutdownComplete(
@@ -160,30 +164,32 @@ namespace System.Net.Quic.Implementations.MsQuic
             SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
             _localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(inetAddress);
 
-            _connectTcs?.SetResult(null);
             _connected = true;
-            _connectTcs = null;
+            _connectTcs.Complete(MsQuicConstants.Success);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return MsQuicConstants.Success;
         }
 
-        private uint HandleEventShutdownBegin(ConnectionEvent connectionEvent)
+        private uint HandleEventShutdownInitiatedByTransport(ConnectionEvent connectionEvent)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown begin {MsQuicConstants.GetError(connectionEvent.ShutdownBeginStatus)}");;
+            if (!_connected)
+            {
+                _connectTcs.CompleteException(new IOException("Connection has been shutdown."));
+            }
 
-            _connectTcs?.SetResult(null);
-            _connectTcs = null;
+            _acceptQueue.Writer.Complete();
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicConstants.Success;
         }
 
-        private uint HandleEventShutdownBeginPeer(ConnectionEvent connectionEvent)
+        private uint HandleEventShutdownInitiatedByPeer(ConnectionEvent connectionEvent)
         {
+            _acceptQueue.Writer.Complete();
             return MsQuicConstants.Success;
         }
 
@@ -193,7 +199,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown Complete");
 
-            _shutdownTcs.SetResult(null);
+            _shutdownTcs.Complete(MsQuicConstants.Success);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return MsQuicConstants.Success;
@@ -315,7 +321,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             MsQuicStatusException.ThrowIfFailed(status);
 
-            return new ValueTask(_connectTcs.Task);
+            return _connectTcs.GetTypelessValueTask();
         }
 
         private MsQuicStream StreamOpen(
@@ -349,7 +355,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 GCHandle.ToIntPtr(_handle));
         }
 
-        private Task ShutdownAsync(
+        private ValueTask ShutdownAsync(
             QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
             ushort ErrorCode)
         {
@@ -362,7 +368,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             MsQuicStatusException.ThrowIfFailed(status);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            return _shutdownTcs.Task;
+            return _shutdownTcs.GetTypelessValueTask();
         }
 
         internal static uint NativeCallbackHandler(
@@ -427,10 +433,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 buf));
         }
 
-        internal override void Close()
+        internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
         {
             // TODO make this async
-            ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0).GetAwaiter().GetResult();
+            return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0);
         }
 
         public override ValueTask DisposeAsync()
