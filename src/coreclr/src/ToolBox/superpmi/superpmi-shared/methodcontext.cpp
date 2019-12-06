@@ -478,6 +478,15 @@ void MethodContext::dumpToConsole(int mcNumber)
     {
         printf(" method context #%d", mcNumber);
     }
+
+    // Dump method name, etc., to output.
+    char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
+    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE);
+    if (cbLen >= 0)
+    {
+        printf(" %s", bufferIdentityInfo);
+    }
+
     printf("\n");
 
 #define LWM(map, key, value) dumpLWM(this, map)
