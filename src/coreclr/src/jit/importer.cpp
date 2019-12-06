@@ -1300,8 +1300,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         // "destAddr" must point to a refany.
 
         GenTree* destAddrClone;
-        destAddr =
-            impCloneExpr(destAddr, &destAddrClone, structHnd, curLevel, pAfterStmt DEBUGARG("MKREFANY assignment"));
+        assert(pAfterStmt == nullptr);
+        destAddr = impCloneExpr(destAddr, &destAddrClone, structHnd, curLevel DEBUGARG("MKREFANY assignment"));
 
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
@@ -2040,8 +2040,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     if (pRuntimeLookup->testForNull)
     {
-        slotPtrTree = impCloneExpr(ctxTree, &ctxTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("impRuntimeLookup slot"));
+        slotPtrTree = impCloneExpr(ctxTree, &ctxTree, NO_CLASS_HANDLE,
+                                   (unsigned)CHECK_SPILL_ALL DEBUGARG("impRuntimeLookup slot"));
     }
 
     GenTree* indOffTree = nullptr;
@@ -2051,8 +2051,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     {
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
         {
-            indOffTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                      nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
+            indOffTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE,
+                                      (unsigned)CHECK_SPILL_ALL DEBUGARG("impRuntimeLookup indirectOffset"));
         }
 
         if (i != 0)
@@ -2126,8 +2126,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTree* handle = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
     handle->gtFlags |= GTF_IND_NONFAULTING;
 
-    GenTree* handleCopy = impCloneExpr(handle, &handle, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("impRuntimeLookup typehandle"));
+    GenTree* handleCopy = impCloneExpr(handle, &handle, NO_CLASS_HANDLE,
+                                       (unsigned)CHECK_SPILL_ALL DEBUGARG("impRuntimeLookup typehandle"));
 
     // Call to helper
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
@@ -2604,8 +2604,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 GenTree* Compiler::impCloneExpr(GenTree*             tree,
                                 GenTree**            pClone,
                                 CORINFO_CLASS_HANDLE structHnd,
-                                unsigned             curLevel,
-                                Statement** pAfterStmt DEBUGARG(const char* reason))
+                                unsigned curLevel DEBUGARG(const char* reason))
 {
     if (!(tree->gtFlags & GTF_GLOB_EFFECT))
     {
@@ -2627,7 +2626,7 @@ GenTree* Compiler::impCloneExpr(GenTree*             tree,
     // specialized type (e.g. a SIMD type).  So we will get the type from
     // the lclVar AFTER calling impAssignTempGenStruct().
 
-    impAssignTempGenStruct(temp, tree, structHnd, curLevel, pAfterStmt, impCurStmtOffs);
+    impAssignTempGenStruct(temp, tree, structHnd, curLevel, nullptr, impCurStmtOffs);
     var_types type = genActualType(lvaTable[temp].TypeGet());
 
     *pClone = gtNewLclvNode(temp, type);
@@ -3868,10 +3867,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #endif // defined(DEBUG)
 
             // We need to use both index and ptr-to-span twice, so clone or spill.
-            index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                 nullptr DEBUGARG("Span.get_Item index"));
-            ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                     nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+            index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE,
+                                 (unsigned)CHECK_SPILL_ALL DEBUGARG("Span.get_Item index"));
+            ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE,
+                                     (unsigned)CHECK_SPILL_ALL DEBUGARG("Span.get_Item ptrToSpan"));
 
             // Bounds check
             CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
@@ -7692,8 +7691,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 // Clone the (possibly transformed) "this" pointer
                 GenTree* thisPtrCopy;
-                thisPtr = impCloneExpr(thisPtr, &thisPtrCopy, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("LDVIRTFTN this pointer"));
+                thisPtr = impCloneExpr(thisPtr, &thisPtrCopy, NO_CLASS_HANDLE,
+                                       (unsigned)CHECK_SPILL_ALL DEBUGARG("LDVIRTFTN this pointer"));
 
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 assert(fptr != nullptr);
@@ -10382,7 +10381,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
 
     // This can replace op1 with a GT_COMMA that evaluates op1 into a local
     //
-    op1 = impCloneExpr(op1, &temp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("CASTCLASS eval op1"));
+    op1 = impCloneExpr(op1, &temp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL DEBUGARG("CASTCLASS eval op1"));
     //
     // op1 is now known to be a non-complex tree
     // thus we can use gtClone(op1) from now on
@@ -12995,8 +12994,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                op1 = impCloneExpr(op1, &op2, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("DUP instruction"));
+                op1 = impCloneExpr(op1, &op2, tiRetVal.GetClassHandle(),
+                                   (unsigned)CHECK_SPILL_ALL DEBUGARG("DUP instruction"));
 
                 assert(!(op1->gtFlags & GTF_GLOB_EFFECT) && !(op2->gtFlags & GTF_GLOB_EFFECT));
                 impPushOnStack(op1, tiRetVal);
@@ -15128,8 +15127,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (opcode == CEE_UNBOX)
                             {
                                 GenTree* cloneOperand;
-                                op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                                   nullptr DEBUGARG("optimized unbox clone"));
+                                op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE,
+                                                   (unsigned)CHECK_SPILL_ALL DEBUGARG("optimized unbox clone"));
 
                                 GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                                 GenTree* boxPayloadAddress =
@@ -15169,14 +15168,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // push(clone + TARGET_POINTER_SIZE)
                     //
                     GenTree* cloneOperand;
-                    op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("inline UNBOX clone1"));
+                    op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE,
+                                       (unsigned)CHECK_SPILL_ALL DEBUGARG("inline UNBOX clone1"));
                     op1 = gtNewOperNode(GT_IND, TYP_I_IMPL, op1);
 
                     GenTree* condBox = gtNewOperNode(GT_EQ, TYP_INT, op1, op2);
 
-                    op1 = impCloneExpr(cloneOperand, &cloneOperand, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("inline UNBOX clone2"));
+                    op1 = impCloneExpr(cloneOperand, &cloneOperand, NO_CLASS_HANDLE,
+                                       (unsigned)CHECK_SPILL_ALL DEBUGARG("inline UNBOX clone2"));
                     op2 = impTokenToHandle(&resolvedToken);
                     if (op2 == nullptr)
                     { // compDonotInline()

@@ -721,8 +721,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 assert(compSupports(InstructionSet_AVX));
 
                 // copy `vectorOp` to accept the modified half vector
-                vectorOp = impCloneExpr(vectorOp, &clonedVectorOp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Clone Vector for Vector256<T>.WithElement"));
+                vectorOp =
+                    impCloneExpr(vectorOp, &clonedVectorOp, NO_CLASS_HANDLE,
+                                 (unsigned)CHECK_SPILL_ALL DEBUGARG("Clone Vector for Vector256<T>.WithElement"));
 
                 if (imm8 >= count / 2)
                 {
@@ -771,8 +772,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                             GenTree* tmpOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp,
                                                                       NI_Vector128_CreateScalarUnsafe, TYP_FLOAT, 16);
                             GenTree* dupVectorOp = nullptr;
-                            vectorOp = impCloneExpr(vectorOp, &dupVectorOp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                                    nullptr DEBUGARG("Clone Vector for Vector128<float>.WithElement"));
+                            vectorOp             = impCloneExpr(vectorOp, &dupVectorOp, NO_CLASS_HANDLE,
+                                                    (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                        "Clone Vector for Vector128<float>.WithElement"));
                             tmpOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmpOp, vectorOp, gtNewIconNode(0),
                                                              NI_SSE_Shuffle, TYP_FLOAT, 16);
                             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmpOp, dupVectorOp, gtNewIconNode(226),
@@ -804,8 +806,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                             GenTree* tmpOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp,
                                                                       NI_Vector128_CreateScalarUnsafe, TYP_FLOAT, 16);
                             GenTree* dupVectorOp = nullptr;
-                            vectorOp = impCloneExpr(vectorOp, &dupVectorOp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                                    nullptr DEBUGARG("Clone Vector for Vector128<float>.WithElement"));
+                            vectorOp             = impCloneExpr(vectorOp, &dupVectorOp, NO_CLASS_HANDLE,
+                                                    (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                        "Clone Vector for Vector128<float>.WithElement"));
                             valueOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, tmpOp, gtNewIconNode(controlBits1),
                                                                NI_SSE_Shuffle, TYP_FLOAT, 16);
                             retNode =
@@ -1008,8 +1011,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                         // (xmm0 = vector, control = i + 228)
                         immNode->AsIntCon()->SetIconValue(228 + imm8);
                         GenTree* clonedVectorOp = nullptr;
-                        vectorOp = impCloneExpr(vectorOp, &clonedVectorOp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                                nullptr DEBUGARG("Clone Vector for Vector128<float>.GetElement"));
+                        vectorOp                = impCloneExpr(vectorOp, &clonedVectorOp, NO_CLASS_HANDLE,
+                                                (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                    "Clone Vector for Vector128<float>.GetElement"));
                         vectorOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, clonedVectorOp, immNode,
                                                             NI_SSE_Shuffle, TYP_FLOAT, 16);
                         return gtNewSimdHWIntrinsicNode(retType, vectorOp, NI_Vector128_ToScalar, TYP_FLOAT, 16);

@@ -7533,8 +7533,8 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
 
             if (isRelative)
             {
-                indOffTree = impCloneExpr(add, &add, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                          nullptr DEBUGARG("virtual table call"));
+                indOffTree =
+                    impCloneExpr(add, &add, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL DEBUGARG("virtual table call"));
             }
 
             vtbl = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
@@ -7553,8 +7553,8 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
 
         if (isRelative)
         {
-            indOffTree = impCloneExpr(add, &add, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                      nullptr DEBUGARG("virtual table call 2"));
+            indOffTree =
+                impCloneExpr(add, &add, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL DEBUGARG("virtual table call 2"));
         }
 
         vtbl = gtNewOperNode(GT_IND, TYP_I_IMPL, add);

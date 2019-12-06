@@ -3749,8 +3749,7 @@ public:
     GenTree* impCloneExpr(GenTree*             tree,
                           GenTree**            clone,
                           CORINFO_CLASS_HANDLE structHnd,
-                          unsigned             curLevel,
-                          Statement** pAfterStmt DEBUGARG(const char* reason));
+                          unsigned curLevel DEBUGARG(const char* reason));
     GenTree* impAssignStruct(GenTree*             dest,
                              GenTree*             src,
                              CORINFO_CLASS_HANDLE structHnd,
