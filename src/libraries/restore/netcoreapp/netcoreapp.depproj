@@ -11,6 +11,17 @@
     <PackageReference Update="Microsoft.NETCore.App" IsImplicitlyDefined="false" PrivateAssets="None" />
   </ItemGroup>
 
+  <!-- Mark framework references from previous netcoreapp tfms >= 3.0 as copy-local. -->
+  <Target Name="_FrameworkReferencesToPrivate"
+          Condition="'$(TargetsNetCoreApp)' == 'true' and !$(TargetFramework.StartsWith('netcoreapp2.')) and '$(TargetFramework)' != '$(NetCoreAppCurrent)'"
+          AfterTargets="_HandlePackageFileConflicts">
+    <ItemGroup>
+      <_referencePrivate Include="@(Reference)" Private="true" />
+      <Reference Remove="@(Reference)" />
+      <Reference Include="@(_referencePrivate)" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <!-- for all configurations this project provides refs for that configuration -->
     <BinPlaceConfiguration Include="$(Configuration)" RefPath="$(RefPath)" />

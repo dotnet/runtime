@@ -47,9 +47,12 @@ from coreclr_arguments import *
 # Argument Parser
 ################################################################################
 
-description = ("""Script to handle running SuperPMI Collections, and replays. In addition, this
+description = ("""Script to handle running SuperPMI collections and replays. In addition, this
 script provides support for SuperPMI ASM diffs. Note that some of the options
-provided by this script are also provided in our SuperPMI collect test.""")
+provided by this script are also provided in our SuperPMI collect test.
+
+Help for each individual command can be shown by asking for help on the individual command, for example
+`superpmi.py collect --help`.""")
 
 superpmi_collect_help = """ Command to run SuperPMI collect over. Note that there
 cannot be any dotnet cli command invoked inside this command, as they will fail due
@@ -82,10 +85,10 @@ collect_parser.add_argument("-build_type", dest="build_type", nargs='?', default
 collect_parser.add_argument("-test_location", dest="test_location", nargs="?", default=None, help="Test location. This is optional")
 collect_parser.add_argument("-pmi_assemblies", dest="pmi_assemblies", nargs="+", default=[], help="Pass a sequence of managed dlls or directories to recurisvely run pmi over while collecting.")
 collect_parser.add_argument("-core_root", dest="core_root", nargs='?', default=None, help="Location of the Core_Root location. If not passed it will be deduced if possible.")
-collect_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None, help="Location of the built product, this is optional.")
-collect_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))), help="Location of the coreclr repo. Optional.")
+collect_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None, help="Location of the built Product directory. Optional.")
+collect_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help="Path of the dotnet/runtime repo root directory. Optional.")
 collect_parser.add_argument("-test_env", dest="test_env", default=None, help="Test env to pass to the coreclr tests if collecting over the tests.")
-collect_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None, help="Location to drop the final mch file. By default it will drop to artifacts/mch/$(buildType).$(arch).$(config)/$(buildType).$(arch).$(config).mch")
+collect_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None, help="Location to drop the final mch file. By default it will drop to artifacts/mch/$(os).$(arch).$(build_type)/$(os).$(arch).$(build_type).mch")
 
 collect_parser.add_argument("--pmi", dest="pmi", default=False, action="store_true", help="Use pmi on a set of directories or assemblies")
 collect_parser.add_argument("-mch_files", dest="mch_files", nargs='+', default=None, help="Pass a sequence of mch files which will be merged.")
@@ -108,7 +111,7 @@ collect_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False
 replay_parser = subparsers.add_parser("replay")
 
 # Add required arguments
-replay_parser.add_argument("collection", nargs='?', default="default", help="Which collection type to run. Default is to run everything. Use superpmi list to find potential collections")
+replay_parser.add_argument("collection", nargs='?', default="default", help="Which collection type to run. Default is to run everything. Use 'superpmi list-collections' to find potential collections.")
 
 replay_parser.add_argument("-jit_path", nargs='?', help="Path to clrjit. defaults to core_root jit.")
 replay_parser.add_argument("-mch_file", nargs=1, help=superpmi_replay_help)
@@ -121,8 +124,8 @@ replay_parser.add_argument("-arch", dest="arch", nargs='?', default="x64")
 replay_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked")
 replay_parser.add_argument("-test_location", dest="test_location", nargs="?", default=None)
 replay_parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
-replay_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None)
-replay_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+replay_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None, help="Location of the built Product directory. Optional.")
+replay_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help="Path of the dotnet/runtime repo root directory. Optional.")
 replay_parser.add_argument("-test_env", dest="test_env", default=None)
 
 replay_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False, action="store_true")
@@ -134,7 +137,7 @@ asm_diff_parser = subparsers.add_parser("asmdiffs")
 # Add required arguments
 asm_diff_parser.add_argument("base_jit_path", nargs=1, help="Path to baseline clrjit.")
 asm_diff_parser.add_argument("diff_jit_path", nargs=1, help="Path to diff clrjit.")
-asm_diff_parser.add_argument("collection", nargs='?', default="default", help="Which collection type to run. Default is to run everything. Use superpmi list to find potential collections")
+asm_diff_parser.add_argument("collection", nargs='?', default="default", help="Which collection type to run. Default is to run everything. Use 'superpmi list-collections' to find potential collections.")
 
 
 asm_diff_parser.add_argument("-mch_file", nargs=1, help=superpmi_replay_help)
@@ -147,8 +150,8 @@ asm_diff_parser.add_argument("-arch", dest="arch", nargs='?', default="x64")
 asm_diff_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked")
 asm_diff_parser.add_argument("-test_location", dest="test_location", nargs="?", default=None)
 asm_diff_parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
-asm_diff_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None)
-asm_diff_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+asm_diff_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None, help="Location of the built Product directory. Optional.")
+asm_diff_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help="Path of the dotnet/runtime repo root directory. Optional.")
 asm_diff_parser.add_argument("-test_env", dest="test_env", default=None)
 
 asm_diff_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False, action="store_true")
@@ -170,7 +173,7 @@ upload_parser.add_argument("-jit_location", nargs=1, default=None, help="Locatio
 
 upload_parser.add_argument("-arch", dest="arch", nargs='?', default="x64")
 upload_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked")
-upload_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+upload_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help="Path of the dotnet/runtime repo root directory. Optional.")
 
 upload_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False, action="store_true")
 
@@ -179,7 +182,7 @@ list_parser = subparsers.add_parser("list-collections")
 
 list_parser.add_argument("-arch", dest="arch", nargs='?', default="x64")
 list_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked")
-list_parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+list_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help="Path of the dotnet/runtime repo root directory. Optional.")
 
 ################################################################################
 # Helper classes
@@ -514,19 +517,47 @@ class SuperPMICollect:
                     
                     return assemblies
 
+                def make_safe_filename(s):
+                    def safe_char(c):
+                        if c.isalnum():
+                            return c
+                        else:
+                            return "_"
+                    return "".join(safe_char(c) for c in s)
+
+                def is_zero_length_file(fpath):  
+                    return os.path.isfile(fpath) and os.stat(fpath).st_size == 0
+
                 async def run_pmi(print_prefix, assembly, self):
                     """ Run pmi over all dlls
                     """
 
                     command = [self.corerun, self.pmi_location, "DRIVEALL", assembly]
-                    print("{}{}".format(print_prefix, " ".join(command)))
-                    
+                    command_string = " ".join(command)
+                    print("{}{}".format(print_prefix, command_string))
+
+                    # Save the stdout and stderr to files, so we can see if PMI wrote any interesting messages.
+                    # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
+                    # is unique.
+                    root_output_filename = make_safe_filename("pmi_" + assembly + "_")
+                    stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
+                    stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
+
                     proc = await asyncio.create_subprocess_shell(
-                        " ".join(command),
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE)
+                        command_string,
+                        stdout=stdout_file_handle,
+                        stderr=stderr_file_handle)
 
                     await proc.communicate()
+
+                    os.close(stdout_file_handle)
+                    os.close(stderr_file_handle)
+
+                    # No need to keep zero-length files
+                    if is_zero_length_file(stdout_filepath):
+                        os.remove(stdout_filepath)
+                    if is_zero_length_file(stderr_filepath):
+                        os.remove(stderr_filepath)
 
                 assemblies = []
                 for item in self.pmi_assemblies:
@@ -814,7 +845,7 @@ class SuperPMIReplay:
                 mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
 
                 if len(mc_files) > 0:
-                    repro_location = os.path.join(self.coreclr_args.coreclr_repo_location, "artifacts", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                    repro_location = os.path.join(self.coreclr_args.runtime_repo_root, "artifacts", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
 
                     # Delete existing repro location
                     if os.path.isdir(repro_location):
@@ -1015,7 +1046,7 @@ class SuperPMIReplayAsmDiffs:
                 mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
 
                 if len(mc_files) > 0:
-                    repro_location = os.path.join(self.coreclr_args.coreclr_repo_location, "artifacts", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                    repro_location = os.path.join(self.coreclr_args.runtime_repo_root, "artifacts", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
 
                     # Delete existing repro location
                     if os.path.isdir(repro_location):
@@ -1074,11 +1105,11 @@ class SuperPMIReplayAsmDiffs:
                         mcl_lines = [item.strip() for item in mcl_lines]
                         self.diff_mcl_contents = mcl_lines
 
-                bin_asm_location = os.path.join(self.coreclr_args.bin_location, "asm", "asm")
+                bin_asm_location = os.path.join(self.coreclr_args.artifacts_location, "asm", "asm")
 
                 count = 0
                 while os.path.isdir(bin_asm_location):
-                    new_bin_asm_location = os.path.join(self.coreclr_args.bin_location, "asm", "asm" + str(count))
+                    new_bin_asm_location = os.path.join(self.coreclr_args.artifacts_location, "asm", "asm" + str(count))
                     
                     count += 1
 
@@ -1089,11 +1120,11 @@ class SuperPMIReplayAsmDiffs:
                 base_asm_location = os.path.join(bin_asm_location, "base")
                 diff_asm_location = os.path.join(bin_asm_location, "diff")
 
-                bin_dump_location = os.path.join(self.coreclr_args.bin_location, "jit_dump", "jit_dump")
+                bin_dump_location = os.path.join(self.coreclr_args.artifacts_location, "jit_dump", "jit_dump")
 
                 count = 0
                 while os.path.isdir(bin_dump_location):
-                    new_base_dump_location = os.path.join(self.coreclr_args.bin_location, "jit_dump", "jit_dump" + str(count))
+                    new_base_dump_location = os.path.join(self.coreclr_args.artifacts_location, "jit_dump", "jit_dump" + str(count))
                     
                     count += 1
 
@@ -1267,7 +1298,7 @@ class SuperPMIReplayAsmDiffs:
                     diff_txt = None
 
                     # Change the working directory to the core root we will call SuperPMI from.
-                    # This is done to allow libcorcedistools to be loaded correctly on unix
+                    # This is done to allow libcoredistools to be loaded correctly on unix
                     # as the loadlibrary path will be relative to the current directory.
                     with ChangeDir(self.coreclr_args.core_root) as dir:
 
@@ -1622,7 +1653,7 @@ def download_mch(coreclr_args, specific_mch=None, include_baseline_jit=False):
     """
 
     urls = list_superpmi_container_via_rest_api(coreclr_args)
-    default_mch_dir = os.path.join(coreclr_args.bin_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+    default_mch_dir = os.path.join(coreclr_args.artifacts_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
 
     if not os.path.isdir(default_mch_dir):
         os.makedirs(default_mch_dir)
@@ -1756,19 +1787,19 @@ def setup_args(args):
                         lambda mode: mode in ["collect", "replay", "asmdiffs", "upload", "list-collections"],
                         'Incorrect mode passed, please choose from ["collect", "replay", "asmdiffs", "upload", "list-collections"]')
 
-    default_coreclr_bin_mch_location = os.path.join(coreclr_args.bin_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+    default_coreclr_bin_mch_location = os.path.join(coreclr_args.artifacts_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
 
     def setup_mch_arg(arg):
-        default_mch_location = os.path.join(coreclr_args.bin_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type), "{}.{}.{}.mch".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+        default_mch_location = os.path.join(coreclr_args.artifacts_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type), "{}.{}.{}.mch".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
 
-        if os.path.isfile(default_mch_location) and not args.force_download and coreclr_args.collection is "default":
+        if os.path.isfile(default_mch_location) and not args.force_download and coreclr_args.collection == "default":
             return default_mch_location
 
         # Download the mch
         else:
             index = download_index(coreclr_args)
             
-            mch_location = os.path.join(coreclr_args.bin_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type), index[coreclr_args.collection])
+            mch_location = os.path.join(coreclr_args.artifacts_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type), index[coreclr_args.collection])
 
             if not os.path.isfile(mch_location):
                 download_mch(coreclr_args, specific_mch=index[coreclr_args.collection], include_baseline_jit=True)
@@ -1917,19 +1948,26 @@ def setup_args(args):
                             "Unable to set break_on_error")
 
         standard_location = False
-        if coreclr_args.bin_location.lower() in coreclr_args.jit_path.lower():
+        if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():
             standard_location = True
 
         determined_arch = None
         determined_build_type = None
         if standard_location:
-            standard_location_split = coreclr_args.jit_path.split(coreclr_args.bin_location)
-
+            # Get os/arch/flavor directory, e.g. split "F:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked" with "F:\gh\runtime\artifacts\bin\coreclr"
+            # yielding
+            # [0]: ""
+            # [1]: "\Windows_NT.x64.Checked"
+            standard_location_split = os.path.dirname(coreclr_args.jit_path).split(os.path.dirname(coreclr_args.product_location))
             assert(coreclr_args.host_os in standard_location_split[1])
-            specialized_path = standard_location_split[1].split(coreclr_args.host_os)
 
-            specialized_path = specialized_path[1].split("/")[0]
+            # Get arch/flavor. Remove leading slash.
+            specialized_path = standard_location_split[1].split(os.path.sep)[1]
 
+            # Split components: "Windows_NT.x64.Checked" into:
+            # [0]: "Windows_NT"
+            # [1]: "x64"
+            # [2]: "Checked"
             determined_split = specialized_path.split(".")
 
             determined_arch = determined_split[1]
@@ -2027,19 +2065,26 @@ def setup_args(args):
                                 "Unable to set diff_jit_dump.")
 
         standard_location = False
-        if coreclr_args.bin_location.lower() in coreclr_args.base_jit_path.lower():
+        if coreclr_args.product_location.lower() in coreclr_args.base_jit_path.lower():
             standard_location = True
 
         determined_arch = None
         determined_build_type = None
         if standard_location:
-            standard_location_split = coreclr_args.base_jit_path.split(coreclr_args.bin_location)
-
+            # Get os/arch/flavor directory, e.g. split "F:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked" with "F:\gh\runtime\artifacts\bin\coreclr"
+            # yielding
+            # [0]: ""
+            # [1]: "\Windows_NT.x64.Checked"
+            standard_location_split = os.path.dirname(coreclr_args.jit_path).split(os.path.dirname(coreclr_args.product_location))
             assert(coreclr_args.host_os in standard_location_split[1])
-            specialized_path = standard_location_split[1].split(coreclr_args.host_os)
 
-            specialized_path = specialized_path[1].split("/")[0]
+            # Get arch/flavor. Remove leading slash.
+            specialized_path = standard_location_split[1].split(os.path.sep)[1]
 
+            # Split components: "Windows_NT.x64.Checked" into:
+            # [0]: "Windows_NT"
+            # [1]: "x64"
+            # [2]: "Checked"
             determined_split = specialized_path.split(".")
 
             determined_arch = determined_split[1]
@@ -2097,8 +2142,8 @@ def main(args):
     """ Main method
     """
 
-    # await/async requires python >= 3.5
-    if sys.version_info.major < 3 and sys.version_info.minor < 5:
+    # await/async requires python >= 3.7
+    if sys.version_info.major < 3 and sys.version_info.minor < 7:
         print("Error, language features require the latest python version.")
         print("Please install python 3.7 or greater")
 
@@ -2146,7 +2191,7 @@ def main(args):
         print("")
 
         print("MCH Path: {}".format(mch_file))
-        print("Jit Path: {}".format(jit_path))
+        print("JIT Path: {}".format(jit_path))
 
         replay = SuperPMIReplay(coreclr_args, mch_file, jit_path)
         success = replay.replay()
@@ -2162,7 +2207,7 @@ def main(args):
 
         begin_time = datetime.datetime.now()
 
-        print("SuperPMI Replay")
+        print("SuperPMI ASM diffs")
         print("------------------------------------------------------------")
         print("Start time: {}".format(begin_time.strftime("%H:%M:%S")))
 
@@ -2173,8 +2218,8 @@ def main(args):
         print("")
 
         print("MCH Path: {}".format(mch_file))
-        print("Base Jit Path: {}".format(base_jit_path))
-        print("Diff Jit Path: {}".format(diff_jit_path))
+        print("Base JIT Path: {}".format(base_jit_path))
+        print("Diff JIT Path: {}".format(diff_jit_path))
 
         asm_diffs = SuperPMIReplayAsmDiffs(coreclr_args, mch_file, base_jit_path, diff_jit_path)
         success = asm_diffs.replay_with_asm_diffs(coreclr_args.previous_temp_location)

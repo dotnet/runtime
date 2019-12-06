@@ -59,7 +59,16 @@ elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
     add_compile_options(-mfloat-abi=softfp)
   endif ()
     add_compile_options(-mthumb)
-    add_compile_options(-mfpu=vfpv3)
+  if (NOT DEFINED CLR_ARM_FPU_TYPE)
+    set(CLR_ARM_FPU_TYPE vfpv3)
+  endif(NOT DEFINED CLR_ARM_FPU_TYPE)
+
+    add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
+  if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+    set(CLR_ARM_FPU_CAPABILITY 0x7)
+  endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+    add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
+
     add_compile_options(-march=armv7-a)
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
     add_definitions(-DBIT32=1)
@@ -257,8 +266,9 @@ endfunction()
 
 include(configure.cmake)
 
+add_subdirectory(System.IO.Compression.Native)
+
 if (NOT CLR_CMAKE_PLATFORM_WASM)
-    add_subdirectory(System.IO.Compression.Native)
 	add_subdirectory(System.IO.Ports.Native)
 endif()
 

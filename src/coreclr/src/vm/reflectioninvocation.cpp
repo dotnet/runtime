@@ -994,9 +994,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     }
 #endif
 
-    // Skip the activation optimization for remoting because of remoting proxy is not always activated.
-    // It would be nice to clean this up and get remoting to always activate methodtable behind the proxy.
-    BOOL fForceActivationForRemoting = FALSE;
     BOOL fCtorOfVariableSizedObject = FALSE;
 
     if (fConstructor)
@@ -1020,14 +1017,11 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
                 gc.retVal = pMT->Allocate();
         }
     }
-    else
-    {
-    }
 
     {
     ArgIteratorForMethodInvoke argit(&gc.pSig);
 
-    if (argit.IsActivationNeeded() || fForceActivationForRemoting)
+    if (argit.IsActivationNeeded())
         pMeth->EnsureActive();
     CONSISTENCY_CHECK(pMeth->CheckActivated());
 
@@ -1322,11 +1316,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     if (fConstructor)
     {
         // We have a special case for Strings...The object is returned...
-        if (ownerType == TypeHandle(g_pStringClass)
-#ifdef FEATURE_UTF8STRING
-            || ownerType == TypeHandle(g_pUtf8StringClass)
-#endif // FEATURE_UTF8STRING
-            ) {
+        if (fCtorOfVariableSizedObject) {
             PVOID pReturnValue = &callDescrData.returnValue;
             gc.retVal = *(OBJECTREF *)pReturnValue;
         }

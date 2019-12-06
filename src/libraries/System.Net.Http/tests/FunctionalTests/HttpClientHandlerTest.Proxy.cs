@@ -67,12 +67,6 @@ namespace System.Net.Http.Functional.Tests
             bool secureServer,
             bool proxyClosesConnectionAfterFirst407Response)
         {
-            if (PlatformDetection.IsWindowsNanoServer && IsWinHttpHandler && proxyAuthScheme == AuthenticationSchemes.Digest)
-            {
-                // WinHTTP doesn't support Digest very well and is disabled on Nano.
-                return;
-            }
-
             if (!PlatformDetection.IsWindows &&
                 (proxyAuthScheme == AuthenticationSchemes.Negotiate || proxyAuthScheme == AuthenticationSchemes.Ntlm))
             {
@@ -113,19 +107,14 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
-            if (!UseSocketsHttpHandler)
-            {
-                throw new SkipTestException("Test needs SocketsHttpHandler");
-            }
-
-            RemoteExecutor.Invoke(async (useSocketsHttpHandlerString, useHttp2String) =>
+            RemoteExecutor.Invoke(async (useHttp2String) =>
             {
                 var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true };
                 using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
                 {
                     Environment.SetEnvironmentVariable("http_proxy", proxyServer.Uri.AbsoluteUri.ToString());
 
-                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString, useHttp2String))
+                    using (HttpClient client = CreateHttpClient(useHttp2String))
                     using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -133,7 +122,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains(proxyServer.ViaHeader, body);
                     }
                 }
-            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
+            }, UseHttp2.ToString()).Dispose();
         }
 
         [ActiveIssue(32809)]
@@ -235,11 +224,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 handler.Proxy = new WebProxy("https://" + Guid.NewGuid().ToString("N"));
 
-                Type expectedType = UseSocketsHttpHandler ?
-                    typeof(NotSupportedException) :
-                    typeof(HttpRequestException);
-
-                await Assert.ThrowsAsync(expectedType, () => client.GetAsync("http://" + Guid.NewGuid().ToString("N")));
+                await Assert.ThrowsAsync<NotSupportedException>(() => client.GetAsync("http://" + Guid.NewGuid().ToString("N")));
             }
         }
 
@@ -300,14 +285,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task MultiProxy_PAC_Failover_Succeeds()
         {
-            if (!UseSocketsHttpHandler || !PlatformDetection.IsWindows)
-            {
-                // PAC-based failover is only supported on Windows/SocketsHttpHandler
-                return;
-            }
-
             // Create our failing proxy server.
             // Bind a port to reserve it, but don't start listening yet. The first Connect() should fail and cause a fail-over.
             using Socket failingProxyServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

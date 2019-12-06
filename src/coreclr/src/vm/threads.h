@@ -326,12 +326,6 @@ public:
         return (BYTE)ofs;
     }
 
-    void SetLoadingFile(DomainFile *pFile)
-    {
-    }
-
-    typedef Holder<Thread *, DoNothing, DoNothing> LoadingFileHolder;
-
     enum ThreadState
     {
     };
@@ -1172,7 +1166,7 @@ public:
         TSNC_WaitUntilGCFinished        = 0x00000010, // The current thread is waiting for GC.  If host returns
                                                       // SO during wait, we will either spin or make GC wait.
         TSNC_BlockedForShutdown         = 0x00000020, // Thread is blocked in WaitForEndOfShutdown.  We should not hit WaitForEndOfShutdown again.
-        TSNC_SOWorkNeeded               = 0x00000040, // The thread needs to wake up AD unload helper thread to finish SO work
+        // unused                       = 0x00000040,
         TSNC_CLRCreatedThread           = 0x00000080, // The thread was created through Thread::CreateNewThread
         TSNC_ExistInThreadStore         = 0x00000100, // For dtor to know if it needs to be removed from ThreadStore
         TSNC_UnsafeSkipEnterCooperative = 0x00000200, // This is a "fix" for deadlocks caused when cleaning up COM
@@ -1187,8 +1181,7 @@ public:
                                                       // After the thread is interrupted once, we turn off interruption
                                                       // at the beginning of wait.
         // unused                       = 0x00040000,
-        TSNC_CannotRecycle              = 0x00080000, // A host can not recycle this Thread object.  When a thread
-                                                      // has orphaned lock, we will apply this.
+        // unused                       = 0x00080000,
         TSNC_RaiseUnloadEvent           = 0x00100000, // Finalize thread is raising managed unload event which
                                                       // may call AppDomain.Unload.
         TSNC_UnbalancedLocks            = 0x00200000, // Do not rely on lock accounting for this thread:
@@ -1476,8 +1469,6 @@ public:
 
     static LONG     m_DetachCount;
     static LONG     m_ActiveDetachCount;  // Count how many non-background detached
-
-    static Volatile<LONG>     m_threadsAtUnsafePlaces;
 
     // Offsets for the following variables need to fit in 1 byte, so keep near
     // the top of the object.  Also, we want cache line filling to work for us
@@ -3142,29 +3133,6 @@ public:
 
     typedef StateHolder<Thread::IncPreventAsync, Thread::DecPreventAsync> ThreadPreventAsyncHolder;
 
-    // During a <clinit>, this thread must not be asynchronously
-    // stopped or interrupted.  That would leave the class unavailable
-    // and is therefore a security hole.
-    static void        IncPreventAbort()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        FastInterlockIncrement((LONG*)&pThread->m_PreventAbort);
-    }
-    static void        DecPreventAbort()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        FastInterlockDecrement((LONG*)&pThread->m_PreventAbort);
-    }
-
-    BOOL IsAbortPrevented()
-    {
-        return m_PreventAbort != 0;
-    }
-
-    typedef StateHolder<Thread::IncPreventAbort, Thread::DecPreventAbort> ThreadPreventAbortHolder;
-
     // The ThreadStore manages a list of all the threads in the system.  I
     // can't figure out how to expand the ThreadList template type without
     // making m_Link public.
@@ -3912,14 +3880,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-private:
-
-    //-------------------------------------------------------------------------
-    // Support creation of assemblies in DllMain (see ceemain.cpp)
-    //-------------------------------------------------------------------------
-    DomainFile* m_pLoadingFile;
-
-
 public:
 
     void SetInteropDebuggingHijacked(BOOL f)
@@ -4031,25 +3991,6 @@ public:
     typedef ConditionalStateHolder<Thread *, Thread::EnterHijackLock, Thread::LeaveHijackLock> HijackLockHolder;
     //-------------------------------------------------------------------------
 
-    static bool ThreadsAtUnsafePlaces(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_threadsAtUnsafePlaces != (LONG)0);
-    }
-
-    static void IncThreadsAtUnsafePlaces(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedIncrement(&m_threadsAtUnsafePlaces);
-    }
-
-    static void DecThreadsAtUnsafePlaces(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedDecrement(&m_threadsAtUnsafePlaces);
-    }
-
     void PrepareForEERestart(BOOL SuspendSucceeded)
     {
         WRAPPER_NO_CONTRACT;
@@ -4071,68 +4012,12 @@ public:
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
     TADDR GetStaticFieldAddrNoCreate(FieldDesc *pFD);
 
-    void SetLoadingFile(DomainFile *pFile)
-    {
-        LIMITED_METHOD_CONTRACT;
-        CONSISTENCY_CHECK(m_pLoadingFile == NULL);
-        m_pLoadingFile = pFile;
-    }
-
-    void ClearLoadingFile()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pLoadingFile = NULL;
-    }
-
-    DomainFile *GetLoadingFile()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLoadingFile;
-    }
-
-private:
-    static void LoadingFileRelease(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        pThread->ClearLoadingFile();
-    }
-
-public:
-     typedef Holder<Thread *, DoNothing, Thread::LoadingFileRelease> LoadingFileHolder;
-
 private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
     // it is performing a <clinit>)
     int         m_PreventAsync;
-    int         m_PreventAbort;
-    int         m_nNestedMarshalingExceptions;
-    BOOL IsMarshalingException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_nNestedMarshalingExceptions != 0);
-    }
-    int StartedMarshalingException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_nNestedMarshalingExceptions++;
-    }
-    void FinishedMarshalingException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_nNestedMarshalingExceptions > 0);
-        m_nNestedMarshalingExceptions--;
-    }
 
     static LONG m_DebugWillSyncCount;
-
-    // IP cache used by QueueCleanupIP.
-    #define CLEANUP_IPS_PER_CHUNK 4
-    struct CleanupIPs {
-        IUnknown    *m_Slots[CLEANUP_IPS_PER_CHUNK];
-        CleanupIPs  *m_Next;
-        CleanupIPs() {LIMITED_METHOD_CONTRACT; memset(this, 0, sizeof(*this)); }
-    };
-    CleanupIPs   m_CleanupIPs;
 
 #define BEGIN_FORBID_TYPELOAD() _ASSERTE_IMPL((GetThreadNULLOk() == 0) || ++GetThreadNULLOk()->m_ulForbidTypeLoad)
 #define END_FORBID_TYPELOAD()   _ASSERTE_IMPL((GetThreadNULLOk() == 0) || GetThreadNULLOk()->m_ulForbidTypeLoad--)
@@ -4320,21 +4205,6 @@ public:
 public:
     // Is the current thread currently executing within a constrained execution region?
     static BOOL IsExecutingWithinCer();
-
-    // Determine whether the method at the given frame in the thread's execution stack is executing within a CER.
-    BOOL IsWithinCer(CrawlFrame *pCf);
-
-private:
-    // used to pad stack on thread creation to avoid aliasing penalty in P4 HyperThread scenarios
-
-    static DWORD WINAPI intermediateThreadProc(PVOID arg);
-    static int m_offset_counter;
-    static const int offset_multiplier = 128;
-
-    typedef struct {
-        LPTHREAD_START_ROUTINE  lpThreadFunction;
-        PVOID lpArg;
-    } intermediateThreadParam;
 
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.
@@ -4626,43 +4496,6 @@ private:
 
     typedef ConditionalStateHolder<Thread *, Thread::EnterWorkingOnThreadContext, Thread::LeaveWorkingOnThreadContext> WorkingOnThreadContextHolder;
 
-public:
-    void PrepareThreadForSOWork()
-    {
-        WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_HIJACK
-        UnhijackThread();
-#endif // FEATURE_HIJACK
-
-        ResetThrowControlForThread();
-
-        // Since this Thread has taken an SO, there may be state left-over after we
-        // short-circuited exception or other error handling, and so we don't want
-        // to risk recycling it.
-        SetThreadStateNC(TSNC_CannotRecycle);
-    }
-
-    void SetSOWorkNeeded()
-    {
-        SetThreadStateNC(TSNC_SOWorkNeeded);
-    }
-
-    BOOL IsSOWorkNeeded()
-    {
-        return HasThreadStateNC(TSNC_SOWorkNeeded);
-    }
-
-    void FinishSOWork();
-
-    void ClearExceptionStateAfterSO(void* pStackFrameSP)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Clear any stale exception state.
-        m_ExceptionState.ClearExceptionStateAfterSO(pStackFrameSP);
-    }
-
 private:
     BOOL m_fAllowProfilerCallbacks;
 
@@ -4733,34 +4566,6 @@ private:
     // we may be in an infinite recursive case.
     Exception *m_pCreatingThrowableForException;
     friend OBJECTREF CLRException::GetThrowable();
-
-#ifdef _DEBUG
-private:
-    int m_dwDisableAbortCheckCount; // Disable check before calling managed code.
-                                    // !!! Use this very carefully.  If managed code runs user code
-                                    // !!! or blocks on locks, the thread may not be aborted.
-public:
-    static void        DisableAbortCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        FastInterlockIncrement((LONG*)&pThread->m_dwDisableAbortCheckCount);
-    }
-    static void        EnableAbortCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        _ASSERTE (pThread->m_dwDisableAbortCheckCount > 0);
-        FastInterlockDecrement((LONG*)&pThread->m_dwDisableAbortCheckCount);
-    }
-
-    BOOL IsAbortCheckDisabled()
-    {
-        return m_dwDisableAbortCheckCount > 0;
-    }
-
-    typedef StateHolder<Thread::DisableAbortCheck, Thread::EnableAbortCheck> DisableAbortCheckHolder;
-#endif
 
 private:
     // At the end of a catch, we may raise ThreadAbortException.  If catch clause set IP to resume in the
@@ -4979,27 +4784,6 @@ private:
 
 typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 typedef Thread::ThreadPreventAsyncHolder ThreadPreventAsyncHolder;
-typedef Thread::ThreadPreventAbortHolder ThreadPreventAbortHolder;
-
-// Combines ForBindSuspendThreadHolder and CrstHolder into one.
-class ForbidSuspendThreadCrstHolder
-{
-public:
-    // Note: member initialization is intentionally ordered.
-    ForbidSuspendThreadCrstHolder(CrstBase * pCrst)
-        : m_forbid_suspend_holder()
-        , m_lock_holder(pCrst)
-    { WRAPPER_NO_CONTRACT; }
-
-private:
-    ForbidSuspendThreadHolder   m_forbid_suspend_holder;
-    CrstHolder                  m_lock_holder;
-};
-
-ETaskType GetCurrentTaskType();
-
-
-
 typedef Thread::AVInRuntimeImplOkayHolder AVInRuntimeImplOkayHolder;
 
 BOOL RevertIfImpersonated(BOOL *bReverted, HANDLE *phToken);

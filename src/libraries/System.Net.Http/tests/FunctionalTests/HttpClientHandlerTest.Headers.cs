@@ -273,7 +273,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
-            if (!UseSocketsHttpHandler || LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.IsHttp2)
             {
                 // Only SocketsHttpHandler with HTTP/1.x uses the Host header to influence the SSL auth.
                 // Host header is not used for HTTP2.

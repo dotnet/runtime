@@ -5,8 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <_ILLinkRuntimeRootDescriptorFileName Condition=" '$(_ILLinkRuntimeRootDescriptorFileName)' == '' ">System.Private.CoreLib.xml</_ILLinkRuntimeRootDescriptorFileName>
-    <_ILLinkRuntimeRootDescriptorFilePath Condition=" '$(_ILLinkRuntimeRootDescriptorFilePath)' == '' ">$(IntermediateOutputPath)$(_ILLinkRuntimeRootDescriptorFileName)</_ILLinkRuntimeRootDescriptorFilePath>
+    <_ILLinkRuntimeRootDescriptorFilePath>$(ILLinkTrimXml)</_ILLinkRuntimeRootDescriptorFilePath>
     <_NamespaceFilePath Condition=" '$(_NamespaceFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\namespace.h</_NamespaceFilePath>
     <_MscorlibFilePath Condition=" '$(_MscorlibFilePath)' == '' ">$(MSBuildThisFileDirectory)..\vm\mscorlib.h</_MscorlibFilePath>
     <_CortypeFilePath Condition=" '$(_CortypeFilePath)' == '' ">$(MSBuildThisFileDirectory)..\inc\cortypeinfo.h</_CortypeFilePath>

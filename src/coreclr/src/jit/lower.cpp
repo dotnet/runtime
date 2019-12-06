@@ -4084,8 +4084,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     GenTree* local;
     if (thisPtr->isLclField())
     {
-        local = new (comp, GT_LCL_FLD)
-            GenTreeLclFld(GT_LCL_FLD, thisPtr->TypeGet(), lclNum, thisPtr->AsLclFld()->gtLclOffs);
+        local = new (comp, GT_LCL_FLD) GenTreeLclFld(thisPtr->TypeGet(), lclNum, thisPtr->AsLclFld()->GetLclOffs());
     }
     else
     {

@@ -151,14 +151,6 @@ stages:
       portableBuild: true
       targetArchitecture: x64
 
-  - template: ${{ variables['pipelinesPath'] }}/jobs/bash-build.yml
-    parameters:
-      additionalMSBuildArgs: /p:OutputRid=rhel.6-x64
-      name: Linux_x64_Rhel6
-      dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-50f0d02-20190918213956
-      portableBuild: false
-      targetArchitecture: x64
-
   # -------- Build OSX (macOS) leg --------
   - template: ${{ variables['pipelinesPath'] }}/jobs/osx-build.yml
     parameters:

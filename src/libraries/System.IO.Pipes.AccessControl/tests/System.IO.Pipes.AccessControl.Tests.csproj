@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="AnonymousPipeTests\AnonymousPipeServerStreamAclTests.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.AclExtensions.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeServerStreamAclTests.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.AclExtensions.cs" />
     <Compile Include="PipeServerStreamAclTestBase.cs" />
     <Compile Include="PipeTest.AclExtensions.cs" />
