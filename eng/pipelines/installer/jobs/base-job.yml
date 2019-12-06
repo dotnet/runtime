@@ -19,18 +19,6 @@ parameters:
   pool: ''
   strategy: {}
 
-variables:
-  commonVariables:
-    # Live artifact download
-    - _coreClrArtifactName: ''
-    - _coreClrDownloadPath: ''
-    - _coreClrOverridePathArg: ''
-
-    - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
-      - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
-      - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
-      - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
-
 jobs:
 - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
   displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
@@ -41,9 +29,6 @@ jobs:
 
   variables:
   - ${{ parameters.variables }}
-  - ${{ each variable in variables.commonVariables }}:
-    - name: ${{ variable.key }}
-      value: ${{ variable.value }}
   - ${{ each variable in parameters.buildVariables }}:
     - name: ${{ variable.key }}
       value: ${{ variable.value }}
