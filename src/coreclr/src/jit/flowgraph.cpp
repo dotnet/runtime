@@ -23504,8 +23504,14 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 {
                     // Unsafe value cls check is not needed here since in-linee compiler instance would have
                     // iterated over locals and marked accordingly.
-                    impAssignTempGenTree(tmpNum, gtNewZeroConNode(genActualType(lclTyp)), (unsigned)CHECK_SPILL_NONE,
-                                         &afterStmt, callILOffset, block);
+                    GenTree* initConst = gtNewZeroConNode(genActualType(lclTyp));
+
+                    GenTree* asg = gtNewTempAssign(tmpNum, initConst);
+                    assert(!asg->IsNothingNode());
+
+                    Statement* asgStmt = gtNewStmt(asg, callILOffset);
+                    fgInsertStmtAfter(block, afterStmt, asgStmt);
+                    afterStmt = asgStmt;
                 }
                 else
                 {

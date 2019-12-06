@@ -756,29 +756,14 @@ void Compiler::impInsertTreeBefore(GenTree* tree, IL_OFFSETX offset, Statement* 
  *  curLevel is the stack level for which the spill to the temp is being done.
  */
 
-void Compiler::impAssignTempGenTree(unsigned    tmp,
-                                    GenTree*    val,
-                                    unsigned    curLevel,
-                                    Statement** pAfterStmt, /* = NULL */
-                                    IL_OFFSETX  ilOffset,   /* = BAD_IL_OFFSET */
-                                    BasicBlock* block       /* = NULL */
-                                    )
+void Compiler::impAssignTempGenTree(unsigned tmp, GenTree* val, unsigned curLevel, IL_OFFSETX offset)
 {
     assert(!varTypeIsStruct(val));
     GenTree* asg = gtNewTempAssign(tmp, val);
 
     if (!asg->IsNothingNode())
     {
-        if (pAfterStmt)
-        {
-            Statement* asgStmt = gtNewStmt(asg, ilOffset);
-            fgInsertStmtAfter(block, *pAfterStmt, asgStmt);
-            *pAfterStmt = asgStmt;
-        }
-        else
-        {
-            impAppendTree(asg, curLevel, impCurStmtOffs);
-        }
+        impAppendTree(asg, curLevel, offset);
     }
 }
 
@@ -2108,7 +2093,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark0"));
 
         unsigned slotLclNum = lvaGrabTemp(true DEBUGARG("impRuntimeLookup test"));
-        impAssignTempGenTree(slotLclNum, slotPtrTree, (unsigned)CHECK_SPILL_ALL, nullptr, impCurStmtOffs);
+        impAssignTempGenTree(slotLclNum, slotPtrTree, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
 
         GenTree* slot = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
         // downcast the pointer to a TYP_INT on 64-bit targets
@@ -2637,10 +2622,10 @@ GenTree* Compiler::impCloneExpr(GenTree*             tree,
 
     unsigned temp = lvaGrabTemp(true DEBUGARG(reason));
 
-    // impAssignTempGenTree() may change tree->gtType to TYP_VOID for calls which
+    // impAssignTempGenStruct() may change tree->gtType to TYP_VOID for calls which
     // return a struct type. It also may modify the struct type to a more
     // specialized type (e.g. a SIMD type).  So we will get the type from
-    // the lclVar AFTER calling impAssignTempGenTree().
+    // the lclVar AFTER calling impAssignTempGenStruct().
 
     impAssignTempGenStruct(temp, tree, structHnd, curLevel, pAfterStmt, impCurStmtOffs);
     var_types type = genActualType(lvaTable[temp].TypeGet());
