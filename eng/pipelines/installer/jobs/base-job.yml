@@ -53,6 +53,16 @@ jobs:
     - name: setScriptToEchoAndFailOnNonZero
       value: set -xe
 
+  # Produce test-signed build for PR and Public builds
+  - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
+    - name: SignType
+      value: test
+
+  # Set up non-PR build from internal project
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - name: SignType
+      value: $[ coalesce(variables.OfficialSignType, 'real') ]
+
   - name: LiveOverridePathArgs
     value: >-
       /p:CoreCLROverridePath=$(CoreClrDownloadPath)
