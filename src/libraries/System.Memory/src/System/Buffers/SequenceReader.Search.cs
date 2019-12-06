@@ -681,7 +681,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Position the reader at the end of the sequence
+        /// Moves the reader to the end of the sequence.
         /// </summary>
         public void AdvanceToEnd()
         {
