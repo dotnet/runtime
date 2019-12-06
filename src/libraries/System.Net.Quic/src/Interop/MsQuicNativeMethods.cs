@@ -480,8 +480,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal byte* Buffer;
         }
 
-        private const ushort IPv4 = 2;
-        private const ushort IPv6 = 23;
+        internal const ushort IPv4 = 2;
+        internal const ushort IPv6 = 23;
 
         public static SOCKADDR_INET Convert(IPEndPoint endpoint)
         {

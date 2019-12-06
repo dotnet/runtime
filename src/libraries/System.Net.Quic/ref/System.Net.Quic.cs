@@ -50,8 +50,8 @@ namespace System.Net.Quic
         public override int Read(byte[] buffer, int offset, int count) => throw null;
         public override void Write(byte[] buffer, int offset, int count) => throw null;
         public long StreamId => throw null;
-        public void ShutdownRead() => throw null;
-        public void ShutdownWrite() => throw null;
+        public void AbortRead() => throw null;
+        public ValueTask ShutdownWriteAsync() => throw null;
     }
     public class QuicClientConnectionOptions
     {
@@ -60,6 +60,7 @@ namespace System.Net.Quic
         public IPEndPoint RemoteEndPoint { get => throw null; set => throw null; }
         public short MaxBidirectionalStreams { get => throw null; set => throw null; }
         public short MaxUnidirectionalStreams { get => throw null; set => throw null; }
+        public TimeSpan IdleTimeout { get => throw null; set => throw null; }
     }
     public class QuicListenerOptions
     {
@@ -68,5 +69,6 @@ namespace System.Net.Quic
         public int ListenBacklog { get => throw null; set => throw null; }
         public short MaxBidirectionalStreams { get => throw null; set => throw null; }
         public short MaxUnidirectionalStreams { get => throw null; set => throw null; }
+        public TimeSpan IdleTimeout { get => throw null; set => throw null; }
     }
 }

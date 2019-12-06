@@ -17,7 +17,7 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default);
 
-        internal abstract void ShutdownRead();
+        internal abstract void AbortRead();
 
         internal abstract bool CanWrite { get; }
 
@@ -25,7 +25,7 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default);
 
-        internal abstract void ShutdownWrite();
+        internal abstract ValueTask ShutdownWriteAsync();
 
         internal abstract void Flush();
 

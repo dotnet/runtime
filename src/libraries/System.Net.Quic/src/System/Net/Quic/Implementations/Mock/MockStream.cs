@@ -131,16 +131,17 @@ namespace System.Net.Quic.Implementations.Mock
             return Task.CompletedTask;
         }
 
-        internal override void ShutdownRead()
+        internal override void AbortRead()
         {
             throw new NotImplementedException();
         }
 
-        internal override void ShutdownWrite()
+        internal override ValueTask ShutdownWriteAsync()
         {
             CheckDisposed();
 
             _socket.Shutdown(SocketShutdown.Send);
+            return default;
         }
 
         private void CheckDisposed()

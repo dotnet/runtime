@@ -27,6 +27,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private ConnectionCallbackDelegate _connectionDelegate;
 
         // Endpoint to either connect to or the endpoint already accepted.
+        private readonly IPEndPoint _localEndPoint;
         private readonly IPEndPoint _remoteEndPoint;
 
         // Some TCSs for making Connect and Shutdown "async" from callbacks. TODO replace with IValueTaskSource
@@ -34,6 +35,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>();
 
         private bool _disposed;
+        private bool _connected;
 
         // Queue for accepted streams
         private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateBounded<MsQuicStream>(new BoundedChannelOptions(capacity: 512) // TODO configurable limit here.
@@ -43,9 +45,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         });
 
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint remoteEndPoint, MsQuicApi api, IntPtr nativeObjPtr)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, MsQuicApi api, IntPtr nativeObjPtr)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            _localEndPoint = remoteEndPoint;
             _remoteEndPoint = remoteEndPoint;
             _api = api;
             _nativeObjPtr = nativeObjPtr;
@@ -64,7 +67,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             _remoteEndPoint = remoteEndPoint;
             _nativeObjPtr = nativeObjPtr;
             _api = api;
+
             SetCallbackHandler();
+            SetIdleTimeout(TimeSpan.FromSeconds(120));
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -75,7 +80,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override SslApplicationProtocol NegotiatedApplicationProtocol => throw new NotImplementedException();
 
-        internal override bool Connected => throw new NotImplementedException();
+        internal override bool Connected => _connected;
 
         internal uint HandleEvent(ref ConnectionEvent connectionEvent)
         {
@@ -143,6 +148,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             _connectTcs?.SetResult(null);
+            _connected = true;
             _connectTcs = null;
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -287,7 +293,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
-            SetIdleTimeout(TimeSpan.FromSeconds(120));
+            // TODO move idle timeout setting from this class
             uint status = _api._connectionStartDelegate(
                 _nativeObjPtr,
                 (ushort)_remoteEndPoint.AddressFamily,

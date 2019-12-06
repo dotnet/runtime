@@ -41,5 +41,10 @@ namespace System.Net.Quic
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.
         public short MaxUnidirectionalStreams { get; set; } = 100;
+
+        /// <summary>
+        /// Idle timeout for connections, afterwhich the connection will be closed.
+        /// </summary>
+        public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(2);
     }
 }

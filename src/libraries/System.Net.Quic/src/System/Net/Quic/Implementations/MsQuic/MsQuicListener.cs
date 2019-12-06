@@ -34,21 +34,34 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private volatile bool _disposed;
 
-        private readonly Channel<MsQuicConnection> _acceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(512) // TODO make this configurable.
-        {
-            SingleReader = true,
-            SingleWriter = true
-        });
+        private volatile bool _started;
+        private IPEndPoint _listenEndpoint;
+
+        private readonly Channel<MsQuicConnection> _acceptConnectionQueue;
 
         internal MsQuicListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions, MsQuicApi api, IntPtr nativeObjPtr)
         {
             _api = api;
             _sslOptions = sslServerAuthenticationOptions;
-            ListenEndPoint = listenEndPoint;
+            _listenEndpoint = listenEndPoint;
             _ptr = nativeObjPtr;
+            _acceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(512) // TODO make this configurable.
+            {
+                SingleReader = true,
+                SingleWriter = true
+            });
         }
 
-        internal override IPEndPoint ListenEndPoint { get; }
+        internal override IPEndPoint ListenEndPoint {
+            get
+            {
+                if (!_started)
+                {
+                    throw new InvalidOperationException("Listener must be started before getting endpoint.");
+                }
+                return _listenEndpoint;
+            }
+        }
 
         internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(CancellationToken cancellationToken = default)
         {
@@ -114,19 +127,47 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override async ValueTask StartAsync()
         {
-            _secConfig = await _api.CreateSecurityConfig(_sslOptions.ServerCertificate);
+            _secConfig = await _api.CreateSecurityConfig(_sslOptions?.ServerCertificate);
 
             SetCallbackHandler();
 
-            SOCKADDR_INET address = MsQuicNativeMethods.Convert(ListenEndPoint);
+            SOCKADDR_INET address = MsQuicNativeMethods.Convert(_listenEndpoint);
 
             uint status = _api._listenerStartDelegate(
                 _ptr,
                 ref address);
+
             MsQuicStatusException.ThrowIfFailed(status);
+
+            // If the listen port is 0, requery the ListeneEndPoint.
+            SetListenPort();
+
+            _started = true;
         }
 
-        internal uint ListenerCallbackHandler(
+        private unsafe void SetListenPort()
+        {
+            byte* ptr = stackalloc byte[sizeof(SOCKADDR_INET)];
+            QuicBuffer buffer = new QuicBuffer
+            {
+                Length = (uint)sizeof(SOCKADDR_INET),
+                Buffer = ptr
+            };
+
+            MsQuicStatusException.ThrowIfFailed(_api.UnsafeGetParam(_ptr, (uint)QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS, ref buffer));
+            SOCKADDR_INET inetAddress = *(SOCKADDR_INET*)ptr;
+
+            if (inetAddress.si_family == MsQuicNativeMethods.IPv4)
+            {
+                _listenEndpoint = new IPEndPoint(new IPAddress(inetAddress.Ipv4.Address), inetAddress.Ipv4.sin_port);
+            }
+            else
+            {
+                _listenEndpoint = new IPEndPoint(new IPAddress(inetAddress.Ipv6.Address), inetAddress.Ipv6._port);
+            }
+        }
+
+        internal unsafe uint ListenerCallbackHandler(
             ref ListenerEvent evt)
         {
             switch (evt.Type)
@@ -134,7 +175,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 case QUIC_LISTENER_EVENT.NEW_CONNECTION:
                     {
                         evt.Data.NewConnection.SecurityConfig = _secConfig.NativeObjPtr;
-                        MsQuicConnection msQuicConnection = new MsQuicConnection(ListenEndPoint, _api, evt.Data.NewConnection.Connection);
+                        MsQuicConnection msQuicConnection = new MsQuicConnection(ListenEndPoint, ListenEndPoint, _api, evt.Data.NewConnection.Connection);
                         _acceptConnectionQueue.Writer.TryWrite(msQuicConnection);
                     }
                     break;

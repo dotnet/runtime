@@ -103,9 +103,9 @@ namespace System.Net.Quic
 
         public override Task FlushAsync(CancellationToken cancellationToken) => _provider.FlushAsync(cancellationToken);
 
-        public void ShutdownRead() => _provider.ShutdownRead();
+        public void AbortRead() => _provider.AbortRead();
 
-        public void ShutdownWrite() => _provider.ShutdownWrite();
+        public ValueTask ShutdownWriteAsync() => _provider.ShutdownWriteAsync();
 
         protected override void Dispose(bool disposing)
         {

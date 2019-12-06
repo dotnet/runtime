@@ -185,14 +185,27 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             MsQuicSecurityConfig secConfig = null;
             var tcs = new TaskCompletionSource<object>();
             uint secConfigCreateStatus = MsQuicConstants.InternalError;
-
-            uint status = _secConfigCreateDelegate(
-                _registrationContext,
-                (uint)QUIC_SEC_CONFIG_FLAG.CERT_CONTEXT,
-                certificate.Handle,
-                null,
-                IntPtr.Zero,
-                SecCfgCreateCallbackHandler);
+            uint status;
+            if (certificate != null)
+            {
+                status = _secConfigCreateDelegate(
+                    _registrationContext,
+                    (uint)QUIC_SEC_CONFIG_FLAG.CERT_CONTEXT,
+                    certificate.Handle,
+                    null,
+                    IntPtr.Zero,
+                    SecCfgCreateCallbackHandler);
+            }
+            else
+            {
+                status = _secConfigCreateDelegate(
+                    _registrationContext,
+                    (uint)QUIC_SEC_CONFIG_FLAG.CERT_NULL,
+                    IntPtr.Zero,
+                    null,
+                    IntPtr.Zero,
+                    SecCfgCreateCallbackHandler);
+            }
 
             MsQuicStatusException.ThrowIfFailed(status);
 

@@ -111,6 +111,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
+            if (!_canWrite)
+            {
+                throw new InvalidOperationException("Writing is not allowed on stream");
+            }
+
             if (_started == StartState.None)
             {
                 _started = StartState.Started;
@@ -125,6 +130,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (!_canRead)
+            {
+                throw new InvalidOperationException("Reading is not allowed on stream");
+            }
 
             lock (_sync)
             {
@@ -205,7 +214,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // TODO do we want this to be a synchronization mechanism to cancel a pending read
         // If so, we need to complete the read here as well.
-        internal override void ShutdownRead()
+        internal override void AbortRead()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -219,7 +228,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal override void ShutdownWrite()
+        internal override ValueTask ShutdownWriteAsync()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -228,6 +237,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
+            return new ValueTask(_sendResettableCompletionSource.GetValueTask().AsTask());
         }
 
         // TODO consider removing sync-over-async with blocking calls.
@@ -433,7 +444,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private uint HandleEventPeerRecvAbort()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
+            // TODO
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicConstants.Success;
@@ -466,9 +477,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            // TODO use another cts here.
-
-            _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+            // TODO use another cts here? This is when both sides are shutdown.
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -611,40 +620,22 @@ namespace System.Net.Quic.Implementations.MsQuic
             MsQuicStatusException.ThrowIfFailed(status);
         }
 
-        private Task<uint> ShutdownAsync(
-            QUIC_STREAM_SHUTDOWN_FLAG flags,
-            ushort errorCode)
-        {
-            uint status = _api._streamShutdownDelegate(
-                _ptr,
-                (uint)flags,
-                errorCode);
-            MsQuicStatusException.ThrowIfFailed(status);
-            return _sendResettableCompletionSource.GetValueTask().AsTask();
-        }
-
         // This can fail if the stream isn't started.
         private unsafe long GetStreamId()
         {
             byte* ptr = stackalloc byte[sizeof(long)];
-            var buffer = new QuicBuffer
+            QuicBuffer buffer = new QuicBuffer
             {
                 Length = sizeof(long),
                 Buffer = ptr
             };
-            GetParam(QUIC_PARAM_STREAM.ID, ref buffer);
-            return *(long*)ptr;
-        }
 
-        private void GetParam(
-            QUIC_PARAM_STREAM param,
-            ref QuicBuffer buf)
-        {
             MsQuicStatusException.ThrowIfFailed(_api.UnsafeGetParam(
                 _ptr,
                 (uint)QUIC_PARAM_LEVEL.STREAM,
-                (uint)param,
-                ref buf));
+                (uint)QUIC_PARAM_STREAM.ID,
+                ref buffer));
+            return *(long*)ptr;
         }
 
         /// <summary>
