@@ -1551,6 +1551,34 @@ mono_thread_attach (MonoDomain *domain)
 }
 
 /**
+ * mono_threads_attach_tools_thread:
+ *
+ * Attach the current thread as a tool thread. DON'T USE THIS FUNCTION WITHOUT READING ALL DISCLAIMERS.
+ *
+ * A tools thread is a very special kind of thread that needs access to core
+ * runtime facilities but should not be counted as a regular thread for high
+ * order facilities such as executing managed code or accessing the managed
+ * heap.
+ *
+ * This is intended only for low-level utilities than need to be able to use
+ * some low-level runtime facilities when doing things like resolving
+ * backtraces in their background processing thread.
+ *
+ * Note in particular that the thread is not fully attached - it does not have
+ * a "current domain" because it cannot run managed code or interact with
+ * managed objects.  However it can act on some metadata, and use our low-level
+ * locks and the coop thread state machine (ie GC Safe and GC Unsafe
+ * transitions make sense).
+ */
+void
+mono_threads_attach_tools_thread (void)
+{
+	MonoThreadInfo *info = mono_thread_info_attach ();
+	g_assert (info);
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+}
+
+/**
  * mono_thread_detach:
  */
 void
@@ -1559,6 +1587,8 @@ mono_thread_detach (MonoThread *thread)
 	if (thread)
 		mono_thread_detach_internal (thread->internal_thread);
 }
+
+
 
 /**
  * mono_thread_detach_if_exiting:

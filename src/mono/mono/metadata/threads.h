@@ -44,6 +44,9 @@ MONO_API MonoThread *mono_thread_attach (MonoDomain *domain);
 MONO_API void mono_thread_detach (MonoThread *thread);
 MONO_API void mono_thread_exit (void);
 
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_threads_attach_tools_thread (void);
+
 MONO_API char   *mono_thread_get_name_utf8 (MonoThread *thread);
 MONO_API int32_t mono_thread_get_managed_id (MonoThread *thread);
 
