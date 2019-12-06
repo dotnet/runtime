@@ -27,8 +27,14 @@
           $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
           $(CoreCLRSharedFrameworkDir)PDB/*.dbg;
           $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" />
+      <CoreCLRFiles Include="$(CoreCLROverridePath)PDB/System.Private.CoreLib.pdb" />
+
+      <CoreCLRSystemPrivateCoreLibNiSymbolFiles
+        Include="$(CoreCLROverridePath)PDB/System.Private.CoreLib.ni.pdb" />
       <CoreCLRFiles
-        Include="$(CoreCLROverridePath)PDB/System.Private.CoreLib.pdb;$(CoreCLROverridePath)PDB/System.Private.CoreLib.ni.pdb" />
+        Include="@(CoreCLRSystemPrivateCoreLibSymbolFiles)"
+        Condition="Exists('%(Identity)')" />
+
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
         Include="
           $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
