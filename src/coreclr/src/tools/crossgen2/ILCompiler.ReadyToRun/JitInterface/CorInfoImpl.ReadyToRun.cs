@@ -1360,6 +1360,18 @@ namespace Internal.JitInterface
             return attribs;
         }
 
+        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+            classMustBeLoadedBeforeCodeIsRun(type);
+        }
+
+        private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
+        {
+            ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type, GetSignatureContext());
+            ((MethodWithGCInfo)_methodCodeNode).TypesToPreload.Add(node);
+        }
+
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
             MethodDesc methodToCall;

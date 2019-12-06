@@ -421,7 +421,6 @@ namespace Internal.JitInterface
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
-
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
@@ -480,7 +479,7 @@ namespace Internal.JitInterface
 
             CorInfoType corInfoRetType = asCorInfoType(signature.ReturnType, &sig->retTypeClass);
             sig->_retType = (byte)corInfoRetType;
-            sig->retTypeSigClass = sig->retTypeClass; // The difference between the two is not relevant for ILCompiler
+            sig->retTypeSigClass = ObjectToHandle(signature.ReturnType);
 
             sig->flags = 0;    // used by IL stubs code
 
@@ -1655,10 +1654,6 @@ namespace Internal.JitInterface
             return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
         }
 
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
-        }
-
         private CORINFO_CLASS_STRUCT_* getBuiltinClass(CorInfoClassId classId)
         {
             switch (classId)
@@ -2798,6 +2793,39 @@ namespace Internal.JitInterface
 
         private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
+            // Filters don't have class token in the clause.ClassTokenOrOffset
+            if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) == 0)
+            {
+                if (clause.ClassTokenOrOffset != 0)
+                {
+                    MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+                    mdToken classToken = (mdToken)clause.ClassTokenOrOffset;
+                    TypeDesc clauseType = (TypeDesc)ResolveTokenInScope(methodIL, MethodBeingCompiled, classToken);
+
+                    CORJIT_FLAGS flags = default(CORJIT_FLAGS);
+                    getJitFlags(ref flags, 0);
+
+                    if (flags.IsSet(CorJitFlag.CORJIT_FLAG_IL_STUB))
+                    {
+                        // IL stub tokens are 'private' and do not resolve correctly in their parent module's metadata.
+
+                        // Currently, the only place we are using a token here is for a COM-to-CLR exception-to-HRESULT
+                        // mapping catch clause.  We want this catch clause to catch all exceptions, so we override the
+                        // token to be mdTypeRefNil, which used by the EH system to mean catch(...)
+                        Debug.Assert(clauseType.IsObject);
+                        clause.ClassTokenOrOffset = 0;
+                    }
+                    else
+                    {
+                        // For all clause types add fixup to ensure the types are loaded before the code of the method
+                        // containing the catch blocks is executed. This ensures that a failure to load the types would
+                        // not happen when the exception handling is in progress and it is looking for a catch handler.
+                        // At that point, we could only fail fast.
+                        classMustBeLoadedBeforeCodeIsRun(clauseType);
+                    }
+                }
+            }
+
             _ehClauses[EHnumber] = clause;
         }
 

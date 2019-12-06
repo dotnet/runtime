@@ -26,10 +26,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
+        private List<ISymbolNode> _typesToPreload;
 
         public MethodWithGCInfo(MethodDesc methodDesc, SignatureContext signatureContext)
         {
             GCInfoNode = new MethodGCInfoNode(this);
+            _typesToPreload = new List<ISymbolNode>();
             _method = methodDesc;
             SignatureContext = signatureContext;
         }
@@ -41,6 +43,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MethodDesc Method => _method;
+
+        public List<ISymbolNode> TypesToPreload => _typesToPreload;
 
         public bool IsEmpty => _methodCode.Data.Length == 0;
 
@@ -105,12 +109,45 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
+            foreach (ISymbolNode node in _typesToPreload)
+            {
+                if (fixupCells == null)
+                {
+                    fixupCells = new List<FixupCell>();
+                }
+
+                PrecodeHelperImport import = (PrecodeHelperImport)node;
+                fixupCells.Add(new FixupCell(import.Table.IndexFromBeginningOfArray, import.OffsetFromBeginningOfArray));
+            }
+
             if (fixupCells == null)
             {
                 return null;
             }
 
             fixupCells.Sort(FixupCell.Comparer);
+
+            // Deduplicate fixupCells
+            int j = 0;
+            for (int i = 1; i < fixupCells.Count; i++)
+            {
+                if (FixupCell.Comparer.Compare(fixupCells[j], fixupCells[i]) != 0)
+                {
+                    j++;
+                    if (i != j)
+                    {
+                        fixupCells[j] = fixupCells[i];
+                    }
+                }
+            }
+
+            // Move j to point after the last valid fixupCell in the array
+            j++;
+
+            if (j < fixupCells.Count)
+            {
+                fixupCells.RemoveRange(j, fixupCells.Count - j);
+            }
 
             NibbleWriter writer = new NibbleWriter();
 
@@ -162,7 +199,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            return new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
+            DependencyList dependencyList = new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
+
+            foreach (ISymbolNode node in _typesToPreload)
+            {
+                dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
+            }
+
+            return dependencyList;
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
