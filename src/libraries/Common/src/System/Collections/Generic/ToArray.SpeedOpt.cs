@@ -9,29 +9,47 @@ namespace System.Collections.Generic
 {
     internal abstract class ToArrayBase<T>
     {
-        private const int maxArraySize = int.MaxValue;
+        // from https://docs.microsoft.com/en-us/dotnet/framework/configure-apps/file-schema/runtime/gcallowverylargeobjects-element
+        private const int maxByteElementsArraySize  = 0X7FFFFFC7;
+        private const int maxOtherElementsArraySize = 0X7FEFFFFF;
+
+        protected const int maxArraySize = maxByteElementsArraySize;
 
         private const int initialRecursiveDepth = 16;
         private const int itemsPerRecursion = 4;
 
         protected const int maxSizeForNoAllocations = initialRecursiveDepth * itemsPerRecursion;
 
-        protected T[] FinishViaAllocations(object source, ref int sourceIdx, Func<T, bool>? predicate, int count)
+        private int GetBufferSize(int count, int sourceSize)
         {
-            if (count == maxArraySize)
+            if (count >= maxByteElementsArraySize)
             {
-                throw new IndexOutOfRangeException();
+                // We fail here "early" as we could be creating more buffers (which would be smaller thaat the max)
+                // but would eventually lead to an excessive allocation which would throw an OutOfMemory exception
+                throw new OutOfMemoryException();
             }
 
+            var maxSize =
+                count < sourceSize
+                ? sourceSize
+                :   count < maxOtherElementsArraySize
+                    ? maxOtherElementsArraySize
+                    : maxByteElementsArraySize;
+
+            return (int)Math.Min((uint)maxSize, (uint)count * 2) - count; ;
+        }
+
+        protected T[] FinishViaAllocations(object source, int sourceSize, ref int sourceIdx, Func<T, bool>? predicate, int count)
+        {
             T[] result;
-            int bufferSize = (int)Math.Min((uint)maxArraySize, (uint)count * 2) - count;
+            int bufferSize = GetBufferSize(count, sourceSize);
             T[] buffer = new T[bufferSize];
 
             var (index, moveNext) = PopulateBuffer(buffer, source, ref sourceIdx, predicate);
 
             if (moveNext)
             {
-                result = FinishViaAllocations(source, ref sourceIdx, predicate, count + index);
+                result = FinishViaAllocations(source, sourceSize, ref sourceIdx, predicate, count + index);
             }
             else
             {
@@ -182,7 +200,7 @@ namespace System.Collections.Generic
             T[] FinishViaAllocations(IEnumerator<T> source, int count)
             {
                 int dummyIdx = 0;
-                return base.FinishViaAllocations(source, ref dummyIdx, null, count);
+                return base.FinishViaAllocations(source, maxArraySize, ref dummyIdx, null, count);
             }
         }
 
@@ -198,7 +216,7 @@ namespace System.Collections.Generic
                 }
                 items.Item1 = source.Current;
             }
-            while (predicate(items.Item1));
+            while (!predicate(items.Item1));
 
             ++count;
 
@@ -209,7 +227,7 @@ namespace System.Collections.Generic
                     return AllocateAndAssign(count, items.Item1);
                 }
                 items.Item2 = source.Current;
-            } while (predicate(items.Item2));
+            } while (!predicate(items.Item2));
 
             ++count;
 
@@ -221,7 +239,7 @@ namespace System.Collections.Generic
                 }
                 items.Item3 = source.Current;
             }
-            while (predicate(items.Item3));
+            while (!predicate(items.Item3));
 
             ++count;
 
@@ -233,7 +251,7 @@ namespace System.Collections.Generic
                 }
                 items.Item4 = source.Current;
             }
-            while (predicate(items.Item4));
+            while (!predicate(items.Item4));
 
             ++count;
 
@@ -255,7 +273,7 @@ namespace System.Collections.Generic
             T[] FinishViaAllocations(IEnumerator<T> source, Func<T, bool>? predicate, int count)
             {
                 int dummyIdx = 0;
-                return base.FinishViaAllocations(source, ref dummyIdx, predicate, count);
+                return base.FinishViaAllocations(source, maxArraySize, ref dummyIdx, predicate, count);
             }
         }
 
@@ -367,7 +385,7 @@ namespace System.Collections.Generic
             {
                 if (sourceIdx < source.Length)
                 {
-                    result = FinishViaAllocations(source, ref sourceIdx, predicate, count);
+                    result = FinishViaAllocations(source, source.Length, ref sourceIdx, predicate, count);
                 }
                 else
                 {
@@ -483,7 +501,7 @@ namespace System.Collections.Generic
             {
                 if (sourceIdx < source.Count)
                 {
-                    result = FinishViaAllocations(source, ref sourceIdx, predicate, count);
+                    result = FinishViaAllocations(source, source.Count, ref sourceIdx, predicate, count);
                 }
                 else
                 {
