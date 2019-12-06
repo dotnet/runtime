@@ -129,6 +129,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(dateTimeOffset, dateTimeOffset2);
         }
 
+        [Theory]
         [MemberData(nameof(JsonDateTimeTestData.InvalidISO8601Tests), MemberType = typeof(JsonDateTimeTestData))]
         public static void TestInvalidDateTime(string testStr)
         {
