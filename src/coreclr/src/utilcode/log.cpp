@@ -31,13 +31,13 @@
 #define LOG_ENABLE                      0x0040
 
 
-static DWORD    LogFlags                    = 0;
-static CQuickWSTR     szLogFileName;
-static HANDLE   LogFileHandle               = INVALID_HANDLE_VALUE;
-static MUTEX_COOKIE   LogFileMutex                = 0;
-static DWORD    LogFacilityMask             = LF_ALL;
-static DWORD    LogFacilityMask2            = 0;
-static DWORD    LogVMLevel                  = LL_INFO100;
+static          DWORD        LogFlags                    = 0;
+static          CQuickWSTR   szLogFileName;
+static          HANDLE       LogFileHandle               = INVALID_HANDLE_VALUE;
+static volatile MUTEX_COOKIE LogFileMutex                = 0;
+static          DWORD        LogFacilityMask             = LF_ALL;
+static          DWORD        LogFacilityMask2            = 0;
+static          DWORD        LogVMLevel                  = LL_INFO100;
         // <TODO>@todo FIX should probably only display warnings and above by default</TODO>
 
 
@@ -96,13 +96,11 @@ VOID InitLogging()
             FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |  ((LogFlags & LOG_ENABLE_FLUSH_FILE) ? FILE_FLAG_WRITE_THROUGH : 0),
             NULL);
 
-        if(0 == LogFileMutex)
+        MUTEX_COOKIE mutexCookie = ClrCreateMutex(NULL, FALSE, NULL);
+        _ASSERTE(mutexCookie != 0);
+        if (InterlockedCompareExchangePointer(&LogFileMutex, mutexCookie, 0) != 0)
         {
-            LogFileMutex = ClrCreateMutex(
-                NULL,
-                FALSE,
-                NULL);
-            _ASSERTE(LogFileMutex != 0);
+            ClrCloseMutex(mutexCookie);
         }
 
             // Some other logging may be going on, try again with another file name
