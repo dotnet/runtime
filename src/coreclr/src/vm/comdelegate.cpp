@@ -1307,7 +1307,9 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             umHolder.Assign(pUMEntryThunk);
 
             // multicast. go thru Invoke
-            OBJECTHANDLE objhnd = GetAppDomain()->CreateLongWeakHandle(pDelegate);
+            OBJECTHANDLE objhnd = pUMEntryThunk->GetObjectHandle();
+            if (objhnd == NULL)
+                objhnd = GetAppDomain()->CreateLongWeakHandle(pDelegate);
             _ASSERTE(objhnd != NULL);
 
             // This target should not ever be used. We are storing it in the thunk for better diagnostics of "call on collected delegate" crashes.
