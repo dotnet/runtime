@@ -321,12 +321,7 @@ namespace System.Collections.Generic
                 result = InitiallyTryWithNoAllocations(source, sourceIdx, predicate, count);
             }
 
-            result[--count] = items.Item4;
-            result[--count] = items.Item3;
-            result[--count] = items.Item2;
-            result[--count] = items.Item1;
-
-            return result;
+            return Assign(result, ref items, count);
         }
 
         protected override (int, bool) PopulateBuffer(T[] buffer, object source, ref int sourceIdx, Func<T, bool>? predicate)
@@ -340,7 +335,7 @@ namespace System.Collections.Generic
             return (bufferIdx, sourceIdx < array.Length);
         }
 
-        private int PopulateBuffer(T[] buffer, T[] source, ref int sourceIdx, Func<T, bool> predicate)
+        private static int PopulateBuffer(T[] buffer, T[] source, ref int sourceIdx, Func<T, bool> predicate)
         {
             int bufferIdx;
             int arrayIdx;
@@ -442,12 +437,7 @@ namespace System.Collections.Generic
                 result = InitiallyTryWithNoAllocations(source, sourceIdx, predicate, count);
             }
 
-            result[--count] = items.Item4;
-            result[--count] = items.Item3;
-            result[--count] = items.Item2;
-            result[--count] = items.Item1;
-
-            return result;
+            return Assign(result, ref items, count);
         }
 
         protected override (int, bool) PopulateBuffer(T[] buffer, object source, ref int sourceIdx, Func<T, bool>? predicate)
@@ -461,7 +451,7 @@ namespace System.Collections.Generic
             return (bufferIdx, sourceIdx < array.Count);
         }
 
-        private int PopulateBuffer(T[] buffer, List<T> source, ref int sourceIdx, Func<T, bool> predicate)
+        private static int PopulateBuffer(T[] buffer, List<T> source, ref int sourceIdx, Func<T, bool> predicate)
         {
             int bufferIdx;
             int arrayIdx;
