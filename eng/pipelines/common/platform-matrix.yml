@@ -229,6 +229,7 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Windows_NT
       archType: arm
+      platform: Windows_NT_arm
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
