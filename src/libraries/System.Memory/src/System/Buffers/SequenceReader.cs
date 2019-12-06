@@ -52,6 +52,9 @@ namespace System.Buffers
         /// <summary>
         /// Gets the unread portion of the <see cref="Sequence"/>.
         /// </summary>
+        /// <value>
+        /// The unread portion of the <see cref="Sequence"/>.
+        /// </value>
         public readonly ReadOnlySequence<T> UnreadSequence => Sequence.Slice(Position);
 
         /// <summary>
