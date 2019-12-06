@@ -8,7 +8,7 @@
     <Error Condition="'$(IsReferenceAssembly)' == 'true' and '$(AllowReferenceFromRuntime)' != 'true'" Text="ReferenceFromRuntime may not be used from reference assemblies." />
 
     <ItemGroup>
-      <_referencePathFromRuntime Include="@(CoreCLRFiles)" Private="false" />
+      <_referencePathFromRuntime Include="@(CoreCLRFiles)" Private="false" Condition="$(TargetFramework.StartsWith('netcoreapp'))" />
       <!-- If this is a test project, also use the $(RuntimePath) to find a @(ReferenceFromRuntime) assembly. -->
       <_referencePathFromRuntime Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" Condition="'$(IsTestProject)' == 'true'" />
       <!-- transform to filename in order to intersect -->
