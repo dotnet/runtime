@@ -32,7 +32,7 @@ namespace System.IO
         public static string[] GetDirectories(string path, string searchPattern) { throw null; }
         public static string[] GetDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
         public static string[] GetDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static string? GetDirectoryRoot(string path) { throw null; }
+        public static string GetDirectoryRoot(string path) { throw null; }
         public static string[] GetFiles(string path) { throw null; }
         public static string[] GetFiles(string path, string searchPattern) { throw null; }
         public static string[] GetFiles(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }

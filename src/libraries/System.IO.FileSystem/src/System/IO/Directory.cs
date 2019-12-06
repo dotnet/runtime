@@ -221,13 +221,13 @@ namespace System.IO
         public static IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, EnumerationOptions enumerationOptions)
             => InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions);
 
-        public static string? GetDirectoryRoot(string path)
+        public static string GetDirectoryRoot(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
             string fullPath = Path.GetFullPath(path);
-            string? root = Path.GetPathRoot(fullPath);
+            string root = Path.GetPathRoot(fullPath)!;
 
             return root;
         }

@@ -140,7 +140,7 @@ namespace System.IO
             // These checks are in place to ensure Unix error throwing happens the same way
             // as it does on Windows.These checks can be removed if a solution to #2460 is
             // found that doesn't require validity checks before making an API call.
-            if (!new DirectoryInfo(Path.GetDirectoryName(FullName)!).Exists) // TODO should assert or ...
+            if (!new DirectoryInfo(Path.GetDirectoryName(FullName)!).Exists)
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullName));
 
             if (!Exists)

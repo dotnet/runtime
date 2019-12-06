@@ -37,7 +37,7 @@ namespace System.IO.Enumeration
         private IntPtr _buffer;
         private int _bufferLength;
         private IntPtr _directoryHandle;
-        private string _currentPath = null!; // Initialized in Init()
+        private string? _currentPath;
         private bool _lastEntryFound;
         private Queue<(IntPtr Handle, string Path)>? _pending;
 

@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 15
+# Visual Studio 15
 VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Tests", "tests\System.IO.FileSystem.Tests.csproj", "{F0D49126-6A1C-42D5-9428-4374C868BAF8}"
