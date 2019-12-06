@@ -17,17 +17,10 @@ namespace System.Net.Quic.Tests
 
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
-            // TODO figure out how to supply a fake cert here.
-            using (X509Store store = new X509Store(StoreLocation.LocalMachine))
+            return new SslServerAuthenticationOptions()
             {
-                store.Open(OpenFlags.ReadOnly);
-                X509Certificate2Collection cers = store.Certificates.Find(X509FindType.FindBySubjectName, "localhost", false);
-                return new SslServerAuthenticationOptions()
-                {
-                    ServerCertificate = cers[0],
-                    ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") }
-                };
-            }
+                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") }
+            };
         }
 
         public SslClientAuthenticationOptions GetSslClientAuthenticationOptions()
