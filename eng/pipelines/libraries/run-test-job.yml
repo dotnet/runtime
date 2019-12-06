@@ -44,8 +44,8 @@ jobs:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             displayName: Build Assets
-            artifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-            artifactFileName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}$(archiveExtension)
+            artifactName: $(librariesBuildArtifactName)
+            artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
 
         - template: /eng/pipelines/common/download-artifact-step.yml
@@ -53,8 +53,8 @@ jobs:
             displayName: Test Assets
             cleanUnpackFolder: false
             unpackFolder: $(Build.SourcesDirectory)/artifacts
-            artifactName: ${{ format('libraries_test_assets_{0}_{1}_x64_{2}', parameters.framework, parameters.osGroup, parameters.dependsOnBuildConfiguration) }}
-            artifactFileName: ${{ format('libraries_test_assets_{0}_{1}_x64_{2}', parameters.framework, parameters.osGroup, parameters.dependsOnBuildConfiguration) }}$(archiveExtension)
+            artifactName: $(librariesTestsArtifactName)
+            artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:

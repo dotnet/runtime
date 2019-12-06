@@ -47,7 +47,7 @@ jobs:
 
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    archType:  ${{ parameters.archType }}
+    archType: ${{ parameters.archType }}
     platform: ${{ parameters.platform }}
 
     ${{ if ne(parameters.container, '') }}:

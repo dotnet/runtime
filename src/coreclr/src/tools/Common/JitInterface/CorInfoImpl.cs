@@ -1394,7 +1394,7 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT)
+            if (type.IsByReferenceOfT || type.IsWellKnownType(WellKnownType.TypedReference))
             {
                 *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
                 return 1;

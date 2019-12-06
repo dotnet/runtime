@@ -55,6 +55,9 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*             
     our_ICorJitInfo.getClassName(ourClass);
     our_ICorJitInfo.isValueClass(ourClass);
     our_ICorJitInfo.asCorInfoType(ourClass);
+
+    const char* className = nullptr;
+    our_ICorJitInfo.getMethodName(info->ftn, &className);
 #endif
 
     // Record data from the global context, if any

@@ -25,7 +25,11 @@ namespace ReadyToRun.SuperIlc
 
         public CpaotRunner(BuildOptions options, IEnumerable<string> referencePaths)
             : base(options, referencePaths)
-        { }
+        {
+            // Set SuperIlc parallelism to a low enough value that ensures that each Crossgen2 invocation gets to use its parallelism
+            if (options.DegreeOfParallelism == 0)
+                options.DegreeOfParallelism = 2;
+        }
 
         protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
         {
@@ -53,6 +57,11 @@ namespace ReadyToRun.SuperIlc
             if (_options.LargeBubble)
             {
                 yield return "--inputbubble";
+            }
+
+            if (_options.Crossgen2Parallelism != 0)
+            {
+                yield return $"--parallelism={_options.Crossgen2Parallelism}";
             }
 
             foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(Path.GetDirectoryName(assemblyFileName)))

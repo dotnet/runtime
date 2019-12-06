@@ -241,7 +241,6 @@ namespace System.Memory.Tests.SequenceReader
             Assert.Equal(default, defaultValue);
         }
 
-
         [Fact]
         public void TryPeekOffset_MultiSegment_StarAhead()
         {

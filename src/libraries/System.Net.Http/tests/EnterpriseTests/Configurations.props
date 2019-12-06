@@ -1,0 +1,7 @@
+﻿<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp-Unix;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>
