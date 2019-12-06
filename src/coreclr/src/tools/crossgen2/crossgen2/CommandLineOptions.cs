@@ -31,6 +31,8 @@ namespace ILCompiler
         public bool Tuning { get; set; }
         public bool Partial { get; set; }
         public bool Resilient { get; set; }
+        public int Parallelism { get; set; }
+
 
         public string SingleMethodTypeName { get; set; }
         public string SingleMethodName { get; set; }
@@ -139,6 +141,10 @@ namespace ILCompiler
                 { 
                     // We don't need to override arity here as 255 is the maximum number of generic arguments
                     Argument = new Argument<string[]>()
+                },
+                new Option(new[] { "--parallelism" }, "Maximum number of threads to use during compilation")
+                { 
+                    Argument = new Argument<int>(() => Environment.ProcessorCount)
                 },
             };
         }
