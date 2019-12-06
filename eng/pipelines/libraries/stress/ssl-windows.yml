@@ -7,7 +7,7 @@ pr:
 
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
-  displayName: HttpStress nightly run
+  displayName: SslStress nightly run
   branches:
     include:
     - master
@@ -17,12 +17,16 @@ pool:
 
 variables:
   - template: ../variables.yml
+  - name: sslStressProject
+    value: $(sourcesRoot)/System.Net.Security/tests/StressTests/SslStress/
+    # Avoid duplication by referencing corefx build infrastructure hosted in HttpStress
+    # TODO move to eng/ folder.
   - name: httpStressProject
     value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
   - name: sdkBaseImage
     value: sdk-corefx-current
-  - name: httpStressImage
-    value: httpstress
+  - name: sslStressImage
+    value: sslstress
 
 steps:
 - checkout: self
@@ -41,22 +45,22 @@ steps:
   displayName: Build Libraries
 
 - powershell: |
-    cd '$(HttpStressProject)'
-    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f windows.Dockerfile .
-  displayName: Build HttpStress
+    # we need to include the entire src/libraries folder in the build context due to Common/ dependencies
+    docker build -t $(sslStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f $(sslStressProject)/windows.Dockerfile src/libraries
+  displayName: Build SslStress
 
 - powershell: |
-    cd '$(HttpStressProject)'
+    cd '$(sslStressProject)'
     docker-compose up --abort-on-container-exit --no-color
-  displayName: Run HttpStress
+  displayName: Run SslStress
   env:
-    HTTPSTRESS_IMAGE: $(httpStressImage)
+    SSLTRESS_IMAGE: $(sslStressImage)
 
 - task: PublishBuildArtifacts@1
   displayName: Publish Logs
   inputs:
     PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(BUILD_CONFIGURATION)'
     PublishLocation: Container
-    ArtifactName: 'httpstress_$(Agent.Os)_$(Agent.JobName)'
+    ArtifactName: 'sslstress_$(Agent.Os)_$(Agent.JobName)'
   continueOnError: true
   condition: always()
