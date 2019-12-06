@@ -104,6 +104,7 @@ jobs:
             ${{ parameters.container }} \
             bash -c '
               rm -v -rf a b s'
+          mkdir "$(Agent.BuildDirectory)/s"
         displayName: Clean up old artifacts owned by root
 
     buildSteps:
