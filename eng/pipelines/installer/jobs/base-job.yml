@@ -46,6 +46,14 @@ jobs:
     - name: ${{ variable.key }}
       value: ${{ variable.value }}
 
+  - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - name: setScriptToEchoAndFailOnNonZero
+      value: ''
+  - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    # Cancel if a step fails, and display commands.
+    - name: setScriptToEchoAndFailOnNonZero
+      value: set -xe
+
   dependsOn:
   - checkout
   - ${{ parameters.dependsOn }}
