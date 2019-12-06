@@ -29,8 +29,14 @@ namespace SslStress.Utils
 
             async Task FillPipeAsync(CancellationToken token)
             {
-                await stream.CopyToAsync(pipe.Writer, token);
-                pipe.Writer.Complete();
+                try 
+                {
+                    await stream.CopyToAsync(pipe.Writer, token);
+                }
+                finally
+                {
+                    pipe.Writer.Complete();
+                }
             }
 
             async Task ReadPipeAsync(CancellationToken token)
