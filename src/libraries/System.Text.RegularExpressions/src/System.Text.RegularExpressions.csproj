@@ -17,7 +17,6 @@
     <Compile Include="System\Text\RegularExpressions\GroupCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\Match.cs" />
     <Compile Include="System\Text\RegularExpressions\MatchCollection.cs" />
-    <Compile Include="System\Text\RegularExpressions\Reference.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
@@ -64,6 +63,7 @@
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />

@@ -1418,6 +1418,50 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+        [OuterLoop("Runs for several seconds")]
+        [Fact]
+        public static void Unregister_ConcurrentUse_ThreadSafe()
+        {
+            CancellationTokenRegistration reg = default;
+            var cts = new CancellationTokenSource();
+
+            DateTime end = DateTime.UtcNow.AddSeconds(4);
+            bool run = true;
+            Task.WaitAll(
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        while (Volatile.Read(ref run) && DateTime.UtcNow < end)
+                        {
+                            reg = cts.Token.Register(() => { });
+                            reg.Unregister();
+                            reg = default;
+                        }
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref run, false);
+                    }
+                }),
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        while (Volatile.Read(ref run) && DateTime.UtcNow < end)
+                        {
+                            reg.Unregister();
+                        }
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref run, false);
+                    }
+                }));
+
+            // Validating that no exception is thrown.
+        }
+
         [Fact]
         public static void Register_ExecutionContextFlowsIfExpected()
         {
