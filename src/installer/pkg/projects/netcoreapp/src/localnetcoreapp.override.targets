@@ -67,13 +67,13 @@
 
     <ItemGroup>
       <CoreFXReferenceItems
-        Include="$([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'ref', 'microsoft.netcore.app', '$(Configuration)'))*"
+        Include="$([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'ref', 'microsoft.netcore.app', '$(Configuration)'))*"
         NuGetPackageId="$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
 
       <CoreFXReferenceCopyLocalItems
         Include="
-          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'pkg', 'netcoreapp', 'runtime', '$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*;
-          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'native', 'netcoreapp-$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*"
+          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'pkg', 'netcoreapp', 'runtime', '$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*;
+          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'native', 'netcoreapp-$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*"
         NuGetPackageId="runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
     </ItemGroup>
 
