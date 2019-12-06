@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- All configurations -->
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs" />

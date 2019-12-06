@@ -18,7 +18,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         public MsQuicApi _api;
 
         // Pointer to the underlying connection
-        private IntPtr _nativeObjPtr;
+        private IntPtr _ptr;
 
         // Handle to this object for native callbacks.
         private GCHandle _handle;
@@ -27,12 +27,12 @@ namespace System.Net.Quic.Implementations.MsQuic
         private ConnectionCallbackDelegate _connectionDelegate;
 
         // Endpoint to either connect to or the endpoint already accepted.
-        private readonly IPEndPoint _localEndPoint;
+        private IPEndPoint _localEndPoint;
         private readonly IPEndPoint _remoteEndPoint;
 
         // Some TCSs for making Connect and Shutdown "async" from callbacks. TODO replace with IValueTaskSource
-        private TaskCompletionSource<object> _connectTcs = new TaskCompletionSource<object>();
-        private TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>();
+        private TaskCompletionSource<object> _connectTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private bool _disposed;
         private bool _connected;
@@ -48,10 +48,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, MsQuicApi api, IntPtr nativeObjPtr)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            _localEndPoint = remoteEndPoint;
+            _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
             _api = api;
-            _nativeObjPtr = nativeObjPtr;
+            _ptr = nativeObjPtr;
 
             SetCallbackHandler();
             SetIdleTimeout(TimeSpan.FromSeconds(120));
@@ -65,7 +65,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             _remoteEndPoint = remoteEndPoint;
-            _nativeObjPtr = nativeObjPtr;
+            _ptr = nativeObjPtr;
             _api = api;
 
             SetCallbackHandler();
@@ -74,8 +74,18 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal override IPEndPoint LocalEndPoint => throw new NotImplementedException();
+        internal override IPEndPoint LocalEndPoint
+        {
+            get
+            {
+                if (!_connected)
+                {
+                    throw new InvalidOperationException("Listener must be started before getting endpoint.");
+                }
 
+                return new IPEndPoint(_localEndPoint.Address, _localEndPoint.Port);
+            }
+        }
         internal override IPEndPoint RemoteEndPoint => new IPEndPoint(_remoteEndPoint.Address, _remoteEndPoint.Port);
 
         internal override SslApplicationProtocol NegotiatedApplicationProtocol => throw new NotImplementedException();
@@ -146,6 +156,9 @@ namespace System.Net.Quic.Implementations.MsQuic
         private uint HandleEventConnected(ConnectionEvent connectionEvent)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
+            _localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(inetAddress);
 
             _connectTcs?.SetResult(null);
             _connected = true;
@@ -295,7 +308,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             // TODO move idle timeout setting from this class
             uint status = _api._connectionStartDelegate(
-                _nativeObjPtr,
+                _ptr,
                 (ushort)_remoteEndPoint.AddressFamily,
                 _remoteEndPoint.Address.ToString(),
                 (ushort)_remoteEndPoint.Port);
@@ -312,7 +325,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             IntPtr streamPtr = IntPtr.Zero;
             uint status = _api._streamOpenDelegate(
-                _nativeObjPtr,
+                _ptr,
                 (uint)flags,
                 MsQuicStream.NativeCallbackHandler,
                 IntPtr.Zero,
@@ -331,7 +344,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _handle = GCHandle.Alloc(this);
             _connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
             _api._setCallbackHandlerDelegate(
-                _nativeObjPtr,
+                _ptr,
                 _connectionDelegate,
                 GCHandle.ToIntPtr(_handle));
         }
@@ -343,7 +356,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             uint status = _api._connectionShutdownDelegate(
-                _nativeObjPtr,
+                _ptr,
                 (uint)Flags,
                 ErrorCode);
             MsQuicStatusException.ThrowIfFailed(status);
@@ -381,12 +394,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
-            if (_nativeObjPtr != IntPtr.Zero)
+            if (_ptr != IntPtr.Zero)
             {
-                _api._connectionCloseDelegate?.Invoke(_nativeObjPtr);
+                _api._connectionCloseDelegate?.Invoke(_ptr);
             }
 
-            _nativeObjPtr = IntPtr.Zero;
+            _ptr = IntPtr.Zero;
             _api = null;
 
             _handle.Free();
@@ -408,7 +421,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicBuffer buf)
         {
             MsQuicStatusException.ThrowIfFailed(_api.UnsafeSetParam(
-                _nativeObjPtr,
+                _ptr,
                 (uint)QUIC_PARAM_LEVEL.CONNECTION,
                 (uint)param,
                 buf));
@@ -427,12 +440,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return default;
             }
 
-            if (_nativeObjPtr != IntPtr.Zero)
+            if (_ptr != IntPtr.Zero)
             {
-                _api._connectionCloseDelegate?.Invoke(_nativeObjPtr);
+                _api._connectionCloseDelegate?.Invoke(_ptr);
             }
 
-            _nativeObjPtr = IntPtr.Zero;
+            _ptr = IntPtr.Zero;
             _api = null;
 
             _handle.Free();

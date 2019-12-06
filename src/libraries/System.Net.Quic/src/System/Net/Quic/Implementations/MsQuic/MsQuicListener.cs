@@ -35,7 +35,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private volatile bool _disposed;
 
         private volatile bool _started;
-        private IPEndPoint _listenEndpoint;
+        private IPEndPoint _listenEndPoint;
 
         private readonly Channel<MsQuicConnection> _acceptConnectionQueue;
 
@@ -43,7 +43,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             _api = api;
             _sslOptions = sslServerAuthenticationOptions;
-            _listenEndpoint = listenEndPoint;
+            _listenEndPoint = listenEndPoint;
             _ptr = nativeObjPtr;
             _acceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(512) // TODO make this configurable.
             {
@@ -52,14 +52,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             });
         }
 
-        internal override IPEndPoint ListenEndPoint {
+        internal override IPEndPoint ListenEndPoint
+        {
             get
             {
                 if (!_started)
                 {
                     throw new InvalidOperationException("Listener must be started before getting endpoint.");
                 }
-                return _listenEndpoint;
+                return new IPEndPoint(_listenEndPoint.Address, _listenEndPoint.Port);
             }
         }
 
@@ -131,7 +132,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             SetCallbackHandler();
 
-            SOCKADDR_INET address = MsQuicNativeMethods.Convert(_listenEndpoint);
+            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
 
             uint status = _api._listenerStartDelegate(
                 _ptr,
@@ -139,7 +140,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             MsQuicStatusException.ThrowIfFailed(status);
 
-            // If the listen port is 0, requery the ListeneEndPoint.
+            // Requery the ListeneEndPoint as port 0 will get a different port
             SetListenPort();
 
             _started = true;
@@ -147,40 +148,36 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private unsafe void SetListenPort()
         {
-            byte* ptr = stackalloc byte[sizeof(SOCKADDR_INET)];
-            QuicBuffer buffer = new QuicBuffer
-            {
-                Length = (uint)sizeof(SOCKADDR_INET),
-                Buffer = ptr
-            };
+            SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
 
-            MsQuicStatusException.ThrowIfFailed(_api.UnsafeGetParam(_ptr, (uint)QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS, ref buffer));
-            SOCKADDR_INET inetAddress = *(SOCKADDR_INET*)ptr;
-
-            if (inetAddress.si_family == MsQuicNativeMethods.IPv4)
-            {
-                _listenEndpoint = new IPEndPoint(new IPAddress(inetAddress.Ipv4.Address), inetAddress.Ipv4.sin_port);
-            }
-            else
-            {
-                _listenEndpoint = new IPEndPoint(new IPAddress(inetAddress.Ipv6.Address), inetAddress.Ipv6._port);
-            }
+            _listenEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(inetAddress);
         }
 
         internal unsafe uint ListenerCallbackHandler(
             ref ListenerEvent evt)
         {
-            switch (evt.Type)
+            try
             {
-                case QUIC_LISTENER_EVENT.NEW_CONNECTION:
-                    {
-                        evt.Data.NewConnection.SecurityConfig = _secConfig.NativeObjPtr;
-                        MsQuicConnection msQuicConnection = new MsQuicConnection(ListenEndPoint, ListenEndPoint, _api, evt.Data.NewConnection.Connection);
-                        _acceptConnectionQueue.Writer.TryWrite(msQuicConnection);
-                    }
-                    break;
-                default:
-                    return MsQuicConstants.InternalError;
+                switch (evt.Type)
+                {
+                    case QUIC_LISTENER_EVENT.NEW_CONNECTION:
+                        {
+                            evt.Data.NewConnection.SecurityConfig = _secConfig.NativeObjPtr;
+                            NewConnectionInfo connectionInfo = *(NewConnectionInfo*)evt.Data.NewConnection.Info;
+                            IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(*(SOCKADDR_INET*)connectionInfo.LocalAddress);
+                            IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(*(SOCKADDR_INET*)connectionInfo.RemoteAddress);
+                            MsQuicConnection msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, _api, evt.Data.NewConnection.Connection);
+                            _acceptConnectionQueue.Writer.TryWrite(msQuicConnection);
+                        }
+                        break;
+                    default:
+                        return MsQuicConstants.InternalError;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return MsQuicConstants.InternalError;
             }
 
             return MsQuicConstants.Success;

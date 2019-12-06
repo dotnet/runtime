@@ -18,6 +18,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task BasicTest()
         {
+            ConsoleEventListener listener = new ConsoleEventListener("Microsoft-System-Net-Quic");
             await DefaultListener.StartAsync();
 
             Task listenTask = Task.Run(async () =>
@@ -55,6 +56,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
+            ConsoleEventListener listener = new ConsoleEventListener("Microsoft-System-Net-Quic");
             await DefaultListener.StartAsync();
 
             Task listenTask = Task.Run(async () =>
@@ -191,42 +193,43 @@ namespace System.Net.Quic.Tests
             await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 10000);
         }
 
-        //[Fact]
-        //public async Task TestStreams()
-        //{
-        //    using (QuicListener listener = new QuicListener(
-        //        QuicImplementationProviders.MsQuic,
-        //        new IPEndPoint(IPAddress.Loopback, 0),
-        //        new SslServerAuthenticationOptions { ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") } }))
-        //    {
-        //        await listener.StartAsync();
-        //        IPEndPoint listenEndPoint = listener.ListenEndPoint;
+        [Fact]
+        public async Task TestStreams()
+        {
+            ConsoleEventListener l = new ConsoleEventListener("Microsoft-System-Net-Quic");
+            using (QuicListener listener = new QuicListener(
+                QuicImplementationProviders.MsQuic,
+                new IPEndPoint(IPAddress.Loopback, 0),
+                GetSslServerAuthenticationOptions()))
+            {
+                await listener.StartAsync();
+                IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
-        //        using (QuicConnection clientConnection = new QuicConnection(
-        //            QuicImplementationProviders.MsQuic,
-        //            listenEndPoint,
-        //            sslClientAuthenticationOptions: new SslClientAuthenticationOptions { ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") } }))
-        //        {
-        //            Assert.False(clientConnection.Connected);
-        //            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+                using (QuicConnection clientConnection = new QuicConnection(
+                    QuicImplementationProviders.MsQuic,
+                    listenEndPoint,
+                    sslClientAuthenticationOptions: new SslClientAuthenticationOptions { ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") } }))
+                {
+                    Assert.False(clientConnection.Connected);
+                    Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
 
-        //            ValueTask connectTask = clientConnection.ConnectAsync();
-        //            QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-        //            await connectTask;
+                    ValueTask connectTask = clientConnection.ConnectAsync();
+                    QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                    await connectTask;
 
-        //            Assert.True(clientConnection.Connected);
-        //            Assert.True(serverConnection.Connected);
-        //            Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
-        //            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-        //            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+                    Assert.True(clientConnection.Connected);
+                    Assert.True(serverConnection.Connected);
+                    Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
+                    Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+                    Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
 
-        //            await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
-        //            await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
-        //            await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
-        //            await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
-        //        }
-        //    }
-        //}
+                    await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
+                    await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
+                    await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
+                    await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
+                }
+            }
+        }
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)
         {
