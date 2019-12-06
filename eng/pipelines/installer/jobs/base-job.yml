@@ -87,8 +87,7 @@ jobs:
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - name: liveLibrariesLegName
-      value: ${{ format('{0}_{1}{2}_{3}_{4}',
-        'netcoreapp',
+      value: ${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
@@ -108,8 +107,7 @@ jobs:
         parameters.archType,
         parameters.liveCoreClrBuildConfig) }}
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    - libraries_build_${{ format('{0}_{1}{2}_{3}_{4}',
-        'netcoreapp',
+    - libraries_build_netcoreapp_${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
