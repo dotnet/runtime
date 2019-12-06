@@ -110,23 +110,6 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void TestParseFailsWhenExceedsMaxDepth()
-        {
-            var builder = new StringBuilder();
-            for (int i = 0; i < 100; i++)
-            {
-                builder.Append("[");
-            }
-
-            for (int i = 0; i < 100; i++)
-            {
-                builder.Append("]");
-            }
-
-            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(builder.ToString()));
-        }
-
-        [Fact]
         public static void TestDeepCopyDoesNotStackOverflow()
         {
             var builder = new StringBuilder();
@@ -278,27 +261,6 @@ namespace System.Text.Json.Tests
 
             Assert.IsType<JsonArray>(jsonObject["array"]);
             Assert.IsType<JsonNumber>(nestedObject["array"]);
-        }
-
-        [Fact]
-        public static void TestInvalidJsonNodeOptions()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNodeOptions()
-            {
-                CommentHandling = (JsonCommentHandling)Enum.GetNames(typeof(JsonCommentHandling)).Length
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNodeOptions()
-            {
-                MaxDepth = -1
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNodeOptions()
-            {
-                DuplicatePropertyNameHandling = (DuplicatePropertyNameHandlingStrategy)Enum.GetNames(typeof(DuplicatePropertyNameHandlingStrategy)).Length
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNodeOptions()
-            {
-                DuplicatePropertyNameHandling = (DuplicatePropertyNameHandlingStrategy)(-1)
-            });
         }
     }
 }

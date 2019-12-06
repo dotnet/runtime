@@ -20,6 +20,7 @@
     <Compile Include="JsonElementWriteTests.cs" />
     <Compile Include="JsonEncodedTextTests.cs" />
     <Compile Include="JsonGuidTestData.cs" />
+    <Compile Include="JsonNodeOptionsTests.cs" />
     <Compile Include="JsonNumberTestData.cs" />
     <Compile Include="JsonPropertyTests.cs" />
     <Compile Include="JsonReaderStateAndOptionsTests.cs" />
