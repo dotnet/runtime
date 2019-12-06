@@ -582,7 +582,7 @@ REM ===
 REM =========================================================================================
 
 if NOT "%__LocalCoreFXPath%"=="" (
-    echo Patch CoreFX from %__LocalCoreFXPath% (%__LocalCoreFXConfig%)
+    echo Patch CoreFX from %__LocalCoreFXPath% ^(%__LocalCoreFXConfig%^)
     set NEXTCMD=python "%__ProjectDir%\tests\scripts\patch-corefx.py" -clr_core_root "%CORE_ROOT%"^
     -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__LocalCoreFXConfig%
     echo !NEXTCMD!
