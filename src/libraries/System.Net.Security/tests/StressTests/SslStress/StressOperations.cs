@@ -177,7 +177,7 @@ namespace SslStress
     {
         public StressClient(Configuration config) : base(config) { }
 
-        protected override async Task HandleConnection(int workerId, SslStream stream, TcpClient client, Random random, TimeSpan duration, CancellationToken token)
+        protected override async Task HandleConnection(int workerId, long jobId, SslStream stream, TcpClient client, Random random, TimeSpan duration, CancellationToken token)
         {
             // token used for signalling cooperative cancellation; do not pass this to SslStream methods
             using var connectionLifetimeToken = new CancellationTokenSource(duration);
@@ -282,12 +282,12 @@ namespace SslStress
 
                     if((DateTime.Now - lastWrite) >= TimeSpan.FromSeconds(10))
                     {
-                        throw new Exception($"worker #{workerId} has stopped writing bytes to server");
+                        throw new Exception($"worker #{workerId} job #{jobId} has stopped writing bytes to server");
                     }
 
                     if((DateTime.Now - lastRead) >= TimeSpan.FromSeconds(10))
                     {
-                        throw new Exception($"worker #{workerId} has stopped receiving bytes from server");
+                        throw new Exception($"worker #{workerId} job #{jobId} has stopped receiving bytes from server");
                     }
                 }
                 while(!token.IsCancellationRequested && !connectionLifetimeToken.IsCancellationRequested);

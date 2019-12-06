@@ -33,10 +33,13 @@ namespace SslStress.Utils
                 {
                     await stream.CopyToAsync(pipe.Writer, token);
                 }
-                finally
+                catch (Exception e)
                 {
-                    pipe.Writer.Complete();
+                    pipe.Writer.Complete(e);
+                    throw;
                 }
+
+                pipe.Writer.Complete();
             }
 
             async Task ReadPipeAsync(CancellationToken token)

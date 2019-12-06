@@ -43,7 +43,7 @@ namespace SslStress
                 UpdateCounters(workerId);
             }
 
-            public void RecordCancellatoin(int workerId)
+            public void RecordCancellation(int workerId)
             {
                 _cancellations[workerId]++;
                 Interlocked.Increment(ref _totalConnections);

@@ -34,7 +34,7 @@ namespace SslStress
             _clientTask = new Lazy<Task>(Task.Run(StartCore));
         }
 
-        protected abstract Task HandleConnection(int workerId, SslStream stream, TcpClient client, Random random, TimeSpan duration, CancellationToken token);
+        protected abstract Task HandleConnection(int workerId, long jobId, SslStream stream, TcpClient client, Random random, TimeSpan duration, CancellationToken token);
 
         protected virtual async Task<SslStream> EstablishSslStream(Stream networkStream, Random random, CancellationToken token)
         {
@@ -97,15 +97,19 @@ namespace SslStress
             {
                 StreamCounter counter = _aggregator.GetCounters(workerId);
 
-                for (long testId = 0; !_cts.IsCancellationRequested; testId++)
+                for (long jobId = 0; !_cts.IsCancellationRequested; jobId++)
                 {
-                    TimeSpan duration = _config.MinConnectionLifetime + random.NextDouble() * (_config.MaxConnectionLifetime - _config.MinConnectionLifetime);
+                    TimeSpan connectionLifetime = _config.MinConnectionLifetime + random.NextDouble() * (_config.MaxConnectionLifetime - _config.MinConnectionLifetime);
+                    TimeSpan cancellationDelay =
+                        (random.NextBoolean(probability: _config.CancellationProbability)) ?
+                        connectionLifetime * random.NextDouble() : // cancel in a random interval within the lifetime
+                        connectionLifetime + TimeSpan.FromSeconds(10); // otherwise trigger cancellation 10 seconds after expected expiry
+
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
-                    if (random.NextBoolean(probability: _config.CancellationProbability))
-                    {
-                        TimeSpan cancellationDelay = duration * random.NextDouble();
-                        cts.CancelAfter(cancellationDelay);
-                    }
+                    cts.CancelAfter(cancellationDelay);
+
+                    bool isTestCompleted = false;
+                    using var _ = cts.Token.Register(CheckForStalledConnection);
 
                     try
                     {
@@ -113,17 +117,37 @@ namespace SslStress
                         await client.ConnectAsync(_config.ServerEndpoint.Address, _config.ServerEndpoint.Port);
                         var stream = new CountingStream(client.GetStream(), counter);
                         using SslStream sslStream = await EstablishSslStream(stream, random, cts.Token);
-                        await HandleConnection(workerId, sslStream, client, random, duration, cts.Token);
+                        await HandleConnection(workerId, jobId, sslStream, client, random, connectionLifetime, cts.Token);
 
                         _aggregator.RecordSuccess(workerId);
                     }
                     catch (OperationCanceledException) when (cts.IsCancellationRequested)
                     {
-                        _aggregator.RecordCancellatoin(workerId);
+                        _aggregator.RecordCancellation(workerId);
                     }
                     catch (Exception e)
                     {
                         _aggregator.RecordFailure(workerId, e);
+                    }
+                    finally
+                    {
+                        isTestCompleted = true;
+                    }
+
+                    async void CheckForStalledConnection()
+                    {
+                        await Task.Delay(10_000);
+                        if(!isTestCompleted)
+                        {
+                            lock (Console.Out)
+                            {
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine($"Worker #{workerId} test #{jobId} has stalled, terminating the stress app.");
+                                Console.WriteLine();
+                                Console.ResetColor();
+                            }
+                            Environment.Exit(1);
+                        }
                     }
                 }
             }
