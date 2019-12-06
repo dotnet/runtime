@@ -10,4 +10,7 @@
     <Compile Include="ICustomMarshaler.cs" />
     <Compile Include="..\..\common\XunitBase.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
 </Project>
