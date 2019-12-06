@@ -22,6 +22,7 @@ pr:
     - src/libraries/*
     - eng/pipelines/installer/*
     - eng/pipelines/libraries/*
+    - eng/pipelines/runtime.yml
 
 jobs:
 #
