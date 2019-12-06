@@ -267,9 +267,6 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 
-    <!-- project file to use when resolving ReferenceFromRuntime items -->
-    <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj</RuntimeProjectFile>
-
     <!-- Paths to binplace package content -->
     <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\netcoreapp\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\netcoreapp\lib</NETCoreAppPackageRuntimePath>

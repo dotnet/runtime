@@ -112,12 +112,6 @@ jobs:
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
 
           - task: CopyFiles@2
-            displayName: Prepare external.runtime folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/external.runtime
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/external.runtime
-
-          - task: CopyFiles@2
             displayName: Prepare shared framework ref assemblies to publish
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref/microsoft.netcore.app

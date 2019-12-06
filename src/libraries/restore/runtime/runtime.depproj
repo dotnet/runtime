@@ -7,7 +7,7 @@
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(ConfigurationGroup)' == 'Debug' or '$(Coverage)' == 'true')">true</SwapNativeForIL>
     <ImportLiveBuildsTargets>true</ImportLiveBuildsTargets>
     <CoreCLROSGroup Condition="'$(CoreCLROSGroup)'==''">$(DefaultOSGroup)</CoreCLROSGroup>
-    <CoreCLRConfiguration>$(ConfigurationGroup)</CoreCLRConfiguration>
+    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)'==''">$(ConfigurationGroup)</CoreCLRConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
   </PropertyGroup>
 
