@@ -67,6 +67,12 @@ namespace SslStress.Utils
             return read;
         }
 
+        public override void WriteByte(byte value)
+        {
+            _stream.WriteByte(value);
+            Interlocked.Increment(ref _counter.BytesRead);
+        }
+
         // route everything else to the inner stream
 
         public override bool CanRead => _stream.CanRead;
