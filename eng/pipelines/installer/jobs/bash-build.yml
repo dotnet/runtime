@@ -1,5 +1,6 @@
 parameters:
   platform: ''
+  dependsOn: []
   additionalMSBuildArgs: ''
   additionalRunArgs: ''
   crossBuild: false
@@ -7,26 +8,22 @@ parameters:
   container: ''
   packageDistroList: null
   skipTests: false
-  strategy:
-    matrix:
-      debug:
-        _BuildConfig: Debug
-      release:
-        _BuildConfig: Release
   archType: x64
   timeoutInMinutes: 120
   pool: ''
   crossrootfsDir: ''
 
 jobs:
-  - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
-    displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
-    dependsOn:
-    - checkout
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    pool: ${{ parameters.pool }}
-    strategy: ${{ parameters.strategy }}
-    variables:
+- template: base-job.yml
+  parameters:
+    ${{ insert }}: ${{ parameters }}
+
+    # Do not attempt to clean workspace: the agent might not be able to remove the files because
+    # they may be owned by "root" due to the way this job uses Docker. This job does its own cleanup
+    # as a prepare step.
+    workspace: ''
+
+    buildVariables:
       # Preserve the NuGet authentication env vars into the Docker container.
       # The 'NuGetAuthenticate' build step may have set these.
       PreserveNuGetAuthDockerArgs: >-
@@ -67,6 +64,7 @@ jobs:
         /p:DisableCrossgen=${{ parameters.disableCrossgen }}
         /p:PortableBuild=${{ parameters.portableBuild }}
         /p:SkipTests=${{ parameters.skipTests }}
+        $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         ${{ parameters.additionalMSBuildArgs }}
         /p:StripSymbols=true
@@ -92,10 +90,7 @@ jobs:
 
       installersSubsetArg: --subset Installers
 
-    steps:
-
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: NuGetAuthenticate@0
+    prepareSteps:
 
     - ${{ if ne(parameters.container, '') }}:
       # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
@@ -111,7 +106,7 @@ jobs:
               rm -v -rf a b s'
         displayName: Clean up old artifacts owned by root
 
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    buildSteps:
 
     # Build binary and nuget packages
     - script: |
@@ -152,7 +147,7 @@ jobs:
               subsetArg: $(installersSubsetArg)
 
     - ${{ if ne(parameters.container, '') }}:
-      # Files may be owned by root because builds don't set user ID. The next AzDO step runs 'find' in
+      # Files may be owned by root because builds don't set user ID. Later build steps run 'find' in
       # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step
       # prevents the failure by using chown to clean up our source tree.
       - script: |
@@ -164,20 +159,4 @@ jobs:
             bash -c "chown -R $(id -u):$(id -g) *"
         displayName: Update file ownership from root to build agent account
         continueOnError: true
-        condition: succeededOrFailed()
-
-    - template: steps/upload-job-artifacts.yml
-      parameters:
-        name: ${{ coalesce(parameters.name, parameters.platform) }}
-        skipTests: ${{ parameters.skipTests }}
-
-    - script: df -h
-      displayName: Check space (df -h)
-      condition: always()
-      continueOnError: true
-
-    # Force clean up machine in case any docker images are left behind
-    - ${{ if ne(parameters.container, '') }}:
-      - script: docker system prune -af && df -h
-        displayName: Run Docker clean up
         condition: succeededOrFailed()

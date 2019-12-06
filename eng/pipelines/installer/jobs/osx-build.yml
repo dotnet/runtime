@@ -7,12 +7,6 @@ jobs:
 - template: base-job.yml
   parameters:
     ${{ insert }}: ${{ parameters }}
-    strategy:
-      matrix:
-        debug:
-          _BuildConfig: Debug
-        release:
-          _BuildConfig: Release
 
     buildVariables:
       CommonMSBuildArgs: >-
@@ -25,6 +19,7 @@ jobs:
         $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
         /p:OfficialBuildId=$(Build.BuildNumber)
         /p:StripSymbols=true
+        $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
       displayName: Build
       condition: succeeded()

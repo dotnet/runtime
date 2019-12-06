@@ -4,8 +4,6 @@ parameters:
   archType: ''
   osSubgroup: ''
   isOfficialBuild: false
-  liveCoreClrBuildConfig: ''
-  liveLibrariesBuildConfig: ''
   timeoutInMinutes: 120
   condition: true
   container: ''
@@ -17,7 +15,17 @@ parameters:
   name: ''
   displayName: ''
   pool: ''
-  strategy: {}
+  workspace:
+    clean: all
+  strategy:
+    matrix:
+      debug:
+        _BuildConfig: Debug
+      release:
+        _BuildConfig: Release
+
+  liveCoreClrBuildConfig: checked
+  liveLibrariesBuildConfig: Release
 
 jobs:
 - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
@@ -26,6 +34,10 @@ jobs:
   condition: and(succeeded(), ${{ parameters.condition }})
   pool: ${{ parameters.pool }}
   strategy: ${{ parameters.strategy }}
+  timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+  ${{ if ne(parameters.workspace, '') }}:
+    workspace: ${{ parameters.workspace }}
 
   variables:
   - ${{ parameters.variables }}
@@ -37,18 +49,52 @@ jobs:
     - name: setScriptToEchoAndFailOnNonZero
       value: ''
   - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-    # Cancel if a step fails, and display commands.
+    # Stop the script if any command exits nonzero, and display each command.
     - name: setScriptToEchoAndFailOnNonZero
       value: set -xe
+
+  - name: LiveOverridePathArgs
+    value: >-
+      /p:CoreCLROverridePath=$(CoreClrDownloadPath)
+      /p:CoreFXOverridePath=$(LibrariesDownloadPath)
+
+  - name: CoreClrDownloadPath
+    value: ''
+  - name: LibrariesDownloadPath
+    value: ''
+
+  - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+    - name: liveCoreClrLegName
+      value: ${{ format('{0}{1}_{2}_{3}',
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveCoreClrBuildConfig) }}
+    - name: CoreClrDownloadPath
+      value: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
+    - name: CoreClrArtifactName
+      value: CoreCLRProduct_$(liveCoreClrLegName)
+
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - name: liveLibrariesLegName
+      value: ${{ format('{0}_{1}{2}_{3}_{4}',
+        'netcoreapp',
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveLibrariesBuildConfig) }}
+    - name: LibrariesDownloadPath
+      value: '$(Build.SourcesDirectory)/artifacts/transport/libraries'
+    - name: LibrariesArtifactName
+      value: libraries_bin_$(liveLibrariesLegName)
 
   dependsOn:
   - checkout
   - ${{ parameters.dependsOn }}
-
-  workspace:
-    clean: all
-
-  timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+  - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+    - coreclr_product_build_$[ variables.liveCoreClrLegName ]
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - libraries_build_$[ variables.liveLibrariesLegName ]
 
   steps:
 
@@ -57,22 +103,37 @@ jobs:
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
     - task: NuGetAuthenticate@0
 
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
+      # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
+      - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
+        displayName: Clear NuGet http cache (if exists)
+
+      - task: MicroBuildSigningPlugin@2
+        displayName: Install MicroBuild plugin for Signing
+        inputs:
+          signType: $(SignType)
+          zipSources: false
+          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+        continueOnError: false
+        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+
   - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
   - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(_coreClrDownloadPath)
-        artifactFileName: '$(_coreClrArtifactName)$(archiveExtension)'
-        artifactName: '$(_coreClrArtifactName)'
-        displayName: 'CoreCLR build drop'
+        unpackFolder: $(CoreClrDownloadPath)
+        artifactFileName: '$(CoreClrArtifactName)$(archiveExtension)'
+        artifactName: '$(CoreClrArtifactName)'
+        displayName: 'CoreCLR artifacts'
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(librariesDownloadDir)
-        artifactFileName: '$(librariesArtifactName)$(archiveExtension)'
-        artifactName: '$(librariesArtifactName)'
+        unpackFolder: $(LibrariesDownloadPath)
+        artifactFileName: '$(LibrariesArtifactName)$(archiveExtension)'
+        artifactName: '$(LibrariesArtifactName)'
         displayName: 'Libraries artifacts'
 
   - ${{ parameters.buildSteps }}
@@ -81,3 +142,15 @@ jobs:
     parameters:
       name: ${{ coalesce(parameters.name, parameters.platform) }}
       skipTests: ${{ parameters.skipTests }}
+
+  - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - script: set -x && df -h
+      displayName: Check remaining storage space
+      condition: always()
+      continueOnError: true
+
+    # Force clean up machine in case any docker images are left behind
+    - ${{ if ne(parameters.container, '') }}:
+      - script: docker system prune -af && df -h
+        displayName: Run Docker clean up
+        condition: succeededOrFailed()
