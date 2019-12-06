@@ -92,9 +92,18 @@ jobs:
   - checkout
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
-    - coreclr_product_build_$[ variables.liveCoreClrLegName ]
+    - coreclr_product_build_${{ format('{0}{1}_{2}_{3}',
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveCoreClrBuildConfig) }}
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    - libraries_build_$[ variables.liveLibrariesLegName ]
+    - libraries_build_${{ format('{0}_{1}{2}_{3}_{4}',
+        'netcoreapp',
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveLibrariesBuildConfig) }}
 
   steps:
 
