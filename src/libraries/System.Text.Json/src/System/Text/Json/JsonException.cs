@@ -89,7 +89,7 @@ namespace System.Text.Json
         {
             LineNumber = (long?)info.GetValue("LineNumber", typeof(long?));
             BytePositionInLine = (long?)info.GetValue("BytePositionInLine", typeof(long?));
-            Path = info.GetString("Path")!;
+            Path = info.GetString("Path") ?? string.Empty;
             SetMessage(info.GetString("ActualMessage"));
         }
 
