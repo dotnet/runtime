@@ -110,7 +110,19 @@ jobs:
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
-          
+
+          - task: CopyFiles@2
+            displayName: Prepare framework runtime folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg/${{ parameters.framework }}/runtime
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg/${{ parameters.framework }}/runtime
+
+          - task: CopyFiles@2
+            displayName: Prepare native folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/native
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/native
+
           - task: CopyFiles@2
             displayName: Prepare testhost folder to publish
             inputs:

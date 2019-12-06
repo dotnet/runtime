@@ -56,33 +56,25 @@
   <Target Name="OverrideFrameworkFilesFromPackageResolve" Condition="'$(CoreFXOverridePath)' != ''" BeforeTargets="GetFilesFromPackageResolve">
     <Error Condition="!Exists('$(CoreFXOverridePath)')" Text="The path provided to CoreFXOverridePath ($(CoreFXOverridePath)) does not exist." />
 
+    <!-- Determine Libraries OSGroup for this build. Copied from "local live-live" PR. -->
     <PropertyGroup>
-      <CoreFXSharedFrameworkPackageSpec>$(CoreFXOverridePath)/specs/$(MicrosoftPrivateCoreFxNETCoreAppPackage).nuspec</CoreFXSharedFrameworkPackageSpec>
-      <CoreFXSharedFrameworkImplementationPackageSpec Condition="'$(PackageRID)' != ''">$(CoreFXOverridePath)/specs/runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage).nuspec</CoreFXSharedFrameworkImplementationPackageSpec>
+      <CoreCLROSGroup Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLROSGroup>
+      <CoreCLROSGroup Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLROSGroup>
+      <CoreCLROSGroup Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLROSGroup>
+      <CoreCLROSGroup Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLROSGroup>
+      <LibrariesOSGroup>$(CoreCLROSGroup)</LibrariesOSGroup>
     </PropertyGroup>
-    
-    <Error Condition="!Exists('$(CoreFXSharedFrameworkPackageSpec)')" Text="The nuspec for the reference $(MicrosoftPrivateCoreFxNETCoreAppPackage) package does not exist." />
-    <Message Condition="'$(CoreFXSharedFrameworkImplementationPackageSpec)' != '' And !Exists('$(CoreFXSharedFrameworkImplementationPackageSpec)')"
-      Text="The nuspec for the implementation runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage) package does not exist. Falling back to packaged CoreFX." />
 
-    <XmlPeek
-      Namespaces="&lt;Namespace Prefix='nuget' Uri='http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd' /&gt;"
-      Query="nuget:package/nuget:files/nuget:file/@src"
-      XmlInputPath="$(CoreFXSharedFrameworkPackageSpec)">
-      <Output TaskParameter="Result" ItemName="CoreFXReferenceItems" />
-    </XmlPeek>
-
-    <XmlPeek
-      Condition="'$(CoreFXSharedFrameworkImplementationPackageSpec)' != '' And Exists($(CoreFXSharedFrameworkImplementationPackageSpec))"
-      Namespaces="&lt;Namespace Prefix='nuget' Uri='http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd' /&gt;"
-      Query="nuget:package/nuget:files/nuget:file/@src"
-      XmlInputPath="$(CoreFXSharedFrameworkImplementationPackageSpec)">
-      <Output TaskParameter="Result" ItemName="CoreFXReferenceCopyLocalItems" />
-    </XmlPeek>
-    
     <ItemGroup>
-      <CoreFXReferenceItems NuGetPackageId="$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
-      <CoreFXReferenceCopyLocalItems NuGetPackageId="runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
+      <CoreFXReferenceItems
+        Include="$([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'ref', 'microsoft.netcore.app', '$(Configuration)'))*"
+        NuGetPackageId="$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
+
+      <CoreFXReferenceCopyLocalItems
+        Include="
+          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'pkg', 'netcoreapp', 'runtime', '$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*;
+          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'native', 'netcoreapp-$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*"
+        NuGetPackageId="runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
     </ItemGroup>
 
     <ItemGroup>
