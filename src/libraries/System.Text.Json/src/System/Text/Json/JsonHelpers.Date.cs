@@ -42,6 +42,76 @@ namespace System.Text.Json
             return JsonReaderHelper.GetTextFromUtf8(span.Slice(0, bytesWritten));
         }
 
+        public static bool TryParseAsISO(ReadOnlySpan<char> source, out DateTime value)
+        {
+            if (!IsValidDateTimeOffsetParseLength(source.Length))
+            {
+                value = default;
+                return false;
+            }
+
+            int length = JsonReaderHelper.GetUtf8ByteCount(source);
+
+            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
+                ? stackalloc byte[JsonConstants.StackallocThreshold]
+                : new byte[length];
+
+            JsonReaderHelper.GetUtf8FromText(source, bytes);
+
+            bytes = bytes.Slice(0, length);
+
+            if (bytes.IndexOf(JsonConstants.BackSlash) != -1)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTime(bytes, out value);
+            }
+
+            Debug.Assert(bytes.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (TryParseAsISO(bytes, out DateTime tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        public static bool TryParseAsISO(ReadOnlySpan<char> source, out DateTimeOffset value)
+        {
+            if (!IsValidDateTimeOffsetParseLength(source.Length))
+            {
+                value = default;
+                return false;
+            }
+
+            int length = JsonReaderHelper.GetUtf8ByteCount(source);
+
+            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
+                ? stackalloc byte[JsonConstants.StackallocThreshold]
+                : new byte[length];
+
+            JsonReaderHelper.GetUtf8FromText(source, bytes);
+
+            bytes = bytes.Slice(0, length);
+
+            if (bytes.IndexOf(JsonConstants.BackSlash) != -1)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTimeOffset(bytes, out value);
+            }
+
+            Debug.Assert(bytes.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (TryParseAsISO(bytes, out DateTimeOffset tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValidDateTimeOffsetParseLength(int length)
         {
