@@ -26,12 +26,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
-        private List<ISymbolNode> _typesToPreload;
+        private List<ISymbolNode> _fixups;
 
         public MethodWithGCInfo(MethodDesc methodDesc, SignatureContext signatureContext)
         {
             GCInfoNode = new MethodGCInfoNode(this);
-            _typesToPreload = new List<ISymbolNode>();
+            _fixups = new List<ISymbolNode>();
             _method = methodDesc;
             SignatureContext = signatureContext;
         }
@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodDesc Method => _method;
 
-        public List<ISymbolNode> TypesToPreload => _typesToPreload;
+        public List<ISymbolNode> Fixups => _fixups;
 
         public bool IsEmpty => _methodCode.Data.Length == 0;
 
@@ -109,15 +109,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            foreach (ISymbolNode node in _typesToPreload)
+            foreach (ISymbolNode node in _fixups)
             {
                 if (fixupCells == null)
                 {
                     fixupCells = new List<FixupCell>();
                 }
 
-                PrecodeHelperImport import = (PrecodeHelperImport)node;
-                fixupCells.Add(new FixupCell(import.Table.IndexFromBeginningOfArray, import.OffsetFromBeginningOfArray));
+                Import fixupCell = (Import)node;
+                fixupCells.Add(new FixupCell(fixupCell.Table.IndexFromBeginningOfArray, fixupCell.OffsetFromBeginningOfArray));
             }
 
             if (fixupCells == null)
@@ -201,7 +201,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencyList dependencyList = new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
 
-            foreach (ISymbolNode node in _typesToPreload)
+            foreach (ISymbolNode node in _fixups)
             {
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
             }

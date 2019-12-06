@@ -2786,49 +2786,6 @@ namespace Internal.JitInterface
             // Nothing to do
         }
 
-        private void setEHcount(uint cEH)
-        {
-            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
-        }
-
-        private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
-        {
-            // Filters don't have class token in the clause.ClassTokenOrOffset
-            if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) == 0)
-            {
-                if (clause.ClassTokenOrOffset != 0)
-                {
-                    MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
-                    mdToken classToken = (mdToken)clause.ClassTokenOrOffset;
-                    TypeDesc clauseType = (TypeDesc)ResolveTokenInScope(methodIL, MethodBeingCompiled, classToken);
-
-                    CORJIT_FLAGS flags = default(CORJIT_FLAGS);
-                    getJitFlags(ref flags, 0);
-
-                    if (flags.IsSet(CorJitFlag.CORJIT_FLAG_IL_STUB))
-                    {
-                        // IL stub tokens are 'private' and do not resolve correctly in their parent module's metadata.
-
-                        // Currently, the only place we are using a token here is for a COM-to-CLR exception-to-HRESULT
-                        // mapping catch clause.  We want this catch clause to catch all exceptions, so we override the
-                        // token to be mdTypeRefNil, which used by the EH system to mean catch(...)
-                        Debug.Assert(clauseType.IsObject);
-                        clause.ClassTokenOrOffset = 0;
-                    }
-                    else
-                    {
-                        // For all clause types add fixup to ensure the types are loaded before the code of the method
-                        // containing the catch blocks is executed. This ensures that a failure to load the types would
-                        // not happen when the exception handling is in progress and it is looking for a catch handler.
-                        // At that point, we could only fail fast.
-                        classMustBeLoadedBeforeCodeIsRun(clauseType);
-                    }
-                }
-            }
-
-            _ehClauses[EHnumber] = clause;
-        }
-
         private bool logMsg(uint level, byte* fmt, IntPtr args)
         {
             // Console.WriteLine(Marshal.PtrToStringAnsi((IntPtr)fmt));
