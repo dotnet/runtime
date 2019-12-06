@@ -1709,8 +1709,8 @@ nameof(boundedCapacity), boundedCapacity,
                 throw new ArgumentException(
                     SR.BlockingCollection_ValidateCollectionsArray_ZeroSize, nameof(collections));
             }
-            else if ((!IsSTAThread && collections.Length > 63) || (IsSTAThread && collections.Length > 62))
-            //The number of WaitHandles must be <= 64 for MTA, and <=63 for STA, and we reserve one for CancellationToken
+            else if (collections.Length > 63)
+            //The number of WaitHandles must be <= 64, we reserve one for CancellationToken
             {
                 throw new ArgumentOutOfRangeException(
 nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
@@ -1733,14 +1733,6 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
                     throw new ArgumentException(
                         SR.BlockingCollection_CantAddAnyWhenCompleted, nameof(collections));
                 }
-            }
-        }
-
-        private static bool IsSTAThread
-        {
-            get
-            {
-                return false;
             }
         }
 
