@@ -1114,6 +1114,21 @@ namespace System.Globalization
             return result;
         }
 
+        public static CultureInfo GetCultureInfo(string name, bool predefinedOnly)
+        {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (!predefinedOnly)
+            {
+                return GetCultureInfo(name);
+            }
+
+            return GetPredefinedCultureInfo(name);
+        }
+
         private static Dictionary<string, CultureInfo> CachedCulturesByName
         {
             get
