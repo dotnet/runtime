@@ -1450,6 +1450,12 @@ FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
 {
     FCALL_CONTRACT;
 
+#ifndef FEATURE_PAL
+    PROCESSOR_NUMBER proc_no_cpu_group;
+    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
+    return (proc_no_cpu_group.Group << 6) | proc_no_cpu_group.Number;
+#else
     return ::GetCurrentProcessorNumber();
+#endif //!FEATURE_PAL
 }
 FCIMPLEND;
