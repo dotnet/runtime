@@ -24,8 +24,8 @@ parameters:
       release:
         _BuildConfig: Release
 
-  liveCoreClrBuildConfig: checked
-  liveLibrariesBuildConfig: Release
+  liveCoreClrBuildConfig: ''
+  liveLibrariesBuildConfig: ''
 
 jobs:
 - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
