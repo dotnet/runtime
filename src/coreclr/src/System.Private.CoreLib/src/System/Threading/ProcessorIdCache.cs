@@ -50,9 +50,6 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int GetCurrentProcessorId()
         {
-            if (s_processorIdRefreshRate <= 2)
-                return Thread.GetCurrentProcessorNumber();
-
             int currentProcessorIdCache = t_currentProcessorIdCache--;
             if ((currentProcessorIdCache & ProcessorIdCacheCountDownMask) == 0)
             {
@@ -137,6 +134,56 @@ namespace System.Threading
                 s_CalibrationSamples = null;
                 s_processorIdRefreshRate = Math.Min(MaxIdRefreshRate, (int)(idMin / tlsMin));
             }
+        }
+
+        // If GetCurrentProcessorNumber takes any nontrivial time (compared to TLS access), return false.
+        // Check more than once - to make sure it was not because TLS was delayed by GC or a context switch.
+        internal static bool SimpleProcessorNumberSpeedCheck()
+        {
+            // NOTE: We do not check the frequency of the Stopwatch.
+            //       If the resolution, precision or access time to the timer are inadequate for our measures here,
+            //       the test will fail anyways.
+
+            // warm up the code paths.
+            int id = UninlinedThreadStatic() | Thread.GetCurrentProcessorNumber();
+            long oneMicrosecond = Stopwatch.Frequency / 1000000;
+
+            // this loop should take < 50 usec. limit it to 100 usec just in case.
+            // If we are on slow hardware, we should calibrate anyways.
+            long limit = Stopwatch.Frequency / 10000 + Stopwatch.GetTimestamp();
+            for (int i = 0; i < 10; i++)
+            {
+                int iters = 1;
+                long t1 = 0;
+                // double the sample size until it is 1 usec.
+                while (t1 < oneMicrosecond)
+                {
+                    iters *= 2;
+                    t1 = Stopwatch.GetTimestamp();
+                    for (int j = 0; j < iters; j++)
+                    {
+                        id = Thread.GetCurrentProcessorNumber();
+                    }
+                    t1 = Stopwatch.GetTimestamp() - t1;
+                }
+
+                // assuming TLS cannot be a lot slower than getting ID, this should take 1-2 usec
+                long t2 = Stopwatch.GetTimestamp();
+                for (int j = 0; j < iters; j++)
+                {
+                    UninlinedThreadStatic();
+                }
+                long t3 = Stopwatch.GetTimestamp();
+
+                // if getting ID took longer than 3x TLS access, we should consider caching.
+                if (t3 > limit || (t3 - t2) * 3 < t1)
+                {
+                    return false;
+                }
+            }
+
+            // Make sure the result was not negative, which would indicate "Not Supported"
+            return id >= 0;
         }
 
         // NoInlining is to make sure JIT does not CSE and to have a better perf proxy for TLS access.

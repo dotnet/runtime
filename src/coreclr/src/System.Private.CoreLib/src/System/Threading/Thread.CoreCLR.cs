@@ -498,57 +498,7 @@ namespace System.Threading
         }
 
         // do a fast check and record in a readonly static so that it could become a JIT constant
-        private static readonly bool s_isProcessorNumberReallyFast = SimpleProcessorNumberSpeedCheck();
-
-        // If GetCurrentProcessorNumber takes any nontrivial time (compared to TLS access), return false.
-        // Check more than once - to make sure it was not because TLS was delayed by GC or a context switch.
-        private static bool SimpleProcessorNumberSpeedCheck()
-        {
-            // NOTE: We do not check the frequency of the Stopwatch.
-            //       If the resolution, precision or access time to the timer are inadequate for our measures here,
-            //       the test will fail anyways.
-
-            // warm up the code paths.
-            int id = ProcessorIdCache.UninlinedThreadStatic() | GetCurrentProcessorNumber();
-            long oneMicrosecond = Stopwatch.Frequency / 1000000;
-
-            // this loop should take < 50 usec. limit it to 100 usec just in case.
-            // If we are on slow hardware, we should calibrate anyways.
-            long limit = Stopwatch.Frequency / 10000 + Stopwatch.GetTimestamp();
-            for (int i = 0; i < 10; i++)
-            {
-                int iters = 1;
-                long t1 = 0;
-                // double the sample size until it is 1 usec.
-                while (t1 < oneMicrosecond)
-                {
-                    iters *= 2;
-                    t1 = Stopwatch.GetTimestamp();
-                    for (int j = 0; j < iters; j++)
-                    {
-                        id = GetCurrentProcessorNumber();
-                    }
-                    t1 = Stopwatch.GetTimestamp() - t1;
-                }
-
-                // assuming TLS cannot be a lot slower than getting ID, this should take 1-2 usec
-                long t2 = Stopwatch.GetTimestamp();
-                for (int j = 0; j < iters; j++)
-                {
-                    ProcessorIdCache.UninlinedThreadStatic();
-                }
-                long t3 = Stopwatch.GetTimestamp();
-
-                // if getting ID took longer than 2x TLS access, we should consider caching.
-                if (t3 > limit || (t3 - t2) * 2 < t1)
-                {
-                    return false;
-                }
-            }
-
-            // Make sure the result was not negative, which would indicate "Not Supported"
-            return id >= 0;
-        }
+        private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.SimpleProcessorNumberSpeedCheck();
 
         internal void ResetThreadPoolThread()
         {
