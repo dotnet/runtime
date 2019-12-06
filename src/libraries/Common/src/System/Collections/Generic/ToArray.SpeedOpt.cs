@@ -118,7 +118,7 @@ namespace System.Collections.Generic
             }
 
             using IEnumerator<T> e = source.GetEnumerator();
-            return InitiallyTryWithNoAllocations(e, null, 0);
+            return InitiallyTryWithNoAllocations(e, 0);
         }
 
         public T[] ToArray(IEnumerable<T> source, Func<T, bool> predicate)
@@ -128,7 +128,65 @@ namespace System.Collections.Generic
             return InitiallyTryWithNoAllocations(e, predicate, 0);
         }
 
-        protected T[] InitiallyTryWithNoAllocations(IEnumerator<T> source, Func<T, bool>? predicate, int count)
+        private T[] InitiallyTryWithNoAllocations(IEnumerator<T> source, int count)
+        {
+            (T, T, T, T) items;
+
+            if (!source.MoveNext())
+            {
+                return Allocate(count);
+            }
+            items.Item1 = source.Current;
+
+            ++count;
+
+            if (!source.MoveNext())
+            {
+                return AllocateAndAssign(count, items.Item1);
+            }
+            items.Item2 = source.Current;
+
+            ++count;
+
+            if (!source.MoveNext())
+            {
+                return AllocateAndAssign(count, items.Item1, items.Item2);
+            }
+            items.Item3 = source.Current;
+
+            ++count;
+
+            if (!source.MoveNext())
+            {
+                return AllocateAndAssign(count, items.Item1, items.Item2, items.Item3);
+            }
+            items.Item4 = source.Current;
+
+            ++count;
+
+            T[] result;
+            if (count >= maxSizeForNoAllocations)
+            {
+                if (source.MoveNext())
+                    result = FinishViaAllocations(source, count);
+                else
+                    result = Allocate(count);
+            }
+            else
+            {
+                result = InitiallyTryWithNoAllocations(source, count);
+            }
+
+            return Assign(result, ref items, count);
+
+            T[] FinishViaAllocations(IEnumerator<T> source, int count)
+            {
+                int dummyIdx = 0;
+                return base.FinishViaAllocations(source, ref dummyIdx, null, count);
+            }
+        }
+
+        private T[] InitiallyTryWithNoAllocations(IEnumerator<T> source, Func<T, bool> predicate, int count)
         {
             (T, T, T, T) items;
 
@@ -140,7 +198,7 @@ namespace System.Collections.Generic
                 }
                 items.Item1 = source.Current;
             }
-            while (predicate != null && !predicate(items.Item1));
+            while (predicate(items.Item1));
 
             ++count;
 
@@ -151,7 +209,7 @@ namespace System.Collections.Generic
                     return AllocateAndAssign(count, items.Item1);
                 }
                 items.Item2 = source.Current;
-            } while (predicate != null && !predicate(items.Item2));
+            } while (predicate(items.Item2));
 
             ++count;
 
@@ -163,7 +221,7 @@ namespace System.Collections.Generic
                 }
                 items.Item3 = source.Current;
             }
-            while (predicate != null && !predicate(items.Item3));
+            while (predicate(items.Item3));
 
             ++count;
 
@@ -175,7 +233,7 @@ namespace System.Collections.Generic
                 }
                 items.Item4 = source.Current;
             }
-            while (predicate != null && !predicate(items.Item4));
+            while (predicate(items.Item4));
 
             ++count;
 
@@ -193,12 +251,12 @@ namespace System.Collections.Generic
             }
 
             return Assign(result, ref items, count);
-        }
 
-        private T[] FinishViaAllocations(IEnumerator<T> source, Func<T, bool>? predicate, int count)
-        {
-            int dummyIdx = 0;
-            return FinishViaAllocations(source, ref dummyIdx, predicate, count);
+            T[] FinishViaAllocations(IEnumerator<T> source, Func<T, bool>? predicate, int count)
+            {
+                int dummyIdx = 0;
+                return base.FinishViaAllocations(source, ref dummyIdx, predicate, count);
+            }
         }
 
         protected override (int, bool) PopulateBuffer(T[] buffer, object source, ref int sourceIdx, Func<T, bool>? predicate)
@@ -252,7 +310,7 @@ namespace System.Collections.Generic
             return InitiallyTryWithNoAllocations(source, 0, predicate, 0);
         }
 
-        protected T[] InitiallyTryWithNoAllocations(T[] source, int sourceIdx, Func<T, bool> predicate, int count)
+        private T[] InitiallyTryWithNoAllocations(T[] source, int sourceIdx, Func<T, bool> predicate, int count)
         {
             (T, T, T, T) items;
 
@@ -368,7 +426,7 @@ namespace System.Collections.Generic
             return InitiallyTryWithNoAllocations(source, 0, predicate, 0);
         }
 
-        protected T[] InitiallyTryWithNoAllocations(List<T> source, int sourceIdx, Func<T, bool> predicate, int count)
+        private T[] InitiallyTryWithNoAllocations(List<T> source, int sourceIdx, Func<T, bool> predicate, int count)
         {
             (T, T, T, T) items;
 
