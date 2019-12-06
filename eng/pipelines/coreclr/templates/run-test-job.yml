@@ -114,8 +114,8 @@ jobs:
         parameters:
           unpackFolder: $(librariesDownloadDir)
           cleanUnpackFolder: false
-          artifactFileName: '$(librariesArtifactName)$(archiveExtension)'
-          artifactName: '$(librariesArtifactName)'
+          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesBuildArtifactName)'
           displayName: 'live-built libraries'
 
 

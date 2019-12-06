@@ -104,12 +104,12 @@ jobs:
         - name: priorityArg
           value: '-priority=1'
 
-    - librariesArtifactName: ''
+    - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''
     - librariesDownloadDir: ''
 
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - librariesArtifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+      - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
       - librariesDownloadDir: $(Build.SourcesDirectory)/artifacts
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - librariesOverrideArg: ' localcorefxpath $(Build.SourcesDirectory) localcorefxconfig ${{ parameters.liveLibrariesBuildConfig }}'
