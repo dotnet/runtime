@@ -26,6 +26,19 @@ namespace System.Globalization
             return GetCultureByName(strDefault);
         }
 
+        private static CultureInfo GetPredefinedCultureInfo(string name)
+        {
+            CultureInfo culture = GetCultureInfo(name);
+            string englishName = culture.EnglishName;
+
+            if (englishName.StartsWith("Unknown Locale", StringComparison.Ordinal) || englishName.StartsWith("Unknown Language", StringComparison.Ordinal))
+            {
+                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
+            }
+
+            return culture;
+        }
+
         private static unsafe CultureInfo GetUserDefaultUICulture()
         {
             if (GlobalizationMode.Invariant)
