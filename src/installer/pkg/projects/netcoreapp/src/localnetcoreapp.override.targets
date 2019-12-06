@@ -47,7 +47,8 @@
 
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'"/>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(FileName)').StartsWith('mscordaccore_'))" />
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
+
+      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" NuGetPackageId="$(MicrosoftNETCoreRuntimeCoreCLRPackage)" />
     </ItemGroup>
 
     <Error Condition="'@(CoreCLRFiles)' == ''" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not contain any files." />
