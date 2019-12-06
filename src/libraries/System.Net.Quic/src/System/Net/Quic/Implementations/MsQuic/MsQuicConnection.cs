@@ -31,8 +31,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         private IPEndPoint _localEndPoint;
         private readonly IPEndPoint _remoteEndPoint;
 
-        private ResettableCompletionSource<uint> _connectTcs = new ResettableCompletionSource<uint>();
-        private ResettableCompletionSource<uint> _shutdownTcs = new ResettableCompletionSource<uint>();
+        private readonly ResettableCompletionSource<uint> _connectTcs = new ResettableCompletionSource<uint>();
+        private readonly ResettableCompletionSource<uint> _shutdownTcs = new ResettableCompletionSource<uint>();
 
         private bool _disposed;
         private bool _connected;
@@ -197,8 +197,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown Complete");
-
             _shutdownTcs.Complete(MsQuicConstants.Success);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -259,55 +257,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private unsafe void SetIdleTimeout(TimeSpan timeout)
         {
-            ulong msTime = (ulong)timeout.TotalMilliseconds;
-            var buffer = new QuicBuffer()
-            {
-                Length = sizeof(ulong),
-                Buffer = (byte*)&msTime
-            };
-            SetParam(QUIC_PARAM_CONN.IDLE_TIMEOUT, buffer);
-        }
-
-        private void SetPeerBiDirectionalStreamCount(ushort count)
-        {
-            SetUshortParamter(QUIC_PARAM_CONN.PEER_BIDI_STREAM_COUNT, count);
-        }
-
-        private void SetPeerUnidirectionalStreamCount(ushort count)
-        {
-            SetUshortParamter(QUIC_PARAM_CONN.PEER_UNIDI_STREAM_COUNT, count);
-        }
-
-        private void SetLocalBidirectionalStreamCount(ushort count)
-        {
-            SetUshortParamter(QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT, count);
-        }
-
-        private void SetLocalUnidirectionalStreamCount(ushort count)
-        {
-            SetUshortParamter(QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT, count);
-        }
-
-        private unsafe void EnableBuffering()
-        {
-            bool val = true;
-            var buffer = new QuicBuffer()
-            {
-                Length = sizeof(bool),
-                Buffer = (byte*)&val
-            };
-            SetParam(QUIC_PARAM_CONN.SEND_BUFFERING, buffer);
-        }
-
-        private unsafe void DisableBuffering()
-        {
-            bool val = false;
-            var buffer = new QuicBuffer()
-            {
-                Length = sizeof(bool),
-                Buffer = (byte*)&val
-            };
-            SetParam(QUIC_PARAM_CONN.SEND_BUFFERING, buffer);
+            MsQuicParameterHelpers.SetULongParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.IDLE_TIMEOUT, (ulong)timeout.TotalMilliseconds);
         }
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
@@ -410,27 +360,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _handle.Free();
             _disposed = true;
-        }
-
-        private unsafe void SetUshortParamter(QUIC_PARAM_CONN param, ushort count)
-        {
-            QuicBuffer buffer = new QuicBuffer()
-            {
-                Length = sizeof(ushort),
-                Buffer = (byte*)&count
-            };
-            SetParam(param, buffer);
-        }
-
-        private void SetParam(
-            QUIC_PARAM_CONN param,
-            QuicBuffer buf)
-        {
-            MsQuicStatusException.ThrowIfFailed(_api.UnsafeSetParam(
-                _ptr,
-                (uint)QUIC_PARAM_LEVEL.CONNECTION,
-                (uint)param,
-                buf));
         }
 
         internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)

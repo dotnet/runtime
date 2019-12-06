@@ -33,12 +33,12 @@ namespace System.Net.Quic.Implementations.MsQuic
         private long _streamId = -1;
 
         // Resettable completions to be used for multiple calls to send, start, and shutdown.
-        private ResettableCompletionSource<uint> _sendResettableCompletionSource;
+        private readonly ResettableCompletionSource<uint> _sendResettableCompletionSource;
 
         // Resettable completions to be used for multiple calls to receive.
-        private ResettableCompletionSource<uint> _receiveResettableCompletionSource;
+        private readonly ResettableCompletionSource<uint> _receiveResettableCompletionSource;
 
-        private ResettableCompletionSource<uint> _shutdownResettableCompletionSource;
+        private readonly ResettableCompletionSource<uint> _shutdownResettableCompletionSource;
 
         // Buffers to hold during a call to send.
         private readonly MemoryHandle[] _bufferArrays = new MemoryHandle[1];
@@ -124,7 +124,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new InvalidOperationException("Writing is not allowed on stream.");
             }
 
-            cancellationToken.Register(() =>
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
             {
                 bool shouldComplete = false;
                 lock (_sync)
@@ -184,7 +184,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            cancellationToken.Register(() =>
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
             {
                 bool shouldComplete = false;
                 lock (_sync)
@@ -265,7 +265,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // TODO do anything to stop writes?
-            cancellationToken.Register(() =>
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
             {
                 bool shouldComplete = false;
                 lock (_sync)
@@ -644,7 +644,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // TODO prevent overlapping sends.
         // TODO consider allowing overlapped reads.
-        internal unsafe ValueTask SendAsync(
+        private unsafe ValueTask SendAsync(
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAG flags)
         {
@@ -693,19 +693,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // This can fail if the stream isn't started.
         private unsafe long GetStreamId()
         {
-            byte* ptr = stackalloc byte[sizeof(long)];
-            QuicBuffer buffer = new QuicBuffer
-            {
-                Length = sizeof(long),
-                Buffer = ptr
-            };
-
-            MsQuicStatusException.ThrowIfFailed(_api.UnsafeGetParam(
-                _ptr,
-                (uint)QUIC_PARAM_LEVEL.STREAM,
-                (uint)QUIC_PARAM_STREAM.ID,
-                ref buffer));
-            return *(long*)ptr;
+            return (long)MsQuicParameterHelpers.GetULongParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.STREAM, (uint)QUIC_PARAM_STREAM.ID);
         }
 
         private enum StartState
