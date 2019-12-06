@@ -24,8 +24,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(nameof(PlatformSupportFakeCulture))]
-        [InlineData("en!US")]
         [InlineData("en@US")]
+        [InlineData("\uFFFF")]
         public void TestInvalidCultureNames(string name)
         {
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name));

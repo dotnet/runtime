@@ -30,7 +30,7 @@ namespace System.Globalization
 
         private static CultureInfo GetPredefinedCultureInfo(string name)
         {
-            if (!IsPredefinedLocale(name))
+            if (!Interop.Globalization.IsPredefinedLocale(name))
             {
                 throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
             }
