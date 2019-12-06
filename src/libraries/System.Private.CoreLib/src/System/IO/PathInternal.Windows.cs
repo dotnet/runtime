@@ -335,6 +335,7 @@ namespace System.IO
         ///   3. Doesn't play nice with string logic
         ///   4. Isn't a cross-plat friendly concept/behavior
         /// </remarks>
+        [return: NotNullIfNotNull("path")]
         internal static string? NormalizeDirectorySeparators(string? path)
         {
             if (string.IsNullOrEmpty(path))
