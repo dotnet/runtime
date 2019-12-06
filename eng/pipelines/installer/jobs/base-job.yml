@@ -12,7 +12,8 @@ parameters:
   prepareSteps: []
   buildSteps: []
   dependsOn: []
-  variables: {}
+  variables: []
+  buildVariables: {}
   name: ''
   displayName: ''
   pool: ''
@@ -39,10 +40,11 @@ jobs:
   strategy: ${{ parameters.strategy }}
 
   variables:
+  - ${{ parameters.variables }}
   - ${{ each variable in variables.commonVariables }}:
     - name: ${{ variable.key }}
       value: ${{ variable.value }}
-  - ${{ each variable in parameters.variables }}:
+  - ${{ each variable in parameters.buildVariables }}:
     - name: ${{ variable.key }}
       value: ${{ variable.value }}
 

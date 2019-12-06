@@ -13,7 +13,8 @@ jobs:
           _BuildConfig: Debug
         release:
           _BuildConfig: Release
-    variables:
+
+    buildVariables:
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
         /p:PortableBuild=true
