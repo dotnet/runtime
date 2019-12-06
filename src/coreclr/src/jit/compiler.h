@@ -3735,12 +3735,12 @@ public:
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, IL_OFFSETX offset);
     void impInsertTreeBefore(GenTree* tree, IL_OFFSETX offset, Statement* stmtBefore);
-    void impAssignTempGen(unsigned    tmp,
-                          GenTree*    val,
-                          unsigned    curLevel,
-                          Statement** pAfterStmt = nullptr,
-                          IL_OFFSETX  ilOffset   = BAD_IL_OFFSET,
-                          BasicBlock* block      = nullptr);
+    void impAssignTempGenTree(unsigned    tmp,
+                              GenTree*    val,
+                              unsigned    curLevel,
+                              Statement** pAfterStmt = nullptr,
+                              IL_OFFSETX  ilOffset   = BAD_IL_OFFSET,
+                              BasicBlock* block      = nullptr);
     void impAssignTempGenStruct(unsigned             tmpNum,
                                 GenTree*             val,
                                 CORINFO_CLASS_HANDLE structHnd,

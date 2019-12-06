@@ -3814,7 +3814,7 @@ inline GenTree* Compiler::impCheckForNullPointer(GenTree* obj)
         // We don't need to spill while appending as we are only assigning
         // NULL to a freshly-grabbed temp.
 
-        impAssignTempGen(tmp, obj, (unsigned)CHECK_SPILL_NONE);
+        impAssignTempGenTree(tmp, obj, (unsigned)CHECK_SPILL_NONE);
 
         obj = gtNewLclvNode(tmp, obj->gtType);
     }

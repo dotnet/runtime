@@ -23504,8 +23504,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 {
                     // Unsafe value cls check is not needed here since in-linee compiler instance would have
                     // iterated over locals and marked accordingly.
-                    impAssignTempGen(tmpNum, gtNewZeroConNode(genActualType(lclTyp)), (unsigned)CHECK_SPILL_NONE,
-                                     &afterStmt, callILOffset, block);
+                    impAssignTempGenTree(tmpNum, gtNewZeroConNode(genActualType(lclTyp)), (unsigned)CHECK_SPILL_NONE,
+                                         &afterStmt, callILOffset, block);
                 }
                 else
                 {
