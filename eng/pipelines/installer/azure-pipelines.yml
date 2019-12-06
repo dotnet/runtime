@@ -13,6 +13,7 @@ trigger:
     - eng/pipelines/coreclr/*
     - eng/pipelines/libraries/*
     - eng/pipelines/common/*
+    - eng/pipelines/runtime.yml
     - docs/*
     - README.md
     - CONTRIBUTING.md
@@ -34,6 +35,7 @@ pr:
     - eng/pipelines/coreclr/*
     - eng/pipelines/libraries/*
     - eng/pipelines/common/*
+    - eng/pipelines/runtime.yml
     - docs/*
     - README.md
     - CONTRIBUTING.md

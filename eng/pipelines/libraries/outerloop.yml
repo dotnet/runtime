@@ -13,7 +13,32 @@ variables:
 
 jobs:
   - template: /eng/pipelines/common/checkout-job.yml
-
+  
+  #
+  # CoreCLR Build
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      buildConfig: release
+      platforms:
+      - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
+        - Windows_NT_x64
+        - Windows_NT_x86
+      - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
+        - Linux_x64
+        - Linux_musl_x64
+        - ${{ if eq(variables['isFullMatrix'], true) }}:
+          - Linux_arm
+          - Linux_arm64
+          - Linux_musl_arm64
+      - ${{ if eq(variables['includeOsxOuterloop'], true) }}:        
+        - OSX_x64
+      jobParameters:
+        testGroup: innerloop
+  #
+  # Libraries Build
+  #
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
@@ -39,6 +64,7 @@ jobs:
         framework: netcoreapp
         runTests: true
         testScope: outerloop
+        liveCoreClrBuildConfig: release
   
   - ${{ if eq(variables['isFullMatrix'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -60,6 +86,7 @@ jobs:
           framework: netcoreapp
           runTests: true
           testScope: outerloop
+          liveCoreClrBuildConfig: release
 
   - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
     - template: /eng/pipelines/common/platform-matrix.yml

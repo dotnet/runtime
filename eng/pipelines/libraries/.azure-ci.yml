@@ -22,6 +22,7 @@ trigger:
     - src/coreclr/*
     - eng/pipelines/coreclr/*
     - eng/pipelines/installer/*
+    - eng/pipelines/runtime.yml
 
 pr:
   branches:

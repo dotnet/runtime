@@ -8,7 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <DisabledTestDir Include="bin" />
     <DisabledTestDir Include="Common" />
+    <DisabledTestDir Include="Tests" />
+    <DisabledTestDir Include="TestWrappers" />
     <_SkipTestDir Include="@(DisabledTestDir)" />
   </ItemGroup>
 
