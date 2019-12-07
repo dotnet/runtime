@@ -36,7 +36,7 @@ namespace System.Collections.Generic
                     ? maxOtherElementsArraySize
                     : maxByteElementsArraySize;
 
-            return (int)Math.Min((uint)maxSize, (uint)count * 2) - count; ;
+            return (int)Math.Min((uint)maxSize, (uint)count * 2) - count;
         }
 
         protected T[] FinishViaAllocations(object source, int sourceSize, ref int sourceIdx, Func<T, bool>? predicate, int count)
