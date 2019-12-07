@@ -1,4 +1,8 @@
-﻿namespace System.Text.Json
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+namespace System.Text.Json
 {
     /// <summary>
     /// Provides a generic view of the mechanism used to handle reference on (De)Serialization. This is an abstract class (this is an internal type but will be potentially exposed in a future).

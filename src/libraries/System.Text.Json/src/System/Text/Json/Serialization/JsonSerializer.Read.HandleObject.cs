@@ -169,8 +169,8 @@ namespace System.Text.Json
 
         private static void HandleEndObject(ref ReadStack state)
         {
-            // Only allow dictionaries to be processed here if this is the DataExtensionProperty or a reference object evaluated as null and is now finishing the dictionary object.
-            Debug.Assert(!state.Current.IsProcessingDictionary() || state.Current.JsonClassInfo.DataExtensionProperty == state.Current.JsonPropertyInfo || state.Current.ShouldHandleReference);
+            // Only allow dictionaries to be processed here if this is the DataExtensionProperty.
+            Debug.Assert(!state.Current.IsProcessingDictionary() || state.Current.JsonClassInfo.DataExtensionProperty == state.Current.JsonPropertyInfo);
 
             // Check if we are trying to build the sorted cache.
             if (state.Current.PropertyRefCache != null)

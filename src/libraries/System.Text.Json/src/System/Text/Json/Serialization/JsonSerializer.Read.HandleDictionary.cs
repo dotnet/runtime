@@ -123,6 +123,7 @@ namespace System.Text.Json
 
                     state.Current.ReturnValue = classInfo.CreateObject();
                 }
+                // If is reference preserved array.
                 else if (state.Current.IsProcessingEnumerable())
                 {
                     Type preservedObjType = typeof(JsonPreservedReference<>).MakeGenericType(state.Current.JsonClassInfo.Type);
@@ -265,15 +266,6 @@ namespace System.Text.Json
                     state.Pop();
                     ApplyObjectToEnumerable(value, ref state);
                 }
-            }
-        }
-
-        private static void SetDictionaryCandidateAsValue(ref ReadStack state)
-        {
-            if (state.Current.DictionaryCandidate != null)
-            {
-                state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, state.Current.DictionaryCandidate);
-                state.Current.DictionaryCandidate = null;
             }
         }
     }

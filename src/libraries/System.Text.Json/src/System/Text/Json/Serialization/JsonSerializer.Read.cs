@@ -47,12 +47,10 @@ namespace System.Text.Json
                     {
                         Debug.Assert(tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number || tokenType == JsonTokenType.True || tokenType == JsonTokenType.False);
 
-                        //HandleValue(tokenType, options, ref reader, ref readStack);
                         HandleValue(tokenType, options, ref reader, ref readStack);
                     }
                     else if (tokenType == JsonTokenType.PropertyName)
                     {
-                        //HandlePropertyName(options, ref reader, ref readStack);
                         HandlePropertyName(options, ref reader, ref readStack);
                     }
                     else if (tokenType == JsonTokenType.StartObject)
@@ -72,7 +70,6 @@ namespace System.Text.Json
                         }
                         else if (readStack.Current.IsProcessingDictionary())
                         {
-                            //HandleStartDictionary(options, ref readStack);
                             HandleStartDictionary(options, ref readStack);
                         }
                         else

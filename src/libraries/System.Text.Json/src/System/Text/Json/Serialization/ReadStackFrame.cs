@@ -45,7 +45,6 @@ namespace System.Text.Json
         public bool ReadMetadataValue;
         public MetadataPropertyName MetadataProperty;
         public string ReferenceId;
-        public object DictionaryCandidate;
 
         // Support IDictionary constructible types, i.e. types that we
         // support by passing and IDictionary to their constructors:
