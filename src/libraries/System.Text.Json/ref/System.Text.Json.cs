@@ -775,7 +775,6 @@ namespace System.Text.Json.Serialization
     {
         internal ReferenceHandling() { }
         public static System.Text.Json.Serialization.ReferenceHandling Default { get { throw null; } }
-        public static System.Text.Json.Serialization.ReferenceHandling Ignore { get { throw null; } }
         public static System.Text.Json.Serialization.ReferenceHandling Preserve { get { throw null; } }
     }
 }

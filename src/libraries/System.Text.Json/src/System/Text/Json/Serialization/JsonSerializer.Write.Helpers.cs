@@ -152,18 +152,9 @@ namespace System.Text.Json
             }
             else
             {
-                if (options.ReferenceHandling.LoopHandling == ReferenceLoopHandling.Ignore)
-                {
-                    options.WriteStart = WriteObjectOrArrayStart;
-                    options.HandleReference = IgnoreReferencesStrategy;
-                    options.PopReference = PopReference;
-                }
-                else
-                {
-                    options.HandleReference = DefaultOnReferencesStrategy;
-                    options.WriteStart = WriteObjectOrArrayStart;
-                    options.PopReference = DefaultPopReference;
-                }
+                options.HandleReference = DefaultOnReferencesStrategy;
+                options.WriteStart = WriteObjectOrArrayStart;
+                options.PopReference = DefaultPopReference;
             }
         }
     }
