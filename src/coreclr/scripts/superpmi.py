@@ -96,8 +96,6 @@ collect_parser.add_argument("--merge_mch_files", dest="merge_mch_files", default
 
 collect_parser.add_argument("--use_zapdisable", dest="use_zapdisable", default=False, action="store_true", help="Allow redundant calls to the systems libraries for more coverage.")
 
-collect_parser.add_argument("--assume_unclean_mch", dest="assume_unclean_mch", default=False, action="store_true", help="Force clean the mch file. This is useful if the dataset is large and there are expected dups.")
-
 # Allow for continuing a collection in progress
 collect_parser.add_argument("-existing_temp_dir", dest="existing_temp_dir", default=None, nargs="?")
 collect_parser.add_argument("--has_run_collection_command", dest="has_run_collection_command", default=False, action="store_true")
@@ -183,6 +181,48 @@ list_parser = subparsers.add_parser("list-collections")
 list_parser.add_argument("-arch", dest="arch", nargs='?', default="x64")
 list_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked")
 list_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help="Path of the dotnet/runtime repo root directory. Optional.")
+
+################################################################################
+# Helper functions
+################################################################################
+
+def is_zero_length_file(fpath):
+    """ Determine if a file system path refers to an existing file that is zero length
+
+    Args:
+        fpath (str) : file system path to test
+
+    Returns:
+        bool : true if the path is an existing file that is zero length
+    """
+    return os.path.isfile(fpath) and os.stat(fpath).st_size == 0
+
+def is_nonzero_length_file(fpath):
+    """ Determine if a file system path refers to an existing file that is non-zero length
+
+    Args:
+        fpath (str) : file system path to test
+
+    Returns:
+        bool : true if the path is an existing file that is non-zero length
+    """
+    return os.path.isfile(fpath) and os.stat(fpath).st_size != 0
+
+def make_safe_filename(s):
+    """ Turn a string into a string usable as a single file name component; replace illegal characters with underscores.
+
+    Args:
+        s (str) : string to convert to a file name
+
+    Returns:
+        (str) : The converted string
+    """
+    def safe_char(c):
+        if c.isalnum():
+            return c
+        else:
+            return "_"
+    return "".join(safe_char(c) for c in s)
 
 ################################################################################
 # Helper classes
@@ -372,8 +412,8 @@ class SuperPMICollect:
         # The base .MCH file path
         self.base_mch_file = None
 
-        # Clean .MCH file path
-        self.clean_mch_file = None
+        # No dup .MCH file path
+        self.nodup_mch_file = None
 
         # Final .MCH file path
         self.final_mch_file = None
@@ -386,15 +426,15 @@ class SuperPMICollect:
         # Do a basic SuperPMI collect and validation:
         #   1. Collect MC files by running a set of sample apps.
         #   2. Merge the MC files into a single MCH using "mcs -merge *.mc -recursive".
-        #   3. Create a clean MCH by running SuperPMI over the MCH, and using "mcs -strip" to filter
-        #       out any failures (if any).
-        #    4. Create a thin unique MCH by using "mcs -removeDup -thin".
-        #    5. Create a TOC using "mcs -toc".
-        #    6. Verify the resulting MCH file is error-free when running SuperPMI against it with the
-        #       same JIT used for collection.
+        #   3. Create a thin unique MCH by using "mcs -removeDup -thin".
+        #   4. Create a clean MCH by running SuperPMI over the MCH, and using "mcs -strip" to filter
+        #      out any failures (if any).
+        #   5. Create a TOC using "mcs -toc".
+        #   6. Verify the resulting MCH file is error-free when running SuperPMI against it with the
+        #      same JIT used for collection.
         #
-        #    MCH files are big. If we don't need them anymore, clean them up right away to avoid
-        #    running out of disk space in disk constrained situations.
+        #   MCH files are big. If we don't need them anymore, clean them up right away to avoid
+        #   running out of disk space in disk constrained situations.
 
         passed = False
 
@@ -405,7 +445,7 @@ class SuperPMICollect:
                 self.final_fail_mcl_file = os.path.join(temp_location, "finalfail.mcl")
                 
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
-                self.clean_mch_file = os.path.join(temp_location, "clean.mch")
+                self.nodup_mch_file = os.path.join(temp_location, "nodup.mch")
 
                 self.temp_location = temp_location
 
@@ -438,8 +478,8 @@ class SuperPMICollect:
                         self.__merge_mch_files__()
 
                 if not self.coreclr_args.has_verified_clean_mch:
-                    self.__create_clean_mch_file__()
                     self.__create_thin_unique_mch__()
+                    self.__create_clean_mch_file__()
                     self.__create_toc__()
                     self.__verify_final_mch__()
 
@@ -517,17 +557,6 @@ class SuperPMICollect:
                     
                     return assemblies
 
-                def make_safe_filename(s):
-                    def safe_char(c):
-                        if c.isalnum():
-                            return c
-                        else:
-                            return "_"
-                    return "".join(safe_char(c) for c in s)
-
-                def is_zero_length_file(fpath):  
-                    return os.path.isfile(fpath) and os.stat(fpath).st_size == 0
-
                 async def run_pmi(print_prefix, assembly, self):
                     """ Run pmi over all dlls
                     """
@@ -575,13 +604,9 @@ class SuperPMICollect:
 
                 os.environ.update(old_env)
 
-        contents = os.listdir(self.temp_location)
-        mc_contents = [os.path.join(self.temp_location, item) for item in contents if ".mc" in item]
-
-        if len(mc_contents) == 0:
+        mc_files = [os.path.join(self.temp_location, item) for item in os.listdir(self.temp_location) if item.endswith(".mc")]
+        if len(mc_files) == 0:
             raise RuntimeError("No .mc files generated.")
-
-        self.mc_contents = mc_contents
 
     def __merge_mc_files__(self):
         """ Merge the mc files that were generated
@@ -596,19 +621,16 @@ class SuperPMICollect:
         command = [self.mcs_path, "-merge", self.base_mch_file, pattern, "-recursive"]
         print("Invoking: " + " ".join(command))
         proc = subprocess.Popen(command)
-
         proc.communicate()
 
-        if not os.path.isfile(self.mcs_path):
-            raise RuntimeError("mch file failed to be generated at: %s" % self.mcs_path)
-
-        contents = os.listdir(self.temp_location)
-        mc_contents = [os.path.join(self.temp_location, item) for item in contents if ".mc" in item and not ".mch" in item]
+        if not os.path.isfile(self.base_mch_file):
+            raise RuntimeError("MCH file failed to be generated at: %s" % self.base_mch_file)
 
         # All the individual MC files are no longer necessary, now that we have
         # merged them into the base.mch. Delete them.
         if not self.coreclr_args.skip_cleanup:
-            for item in mc_contents:
+            mc_files = [os.path.join(self.temp_location, item) for item in os.listdir(self.temp_location) if item.endswith(".mc")]
+            for item in mc_files:
                 os.remove(item)
 
     def __merge_mch_files__(self):
@@ -625,67 +647,67 @@ class SuperPMICollect:
             command = [self.mcs_path, "-concat", self.base_mch_file, item]
             print("Invoking: " + " ".join(command))
             proc = subprocess.Popen(command)
-
             proc.communicate()
 
-        if not os.path.isfile(self.mcs_path):
-            raise RuntimeError("mch file failed to be generated at: %s" % self.mcs_path)
-    
-    def __create_clean_mch_file__(self):
-        """ Create a clean mch file based on the original
-
-        Notes:
-            <SuperPMIPath> -p -f <s_baseFailMclFile> <s_baseMchFile> <jitPath>
-
-            if <s_baseFailMclFile> is non-empty:
-                <mcl> -strip <s_baseFailMclFile> <s_baseMchFile> <s_cleanMchFile>
-            else
-                # no need to copy, just change the names
-                clean_mch_file = base_mch_file
-            del <s_baseFailMclFile>
-        """
-
-        command = [self.superpmi_path, "-p", "-f", self.base_fail_mcl_file, self.base_mch_file, self.jit_path]
-        print (" ".join(command))
-        proc = subprocess.Popen(command)
-
-        proc.communicate()
-
-        if os.path.isfile(self.base_fail_mcl_file) and os.stat(self.base_fail_mcl_file).st_size != 0:
-            command = [self.mcs_path, "-strip", self.base_fail_mcl_file, self.base_mch_file, self.clean_mch_file]
-            print (" ".join(command))
-            proc = subprocess.Popen(command)
-
-            proc.communicate()
-        else:
-            self.clean_mch_file = self.base_mch_file
-            self.base_mch_file = None
-
-        if not os.path.isfile(self.clean_mch_file):
-            raise RuntimeError("Clean mch file failed to be generated.")
-
-        if not self.coreclr_args.skip_cleanup:
-            if os.path.isfile(self.base_fail_mcl_file):
-                os.remove(self.base_fail_mcl_file)
-                self.base_fail_mcl_file = None
+        if not os.path.isfile(self.base_mch_file):
+            raise RuntimeError("MCH file failed to be generated at: %s" % self.base_mch_file)
 
     def __create_thin_unique_mch__(self):
         """  Create a thin unique MCH
         
         Notes:
-            <mcl> -removeDup -thin <s_cleanMchFile> <s_finalMchFile>
+            <mcl> -removeDup -thin <s_baseMchFile> <s_nodupMchFile>
         """
 
-        command = [self.mcs_path, "-removeDup", "-thin", self.clean_mch_file, self.final_mch_file]
+        command = [self.mcs_path, "-removeDup", "-thin", self.base_mch_file, self.nodup_mch_file]
+        print("Invoking: " + " ".join(command))
         proc = subprocess.Popen(command)
         proc.communicate()
 
-        if not os.path.isfile(self.final_mch_file):
-            raise RuntimeError("Error, final mch file not created correctly.")
+        if not os.path.isfile(self.nodup_mch_file):
+            raise RuntimeError("Error, no dup mch file not created correctly at: %s" % self.nodup_mch_file)
 
         if not self.coreclr_args.skip_cleanup:
-            os.remove(self.clean_mch_file)
-            self.clean_mch_file = None
+            os.remove(self.base_mch_file)
+            self.base_mch_file = None
+    
+    def __create_clean_mch_file__(self):
+        """ Create a clean mch file
+
+        Notes:
+            <SuperPMIPath> -p -f <s_baseFailMclFile> <s_nodupMchFile> <jitPath>
+
+            if <s_baseFailMclFile> is non-empty:
+                <mcl> -strip <s_baseFailMclFile> <s_nodupMchFile> <s_finalMchFile>
+            else
+                # copy/move nodup file to final file
+            del <s_baseFailMclFile>
+        """
+
+        command = [self.superpmi_path, "-p", "-f", self.base_fail_mcl_file, self.nodup_mch_file, self.jit_path]
+        print("Invoking: " + " ".join(command))
+        proc = subprocess.Popen(command)
+        proc.communicate()
+
+        if is_nonzero_length_file(self.base_fail_mcl_file):
+            command = [self.mcs_path, "-strip", self.base_fail_mcl_file, self.nodup_mch_file, self.final_mch_file]
+            print("Invoking: " + " ".join(command))
+            proc = subprocess.Popen(command)
+            proc.communicate()
+        else:
+            # Ideally we could just rename this file instead of copying it.
+            shutil.copy2(self.nodup_mch_file, self.final_mch_file)
+
+        if not os.path.isfile(self.final_mch_file):
+            raise RuntimeError("Final mch file failed to be generated.")
+
+        if not self.coreclr_args.skip_cleanup:
+            if os.path.isfile(self.base_fail_mcl_file):
+                os.remove(self.base_fail_mcl_file)
+                self.base_fail_mcl_file = None
+            if os.path.isfile(self.nodup_mch_file):
+                os.remove(self.nodup_mch_file)
+                self.nodup_mch_file = None
         
     def __create_toc__(self):
         """ Create a TOC file
@@ -695,11 +717,12 @@ class SuperPMICollect:
         """
 
         command = [self.mcs_path, "-toc", self.final_mch_file]
+        print("Invoking: " + " ".join(command))
         proc = subprocess.Popen(command)
         proc.communicate()
 
         if not os.path.isfile(self.toc_file):
-            raise RuntimeError("Error, toc file not created correctly.")
+            raise RuntimeError("Error, toc file not created correctly at: %s" % self.toc_file)
 
     def __verify_final_mch__(self):
         """ Verify the resulting MCH file is error-free when running SuperPMI against it with the same JIT used for collection.
@@ -712,7 +735,7 @@ class SuperPMICollect:
         passed = spmi_replay.replay()
 
         if not passed:
-            raise RuntimeError("Error unclean replay.")
+            raise RuntimeError("Error, unclean replay.")
 
 ################################################################################
 # SuperPMI Replay
@@ -821,7 +844,7 @@ class SuperPMIReplay:
                 print("Clean SuperPMI Replay")
                 return_code = True
 
-            if os.path.isfile(self.fail_mcl_file) and os.stat(self.fail_mcl_file).st_size != 0:
+            if is_nonzero_length_file(self.fail_mcl_file):  
                 # Unclean replay.
                 #
                 # Save the contents of the fail.mcl file to dig into failures.
@@ -1017,7 +1040,7 @@ class SuperPMIReplayAsmDiffs:
             else:
                 return_code = 1;
 
-            if os.path.isfile(self.fail_mcl_file) and os.stat(self.fail_mcl_file).st_size != 0:
+            if is_nonzero_length_file(self.fail_mcl_file):
                 # Unclean replay.
                 #
                 # Save the contents of the fail.mcl file to dig into failures.
@@ -1080,7 +1103,7 @@ class SuperPMIReplayAsmDiffs:
             # There were diffs. Go through each method that created diffs and
             # create a base/diff asm file with diffable asm. In addition, create
             # a standalone .mc for easy iteration.
-            if os.path.isfile(self.diff_mcl_file) and os.stat(self.diff_mcl_file).st_size != 0 or self.coreclr_args.diff_with_code_only:
+            if is_nonzero_length_file(self.diff_mcl_file) or self.coreclr_args.diff_with_code_only:
                 # AsmDiffs.
                 #
                 # Save the contents of the fail.mcl file to dig into failures.
@@ -1865,11 +1888,6 @@ def setup_args(args):
                             "existing_temp_dir",
                             lambda unused: True,
                             "Unable to set existing_temp_dir.")
-
-        coreclr_args.verify(args,
-                            "assume_unclean_mch",
-                            lambda unused: True,
-                            "Unable to set assume_unclean_mch.")
 
         coreclr_args.verify(args,
                             "has_run_collection_command",
