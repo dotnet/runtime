@@ -203,7 +203,8 @@ namespace
         _X("JIT_PATH"),
         _X("STARTUP_HOOKS"),
         _X("APP_PATHS"),
-        _X("APP_NI_PATHS")
+        _X("APP_NI_PATHS"),
+        _X("FX_RESOLUTION")
     };
 
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");

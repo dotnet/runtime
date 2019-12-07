@@ -67,6 +67,7 @@ enum class common_property
     StartUpHooks,
     AppPaths,
     AppNIPaths,
+    FxResolution,
 
     // Sentinel value - new values should be defined above
     Last
