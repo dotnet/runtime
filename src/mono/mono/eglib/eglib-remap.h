@@ -124,6 +124,7 @@
 #define g_mem_set_vtable monoeg_g_mem_set_vtable
 #define g_mem_get_vtable monoeg_g_mem_get_vtable
 #define g_mkdtemp monoeg_g_mkdtemp
+#define g_module_address monoeg_g_module_address
 #define g_module_build_path monoeg_g_module_build_path
 #define g_module_close monoeg_g_module_close
 #define g_module_error monoeg_g_module_error
