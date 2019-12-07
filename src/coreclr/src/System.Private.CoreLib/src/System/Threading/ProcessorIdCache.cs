@@ -183,7 +183,14 @@ namespace System.Threading
             }
 
             // Make sure the result was not negative, which would indicate "Not Supported"
-            return id >= 0;
+            if (id < 0)
+            {
+                return false;
+            }
+
+            // GetCurrentProcessorNumber  is fast, no more checks needed.
+            s_CalibrationSamples = null;
+            return true;
         }
 
         // NoInlining is to make sure JIT does not CSE and to have a better perf proxy for TLS access.
