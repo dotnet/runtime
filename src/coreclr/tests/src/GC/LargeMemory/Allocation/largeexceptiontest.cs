@@ -52,9 +52,9 @@ public sealed class LargeExceptionTest {
             throw;
         }
 
-	int availableMem = MemCheck.GetPhysicalMem();
-        if (availableMem != -1 && availableMem < sizeInMB){
-            sizeInMB = (uint)(availableMem > 300 ? 300 : (availableMem / 2));
+        uint? availableMem = MemCheck.TryGetPhysicalMemMB();
+        if (availableMem != null && availableMem < sizeInMB){
+            sizeInMB = availableMem > 300 ? 300 : (availableMem.Value / 2);
             Console.WriteLine("Not enough memory. Allocating " + sizeInMB + "MB instead.");
         }
 
