@@ -12515,25 +12515,49 @@ DONE_MORPHING_CHILDREN:
                 op2 = tree->AsOp()->gtOp2;
             }
 
-            /* See if we can fold GT_ADD nodes. */
-
-            if (oper == GT_ADD)
+            // See if we can fold constants for commutative operators.
+            if (tree->OperIs(GT_OR, GT_XOR, GT_AND, GT_ADD))
             {
-                /* Fold "((x+icon1)+(y+icon2)) to ((x+y)+(icon1+icon2))" */
-
-                if (op1->gtOper == GT_ADD && op2->gtOper == GT_ADD && !gtIsActiveCSE_Candidate(op2) &&
-                    op1->AsOp()->gtOp2->gtOper == GT_CNS_INT && op2->AsOp()->gtOp2->gtOper == GT_CNS_INT &&
-                    !op1->gtOverflow() && !op2->gtOverflow())
+                // Fold "((x <op> icon1) <op> (y <op> icon2))" to "((x <op> y) <op> (icon1 <op> icon2))"
+                if (op1->OperIs(op2->OperGet()) && op1->OperIs(oper) && !gtIsActiveCSE_Candidate(op2) &&
+                    op1->AsOp()->gtGetOp2()->IsCnsIntOrI() && op2->AsOp()->gtGetOp2()->IsCnsIntOrI())
                 {
                     // Don't create a byref pointer that may point outside of the ref object.
                     // If a GC happens, the byref won't get updated. This can happen if one
                     // of the int components is negative. It also requires the address generation
                     // be in a fully-interruptible code region.
-                    if (!varTypeIsGC(op1->AsOp()->gtOp1->TypeGet()) && !varTypeIsGC(op2->AsOp()->gtOp1->TypeGet()))
+                    if (!varTypeIsGC(op1->AsOp()->gtGetOp1()->TypeGet()) &&
+                        !varTypeIsGC(op2->AsOp()->gtGetOp1()->TypeGet()))
                     {
-                        cns1 = op1->AsOp()->gtOp2;
-                        cns2 = op2->AsOp()->gtOp2;
-                        cns1->AsIntCon()->gtIconVal += cns2->AsIntCon()->gtIconVal;
+                        cns1 = op1->AsOp()->gtGetOp2();
+                        cns2 = op2->AsOp()->gtGetOp2();
+                        ssize_t icon1 = cns1->AsIntCon()->IconValue();
+                        ssize_t icon2 = cns2->AsIntCon()->IconValue();
+
+                        if (oper == GT_ADD)
+                        {
+                            if (op1->gtOverflow() || op2->gtOverflow())
+                            {
+                                break;
+                            }
+                            cns1->AsIntCon()->SetIconValue(icon1 + icon2);
+                        }
+                        else if (oper == GT_OR)
+                        {
+                            cns1->AsIntCon()->SetIconValue(icon1 | icon2);
+                        }
+                        else if (oper == GT_XOR)
+                        {
+                            cns1->AsIntCon()->SetIconValue(icon1 ^ icon2);
+                        }
+                        else if (oper == GT_AND)
+                        {
+                            cns1->AsIntCon()->SetIconValue(icon1 & icon2);
+                        }
+                        else
+                        {
+                            noway_assert(!"unexpected operator");
+                        }
 #ifdef _TARGET_64BIT_
                         if (cns1->TypeGet() == TYP_INT)
                         {
@@ -12554,20 +12578,44 @@ DONE_MORPHING_CHILDREN:
 
                 if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ))
                 {
-                    /* Fold "((x+icon1)+icon2) to (x+(icon1+icon2))" */
+                    // Fold "((x <op> icon1) <op> icon2) to (x <op> (icon1 <op> icon2))"
                     CLANG_FORMAT_COMMENT_ANCHOR;
 
-                    if (op1->gtOper == GT_ADD &&                             //
-                        !gtIsActiveCSE_Candidate(op1) &&                     //
-                        !op1->gtOverflow() &&                                //
-                        op1->AsOp()->gtOp2->IsCnsIntOrI() &&                 //
-                        (op1->AsOp()->gtOp2->OperGet() == op2->OperGet()) && //
-                        (op1->AsOp()->gtOp2->TypeGet() != TYP_REF) &&        // Don't fold REFs
-                        (op2->TypeGet() != TYP_REF))                         // Don't fold REFs
+                    if (op1->OperIs(oper) &&                                      //
+                        !gtIsActiveCSE_Candidate(op1) &&                          //
+                        op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&                 //
+                        (op1->AsOp()->gtGetOp2()->OperGet() == op2->OperGet()) && //
+                        (op1->AsOp()->gtGetOp2()->TypeGet() != TYP_REF) &&        // Don't fold REFs
+                        (op2->TypeGet() != TYP_REF))                              // Don't fold REFs
                     {
-                        cns1 = op1->AsOp()->gtOp2;
-                        op2->AsIntConCommon()->SetIconValue(cns1->AsIntConCommon()->IconValue() +
-                                                            op2->AsIntConCommon()->IconValue());
+                        cns1 = op1->AsOp()->gtGetOp2();
+                        ssize_t icon1 = cns1->AsIntConCommon()->IconValue();
+                        ssize_t icon2 = op2->AsIntConCommon()->IconValue();
+
+                        if (oper == GT_ADD)
+                        {
+                            if (op1->gtOverflow())
+                            {
+                                break;
+                            }
+                            op2->AsIntConCommon()->SetIconValue(icon1 + icon2);
+                        }
+                        else if (oper == GT_OR)
+                        {
+                            op2->AsIntConCommon()->SetIconValue(icon1 | icon2);
+                        }
+                        else if (oper == GT_XOR)
+                        {
+                            op2->AsIntConCommon()->SetIconValue(icon1 ^ icon2);
+                        }
+                        else if (oper == GT_AND)
+                        {
+                            op2->AsIntConCommon()->SetIconValue(icon1 & icon2);
+                        }
+                        else
+                        {
+                            noway_assert(!"unexpected operator");
+                        }
 #ifdef _TARGET_64BIT_
                         if (op2->TypeGet() == TYP_INT)
                         {
@@ -12588,9 +12636,9 @@ DONE_MORPHING_CHILDREN:
                         op1 = tree->AsOp()->gtOp1;
                     }
 
-                    // Fold (x + 0).
-
-                    if ((op2->AsIntConCommon()->IconValue() == 0) && !gtIsActiveCSE_Candidate(tree))
+                    // Fold (x <op> 0) for GT_ADD, GT_OR and GT_XOR.
+                    if (tree->OperIs(GT_ADD, GT_OR, GT_XOR) && (op2->AsIntConCommon()->IconValue() == 0) &&
+                        !gtIsActiveCSE_Candidate(tree))
                     {
 
                         // If this addition is adding an offset to a null pointer,
@@ -12752,7 +12800,7 @@ DONE_MORPHING_CHILDREN:
                     goto DONE_MORPHING_CHILDREN;
                 }
             }
-            else if (fgOperIsBitwiseRotationRoot(oper))
+            if (fgOperIsBitwiseRotationRoot(oper))
             {
                 tree = fgRecognizeAndMorphBitwiseRotation(tree);
 
