@@ -444,7 +444,6 @@
   <!-- WinHttpHandler implementation -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
-    <Compile Include="System\Net\Http\HttpClientHandler.netcoreapp.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
   </ItemGroup>
   <!-- Compile the WinHttpHandler implementation into the System.Net.Http.dll binary.  This is a
@@ -467,7 +466,6 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
-    <Compile Include="System\Net\Http\HttpClientHandler.netcoreapp.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Unix.cs" />
     <Compile Include="$(CommonPath)System\StrongToWeakReference.cs">
       <Link>Common\Interop\Unix\StrongToWeakReference.cs</Link>
