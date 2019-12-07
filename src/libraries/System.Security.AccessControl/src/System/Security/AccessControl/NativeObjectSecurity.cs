@@ -14,6 +14,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
@@ -144,6 +145,14 @@ namespace System.Security.AccessControl
                     else if (error == Interop.Errors.ERROR_FILE_NOT_FOUND)
                     {
                         exception = (name == null ? new FileNotFoundException() : new FileNotFoundException(name));
+                    }
+                    else if (error == Interop.Errors.ERROR_PATH_NOT_FOUND)
+                    {
+                        exception = isContainer switch
+                        {
+                            false => (name == null ? new FileNotFoundException()      : new FileNotFoundException(name)),
+                            true  => (name == null ? new DirectoryNotFoundException() : new DirectoryNotFoundException(name))
+                        };
                     }
                     else if (error == Interop.Errors.ERROR_NO_SECURITY_ON_OBJECT)
                     {

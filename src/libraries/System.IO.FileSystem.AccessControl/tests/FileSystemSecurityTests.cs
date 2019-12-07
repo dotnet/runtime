@@ -4,10 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -15,6 +18,10 @@ namespace System.IO
 {
     public class FileSystemSecurityTests
     {
+        // Max file name length in NTFS and FAT32 is 255
+        // https://docs.microsoft.com/en-us/windows/win32/fileio/filesystem-functionality-comparison?redirectedfrom=MSDN#limits
+        private const int MaxFileNameLength = 255;
+
         [Fact]
         public void AddAccessRule_InvalidFileSystemAccessRule()
         {
@@ -408,6 +415,86 @@ namespace System.IO
             var fileSecurity = new FileSecurity();
             Type type = fileSecurity.AuditRuleType;
             Assert.Equal(typeof(FileSystemAuditRule), type);
+        }
+
+        [Fact]
+        public void DirNotFound_DirectorySecurity()
+        {
+            using TempDirectory tempDirectory = new TempDirectory();
+            {
+                string longDir = CreateLongDirectory(tempDirectory.Path, create: false);
+                Assert.Throws<DirectoryNotFoundException>(() =>
+                {
+                    var security = new DirectorySecurity(longDir, AccessControlSections.Owner);
+                });
+            }
+        }
+
+        [Fact]
+        public void FileNotFound_FileSecurity()
+        {
+            using TempDirectory tempDirectory = new TempDirectory();
+            {
+                string longDir = CreateLongDirectory(tempDirectory.Path, create: false);
+                string filePath = Path.Combine(longDir, "file.txt");
+                Assert.Throws<FileNotFoundException>(() =>
+                {
+                    var security = new FileSecurity(filePath, AccessControlSections.Owner);
+                });
+            }
+        }
+
+        [Fact]
+        public void MaxLengthPath_DirectorySecurity()
+        {
+            using TempDirectory tempDirectory = new TempDirectory();
+            {
+                string longDir = CreateLongDirectory(tempDirectory.Path);
+                var security = new DirectorySecurity(longDir, AccessControlSections.Owner);
+                Assert.NotNull(security);
+            }
+        }
+
+        [Fact]
+        public void MaxLengthPath_FileSecurity()
+        {
+            using (TempDirectory tempDirectory = new TempDirectory())
+            {
+                string longDir = CreateLongDirectory(tempDirectory.Path);
+                using TempFile tempFile = new TempFile(Path.Combine(longDir, "file.txt"));
+                var security = new FileSecurity(tempFile.Path, AccessControlSections.Owner);
+                Assert.NotNull(security);
+            }
+        }
+
+        private string CreateLongDirectory(string basePath, bool create = true)
+        {
+            string fullPath = Path.Combine(basePath, GetRandomName(), GetRandomName(), GetRandomName(), GetRandomName(), GetRandomName());
+
+            if (create)
+            {
+                Directory.CreateDirectory(fullPath);
+            }
+
+            return fullPath;
+        }
+
+        private string GetRandomName()
+        {
+            string guid = Guid.NewGuid().ToString("N");
+            StringBuilder sb = new StringBuilder(MaxFileNameLength, MaxFileNameLength);
+            while (sb.Length < MaxFileNameLength)
+            {
+                try
+                {
+                    sb.Append(guid);
+                }
+                catch
+                {
+                    sb.Append(guid.Substring(0, MaxFileNameLength - sb.Length));
+                }
+            }
+            return sb.ToString();
         }
     }
 }

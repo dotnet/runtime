@@ -19,7 +19,7 @@ namespace System.Security.AccessControl
         }
 
         internal FileSystemSecurity(bool isContainer, string name, AccessControlSections includeSections, bool isDirectory)
-            : base(isContainer, s_ResourceType, name, includeSections, _HandleErrorCode, isDirectory)
+            : base(isContainer, s_ResourceType, PathInternal.EnsureExtendedPrefixIfNeeded(Path.GetFullPath(name)), includeSections, _HandleErrorCode, isDirectory)
         {
         }
 
