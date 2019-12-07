@@ -23,6 +23,9 @@ jobs:
     # as a prepare step.
     workspace: ''
 
+    # This job runs within several Docker containers, so Build.SourcesDirectory is not accurate.
+    buildCommandSourcesDirectory: '/root/runtime/'
+
     buildVariables:
       # Preserve the NuGet authentication env vars into the Docker container.
       # The 'NuGetAuthenticate' build step may have set these.

@@ -24,6 +24,8 @@ parameters:
       release:
         _BuildConfig: Release
 
+  buildCommandSourcesDirectory: '$(Build.SourcesDirectory)/'
+
   liveCoreClrBuildConfig: ''
   liveLibrariesBuildConfig: ''
 
@@ -65,8 +67,8 @@ jobs:
 
   - name: LiveOverridePathArgs
     value: >-
-      /p:CoreCLROverridePath=$(CoreClrDownloadPath)
-      /p:CoreFXOverridePath=$(LibrariesDownloadPath)
+      /p:CoreCLROverridePath=${{ parameters.buildCommandSourcesDirectory }}$(CoreClrDownloadPath)
+      /p:CoreFXOverridePath=${{ parameters.buildCommandSourcesDirectory }}$(LibrariesDownloadPath)
 
   - name: CoreClrDownloadPath
     value: ''
@@ -81,7 +83,7 @@ jobs:
         parameters.archType,
         parameters.liveCoreClrBuildConfig) }}
     - name: CoreClrDownloadPath
-      value: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
+      value: 'artifacts/transport/coreclr'
     - name: CoreClrArtifactName
       value: CoreCLRProduct_$(liveCoreClrLegName)
 
@@ -93,7 +95,7 @@ jobs:
         parameters.archType,
         parameters.liveLibrariesBuildConfig) }}
     - name: LibrariesDownloadPath
-      value: '$(Build.SourcesDirectory)/artifacts/transport/libraries'
+      value: 'artifacts/transport/libraries'
     - name: LibrariesArtifactName
       value: libraries_bin_$(liveLibrariesLegName)
 
@@ -140,7 +142,7 @@ jobs:
   - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(CoreClrDownloadPath)
+        unpackFolder: $(Build.SourcesDirectory)/$(CoreClrDownloadPath)
         artifactFileName: '$(CoreClrArtifactName)$(archiveExtension)'
         artifactName: '$(CoreClrArtifactName)'
         displayName: 'CoreCLR artifacts'
@@ -148,7 +150,7 @@ jobs:
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(LibrariesDownloadPath)
+        unpackFolder: $(Build.SourcesDirectory)/$(LibrariesDownloadPath)
         artifactFileName: '$(LibrariesArtifactName)$(archiveExtension)'
         artifactName: '$(LibrariesArtifactName)'
         displayName: 'Libraries artifacts'
