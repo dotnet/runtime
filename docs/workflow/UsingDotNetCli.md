@@ -5,8 +5,8 @@ This walkthrough explains how to run against your local CoreCLR build using `dot
 
 For other walkthroughs see:
 
-- [Using Your Build - Update CoreCLR from raw binary output](UsingYourBuild.md)
-- [Using CoreRun To Run .NET Core Application](UsingCoreRun.md)
+- [Using Your Build - Update CoreCLR from raw binary output](./testing/UsingYourBuild.md)
+- [Using CoreRun To Run .NET Core Application](./testing/UsingCoreRun.md)
 - [Dogfooding .NET Core SDK](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md).
 
 ## Prerequisites
@@ -17,7 +17,7 @@ For other walkthroughs see:
     artifacts\bin\coreclr\<OS>.<arch>.<flavor>\.nuget\pkg\runtime.<OS>-<arch>.Microsoft.NETCore.Runtime.CoreCLR.<version>.nupkg
 ```
 
-2. Acquired the latest nightly .NET Core SDK from [here](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries) and added it's root folder to your [path](../building/windows-instructions.md#adding-to-the-default-path-variable)
+2. Acquired the latest nightly .NET Core SDK from [here](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries) and added it's root folder to your [path](./debugging/windows-instructions.md#adding-to-the-default-path-variable)
 
 ## First Run
 
