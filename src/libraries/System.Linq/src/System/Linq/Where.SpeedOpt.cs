@@ -76,7 +76,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TSource[] ToArray() => ToArrayArray<TSource>.Instance.ToArray(_source, _predicate);
+            public TSource[] ToArray() => ToArrayArrayWhere<TSource>.Instance.ToArray(_source, _predicate);
 
             public List<TSource> ToList()
             {
@@ -120,7 +120,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TSource[] ToArray() => ToArrayList<TSource>.Instance.ToArray(_source, _predicate);
+            public TSource[] ToArray() => ToArrayListWhere<TSource>.Instance.ToArray(_source, _predicate);
 
             public List<TSource> ToList()
             {
@@ -168,20 +168,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TResult[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TResult>(_source.Length);
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        builder.Add(_selector(item));
-                    }
-                }
-
-                return builder.ToArray();
-            }
+            public TResult[] ToArray() => ToArrayArrayWhereSelect<TSource, TResult>.Instance.ToArray(_source, _predicate, _selector);
 
             public List<TResult> ToList()
             {
@@ -229,21 +216,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TResult[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TResult>(_source.Count);
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        builder.Add(_selector(item));
-                    }
-                }
-
-                return builder.ToArray();
-            }
+            public TResult[] ToArray() => ToArrayListWhereSelect<TSource, TResult>.Instance.ToArray(_source, _predicate, _selector);
 
             public List<TResult> ToList()
             {
@@ -291,20 +264,7 @@ namespace System.Linq
                 return count;
             }
 
-            public TResult[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
-
-                foreach (TSource item in _source)
-                {
-                    if (_predicate(item))
-                    {
-                        builder.Add(_selector(item));
-                    }
-                }
-
-                return builder.ToArray();
-            }
+            public TResult[] ToArray() => ToArrayEnumerableWithSelect<TSource, TResult>.Instance.ToArray(_source, _predicate, _selector);
 
             public List<TResult> ToList()
             {

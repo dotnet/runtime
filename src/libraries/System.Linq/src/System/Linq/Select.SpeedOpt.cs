@@ -21,17 +21,7 @@ namespace System.Linq
 
         private sealed partial class SelectEnumerableIterator<TSource, TResult> : IIListProvider<TResult>
         {
-            public TResult[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
-
-                foreach (TSource item in _source)
-                {
-                    builder.Add(_selector(item));
-                }
-
-                return builder.ToArray();
-            }
+            public TResult[] ToArray() => ToArrayEnumerableWithSelect<TSource, TResult>.Instance.ToArray(_source, _selector);
 
             public List<TResult> ToList()
             {
@@ -597,12 +587,7 @@ namespace System.Linq
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
-                foreach (TSource input in _source)
-                {
-                    builder.Add(_selector(input));
-                }
-                return builder.ToArray();
+                return ToArrayEnumerableWithSelect<TSource, TResult>.Instance.ToArray(_source, _selector);
             }
 
             private TResult[] PreallocatingToArray(int count)
