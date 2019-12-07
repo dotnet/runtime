@@ -10,6 +10,13 @@ parameters:
   variables: {}
   pool: ''
 
+  # When set to a non-empty value (Debug / Release), it determines libraries
+  # build configuration to use for the tests. Setting this property implies
+  # a dependency of this job on the appropriate libraries build and is used
+  # to construct the name of the Azure artifact representing libraries build
+  # to use for building the tests.
+  liveLibrariesBuildConfig: ''
+
 ### Crossgen-comparison job
 ###
 ### Ensure that the output of cross-architecture, e.g. x64-hosted-arm-targeting,
@@ -23,6 +30,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'test/crossgen-comparison/'
     pool: ${{ parameters.pool }}
 
@@ -59,7 +67,10 @@ jobs:
     - ${{ parameters.variables }}
 
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    dependsOn:
+    - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -77,6 +88,16 @@ jobs:
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
         artifactName: '$(buildProductArtifactName)'
         displayName: 'product build'
+
+    # Optionally download live-built libraries
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesBuildArtifactName)'
+          displayName: 'live-built libraries'
 
 
     # Create directories and ensure crossgen is executable
