@@ -31,6 +31,7 @@
     <Compile Include="NewtonsoftTests\EnumConverterTests.cs" />
     <Compile Include="NewtonsoftTests\ImmutableCollectionsTests.cs" />
     <Compile Include="NewtonsoftTests\JsonSerializerTests.cs" />
+    <Compile Include="Serialization\ReferenceHandlingTests.Serialize.cs" />
     <Compile Include="Serialization\Array.ReadTests.cs" />
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
@@ -75,6 +76,7 @@
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="Serialization\ReadValueTests.cs" />
     <Compile Include="Serialization\SampleTestData.OrderPayload.cs" />
+    <Compile Include="Serialization\ReferenceHandlingTests.Deserialize.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />

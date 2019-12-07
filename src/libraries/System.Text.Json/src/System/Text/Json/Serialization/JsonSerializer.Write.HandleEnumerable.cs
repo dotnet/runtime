@@ -33,15 +33,28 @@ namespace System.Text.Json
 
                     if (state.Current.PopStackOnEndCollection)
                     {
-                        state.Pop();
+                        state.Pop(writer, options);
                     }
 
                     return true;
                 }
 
+                ResolvedReferenceHandling handling = options.HandleReference(ref state, out string referenceId, out bool writeAsReference, enumerable);
+
+                if (handling == ResolvedReferenceHandling.Ignore)
+                {
+                    //Reference loop found and ignore handling specified, do not write anything and pop the frame from the stack in case the array has an independant frame.
+                    return WriteEndArray(ref state, writer, options);
+                }
                 state.Current.CollectionEnumerator = enumerable.GetEnumerator();
 
-                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
+                options.WriteStart(ref state.Current, ClassType.Enumerable, writer, options, writeAsReference: writeAsReference, referenceId: referenceId);
+
+                if (handling == ResolvedReferenceHandling.IsReference)
+                {
+                    // We don't need to enumerate, this is a reference and was already written in WriteObjectOrArrayStart.
+                    return WriteEndArray(ref state, writer, options);
+                }
             }
 
             if (state.Current.CollectionEnumerator.MoveNext())
@@ -64,6 +77,7 @@ namespace System.Text.Json
                 }
                 else
                 {
+                    JsonPropertyInfo previousPropertyInfo = state.Current.JsonPropertyInfo;
                     // An object or another enumerator requires a new stack frame.
                     object nextValue = state.Current.CollectionEnumerator.Current;
                     state.Push(elementClassInfo, nextValue);
@@ -75,12 +89,23 @@ namespace System.Text.Json
             // We are done enumerating.
             writer.WriteEndArray();
 
+            if (state.Current.WriteWrappingBraceOnEndCollection)
+            {
+                writer.WriteEndObject();
+            }
+
+            return WriteEndArray(ref state, writer, options);
+        }
+
+        private static bool WriteEndArray(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options)
+        {
             if (state.Current.PopStackOnEndCollection)
             {
-                state.Pop();
+                state.Pop(writer, options);
             }
             else
             {
+                options.PopReference(ref state, true);
                 state.Current.EndArray();
             }
 

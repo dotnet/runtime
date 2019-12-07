@@ -37,6 +37,16 @@ namespace System.Text.Json
         // The current JSON data for a property does not match a given POCO, so ignore the property (recursively).
         public bool Drain;
 
+        // Preserve Reference
+        public bool IsPreserved;
+        public bool IsPreservedArray;
+        public bool DictionaryPropertyIsPreserved;
+        public bool ShouldHandleReference;
+        public bool ReadMetadataValue;
+        public MetadataPropertyName MetadataProperty;
+        public string ReferenceId;
+        public object DictionaryCandidate;
+
         // Support IDictionary constructible types, i.e. types that we
         // support by passing and IDictionary to their constructors:
         // immutable dictionaries, Hashtable, SortedList
@@ -162,6 +172,9 @@ namespace System.Text.Json
             JsonClassInfo = null;
             PropertyRefCache = null;
             ReturnValue = null;
+            IsPreserved = false;
+            DictionaryPropertyIsPreserved = false;
+            IsPreservedArray = false;
             EndObject();
         }
 

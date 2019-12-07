@@ -20,6 +20,15 @@
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
+    <Compile Include="System\Text\Json\Serialization\BidirectionalDictionary.cs" />
+    <Compile Include="System\Text\Json\Serialization\DefaultReferenceResolver.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceEqualsEqualityComparer.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandling.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandlingStrategy.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceResolver.cs" />
+    <Compile Include="System\Text\Json\Serialization\ResolvedReferenceHandling.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleReferences.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.Serialization.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />

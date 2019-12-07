@@ -25,6 +25,7 @@ namespace System.Text.Json
         private JsonNamingPolicy _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private JavaScriptEncoder _encoder;
+        private ReferenceHandling _referenceHandling = ReferenceHandling.Default;
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
@@ -33,6 +34,11 @@ namespace System.Text.Json
         private bool _ignoreReadOnlyProperties;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
+
+        // Reference Handling delegates for Serialization.
+        internal ReferenceHandlingStrategy HandleReference = JsonSerializer.DefaultOnReferencesStrategy;
+        internal WriteStart WriteStart = JsonSerializer.WriteObjectOrArrayStart;
+        internal PopReference PopReference = JsonSerializer.DefaultPopReference;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -293,6 +299,22 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _writeIndented = value;
+            }
+        }
+
+        /// <summary>
+        /// Defines how references are treated when writing/reading JSON, this is convenient to deal with circularity.
+        /// </summary>
+        public ReferenceHandling ReferenceHandling
+        {
+            get => _referenceHandling;
+            set
+            {
+                VerifyMutable();
+
+                _referenceHandling = value;
+
+                JsonSerializer.SetReferenceHandlingDelegates(this);
             }
         }
 

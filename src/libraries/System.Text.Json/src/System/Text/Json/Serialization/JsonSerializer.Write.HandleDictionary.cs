@@ -35,10 +35,17 @@ namespace System.Text.Json
 
                     if (state.Current.PopStackOnEndCollection)
                     {
-                        state.Pop();
+                        state.Pop(writer, options);
                     }
 
                     return true;
+                }
+
+                ResolvedReferenceHandling handling = options.HandleReference(ref state, out string referenceId, out bool writeAsReference, enumerable);
+                if (handling == ResolvedReferenceHandling.Ignore)
+                {
+                    //Reference loop found, do not write anything and pop the frame from the stack.
+                    return WriteEndDictionary(ref state, writer, options);
                 }
 
                 // Let the dictionary return the default IEnumerator from its IEnumerable.GetEnumerator().
@@ -49,7 +56,13 @@ namespace System.Text.Json
 
                 if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
                 {
-                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
+                    options.WriteStart(ref state.Current, ClassType.Dictionary, writer, options, writeAsReference: writeAsReference, referenceId: referenceId);
+                }
+
+                // Return when writeAsReference is true.
+                if (handling == ResolvedReferenceHandling.IsReference)
+                {
+                    return WriteEndDictionary(ref state, writer, options);
                 }
             }
 
@@ -105,12 +118,18 @@ namespace System.Text.Json
                 writer.WriteEndObject();
             }
 
+            return WriteEndDictionary(ref state, writer, options);
+        }
+
+        private static bool WriteEndDictionary(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options)
+        {
             if (state.Current.PopStackOnEndCollection)
             {
-                state.Pop();
+                state.Pop(writer, options);
             }
             else
             {
+                options.PopReference(ref state, true);
                 state.Current.EndDictionary();
             }
 

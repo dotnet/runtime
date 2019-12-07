@@ -28,6 +28,9 @@ namespace System.Text.Json
         public bool StartObjectWritten;
         public bool MoveToNextProperty;
 
+        public bool WriteWrappingBraceOnEndCollection;
+        public bool KeepReferenceInSet;
+
         // The current property.
         public int PropertyEnumeratorIndex;
         public ExtensionDataWriteStatus ExtensionDataStatus;
@@ -86,6 +89,90 @@ namespace System.Text.Json
             {
                 Debug.Assert(classType == ClassType.Enumerable);
                 writer.WriteStartArray(propertyName);
+            }
+        }
+
+        public void WriteReferenceObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, JsonSerializerOptions options, bool writeNull = false, bool writeAsReference = false, string referenceId = null)
+        {
+            if (JsonPropertyInfo?.EscapedName.HasValue == true)
+            {
+                WriteReferenceObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName.Value, writer, writeNull, writeAsReference, referenceId);
+            }
+            else if (KeyName != null)
+            {
+                JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName, options.Encoder);
+                WriteReferenceObjectOrArrayStart(classType, propertyName, writer, writeNull, writeAsReference, referenceId);
+            }
+            else
+            {
+                Debug.Assert(writeNull == false);
+                // Write start without a property name.
+                if (writeAsReference)
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("$ref", referenceId);
+                    writer.WriteEndObject();
+                }
+                else if (classType == ClassType.Object || classType == ClassType.Dictionary)
+                {
+                    writer.WriteStartObject();
+                    if (referenceId != null)
+                    {
+                        writer.WriteString("$id", referenceId);
+                    }
+                    StartObjectWritten = true;
+                }
+                else
+                {
+                    Debug.Assert(classType == ClassType.Enumerable);
+                    if (referenceId != null) // wrap array into an object with $id and $values metadata properties.
+                    {
+                        writer.WriteStartObject();
+                        writer.WriteString("$id", referenceId); //it can be WriteString.
+                        writer.WritePropertyName("$values");
+                        WriteWrappingBraceOnEndCollection = true;
+                    }
+                    writer.WriteStartArray();
+                }
+            }
+        }
+
+        private void WriteReferenceObjectOrArrayStart(ClassType classType, JsonEncodedText propertyName, Utf8JsonWriter writer, bool writeNull, bool writeAsReference, string referenceId)
+        {
+            if (writeNull)
+            {
+                writer.WriteNull(propertyName);
+            }
+            else if (writeAsReference) //is a reference? write { "$ref": "1" } regardless of the type.
+            {
+                writer.WriteStartObject(propertyName);
+                writer.WriteString("$ref", referenceId.ToString());
+                writer.WriteEndObject();
+            }
+            else if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
+            {
+                writer.WriteStartObject(propertyName);
+                StartObjectWritten = true;
+                if (referenceId != null)
+                {
+                    writer.WriteString("$id", referenceId);
+                }
+            }
+            else
+            {
+                Debug.Assert(classType == ClassType.Enumerable);
+                if (referenceId != null) // new reference? wrap array into an object with $id and $values metadata properties
+                {
+                    writer.WriteStartObject(propertyName);
+                    writer.WriteString("$id", referenceId); //it can be WriteString.
+                    writer.WritePropertyName("$values");
+                    writer.WriteStartArray();
+                    WriteWrappingBraceOnEndCollection = true;
+                }
+                else
+                {
+                    writer.WriteStartArray(propertyName);
+                }
             }
         }
 

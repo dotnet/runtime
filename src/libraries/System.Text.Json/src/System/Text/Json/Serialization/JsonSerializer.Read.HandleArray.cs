@@ -192,7 +192,7 @@ namespace System.Text.Json
                     JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
 
                     object currentEnumerable = jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
-                    if (currentEnumerable == null)
+                    if (currentEnumerable == null || !state.Current.CollectionPropertyInitialized)
                     {
                         jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
                     }

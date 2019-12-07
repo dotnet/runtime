@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -138,6 +139,32 @@ namespace System.Text.Json
             }
 
             writer.Flush();
+        }
+
+
+        internal static void SetReferenceHandlingDelegates(JsonSerializerOptions options)
+        {
+            if (options.ReferenceHandling.PreserveHandlingOnSerialize == PreserveReferencesHandling.All)
+            {
+                options.WriteStart = WriteReferenceObjectOrArrayStart;
+                options.HandleReference = PreserveReferencesStrategy;
+                options.PopReference = (ref WriteStack _, bool __) => { }; //enpty delegate, we dont need to use the reference stack when optiong-in for preserve.
+            }
+            else
+            {
+                if (options.ReferenceHandling.LoopHandling == ReferenceLoopHandling.Ignore)
+                {
+                    options.WriteStart = WriteObjectOrArrayStart;
+                    options.HandleReference = IgnoreReferencesStrategy;
+                    options.PopReference = PopReference;
+                }
+                else
+                {
+                    options.HandleReference = DefaultOnReferencesStrategy;
+                    options.WriteStart = WriteObjectOrArrayStart;
+                    options.PopReference = DefaultPopReference;
+                }
+            }
         }
     }
 }

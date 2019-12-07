@@ -15,6 +15,9 @@ namespace System.Text.Json
         private List<WriteStackFrame> _previous;
         private int _index;
 
+        private ReferenceResolver _referenceResolver;
+        private HashSet<object> _referenceStack;
+
         public void Push()
         {
             if (_previous == null)
@@ -59,9 +62,12 @@ namespace System.Text.Json
             }
         }
 
-        public void Pop()
+        public void Pop(Utf8JsonWriter writer, JsonSerializerOptions options)
         {
             Debug.Assert(_index > 0);
+
+            options.PopReference(ref this, false);
+
             Current = _previous[--_index];
         }
 
@@ -104,6 +110,32 @@ namespace System.Text.Json
                     sb.Append(propertyName);
                 }
             }
+        }
+
+        public bool AddStackReference(object value)
+        {
+            if (_referenceStack == null)
+            {
+                _referenceStack = new HashSet<object>(ReferenceEqualsEqualityComparer<object>.Comparer);
+            }
+
+            return _referenceStack.Add(value);
+        }
+
+        public void PopStackReference(object value) => _referenceStack?.Remove(value);
+
+        // true if reference already existed; otherwise, false;
+        public bool GetPreservedReference(object value, out string id)
+        {
+            if (_referenceResolver == null)
+            {
+                _referenceResolver = new DefaultReferenceResolver();
+            }
+
+            bool isReference = _referenceResolver.IsReferenced(value);
+            id = _referenceResolver.GetReference(value);
+
+            return isReference;
         }
     }
 }

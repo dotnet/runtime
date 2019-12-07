@@ -72,6 +72,7 @@ namespace System.Text.Json
                 WriteStack state = default;
                 state.Current.Initialize(inputType, options);
                 state.Current.CurrentValue = value;
+                SetReferenceHandlingDelegates(options);
 
                 bool isFinalBlock;
                 int flushThreshold;

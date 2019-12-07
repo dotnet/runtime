@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text.Json.Serialization;
+
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
@@ -14,7 +16,15 @@ namespace System.Text.Json
             ReadStack state = default;
             state.Current.Initialize(returnType, options);
 
-            ReadCore(options, ref reader, ref state);
+            if (options.ReferenceHandling.PreserveHandlingOnDeserialize == PreserveReferencesHandling.All)
+            {
+                ReadCoreRef(options, ref reader, ref state);
+
+            }
+            else
+            {
+                ReadCore(options, ref reader, ref state);
+            }
 
             return state.Current.ReturnValue;
         }

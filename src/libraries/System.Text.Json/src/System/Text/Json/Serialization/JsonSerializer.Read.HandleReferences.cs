@@ -14,7 +14,7 @@ namespace System.Text.Json
     /// </summary>
     public static partial class JsonSerializer
     {
-        private static void ReadCore(
+        private static void ReadCoreRef(
             JsonSerializerOptions options,
             ref Utf8JsonReader reader,
             ref ReadStack readStack)
@@ -43,17 +43,28 @@ namespace System.Text.Json
 
                     JsonTokenType tokenType = reader.TokenType;
 
+                    if (readStack.Current.MetadataProperty == MetadataPropertyName.Values)
+                    {
+                        if (tokenType != JsonTokenType.StartArray)
+                        {
+                            throw new JsonException("Invalid array for $values property.");
+                        }
+                        else
+                        {
+                            readStack.Current.MetadataProperty = MetadataPropertyName.NoMetadata;
+                        }
+                    }
+
                     if (JsonHelpers.IsInRangeInclusive(tokenType, JsonTokenType.String, JsonTokenType.False))
                     {
                         Debug.Assert(tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number || tokenType == JsonTokenType.True || tokenType == JsonTokenType.False);
 
                         //HandleValue(tokenType, options, ref reader, ref readStack);
-                        HandleValue(tokenType, options, ref reader, ref readStack);
+                        HandleValueRef(tokenType, options, ref reader, ref readStack);
                     }
                     else if (tokenType == JsonTokenType.PropertyName)
                     {
-                        //HandlePropertyName(options, ref reader, ref readStack);
-                        HandlePropertyName(options, ref reader, ref readStack);
+                        HandlePropertyNameRef(options, ref reader, ref readStack);
                     }
                     else if (tokenType == JsonTokenType.StartObject)
                     {
@@ -72,17 +83,20 @@ namespace System.Text.Json
                         }
                         else if (readStack.Current.IsProcessingDictionary())
                         {
-                            //HandleStartDictionary(options, ref readStack);
-                            HandleStartDictionary(options, ref readStack);
+                            HandleStartDictionaryRef(options, ref readStack);
                         }
                         else
                         {
-                            HandleStartObject(options, ref readStack);
+                            HandleStartObjectRef(options, ref readStack);
                         }
                     }
                     else if (tokenType == JsonTokenType.EndObject)
                     {
-                        if (readStack.Current.Drain)
+                        if (readStack.Current.ShouldHandleReference)
+                        {
+                            HandleReference(options, ref readStack, ref reader);
+                        }
+                        else if (readStack.Current.Drain)
                         {
                             readStack.Pop();
 
@@ -92,11 +106,11 @@ namespace System.Text.Json
                         }
                         else if (readStack.Current.IsProcessingDictionary())
                         {
-                            HandleEndDictionary(options, ref readStack);
+                            HandleEndDictionaryRef(options, ref readStack);
                         }
                         else
                         {
-                            HandleEndObject(ref readStack);
+                            HandleEndObjectRef(ref readStack);
                         }
                     }
                     else if (tokenType == JsonTokenType.StartArray)
@@ -141,69 +155,6 @@ namespace System.Text.Json
             }
 
             readStack.BytesConsumed += reader.BytesConsumed;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool HandleObjectAsValue(
-            JsonTokenType tokenType,
-            JsonSerializerOptions options,
-            ref Utf8JsonReader reader,
-            ref ReadStack readStack,
-            ref JsonReaderState initialState,
-            long initialBytesConsumed)
-        {
-            if (readStack.ReadAhead)
-            {
-                // Attempt to skip to make sure we have all the data we need.
-                bool complete = reader.TrySkip();
-
-                // We need to restore the state in all cases as we need to be positioned back before
-                // the current token to either attempt to skip again or to actually read the value in
-                // HandleValue below.
-
-                reader = new Utf8JsonReader(
-                    reader.OriginalSpan.Slice(checked((int)initialBytesConsumed)),
-                    isFinalBlock: reader.IsFinalBlock,
-                    state: initialState);
-                Debug.Assert(reader.BytesConsumed == 0);
-                readStack.BytesConsumed += initialBytesConsumed;
-
-                if (!complete)
-                {
-                    // Couldn't read to the end of the object, exit out to get more data in the buffer.
-                    return false;
-                }
-
-                // Success, requeue the reader to the token for HandleValue.
-                reader.Read();
-                Debug.Assert(tokenType == reader.TokenType);
-            }
-
-            HandleValue(tokenType, options, ref reader, ref readStack);
-            return true;
-        }
-
-        private static ReadOnlySpan<byte> GetUnescapedString(ReadOnlySpan<byte> utf8Source, int idx)
-        {
-            // The escaped name is always longer than the unescaped, so it is safe to use escaped name for the buffer length.
-            int length = utf8Source.Length;
-            byte[] pooledName = null;
-
-            Span<byte> unescapedName = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
-                (pooledName = ArrayPool<byte>.Shared.Rent(length));
-
-            JsonReaderHelper.Unescape(utf8Source, unescapedName, idx, out int written);
-            ReadOnlySpan<byte> propertyName = unescapedName.Slice(0, written).ToArray();
-
-            if (pooledName != null)
-            {
-                // We clear the array because it is "user data" (although a property name).
-                new Span<byte>(pooledName, 0, written).Clear();
-                ArrayPool<byte>.Shared.Return(pooledName);
-            }
-
-            return propertyName;
         }
     }
 }

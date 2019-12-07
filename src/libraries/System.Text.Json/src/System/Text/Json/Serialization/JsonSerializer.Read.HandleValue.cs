@@ -29,5 +29,31 @@ namespace System.Text.Json
 
             jsonPropertyInfo.Read(tokenType, ref state, ref reader);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void HandleValueRef(JsonTokenType tokenType, JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
+        {
+            if (state.Current.SkipProperty)
+            {
+                return;
+            }
+
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
+            if (jsonPropertyInfo == null)
+            {
+                jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootProperty(options);
+            }
+            else if (state.Current.JsonClassInfo.ClassType == ClassType.Unknown)
+            {
+                jsonPropertyInfo = state.Current.JsonClassInfo.GetOrAddPolymorphicProperty(jsonPropertyInfo, typeof(object), options);
+            }
+            else if (state.Current.ReadMetadataValue)
+            {
+                HandleMetadataPropertyValue(ref reader, ref state);
+                return;
+            }
+
+            jsonPropertyInfo.Read(tokenType, ref state, ref reader);
+        }
     }
 }
