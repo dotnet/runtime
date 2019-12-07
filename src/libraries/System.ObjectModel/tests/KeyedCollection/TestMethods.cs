@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
 {
-    public abstract partial class KeyedCollectionTests<TKey, TValue>
+    public abstract class KeyedCollectionTests<TKey, TValue>
         where TValue : IComparable<TValue> where TKey : IEquatable<TKey>
     {
         private static readonly bool s_keyNullable = default(TKey)
@@ -2017,6 +2017,55 @@ namespace System.Collections.ObjectModel.Tests
                     insert(collection, collection.Count, tempKeyedItem);
                     collection.Verify(keys, items, itemsWithKeys);
                 }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ContainsKeyData))]
+        public void TryGetValue(
+            int collectionSize,
+            Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
+                generateKeyedItem)
+        {
+            TKey[] keys;
+            IKeyedItem<TKey, TValue>[] items;
+            IKeyedItem<TKey, TValue>[] itemsWithKeys;
+            var collection =
+                new TestKeyedCollectionOfIKeyedItem<TKey, TValue>();
+            collection.AddItems(
+                generateKeyedItem.Value.Bind(
+                    GenerateValue,
+                    GetKeyForItem),
+                ki => ki.Key,
+                collectionSize,
+                out keys,
+                out items,
+                out itemsWithKeys);
+            IKeyedItem<TKey, TValue> itemNotIn =
+                generateKeyedItem.Value(GenerateValue, GetKeyForItem);
+
+            TKey keyNotIn = itemNotIn.Key;
+            if (keyNotIn == null)
+            {
+                IKeyedItem<TKey, TValue> item;
+                AssertExtensions.Throws<ArgumentNullException>("key", () => collection.TryGetValue(keyNotIn, out item));
+            }
+            else
+            {
+                IKeyedItem<TKey, TValue> item;
+                Assert.False(collection.TryGetValue(keyNotIn, out item));
+            }
+            foreach (TKey k in keys)
+            {
+                IKeyedItem<TKey, TValue> item;
+                TKey key = k;
+                if (key == null)
+                {
+                    AssertExtensions.Throws<ArgumentNullException>("key", () => collection.TryGetValue(key, out item));
+                    continue;
+                }
+                Assert.True(collection.TryGetValue(key, out item));
+                Assert.Equal(item.Key, key);
             }
         }
     }

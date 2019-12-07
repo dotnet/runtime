@@ -18,7 +18,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
@@ -91,10 +90,12 @@ namespace System.Text.RegularExpressions
 
         public readonly int[] Codes;                     // the code
         public readonly string[] Strings;                // the string/set table
+        public readonly int[]?[] StringsAsciiLookup;     // the ASCII lookup table optimization for the sets in Strings
         public readonly int TrackCount;                  // how many instructions use backtracking
         public readonly Hashtable? Caps;                 // mapping of user group numbers -> impl group slots
         public readonly int CapSize;                     // number of impl group slots
         public readonly RegexPrefix? FCPrefix;           // the set of candidate first characters (may be null)
+        public int[]? FCPrefixAsciiLookup;               // the ASCII lookup table optimization for the set of candidate first characters if there are any
         public readonly RegexBoyerMoore? BMPrefix;       // the fixed prefix string as a Boyer-Moore machine (may be null)
         public readonly int Anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
         public readonly bool RightToLeft;                // true if right to left
@@ -109,6 +110,7 @@ namespace System.Text.RegularExpressions
 
             Codes = codes;
             Strings = stringlist.ToArray();
+            StringsAsciiLookup = new int[Strings.Length][];
             TrackCount = trackcount;
             Caps = caps;
             CapSize = capsize;

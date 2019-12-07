@@ -3360,12 +3360,9 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             {
                 case GT_LCL_FLD:
                 case GT_STORE_LCL_FLD:
-                {
-                    GenTreeLclFld* lclField = memOp->AsLclFld();
-                    varNum                  = lclField->GetLclNum();
-                    offset                  = lclField->gtLclOffs;
+                    varNum = memOp->AsLclFld()->GetLclNum();
+                    offset = memOp->AsLclFld()->GetLclOffs();
                     break;
-                }
 
                 case GT_LCL_VAR:
                 {

@@ -185,12 +185,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            if (IsWinHttpHandler)
-            {
-                // Issue #9228
-                return;
-            }
-
             HttpContent content = new StreamContent(new CustomContent.CustomStream(Encoding.UTF8.GetBytes(ExpectedContent), false));
             var credential = new NetworkCredential(UserName, Password);
             await PostUsingAuthHelper(remoteServer, ExpectedContent, content, credential, preAuthenticate: true);

@@ -425,9 +425,6 @@
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinHttpException.cs">
       <Link>ProductionCode\System\Net\Http\WinHttpException.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinInetProxyHelper.cs">
-      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinHttpTraceHelper.cs">
       <Link>ProductionCode\System\Net\Http\WinHttpTraceHelper.cs</Link>
     </Compile>
@@ -451,6 +448,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs">
       <Link>ProductionCode\Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\WinInetProxyHelper.cs">
+      <Link>Common\System\Net\Http\WinInetProxyHelper.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\Http2\IHttpHeadersHandler.cs">
       <Link>Common\System\Net\Http\Http2\IHttpHeadersHandler.cs</Link>

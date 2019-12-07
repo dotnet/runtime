@@ -3,7 +3,7 @@
     <RunArguments>$(TargetFileName)</RunArguments>
     <RunArguments>$(RunArguments) -xml $(TestResultsName)</RunArguments>
     <RunArguments>$(RunArguments) -nologo</RunArguments>
-    <RunArguments Condition="'$(ArchiveTest)' == 'true'">$(RunArguments) -nocolor</RunArguments>
+    <RunArguments Condition="'$(ArchiveTests)' == 'true'">$(RunArguments) -nocolor</RunArguments>
 
     <!-- Add local and global options to the argument stack. -->
     <RunArguments Condition="'$(TestDisableParallelization)' == 'true'">$(RunArguments) -maxthreads 1</RunArguments>

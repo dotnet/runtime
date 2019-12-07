@@ -5422,36 +5422,18 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
     GetEmitter()->emitIns_R_I(INS_vpop, EA_8BYTE, lowReg, slots / 2);
 }
 
-/*-----------------------------------------------------------------------------
- *
- *  If we have a jmp call, then the argument registers cannot be used in the
- *  epilog. So return the current call's argument registers as the argument
- *  registers for the jmp call.
- */
-regMaskTP CodeGen::genJmpCallArgMask()
-{
-    assert(compiler->compGeneratingEpilog);
-
-    regMaskTP argMask = RBM_NONE;
-    for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; ++varNum)
-    {
-        const LclVarDsc& desc = compiler->lvaTable[varNum];
-        if (desc.lvIsRegArg)
-        {
-            argMask |= genRegMask(desc.GetArgReg());
-        }
-    }
-    return argMask;
-}
-
-/*-----------------------------------------------------------------------------
- *
- *  Free the local stack frame: add to SP.
- *  If epilog unwind hasn't been started, and we generate code, we start unwind
- *  and set *pUnwindStarted = true.
- */
-
-void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted, bool jmpEpilog)
+//------------------------------------------------------------------------
+// genFreeLclFrame: free the local stack frame by adding `frameSize` to SP.
+//
+// Arguments:
+//   frameSize - the frame size to free;
+//   pUnwindStarted - was epilog unwind started or not.
+//
+// Notes:
+//   If epilog unwind hasn't been started, and we generate code, we start unwind
+//    and set* pUnwindStarted = true.
+//
+void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted)
 {
     assert(compiler->compGeneratingEpilog);
 
@@ -5481,13 +5463,8 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
     }
     else
     {
-        regMaskTP grabMask = RBM_INT_CALLEE_TRASH;
-        if (jmpEpilog)
-        {
-            // Do not use argument registers as scratch registers in the jmp epilog.
-            grabMask &= ~genJmpCallArgMask();
-        }
-        regNumber tmpReg = REG_TMP_0;
+        // R12 doesn't hold arguments or return values, so can be used as temp.
+        regNumber tmpReg = REG_R12;
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, frameSize);
         if (*pUnwindStarted)
         {
@@ -7950,7 +7927,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) ==
             RBM_NONE)
     {
-        genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted, jmpEpilog);
+        genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
     }
 
     if (!unwindStarted)
@@ -8794,7 +8771,7 @@ void CodeGen::genFuncletEpilog()
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genFreeLclFrame(genFuncletInfo.fiSpDelta, &unwindStarted, false);
+        genFreeLclFrame(genFuncletInfo.fiSpDelta, &unwindStarted);
     }
 
     if (!unwindStarted)

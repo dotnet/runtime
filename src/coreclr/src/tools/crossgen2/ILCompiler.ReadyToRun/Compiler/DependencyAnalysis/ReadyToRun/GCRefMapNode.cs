@@ -83,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             for (int methodIndex = 0; methodIndex < _methods.Count; methodIndex++)
             {
                 IMethodNode methodNode = _methods[methodIndex];
-                if (methodNode == null || (methodNode is MethodWithGCInfo methodWithGCInfo && methodWithGCInfo.IsEmpty))
+                if (methodNode == null || (methodNode is LocalMethodImport localMethod && localMethod.MethodCodeNode.IsEmpty))
                 {
                     // Flush an empty GC ref map block to prevent
                     // the indexed records from falling out of sync with methods

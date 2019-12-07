@@ -63,7 +63,7 @@ class CoreclrArguments:
         self.arch = None
         self.build_type = None
         self.core_root = None
-        self.coreclr_repo_location = None
+        self.runtime_repo_location = None
 
         self.default_build_type = default_build_type
 
@@ -205,7 +205,7 @@ class CoreclrArguments:
             return None
 
         def check_and_return_test_location(test_location):
-            default_test_location = os.path.join(self.coreclr_repo_location, "..", "..", "artifacts", "tests", "coreclr", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
+            default_test_location = os.path.join(self.runtime_repo_location, "artifacts", "tests", "coreclr", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
 
             if os.path.isdir(default_test_location) or not self.require_built_test_dir:
                 return default_test_location
@@ -227,7 +227,7 @@ class CoreclrArguments:
             return core_root
 
         def check_and_return_default_product_location(product_location):
-            default_product_location = os.path.join(self.bin_location, "Product", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
+            default_product_location = os.path.join(self.artifacts_location, "bin", "coreclr", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
 
             if os.path.isdir(default_product_location) or not self.require_built_product_dir:
                 return default_product_location
@@ -236,8 +236,8 @@ class CoreclrArguments:
 
             return product_location
 
-        self.coreclr_repo_location = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.bin_location = os.path.join(self.coreclr_repo_location, "artifacts")
+        self.runtime_repo_location = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        self.artifacts_location = os.path.join(self.runtime_repo_location, "artifacts")
 
         self.verify(args,
                     "host_os",
@@ -248,7 +248,7 @@ class CoreclrArguments:
         self.verify(args, 
                     "arch",
                     check_arch,
-                    "Unsupported architecture: %s.\nSupported architectures: %s" % (args.arch, ", ".join(self.valid_arches)))
+                    "Unsupported architecture.\nSupported architectures: %s" % (", ".join(self.valid_arches)))
 
         self.verify(args,
                     "build_type",

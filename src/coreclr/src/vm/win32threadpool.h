@@ -764,13 +764,6 @@ public:
 
     // Private methods
 
-    static DWORD WINAPI intermediateThreadProc(PVOID arg);
-
-    typedef struct {
-        LPTHREAD_START_ROUTINE  lpThreadFunction;
-        PVOID                   lpArg;
-    } intermediateThreadParam;
-
     static Thread* CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpArgs, BOOL *pIsCLRThread);
 
     static BOOL CreateWorkerThread();
@@ -1100,9 +1093,6 @@ private:
 #ifdef _DEBUG
     static DWORD   TickCountAdjustment;                 // add this value to value returned by GetTickCount
 #endif
-
-    DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static int offset_counter;
-    static const int offset_multiplier = 128;
 };
 
 

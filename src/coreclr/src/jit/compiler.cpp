@@ -1709,8 +1709,6 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
     GenTree::DumpNodeSizes(fout);
 #endif
 
-    BasicBlock::DisplayStaticSizes(fout);
-
 #if EMITTER_STATS
     emitterStaticStats(fout);
 #endif
@@ -9819,11 +9817,11 @@ int cLeafIR(Compiler* comp, GenTree* tree)
             comp->gtGetLclVarNameInfo(lclNum, &ilKind, &ilName, &ilNum);
             if (ilName != nullptr)
             {
-                chars += printf("%s+%u", ilName, tree->AsLclFld()->gtLclOffs);
+                chars += printf("%s+%u", ilName, tree->AsLclFld()->GetLclOffs());
             }
             else
             {
-                chars += printf("%s%d+%u", ilKind, ilNum, tree->AsLclFld()->gtLclOffs);
+                chars += printf("%s%d+%u", ilKind, ilNum, tree->AsLclFld()->GetLclOffs());
                 LclVarDsc* varDsc = comp->lvaTable + lclNum;
                 if (comp->dumpIRLocals)
                 {

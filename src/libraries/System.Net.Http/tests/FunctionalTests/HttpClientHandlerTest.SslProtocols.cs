@@ -156,12 +156,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(SupportedSSLVersionServers))]
         public async Task GetAsync_SupportedSSLVersion_Succeeds(SslProtocols sslProtocols, string url)
         {
-            if (UseSocketsHttpHandler)
-            {
-                // TODO #26186: SocketsHttpHandler is failing on some OSes.
-                return;
-            }
-
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 handler.SslProtocols = sslProtocols;
@@ -246,17 +240,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowedClientSslVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedClientProtocols, SslProtocols acceptedServerProtocols)
         {
-            if (IsWinHttpHandler &&
-                allowedClientProtocols == (SslProtocols.Tls11 | SslProtocols.Tls12) &&
-                acceptedServerProtocols == SslProtocols.Tls)
-            {
-                // Native WinHTTP sometimes uses multiple TCP connections to try other TLS protocols when
-                // getting TLS protocol failures as part of its TLS fallback algorithm. The loopback server
-                // doesn't expect this and stops listening for more connections. This causes unexpected test
-                // failures. See dotnet/corefx #8538.
-                return;
-            }
-
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {

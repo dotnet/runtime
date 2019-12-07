@@ -1163,29 +1163,14 @@ namespace System.Text.RegularExpressions
                     CallToLower();
                 }
 
-                if (!RegexCharClass.IsSingleton(_fcPrefix.GetValueOrDefault().Prefix))
-                {
-                    EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, charInClassV);
-                    BrtrueFar(l2);
-                }
-                else
-                {
-                    Ldc(RegexCharClass.SingletonChar(_fcPrefix.GetValueOrDefault().Prefix));
-                    Beq(l2);
-                }
+                EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, charInClassV);
+                BrtrueFar(l2);
 
                 MarkLabel(l5);
 
                 Ldloc(cV);
                 Ldc(0);
-                if (!RegexCharClass.IsSingleton(_fcPrefix.GetValueOrDefault().Prefix))
-                {
-                    BgtFar(l1);
-                }
-                else
-                {
-                    Bgt(l1);
-                }
+                BgtFar(l1);
 
                 Ldc(0);
                 BrFar(l3);

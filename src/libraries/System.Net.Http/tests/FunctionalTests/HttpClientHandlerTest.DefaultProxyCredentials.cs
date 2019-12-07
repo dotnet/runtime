@@ -102,9 +102,9 @@ namespace System.Net.Http.Functional.Tests
                     psi.Environment.Add("http_proxy", $"http://{proxyUri.Host}:{proxyUri.Port}");
                 }
 
-                RemoteExecutor.Invoke(async (useProxyString, useSocketsHttpHandlerString, useHttp2String) =>
+                RemoteExecutor.Invoke(async (useProxyString, useHttp2String) =>
                 {
-                    using (HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String))
+                    using (HttpClientHandler handler = CreateHttpClientHandler(useHttp2String))
                     using (HttpClient client = CreateHttpClient(handler, useHttp2String))
                     {
                         var creds = new NetworkCredential(ExpectedUsername, ExpectedPassword);
@@ -115,7 +115,7 @@ namespace System.Net.Http.Functional.Tests
                         // Correctness of user and password is done in server part.
                         Assert.True(response.StatusCode == HttpStatusCode.OK);
                     }
-                }, useProxy.ToString(), UseSocketsHttpHandler.ToString(), UseHttp2.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+                }, useProxy.ToString(), UseHttp2.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
                 if (useProxy)
                 {
                     await proxyTask;

@@ -44,10 +44,10 @@ jobs:
         # This is only required for cross builds.
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
-    
+
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    archType:  ${{ parameters.archType }}
+    archType: ${{ parameters.archType }}
 
     ${{ if ne(parameters.container, '') }}:
       ${{ if eq(parameters.container.registry, 'mcr') }}:

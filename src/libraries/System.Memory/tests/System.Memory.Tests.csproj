@@ -16,9 +16,9 @@
     <Compile Include="MemoryMarshal\CreateSpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpan.cs" />
     <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.netcoreapp.cs" Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.netcoreapp.cs" />
-    <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.netcoreapp.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.cs" />
     <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.netcoreapp.cs" Link="ParsersAndFormatters\Parser\RealParserTestsBase.netcoreapp.cs" />
-    <Compile Include="ParsersAndFormatters\Parser\RealParserTests.netcoreapp.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\RealParserTests.cs" />
     <Compile Include="ReadOnlySpan\Contains.byte.cs" />
     <Compile Include="ReadOnlySpan\Contains.T.cs" />
     <Compile Include="Span\Reflection.cs" />

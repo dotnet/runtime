@@ -195,6 +195,11 @@ namespace Internal.JitInterface
                 // Special methods on delegate types
                 return true;
             }
+            if (method.HasCustomAttribute("System.Runtime", "BypassReadyToRunAttribute"))
+            {
+                // This is a quick workaround to opt specific methods out of ReadyToRun compilation to work around bugs.
+                return true;
+            }
 
             return false;
         }
@@ -635,6 +640,7 @@ namespace Internal.JitInterface
         {
             if (fIsTailPrefix)
             {
+                // FUTURE: Delay load fixups for tailcalls
                 throw new RequiresRuntimeJitException(nameof(fIsTailPrefix));
             }
 
