@@ -12529,8 +12529,8 @@ DONE_MORPHING_CHILDREN:
                     if (!varTypeIsGC(op1->AsOp()->gtGetOp1()->TypeGet()) &&
                         !varTypeIsGC(op2->AsOp()->gtGetOp1()->TypeGet()))
                     {
-                        cns1 = op1->AsOp()->gtGetOp2();
-                        cns2 = op2->AsOp()->gtGetOp2();
+                        cns1          = op1->AsOp()->gtGetOp2();
+                        cns2          = op2->AsOp()->gtGetOp2();
                         ssize_t icon1 = cns1->AsIntCon()->IconValue();
                         ssize_t icon2 = cns2->AsIntCon()->IconValue();
 
@@ -12588,7 +12588,7 @@ DONE_MORPHING_CHILDREN:
                         (op1->AsOp()->gtGetOp2()->TypeGet() != TYP_REF) &&        // Don't fold REFs
                         (op2->TypeGet() != TYP_REF))                              // Don't fold REFs
                     {
-                        cns1 = op1->AsOp()->gtGetOp2();
+                        cns1          = op1->AsOp()->gtGetOp2();
                         ssize_t icon1 = cns1->AsIntConCommon()->IconValue();
                         ssize_t icon2 = op2->AsIntConCommon()->IconValue();
 
