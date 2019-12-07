@@ -114,7 +114,7 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonDateTimeTestData.ValidISO8601Tests), MemberType = typeof(JsonDateTimeTestData))]
         public static void TestDateTimeAndDateTimeOffsetWithEscapedChars(string testStr, string iso8601Str)
         {
-            var trimmedTestStr = testStr.Trim('"');
+            string trimmedTestStr = testStr.Trim('"');
 
             var jsonString = new JsonString(trimmedTestStr);
             var dateTime = DateTime.Parse(iso8601Str);
