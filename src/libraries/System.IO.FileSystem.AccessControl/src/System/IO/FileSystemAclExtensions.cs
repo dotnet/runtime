@@ -24,7 +24,9 @@ namespace System.IO
         public static void SetAccessControl(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
             if (directorySecurity == null)
+            {
                 throw new ArgumentNullException(nameof(directorySecurity));
+            }
 
             string fullPath = Path.GetFullPath(directoryInfo.FullName);
             directorySecurity.Persist(fullPath);
@@ -43,8 +45,9 @@ namespace System.IO
         public static void SetAccessControl(this FileInfo fileInfo, FileSecurity fileSecurity)
         {
             if (fileSecurity == null)
+            {
                 throw new ArgumentNullException(nameof(fileSecurity));
-
+            }
             string fullPath = Path.GetFullPath(fileInfo.FullName);
             // Appropriate security check should be done for us by FileSecurity.
             fileSecurity.Persist(fullPath);
@@ -59,11 +62,15 @@ namespace System.IO
         public static FileSecurity GetAccessControl(this FileStream fileStream)
         {
             if (fileStream == null)
+            {
                 throw new ArgumentNullException(nameof(fileStream));
+            }
 
             SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
             return new FileSecurity(handle, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
@@ -78,14 +85,20 @@ namespace System.IO
         public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
         {
             if (fileStream == null)
+            {
                 throw new ArgumentNullException(nameof(fileStream));
+            }
 
             if (fileSecurity == null)
+            {
                 throw new ArgumentNullException(nameof(fileSecurity));
+            }
 
             SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
+            {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
             fileSecurity.Persist(handle, fileStream.Name);
         }
@@ -100,10 +113,14 @@ namespace System.IO
         public static void Create(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
             if (directoryInfo == null)
+            {
                 throw new ArgumentNullException(nameof(directoryInfo));
+            }
 
             if (directorySecurity == null)
+            {
                 throw new ArgumentNullException(nameof(directorySecurity));
+            }
 
             FileSystem.CreateDirectory(directoryInfo.FullName, directorySecurity.GetSecurityDescriptorBinaryForm());
         }
@@ -131,10 +148,14 @@ namespace System.IO
         public static FileStream Create(this FileInfo fileInfo, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity fileSecurity)
         {
             if (fileInfo == null)
+            {
                 throw new ArgumentNullException(nameof(fileInfo));
+            }
 
             if (fileSecurity == null)
+            {
                 throw new ArgumentNullException(nameof(fileSecurity));
+            }
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;
@@ -184,10 +205,12 @@ namespace System.IO
             {
                 access = FileAccess.Read;
             }
+
             if ((rights & FileSystemRights.WriteData) != 0 || ((int)rights & Interop.Kernel32.GenericOperations.GENERIC_WRITE) != 0)
             {
                 access = access == FileAccess.Read ? FileAccess.ReadWrite : FileAccess.Write;
             }
+
             return access;
         }
 
