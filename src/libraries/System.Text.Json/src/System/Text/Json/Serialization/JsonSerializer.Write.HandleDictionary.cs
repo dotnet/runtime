@@ -81,6 +81,11 @@ namespace System.Text.Json
 
                     if (options.DictionaryKeyPolicy != null && state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
                     {
+                        if (key == null)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
+                        }
+
                         key = options.DictionaryKeyPolicy.ConvertName(key);
                     }
 
@@ -123,7 +128,7 @@ namespace System.Text.Json
         {
             Debug.Assert(converter != null && current.CollectionEnumerator != null);
 
-            string? key;
+            string key;
             TProperty value;
             if (current.CollectionEnumerator is IEnumerator<KeyValuePair<string, TProperty>> enumerator)
             {

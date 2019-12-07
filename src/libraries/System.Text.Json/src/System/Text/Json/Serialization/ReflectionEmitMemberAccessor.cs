@@ -95,8 +95,9 @@ namespace System.Text.Json
             JsonClassInfo.ConstructorDelegate constructor = (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(
                 typeof(JsonClassInfo.ConstructorDelegate));
 
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor()!;
+            ImmutableCollectionCreator? creator = (ImmutableCollectionCreator?)constructor();
 
+            Debug.Assert(creator != null);
             creator.RegisterCreatorDelegateFromMethod(createRange);
             return creator;
         }
@@ -143,8 +144,9 @@ namespace System.Text.Json
             JsonClassInfo.ConstructorDelegate constructor = (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(
                 typeof(JsonClassInfo.ConstructorDelegate));
 
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor()!;
+            ImmutableCollectionCreator? creator = (ImmutableCollectionCreator?)constructor();
 
+            Debug.Assert(creator != null);
             creator.RegisterCreatorDelegateFromMethod(createRange);
             return creator;
         }

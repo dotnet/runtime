@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Text.Json
 {
     /// <summary>
@@ -28,7 +26,6 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="name">The name to convert.</param>
         /// <returns>The converted name.</returns>
-        [return: NotNullIfNotNull("name")]
-        public abstract string? ConvertName(string? name);
+        public abstract string ConvertName(string name);
     }
 }

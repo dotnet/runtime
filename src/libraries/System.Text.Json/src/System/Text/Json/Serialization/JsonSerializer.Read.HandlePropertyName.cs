@@ -54,7 +54,7 @@ namespace System.Text.Json
                 JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
                 if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
                 {
-                    JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
+                    JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo!.DataExtensionProperty;
                     if (dataExtProperty == null)
                     {
                         state.Current.JsonPropertyInfo = JsonPropertyInfo.s_missingProperty;

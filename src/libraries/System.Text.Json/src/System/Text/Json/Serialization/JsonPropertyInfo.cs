@@ -97,7 +97,7 @@ namespace System.Text.Json
             }
             else if (Options.PropertyNamingPolicy != null)
             {
-                string? name = Options.PropertyNamingPolicy.ConvertName(PropertyInfo.Name);
+                string name = Options.PropertyNamingPolicy.ConvertName(PropertyInfo.Name);
                 if (name == null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(ParentClassType, this);

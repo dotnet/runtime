@@ -584,7 +584,8 @@ namespace System.Text.Json
                 return ClassType.Enumerable;
             }
 
-            if (type.FullName!.StartsWith("System.Collections.Generic.IEnumerable`1"))
+            Debug.Assert(type.FullName! != null);
+            if (type.FullName.StartsWith("System.Collections.Generic.IEnumerable`1"))
             {
                 elementType = type.GetGenericArguments()[0];
                 runtimeType = typeof(List<>).MakeGenericType(elementType);

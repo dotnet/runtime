@@ -14,7 +14,7 @@ namespace System.Text.Json
     {
         // The object (POCO or IEnumerable) that is being populated
         public object? ReturnValue;
-        public JsonClassInfo JsonClassInfo;
+        public JsonClassInfo? JsonClassInfo;
 
         // Support Dictionary keys.
         public string? KeyName;
@@ -94,6 +94,7 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingObject(ClassType classTypes)
         {
+            Debug.Assert(JsonClassInfo != null);
             return (JsonClassInfo.ClassType & classTypes) != 0;
         }
 
@@ -129,6 +130,7 @@ namespace System.Text.Json
             }
             else if (JsonPropertyInfo == null)
             {
+                Debug.Assert(JsonClassInfo != null);
                 classType = JsonClassInfo.ClassType;
             }
             else
@@ -153,14 +155,14 @@ namespace System.Text.Json
         {
             if (IsProcessingObject(ClassType.Value | ClassType.Enumerable | ClassType.Dictionary))
             {
-                JsonPropertyInfo = JsonClassInfo.PolicyProperty;
+                JsonPropertyInfo = JsonClassInfo!.PolicyProperty;
             }
         }
 
         public void Reset()
         {
             Drain = false;
-            JsonClassInfo = null!;
+            JsonClassInfo = null;
             PropertyRefCache = null;
             ReturnValue = null;
             EndObject();
@@ -273,7 +275,7 @@ namespace System.Text.Json
 
             if (IsProcessingCollectionObject())
             {
-                return JsonClassInfo.ElementClassInfo!.Type;
+                return JsonClassInfo!.ElementClassInfo!.Type;
             }
 
             return JsonPropertyInfo.RuntimePropertyType;

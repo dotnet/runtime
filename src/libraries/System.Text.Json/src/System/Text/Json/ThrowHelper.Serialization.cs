@@ -132,6 +132,7 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameNull, parentType, jsonPropertyInfo.PropertyInfo?.Name));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializerDictionaryKeyNull(Type policyType)
         {
@@ -185,7 +186,7 @@ namespace System.Text.Json
                 Type? propertyType = readStack.Current.JsonPropertyInfo?.RuntimePropertyType;
                 if (propertyType == null)
                 {
-                    propertyType = readStack.Current.JsonClassInfo.Type;
+                    propertyType = readStack.Current.JsonClassInfo?.Type;
                 }
 
                 message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType);

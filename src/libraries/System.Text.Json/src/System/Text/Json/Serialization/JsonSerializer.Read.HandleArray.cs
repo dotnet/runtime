@@ -21,7 +21,7 @@ namespace System.Text.Json
                 state.Current.Drain = true;
                 return;
             }
-
+            Debug.Assert(state.Current.JsonClassInfo != null);
             JsonPropertyInfo? jsonPropertyInfo = state.Current.JsonPropertyInfo;
             if (jsonPropertyInfo == null)
             {
@@ -66,8 +66,7 @@ namespace System.Text.Json
 
                 if (state.Current.ReturnValue != null)
                 {
-                    Debug.Assert(state.Current.JsonPropertyInfo != null);
-                    state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
+                    state.Current.JsonPropertyInfo!.SetValueAsObject(state.Current.ReturnValue, value);
                 }
                 else
                 {

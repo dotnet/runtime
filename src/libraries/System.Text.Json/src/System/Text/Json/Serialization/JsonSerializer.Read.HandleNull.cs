@@ -28,8 +28,6 @@ namespace System.Text.Json
                 return true;
             }
 
-            Debug.Assert(jsonPropertyInfo != null);
-
             if (state.Current.IsProcessingCollectionObject())
             {
                 AddNullToCollection(jsonPropertyInfo, ref reader, ref state);
@@ -71,7 +69,7 @@ namespace System.Text.Json
 
             if (!jsonPropertyInfo.IgnoreNullValues)
             {
-                state.Current.JsonPropertyInfo!.SetValueAsObject(state.Current.ReturnValue, value: null);
+                jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value: null);
             }
 
             return false;

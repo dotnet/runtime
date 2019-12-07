@@ -17,7 +17,7 @@ namespace System.Text.Json
             JsonPropertyInfo? jsonPropertyInfo = state.Current.JsonPropertyInfo;
             if (jsonPropertyInfo == null)
             {
-                jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootProperty(options);
+                jsonPropertyInfo = state.Current.JsonClassInfo!.CreateRootProperty(options);
             }
 
             Debug.Assert(jsonPropertyInfo != null);
@@ -89,12 +89,15 @@ namespace System.Text.Json
             {
                 if (state.Current.TempDictionaryValues != null)
                 {
-                    JsonDictionaryConverter converter = state.Current.JsonPropertyInfo.DictionaryConverter!;
+                    JsonDictionaryConverter? converter = state.Current.JsonPropertyInfo.DictionaryConverter;
+                    Debug.Assert(converter != null);
                     state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, converter.CreateFromDictionary(ref state, state.Current.TempDictionaryValues, options));
                     state.Current.EndProperty();
                 }
                 else
                 {
+                    Debug.Assert(state.Current.JsonClassInfo != null);
+
                     // Handle special case of DataExtensionProperty where we just added a dictionary element to the extension property.
                     // Since the JSON value is not a dictionary element (it's a normal property in JSON) a JsonTokenType.EndObject
                     // encountered here is from the outer object so forward to HandleEndObject().
@@ -114,7 +117,8 @@ namespace System.Text.Json
                 object? value;
                 if (state.Current.TempDictionaryValues != null)
                 {
-                    JsonDictionaryConverter converter = state.Current.JsonPropertyInfo.DictionaryConverter!;
+                    JsonDictionaryConverter? converter = state.Current.JsonPropertyInfo.DictionaryConverter;
+                    Debug.Assert(converter != null);
                     value = converter.CreateFromDictionary(ref state, state.Current.TempDictionaryValues, options);
                 }
                 else
