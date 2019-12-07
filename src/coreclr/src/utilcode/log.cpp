@@ -96,13 +96,6 @@ VOID InitLogging()
             FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |  ((LogFlags & LOG_ENABLE_FLUSH_FILE) ? FILE_FLAG_WRITE_THROUGH : 0),
             NULL);
 
-        MUTEX_COOKIE mutexCookie = ClrCreateMutex(NULL, FALSE, NULL);
-        _ASSERTE(mutexCookie != 0);
-        if (InterlockedCompareExchangePointer(&LogFileMutex, mutexCookie, 0) != 0)
-        {
-            ClrCloseMutex(mutexCookie);
-        }
-
             // Some other logging may be going on, try again with another file name
         if (LogFileHandle == INVALID_HANDLE_VALUE && wcslen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
         {
@@ -185,16 +178,28 @@ VOID LeaveLogLock()
     }
 }
 
-static bool bLoggingInitialized = false;
+static volatile bool bLoggingInitialized = false;
 VOID InitializeLogging()
 {
     STATIC_CONTRACT_NOTHROW;
 
     if (bLoggingInitialized)
         return;
-    bLoggingInitialized = true;
 
-    InitLogging();      // You can call this in the debugger to fetch new settings
+    MUTEX_COOKIE mutexCookie = ClrCreateMutex(NULL, FALSE, NULL);
+    _ASSERTE(mutexCookie != 0);
+    if (InterlockedCompareExchangeT(&LogFileMutex, mutexCookie, 0) != 0)
+    {
+        ClrCloseMutex(mutexCookie);
+    }
+
+    EnterLogLock();
+    if (!bLoggingInitialized)
+    {
+        InitLogging();      // You can call this in the debugger to fetch new settings
+        bLoggingInitialized = true;
+    }
+    LeaveLogLock();
 }
 
 VOID FlushLogging() {

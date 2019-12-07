@@ -5125,9 +5125,9 @@ inline T* InterlockedCompareExchangeT(
 }
 
 #undef InterlockedExchangePointer
-#define InterlockedExchangePointer InterlockedExchangeT
+#define InterlockedExchangePointer Use_InterlockedExchangeT
 #undef InterlockedCompareExchangePointer
-#define InterlockedCompareExchangePointer InterlockedCompareExchangeT
+#define InterlockedCompareExchangePointer Use_InterlockedCompareExchangeT
 
 // Returns the directory for HMODULE. So, if HMODULE was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).

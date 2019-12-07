@@ -66,6 +66,7 @@ enum {
 #else
 
 extern VOID InitializeLogging();
+extern VOID InitLogging();
 extern VOID ShutdownLogging();
 extern VOID FlushLogging();
 
