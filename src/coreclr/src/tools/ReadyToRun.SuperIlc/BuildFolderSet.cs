@@ -97,7 +97,7 @@ namespace ReadyToRun.SuperIlc
 
         private void WriteJittedMethodSummary(StreamWriter logWriter)
         {
-            Dictionary<string, HashSet<string>>[] allMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
+            var allMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
 
             foreach (CompilerRunner runner in _compilerRunners)
             {
@@ -108,7 +108,7 @@ namespace ReadyToRun.SuperIlc
             {
                 for (int exeIndex = 0; exeIndex < folder.Executions.Count; exeIndex++)
                 {
-                    Dictionary<string, HashSet<string>>[] appMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
+                    var appMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
                         appMethodsPerModulePerCompiler[(int)runner.Index] = new Dictionary<string, HashSet<string>>();
@@ -129,12 +129,12 @@ namespace ReadyToRun.SuperIlc
                 return false;
             }
 
-            Stopwatch stopwatch = new Stopwatch();
+            var stopwatch = new Stopwatch();
             stopwatch.Start();
 
             ResolveTestExclusions();
 
-            List<ProcessInfo> compilationsToRun = new List<ProcessInfo>();
+            var compilationsToRun = new List<ProcessInfo>();
 
             foreach (BuildFolder folder in FoldersToBuild)
             {
@@ -154,10 +154,10 @@ namespace ReadyToRun.SuperIlc
             ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism, _options.MeasurePerf);
 
             bool success = true;
-            List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
+            var failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
             int successfulCompileCount = 0;
 
-            List<ProcessInfo> r2rDumpExecutionsToRun = new List<ProcessInfo>();
+            var r2rDumpExecutionsToRun = new List<ProcessInfo>();
 
             foreach (BuildFolder folder in FoldersToBuild)
             {
@@ -247,7 +247,7 @@ namespace ReadyToRun.SuperIlc
                 return true;
             }
 
-            Stopwatch stopwatch = new Stopwatch();
+            var stopwatch = new Stopwatch();
             stopwatch.Start();
 
             string coreRoot = _options.CoreRootDirectory.FullName;
@@ -313,7 +313,7 @@ namespace ReadyToRun.SuperIlc
                             _frameworkExclusions[exclusion.SimpleName] = exclusion.Reason;
                             continue;
                         }
-                        ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _options.CoreRootDirectory.FullName, new string[] { frameworkDll }));
+                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _options.CoreRootDirectory.FullName, new string[] { frameworkDll }));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;
                     }
@@ -1493,7 +1493,7 @@ namespace ReadyToRun.SuperIlc
 
         private void WriteFileListPerCompilationOutcome(string outputFileName, CompilationOutcome outcome)
         {
-            List<string> filteredTestList = new List<string>();
+            var filteredTestList = new List<string>();
             foreach (BuildFolder folder in _buildFolders)
             {
                 foreach (ProcessInfo[] compilation in folder.Compilations)
