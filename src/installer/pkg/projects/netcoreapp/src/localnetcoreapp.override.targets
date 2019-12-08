@@ -35,7 +35,7 @@
       <CoreCLRSystemPrivateCoreLibNiSymbolFiles
         Include="$(CoreCLROverridePath)PDB/System.Private.CoreLib.ni.pdb" />
       <CoreCLRFiles
-        Include="@(CoreCLRSystemPrivateCoreLibSymbolFiles)"
+        Include="@(CoreCLRSystemPrivateCoreLibNiSymbolFiles)"
         Condition="Exists('%(Identity)')" />
 
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
