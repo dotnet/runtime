@@ -234,8 +234,8 @@ int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLeng
     return UErrorCodeToBool(status);
 }
 
-// GlobalizationNative_IsPredefinedLocale return TRUE if the ICU has a real data for the locale.
-// otherwise it returns FALSE;
+// GlobalizationNative_IsPredefinedLocale returns TRUE if ICU has a real data for the locale.
+// Otherwise it returns FALSE;
 
 int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName)
 {
@@ -247,8 +247,8 @@ int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName)
         return FALSE;
 
     // ures_open returns err = U_ZERO_ERROR when ICU has data for localeName.
-    // if it is fake locale, it will returns err = U_USING_FALLBACK_WARNING || err = U_USING_DEFAULT_WARNING.
-    // other err values would be just a failure.
+    // If it is fake locale, it will return err = U_USING_FALLBACK_WARNING || err = U_USING_DEFAULT_WARNING.
+    // Other err values would be just a failure.
     UResourceBundle* uresb = ures_open(NULL, locale, &err);
     ures_close(uresb);
 
