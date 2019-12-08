@@ -12,7 +12,7 @@
       <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
       <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
       <CoreCLRCrossTargetComponentDir
-        Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)','$(CoreCLRCrossTargetComponentDir)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
+        Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
     </PropertyGroup>
     <ItemGroup>
       <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
