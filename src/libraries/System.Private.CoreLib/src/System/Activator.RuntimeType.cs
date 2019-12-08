@@ -12,6 +12,10 @@ namespace System
 {
     public static partial class Activator
     {
+        //
+        // Note: CreateInstance returns null for Nullable<T>, e.g. CreateInstance(typeof(int?)) returns null.
+        //
+
         public static object? CreateInstance(Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
             if (type is null)
@@ -139,7 +143,7 @@ namespace System
         [System.Runtime.CompilerServices.Intrinsic]
         public static T CreateInstance<T>()
         {
-            return (T)((RuntimeType)typeof(T)).CreateInstanceDefaultCtor(publicOnly: true, skipCheckThis: true, fillCache: true, wrapExceptions: true);
+            return (T)((RuntimeType)typeof(T)).CreateInstanceDefaultCtor(publicOnly: true, skipCheckThis: true, fillCache: true, wrapExceptions: true)!;
         }
 
         private static T CreateDefaultInstance<T>() where T : struct => default;
