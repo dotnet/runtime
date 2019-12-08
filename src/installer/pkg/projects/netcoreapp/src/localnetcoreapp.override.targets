@@ -54,7 +54,22 @@
 
       <CoreCLRFiles Include="@(CoreCLRCrossTargetFiles)" />
 
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'"/>
+      <!--
+        Remove files we want to override from ReferenceCopyLocalPaths.
+
+        Use distinct filenames: we may have a target arch file as well as cross-arch (build machine
+        arch). In that case, the typical match-up condition fails:
+
+          '@(CoreCLRFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'
+
+        We get 'clrjit.dll;clrjit.dll' == 'clrjit.dll', preventing clrjit.dll from being removed.
+        Filtering CoreCLRFiles down to unique FileName+Extension items makes it work.
+      -->
+      <CoreCLRFileFileNameExtensions Include="@(CoreCLRFiles -> '%(FileName)%(Extension)')" />
+      <ReferenceCopyLocalPaths
+        Remove="@(ReferenceCopyLocalPaths)"
+        Condition="'@(CoreCLRFileFileNameExtensions->Distinct())' == '%(FileName)%(Extension)'"/>
+
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(FileName)').StartsWith('mscordaccore_'))" />
 
       <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" NuGetPackageId="$(MicrosoftNETCoreRuntimeCoreCLRPackage)" />
