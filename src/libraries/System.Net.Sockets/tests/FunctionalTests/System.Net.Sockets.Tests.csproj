@@ -19,7 +19,7 @@
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="ExecutionContextFlowTest.cs" />
     <Compile Include="IPPacketInformationTest.cs" />
-    <Compile Include="KeepAliveTest.netcoreapp.cs" />
+    <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LingerStateTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />

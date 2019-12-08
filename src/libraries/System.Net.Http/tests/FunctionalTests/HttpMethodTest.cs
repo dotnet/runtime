@@ -28,8 +28,6 @@ namespace System.Net.Http.Functional.Tests
             StaticHttpMethods = staticHttpMethods;
         }
 
-        static partial void AddStaticHttpMethods(List<object[]> staticHttpMethods);
-
         [Fact]
         public void StaticProperties_VerifyValues_PropertyNameMatchesHttpMethodName()
         {
@@ -153,7 +151,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal("PATCH", HttpMethod.Patch.Method);
         }
 
-        static partial void AddStaticHttpMethods(List<object[]> staticHttpMethods)
+        private static void AddStaticHttpMethods(List<object[]> staticHttpMethods)
         {
             staticHttpMethods.Add(new object[] { HttpMethod.Patch });
         }
