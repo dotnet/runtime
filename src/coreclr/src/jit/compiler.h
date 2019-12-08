@@ -3757,13 +3757,18 @@ public:
                              Statement**          pAfterStmt = nullptr,
                              IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
                              BasicBlock*          block      = nullptr);
-    GenTree* impAssignStructPtr(GenTree*             dest,
-                                GenTree*             src,
-                                CORINFO_CLASS_HANDLE structHnd,
-                                unsigned             curLevel,
-                                Statement**          pAfterStmt = nullptr,
-                                IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
-                                BasicBlock*          block      = nullptr);
+    GenTree* impAssignStructPtrTree(GenTree*             destAddr,
+                                    GenTree*             src,
+                                    CORINFO_CLASS_HANDLE structHnd,
+                                    unsigned             curLevel,
+                                    IL_OFFSETX           ilOffset = BAD_IL_OFFSET);
+
+    GenTree* impAssignStructPtrStmt(GenTree*             destAddr,
+                                    GenTree*             src,
+                                    CORINFO_CLASS_HANDLE structHnd,
+                                    Statement**          pAfterStmt,
+                                    BasicBlock*          block,
+                                    IL_OFFSETX           ilOffset = BAD_IL_OFFSET);
 
     GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);
 
