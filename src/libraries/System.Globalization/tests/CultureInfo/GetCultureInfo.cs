@@ -9,9 +9,9 @@ namespace System.Globalization.Tests
 {
     public class GetCultureInfoTests
     {
-        public static bool PlatformSupportFakeCulture => !PlatformDetection.IsWindows || (PlatformDetection.WindowsVersion >= 10 && !PlatformDetection.IsFullFramework);
+        public static bool PlatformSupportsFakeCulture => !PlatformDetection.IsWindows || (PlatformDetection.WindowsVersion >= 10 && !PlatformDetection.IsFullFramework);
 
-        [ConditionalTheory(nameof(PlatformSupportFakeCulture))]
+        [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
         [InlineData("en")]
         [InlineData("en-US")]
         [InlineData("ja-JP")]
@@ -23,7 +23,7 @@ namespace System.Globalization.Tests
             Assert.Equal(name, CultureInfo.GetCultureInfo(name, predefinedOnly: false).Name);
         }
 
-        [ConditionalTheory(nameof(PlatformSupportFakeCulture))]
+        [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
         [InlineData("en@US")]
         [InlineData("\uFFFF")]
         public void TestInvalidCultureNames(string name)
@@ -33,7 +33,7 @@ namespace System.Globalization.Tests
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name, predefinedOnly: true));
         }
 
-        [ConditionalTheory(nameof(PlatformSupportFakeCulture))]
+        [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
         [InlineData("xx")]
         [InlineData("xx-XX")]
         [InlineData("xx-YY")]

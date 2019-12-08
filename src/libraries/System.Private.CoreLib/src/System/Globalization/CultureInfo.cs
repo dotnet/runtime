@@ -1121,12 +1121,12 @@ namespace System.Globalization
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (!predefinedOnly)
+            if (predefinedOnly)
             {
-                return GetCultureInfo(name);
+                return GetPredefinedCultureInfo(name);
             }
 
-            return GetPredefinedCultureInfo(name);
+            return GetCultureInfo(name);
         }
 
         private static Dictionary<string, CultureInfo> CachedCulturesByName

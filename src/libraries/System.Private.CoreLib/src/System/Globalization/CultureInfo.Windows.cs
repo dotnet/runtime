@@ -31,7 +31,12 @@ namespace System.Globalization
             CultureInfo culture = GetCultureInfo(name);
             string englishName = culture.EnglishName;
 
-            if (englishName.StartsWith("Unknown Locale", StringComparison.Ordinal) || englishName.StartsWith("Unknown Language", StringComparison.Ordinal))
+            // Check if the English Name starts with "Unknown Locale" or "Unknown Language" terms.
+            const int SecondTermIndex = 8;
+
+            if (englishName.StartsWith("Unknown ", StringComparison.Ordinal) && englishName.Length > SecondTermIndex &&
+                (englishName.IndexOf("Locale", SecondTermIndex, StringComparison.Ordinal) == SecondTermIndex ||
+                 englishName.IndexOf("Language", SecondTermIndex, StringComparison.Ordinal) == SecondTermIndex))
             {
                 throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
             }
