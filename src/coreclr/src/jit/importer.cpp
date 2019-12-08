@@ -771,14 +771,12 @@ void Compiler::impAssignTempGenTree(unsigned tmp, GenTree* val, unsigned curLeve
  * same as above, but handle the valueclass case too
  */
 
-void Compiler::impAssignTempGenStruct(unsigned             tmpNum,
-                                      GenTree*             val,
-                                      CORINFO_CLASS_HANDLE structType,
-                                      unsigned             curLevel,
-                                      Statement**          pAfterStmt, /* = NULL */
-                                      IL_OFFSETX           ilOffset,   /* = BAD_IL_OFFSET */
-                                      BasicBlock*          block       /* = NULL */
-                                      )
+void Compiler::impAssignTempGenStructTree(unsigned             tmpNum,
+                                          GenTree*             val,
+                                          CORINFO_CLASS_HANDLE structType,
+                                          unsigned             curLevel,
+                                          IL_OFFSETX           ilOffset /* = BAD_IL_OFFSET */
+                                          )
 {
     GenTree* asg;
 
@@ -805,7 +803,8 @@ void Compiler::impAssignTempGenStruct(unsigned             tmpNum,
         val->gtType = lvaTable[tmpNum].lvType;
 
         GenTree* dst = gtNewLclvNode(tmpNum, val->gtType);
-        asg          = impAssignStruct(dst, val, structType, curLevel, pAfterStmt, ilOffset, block);
+
+        asg = impAssignStructTree(dst, val, structType, curLevel, ilOffset);
     }
     else
     {
@@ -814,16 +813,57 @@ void Compiler::impAssignTempGenStruct(unsigned             tmpNum,
 
     if (!asg->IsNothingNode())
     {
-        if (pAfterStmt)
-        {
-            Statement* asgStmt = gtNewStmt(asg, ilOffset);
-            fgInsertStmtAfter(block, *pAfterStmt, asgStmt);
-            *pAfterStmt = asgStmt;
-        }
-        else
-        {
-            impAppendTree(asg, curLevel, impCurStmtOffs);
-        }
+
+        impAppendTree(asg, curLevel, impCurStmtOffs);
+    }
+}
+
+void Compiler::impAssignTempGenStructStmt(unsigned             tmpNum,
+                                          GenTree*             val,
+                                          CORINFO_CLASS_HANDLE structType,
+                                          Statement**          pAfterStmt,
+                                          BasicBlock*          block,
+                                          IL_OFFSETX           ilOffset /* = BAD_IL_OFFSET */
+                                          )
+{
+    assert((pAfterStmt != nullptr) && (block != nullptr));
+    GenTree* asg;
+
+    assert(val->TypeGet() != TYP_STRUCT || structType != NO_CLASS_HANDLE);
+    if (varTypeIsStruct(val))
+    {
+        assert(tmpNum < lvaCount);
+
+        // if the method is non-verifiable the assert is not true
+        // so at least ignore it in the case when verification is turned on
+        // since any block that tries to use the temp would have failed verification.
+        var_types varType = lvaTable[tmpNum].lvType;
+        assert(tiVerificationNeeded || varType == TYP_UNDEF || varTypeIsStruct(varType));
+        lvaSetStruct(tmpNum, structType, false);
+
+        // Now, set the type of the struct value. Note that lvaSetStruct may modify the type
+        // of the lclVar to a specialized type (e.g. TYP_SIMD), based on the handle (structType)
+        // that has been passed in for the value being assigned to the temp, in which case we
+        // need to set 'val' to that same type.
+        // Note also that if we always normalized the types of any node that might be a struct
+        // type, this would not be necessary - but that requires additional JIT/EE interface
+        // calls that may not actually be required - e.g. if we only access a field of a struct.
+
+        val->gtType = lvaTable[tmpNum].lvType;
+
+        GenTree* dst = gtNewLclvNode(tmpNum, val->gtType);
+        asg          = impAssignStructStmt(dst, val, structType, pAfterStmt, block, ilOffset);
+    }
+    else
+    {
+        asg = gtNewTempAssign(tmpNum, val);
+    }
+
+    if (!asg->IsNothingNode())
+    {
+        Statement* asgStmt = gtNewStmt(asg, ilOffset);
+        fgInsertStmtAfter(block, *pAfterStmt, asgStmt);
+        *pAfterStmt = asgStmt;
     }
 }
 
@@ -1065,14 +1105,12 @@ GenTreeCall::Use* Compiler::impPopReverseCallArgs(unsigned count, CORINFO_SIG_IN
 // Notes:
 //    Temp assignments may be appended to impStmtList if spilling is necessary.
 
-GenTree* Compiler::impAssignStruct(GenTree*             dest,
-                                   GenTree*             src,
-                                   CORINFO_CLASS_HANDLE structHnd,
-                                   unsigned             curLevel,
-                                   Statement**          pAfterStmt, /* = nullptr */
-                                   IL_OFFSETX           ilOffset,   /* = BAD_IL_OFFSET */
-                                   BasicBlock*          block       /* = nullptr */
-                                   )
+GenTree* Compiler::impAssignStructTree(GenTree*             dest,
+                                       GenTree*             src,
+                                       CORINFO_CLASS_HANDLE structHnd,
+                                       unsigned             curLevel,
+                                       IL_OFFSETX           ilOffset /* = BAD_IL_OFFSET */
+                                       )
 {
     assert(varTypeIsStruct(dest));
 
@@ -1087,16 +1125,7 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
         assert(varTypeIsStruct(dest->AsOp()->gtOp2));
 
         // Append all the op1 of GT_COMMA trees before we evaluate op2 of the GT_COMMA tree.
-        if (pAfterStmt)
-        {
-            Statement* newStmt = gtNewStmt(dest->AsOp()->gtOp1, ilOffset);
-            fgInsertStmtAfter(block, *pAfterStmt, newStmt);
-            *pAfterStmt = newStmt;
-        }
-        else
-        {
-            impAppendTree(dest->AsOp()->gtOp1, curLevel, ilOffset); // do the side effect
-        }
+        impAppendTree(dest->AsOp()->gtOp1, curLevel, ilOffset); // do the side effect
 
         // set dest to the second thing
         dest = dest->AsOp()->gtOp2;
@@ -1125,14 +1154,63 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
         destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
     }
 
-    if (pAfterStmt != nullptr)
+    return impAssignStructPtrTree(destAddr, src, structHnd, curLevel, ilOffset);
+}
+
+GenTree* Compiler::impAssignStructStmt(GenTree*             dest,
+                                       GenTree*             src,
+                                       CORINFO_CLASS_HANDLE structHnd,
+                                       Statement**          pAfterStmt,
+                                       BasicBlock*          block,
+                                       IL_OFFSETX           ilOffset /* = BAD_IL_OFFSET */
+                                       )
+{
+    assert((pAfterStmt != nullptr) && (block != nullptr));
+    assert(varTypeIsStruct(dest));
+
+    if (ilOffset == BAD_IL_OFFSET)
     {
-        return impAssignStructPtrStmt(destAddr, src, structHnd, pAfterStmt, block, ilOffset);
+        ilOffset = impCurStmtOffs;
+    }
+
+    while (dest->gtOper == GT_COMMA)
+    {
+        // Second thing is the struct.
+        assert(varTypeIsStruct(dest->AsOp()->gtOp2));
+
+        // Append all the op1 of GT_COMMA trees before we evaluate op2 of the GT_COMMA tree.
+        Statement* newStmt = gtNewStmt(dest->AsOp()->gtOp1, ilOffset);
+        fgInsertStmtAfter(block, *pAfterStmt, newStmt);
+        *pAfterStmt = newStmt;
+
+        // set dest to the second thing
+        dest = dest->AsOp()->gtOp2;
+    }
+
+    assert(dest->gtOper == GT_LCL_VAR || dest->gtOper == GT_RETURN || dest->gtOper == GT_FIELD ||
+           dest->gtOper == GT_IND || dest->gtOper == GT_OBJ || dest->gtOper == GT_INDEX);
+
+    // Return a NOP if this is a self-assignment.
+    if (dest->OperGet() == GT_LCL_VAR && src->OperGet() == GT_LCL_VAR &&
+        src->AsLclVarCommon()->GetLclNum() == dest->AsLclVarCommon()->GetLclNum())
+    {
+        return gtNewNothingNode();
+    }
+
+    // TODO-1stClassStructs: Avoid creating an address if it is not needed,
+    // or re-creating a Blk node if it is.
+    GenTree* destAddr;
+
+    if (dest->gtOper == GT_IND || dest->OperIsBlk())
+    {
+        destAddr = dest->AsOp()->gtOp1;
     }
     else
     {
-        return impAssignStructPtrTree(destAddr, src, structHnd, curLevel, ilOffset);
+        destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
     }
+
+    return impAssignStructPtrStmt(destAddr, src, structHnd, pAfterStmt, block, ilOffset);
 }
 
 //------------------------------------------------------------------------
@@ -1687,7 +1765,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
     {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
-        impAssignTempGenStruct(tmpNum, structVal, structHnd, curLevel);
+        impAssignTempGenStructTree(tmpNum, structVal, structHnd, curLevel);
 
         // The 'return value' is now the temp itself
 
@@ -1960,7 +2038,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
         {
             unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
-            impAssignTempGenStruct(tmpNum, structVal, structHnd, curLevel);
+            impAssignTempGenStructTree(tmpNum, structVal, structHnd, curLevel);
 
             // The structVal is now the temp itself
 
@@ -2493,7 +2571,7 @@ bool Compiler::impSpillStackEntry(unsigned level,
     }
 
     /* Assign the spilled entry to the temp */
-    impAssignTempGenStruct(tnum, tree, verCurrentState.esStack[level].seTypeInfo.GetClassHandle(), level);
+    impAssignTempGenStructTree(tnum, tree, verCurrentState.esStack[level].seTypeInfo.GetClassHandle(), level);
 
     // If temp is newly introduced and a ref type, grab what type info we can.
     if (isNewTemp && (lvaTable[tnum].lvType == TYP_REF))
@@ -2853,7 +2931,7 @@ GenTree* Compiler::impCloneExpr(GenTree*             tree,
     // specialized type (e.g. a SIMD type).  So we will get the type from
     // the lclVar AFTER calling impAssignTempGenStruct().
 
-    impAssignTempGenStruct(temp, tree, structHnd, curLevel, nullptr, impCurStmtOffs);
+    impAssignTempGenStructTree(temp, tree, structHnd, curLevel, impCurStmtOffs);
     var_types type = genActualType(lvaTable[temp].TypeGet());
 
     *pClone = gtNewLclvNode(temp, type);
@@ -4145,7 +4223,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             noway_assert(genTypeSize(rawHandle->TypeGet()) == genTypeSize(TYP_I_IMPL));
 
             unsigned rawHandleSlot = lvaGrabTemp(true DEBUGARG("rawHandle"));
-            impAssignTempGenStruct(rawHandleSlot, rawHandle, clsHnd, (unsigned)CHECK_SPILL_NONE);
+            impAssignTempGenStructTree(rawHandleSlot, rawHandle, clsHnd, (unsigned)CHECK_SPILL_NONE);
 
             GenTree*  lclVar     = gtNewLclvNode(rawHandleSlot, TYP_I_IMPL);
             GenTree*  lclVarAddr = gtNewOperNode(GT_ADDR, TYP_I_IMPL, lclVar);
@@ -8885,7 +8963,8 @@ DONE_CALL:
                         unsigned   calliSlot  = lvaGrabTemp(true DEBUGARG("calli"));
                         LclVarDsc* varDsc     = &lvaTable[calliSlot];
                         varDsc->lvVerTypeInfo = tiRetVal;
-                        impAssignTempGenStruct(calliSlot, call, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_NONE);
+                        impAssignTempGenStructTree(calliSlot, call, tiRetVal.GetClassHandle(),
+                                                   (unsigned)CHECK_SPILL_NONE);
                         // impAssignTempGenTree can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
                         call           = gtNewLclvNode(calliSlot, type);
@@ -9363,7 +9442,7 @@ REDO_RETURN_NODE:
             unsigned tmpNum = lvaGrabTemp(true DEBUGARG("pseudo return buffer"));
 
             // No need to spill anything as we're about to return.
-            impAssignTempGenStruct(tmpNum, op, info.compMethodInfo->args.retTypeClass, (unsigned)CHECK_SPILL_NONE);
+            impAssignTempGenStructTree(tmpNum, op, info.compMethodInfo->args.retTypeClass, (unsigned)CHECK_SPILL_NONE);
 
             // Don't create both a GT_ADDR & GT_OBJ just to undo all of that; instead,
             // jump directly to a GT_LCL_FLD.
@@ -11420,7 +11499,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (varTypeIsStruct(lclTyp))
                 {
-                    op1 = impAssignStruct(op2, op1, clsHnd, (unsigned)CHECK_SPILL_ALL);
+                    op1 = impAssignStructTree(op2, op1, clsHnd, (unsigned)CHECK_SPILL_ALL);
                 }
                 else
                 {
@@ -12154,7 +12233,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 if (varTypeIsStruct(op1))
                 {
-                    op1 = impAssignStruct(op1, op2, stelemClsHnd, (unsigned)CHECK_SPILL_ALL);
+                    op1 = impAssignStructTree(op1, op2, stelemClsHnd, (unsigned)CHECK_SPILL_ALL);
                 }
                 else
                 {
@@ -13207,7 +13286,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (!opts.compDbgCode && !op1->IsIntegralConst(0) && !op1->IsFPZero() && !op1->IsLocal())
                 {
                     const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
-                    impAssignTempGenStruct(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
+                    impAssignTempGenStructTree(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
                     var_types type = genActualType(lvaTable[tmpNum].TypeGet());
                     op1            = gtNewLclvNode(tmpNum, type);
 
@@ -14832,7 +14911,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (deferStructAssign)
                 {
-                    op1 = impAssignStruct(op1, op2, clsHnd, (unsigned)CHECK_SPILL_ALL);
+                    op1 = impAssignStructTree(op1, op2, clsHnd, (unsigned)CHECK_SPILL_ALL);
                 }
             }
                 goto APPEND;
@@ -15475,7 +15554,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
+                        op1 = impAssignStructTree(op2, op1, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
@@ -15513,7 +15592,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
+                        op1 = impAssignStructTree(op2, op1, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
@@ -16375,7 +16454,7 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* src, CORINFO
 GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for small struct return."));
-    impAssignTempGenStruct(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
+    impAssignTempGenStructTree(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
     GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
     return ret;
 }
@@ -16395,7 +16474,7 @@ GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HAND
 GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
-    impAssignTempGenStruct(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
+    impAssignTempGenStructTree(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
     GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
 
     // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
@@ -16630,8 +16709,8 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                         restoreType = true;
                     }
 
-                    impAssignTempGenStruct(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
-                                           (unsigned)CHECK_SPILL_ALL);
+                    impAssignTempGenStructTree(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
+                                               (unsigned)CHECK_SPILL_ALL);
 
                     GenTree* tmpOp2 = gtNewLclvNode(lvaInlineeReturnSpillTemp, op2->TypeGet());
 
@@ -16719,8 +16798,8 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     assert(info.compRetNativeType != TYP_VOID);
                     assert(fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals());
 
-                    impAssignTempGenStruct(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
-                                           (unsigned)CHECK_SPILL_ALL);
+                    impAssignTempGenStructTree(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
+                                               (unsigned)CHECK_SPILL_ALL);
                 }
 
 #if defined(_TARGET_ARM_) || defined(UNIX_AMD64_ABI)

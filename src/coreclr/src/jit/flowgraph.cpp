@@ -23288,8 +23288,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     // argTmpNum here since in-linee compiler instance
                     // would have iterated over these and marked them
                     // accordingly.
-                    impAssignTempGenStruct(tmpNum, argNode, structHnd, (unsigned)CHECK_SPILL_NONE, &afterStmt,
-                                           callILOffset, block);
+                    impAssignTempGenStructStmt(tmpNum, argNode, structHnd, &afterStmt, block, callILOffset);
 
                     // We used to refine the temp type here based on
                     // the actual arg, but we now do this up front, when
