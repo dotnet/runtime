@@ -16,7 +16,10 @@
     </PropertyGroup>
     <ItemGroup>
       <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
-      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" />
+      <CoreCLRCrossTargetFiles
+        Include="$(CoreCLRCrossTargetComponentDir)*.*"
+        Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
+        IsNative="true" />
       <CoreCLRFiles Include="$(CoreCLROverridePath)Redist/**/*.dll" />
       <CoreCLRFiles>
         <IsNative>true</IsNative>
@@ -84,6 +87,9 @@
         NuGetPackageId="runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
     </ItemGroup>
 
+    <Error Condition="'@(CoreFXReferenceItems)' == ''" Text="The path provided to CoreFXOverridePath ($(CoreFXOverridePath)) has no CoreFXReferenceItems." />
+    <Error Condition="'@(CoreFXReferenceCopyLocalItems)' == ''" Text="The path provided to CoreFXOverridePath ($(CoreFXOverridePath)) has no CoreFXReferenceCopyLocalItems." />
+
     <ItemGroup>
       <OverriddenFrameworkReferenceFiles
         Include="@(Reference)"
@@ -123,11 +129,10 @@
   <Target Name="OverrideCrossgenToolPaths" DependsOnTargets="GetCorePackagePaths" AfterTargets="GetCrossgenToolPaths" BeforeTargets="CreateCrossGenImages">  
     <PropertyGroup Condition="'$(CoreCLROverridePath)' != ''">
       <_runtimeDirectory>$(CoreCLROverridePath)</_runtimeDirectory>
-      <_crossgenPath>$(CoreCLROverridePath)/crossgen$(ApplicationFileExtension)</_crossgenPath>
+      <_crossgenPath>$([MSBuild]::NormalizePath('$(CoreCLROverridePath)', '$(_crossHostArch)', 'crossgen$(ApplicationFileExtension)'))</_crossgenPath>
       <_CoreLibSharedDirectory>$(CoreCLROverridePath)</_CoreLibSharedDirectory>
-      <_jitPath>$(CoreClrOverridePath)/$(_crossHostArch)/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
+      <_jitPath>$([MSBuild]::NormalizePath('$(CoreCLROverridePath)', '$(_crossHostArch)', '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'))</_jitPath>
     </PropertyGroup>
-
   </Target>
 
 </Project>
