@@ -44,12 +44,8 @@
           $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
           $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
 
-      <CoreCLRFiles>
-        <TargetPath>runtime/$(RuntimeIdentifier)/native</TargetPath>
-      </CoreCLRFiles>
-
       <CoreCLRCrossTargetFiles>
-        <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+        <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
       </CoreCLRCrossTargetFiles>
 
       <CoreCLRFiles Include="@(CoreCLRCrossTargetFiles)" />
