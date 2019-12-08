@@ -71,6 +71,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
+            ThrowIfDisposed();
+
             if (await _acceptConnectionQueue.Reader.WaitToReadAsync())
             {
                 if (_acceptConnectionQueue.Reader.TryRead(out MsQuicConnection connection))
@@ -127,12 +129,16 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
+
             _api._listenerStopDelegate(_ptr);
             return default;
         }
 
         internal override async ValueTask StartAsync(CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
+
             _secConfig = await _api.CreateSecurityConfig(_sslOptions?.ServerCertificate);
 
             SetCallbackHandler();
@@ -212,6 +218,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _ptr,
                 _listenerDelegate,
                 GCHandle.ToIntPtr(_handle));
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(MsQuicStream));
+            }
         }
     }
 }

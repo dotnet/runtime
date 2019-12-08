@@ -228,6 +228,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
+            ThrowIfDisposed();
+
             if (await _acceptQueue.Reader.WaitToReadAsync(cancellationToken))
             {
                 if (_acceptQueue.Reader.TryRead(out MsQuicStream stream))
@@ -244,11 +246,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
+            ThrowIfDisposed();
+
             return StreamOpen(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
+            ThrowIfDisposed();
+
             return StreamOpen(QUIC_STREAM_OPEN_FLAG.NONE);
         }
 
@@ -259,6 +265,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
+
             // TODO move idle timeout setting from this class
             uint status = _api._connectionStartDelegate(
                 _ptr,
@@ -367,7 +375,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
         {
-            // TODO make this async
+            ThrowIfDisposed();
+
             return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0);
         }
 
@@ -396,6 +405,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return default;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(MsQuicStream));
+            }
         }
     }
 }

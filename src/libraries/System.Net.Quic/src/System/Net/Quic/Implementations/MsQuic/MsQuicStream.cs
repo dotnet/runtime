@@ -117,6 +117,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
+
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             if (!_canWrite)
@@ -170,6 +172,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
+
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             if (!_canRead)
             {
@@ -255,6 +259,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
+            ThrowIfDisposed();
+
             lock (_sync)
             {
                 _readState = ReadState.Aborted;
@@ -268,6 +274,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override ValueTask ShutdownWriteAsync(CancellationToken cancellationToken = default)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            ThrowIfDisposed();
 
             // TODO do anything to stop writes?
             using CancellationTokenRegistration registration = cancellationToken.Register(() =>
@@ -298,22 +306,29 @@ namespace System.Net.Quic.Implementations.MsQuic
         // TODO consider removing sync-over-async with blocking calls.
         internal override int Read(Span<byte> buffer)
         {
+            ThrowIfDisposed();
+
             return ReadAsync(buffer.ToArray()).GetAwaiter().GetResult();
         }
 
         internal override void Write(ReadOnlySpan<byte> buffer)
         {
+            ThrowIfDisposed();
+
             WriteAsync(buffer.ToArray()).GetAwaiter().GetResult();
         }
 
         // MsQuic doesn't support explicit flushing
         internal override void Flush()
         {
+            ThrowIfDisposed();
         }
 
         // MsQuic doesn't support explicit flushing
         internal override Task FlushAsync(CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
+
             return default;
         }
 
@@ -716,6 +731,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         private unsafe long GetStreamId()
         {
             return (long)MsQuicParameterHelpers.GetULongParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.STREAM, (uint)QUIC_PARAM_STREAM.ID);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(MsQuicStream));
+            }
         }
 
         private enum StartState
