@@ -112,30 +112,6 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux rhel6 x64
-
-- ${{ if or(containsValue(parameters.platforms, 'Linux_rhel6_x64'), eq(parameters.platformGroup, 'all')) }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      osGroup: Linux
-      osSubgroup: _rhel6
-      archType: x64
-      platform: Linux_rhel6_x64
-      container:
-        image: centos-6-f39df28-20191023143802
-        registry: mcr
-      jobParameters:
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        ${{ if ne(parameters.managedOsxBuild, true) }}:
-          managedTestBuildOsGroup: Linux_rhel
-        ${{ if eq(parameters.managedOsxBuild, true) }}:
-          managedTestBuildOsGroup: OSX
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
 # Linux x64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
@@ -157,6 +133,22 @@ jobs:
           managedTestBuildOsGroup: Linux
         ${{ if eq(parameters.managedOsxBuild, true) }}:
           managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+- ${{ if containsValue(parameters.platforms, 'WebAssembly_wasm') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: WebAssembly
+      archType: wasm
+      platform: WebAssembly_wasm
+      container:
+        image: ubuntu-16.04-a50a721-20191023143845
+        registry: mcr
+      jobParameters:
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # FreeBSD

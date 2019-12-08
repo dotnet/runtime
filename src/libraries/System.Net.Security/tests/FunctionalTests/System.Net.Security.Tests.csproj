@@ -124,38 +124,6 @@
           <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
         </Compile>
       </ItemGroup>
-      <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-        <None Include="..\Scripts\Unix\setup-kdc.sh">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="..\Scripts\Unix\krb5.conf">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="..\Scripts\Unix\kdc.conf.ubuntu">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="..\Scripts\Unix\kdc.conf.centos">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="..\Scripts\Unix\kdc.conf.opensuse">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <Compile Include="NegotiateStreamTest.Linux.cs" />
-        <Compile Include="UnixGssFakeNegotiateStream.cs" />
-        <Compile Include="UnixGssFakeStreamFramer.cs" />
-        <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs">
-          <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs">
-          <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs">
-          <Link>Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs">
-          <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs</Link>
-        </Compile>
-      </ItemGroup>
       <ItemGroup>
         <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
       </ItemGroup>

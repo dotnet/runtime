@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
@@ -732,7 +733,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static char SingletonChar(string set)
         {
-            Debug.Assert(IsSingleton(set) || IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
+            Debug.Assert(IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
             return set[SetStartIndex];
         }
 
@@ -746,14 +747,6 @@ namespace System.Text.RegularExpressions
             charClass[SetLengthIndex] == 0 &&
             !IsNegated(charClass) &&
             !IsSubtraction(charClass);
-
-        /// <summary><c>true</c> if the set contains a single character only</summary>
-        public static bool IsSingleton(string set) =>
-            set[CategoryLengthIndex] == 0 &&
-            set[SetLengthIndex] == 2 &&
-            !IsNegated(set) &&
-            !IsSubtraction(set) &&
-            (set[SetStartIndex] == LastChar || set[SetStartIndex] + 1 == set[SetStartIndex + 1]);
 
         public static bool IsSingletonInverse(string set) =>
             set[CategoryLengthIndex] == 0 &&
@@ -821,6 +814,68 @@ namespace System.Text.RegularExpressions
                 default:
                     return ch == ZeroWidthJoiner || ch == ZeroWidthNonJoiner;
             }
+        }
+
+        public static bool CharInClass(char ch, string set, ref int[]? asciiResultCache)
+        {
+            // The int[] contains 8 ints, or 256 bits.  These are laid out as pairs, where the first bit ("known") in the pair
+            // says whether the second bit ("value") in the pair has already been computed.  Once a value is computed, it's never
+            // changed, so since Int32s are written/read atomically, we can trust the value bit if we see that the known bit
+            // has been set.  If the known bit hasn't been set, then we proceed to look it up, and then swap in the result.
+            const int CacheArrayLength = 8;
+            Debug.Assert(asciiResultCache is null || asciiResultCache.Length == CacheArrayLength, "set lookup should be able to store two bits for each of the first 128 characters");
+
+            if (ch < 128)
+            {
+                // Lazily-initialize the cache for this set.
+                if (asciiResultCache is null)
+                {
+                    Interlocked.CompareExchange(ref asciiResultCache, new int[CacheArrayLength], null);
+                }
+
+                // Determine which int in the lookup array contains the known and value bits for this character,
+                // and compute their bit numbers.
+                ref int slot = ref asciiResultCache[ch >> 4];
+                int knownBit = 1 << ((ch & 0xF) << 1);
+                int valueBit = knownBit << 1;
+
+                // If the value for this bit has already been computed, use it.
+                int current = slot;
+                if ((current & knownBit) != 0)
+                {
+                    return (current & valueBit) != 0;
+                }
+
+                // (After warm-up, we should find ourselves rarely getting here.)
+
+                // Otherwise, compute it normally.
+                bool isInClass = CharInClass(ch, set);
+
+                // Determine which bits to write back to the array.
+                int bitsToSet = knownBit;
+                if (isInClass)
+                {
+                    bitsToSet |= valueBit;
+                }
+
+                // "or" the bits back in a thread-safe manner.
+                while (true)
+                {
+                    int oldValue = Interlocked.CompareExchange(ref slot, current | bitsToSet, current);
+                    if (oldValue == current)
+                    {
+                        break;
+                    }
+
+                    current = oldValue;
+                }
+
+                // Return the computed value.
+                return isInClass;
+            }
+
+            // Non-ASCII.  Fall back to computing the answer.
+            return CharInClassRecursive(ch, set, 0);
         }
 
         public static bool CharInClass(char ch, string set) =>

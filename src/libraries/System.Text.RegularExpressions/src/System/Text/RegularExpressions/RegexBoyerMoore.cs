@@ -205,23 +205,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private bool MatchPattern(string text, int index)
-        {
-            if (CaseInsensitive)
-            {
-                if (text.Length - index < Pattern.Length)
-                {
-                    return false;
-                }
-
-                return (0 == string.Compare(Pattern, 0, text, index, Pattern.Length, CaseInsensitive, _culture));
-            }
-            else
-            {
-                return (0 == string.CompareOrdinal(Pattern, 0, text, index, Pattern.Length));
-            }
-        }
-
         /// <summary>
         /// When a regex is anchored, we can do a quick IsMatch test instead of a Scan
         /// </summary>
@@ -231,16 +214,21 @@ namespace System.Text.RegularExpressions
             {
                 if (index < beglimit || endlimit - index < Pattern.Length)
                     return false;
-
-                return MatchPattern(text, index);
             }
             else
             {
                 if (index > endlimit || index - beglimit < Pattern.Length)
                     return false;
 
-                return MatchPattern(text, index - Pattern.Length);
+                index -= Pattern.Length;
             }
+
+            if (CaseInsensitive)
+            {
+                return string.Compare(Pattern, 0, text, index, Pattern.Length, ignoreCase: true, _culture) == 0;
+            }
+
+            return Pattern.AsSpan().SequenceEqual(text.AsSpan(index, Pattern.Length));
         }
 
         /// <summary>

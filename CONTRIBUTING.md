@@ -31,7 +31,7 @@ Please do not:
   of time.
 * **DON'T** commit code that you didn't write. If you find code that you think is a good fit to add to .NET Core, file an issue and start a discussion before proceeding.
 * **DON'T** submit PRs that alter licensing related files or headers. If you believe there's a problem with them, file an issue and we'll be happy to discuss it.
-* **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project-docs/api-review-process.md).
+* **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project/api-review-process.md).
 
 ## Managed Code Compatibility
 
@@ -105,8 +105,8 @@ The following file header is the used for .NET Core. Please use it for new files
 // See the LICENSE file in the project root for more information.
 ```
 
-- See [class.cpp](../../src/vm/class.cpp) for an example of the header in a C++ file.
-- See [List.cs](../../src/System.Private.CoreLib/shared/System/Collections/Generic/List.cs) for an example of the header in a C# file.
+- See [class.cpp](./src/coreclr/src/vm/class.cpp) for an example of the header in a C++ file.
+- See [List.cs](./src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs) for an example of the header in a C# file.
 
 ## PR - CI Process
 
@@ -151,9 +151,9 @@ The following rules must be followed for PRs that include files from another pro
 
 - The license of the file is [permissive](https://en.wikipedia.org/wiki/Permissive_free_software_licence).
 - The license of the file is left in-tact.
-- The contribution is correctly attributed in the [3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file in the repository, as needed.
+- The contribution is correctly attributed in the [3rd party notices](./THIRD-PARTY-NOTICES.TXT) file in the repository, as needed.
 
-See [IdnMapping.cs](../../src/System.Private.CoreLib/shared/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file.
+See [IdnMapping.cs](./src/libraries/System.Private.CoreLib/src/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](./THIRD-PARTY-NOTICES.TXT) file.
 
 ### Porting Files from Other Projects
 

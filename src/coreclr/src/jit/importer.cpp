@@ -6393,6 +6393,15 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     //   jit\jit64\ebvts\mcpp\sources2\ijw\__clrcall\vector_ctor_dtor.02\deldtor_clr.exe
     if (block->hasTryIndex())
     {
+        // This does not apply to the raw pinvoke call that is inside the pinvoke
+        // ILStub. In this case, we have to inline the raw pinvoke call into the stub,
+        // otherwise we would end up with a stub that recursively calls itself, and end
+        // up with a stack overflow.
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
+        {
+            return true;
+        }
+
         return false;
     }
 #endif // _TARGET_64BIT_
@@ -6487,17 +6496,25 @@ void Compiler::impCheckForPInvokeCall(
         // inlining in CoreRT. Skip the ambient conditions checks and profitability checks.
         if (!IsTargetAbi(CORINFO_CORERT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
         {
-            if (!impCanPInvokeInline())
+            if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
             {
-                return;
+                // Raw PInvoke call in PInvoke IL stub generated must be inlined to avoid infinite
+                // recursive calls to the stub.
             }
-
-            // Size-speed tradeoff: don't use inline pinvoke at rarely
-            // executed call sites.  The non-inline version is more
-            // compact.
-            if (block->isRunRarely())
+            else
             {
-                return;
+                if (!impCanPInvokeInline())
+                {
+                    return;
+                }
+
+                // Size-speed tradeoff: don't use inline pinvoke at rarely
+                // executed call sites.  The non-inline version is more
+                // compact.
+                if (block->isRunRarely())
+                {
+                    return;
+                }
             }
         }
 

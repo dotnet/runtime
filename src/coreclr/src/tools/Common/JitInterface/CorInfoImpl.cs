@@ -636,14 +636,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
-            {
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
-
-                if (method.IsRawPInvoke())
-                {
-                    result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
-                }
-            }
 
 #if READYTORUN
             if (method.RequireSecObject)
@@ -1401,7 +1394,7 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT)
+            if (type.IsByReferenceOfT || type.IsWellKnownType(WellKnownType.TypedReference))
             {
                 *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
                 return 1;
@@ -1597,10 +1590,11 @@ namespace Internal.JitInterface
                         return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
                     }
                 }
-                else if (!md.IsConstructor && !typeToInit.IsValueType)
+                else if (!md.IsConstructor && !typeToInit.IsValueType && !typeToInit.IsInterface)
                 {
                     // According to the spec, we should be able to do this optimization for both reference and valuetypes.
                     // To maintain backward compatibility, we are doing it for reference types only.
+                    // We don't do this for interfaces though, as those don't have instance constructors.
                     // For instance methods of types with precise-initialization
                     // semantics, we can assume that the .ctor triggerred the
                     // type initialization.
@@ -1641,7 +1635,7 @@ namespace Internal.JitInterface
                 // This optimization may cause static fields in reference types to be accessed without cctor being triggered
                 // for NULL "this" object. It does not conform with what the spec says. However, we have been historically 
                 // doing it for perf reasons.
-                if (!typeToInit.IsValueType && !typeToInit.IsBeforeFieldInit)
+                if (!typeToInit.IsValueType && ! typeToInit.IsInterface && !typeToInit.IsBeforeFieldInit)
                 {
                     if (typeToInit == typeFromContext(context) || typeToInit == MethodBeingCompiled.OwningType)
                     {
@@ -2530,13 +2524,12 @@ namespace Internal.JitInterface
         private byte* findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException("findNameOfToken"); }
 
-        SystemVStructClassificator _systemVStructClassificator = new SystemVStructClassificator();
-
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         {
             TypeDesc typeDesc = HandleToObject(structHnd);
 
-            return _systemVStructClassificator.getSystemVAmd64PassStructInRegisterDescriptor(typeDesc, structPassInRegDescPtr);
+            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(typeDesc, out *structPassInRegDescPtr);
+            return true;
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)

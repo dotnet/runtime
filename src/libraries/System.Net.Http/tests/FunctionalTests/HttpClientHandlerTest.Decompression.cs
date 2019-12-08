@@ -59,12 +59,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(
             string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods)
         {
-            if (!UseSocketsHttpHandler && encodingName == "br")
-            {
-                // Brotli only supported on SocketsHttpHandler.
-                return;
-            }
-
             var expectedContent = new byte[12345];
             new Random(42).NextBytes(expectedContent);
 
@@ -206,13 +200,6 @@ namespace System.Net.Http.Functional.Tests
             string encodings,
             string manualAcceptEncodingHeaderValues)
         {
-            if (!UseSocketsHttpHandler &&
-                (encodings.Contains("br") || manualAcceptEncodingHeaderValues.Contains("br")))
-            {
-                // Brotli encoding only supported on SocketsHttpHandler.
-                return;
-            }
-
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();

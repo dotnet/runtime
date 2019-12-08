@@ -4,21 +4,21 @@
 
 namespace System.ComponentModel
 {
-    public delegate void RunWorkerCompletedEventHandler(object sender, RunWorkerCompletedEventArgs e);
+    public delegate void RunWorkerCompletedEventHandler(object? sender, RunWorkerCompletedEventArgs e);
 
     public class RunWorkerCompletedEventArgs : AsyncCompletedEventArgs
     {
-        private readonly object _result;
+        private readonly object? _result;
 
-        public RunWorkerCompletedEventArgs(object result,
-                                           Exception error,
+        public RunWorkerCompletedEventArgs(object? result,
+                                           Exception? error,
                                            bool cancelled)
             : base(error, cancelled, null)
         {
             _result = result;
         }
 
-        public object Result
+        public object? Result
         {
             get
             {
@@ -29,7 +29,7 @@ namespace System.ComponentModel
 
         // Hide from editor, since never used.
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public new object UserState
+        public new object? UserState
         {
             get
             {

@@ -3,12 +3,6 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <!--
-    Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
-    $(Subset) automatically when creating project-to-project dependencies.
-  -->
-  <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
-
-  <!--
     Before Microsoft.Common.targets, set the extensions path to match the restore dir as Arcade
     sets it, so MSBuild packages with targets files will be found and imported.
   -->
@@ -29,26 +23,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <InstallerProjectRoot>$(MSBuildThisFileDirectory)</InstallerProjectRoot>
     <SigningToolsDir>$(InstallerProjectRoot)signing\</SigningToolsDir>
-    <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
   </PropertyGroup>
 
   <PropertyGroup>
     <HostMachineInfoProps>$(ArtifactsObjDir)HostMachineInfo.props</HostMachineInfoProps>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!--
-      This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging
-      It is also used to name the build output manifest for orchestrated builds.
-    -->
-    <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">core-setup</GitHubRepositoryName>
-  </PropertyGroup>
-
-  <!-- Build as portable by default -->
-  <PropertyGroup>
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -121,8 +100,6 @@
     <EnableSourceLink>false</EnableSourceLink>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
     <DeterministicSourcePaths>false</DeterministicSourcePaths>
-    <!-- Normally set by sourcelink, and needed by the Pack targets -->
-    <RepositoryUrl Condition="'$(RepositoryUrl)' == '''">https://github.com/dotnet/core-setup</RepositoryUrl>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->

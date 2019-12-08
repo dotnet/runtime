@@ -47,8 +47,13 @@
       artifacts to the test layout, then running the test subset.
   -->
 
-  <!-- Import only when imported by Arcade's Build.proj as we import Directory.Build.props ourselves. -->
-  <Import Project="$(RepoRoot)Directory.Build.props" Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true'" />
+  <PropertyGroup>
+    <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'libraries'))</LibrariesProjectRoot>
+    <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr'))</CoreClrProjectRoot>
+    <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
+    <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'tools-local'))</RepoToolsLocalDir>
+    <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
+  </PropertyGroup>
 
   <PropertyGroup>
     <DefaultSubsetCategories>libraries-installer-coreclr</DefaultSubsetCategories>

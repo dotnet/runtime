@@ -23,9 +23,4 @@
       <Link>Common\System\Runtime\Serialization\Utils.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="SizeFTests.netcoreapp.cs" />
-    <Compile Include="ColorTests.netcoreapp.cs" />
-    <Compile Include="SizeTests.netcoreapp.cs" />
-  </ItemGroup>
 </Project>

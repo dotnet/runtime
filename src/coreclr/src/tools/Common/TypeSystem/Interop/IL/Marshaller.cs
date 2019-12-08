@@ -1434,7 +1434,7 @@ namespace Internal.TypeSystem.Interop
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
         }
 
-        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
@@ -1529,7 +1529,7 @@ namespace Internal.TypeSystem.Interop
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
         }
 
-        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
@@ -1616,7 +1616,7 @@ namespace Internal.TypeSystem.Interop
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
         }
 
-        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 

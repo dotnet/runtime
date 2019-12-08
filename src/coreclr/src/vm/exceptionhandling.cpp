@@ -2498,7 +2498,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
 
     // Doing rude abort.  Skip all non-constrained execution region code.
     // When rude abort is initiated, we cannot intercept any exceptions.
-    if ((pThread->IsRudeAbortInitiated() && !pThread->IsWithinCer(pcfThisFrame)))
+    if (pThread->IsRudeAbortInitiated())
     {
         // If we are unwinding to find the real resume frame, then we cannot ignore frames yet.
         // We need to make sure we find the correct resume frame before starting to ignore frames.
@@ -3030,7 +3030,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                             pThread->m_dwIndexClauseForCatch = dwPreFilterTACatchHandlerClauseIndex;
                             pThread->m_sfEstablisherOfActualHandlerFrame = sfPreFilterEstablisherOfActualHandlerFrame;
 
-                            if (pThread->IsRudeAbortInitiated() && !pThread->IsWithinCer(pcfThisFrame))
+                            if (pThread->IsRudeAbortInitiated())
                             {
                                 EH_LOG((LL_INFO100, "  IGNOREFRAME: rude abort\n"));
                                 goto lExit;

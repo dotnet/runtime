@@ -1584,7 +1584,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
             unsigned int offset = 0;
             if (srcAddr->OperGet() == GT_LCL_FLD_ADDR)
             {
-                offset = srcAddr->AsLclFld()->gtLclOffs;
+                offset = srcAddr->AsLclFld()->GetLclOffs();
             }
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->GetLclNum(), offset);
         }

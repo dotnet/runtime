@@ -195,6 +195,11 @@ namespace Internal.JitInterface
                 // Special methods on delegate types
                 return true;
             }
+            if (method.HasCustomAttribute("System.Runtime", "BypassReadyToRunAttribute"))
+            {
+                // This is a quick workaround to opt specific methods out of ReadyToRun compilation to work around bugs.
+                return true;
+            }
 
             return false;
         }
@@ -635,6 +640,7 @@ namespace Internal.JitInterface
         {
             if (fIsTailPrefix)
             {
+                // FUTURE: Delay load fixups for tailcalls
                 throw new RequiresRuntimeJitException(nameof(fIsTailPrefix));
             }
 
@@ -907,6 +913,11 @@ namespace Internal.JitInterface
 
             originalMethod = HandleToObject(pResolvedToken.hMethod);
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
+
+            if (type.IsGenericDefinition)
+            {
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, HandleToObject(callerHandle));
+            }
 
             // This formula roughly corresponds to CoreCLR CEEInfo::resolveToken when calling GetMethodDescFromMethodSpec
             // (that always winds up by calling FindOrCreateAssociatedMethodDesc) at

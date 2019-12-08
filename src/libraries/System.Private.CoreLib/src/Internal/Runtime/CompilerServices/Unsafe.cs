@@ -27,7 +27,7 @@ namespace Internal.Runtime.CompilerServices
 {
     //
     // Subsetted clone of System.Runtime.CompilerServices.Unsafe for internal runtime use.
-    // Keep in sync with https://github.com/dotnet/corefx/tree/master/src/System.Runtime.CompilerServices.Unsafe.
+    // Keep in sync with https://github.com/dotnet/runtime/tree/master/src/libraries/System.Runtime.CompilerServices.Unsafe.
     //
 
     /// <summary>
