@@ -3895,7 +3895,7 @@ namespace System
                     }
 
                     // fast path??
-                    instance = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions)!;
+                    instance = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
                 }
                 else
                 {
