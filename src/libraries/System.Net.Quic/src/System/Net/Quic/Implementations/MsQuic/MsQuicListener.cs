@@ -19,6 +19,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // Security configuration for MsQuic
         private MsQuicSecurityConfig _secConfig;
+        private MsQuicSession _session;
 
         // Pointer to the underlying listener
         private IntPtr _ptr;
@@ -39,13 +40,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private readonly Channel<MsQuicConnection> _acceptConnectionQueue;
 
-        internal MsQuicListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions, MsQuicApi api, IntPtr nativeObjPtr)
+        internal MsQuicListener(QuicListenerOptions options)
         {
-            _api = api;
-            _sslOptions = sslServerAuthenticationOptions;
-            _listenEndPoint = listenEndPoint;
-            _ptr = nativeObjPtr;
-            _acceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(512) // TODO make this configurable.
+            _session = new MsQuicSession();
+            _ptr = _session.ListenerOpen(options);
+
+            _api = MsQuicApi.Api;
+            _sslOptions = options.ServerAuthenticationOptions;
+            _listenEndPoint = options.ListenEndPoint;
+            _acceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(options.ListenBacklog)
             {
                 SingleReader = true,
                 SingleWriter = true
@@ -117,6 +120,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _ptr = IntPtr.Zero;
             _api = null;
+            // TODO this call to session dispose hangs.
+            //_session.Dispose();
             _disposed = true;
         }
 

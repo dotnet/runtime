@@ -17,6 +17,7 @@ namespace System.Net.Quic.Implementations.MsQuic
     {
         // Functions to invoke in MsQuic
         public MsQuicApi _api;
+        private MsQuicSession _session;
 
         // Pointer to the underlying connection
         private IntPtr _ptr;
@@ -38,7 +39,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private bool _connected;
 
         // Queue for accepted streams
-        private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateBounded<MsQuicStream>(new BoundedChannelOptions(capacity: 512) // TODO configurable limit here.
+        private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateUnbounded<MsQuicStream>(new UnboundedChannelOptions()
         {
             SingleReader = true,
             SingleWriter = true,
@@ -60,13 +61,16 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // constructor for outbound connections
         // TODO eventually remove the MsQuicApi and nativeObjectPtr from this constructor as people will new this up.
-        public MsQuicConnection(IPEndPoint remoteEndPoint, MsQuicApi api, IntPtr nativeObjPtr, SslClientAuthenticationOptions sslClientAuthenticationOptions)
+        public MsQuicConnection(QuicClientConnectionOptions options)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            _remoteEndPoint = remoteEndPoint;
-            _ptr = nativeObjPtr;
-            _api = api;
+            // TODO need to figure out if/how we want to expose sessions
+            // Creating a session per connection isn't ideal.
+            _session = new MsQuicSession();
+            _ptr = _session.ConnectionOpen(options);
+            _remoteEndPoint = options.RemoteEndPoint;
+            _api = MsQuicApi.Api;
 
             SetCallbackHandler();
             SetIdleTimeout(TimeSpan.FromSeconds(120));
@@ -209,17 +213,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             MsQuicStream msQuicStream = new MsQuicStream(_api, this, connectionEvent.StreamFlags, connectionEvent.Data.NewStream.Stream, inbound: true);
 
-            if (_acceptQueue.Writer.TryWrite(msQuicStream))
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            _acceptQueue.Writer.TryWrite(msQuicStream);
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-                return MsQuicConstants.Success;
-            }
-            else
-            {
-                // Backlog too large, can't accept connections.
-                return MsQuicConstants.InternalError;
-            }
+            return MsQuicConstants.Success;
         }
 
         private uint HandleEventStreamsAvailable(ConnectionEvent connectionEvent)
@@ -350,6 +347,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             if (_ptr != IntPtr.Zero)
             {
                 _api._connectionCloseDelegate?.Invoke(_ptr);
@@ -359,7 +358,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             _api = null;
 
             _handle.Free();
+            _session?.Dispose();
+
             _disposed = true;
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
@@ -375,6 +378,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return default;
             }
 
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             if (_ptr != IntPtr.Zero)
             {
                 _api._connectionCloseDelegate?.Invoke(_ptr);
@@ -384,7 +389,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             _api = null;
 
             _handle.Free();
+
+            //_session?.Dispose();
             _disposed = true;
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
             return default;
         }
     }

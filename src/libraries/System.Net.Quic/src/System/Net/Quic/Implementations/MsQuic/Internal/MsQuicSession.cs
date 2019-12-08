@@ -11,12 +11,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         private MsQuicApi _api;
         private bool _opened;
 
-        internal MsQuicSession(string registration)
+        internal MsQuicSession()
         {
             _api = MsQuicApi.Api;
         }
 
-        public MsQuicConnection ConnectionOpen(QuicClientConnectionOptions options)
+        public IntPtr ConnectionOpen(QuicClientConnectionOptions options)
         {
             if (!_opened)
             {
@@ -25,27 +25,25 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     options.MaxUnidirectionalStreams);
             }
 
-            uint status = _api._connectionOpenDelegate(
+            MsQuicStatusException.ThrowIfFailed(_api._connectionOpenDelegate(
                 _nativeObjPtr,
                 MsQuicConnection.NativeCallbackHandler,
                 IntPtr.Zero,
-                out IntPtr connectionPtr);
+                out IntPtr connectionPtr));
 
-            MsQuicStatusException.ThrowIfFailed(status);
-
-            return new MsQuicConnection(options.RemoteEndPoint, _api, connectionPtr, options.ClientAuthenticationOptions);
+            return connectionPtr;
         }
 
         private void OpenSession(byte[] alpn, short bidirectionalStreamCount, short undirectionalStreamCount)
         {
             _opened = true;
             _nativeObjPtr = _api.SessionOpen(alpn);
-            SetPeerBiDirectionalStreamCount((ushort)bidirectionalStreamCount); // TODO make these configurable.
+            SetPeerBiDirectionalStreamCount((ushort)bidirectionalStreamCount);
             SetPeerUnidirectionalStreamCount((ushort)undirectionalStreamCount);
         }
 
         // TODO allow for a callback to select the certificate (SNI).
-        public MsQuicListener ListenerOpen(QuicListenerOptions options)
+        public IntPtr ListenerOpen(QuicListenerOptions options)
         {
             if (!_opened)
             {
@@ -54,18 +52,16 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                                     options.MaxUnidirectionalStreams);
             }
 
-            uint status = _api._listenerOpenDelegate(
+            MsQuicStatusException.ThrowIfFailed(_api._listenerOpenDelegate(
                 _nativeObjPtr,
                 MsQuicListener.NativeCallbackHandler,
                 IntPtr.Zero,
-                out IntPtr listenerPointer);
+                out IntPtr listenerPointer));
 
-            var listener = new MsQuicListener(options.ListenEndPoint, options.ServerAuthenticationOptions, _api, listenerPointer);
-
-            return listener;
+            return listenerPointer;
         }
 
-        // TODO call this for graceful shutdown.
+        // TODO call this for graceful shutdown?
         public void ShutDown(
             QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
             ushort ErrorCode)

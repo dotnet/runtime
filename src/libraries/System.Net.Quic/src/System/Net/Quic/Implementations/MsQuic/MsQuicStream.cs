@@ -123,6 +123,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 throw new InvalidOperationException("Writing is not allowed on stream.");
             }
+            lock (_sync)
+            {
+                if (_sendState == SendState.Aborted)
+                {
+                    throw new OperationCanceledException("Sending has already been aborted on the stream");
+                }
+            }
 
             using CancellationTokenRegistration registration = cancellationToken.Register(() =>
             {
@@ -152,8 +159,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (_sync)
             {
-                // TODO confirm the expected behavior when we cancel sending.
-                // do we want to make it so write async always throws?
                 if (_sendState == SendState.Finished)
                 {
                     _sendState = SendState.None;
@@ -232,8 +237,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_readState == ReadState.IndividualReadComplete)
                 {
-                    // Don't call receive complete after the stream has been aborted or completed.
                     EnableReceive();
+                    // TODO this threw an exception (why was ReceiveComplete invalid?)
                     ReceiveComplete(actual);
                     _readState = ReadState.None;
                 }
@@ -283,7 +288,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             });
 
-            _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
+            var status = _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -314,11 +319,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         public override ValueTask DisposeAsync()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             if (_disposed)
             {
                 return default;
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             if (_ptr != IntPtr.Zero)
             {
@@ -331,6 +337,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _api = null;
 
             _disposed = true;
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return default;
         }
@@ -356,6 +363,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             if (_ptr != IntPtr.Zero)
             {
                 // TODO call shutdown here.
@@ -365,6 +374,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _handle.Free();
             _api = null;
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             _disposed = true;
         }
@@ -524,8 +534,20 @@ namespace System.Net.Quic.Implementations.MsQuic
         private uint HandleEventSendShutdownComplete(ref MsQuicNativeMethods.StreamEvent evt)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            bool shouldComplete = false;
+            lock (_sync)
+            {
+                if (_shutdownState == ShutdownState.None)
+                {
+                    _shutdownState = ShutdownState.Finished;
+                    shouldComplete = true;
+                }
+            }
 
-            _shutdownResettableCompletionSource.Complete(MsQuicConstants.Success);
+            if (shouldComplete)
+            {
+                _shutdownResettableCompletionSource.Complete(MsQuicConstants.Success);
+            }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 

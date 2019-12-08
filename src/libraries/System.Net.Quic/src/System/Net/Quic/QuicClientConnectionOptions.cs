@@ -17,7 +17,7 @@ namespace System.Net.Quic
         public SslClientAuthenticationOptions ClientAuthenticationOptions { get; set; }
 
         /// <summary>
-        /// The endpoint to connect to.
+        /// The local endpoint that will be bound to.
         /// </summary>
         public IPEndPoint LocalEndPoint { get; set; }
 
@@ -27,16 +27,16 @@ namespace System.Net.Quic
         public IPEndPoint RemoteEndPoint { get; set; }
 
         /// <summary>
-        /// Limit on the number of bidirectional streams a connection can create
-        /// to the listener.
+        /// Limit on the number of bidirectional streams the peer connection can create
+        /// on an accepted connection.
         /// Default is 100.
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.
         public short MaxBidirectionalStreams { get; set; } = 100;
 
         /// <summary>
-        /// Limit on the number of unidirectional streams a connection can create
-        /// to the listener.
+        /// Limit on the number of unidirectional streams the peer connection can create
+        /// on an accepted connection.
         /// Default is 100.
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.
