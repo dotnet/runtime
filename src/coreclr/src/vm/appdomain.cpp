@@ -2005,7 +2005,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
     // further loading of nonprimitive types may need casting support.
     // initialize cast cache here.
-    MscorlibBinder::GetClass(CLASS__CASTCACHE);
     CastCache::Initialize();
 
     // unfortunately, the following cannot be delay loaded since the jit
