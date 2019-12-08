@@ -2717,6 +2717,7 @@ print_unimplemented_interface_method_info (MonoClass *klass, MonoClass *ic, Mono
 static MonoMethod*
 mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 {
+	// FIXME move state to caller
 	gboolean static_iter = FALSE;
 
 	if (!iter)
