@@ -20,7 +20,7 @@ export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 
 source $scriptroot/eng/common/tools.sh
 
-InitializeDotNetCli
+InitializeDotNetCli true # Install
 __dotnetDir=${_InitializeDotNetCli}
 
 dotnetPath=${__dotnetDir}/dotnet
