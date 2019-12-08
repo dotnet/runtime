@@ -2142,10 +2142,10 @@ def main(args):
     """ Main method
     """
 
-    # await/async requires python >= 3.5
-    if sys.version_info.major < 3 and sys.version_info.minor < 5:
+    # await/async requires python >= 3.7
+    if sys.version_info.major < 3 and sys.version_info.minor < 7:
         print("Error, language features require the latest python version.")
-        print("Please install python 3.8 or greater")
+        print("Please install python 3.7 or greater")
 
         return 1
 
