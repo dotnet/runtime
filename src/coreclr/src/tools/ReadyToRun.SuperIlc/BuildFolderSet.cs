@@ -263,13 +263,13 @@ namespace ReadyToRun.SuperIlc
                 outputPath.RecreateDirectory();
             }
 
-            List<ProcessInfo> compilationsToRun = new List<ProcessInfo>();
-            List<KeyValuePair<string, ProcessInfo[]>> compilationsPerRunner = new List<KeyValuePair<string, ProcessInfo[]>>();
-            List<string> excludedAssemblies = new List<string>();
+            var compilationsToRun = new List<ProcessInfo>();
+            var compilationsPerRunner = new List<KeyValuePair<string, ProcessInfo[]>>();
+            var excludedAssemblies = new List<string>();
 
             if (_options.Composite)
             {
-                ProcessInfo[] processes = new ProcessInfo[(int)CompilerIndex.Count];
+                var processes = new ProcessInfo[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in frameworkRunners)
                 {
                     List<string> inputFrameworkDlls = new List<string>();
@@ -322,12 +322,12 @@ namespace ReadyToRun.SuperIlc
 
             ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism);
 
-            HashSet<string>[] skipCopying = new HashSet<string>[(int)CompilerIndex.Count];
+            var skipCopying = new HashSet<string>[(int)CompilerIndex.Count];
             foreach (CompilerRunner runner in frameworkRunners)
             {
                 skipCopying[(int)runner.Index] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
-            int[] failedCompilationsPerBuilder = new int[(int)CompilerIndex.Count];
+            var failedCompilationsPerBuilder = new int[(int)CompilerIndex.Count];
             int successfulCompileCount = 0;
             int failedCompileCount = 0;
             foreach (KeyValuePair<string, ProcessInfo[]> kvp in compilationsPerRunner)
@@ -461,9 +461,9 @@ namespace ReadyToRun.SuperIlc
 
         public bool Execute()
         {
-            Stopwatch stopwatch = new Stopwatch();
+            var stopwatch = new Stopwatch();
             stopwatch.Start();
-            List<ProcessInfo> executionsToRun = new List<ProcessInfo>();
+            var executionsToRun = new List<ProcessInfo>();
 
             foreach (BuildFolder folder in FoldersToBuild)
             {
@@ -517,7 +517,7 @@ namespace ReadyToRun.SuperIlc
 
         public bool Build()
         {
-            Stopwatch stopwatch = new Stopwatch();
+            var stopwatch = new Stopwatch();
             stopwatch.Start();
 
             bool success = _options.Exe || Compile();
@@ -645,14 +645,14 @@ namespace ReadyToRun.SuperIlc
         private void WriteBuildStatistics(StreamWriter logWriter)
         {
             // The Count'th element corresponds to totals over all compiler runners used in the run
-            int[,] compilationOutcomes = new int[(int)CompilationOutcome.Count, (int)CompilerIndex.Count + 1];
-            int[,] executionOutcomes = new int[(int)ExecutionOutcome.Count, (int)CompilerIndex.Count + 1];
+            var compilationOutcomes = new int[(int)CompilationOutcome.Count, (int)CompilerIndex.Count + 1];
+            var executionOutcomes = new int[(int)ExecutionOutcome.Count, (int)CompilerIndex.Count + 1];
             int totalCompilations = 0;
             int totalExecutions = 0;
 
             foreach (BuildFolder folder in FoldersToBuild)
             {
-                bool[] compilationFailedPerRunner = new bool[(int)CompilerIndex.Count];
+                var compilationFailedPerRunner = new bool[(int)CompilerIndex.Count];
                 if (!_options.Exe)
                 {
                     foreach (ProcessInfo[] compilation in folder.Compilations)
@@ -763,7 +763,7 @@ namespace ReadyToRun.SuperIlc
             if (foldersToBuild != 0)
             {
                 int lineSize = 10 * _compilerRunners.Count() + 13 + 8;
-                string separator = new string('-', lineSize);
+                var separator = new string('-', lineSize);
 
                 if (!_options.Exe)
                 {
@@ -862,7 +862,7 @@ namespace ReadyToRun.SuperIlc
             int keyLength = _frameworkExclusions.Keys.Max(key => key.Length);
             const string SimpleNameTitle = "SIMPLE_NAME";
             keyLength = Math.Max(keyLength, SimpleNameTitle.Length);
-            StringBuilder title = new StringBuilder();
+            var title = new StringBuilder();
             title.Append(SimpleNameTitle);
             title.Append(' ', keyLength - SimpleNameTitle.Length);
             title.Append(" | REASON");
@@ -870,7 +870,7 @@ namespace ReadyToRun.SuperIlc
             logWriter.WriteLine(new string('-', title.Length));
             foreach (KeyValuePair<string, string> exclusion in _frameworkExclusions.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
             {
-                StringBuilder line = new StringBuilder();
+                var line = new StringBuilder();
                 line.Append(exclusion.Key);
                 line.Append(' ', keyLength - exclusion.Key.Length);
                 line.Append(" | ");
@@ -883,7 +883,7 @@ namespace ReadyToRun.SuperIlc
         {
             string baseFolder = _options.InputDirectory.FullName;
             int baseOffset = baseFolder.Length + (baseFolder.Length > 0 && baseFolder[baseFolder.Length - 1] == Path.DirectorySeparatorChar ? 0 : 1);
-            HashSet<string> folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (BuildFolder folder in FoldersToBuild)
             {
                 string relativeFolder = "";
@@ -904,7 +904,7 @@ namespace ReadyToRun.SuperIlc
                 return;
             }
 
-            List<string> folderList = new List<string>(folders);
+            var folderList = new List<string>(folders);
             folderList.Sort(StringComparer.OrdinalIgnoreCase);
             logWriter.WriteLine();
             logWriter.WriteLine("Folder statistics:");
@@ -1009,8 +1009,8 @@ namespace ReadyToRun.SuperIlc
 
         private void WriteExecutableSizeStatistics(StreamWriter logWriter)
         {
-            List<ExeSizeInfo> sizeStats = new List<ExeSizeInfo>();
-            HashSet<string> libraryHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var sizeStats = new List<ExeSizeInfo>();
+            var libraryHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (BuildFolder folder in FoldersToBuild)
             {
@@ -1205,7 +1205,7 @@ namespace ReadyToRun.SuperIlc
 
         public void WriteBuildLog(string buildLogPath)
         {
-            using (StreamWriter buildLogWriter = new StreamWriter(buildLogPath))
+            using (var buildLogWriter = new StreamWriter(buildLogPath))
             {
                 WriteBuildStatistics(buildLogWriter);
             }
@@ -1213,9 +1213,9 @@ namespace ReadyToRun.SuperIlc
 
         public void WriteCombinedLog(string outputFile)
         {
-            using (StreamWriter combinedLog = new StreamWriter(outputFile))
+            using (var combinedLog = new StreamWriter(outputFile))
             {
-                StreamWriter[] perRunnerLog = new StreamWriter[(int)CompilerIndex.Count];
+                var perRunnerLog = new StreamWriter[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in _compilerRunners)
                 {
                     string runnerLogPath = Path.ChangeExtension(outputFile, "-" + runner.CompilerName + ".log");
@@ -1224,7 +1224,7 @@ namespace ReadyToRun.SuperIlc
 
                 foreach (BuildFolder folder in FoldersToBuild)
                 {
-                    bool[] compilationErrorPerRunner = new bool[(int)CompilerIndex.Count];
+                    var compilationErrorPerRunner = new bool[(int)CompilerIndex.Count];
                     if (!_options.Exe)
                     {
                         foreach (ProcessInfo[] compilation in folder.Compilations)
@@ -1332,7 +1332,7 @@ namespace ReadyToRun.SuperIlc
             if (_options.Framework)
             {
                 string frameworkExclusionsFile = Path.Combine(_options.OutputDirectory.FullName, "framework-exclusions-" + suffix);
-                using (StreamWriter writer = new StreamWriter(frameworkExclusionsFile))
+                using (var writer = new StreamWriter(frameworkExclusionsFile))
                 {
                     WriteFrameworkExclusions(writer);
                 }
@@ -1410,7 +1410,7 @@ namespace ReadyToRun.SuperIlc
                 return;
             }
 
-            using (StreamWriter logWriter = new StreamWriter(fileName))
+            using (var logWriter = new StreamWriter(fileName))
             {
                 foreach (KeyValuePair<string, byte> kvp in markerResults.OrderBy((kvp) => kvp.Key))
                 {
@@ -1427,7 +1427,7 @@ namespace ReadyToRun.SuperIlc
                 return;
             }
 
-            using (StreamWriter logWriter = new StreamWriter(fileName))
+            using (var logWriter = new StreamWriter(fileName))
             {
                 int cpaotCount = cpaot.Count();
                 logWriter.WriteLine("Objects queried by CPAOT:        {0}", cpaotCount);
@@ -1517,7 +1517,7 @@ namespace ReadyToRun.SuperIlc
 
         private void WriteFileListPerExecutionOutcome(string outputFileName, ExecutionOutcome outcome)
         {
-            List<string> filteredTestList = new List<string>();
+            var filteredTestList = new List<string>();
             foreach (BuildFolder folder in _buildFolders)
             {
                 foreach (ProcessInfo[] execution in folder.Executions)
