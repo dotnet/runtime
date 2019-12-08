@@ -199,7 +199,7 @@ private:
 // We pick 8 as the probe limit (hoping for 4 probes on average), but the number can be refined further.
     static const DWORD BUCKET_SIZE = 8;
 
-    static OBJECTHANDLE   s_cache;
+    static BASEARRAYREF*  s_pTableRef;
     static DWORD          s_lastFlushSize;
 
     FORCEINLINE static TypeHandle::CastResult TryGetFromCache(TADDR source, TADDR target)

@@ -10,8 +10,8 @@
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-OBJECTHANDLE CastCache::s_cache = NULL;
-DWORD CastCache::s_lastFlushSize = INITIAL_CACHE_SIZE;
+BASEARRAYREF* CastCache::s_pTableRef = NULL;
+DWORD CastCache::s_lastFlushSize     = INITIAL_CACHE_SIZE;
 
 BASEARRAYREF CastCache::CreateCastCache(DWORD size)
 {
@@ -93,7 +93,7 @@ BOOL CastCache::MaybeReplaceCacheWithLarger(DWORD size)
         return FALSE;
     }
 
-    StoreObjectInHandle(s_cache, newTable);
+    SetObjectReference((OBJECTREF *)s_pTableRef, newTable);
     return TRUE;
 }
 
@@ -107,10 +107,10 @@ void CastCache::FlushCurrentCache()
     }
     CONTRACTL_END;
 
-    BASEARRAYREF currentTableRef = (BASEARRAYREF)ObjectFromHandle(s_cache);
+    BASEARRAYREF currentTableRef = *s_pTableRef;
     s_lastFlushSize = !currentTableRef ? INITIAL_CACHE_SIZE : CacheElementCount(currentTableRef);
 
-    StoreObjectInHandle(s_cache, NULL);
+    *s_pTableRef = NULL;
 }
 
 void CastCache::Initialize()
@@ -123,7 +123,10 @@ void CastCache::Initialize()
     }
     CONTRACTL_END;
 
-    s_cache = CreateGlobalHandle(NULL);
+    FieldDesc* pTableField = MscorlibBinder::GetField(FIELD__CASTCACHE__TABLE);
+
+    GCX_COOP();
+    s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();
 }
 
 TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
@@ -136,10 +139,10 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
     }
     CONTRACTL_END;
 
-    BASEARRAYREF table = (BASEARRAYREF)ObjectFromHandle(s_cache);
+    BASEARRAYREF table = *s_pTableRef;
 
     // we use NULL as a sentinel for a rare case when a table could not be allocated
-    // because we avoid OOMs in conversions
+    // because we avoid OOMs.
     // we could use 0-element table instead, but then we would have to check the size here.
     if (!table)
     {
@@ -207,7 +210,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
 
     do
     {
-        table = (BASEARRAYREF)ObjectFromHandle(s_cache);
+        table = *s_pTableRef;
         if (!table)
         {
             // we did not allocate a table or flushed it, try replacing, but do not continue looping.
@@ -263,7 +266,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
     } while (TryGrow(table));
 
     // reread table after TryGrow.
-    table = (BASEARRAYREF)ObjectFromHandle(s_cache);
+    table = *s_pTableRef;
     if (!table)
     {
         // we did not allocate a table.
