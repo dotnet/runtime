@@ -4442,7 +4442,8 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
             // even if the rhs is not. See the CEE_STLOC* case in impImportBlockCode(). As a result,
             // we can have an integer type lclVar that behaves as a GC type. In that case we need to
             // kill the local.
-            if ((assignedInterval->recentRefPosition != nullptr) && (assignedInterval->recentRefPosition->treeNode != nullptr))
+            if ((assignedInterval->recentRefPosition != nullptr) &&
+                (assignedInterval->recentRefPosition->treeNode != nullptr))
             {
                 needsKill = varTypeIsGC(assignedInterval->recentRefPosition->treeNode);
             }
