@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -154,6 +155,31 @@ namespace System.Net.Tests
 
                 Assert.Throws<InvalidOperationException>(() => listener.EndGetContext(beginGetContextResult));
             }
+        }
+
+        [Fact]
+        //[OuterLoop]
+        public void GetContext_StopIsCalled_GetContextUnblocked()
+        {
+            using var listenerFactory = new HttpListenerFactory();
+            var listener = listenerFactory.GetListener();
+            listener.Start();
+
+            var listenerTask = Task.Run(() =>
+            {
+                try
+                {
+                    var context = listener.GetContext();
+                }
+                catch (Exception)
+                {
+                }
+            });
+
+            Task.Delay(1000).Wait(); // let listenerTask to call GetContext
+            listener.Stop();
+            listener.Close();
+            listenerTask.Wait();
         }
     }
 }

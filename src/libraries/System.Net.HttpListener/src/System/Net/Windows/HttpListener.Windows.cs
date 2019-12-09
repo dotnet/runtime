@@ -449,6 +449,7 @@ namespace System.Net
             if ((_requestQueueHandle != null) && (!_requestQueueHandle.IsInvalid))
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
+                Interop.Kernel32.CancelIoEx(_requestQueueHandle, null);
                 _requestQueueBoundHandle?.Dispose();
                 _requestQueueHandle.Dispose();
             }
