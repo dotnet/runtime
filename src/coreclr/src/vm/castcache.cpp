@@ -142,7 +142,7 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
     BASEARRAYREF table = *s_pTableRef;
 
     // we use NULL as a sentinel for a rare case when a table could not be allocated
-    // because we avoid OOMs in conversions
+    // because we avoid OOMs.
     // we could use 0-element table instead, but then we would have to check the size here.
     if (!table)
     {
