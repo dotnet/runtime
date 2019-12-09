@@ -52,3 +52,10 @@ jobs:
 # Build and Test
 #
 - template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    strategy:
+      matrix:
+        debug:
+          _BuildConfig: Debug
+        release:
+          _BuildConfig: Release

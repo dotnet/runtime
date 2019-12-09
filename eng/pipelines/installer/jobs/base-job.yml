@@ -19,8 +19,6 @@ parameters:
     clean: all
   strategy:
     matrix:
-      debug:
-        _BuildConfig: Debug
       release:
         _BuildConfig: Release
 
