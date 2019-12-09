@@ -69,12 +69,12 @@ jobs:
 
         - _coreClrArtifactName: ''
         - _coreClrDownloadPath: ''
-        - _coreClrOverridePathArg: ''
+        - _coreClrArtifactsPathArg: ''
 
         - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
           - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
           - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
-          - _coreClrOverridePathArg: ' /p:CoreCLRArtifactsPath=$(_coreClrDownloadPath)'
+          - _coreClrArtifactsPathArg: ' /p:CoreCLRArtifactsPath=$(_coreClrDownloadPath)'
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
@@ -90,7 +90,7 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_coreClrOverridePathArg)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_coreClrArtifactsPathArg)
         - ${{ parameters.variables }}
 
       dependsOn:
