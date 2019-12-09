@@ -1,5 +1,5 @@
 function Get-DotNetPath() {
-  Invoke-Expression "& `"$PSScriptRoot\dotnet.cmd`" dotnetPath $dotnetPath $args"
+  Set-Content -Path (Join-Path $ToolsetDir 'sdk.txt') -Value $dotnetPath -Force
 }
 
 . $PSScriptRoot\eng\common\tools.ps1
