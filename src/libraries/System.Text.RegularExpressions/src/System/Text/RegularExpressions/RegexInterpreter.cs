@@ -484,6 +484,8 @@ namespace System.Text.RegularExpressions
                         }
                     }
                 }
+
+                runtextpos = runtextend;
             }
             else
             {
@@ -512,6 +514,8 @@ namespace System.Text.RegularExpressions
                         }
                     }
                 }
+
+                runtextpos = runtextbeg;
             }
 
             return false;
