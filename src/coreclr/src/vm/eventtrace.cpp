@@ -5035,6 +5035,108 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
 
+/****************************************************************************/
+/* This is called by the runtime during startup to log the
+   properties passed on from the host. */
+/****************************************************************************/
+
+VOID ETW::InfoLog::RuntimeInputProperties(int nProperties, LPCWSTR* propertyNames, LPCWSTR* propertyValues)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    EX_TRY{
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, RuntimeProperties))
+        {
+            unsigned short ClrInstanceID = GetClrInstanceId();
+            LPCWSTR trustedPlatformAssemblies = nullptr;
+            LPCWSTR nativeDllSearchDirectories = nullptr;
+            LPCWSTR platformResourceRoots = nullptr;
+            LPCWSTR appContextBaseDirectory = nullptr;
+            LPCWSTR appContextDepsFiles = nullptr;
+            LPCWSTR probingDirectories = nullptr;
+            LPCWSTR fxProductVersion = nullptr;
+            LPCWSTR jitPath = nullptr;
+            LPCWSTR fxDepsFile = nullptr;
+            LPCWSTR appPaths = nullptr;
+            LPCWSTR appNIPaths = nullptr;
+            LPCWSTR startUpHooks = nullptr;
+            LPCWSTR resolvedFrameworks = nullptr;
+            SString others;
+
+            for (int i = 0; i < nProperties; i++)
+            {
+                if (wcscmp(propertyNames[i], W("TRUSTED_PLATFORM_ASSEMBLIES")) == 0)
+                {
+                    trustedPlatformAssemblies = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("NATIVE_DLL_SEARCH_DIRECTORIES")) == 0)
+                {
+                    nativeDllSearchDirectories = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("PLATFORM_RESOURCE_ROOTS")) == 0)
+                {
+                    platformResourceRoots = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("APP_CONTEXT_BASE_DIRECTORY")) == 0)
+                {
+                    appContextBaseDirectory = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("APP_CONTEXT_DEPS_FILES")) == 0)
+                {
+                    appContextDepsFiles = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("PROBING_DIRECTORIES")) == 0)
+                {
+                    probingDirectories = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("FX_PRODUCT_VERSION")) == 0)
+                {
+                    fxProductVersion = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("JIT_PATH")) == 0)
+                {
+                    jitPath = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("FX_DEPS_FILE")) == 0)
+                {
+                    fxDepsFile = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("APP_PATHS")) == 0)
+                {
+                    appPaths = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("APP_NI_PATHS")) == 0)
+                {
+                    appNIPaths = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("STARTUP_HOOKS")) == 0)
+                {
+                    startUpHooks = propertyValues[i];
+                }
+                else if (wcscmp(propertyNames[i], W("RESOLVED_FRAMEWORKS")) == 0)
+                {
+                    resolvedFrameworks = propertyValues[i];
+                }
+                else
+                {
+                    others.Append(propertyNames[i]);
+                    others.Append(W("="));
+                    others.Append(propertyValues[i]);
+                    others.Append(W("\n"));
+                }
+            }
+
+            FireEtwRuntimeProperties(ClrInstanceID, trustedPlatformAssemblies, nativeDllSearchDirectories,
+                platformResourceRoots, appContextBaseDirectory, appContextDepsFiles,
+                probingDirectories, fxProductVersion, jitPath, fxDepsFile,
+                appPaths, appNIPaths, startUpHooks, resolvedFrameworks, others);
+        }
+    } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+}
+
 /* Fires ETW events every time a pdb is dynamically loaded.
 *
 * The ETW events correspond to sending parts of the pdb in roughly

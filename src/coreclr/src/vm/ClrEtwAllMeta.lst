@@ -298,6 +298,7 @@ nomac:CLRAuthenticodeVerification:::AuthenticodeVerificationStop_V1
 # RuntimeInfo events
 ####################
 nostack:CLRRuntimeInformation:::RuntimeInformationStart
+nostack:CLRRuntimeInformation:::RuntimeProperties
 
 ###########################
 # Tiered compilation events

@@ -710,6 +710,43 @@
                         </UserData>
                     </template>
 
+                    <template tid="RuntimeProperties">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="TrustedPlatformAssemblies" inType="win:UnicodeString"/>
+                        <data name="NativeDllSearchDirectories" inType="win:UnicodeString"/>
+                        <data name="PlatformResourceRoots" inType="win:UnicodeString"/>
+                        <data name="AppContextBaseDirectory" inType="win:UnicodeString"/>
+                        <data name="AppContextDepsFiles" inType="win:UnicodeString"/>
+                        <data name="ProbingDirectories" inType="win:UnicodeString"/>
+                        <data name="FxProductVersion" inType="win:UnicodeString"/>
+                        <data name="JitPath" inType="win:UnicodeString"/>
+                        <data name="FxDepsFile" inType="win:UnicodeString"/>
+                        <data name="AppPaths" inType="win:UnicodeString"/>
+                        <data name="AppNIPaths" inType="win:UnicodeString"/>
+                        <data name="StartUpHooks" inType="win:UnicodeString"/>
+                        <data name="ResolvedFrameworks" inType="win:UnicodeString"/>
+                        <data name="Others" inType="win:UnicodeString"/>
+                        <UserData>
+                            <Type xmlns="myNs">
+                                <ClrInstanceID> %1  </ClrInstanceID>
+                                <TrustedPlatformAssemblies> %2 </TrustedPlatformAssemblies>
+                                <NativeDllSearchDirectories> %3 </NativeDllSearchDirectories>
+                                <PlatformResourceRoots> %4 </PlatformResourceRoots>
+                                <AppContextBaseDirectory> %5 </AppContextBaseDirectory>
+                                <AppContextDepsFiles> %6 </AppContextDepsFiles>
+                                <ProbingDirectories> %7 </ProbingDirectories>
+                                <FxProductVersion> %8 </FxProductVersion>
+                                <JitPath> %9 </JitPath>
+                                <FxDepsFile> %10 </FxDepsFile>
+                                <AppPaths> %11 </AppPaths>
+                                <AppNIPaths> %12 </AppNIPaths>
+                                <StartUpHooks> %13 </StartUpHooks>
+                                <ResolvedFrameworks> %14 </ResolvedFrameworks>
+                                <Others> %15 </Others>
+                            </Type>
+                        </UserData>
+                    </template>
+
                     <template tid="GCStart">
                         <data name="Count" inType="win:UInt32" outType="xs:unsignedInt"/>
                         <data name="Reason" inType="win:UInt32" map="GCReasonMap" />
@@ -3470,7 +3507,12 @@
                            opcode="win:Start"
                            task="CLRRuntimeInformation"
                            symbol="RuntimeInformationStart" message="$(string.RuntimePublisher.RuntimeInformationEventMessage)"/>
-
+                    
+                    <event value="296" version="0" level="win:Informational"  template="RuntimeProperties"
+                           opcode="win:Start"
+                           task="CLRRuntimeInformation"
+                           symbol="RuntimeProperties" message="$(string.RuntimePublisher.RuntimePropertiesEventMessage)"/>
+                    
                     <!-- Additional GC events 200-239 -->
                     <event value="200" version="0" level="win:Verbose" template="IncreaseMemoryPressure"
                            keywords="GCKeyword" opcode="IncreaseMemoryPressure"
@@ -6791,6 +6833,7 @@
                 <string id="RuntimePublisher.AuthenticodeVerificationEnd_V1EventMessage" value="VerificationFlags=%1;%nErrorCode=%2;%nModulePath=%3;%nClrInstanceID=%4"/>
                 <string id="RuntimePublisher.EEStartupStartEventMessage" value="VerificationFlags=%1;%nErrorCode=%2;%nModulePath=%3;%nClrInstanceID=%4"/>
                 <string id="RuntimePublisher.RuntimeInformationEventMessage" value="ClrInstanceID=%1;%nSKU=%2;%nBclMajorVersion=%3;%nBclMinorVersion=%4;%nBclBuildNumber=%5;%nBclQfeNumber=%6;%nVMMajorVersion=%7;%nVMMinorVersion=%8;%nVMBuildNumber=%9;%nVMQfeNumber=%10;%nStartupFlags=%11;%nStartupMode=%12;%nCommandLine=%13;%nComObjectGUID=%14;%nRuntimeDllPath=%15"/>
+                <string id="RuntimePublisher.RuntimePropertiesEventMessage" value="ClrInstanceID=%1;%nTrustedPlatformAssemblies=%2;%nNativeDllSearchDirectories=%3;%nPlatformResourceRoots=%4;%nAppContextBaseDirectory=%5;%nAppContextDepsFiles=%6;%nProbingDirectories=%7;%nFxProductVersion=%8;%nJitPath=%9;%nFxDepsFile=%10;%nAppPaths=%11;%nAppNIPaths=%12;%nStartUpHooks=%13;%nResolvedFrameworks=%14;%nOthers=%15" />
                 <string id="RuntimePublisher.MethodJitInliningFailedEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nInlinerNamespace=%4;%nInlinerName=%5;%nInlinerNameSignature=%6;%nInlineeNamespace=%7;%nInlineeName=%8;%nInlineeNameSignature=%9;%nFailAlways=%10;%nFailReason=%11;%nClrInstanceID=%12" />
                 <string id="RuntimePublisher.MethodJitInliningSucceededEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nInlinerNamespace=%4;%nInlinerName=%5;%nInlinerNameSignature=%6;%nInlineeNamespace=%7;%nInlineeName=%8;%nInlineeNameSignature=%9;%nClrInstanceID=%10" />
                 <string id="RuntimePublisher.MethodJitTailCallFailedEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nCallerNamespace=%4;%nCallerName=%5;%nCallerNameSignature=%6;%nCalleeNamespace=%7;%nCalleeName=%8;%nCalleeNameSignature=%9;%nTailPrefix=%10;%nFailReason=%11;%nClrInstanceID=%12" />

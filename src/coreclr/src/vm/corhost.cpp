@@ -681,6 +681,7 @@ HRESULT CorHost2::_CreateAppDomain(
     pDomain->SetFriendlyName(wszFriendlyName);
 
     ETW::LoaderLog::DomainLoad(pDomain, (LPWSTR)wszFriendlyName);
+    ETW::InfoLog::RuntimeInputProperties(nProperties, pPropertyNames, pPropertyValues);
 
     if (dwFlags & APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS)
         pDomain->SetIgnoreUnhandledExceptions();
