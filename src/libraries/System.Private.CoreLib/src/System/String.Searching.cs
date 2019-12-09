@@ -34,6 +34,11 @@ namespace System
             return IndexOf(value, comparisonType) != -1;
         }
 
+        public void DemoApi(string str)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         // Returns the index of the first occurrence of a specified character in the current instance.
         // The search starts at startIndex and runs thorough the next count characters.
         //
