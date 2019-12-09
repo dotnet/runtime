@@ -24,6 +24,9 @@
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs">
       <Link>Common\System\Net\Capability.Security.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\DribbleStream.cs">
+      <Link>Common\System\Net\DribbleStream.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs">
       <Link>Common\System\Net\Http\GenericLoopbackServer.cs</Link>
     </Compile>
@@ -56,6 +59,12 @@
     </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs">
+      <Link>Common\System\Threading\TrackingSynchronizationContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Asynchrony.cs">
+      <Link>Common\System\Net\HttpClientHandlerTest.Asynchrony.cs</Link>
     </Compile>
     <Compile Include="PlatformHandlerTest.cs" />
     <Compile Include="ServerCertificateTest.cs" />

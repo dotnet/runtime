@@ -94,14 +94,18 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="ByteArrayContentTest.cs" />
     <Compile Include="ChannelBindingAwareContent.cs" />
-    <Compile Include="DribbleStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\DribbleStream.cs">
+      <Link>Common\System\Net\DribbleStream.cs</Link>
+    </Compile>
     <Compile Include="CustomContent.cs" />
     <Compile Include="DelegatingHandlerTest.cs" />
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="ByteAtATimeContent.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
-    <Compile Include="HttpClientHandlerTest.Asynchrony.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Asynchrony.cs">
+      <Link>Common\System\Net\HttpClientHandlerTest.Asynchrony.cs</Link>
+    </Compile>
     <Compile Include="HttpClientHandlerTest.Authentication.cs" />
     <Compile Include="HttpClientHandlerTest.AutoRedirect.cs" />
     <Compile Include="HttpClientHandlerTest.Cancellation.cs" />

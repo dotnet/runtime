@@ -57,14 +57,14 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    /*// Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
+        protected override HttpClient CreateHttpClient() => CreateHttpClient(new WinHttpHandler());
+
         public PlatformHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
+    /*// Test only WinHttpHandler since the CurlHandler was removed
     [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpProtocolTests : HttpProtocolTests
     {
