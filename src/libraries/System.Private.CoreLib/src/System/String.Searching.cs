@@ -31,7 +31,7 @@ namespace System
 
         public bool Contains(char value, StringComparison comparisonType)
         {
-            return IndexOf(value, comparisonType) != -1;
+            return IndexOf(value, comparisonType) == -1;
         }
 
         // Returns the index of the first occurrence of a specified character in the current instance.
