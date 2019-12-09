@@ -35,8 +35,7 @@ namespace System.Net.Quic
         public short MaxBidirectionalStreams { get; set; } = 100;
 
         /// <summary>
-        /// Limit on the number of unidirectional streams an accepted connection can create
-        /// back to the client.
+        /// Limit on the number of unidirectional streams the peer connection can create.
         /// Default is 100.
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.

@@ -61,7 +61,7 @@
     <Compile Include="Interop\Linux\MsQuicStatusHelper.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
