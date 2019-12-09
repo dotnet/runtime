@@ -260,20 +260,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>A macro for the various forms of LdcI8.</summary>
-        private void LdcI8(long i)
-        {
-            if (i <= int.MaxValue && i >= int.MinValue)
-            {
-                Ldc((int)i);
-                _ilg!.Emit(OpCodes.Conv_I8);
-            }
-            else
-            {
-                _ilg!.Emit(OpCodes.Ldc_I8, i);
-            }
-        }
-
         /// <summary>A macro for _ilg.Emit(OpCodes.Dup).</summary>
         private void Dup() => _ilg!.Emit(OpCodes.Dup);
 
@@ -306,9 +292,6 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Sub) or _ilg.Emit(OpCodes.Add).</summary>
         private void Sub(bool negate) => _ilg!.Emit(negate ? OpCodes.Add : OpCodes.Sub);
-
-        /// <summary>A macro for _ilg.Emit(OpCodes.Div).</summary>
-        private void Div() => _ilg!.Emit(OpCodes.Div);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.And).</summary>
         private void And() => _ilg!.Emit(OpCodes.And);
@@ -358,9 +341,6 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Call, mt).</summary>
         private void Call(MethodInfo mt) => _ilg!.Emit(OpCodes.Call, mt);
-
-        /// <summary>A macro for _ilg.Emit(OpCodes.Newobj, ct).</summary>
-        private void Newobj(ConstructorInfo ct) => _ilg!.Emit(OpCodes.Newobj, ct);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Brfalse) (long form).</summary>
         private void BrfalseFar(Label l) => _ilg!.Emit(OpCodes.Brfalse, l);
