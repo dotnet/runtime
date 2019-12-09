@@ -1,6 +1,5 @@
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
   <PropertyGroup>
-    <ImportLiveBuildsTargets>true</ImportLiveBuildsTargets>
     <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(_bc_OSGroup)</CoreCLROSGroup>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(_bc_ConfigurationGroup)</CoreCLRConfiguration>
   </PropertyGroup>

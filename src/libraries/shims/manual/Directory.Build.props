@@ -13,7 +13,6 @@
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
     <!-- Use runtime assemblies for the TargetGroup, using build configuration OSGroup -->
     <RefPath>$(ArtifactsBinDir)runtime/$(TargetGroup)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)-$(ArchGroup)/</RefPath>
-    <ImportLiveBuildsTargets>true</ImportLiveBuildsTargets>
     <CoreCLROSGroup>$(_bc_OSGroup)</CoreCLROSGroup>
     <CoreCLRConfiguration>$(_bc_ConfigurationGroup)</CoreCLRConfiguration>
   </PropertyGroup>
