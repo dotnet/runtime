@@ -98,7 +98,6 @@
         <Compile Include="SslStreamSchSendAuxRecordTest.cs" />
         <Compile Include="SslStreamCredentialCacheTest.cs" />
         <Compile Include="SslStreamSystemDefaultsTest.cs" />
-        <Compile Include="SslStreamStreamToStreamTest.netcoreapp.cs" />
       </ItemGroup>
       <ItemGroup>
         <Compile Include="LoggingTest.cs" />

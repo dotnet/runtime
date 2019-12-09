@@ -111,6 +111,25 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
+        [MemberData(nameof(JsonDateTimeTestData.ValidISO8601Tests), MemberType = typeof(JsonDateTimeTestData))]
+        public static void TestDateTimeAndDateTimeOffsetWithEscapedChars(string testStr, string iso8601Str)
+        {
+            string trimmedTestStr = testStr.Trim('"');
+
+            var jsonString = new JsonString(trimmedTestStr);
+            var dateTime = DateTime.Parse(iso8601Str);
+            var dateTimeOffset = DateTimeOffset.Parse(iso8601Str);
+
+            Assert.Equal(dateTime, jsonString.GetDateTime());
+            Assert.True(jsonString.TryGetDateTime(out DateTime dateTime2));
+            Assert.Equal(dateTime, dateTime2);
+
+            Assert.Equal(dateTimeOffset, jsonString.GetDateTimeOffset());
+            Assert.True(jsonString.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset2));
+            Assert.Equal(dateTimeOffset, dateTimeOffset2);
+        }
+
+        [Theory]
         [MemberData(nameof(JsonDateTimeTestData.InvalidISO8601Tests), MemberType = typeof(JsonDateTimeTestData))]
         public static void TestInvalidDateTime(string testStr)
         {
