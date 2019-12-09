@@ -158,7 +158,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        //[OuterLoop]
+        [OuterLoop]
         public void GetContext_StopIsCalled_GetContextUnblocked()
         {
             using var listenerFactory = new HttpListenerFactory();
