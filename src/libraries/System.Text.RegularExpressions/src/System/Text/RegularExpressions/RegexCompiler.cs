@@ -664,10 +664,13 @@ namespace System.Text.RegularExpressions
             Stloc(_cultureV);
         }
 
+        /// <summary>Whether ToLower operations should be performed with the invariant culture as opposed to the one in <see cref="_cultureV"/>.</summary>
+        private bool UseToLowerInvariant => _cultureV == null || _options.HasFlag(RegexOptions.CultureInvariant);
+
         /// <summary>Invokes either char.ToLower(..., _culture) or char.ToLowerInvariant(...).</summary>
         private void CallToLower()
         {
-            if (_cultureV == null || _options.HasFlag(RegexOptions.CultureInvariant))
+            if (UseToLowerInvariant)
             {
                 Call(s_chartolowerinvariantM);
             }
@@ -1133,12 +1136,7 @@ namespace System.Text.RegularExpressions
 
                 Leftcharnext();
 
-                if (_fcPrefix.GetValueOrDefault().CaseInsensitive)
-                {
-                    CallToLower();
-                }
-
-                EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, charInClassV);
+                EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassV);
                 BrtrueFar(l2);
 
                 MarkLabel(l5);
@@ -1209,11 +1207,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(iV);
                 Call(s_spangetitem);
                 LdindU2();
-                if (_fcPrefix.GetValueOrDefault().CaseInsensitive)
-                {
-                    CallToLower();
-                }
-                EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, charInClassV);
+                EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassV);
                 BrfalseFar(charNotInClassLabel);
 
                 // runtextpos += i; return true;
@@ -2217,18 +2211,18 @@ namespace System.Text.RegularExpressions
                         Leftcharnext();
                     }
 
-                    if (IsCi())
-                    {
-                        CallToLower();
-                    }
-
                     if (Code() == RegexCode.Set)
                     {
-                        EmitCallCharInClass(_strings![Operand(0)], charInClassV);
+                        EmitCallCharInClass(_strings![Operand(0)], IsCi(), charInClassV);
                         BrfalseFar(_backtrack);
                     }
                     else
                     {
+                        if (IsCi())
+                        {
+                            CallToLower();
+                        }
+
                         Ldc(Operand(0));
                         if (Code() == RegexCode.One)
                         {
@@ -2516,10 +2510,6 @@ namespace System.Text.RegularExpressions
                             Sub();
                         }
                         Callvirt(s_getcharM);
-                        if (IsCi())
-                        {
-                            CallToLower();
-                        }
 
                         if (Code() == RegexCode.Setrep)
                         {
@@ -2527,11 +2517,16 @@ namespace System.Text.RegularExpressions
                             {
                                 EmitTimeoutCheck();
                             }
-                            EmitCallCharInClass(_strings![Operand(0)], charInClassV);
+                            EmitCallCharInClass(_strings![Operand(0)], IsCi(), charInClassV);
                             BrfalseFar(_backtrack);
                         }
                         else
                         {
+                            if (IsCi())
+                            {
+                                CallToLower();
+                            }
+
                             Ldc(Operand(0));
                             if (Code() == RegexCode.Onerep)
                             {
@@ -2646,10 +2641,6 @@ namespace System.Text.RegularExpressions
                         {
                             Rightcharnext();
                         }
-                        if (IsCi())
-                        {
-                            CallToLower();
-                        }
 
                         if (Code() == RegexCode.Setloop)
                         {
@@ -2657,11 +2648,16 @@ namespace System.Text.RegularExpressions
                             {
                                 EmitTimeoutCheck();
                             }
-                            EmitCallCharInClass(_strings![Operand(0)], charInClassV);
+                            EmitCallCharInClass(_strings![Operand(0)], IsCi(), charInClassV);
                             BrtrueFar(l1);
                         }
                         else
                         {
+                            if (IsCi())
+                            {
+                                CallToLower();
+                            }
+
                             Ldc(Operand(0));
                             if (Code() == RegexCode.Oneloop)
                             {
@@ -2839,18 +2835,18 @@ namespace System.Text.RegularExpressions
                         Leftcharnext();
                     }
 
-                    if (IsCi())
-                    {
-                        CallToLower();
-                    }
-
                     if (Code() == RegexCode.Setlazy)
                     {
-                        EmitCallCharInClass(_strings![Operand(0)], charInClassV);
+                        EmitCallCharInClass(_strings![Operand(0)], IsCi(), charInClassV);
                         BrfalseFar(_backtrack);
                     }
                     else
                     {
+                        if (IsCi())
+                        {
+                            CallToLower();
+                        }
+
                         Ldc(Operand(0));
                         if (Code() == RegexCode.Onelazy)
                         {
@@ -2881,7 +2877,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Emits a call to RegexRunner.CharInClass or a functional equivalent.</summary>
-        private void EmitCallCharInClass(string charClass, LocalBuilder tempLocal)
+        private void EmitCallCharInClass(string charClass, bool caseInsensitive, LocalBuilder tempLocal)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
@@ -2889,7 +2885,8 @@ namespace System.Text.RegularExpressions
             // for which we can call a dedicated method, or a fast-path for ASCII using a lookup table.
 
             // First, see if the char class is a built-in one for which there's a better function
-            // we can just call directly.
+            // we can just call directly.  Everything in this section must work correctly for both case
+            // sensitive and case insensitive modes, regardless of current culture or invariant.
             switch (charClass)
             {
                 case RegexCharClass.AnyClass:
@@ -2923,8 +2920,23 @@ namespace System.Text.RegularExpressions
                     return;
             }
 
+            // If we're meant to be doing a case-insensitive lookup, and if we're not using the invariant culture,
+            // lowercase the input.  If we're using the invariant culture, we may still end up calling ToLower later
+            // on, but we may also be able to avoid it, in particular in the case of our lookup table, where we can
+            // generate the lookup table already factoring in the invariant case sensitivity.
+            bool invariant = false;
+            if (caseInsensitive)
+            {
+                invariant = UseToLowerInvariant;
+                if (!invariant)
+                {
+                    CallToLower();
+                }
+            }
+
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
-            if (charClass.Length == RegexCharClass.SetStartIndex + 2 && // one set of two values
+            if (!invariant && // if we're being asked to do a case insensitive comparison with the invariant culture, just use the lookup table
+                charClass.Length == RegexCharClass.SetStartIndex + 2 && // one set of two values
                 charClass[RegexCharClass.SetLengthIndex] == 2 && // validate we have the right number of ranges
                 charClass[RegexCharClass.CategoryLengthIndex] == 0 && // must not have any categories
                 charClass[RegexCharClass.SetStartIndex] < charClass[RegexCharClass.SetStartIndex + 1]) // valid range
@@ -2963,7 +2975,9 @@ namespace System.Text.RegularExpressions
             {
                 for (int i = 0; i < 128; i++)
                 {
-                    if (RegexCharClass.CharInClass((char)i, charClass))
+                    char c = (char)i;
+                    if (RegexCharClass.CharInClass(c, charClass) ||
+                        (invariant && char.IsUpper(c) && RegexCharClass.CharInClass(char.ToLowerInvariant(c), charClass)))
                     {
                         dest[i >> 4] |= (char)(1 << (i & 0xF));
                     }
@@ -3035,8 +3049,13 @@ namespace System.Text.RegularExpressions
             else
             {
                 // The whole class wasn't ASCII, so if the character is >= 128, we need to fall back to calling:
-                // CharInClass(ch, charClass)
+                // CharInClass(ch, charClass).  If case insensitivity is required, we will have already called
+                // ToLower, but only if !invariant, so we need to do so here for invariant as well.
                 Ldloc(tempLocal);
+                if (invariant)
+                {
+                    CallToLower();
+                }
                 Ldstr(charClass);
                 Call(s_charInClassM);
             }
