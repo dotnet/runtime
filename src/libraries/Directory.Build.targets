@@ -52,8 +52,8 @@
     <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
-      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime</RuntimePath>
-      <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app</RefPath>
+      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(_bc_OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
+      <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(ConfigurationGroup)</RefPath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' and '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceConfiguration>
