@@ -143,13 +143,11 @@
   <ItemGroup>
     <Compile Include="CustomContent.netcore.cs" />
     <Compile Include="HPackTest.cs" />
-    <Compile Include="HttpClientTest.netcoreapp.cs" />
     <Compile Include="HttpClientHandlerTest.Http1.cs" />
     <Compile Include="HttpClientHandlerTest.Http2.cs" />
     <Compile Include="HttpClientHandlerTest.AcceptAllCerts.cs" />
     <Compile Include="HttpClientHandlerTest.Decompression.cs" />
     <Compile Include="HttpClientMiniStressTest.cs" />
-    <Compile Include="HttpMethodTest.netcoreapp.cs" />
     <Compile Include="NtAuthTests.cs" />
     <Compile Include="ReadOnlyMemoryContentTest.cs" />
     <Compile Include="SocketsHttpHandlerTest.cs" />

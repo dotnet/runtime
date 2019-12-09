@@ -4,7 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="WebSocketTests.cs" />
-    <Compile Include="WebSocketTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="WebSocketExceptionTests.cs" />
     <Compile Include="WebSocketReceiveResultTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketCreateTest.cs">

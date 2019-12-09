@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Net.Security;
 using System.Collections.Generic;
 using System.Security.Authentication;
@@ -222,6 +221,14 @@ namespace System.Net.Http
                 _diagnosticsHandler.SendAsync(request, cancellationToken) :
                 _socketsHttpHandler.SendAsync(request, cancellationToken);
         }
+
         public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get; } = delegate { return true; };
+
+        private void ThrowForModifiedManagedSslOptionsIfStarted()
+        {
+            // Hack to trigger an InvalidOperationException if a property that's stored on
+            // SslOptions is changed, since SslOptions itself does not do any such checks.
+            _socketsHttpHandler.SslOptions = _socketsHttpHandler.SslOptions;
+        }
     }
 }

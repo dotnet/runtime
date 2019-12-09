@@ -130,5 +130,33 @@
       <Uri>https://github.com/microsoft/vstest</Uri>
       <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>
     </Dependency>
+    <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.19608.5">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>
+    </Dependency>
+    <Dependency Name="System.Drawing.Common.TestData" Version="5.0.0-beta.19608.5">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>
+    </Dependency>
+    <Dependency Name="System.IO.Compression.TestData" Version="5.0.0-beta.19608.5">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>
+    </Dependency>
+    <Dependency Name="System.IO.Packaging.TestData" Version="5.0.0-beta.19608.5">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>
+    </Dependency>
+    <Dependency Name="System.Net.TestData" Version="5.0.0-beta.19608.5">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>
+    </Dependency>
+    <Dependency Name="System.Security.Cryptography.X509Certificates.TestData" Version="5.0.0-beta.19608.5">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>
+    </Dependency>
+    <Dependency Name="System.Windows.Extensions.TestData" Version="5.0.0-beta.19608.5">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>
+    </Dependency>
   </ToolsetDependencies>
 </Dependencies>

@@ -58,6 +58,14 @@
     <SystemTextJsonVersion>5.0.0-alpha.1.19563.6</SystemTextJsonVersion>
     <SystemTextEncodingsWebVersion>5.0.0-alpha.1.19563.6</SystemTextEncodingsWebVersion>
     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
+    <!-- Runtime-Assets dependencies -->
+    <SystemComponentModelTypeConverterTestDataVersion>5.0.0-beta.19608.5</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>5.0.0-beta.19608.5</SystemDrawingCommonTestDataVersion>
+    <SystemIOCompressionTestDataVersion>5.0.0-beta.19608.5</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>5.0.0-beta.19608.5</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>5.0.0-beta.19608.5</SystemNetTestDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>5.0.0-beta.19608.5</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>5.0.0-beta.19608.5</SystemWindowsExtensionsTestDataVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryVersion>2.2.0-prerelease.19564.1</NETStandardLibraryVersion>
     <!-- dotnet-optimization dependencies -->
@@ -85,14 +93,6 @@
     <TraceEventVersion>2.0.5</TraceEventVersion>
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
     <XUnitXmlTestLoggerVersion>2.1.26</XUnitXmlTestLoggerVersion>
-    <!-- Test data -->
-    <SystemIOCompressionTestDataVersion>1.0.16</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>1.0.4</SystemIOPackagingTestDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>1.0.7</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemNetTestDataVersion>1.0.6</SystemNetTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>1.0.4</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>1.0.12</SystemDrawingCommonTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>1.0.5</SystemWindowsExtensionsTestDataVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>3.0.0-preview9-190909-1</MicrosoftPrivateIntellisenseVersion>

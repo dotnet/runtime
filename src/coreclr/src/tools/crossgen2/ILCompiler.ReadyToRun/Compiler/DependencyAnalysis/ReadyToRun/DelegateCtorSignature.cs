@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     enforceOwningType: false,
                     innerContext,
                     isUnboxingStub: false,
-                    isInstantiatingStub: false);
+                    isInstantiatingStub: _targetMethod.Method.HasInstantiation);
 
                 builder.EmitTypeSignature(_delegateType, innerContext);
             }

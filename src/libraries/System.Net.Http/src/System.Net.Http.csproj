@@ -25,7 +25,6 @@
     <Compile Include="System\Net\Http\HttpClient.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
-    <Compile Include="System\Net\Http\HttpClientHandler.netcoreapp.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="System\Net\Http\HttpContent.cs" />
     <Compile Include="System\Net\Http\HttpMessageHandler.cs" />

@@ -29,6 +29,7 @@
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FindClose.cs" Link="Interop\Windows\Interop.FindClose.cs" />
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs" Link="Interop\Windows\Interop.FindFirstFileEx.cs" />
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
+    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs" Link="Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs" />
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs" Link="Common\Interop\Windows\Interop.GetFileAttributesEx.cs" />
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs" Link="Common\Interop\Windows\Interop.GetFileType_SafeHandle.cs" />
@@ -47,7 +48,6 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs" Link="System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs" Link="System\IO\Win32Marshal.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs" Link="System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Interop.GenericOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.LongFileTime.cs" Link="Common\Interop\Windows\Interop.LongFileTime.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateDirectory.cs" Link="Common\Interop\Windows\Interop.CreateDirectory.cs" />

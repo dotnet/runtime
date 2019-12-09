@@ -3,6 +3,9 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
+    
+    <!-- Crossgen is not intended to serve as an IL verifier, and is not designed to provide error semantics on bad input. -->
+    <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abstract08.il" />
