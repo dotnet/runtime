@@ -156,10 +156,13 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        public Task<string> ReadAsStringAsync()
+        public Task<string> ReadAsStringAsync() =>
+            ReadAsStringAsync(CancellationToken.None);
+
+        public Task<string> ReadAsStringAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(), this, s => s.ReadBufferedContentAsString());
+            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, s => s.ReadBufferedContentAsString());
         }
 
         private string ReadBufferedContentAsString()
@@ -238,10 +241,13 @@ namespace System.Net.Http
             return encoding.GetString(buffer.Array, buffer.Offset + bomLength, buffer.Count - bomLength);
         }
 
-        public Task<byte[]> ReadAsByteArrayAsync()
+        public Task<byte[]> ReadAsByteArrayAsync() =>
+            ReadAsByteArrayAsync(CancellationToken.None);
+
+        public Task<byte[]> ReadAsByteArrayAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
-            return WaitAndReturnAsync(LoadIntoBufferAsync(), this, s => s.ReadBufferedContentAsByteArray());
+            return WaitAndReturnAsync(LoadIntoBufferAsync(cancellationToken), this, s => s.ReadBufferedContentAsByteArray());
         }
 
         internal byte[] ReadBufferedContentAsByteArray()
@@ -251,7 +257,10 @@ namespace System.Net.Http
             return _bufferedContent.ToArray();
         }
 
-        public Task<Stream> ReadAsStreamAsync()
+        public Task<Stream> ReadAsStreamAsync() =>
+            ReadAsStreamAsync(CancellationToken.None);
+
+        public Task<Stream> ReadAsStreamAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
 
@@ -263,7 +272,7 @@ namespace System.Net.Http
             {
                 Task<Stream> t = TryGetBuffer(out ArraySegment<byte> buffer) ?
                     Task.FromResult<Stream>(new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false)) :
-                    CreateContentReadStreamAsync();
+                    CreateContentReadStreamAsync(cancellationToken);
                 _contentReadStream = t;
                 return t;
             }
@@ -325,11 +334,16 @@ namespace System.Net.Http
         // types, waiting for the request content to complete before completing the SendAsync task.
         internal virtual bool AllowDuplex => true;
 
+        public Task CopyToAsync(Stream stream) =>
+            CopyToAsync(stream, CancellationToken.None);
+
+        public Task CopyToAsync(Stream stream, CancellationToken cancellationToken) =>
+            CopyToAsync(stream, null, cancellationToken);
+
         public Task CopyToAsync(Stream stream, TransportContext context) =>
             CopyToAsync(stream, context, CancellationToken.None);
 
-        // TODO #9071: Expose this publicly.
-        internal Task CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        public Task CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             CheckDisposed();
             if (stream == null)
@@ -369,11 +383,6 @@ namespace System.Net.Http
             }
         }
 
-        public Task CopyToAsync(Stream stream)
-        {
-            return CopyToAsync(stream, null);
-        }
-
         public Task LoadIntoBufferAsync()
         {
             return LoadIntoBufferAsync(MaxBufferSize);
@@ -384,6 +393,9 @@ namespace System.Net.Http
         // If buffering is used without a connection, it is supposed to be fast, thus no cancellation required.
         public Task LoadIntoBufferAsync(long maxBufferSize) =>
             LoadIntoBufferAsync(maxBufferSize, CancellationToken.None);
+
+        internal Task LoadIntoBufferAsync(CancellationToken cancellationToken) =>
+            LoadIntoBufferAsync(MaxBufferSize, cancellationToken);
 
         internal Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
         {
@@ -456,6 +468,12 @@ namespace System.Net.Http
             // if there is a better way to retrieve the content as stream (e.g. byte array/string use a more efficient
             // way, like wrapping a read-only MemoryStream around the bytes/string)
             return WaitAndReturnAsync(LoadIntoBufferAsync(), this, s => (Stream)s._bufferedContent);
+        }
+
+        protected virtual Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
+        {
+            // Drops the CT for compatibility reasons, see https://github.com/dotnet/corefx/issues/32615#issuecomment-562083237
+            return CreateContentReadStreamAsync();
         }
 
         // As an optimization for internal consumers of HttpContent (e.g. HttpClient.GetStreamAsync), and for

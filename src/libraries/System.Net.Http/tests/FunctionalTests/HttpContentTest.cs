@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -14,14 +16,9 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpContentTest
+    public class HttpContentTest : HttpClientHandlerTestBase
     {
-        private readonly ITestOutputHelper _output;
-
-        public HttpContentTest(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public HttpContentTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task CopyToAsync_CallWithMockContent_MockContentMethodCalled()
@@ -120,6 +117,20 @@ namespace System.Net.Http.Functional.Tests
             // used.
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
             Assert.Equal(data.Length, destination.Length);
+        }
+
+        [Fact]
+        public async Task CopyToAsync_Buffered_CanBeCanceled()
+        {
+            // Buffered CopyToAsync will pass the CT to the Stream.WriteAsync
+            MockContent content = new MockContent();
+            await content.LoadIntoBufferAsync();
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            using MemoryStream ms = new MemoryStream();
+            await Assert.ThrowsAsync<TaskCanceledException>(() => content.CopyToAsync(ms, cts.Token));
         }
 
         [Fact]
@@ -500,6 +511,252 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine(content.Headers.ToString());
         }
 
+
+        [Fact]
+        public async Task ReadAsStringAsync_Buffered_IgnoresCancellationToken()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseContentRead);
+
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    string received = await response.Content.ReadAsStringAsync(cts.Token);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsStringAsync(cts.Token));
+                },
+                async server =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }
+                    catch { }
+                });
+        }
+
+        [Fact]
+        public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsStringAsync(cts.Token));
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 100));
+                        await Task.Delay(250);
+                        cts.Cancel();
+                        await Task.Delay(500);
+                        try
+                        {
+                            await connection.SendResponseAsync(new string('a', 100));
+                        }
+                        catch { }
+                    });
+                });
+        }
+
+        [Fact]
+        public async Task ReadAsByteArrayAsync_Buffered_IgnoresCancellationToken()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseContentRead);
+
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    byte[] receivedBytes = await response.Content.ReadAsByteArrayAsync(cts.Token);
+                    string received = Encoding.UTF8.GetString(receivedBytes);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsByteArrayAsync(cts.Token));
+                },
+                async server =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }
+                    catch { }
+                });
+        }
+
+        [Fact]
+        public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsByteArrayAsync(cts.Token));
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 100));
+                        await Task.Delay(250);
+                        cts.Cancel();
+                        await Task.Delay(500);
+                        try
+                        {
+                            await connection.SendResponseAsync(new string('a', 100));
+                        }
+                        catch { }
+                    });
+                });
+        }
+
+        [Fact]
+        public async Task ReadAsStreamAsync_Buffered_IgnoresCancellationToken()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseContentRead);
+
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    Stream receivedStream = await response.Content.ReadAsStreamAsync(cts.Token);
+                    Assert.IsType<MemoryStream>(receivedStream);
+                    byte[] receivedBytes = (receivedStream as MemoryStream).ToArray();
+                    string received = Encoding.UTF8.GetString(receivedBytes);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task ReadAsStreamAsync_Unbuffered_IgnoresCancellationToken()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    Stream receivedStream = await response.Content.ReadAsStreamAsync(cts.Token);
+                    MemoryStream ms = new MemoryStream();
+                    await receivedStream.CopyToAsync(ms);
+                    byte[] receivedBytes = ms.ToArray();
+                    string received = Encoding.UTF8.GetString(receivedBytes);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task ReadAsStreamAsync_Unbuffered_CustomContent_CanBeCanceled()
+        {
+            MockContent content = new MockContent();
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() => content.ReadAsStreamAsync(cts.Token));
+        }
+
         #region Helper methods
 
         private byte[] EncodeStringWithBOM(Encoding encoding, string str)
@@ -630,7 +887,7 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
 
-            protected override Task<Stream> CreateContentReadStreamAsync()
+            protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
             {
                 CreateContentReadStreamCount++;
 
@@ -640,6 +897,11 @@ namespace System.Net.Http.Functional.Tests
                 }
                 else
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return Task.FromCanceled<Stream>(cancellationToken);
+                    }
+
                     return Task.FromResult<Stream>(new MockMemoryStream(_mockData, 0, _mockData.Length, false));
                 }
             }
