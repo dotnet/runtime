@@ -4435,7 +4435,23 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
         {
             continue;
         }
-        unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
+        bool needsKill = varTypeIsGC(assignedInterval->registerType);
+        if (!needsKill)
+        {
+            // The importer will assign a GC type to the rhs of an assignment if the lhs type is a GC type,
+            // even if the rhs is not. See the CEE_STLOC* case in impImportBlockCode(). As a result,
+            // we can have an integer type lclVar that behaves as a GC type. In that case we need to
+            // kill the local.
+            if ((assignedInterval->recentRefPosition != nullptr) && (assignedInterval->recentRefPosition->treeNode != nullptr))
+            {
+                needsKill = varTypeIsGC(assignedInterval->recentRefPosition->treeNode);
+            }
+        }
+        if (needsKill)
+        {
+            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_GC_REF, nullptr, nextReg, nullptr));
+            unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
+        }
     }
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DONE_KILL_GC_REFS, nullptr, REG_NA, nullptr));
 }
