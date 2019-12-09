@@ -132,6 +132,9 @@ namespace System.Net.Mail
                 {
                     if (!_isClosed && _tcpClient != null)
                     {
+                        // Gracefully close the transmission channel
+                        QuitCommand.Send(this);
+
                         //free cbt buffer
                         if (_channelBindingToken != null)
                         {

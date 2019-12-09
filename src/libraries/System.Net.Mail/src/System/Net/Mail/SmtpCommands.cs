@@ -641,6 +641,46 @@ namespace System.Net.Mail
         }
     }
 
+    internal static class QuitCommand
+    {
+        private static void CheckResponse(SmtpStatusCode statusCode, string serverResponse)
+        {
+            switch (statusCode)
+            {
+                case SmtpStatusCode.ServiceClosingTransmissionChannel:
+                    {
+                        return;
+                    }
+                case SmtpStatusCode.CommandUnrecognized:
+                default:
+                    {
+                        if ((int)statusCode < 400)
+                        {
+                            throw new SmtpException(SR.net_webstatus_ServerProtocolViolation, serverResponse);
+                        }
+
+                        throw new SmtpException(statusCode, serverResponse, true);
+                    }
+            }
+        }
+
+        private static void PrepareCommand(SmtpConnection conn)
+        {
+            if (conn.IsStreamOpen)
+            {
+                throw new InvalidOperationException(SR.SmtpDataStreamOpen);
+            }
+
+            conn.BufferBuilder.Append(SmtpCommands.Quit);
+        }
+
+        internal static void Send(SmtpConnection conn)
+        {
+            PrepareCommand(conn);
+            SmtpStatusCode statusCode = CheckCommand.Send(conn, out string response);
+            CheckResponse(statusCode, response);
+        }
+    }
 
     internal static class SmtpCommands
     {

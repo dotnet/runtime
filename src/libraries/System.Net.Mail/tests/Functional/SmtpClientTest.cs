@@ -488,5 +488,33 @@ namespace System.Net.Mail.Tests
         }
 
         private static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendMail_SendQUITOnDispose(bool asyncSend)
+        {
+            bool quitMessageReceived = false;
+
+            using var server = new LoopbackSmtpServer();
+            server.OnQuitReceived += _ => quitMessageReceived = true;
+
+            using (SmtpClient client = server.CreateClient())
+            {
+                client.Credentials = new NetworkCredential("Foo", "Bar");
+                MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+                if (asyncSend)
+                {
+                    await client.SendMailAsync(msg).TimeoutAfter((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
+                }
+                else
+                {
+                    client.Send(msg);
+                }
+                Assert.False(quitMessageReceived, "QUIT received");
+            }
+
+            Assert.True(quitMessageReceived, "QUIT message not received");
+        }
     }
 }
