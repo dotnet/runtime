@@ -89,7 +89,7 @@
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceConfiguration>
     <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or '$(_bc_TargetGroup)' != 'netcoreapp')" Include="netcoreapp-$(_bc_OSGroup)">
       <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
     </BinPlaceConfiguration>
 
