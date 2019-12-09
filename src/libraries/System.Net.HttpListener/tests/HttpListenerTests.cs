@@ -176,7 +176,7 @@ namespace System.Net.Tests
                 }
             });
 
-            Task.Delay(1000).Wait(); // let listenerTask to call GetContext
+            Task.Delay(1000).Wait(1100); // let listenerTask to call GetContext
             listener.Stop();
             listener.Close();
             listenerTask.Wait();
