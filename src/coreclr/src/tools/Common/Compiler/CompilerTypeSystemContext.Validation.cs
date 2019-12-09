@@ -21,6 +21,17 @@ namespace ILCompiler
             _validTypes.GetOrCreateValue(type);
         }
 
+        public void EnsureLoadableMethod(MethodDesc method)
+        {
+            EnsureLoadableType(method.OwningType);
+
+            if (method.HasInstantiation)
+            {
+                foreach (var instType in method.Instantiation)
+                    EnsureLoadableType(instType);
+            }
+        }
+
         class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
         {
             protected override bool CompareKeyToValue(TypeDesc key, TypeDesc value) => key == value;
@@ -112,6 +123,17 @@ namespace ILCompiler
                 foreach (var intf in type.RuntimeInterfaces)
                 {
                     ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(intf.NormalizeInstantiation());
+                }
+
+                if (type.IsRuntimeDeterminedType)
+                {
+                    // The checks below this point do not apply to rutime determinied types (and will throw non-TypeSystem exceptions).
+                    return type;
+                }
+
+                if(type.BaseType != null)
+                {
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type.BaseType);
                 }
 
                 var defType = (DefType)type;

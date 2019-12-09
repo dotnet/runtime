@@ -171,31 +171,30 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
-        private bool ShouldSkipCompilation(IMethodNode methodCodeNodeNeedingCode)
+        public static bool ShouldSkipCompilation(MethodDesc methodNeedingCode)
         {
-            MethodDesc method = methodCodeNodeNeedingCode.Method;
-            if (method.IsAggressiveOptimization)
+            if (methodNeedingCode.IsAggressiveOptimization)
             {
                 return true;
             }
-            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(methodNeedingCode))
             {
                 return true;
             }
-            if (MethodBeingCompiled.IsAbstract)
+            if (methodNeedingCode.IsAbstract)
             {
                 return true;
             }
-            if (MethodBeingCompiled.OwningType.IsDelegate && (
-                MethodBeingCompiled.IsConstructor ||
-                MethodBeingCompiled.Name == "BeginInvoke" ||
-                MethodBeingCompiled.Name == "Invoke" ||
-                MethodBeingCompiled.Name == "EndInvoke"))
+            if (methodNeedingCode.OwningType.IsDelegate && (
+                methodNeedingCode.IsConstructor ||
+                methodNeedingCode.Name == "BeginInvoke" ||
+                methodNeedingCode.Name == "Invoke" ||
+                methodNeedingCode.Name == "EndInvoke"))
             {
                 // Special methods on delegate types
                 return true;
             }
-            if (method.HasCustomAttribute("System.Runtime", "BypassReadyToRunAttribute"))
+            if (methodNeedingCode.HasCustomAttribute("System.Runtime", "BypassReadyToRunAttribute"))
             {
                 // This is a quick workaround to opt specific methods out of ReadyToRun compilation to work around bugs.
                 return true;
@@ -211,7 +210,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (!ShouldSkipCompilation(methodCodeNodeNeedingCode))
+                if (!ShouldSkipCompilation(MethodBeingCompiled))
                 {
                     CompileMethodInternal(methodCodeNodeNeedingCode);
                     codeGotPublished = true;
