@@ -6,6 +6,7 @@ parameters:
   container: ''
   helixQueues: ''
   crossrootfsDir: ''
+  liveLibrariesBuildConfig: ''
   stagedBuild: false
   variables: {}
   pool: ''
@@ -22,6 +23,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     stagedBuild: ${{ parameters.stagedBuild }}
     helixType: 'test/crossgen-comparison/'
     pool: ${{ parameters.pool }}
@@ -59,7 +61,10 @@ jobs:
     - ${{ parameters.variables }}
 
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    dependsOn:
+    - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -79,6 +84,17 @@ jobs:
         displayName: 'product build'
 
 
+    # Optionally download live-built libraries
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesBuildArtifactName)'
+          displayName: 'live-built libraries'
+
+
     # Create directories and ensure crossgen is executable
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: |
@@ -92,7 +108,7 @@ jobs:
 
 
     # Populate Core_Root
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
       displayName: Populate Core_Root
 
 
