@@ -1049,7 +1049,7 @@ namespace System.Text.RegularExpressions
 
                             while (c-- > 0)
                             {
-                                // Check the timeout every 2000th iteration. The additional if check
+                                // Check the timeout every 2048th iteration. The additional if check
                                 // in every iteration can be neglected as the cost of the CharInClass
                                 // check is many times higher.
                                 if ((uint)c % LoopTimeoutCheckCount == 0)
@@ -1134,7 +1134,7 @@ namespace System.Text.RegularExpressions
 
                             for (i = c; i > 0; i--)
                             {
-                                // Check the timeout every 2000th iteration. The additional if check
+                                // Check the timeout every 2048th iteration. The additional if check
                                 // in every iteration can be neglected as the cost of the CharInClass
                                 // check is many times higher.
                                 if ((uint)i % LoopTimeoutCheckCount == 0)

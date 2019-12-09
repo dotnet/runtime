@@ -3074,7 +3074,7 @@ namespace System.Text.RegularExpressions
             Add();
             Stloc(_loopV);
 
-            // Emit code to check the timeout every 2000th-iteration.
+            // Emit code to check the timeout every 2048th-iteration.
             Label label = DefineLabel();
             Ldloc(_loopV);
             Ldc(LoopTimeoutCheckCount);
