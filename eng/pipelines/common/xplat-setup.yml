@@ -39,6 +39,9 @@ jobs:
           value: '/'
         - name: _msbuildCommand
           value: ./eng/common/msbuild.sh --warnaserror false --ci
+        # Set the bash script to display each command, and stop if any command exits nonzero.
+        - name: setScriptToEchoAndFailOnNonZero
+          value: 'set -xe'
 
       - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
         # This is only required for cross builds.

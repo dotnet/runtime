@@ -45,14 +45,6 @@ jobs:
     - name: ${{ variable.key }}
       value: ${{ variable.value }}
 
-  - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-    - name: setScriptToEchoAndFailOnNonZero
-      value: ''
-  - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-    # Stop the script if any command exits nonzero, and display each command.
-    - name: setScriptToEchoAndFailOnNonZero
-      value: set -xe
-
   # Produce test-signed build for PR and Public builds
   - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
     - name: SignType
