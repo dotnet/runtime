@@ -89,7 +89,7 @@ namespace System.Net.Sockets
 
         /// <summary>Initialize the SocketAsyncEventArgs</summary>
         /// <param name="unsafeSuppressExecutionContextFlow">
-        /// Whether to capture and flow ExecutionContext. ExecutionContext flow should only
+        /// Whether to disable the capturing and flow of ExecutionContext. ExecutionContext flow should only
         /// be disabled if it's going to be handled by higher layers.
         /// </param>
         public SocketAsyncEventArgs(bool unsafeSuppressExecutionContextFlow)
