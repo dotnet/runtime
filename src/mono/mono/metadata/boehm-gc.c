@@ -105,7 +105,9 @@ mono_gc_warning (char *msg, GC_word arg)
 }
 
 static void on_gc_notification (GC_EventType event);
-static void on_gc_heap_resize (size_t new_size);
+
+// GC_word here to precisely match Boehm. Not size_t, not gsize.
+static void on_gc_heap_resize (GC_word new_size);
 
 void
 mono_gc_base_init (void)
@@ -476,9 +478,9 @@ on_gc_notification (GC_EventType event)
 	}
 }
 
- 
+ // GC_word here to precisely match Boehm. Not size_t, not gsize.
 static void
-on_gc_heap_resize (size_t new_size)
+on_gc_heap_resize (GC_word new_size)
 {
 	guint64 heap_size = GC_get_heap_size ();
 #ifndef DISABLE_PERFCOUNTERS
