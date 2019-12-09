@@ -24,19 +24,17 @@ namespace System.Text.Json.Tests
 
             // Test for default MaxDepth
             Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(builder.ToString()));
+            JsonNodeOptions options = new JsonNodeOptions { MaxDepth = default };
+            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(builder.ToString()));
 
             // Test for MaxDepth of 5
-            var options = new JsonNodeOptions { MaxDepth = 5 };
+            options = new JsonNodeOptions { MaxDepth = 5 };
             Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(builder.ToString(), options));
         }
 
-        [Theory]
-        [InlineData(JsonCommentHandling.Disallow)]
-        [InlineData(JsonCommentHandling.Skip)]
-        public static void TestJsonCommentHandling(JsonCommentHandling jsonCommentHandling)
+        [Fact]
+        public static void TestJsonCommentHandling()
         {
-            JsonNodeOptions options = new JsonNodeOptions { CommentHandling = jsonCommentHandling };
-
             string jsonStringWithComments = @"
             {
                 // First comment
@@ -45,20 +43,20 @@ namespace System.Text.Json.Tests
                 // Last comment
             }";
 
-            if (jsonCommentHandling == JsonCommentHandling.Disallow)
-            {
-                Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithComments, options));
-            }
-            else
-            {
-                JsonObject jsonObject = (JsonObject)JsonNode.Parse(jsonStringWithComments, options);
+            JsonNodeOptions options = new JsonNodeOptions { CommentHandling = default };
+            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithComments));
 
-                Assert.Equal("first value", jsonObject["firstProperty"]);
-                Assert.Equal("second value", jsonObject["secondProperty"]);
+            options = new JsonNodeOptions { CommentHandling = JsonCommentHandling.Disallow };
+            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithComments, options));
 
-                Assert.Equal(2, jsonObject.GetPropertyNames().Count);
-                Assert.Equal(2, jsonObject.GetPropertyValues().Count);
-            }
+            options = new JsonNodeOptions { CommentHandling = JsonCommentHandling.Skip };
+            JsonObject jsonObject = (JsonObject)JsonNode.Parse(jsonStringWithComments, options);
+
+            Assert.Equal("first value", jsonObject["firstProperty"]);
+            Assert.Equal("second value", jsonObject["secondProperty"]);
+
+            Assert.Equal(2, jsonObject.GetPropertyNames().Count);
+            Assert.Equal(2, jsonObject.GetPropertyValues().Count);
         }
 
         [Fact]
@@ -70,7 +68,13 @@ namespace System.Text.Json.Tests
                 ""secondProperty"" : ""second value"",
             }";
 
-            JsonNodeOptions options = new JsonNodeOptions { AllowTrailingCommas = true };
+            JsonNodeOptions options = new JsonNodeOptions { AllowTrailingCommas = default };
+            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithTrailingCommas));
+
+            options = new JsonNodeOptions { AllowTrailingCommas = false };
+            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithTrailingCommas, options));
+
+            options = new JsonNodeOptions { AllowTrailingCommas = true };
             JsonObject jsonObject = (JsonObject) JsonNode.Parse(jsonStringWithTrailingCommas, options);
 
             Assert.Equal("first value", jsonObject["firstProperty"]);
@@ -78,9 +82,6 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(2, jsonObject.GetPropertyNames().Count);
             Assert.Equal(2, jsonObject.GetPropertyValues().Count);
-
-            options = new JsonNodeOptions { AllowTrailingCommas = false };
-            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithTrailingCommas, options));
         }
 
         [Fact]
