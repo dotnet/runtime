@@ -40,6 +40,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charIsDigitM = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceM = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_getcharM = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_asspanM = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_spangetitem = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_spangetlengthM = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
         private static readonly MethodInfo s_crawlposM = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassM = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_getCurrentCulture = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
@@ -304,6 +307,12 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldloc_S).</summary>
         private void Ldloc(LocalBuilder lt) => _ilg!.Emit(OpCodes.Ldloc_S, lt);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldloca).</summary>
+        private void Ldloca(LocalBuilder lt) => _ilg!.Emit(OpCodes.Ldloca, lt);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldind_U2).</summary>
+        private void LdindU2() => _ilg!.Emit(OpCodes.Ldind_U2);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Stloc).</summary>
         private void Stloc(LocalBuilder lt) => _ilg!.Emit(OpCodes.Stloc_S, lt);
@@ -1092,10 +1101,11 @@ namespace System.Text.RegularExpressions
                 Ldc(1);
                 Ret();
             }
-            else
+            else if (_code!.RightToLeft)
             {
                 LocalBuilder charInClassV = _tempV;
                 LocalBuilder cV = _temp2V;
+
                 Label l1 = DefineLabel();
                 Label l2 = DefineLabel();
                 Label l3 = DefineLabel();
@@ -1105,16 +1115,8 @@ namespace System.Text.RegularExpressions
                 Mvfldloc(s_textposF, _textposV);
                 Mvfldloc(s_textF, _textV);
 
-                if (!_code!.RightToLeft)
-                {
-                    Ldthisfld(s_textendF);
-                    Ldloc(_textposV);
-                }
-                else
-                {
-                    Ldloc(_textposV);
-                    Ldthisfld(s_textbegF);
-                }
+                Ldloc(_textposV);
+                Ldthisfld(s_textbegF);
                 Sub();
                 Stloc(cV);
 
@@ -1129,14 +1131,7 @@ namespace System.Text.RegularExpressions
                 Sub();
                 Stloc(cV);
 
-                if (_code.RightToLeft)
-                {
-                    Leftcharnext();
-                }
-                else
-                {
-                    Rightcharnext();
-                }
+                Leftcharnext();
 
                 if (_fcPrefix.GetValueOrDefault().CaseInsensitive)
                 {
@@ -1172,7 +1167,88 @@ namespace System.Text.RegularExpressions
                 Ldc(0);
                 Ret();
             }
+            else // for left-to-right, use span to avoid bounds checks when doing normal forward iteration recognized by the JIT
+            {
+                LocalBuilder charInClassV = _tempV;
+                LocalBuilder iV = _temp2V;
+                _temp3V = DeclareReadOnlySpanChar();
+                LocalBuilder textSpanV = _temp3V;
 
+                Label returnFalseLabel = DefineLabel();
+                Label checkSpanLengthLabel = DefineLabel();
+                Label loopBody = DefineLabel();
+                Label charNotInClassLabel = DefineLabel();
+
+                // string runtext = this.runtext
+                Mvfldloc(s_textF, _textV);
+
+                // if (runtextend - runtextpos > 0)
+                Ldthisfld(s_textendF);
+                Ldthisfld(s_textposF);
+                Sub();
+                Ldc(0);
+                BleFar(returnFalseLabel);
+
+                // ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
+                Ldloc(_textV);
+                Ldthisfld(s_textposF);
+                Ldthisfld(s_textendF);
+                Ldthisfld(s_textposF);
+                Sub();
+                Call(s_asspanM);
+                Stloc(textSpanV);
+
+                // for (int i = 0;
+                Ldc(0);
+                Stloc(iV);
+                BrFar(checkSpanLengthLabel);
+
+                // if (CharInClass(span[i], "..."))
+                MarkLabel(loopBody);
+                Ldloca(textSpanV);
+                Ldloc(iV);
+                Call(s_spangetitem);
+                LdindU2();
+                if (_fcPrefix.GetValueOrDefault().CaseInsensitive)
+                {
+                    CallToLower();
+                }
+                EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, charInClassV);
+                BrfalseFar(charNotInClassLabel);
+
+                // runtextpos += i; return true;
+                Ldthis();
+                Ldthisfld(s_textposF);
+                Ldloc(iV);
+                Add();
+                Stfld(s_textposF);
+                Ldc(1);
+                Ret();
+
+                // for (...; ...; i++)
+                MarkLabel(charNotInClassLabel);
+                Ldloc(iV);
+                Ldc(1);
+                Add();
+                Stloc(iV);
+
+                // for (...; i < span.Length; ...);
+                MarkLabel(checkSpanLengthLabel);
+                Ldloc(iV);
+                Ldloca(textSpanV);
+                Call(s_spangetlengthM);
+                BltFar(loopBody);
+
+                // runtextpos = runtextend;
+                Ldthis();
+                Ldthisfld(s_textendF);
+                Stfld(s_textposF);
+
+                // return false;
+                MarkLabel(returnFalseLabel);
+                Ldc(0);
+                Ret();
+            }
         }
 
         /// <summary>Generates a very simple method that sets the _trackcount field.</summary>
@@ -1195,6 +1271,8 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Declares a local string.</summary>
         private LocalBuilder DeclareString() => _ilg!.DeclareLocal(typeof(string));
+
+        private LocalBuilder DeclareReadOnlySpanChar() => _ilg!.DeclareLocal(typeof(ReadOnlySpan<char>));
 
         /// <summary>Generates the code for "RegexRunner.Go".</summary>
         protected void GenerateGo()
