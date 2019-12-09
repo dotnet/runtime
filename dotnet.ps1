@@ -1,5 +1,10 @@
 function Get-DotNetPath() {
-  Set-Content -Path (Join-Path $ToolsetDir 'sdk.txt') -Value $dotnetPath -Force
+  $sdkCacheFile = (Join-Path $ToolsetDir 'sdk.txt')
+  Try {
+    Set-Content -Path $sdkCacheFile -Value $dotnetPath -Force
+  } Catch {
+      Write-Host "Can't update $sdkCacheFile"
+  }
 }
 
 . $PSScriptRoot\eng\common\tools.ps1
