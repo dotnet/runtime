@@ -104,5 +104,17 @@ namespace System.Text.Json.Tests
                 DuplicatePropertyNameHandling = (DuplicatePropertyNameHandlingStrategy)(-1)
             });
         }
+
+        [Fact]
+        public static void TestDefaultJsonNodeOptions()
+        {
+            JsonNodeOptions defaultOptions = default;
+            JsonNodeOptions newOptions = new JsonNodeOptions();
+
+            Assert.Equal(defaultOptions.AllowTrailingCommas, newOptions.AllowTrailingCommas);
+            Assert.Equal(defaultOptions.CommentHandling, newOptions.CommentHandling);
+            Assert.Equal(defaultOptions.DuplicatePropertyNameHandling, newOptions.DuplicatePropertyNameHandling);
+            Assert.Equal(defaultOptions.MaxDepth, newOptions.MaxDepth);
+        }
     }
 }
