@@ -23,7 +23,7 @@
       <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
       <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
       <CoreCLRCrossTargetComponentDir
-        Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDir)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
+        Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
     </PropertyGroup>
     <ItemGroup>
       <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
