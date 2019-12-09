@@ -135,8 +135,6 @@ endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
-   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-   add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
 endif ()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -150,8 +148,7 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
     add_definitions(-D_BSD_SOURCE) # required for getline
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld -Xlinker --build-id=sha1")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  -fuse-ld=lld -Xlinker --build-id=sha1")
+    add_link_options(-fuse-ld=lld)
 endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
 if(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
@@ -173,6 +170,12 @@ endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_PLATFORM_UNIX)
+    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        add_link_options(-Wl,-bind_at_load)
+    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+        add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+    endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
     add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
