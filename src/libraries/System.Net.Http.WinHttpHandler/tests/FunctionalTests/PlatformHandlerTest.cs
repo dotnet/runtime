@@ -10,8 +10,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public class PlatformHandler_HttpClientHandler : HttpClientHandlerTestBase
     {
         public PlatformHandler_HttpClientHandler(ITestOutputHelper output) : base(output) { }
@@ -23,7 +21,7 @@ namespace System.Net.Http.Functional.Tests
         {
            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                using (HttpClient client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClient(new WinHttpHandler()))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     await TestHelper.WhenAllCompletedOrAnyFailed(
@@ -59,7 +57,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
+    /*// Test only WinHttpHandler since the CurlHandler was removed
     [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
@@ -267,5 +265,5 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override bool UseHttp2LoopbackServer => true;
     }
-#endif
+#endif*/
 }

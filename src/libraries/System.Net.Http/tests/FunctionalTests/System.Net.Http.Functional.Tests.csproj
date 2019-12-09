@@ -76,6 +76,12 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs">
       <Link>Common\System\Net\Http\GenericLoopbackServer.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTestBase.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs">
+      <Link>Common\System\Net\Http\TestHelper.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs">
       <Link>Common\System\Threading\TrackingSynchronizationContext.cs</Link>
     </Compile>
@@ -111,7 +117,6 @@
     <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />
     <Compile Include="HttpClientHandlerTest.SslProtocols.cs" />
     <Compile Include="DiagnosticsTests.cs" />
-    <Compile Include="HttpClientHandlerTestBase.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpClientEKUTest.cs" />
     <Compile Include="HttpClient.SelectedSitesTest.cs" />
@@ -127,7 +132,6 @@
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />
-    <Compile Include="PlatformHandlerTest.cs" />
     <Compile Include="PostScenarioTest.cs" />
     <Compile Include="RepeatedFlushContent.cs" />
     <Compile Include="ResponseStreamTest.cs" />
@@ -135,7 +139,6 @@
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />
     <Compile Include="SyncBlockingContent.cs" />
-    <Compile Include="TestHelper.cs" />
     <Compile Include="DefaultCredentialsTest.cs" />
     <Compile Include="ThrowingContent.cs" />
     <Compile Include="Watchdog.cs" />
