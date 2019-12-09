@@ -17,10 +17,12 @@ pool:
 
 variables:
   - template: ../variables.yml
+  - name: dockerfilesFolder
+    value: $(Build.SourcesDirectory)/eng/docker/
   - name: httpStressProject
     value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
   - name: sdkBaseImage
-    value: sdk-corefx-current
+    value: dotnet-sdk-libraries-current
   - name: httpStressImage
     value: httpstress
 
@@ -31,13 +33,7 @@ steps:
   lfs: false
 
 - powershell: |
-    .\libraries.cmd -ci -c $(BUILD_CONFIGURATION)
-    docker build -t $(sdkBaseImage) `
-        --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) `
-        --build-arg TESTHOST_LOCATION=. `
-        -f src/libraries/System.Net.Http/tests/StressTests/HttpStress/corefx.windows.Dockerfile `
-        artifacts/bin/testhost
-
+    $(dockerfilesFolder)/build-docker-sdk-windows.ps1
   displayName: Build Libraries
 
 - powershell: |

@@ -17,16 +17,14 @@ pool:
 
 variables:
   - template: ../variables.yml
-  - name: sslStressProject
-    value: $(sourcesRoot)/System.Net.Security/tests/StressTests/SslStress/
-    # Avoid duplication by referencing corefx build infrastructure hosted in HttpStress
-    # TODO move to eng/ folder.
+  - name: dockerfilesFolder
+    value: $(Build.SourcesDirectory)/eng/docker/
   - name: httpStressProject
     value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
   - name: sdkBaseImage
-    value: sdk-corefx-current
-  - name: sslStressImage
-    value: sslstress
+    value: dotnet-sdk-libraries-current
+  - name: httpStressImage
+    value: httpstress
 
 steps:
 - checkout: self
@@ -35,14 +33,8 @@ steps:
   lfs: false
 
 - powershell: |
-    .\libraries.cmd -ci -c $(BUILD_CONFIGURATION)
-    docker build -t $(sdkBaseImage) `
-        --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) `
-        --build-arg TESTHOST_LOCATION=. `
-        -f src/libraries/System.Net.Http/tests/StressTests/HttpStress/corefx.windows.Dockerfile `
-        artifacts/bin/testhost
-
-  displayName: Build Libraries
+  $(dockerfilesFolder)/build-docker-sdk-windows.ps1
+displayName: Build Libraries
 
 - powershell: |
     # we need to include the entire src/libraries folder in the build context due to Common/ dependencies
