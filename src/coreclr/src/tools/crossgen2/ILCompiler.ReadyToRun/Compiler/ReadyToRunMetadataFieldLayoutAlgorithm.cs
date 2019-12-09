@@ -149,6 +149,9 @@ namespace ILCompiler
                         FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(fieldDefHandle);
                         if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
                         {
+                            if ((fieldDef.Attributes & FieldAttributes.HasFieldRVA) != 0)
+                                continue;
+
                             int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? StaticIndex.ThreadLocal : StaticIndex.Regular);
                             int alignment;
                             int size;
@@ -164,14 +167,14 @@ namespace ILCompiler
                             GetElementTypeInfo(module, fieldDesc, valueTypeHandle, corElementType, pointerSize, moduleLayout: true,
                                 out alignment, out size, out isGcPointerField, out isGcBoxedField);
 
-                            if (size != 0)
-                            {
-                                nonGcBytes[index] += size;
-                                nonGcAlignment[index] = Math.Max(nonGcAlignment[index], alignment);
-                            }
                             if (isGcPointerField || isGcBoxedField)
                             {
                                 gcBytes[index] += pointerSize;
+                            }
+                            else if (size != 0)
+                            {
+                                nonGcBytes[index] += size;
+                                nonGcAlignment[index] = Math.Max(nonGcAlignment[index], alignment);
                             }
                         }
                     }
@@ -373,29 +376,36 @@ namespace ILCompiler
 
             public FieldAndOffset[] GetOrAddDynamicLayout(DefType defType, ModuleFieldLayout moduleFieldLayout)
             {
-                int nonGcOffset;
-                switch (moduleFieldLayout.Module.Context.Target.Architecture)
-                {
-                    case TargetArchitecture.X86:
-                        nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobX86;
-                        break;
-
-                    case TargetArchitecture.X64:
-                        nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobAmd64;
-                        break;
-
-                    default:
-                        throw new NotImplementedException();
-                }
-                OffsetsForType offsetsForType = new OffsetsForType(
-                    nonGcOffset: new LayoutInt(nonGcOffset),
-                    tlsNonGcOffset: new LayoutInt(nonGcOffset),
-                    gcOffset: LayoutInt.Zero,
-                    tlsGcOffset: LayoutInt.Zero);
-
                 FieldAndOffset[] fieldsForType;
-                fieldsForType = CalculateTypeLayout(defType, moduleFieldLayout.Module, offsetsForType);
-                return moduleFieldLayout.GetOrAddDynamicLayout(defType, fieldsForType);
+                if (!moduleFieldLayout.TryGetDynamicLayout(defType, out fieldsForType))
+                {
+                    int nonGcOffset;
+                    switch (moduleFieldLayout.Module.Context.Target.Architecture)
+                    {
+                        case TargetArchitecture.X86:
+                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobX86;
+                            break;
+
+                        case TargetArchitecture.X64:
+                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobAmd64;
+                            break;
+
+                        default:
+                            throw new NotImplementedException();
+                    }
+
+                    OffsetsForType offsetsForType = new OffsetsForType(
+                        nonGcOffset: new LayoutInt(nonGcOffset),
+                        tlsNonGcOffset: new LayoutInt(nonGcOffset),
+                        gcOffset: LayoutInt.Zero,
+                        tlsGcOffset: LayoutInt.Zero);
+
+                    fieldsForType = moduleFieldLayout.GetOrAddDynamicLayout(
+                        defType,
+                        CalculateTypeLayout(defType, moduleFieldLayout.Module, offsetsForType));
+                }
+
+                return fieldsForType;
             }
 
             public FieldAndOffset[] CalculateTypeLayout(DefType defType, EcmaModule module, in OffsetsForType offsetsForType)
@@ -419,6 +429,9 @@ namespace ILCompiler
                     FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(((EcmaField)field.GetTypicalFieldDefinition()).Handle);
                     if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
                     {
+                        if ((fieldDef.Attributes & FieldAttributes.HasFieldRVA) != 0)
+                            continue;
+
                         int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? StaticIndex.ThreadLocal : StaticIndex.Regular);
                         int alignment;
                         int size;
@@ -521,7 +534,11 @@ namespace ILCompiler
 
                         LayoutInt offset = LayoutInt.Zero;
 
-                        if (isGcPointerField)
+                        if ((fieldDef.Attributes & FieldAttributes.HasFieldRVA) != 0)
+                        {
+                            offset = new LayoutInt(fieldDef.GetRelativeVirtualAddress());
+                        }
+                        else if (isGcPointerField)
                         {
                             offset = gcPointerFieldOffsets[index];
                             gcPointerFieldOffsets[index] += new LayoutInt(pointerSize);
@@ -742,6 +759,11 @@ namespace ILCompiler
                 TypeOffsets = typeOffsets;
 
                 _genericTypeToFieldMap = new ConcurrentDictionary<DefType, FieldAndOffset[]>();
+            }
+
+            public bool TryGetDynamicLayout(DefType instantiatedType, out FieldAndOffset[] fieldMap)
+            {
+                return _genericTypeToFieldMap.TryGetValue(instantiatedType, out fieldMap);
             }
 
             public FieldAndOffset[] GetOrAddDynamicLayout(DefType instantiatedType, FieldAndOffset[] fieldMap)
