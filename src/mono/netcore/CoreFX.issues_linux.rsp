@@ -23,6 +23,8 @@
 
 # Requires precise GC (should be ignored in dotnet/corefx for mono)
 -nomethod System.Collections.Concurrent.Tests.ConcurrentQueueTests.ReferenceTypes_NulledAfterDequeue
+-nomethod System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest7_WeakReference
+-nomethod System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestFinalization
 
 # fails with some OpenSSL error
 -nomethod System.Net.Security.Tests.ServerRequireEncryptionTest.ServerRequireEncryption_ClientNoEncryption_NoConnect
@@ -33,10 +35,5 @@
 -nomethod System.Net.Security.Tests.ServerAsyncAuthenticateTest.ServerAsyncAuthenticate_MismatchProtocols_Fails
 -nomethod System.Net.Security.Tests.ClientAsyncAuthenticateTest.ClientAsyncAuthenticate_MismatchProtocols_Fails
 
-# fails on LLVM
--nomethod System.Tests.StringTests.StartsWith
+# https://github.com/mono/mono/issues/18067 LLVM: try-catch doesn't catch an exception
 -nomethod System.Reflection.Tests.BindingFlagsDoNotWrapTests.*
--nomethod System.Tests.TypeTests.FilterName_Invoke_DelegateFiltersExpectedMembers
-
-# fails on Interpreter
--nomethod System.Runtime.CompilerServices.Tests.RuntimeFeatureTests.DynamicCode_Jit

@@ -205,7 +205,7 @@ run-tests-corefx: prepare update-tests-corefx
 		counter=$$((counter+1)); \
 		testname=$$(basename $$testdir); \
 		if [ -n "$$USE_TIMEOUT" ]; then timeoutcmd="../scripts/ci/run-step.sh --label=$$testname --timeout=10m --fatal"; fi; \
-		$$timeoutcmd $(MAKE) run-tests-corefx-$$testname TEST_COUNTER="($$counter / $$tests_count) " || echo $$testname >> .failures; \
+		$$timeoutcmd $(MAKE) run-tests-corefx-$$testname XUNIT_MONO_ENV_OPTIONS="$(XUNIT_MONO_ENV_OPTIONS)" XUNIT_ARGS="$(XUNIT_ARGS)" TEST_COUNTER="($$counter / $$tests_count) " || echo $$testname >> .failures; \
 	done; \
 	$(MAKE) xunit-summary; \
 	if [ -e ".failures" ]; then \
