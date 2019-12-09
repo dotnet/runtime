@@ -67,7 +67,7 @@ namespace System.Text.RegularExpressions
         private LocalBuilder? _temp2V;
         private LocalBuilder? _temp3V;
         private LocalBuilder? _cultureV;      // current culture is cached in local variable to prevent many thread local storage accesses for CultureInfo.CurrentCulture
-        private LocalBuilder? _loopV;         // counter for setrep and setloop
+        private LocalBuilder? _loopV;         // timeout counter for setrep and setloop
 
         protected RegexCode? _code;           // the RegexCode object (used for debugging only)
         protected int[]? _codes;              // the RegexCodes being translated
@@ -270,7 +270,7 @@ namespace System.Text.RegularExpressions
         private void Ret() => _ilg!.Emit(OpCodes.Ret);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Rem).</summary>
-        private void Rem() => _ilg!.Emit(OpCodes.Rem);
+        private void RemUn() => _ilg!.Emit(OpCodes.Rem_Un);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Ceq).</summary>
         private void Ceq() => _ilg!.Emit(OpCodes.Ceq);
@@ -380,6 +380,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Brfalse_S) (short jump).</summary>
         private void Brfalse(Label l) => _ilg!.Emit(OpCodes.Brfalse_S, l);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Brtrue_S) (short jump).</summary>
+        private void Brtrue(Label l) => _ilg!.Emit(OpCodes.Brtrue_S, l);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Br_S) (short jump).</summary>
         private void Br(Label l) => _ilg!.Emit(OpCodes.Br_S, l);
@@ -3074,14 +3077,12 @@ namespace System.Text.RegularExpressions
             Add();
             Stloc(_loopV);
 
-            // Emit code to check the timeout every 2048th-iteration.
+            // Emit code to check the timeout every 2048th iteration.
             Label label = DefineLabel();
             Ldloc(_loopV);
             Ldc(LoopTimeoutCheckCount);
-            Rem();
-            Ldc(0);
-            Ceq();
-            Brfalse(label);
+            RemUn();
+            Brtrue(label);
             Ldthis();
             Callvirt(s_checkTimeoutM);
             MarkLabel(label);
