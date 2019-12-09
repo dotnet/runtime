@@ -25,7 +25,7 @@ namespace System.Text.Json.Tests
             // Test for default MaxDepth
             Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(builder.ToString()));
             JsonNodeOptions options = new JsonNodeOptions { MaxDepth = default };
-            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(builder.ToString()));
+            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(builder.ToString(), options));
 
             // Test for MaxDepth of 5
             options = new JsonNodeOptions { MaxDepth = 5 };
@@ -44,7 +44,7 @@ namespace System.Text.Json.Tests
             }";
 
             JsonNodeOptions options = new JsonNodeOptions { CommentHandling = default };
-            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithComments));
+            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithComments, options));
 
             options = new JsonNodeOptions { CommentHandling = JsonCommentHandling.Disallow };
             Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithComments, options));
@@ -69,7 +69,7 @@ namespace System.Text.Json.Tests
             }";
 
             JsonNodeOptions options = new JsonNodeOptions { AllowTrailingCommas = default };
-            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithTrailingCommas));
+            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithTrailingCommas, options));
 
             options = new JsonNodeOptions { AllowTrailingCommas = false };
             Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(jsonStringWithTrailingCommas, options));
