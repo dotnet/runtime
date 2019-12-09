@@ -33,7 +33,7 @@ jobs:
         $(MsbuildSigningArguments)
       displayName: Build
 
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - ${{ if eq(variables.isOfficialBuild, true) }}:
       - task: NuGetCommand@2
         displayName: Push Visual Studio NuPkgs
         inputs:

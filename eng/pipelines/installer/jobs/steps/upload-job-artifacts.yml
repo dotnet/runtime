@@ -4,7 +4,7 @@ parameters:
 
 steps:
 # Upload build outputs as build artifacts only if internal and not PR, to save storage space.
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+- ${{ if eq(variables.isOfficialBuild, true) }}:
   - task: CopyFiles@2
     displayName: Prepare job-specific Artifacts subdirectory
     inputs:

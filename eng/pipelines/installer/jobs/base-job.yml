@@ -3,7 +3,6 @@ parameters:
   osGroup: ''
   archType: ''
   osSubgroup: ''
-  isOfficialBuild: false
   timeoutInMinutes: 120
   condition: true
   container: ''
@@ -51,7 +50,7 @@ jobs:
       value: test
 
   # Set up non-PR build from internal project
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+  - ${{ if eq(variables.isOfficialBuild, true) }}:
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
