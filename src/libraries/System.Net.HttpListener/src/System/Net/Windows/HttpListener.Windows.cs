@@ -453,7 +453,7 @@ namespace System.Net
                 _requestQueueHandle.Dispose();
                 try
                 {
-                    Interop.Kernel32.CancelIoEx(_requestQueueHandle, null); // this cancells the synchronous call to HttpReceiveHttpRequest
+                    Interop.Kernel32.CancelIoEx(_requestQueueHandle, null); // this cancels the synchronous call to HttpReceiveHttpRequest
                 }
                 catch (ObjectDisposedException)
                 {
