@@ -6,6 +6,7 @@ using System;
 
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
+using Internal.JitInterface;
 
 namespace ILCompiler
 {
@@ -63,8 +64,11 @@ namespace ILCompiler
                         if (containsSignatureVariables)
                             continue;
 
-                        CheckCanGenerateMethod(method);
-                        rootProvider.AddCompilationRoot(method, "Profile triggered method");
+                        if (!CorInfoImpl.ShouldSkipCompilation(method))
+                        {
+                            CheckCanGenerateMethod(method);
+                            rootProvider.AddCompilationRoot(method, "Profile triggered method");
+                        }
                     }
                     catch (TypeSystemException)
                     {
@@ -124,8 +128,11 @@ namespace ILCompiler
 
                 try
                 {
-                    CheckCanGenerateMethod(methodToRoot);
-                    rootProvider.AddCompilationRoot(methodToRoot, reason);
+                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    {
+                        CheckCanGenerateMethod(methodToRoot);
+                        rootProvider.AddCompilationRoot(methodToRoot, reason);
+                    }
                 }
                 catch (TypeSystemException)
                 {
@@ -155,6 +162,10 @@ namespace ILCompiler
             {
                 CheckTypeCanBeUsedInSignature(signature[i]);
             }
+
+            // Ensure the containing type of the method is also resolvable
+            if (method.OwningType is DefType defType)
+                defType.ComputeTypeContainsGCPointers();
         }
 
         private static void CheckTypeCanBeUsedInSignature(TypeDesc type)
