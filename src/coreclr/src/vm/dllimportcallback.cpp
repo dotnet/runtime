@@ -965,14 +965,15 @@ void UMEntryThunk::Terminate()
     }
     CONTRACTL_END;
 
-    m_code.Poison();
-
-    s_thunkFreeList.AddToList(this);
-
     if (GetObjectHandle())
     {
         DestroyLongWeakHandle(GetObjectHandle());
+        this->m_pObjectHandle = 0;
     }
+
+    m_code.Poison();
+
+    s_thunkFreeList.AddToList(this);
 }
 
 VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
