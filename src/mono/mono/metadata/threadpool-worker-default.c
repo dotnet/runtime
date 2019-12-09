@@ -533,7 +533,7 @@ worker_try_create (void)
 	ERROR_DECL (error);
 	MonoInternalThread *thread;
 	gint64 current_ticks;
-	gint32 now;
+	gint32 now = 0;
 	ThreadPoolWorkerCounter counter;
 
 	if (mono_runtime_is_shutting_down ())
