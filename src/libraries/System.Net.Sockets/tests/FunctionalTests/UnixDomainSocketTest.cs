@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public partial class UnixDomainSocketTest
+    public class UnixDomainSocketTest
     {
         [PlatformSpecific(~TestPlatforms.Windows)] // Windows doesn't currently support ConnectEx with domain sockets
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
