@@ -516,6 +516,7 @@ FCFuncStart(gAssemblyLoadContextFuncs)
     QCFuncElement("TraceResolvingHandlerInvoked", AssemblyNative::TraceResolvingHandlerInvoked)
     QCFuncElement("TraceAssemblyResolveHandlerInvoked", AssemblyNative::TraceAssemblyResolveHandlerInvoked)
     QCFuncElement("TraceAssemblyLoadFromResolveHandlerInvoked", AssemblyNative::TraceAssemblyLoadFromResolveHandlerInvoked)
+    QCFuncElement("TraceSatelliteSubdirectoryPathProbed", AssemblyNative::TraceSatelliteSubdirectoryPathProbed)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyNameFuncs)

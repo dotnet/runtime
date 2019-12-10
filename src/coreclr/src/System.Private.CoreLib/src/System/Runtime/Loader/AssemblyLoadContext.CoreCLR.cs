@@ -44,6 +44,9 @@ namespace System.Runtime.Loader
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
 
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        internal static extern bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
+
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             RuntimeAssembly? loadedAssembly = null;

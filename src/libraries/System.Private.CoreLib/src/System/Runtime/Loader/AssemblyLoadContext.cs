@@ -743,21 +743,22 @@ namespace System.Runtime.Loader
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
-            if (Internal.IO.File.InternalExists(assemblyPath))
-            {
-                return parentALC.LoadFromAssemblyPath(assemblyPath);
-            }
-            else if (Path.IsCaseSensitive)
+            bool exists = Internal.IO.File.InternalExists(assemblyPath);
+            if (!exists && Path.IsCaseSensitive)
             {
                 assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
-
-                if (Internal.IO.File.InternalExists(assemblyPath))
-                {
-                    return parentALC.LoadFromAssemblyPath(assemblyPath);
-                }
+                exists = Internal.IO.File.InternalExists(assemblyPath);
             }
 
-            return null;
+            Assembly? asm = exists ? parentALC.LoadFromAssemblyPath(assemblyPath) : null;
+#if CORECLR
+            if (AssemblyLoadContext.IsTracingEnabled())
+            {
+                AssemblyLoadContext.TraceSatelliteSubdirectoryPathProbed(assemblyPath, exists ? HResults.S_OK : HResults.COR_E_FILENOTFOUND);
+            }
+#endif // CORECLR
+
+            return asm;
         }
 
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
