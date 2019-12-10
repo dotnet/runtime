@@ -258,6 +258,13 @@ It's possible to cycle the process, stripping this failure from the final MCH,
 testing for "clean-ness" again, and repeating. It should not be necessary, however.
 
 
+## Publishing the SuperPMI collection
+
+The files that should be published for consumption either by yourself or by a group
+are `final.mch` and `final.mch.mct` (the TOC). All other files described above are
+intermediate files in the collection process, and are not needed afterwards.
+
+
 # Playback
 
 Once you have a merged, de-duplicated MCH collection, you can play it back
