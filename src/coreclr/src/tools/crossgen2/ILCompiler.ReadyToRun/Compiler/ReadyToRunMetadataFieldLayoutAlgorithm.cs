@@ -149,8 +149,8 @@ namespace ILCompiler
                         FieldDefinition fieldDef = module.MetadataReader.GetFieldDefinition(fieldDefHandle);
                         if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
                         {
-                            if ((fieldDef.Attributes & FieldAttributes.HasFieldRVA) != 0)
-                                continue;
+                            // Static RVA fields are included when approximating offsets and sizes for the module field layout, see
+                            // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2057">this loop</a>.
 
                             int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? StaticIndex.ThreadLocal : StaticIndex.Regular);
                             int alignment;
@@ -167,14 +167,14 @@ namespace ILCompiler
                             GetElementTypeInfo(module, fieldDesc, valueTypeHandle, corElementType, pointerSize, moduleLayout: true,
                                 out alignment, out size, out isGcPointerField, out isGcBoxedField);
 
-                            if (isGcPointerField || isGcBoxedField)
-                            {
-                                gcBytes[index] += pointerSize;
-                            }
-                            else if (size != 0)
+                            if (size != 0)
                             {
                                 nonGcBytes[index] += size;
                                 nonGcAlignment[index] = Math.Max(nonGcAlignment[index], alignment);
+                            }
+                            if (isGcPointerField || isGcBoxedField)
+                            {
+                                gcBytes[index] += pointerSize;
                             }
                         }
                     }
@@ -359,7 +359,6 @@ namespace ILCompiler
                         {
                             size = fieldDesc.FieldType.UnderlyingType.GetElementSize().AsInt;
                             alignment = size;
-                            isGcBoxedField = false;
                         }
                         else
                         {
