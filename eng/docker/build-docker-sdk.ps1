@@ -21,7 +21,7 @@ if ($buildWindowsContainers)
   docker build --tag $imageName `
       --build-arg CONFIGURATION=$configuration `
       --build-arg TESTHOST_LOCATION=. `
-      --file "$REPO_ROOT_DIR/libraries-sdk.windows.Dockerfile" `
+      --file "$PSScriptRoot/libraries-sdk.windows.Dockerfile" `
       "$REPO_ROOT_DIR/artifacts/bin/testhost"
 }
 else 
@@ -29,6 +29,6 @@ else
   # Docker build libraries and copy to dotnet sdk image
   docker build --tag $imageName `
       --build-arg CONFIGURATION=$configuration `
-      --file libraries-sdk.linux.Dockerfile `
+      --file "$PSScriptRoot/libraries-sdk.linux.Dockerfile" `
       $REPO_ROOT_DIR
 }
