@@ -23,8 +23,6 @@ variables:
     value: $(sourcesRoot)/System.Net.Security/tests/StressTests/SslStress
   - name: sdkBaseImage
     value: dotnet-sdk-libraries-current
-  - name: sslStressImage
-    value: sslstress
 
 steps:
 - checkout: self
@@ -37,13 +35,10 @@ steps:
   displayName: Build Libraries
 
 - bash: |
-    # we need to include the entire src/libraries folder in the build context due to Common/ dependencies
-    docker build -t $(sslStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f $(sslStressProject)/Dockerfile src/libraries
+    $(sslStressProject)/run-docker-compose.ps1 -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
   displayName: Build SslStress
 
 - bash: |
     cd '$(sslStressProject)'
     docker-compose up --abort-on-container-exit --no-color
   displayName: Run SslStress
-  env:
-    SSLSTRESS_IMAGE: $(sslStressImage)

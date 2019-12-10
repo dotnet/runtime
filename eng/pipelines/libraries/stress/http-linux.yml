@@ -37,12 +37,11 @@ steps:
   displayName: Build Libraries
 
 - bash: |
-    cd '$(HttpStressProject)'
-    ./run-docker-compose.ps1 -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+    $(httpStressProject)/run-docker-compose.ps1 -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
   displayName: Build HttpStress
 
 - bash: |
-    cd '$(HttpStressProject)'
+    cd '$(httpStressProject)'
     docker-compose up --abort-on-container-exit --no-color
   displayName: Run HttpStress
   env:
