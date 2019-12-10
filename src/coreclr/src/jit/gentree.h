@@ -3244,6 +3244,13 @@ struct GenTreeField : public GenTree
         gtFieldLookup.addr = nullptr;
 #endif
     }
+
+    // True if this field is a volatile memory operation.
+    bool IsVolatile() const
+    {
+        return (gtFlags & GTF_FLD_VOLATILE) != 0;
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeField() : GenTree()
     {
@@ -5038,6 +5045,18 @@ struct GenTreeIndir : public GenTreeOp
     {
     }
 
+    // True if this indirection is a volatile memory operation.
+    bool IsVolatile() const
+    {
+        return (gtFlags & GTF_IND_VOLATILE) != 0;
+    }
+
+    // True if this indirection is an unaligned memory operation.
+    bool IsUnaligned() const
+    {
+        return (gtFlags & GTF_IND_UNALIGNED) != 0;
+    }
+
 #if DEBUGGABLE_GENTREE
 protected:
     friend GenTree;
@@ -5087,18 +5106,6 @@ public:
     {
         assert((m_layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         return (m_layout != nullptr) ? m_layout->GetSize() : 0;
-    }
-
-    // True if this BlkOpNode is a volatile memory operation.
-    bool IsVolatile() const
-    {
-        return (gtFlags & GTF_BLK_VOLATILE) != 0;
-    }
-
-    // True if this BlkOpNode is an unaligned memory operation.
-    bool IsUnaligned() const
-    {
-        return (gtFlags & GTF_BLK_UNALIGNED) != 0;
     }
 
     // Instruction selection: during codegen time, what code sequence we will be using
