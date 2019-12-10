@@ -10,7 +10,7 @@ cd $(dirname $0)
 
 REPO_ROOT_DIR=$(git rev-parse --show-toplevel)
 
-docker build --tag $(DOCKER_IMAGE_TAG) \
-             --build-arg CONFIGURATION=$(CONFIGURATION) \
+docker build --tag $DOCKER_IMAGE_TAG \
+             --build-arg CONFIGURATION=$CONFIGURATION \
              --file libraries-sdk.linux.Dockerfile \
              $REPO_ROOT_DIR

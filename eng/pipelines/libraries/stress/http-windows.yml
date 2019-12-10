@@ -18,9 +18,9 @@ pool:
 variables:
   - template: ../variables.yml
   - name: dockerfilesFolder
-    value: $(Build.SourcesDirectory)/eng/docker/
+    value: $(Build.SourcesDirectory)/eng/docker
   - name: httpStressProject
-    value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress/
+    value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress
   - name: sdkBaseImage
     value: dotnet-sdk-libraries-current
   - name: httpStressImage
