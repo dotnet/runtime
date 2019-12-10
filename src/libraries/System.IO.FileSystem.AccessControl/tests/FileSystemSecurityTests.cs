@@ -18,10 +18,6 @@ namespace System.IO
 {
     public class FileSystemSecurityTests
     {
-        // Max file name length in NTFS and FAT32 is 255
-        // https://docs.microsoft.com/en-us/windows/win32/fileio/filesystem-functionality-comparison?redirectedfrom=MSDN#limits
-        private const int MaxFileNameLength = 255;
-
         [Fact]
         public void AddAccessRule_InvalidFileSystemAccessRule()
         {
@@ -462,7 +458,9 @@ namespace System.IO
 
         private string CreateLongDirectory(string basePath, bool create = true)
         {
-            string fullPath = Path.Combine(basePath, GetRandomName(), GetRandomName(), GetRandomName(), GetRandomName(), GetRandomName());
+            string name = TempDirectory.GetMaxLengthRandomName();
+
+            string fullPath = Path.Combine(basePath, name, name, name, name, name);
 
             if (create)
             {
@@ -470,24 +468,6 @@ namespace System.IO
             }
 
             return fullPath;
-        }
-
-        private string GetRandomName()
-        {
-            string guid = Guid.NewGuid().ToString("N");
-            StringBuilder sb = new StringBuilder(MaxFileNameLength, MaxFileNameLength);
-            while (sb.Length < MaxFileNameLength)
-            {
-                try
-                {
-                    sb.Append(guid);
-                }
-                catch
-                {
-                    sb.Append(guid.Substring(0, MaxFileNameLength - sb.Length));
-                }
-            }
-            return sb.ToString();
         }
     }
 }
