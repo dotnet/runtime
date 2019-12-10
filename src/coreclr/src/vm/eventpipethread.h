@@ -19,7 +19,8 @@ class EventPipeThread;
 
 void ReleaseEventPipeThreadRef(EventPipeThread* pThread);
 void AcquireEventPipeThreadRef(EventPipeThread* pThread);
-typedef Wrapper<EventPipeThread*, AcquireEventPipeThreadRef, ReleaseEventPipeThreadRef> EventPipeThreadHolder;
+// typedef Wrapper<EventPipeThread*, AcquireEventPipeThreadRef, ReleaseEventPipeThreadRef> EventPipeThreadHolder;
+typedef EventPipeThread* EventPipeThreadHolder;
 
 class EventPipeThreadSessionState
 {
