@@ -23,7 +23,6 @@ namespace System.IO
             _threadId = Environment.CurrentManagedThreadId;
         }
 
-        [MaybeNull]
         public TSource Current
         {
             get { return current; }
