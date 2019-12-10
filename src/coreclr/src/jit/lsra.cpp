@@ -4410,13 +4410,17 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 }
 
 //------------------------------------------------------------------------
-// spillGCRefs: Spill any GC-type intervals that are currently in registers.a
+// spillGCRefs: Spill any GC-type intervals that are currently in registers.
 //
 // Arguments:
 //    killRefPosition - The RefPosition for the kill
 //
 // Return Value:
 //    None.
+//
+// Notes:
+//    This is used to ensure that we have no live GC refs in registers at an
+//    unmanaged call.
 //
 void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 {
@@ -4440,8 +4444,10 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
         {
             // The importer will assign a GC type to the rhs of an assignment if the lhs type is a GC type,
             // even if the rhs is not. See the CEE_STLOC* case in impImportBlockCode(). As a result,
-            // we can have an integer type lclVar that behaves as a GC type. In that case we need to
-            // kill the local.
+            // we can have a 'GT_LCL_VAR' node with a GC type, when the lclVar itself is an integer type.
+            // The emitter will mark this register as holding a GC type. Therfore we must spill this value.
+            // This was exposed by the Interop\StructMarshalling\ReversePInvoke\MarshalSeqStruct\
+            // DelegatePInvoke\DelegatePInvokeTest\DelegatePInvokeTest.dll test case on Arm32.
             if ((assignedInterval->recentRefPosition != nullptr) &&
                 (assignedInterval->recentRefPosition->treeNode != nullptr))
             {
@@ -5207,7 +5213,8 @@ void LinearScan::allocateRegisters()
         printf("\n\nAllocating Registers\n"
                "--------------------\n");
         // Start with a small set of commonly used registers, so that we don't keep having to print a new title.
-        registersToDump = LsraLimitSmallIntSet | LsraLimitSmallFPSet;
+        // Include all the arg regs, as they may already have values assigned to them.
+        registersToDump = LsraLimitSmallIntSet | LsraLimitSmallFPSet | RBM_ARG_REGS;
         dumpRegRecordHeader();
         // Now print an empty "RefPosition", since we complete the dump of the regs at the beginning of the loop.
         printf(indentFormat, "");
@@ -9839,7 +9846,7 @@ void LinearScan::dumpRegRecordHeader()
            "action taken during allocation (e.g. Alloc a new register, or Keep an existing one).\n"
            "The subsequent columns show the Interval occupying each register, if any, followed by 'a' if it is\n"
            "active, a 'p' if it is a large vector that has been partially spilled, and 'i'if it is inactive.\n"
-           "Columns are only printed up to the last modifed register, which may increase during allocation,"
+           "Columns are only printed up to the last modifed register, which may increase during allocation,\n"
            "in which case additional columns will appear.  \n"
            "Registers which are not marked modified have ---- in their column.\n\n");
 
