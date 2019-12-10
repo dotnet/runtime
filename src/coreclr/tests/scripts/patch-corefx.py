@@ -245,7 +245,7 @@ def main(args):
                           'artifacts',
                           'bin',
                           'runtime',
-                          'netcoreapp-%s-%s-%s' % (clr_os, build_type, arch))
+                          'netcoreapp5.0-%s-%s-%s' % (clr_os, build_type, arch))
 
     if not os.path.exists(fx_bin):
         raise Exception('CoreFX bin path %s does not exist.' % (fx_bin))
