@@ -43,9 +43,10 @@ if ($useWindowsContainers)
 }
 
 Set-Location $PSScriptRoot
-docker-compose build $BUILD_ARGS.Split()
+docker-compose --help
+docker-compose build # $BUILD_ARGS.Split()
 
-if (!$?) { exit 1 }
+#if (!$?) { exit 1 }
 
 # Run the stress app
 
