@@ -79,7 +79,11 @@ namespace Microsoft.NET.HostModel.Tests
             fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "app.repeat"));
 
             Bundler bundler = new Bundler(hostName, bundleDir.FullName);
-            Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
+
+            var argEx = Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
+            Assert.Equal("Invalid input specification: Found multiple entries with the same BundleRelativePath:"
+                + Environment.NewLine
+                + fileSpecs[1], argEx.Message);
         }
 
         [InlineData(true)]
