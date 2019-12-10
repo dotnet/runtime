@@ -21,7 +21,7 @@ namespace System.Net.Quic.Tests
 
             Task listenTask = Task.Run(async () =>
             {
-                await using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
+                using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
                 await using QuicStream stream = await connection.AcceptStreamAsync();
 
                 byte[] buffer = new byte[s_data.Length];
@@ -37,7 +37,7 @@ namespace System.Net.Quic.Tests
 
             Task clientTask = Task.Run(async () =>
             {
-                await using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+                using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
                 await connection.ConnectAsync();
                 await using QuicStream stream = connection.OpenBidirectionalStream();
 
@@ -62,11 +62,10 @@ namespace System.Net.Quic.Tests
 
             for (int j = 0; j < 100; j++)
             {
-
                 Task listenTask = Task.Run(async () =>
                 {
                     // Connection isn't being accepted, interesting.
-                    await using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
+                    using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
                     await using QuicStream stream = await connection.AcceptStreamAsync();
                     byte[] buffer = new byte[s_data.Length];
 
@@ -92,7 +91,7 @@ namespace System.Net.Quic.Tests
 
                 Task clientTask = Task.Run(async () =>
                 {
-                    await using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+                    using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
                     await connection.ConnectAsync();
                     await using QuicStream stream = connection.OpenBidirectionalStream();
 
@@ -130,7 +129,7 @@ namespace System.Net.Quic.Tests
             Task listenTask = Task.Run(async () =>
             {
                 {
-                    await using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
+                    using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
                     await using QuicStream stream = await connection.AcceptStreamAsync();
                     await using QuicStream stream2 = await connection.AcceptStreamAsync();
 
@@ -169,7 +168,7 @@ namespace System.Net.Quic.Tests
 
             Task clientTask = Task.Run(async () =>
             {
-                await using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+                using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
                 await connection.ConnectAsync();
                 await using QuicStream stream = connection.OpenBidirectionalStream();
                 await using QuicStream stream2 = connection.OpenBidirectionalStream();
@@ -209,11 +208,10 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task AbortiveConnectionFromClient()
         {
-
             await DefaultListener.StartAsync();
-            await using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+            using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
             await clientConnection.ConnectAsync();
-            await using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
 
             // Close connection on client, verifying server connection is aborted.
             await clientConnection.CloseAsync();

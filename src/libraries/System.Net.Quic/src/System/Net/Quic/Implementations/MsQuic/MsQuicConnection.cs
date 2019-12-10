@@ -15,8 +15,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicConnection : QuicConnectionProvider
     {
-        // Functions to invoke in MsQuic
-        public MsQuicApi _api;
         private MsQuicSession _session;
 
         // Pointer to the underlying connection
@@ -26,6 +24,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private GCHandle _handle;
 
         // Delegate that wraps the static function that will be called when receiving an event.
+        // TODO investigate if the delegate can be static instead.
         private ConnectionCallbackDelegate _connectionDelegate;
 
         // Endpoint to either connect to or the endpoint already accepted.
@@ -46,12 +45,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         });
 
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, MsQuicApi api, IntPtr nativeObjPtr)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, IntPtr nativeObjPtr)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
-            _api = api;
             _ptr = nativeObjPtr;
 
             SetCallbackHandler();
@@ -69,10 +67,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             _session = new MsQuicSession();
             _ptr = _session.ConnectionOpen(options);
             _remoteEndPoint = options.RemoteEndPoint;
-            _api = MsQuicApi.Api;
 
             SetCallbackHandler();
-            SetIdleTimeout(TimeSpan.FromSeconds(120));
+            SetIdleTimeout(options.IdleTimeout);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -89,6 +86,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return new IPEndPoint(_localEndPoint.Address, _localEndPoint.Port);
             }
         }
+
         internal override IPEndPoint RemoteEndPoint => new IPEndPoint(_remoteEndPoint.Address, _remoteEndPoint.Port);
 
         internal override SslApplicationProtocol NegotiatedApplicationProtocol => throw new NotImplementedException();
@@ -166,7 +164,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
+            SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
             _localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(inetAddress);
 
             _connected = true;
@@ -215,7 +213,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            MsQuicStream msQuicStream = new MsQuicStream(_api, this, connectionEvent.StreamFlags, connectionEvent.Data.NewStream.Stream, inbound: true);
+            MsQuicStream msQuicStream = new MsQuicStream(this, connectionEvent.StreamFlags, connectionEvent.Data.NewStream.Stream, inbound: true);
 
             _acceptQueue.Writer.TryWrite(msQuicStream);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -264,7 +262,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private unsafe void SetIdleTimeout(TimeSpan timeout)
         {
-            MsQuicParameterHelpers.SetULongParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.IDLE_TIMEOUT, (ulong)timeout.TotalMilliseconds);
+            MsQuicParameterHelpers.SetULongParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.IDLE_TIMEOUT, (ulong)timeout.TotalMilliseconds);
         }
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
@@ -272,7 +270,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             MsQuicStatusException.ThrowIfFailed(
-                _api._connectionStartDelegate(
+                MsQuicApi.Api._connectionStartDelegate(
                 _ptr,
                 (ushort)_remoteEndPoint.AddressFamily,
                 _remoteEndPoint.Address.ToString(),
@@ -288,14 +286,14 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             IntPtr streamPtr = IntPtr.Zero;
             MsQuicStatusException.ThrowIfFailed(
-                _api._streamOpenDelegate(
+                MsQuicApi.Api._streamOpenDelegate(
                 _ptr,
                 (uint)flags,
                 MsQuicStream.NativeCallbackHandler,
                 IntPtr.Zero,
                 out streamPtr));
 
-            MsQuicStream stream = new MsQuicStream(_api, this, flags, streamPtr, inbound: false);
+            MsQuicStream stream = new MsQuicStream(this, flags, streamPtr, inbound: false);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return stream;
@@ -305,7 +303,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             _handle = GCHandle.Alloc(this);
             _connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
-            _api._setCallbackHandlerDelegate(
+            MsQuicApi.Api._setCallbackHandlerDelegate(
                 _ptr,
                 _connectionDelegate,
                 GCHandle.ToIntPtr(_handle));
@@ -317,7 +315,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            uint status = _api._connectionShutdownDelegate(
+            uint status = MsQuicApi.Api._connectionShutdownDelegate(
                 _ptr,
                 (uint)Flags,
                 ErrorCode);
@@ -359,11 +357,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
-                _api._connectionCloseDelegate?.Invoke(_ptr);
+                MsQuicApi.Api._connectionCloseDelegate?.Invoke(_ptr);
             }
 
             _ptr = IntPtr.Zero;
-            _api = null;
 
             _handle.Free();
             _session?.Dispose();
@@ -378,34 +375,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0);
-        }
-
-        public override ValueTask DisposeAsync()
-        {
-            if (_disposed)
-            {
-                return default;
-            }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
-            if (_ptr != IntPtr.Zero)
-            {
-                _api._connectionCloseDelegate?.Invoke(_ptr);
-            }
-
-            _ptr = IntPtr.Zero;
-            _api = null;
-
-            _handle.Free();
-
-            // TODO continue investigating when session shutdown can block.
-            //_session?.Dispose();
-            _disposed = true;
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-
-            return default;
         }
 
         private void ThrowIfDisposed()

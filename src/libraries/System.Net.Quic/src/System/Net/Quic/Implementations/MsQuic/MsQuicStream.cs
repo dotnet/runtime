@@ -16,9 +16,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicStream : QuicStreamProvider
     {
-        // Functions to invoke in MsQuic
-        private MsQuicApi _api;
-
         // Pointer to the underlying stream
         private readonly IntPtr _ptr;
 
@@ -56,10 +53,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         private SendState _sendState;
 
         // Used by the class to indicate that the stream is m_Readable.
-        private bool _canRead;
+        private readonly bool _canRead;
 
         // Used by the class to indicate that the stream is writable.
-        private bool _canWrite;
+        private readonly bool _canWrite;
 
         private volatile bool _disposed = false;
 
@@ -68,11 +65,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         private object _sync = new object();
 
         // Creates a new MsQuicStream
-        internal MsQuicStream(MsQuicApi api, MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
+        internal MsQuicStream(MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
         {
             Debug.Assert(connection != null);
 
-            _api = api;
             _ptr = nativeObjPtr;
 
             if (inbound)
@@ -266,7 +262,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _readState = ReadState.Aborted;
             }
 
-            _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
+            MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -296,7 +292,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             });
 
-            var status = _api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
+            var status = MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -344,12 +340,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (_ptr != IntPtr.Zero)
             {
                 // TODO resolve graceful vs abortive dispose here. Will file a separate issue.
-                //_api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
-                _api._streamCloseDelegate?.Invoke(_ptr);
+                //MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
+                MsQuicApi.Api._streamCloseDelegate?.Invoke(_ptr);
             }
 
             _handle.Free();
-            _api = null;
 
             _disposed = true;
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -380,12 +375,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (_ptr != IntPtr.Zero)
             {
                 // TODO resolve graceful vs abortive dispose here. Will file a separate issue.
-                //_api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
-                _api._streamCloseDelegate?.Invoke(_ptr);
+                //MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
+                MsQuicApi.Api._streamCloseDelegate?.Invoke(_ptr);
             }
 
             _handle.Free();
-            _api = null;
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -394,7 +388,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void EnableReceive()
         {
-            _api._streamReceiveSetEnabledDelegate(_ptr, enabled: true);
+            MsQuicApi.Api._streamReceiveSetEnabledDelegate(_ptr, enabled: true);
         }
 
         internal static uint NativeCallbackHandler(
@@ -700,7 +694,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _handle = GCHandle.Alloc(this);
 
             _callback = new StreamCallbackDelegate(NativeCallbackHandler);
-            _api._setCallbackHandlerDelegate(
+            MsQuicApi.Api._setCallbackHandlerDelegate(
                 _ptr,
                 _callback,
                 GCHandle.ToIntPtr(_handle));
@@ -721,7 +715,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             var quicBufferPointer = (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(_sendQuicBuffers, 0);
 
-            uint status = _api._streamSendDelegate(
+            uint status = MsQuicApi.Api._streamSendDelegate(
                 _ptr,
                 quicBufferPointer,
                 bufferCount: 1,
@@ -739,7 +733,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private ValueTask<uint> StartWritesAsync()
         {
-            uint status = _api._streamStartDelegate(
+            uint status = MsQuicApi.Api._streamStartDelegate(
               _ptr,
               (uint)QUIC_STREAM_START_FLAG.ASYNC);
 
@@ -749,14 +743,14 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void ReceiveComplete(int bufferLength)
         {
-            uint status = _api._streamReceiveCompleteDelegate(_ptr, (ulong)bufferLength);
+            uint status = MsQuicApi.Api._streamReceiveCompleteDelegate(_ptr, (ulong)bufferLength);
             MsQuicStatusException.ThrowIfFailed(status);
         }
 
         // This can fail if the stream isn't started.
         private unsafe long GetStreamId()
         {
-            return (long)MsQuicParameterHelpers.GetULongParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.STREAM, (uint)QUIC_PARAM_STREAM.ID);
+            return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.STREAM, (uint)QUIC_PARAM_STREAM.ID);
         }
 
         private void ThrowIfDisposed()

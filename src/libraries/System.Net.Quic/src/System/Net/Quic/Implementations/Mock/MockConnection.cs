@@ -212,12 +212,5 @@ namespace System.Net.Quic.Implementations.Mock
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
-        public override ValueTask DisposeAsync()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-            return default;
-        }
     }
 }

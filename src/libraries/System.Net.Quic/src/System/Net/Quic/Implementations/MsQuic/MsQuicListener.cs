@@ -12,11 +12,8 @@ using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal class MsQuicListener : QuicListenerProvider, IDisposable, IAsyncDisposable
+    internal class MsQuicListener : QuicListenerProvider, IDisposable
     {
-        // Functions to invoke in MsQuic
-        private MsQuicApi _api;
-
         // Security configuration for MsQuic
         private MsQuicSecurityConfig _secConfig;
         private MsQuicSession _session;
@@ -48,7 +45,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 SingleWriter = true
             });
 
-            _api = MsQuicApi.Api;
             _sslOptions = options.ServerAuthenticationOptions;
             _listenEndPoint = options.ListenEndPoint;
 
@@ -99,12 +95,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             Dispose(false);
         }
 
-        public override ValueTask DisposeAsync()
-        {
-            Dispose();
-            return default;
-        }
-
         private void Dispose(bool disposing)
         {
             if (_disposed)
@@ -116,12 +106,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
-                _api._listenerStopDelegate(_ptr);
-                _api._listenerCloseDelegate(_ptr);
+                MsQuicApi.Api._listenerStopDelegate(_ptr);
+                MsQuicApi.Api._listenerCloseDelegate(_ptr);
             }
 
             _ptr = IntPtr.Zero;
-            _api = null;
 
             // TODO this call to session dispose hangs.
             //_session.Dispose();
@@ -132,7 +121,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            _api._listenerStopDelegate(_ptr);
+            MsQuicApi.Api._listenerStopDelegate(_ptr);
             return default;
         }
 
@@ -140,13 +129,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            _secConfig = await _api.CreateSecurityConfig(_sslOptions?.ServerCertificate);
+            _secConfig = await MsQuicApi.Api.CreateSecurityConfig(_sslOptions?.ServerCertificate);
 
             SetCallbackHandler();
 
             SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
 
-            uint status = _api._listenerStartDelegate(
+            uint status = MsQuicApi.Api._listenerStartDelegate(
                 _ptr,
                 ref address);
 
@@ -160,7 +149,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private unsafe void SetListenPort()
         {
-            SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(_api, _ptr, (uint)QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
+            SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
 
             _listenEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(inetAddress);
         }
@@ -178,7 +167,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                             NewConnectionInfo connectionInfo = *(NewConnectionInfo*)evt.Data.NewConnection.Info;
                             IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(*(SOCKADDR_INET*)connectionInfo.LocalAddress);
                             IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(*(SOCKADDR_INET*)connectionInfo.RemoteAddress);
-                            MsQuicConnection msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, _api, evt.Data.NewConnection.Connection);
+                            MsQuicConnection msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, evt.Data.NewConnection.Connection);
                             _acceptConnectionQueue.Writer.TryWrite(msQuicConnection);
                         }
                         break;
@@ -215,7 +204,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             _handle = GCHandle.Alloc(this);
             _listenerDelegate = new ListenerCallbackDelegate(NativeCallbackHandler);
-            _api._setCallbackHandlerDelegate(
+            MsQuicApi.Api._setCallbackHandlerDelegate(
                 _ptr,
                 _listenerDelegate,
                 GCHandle.ToIntPtr(_handle));

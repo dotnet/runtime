@@ -8,12 +8,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         private bool _disposed = false;
         private IntPtr _nativeObjPtr;
-        private MsQuicApi _api;
         private bool _opened;
 
         internal MsQuicSession()
         {
-            _api = MsQuicApi.Api;
         }
 
         public IntPtr ConnectionOpen(QuicClientConnectionOptions options)
@@ -25,7 +23,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     options.MaxUnidirectionalStreams);
             }
 
-            MsQuicStatusException.ThrowIfFailed(_api._connectionOpenDelegate(
+            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api._connectionOpenDelegate(
                 _nativeObjPtr,
                 MsQuicConnection.NativeCallbackHandler,
                 IntPtr.Zero,
@@ -37,7 +35,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         private void OpenSession(byte[] alpn, short bidirectionalStreamCount, short undirectionalStreamCount)
         {
             _opened = true;
-            _nativeObjPtr = _api.SessionOpen(alpn);
+            _nativeObjPtr = MsQuicApi.Api.SessionOpen(alpn);
             SetPeerBiDirectionalStreamCount((ushort)bidirectionalStreamCount);
             SetPeerUnidirectionalStreamCount((ushort)undirectionalStreamCount);
         }
@@ -52,7 +50,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                                     options.MaxUnidirectionalStreams);
             }
 
-            MsQuicStatusException.ThrowIfFailed(_api._listenerOpenDelegate(
+            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api._listenerOpenDelegate(
                 _nativeObjPtr,
                 MsQuicListener.NativeCallbackHandler,
                 IntPtr.Zero,
@@ -66,7 +64,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
             ushort ErrorCode)
         {
-            _api._sessionShutdownDelegate(
+            MsQuicApi.Api._sessionShutdownDelegate(
                 _nativeObjPtr,
                 (uint)Flags,
                 ErrorCode);
@@ -123,7 +121,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
           QUIC_PARAM_SESSION param,
           MsQuicNativeMethods.QuicBuffer buf)
         {
-            MsQuicStatusException.ThrowIfFailed(_api.UnsafeSetParam(
+            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.UnsafeSetParam(
                 _nativeObjPtr,
                 (uint)QUIC_PARAM_LEVEL.SESSION,
                 (uint)param,
@@ -142,9 +140,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return;
             }
 
-            _api._sessionCloseDelegate?.Invoke(_nativeObjPtr);
+            MsQuicApi.Api._sessionCloseDelegate?.Invoke(_nativeObjPtr);
             _nativeObjPtr = IntPtr.Zero;
-            _api = null;
 
             _disposed = true;
         }

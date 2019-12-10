@@ -183,7 +183,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         public async ValueTask<MsQuicSecurityConfig> CreateSecurityConfig(X509Certificate certificate)
         {
             MsQuicSecurityConfig secConfig = null;
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
             uint status;
             if (certificate != null)

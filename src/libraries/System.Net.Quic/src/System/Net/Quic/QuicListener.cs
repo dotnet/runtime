@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic
 {
-    public sealed class QuicListener : IDisposable, IAsyncDisposable
+    public sealed class QuicListener : IDisposable
     {
         private readonly QuicListenerProvider _provider;
 
@@ -51,7 +51,5 @@ namespace System.Net.Quic
         public ValueTask CloseAsync(CancellationToken cancellationToken = default) => _provider.CloseAsync(cancellationToken);
 
         public void Dispose() => _provider.Dispose();
-
-        public ValueTask DisposeAsync() => _provider.DisposeAsync();
     }
 }

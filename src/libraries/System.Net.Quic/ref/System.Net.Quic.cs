@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic
 {
-    public sealed partial class QuicConnection : System.IDisposable, System.IAsyncDisposable
+    public sealed partial class QuicConnection : System.IDisposable
     {
         public QuicConnection(IPEndPoint remoteEndPoint, System.Net.Security.SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint = null) { }
         public System.Threading.Tasks.ValueTask ConnectAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
@@ -24,9 +24,8 @@ namespace System.Net.Quic
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol => throw null;
         public ValueTask CloseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() => throw null;
-        public ValueTask DisposeAsync() => throw null;
     }
-    public sealed partial class QuicListener : IDisposable, System.IAsyncDisposable
+    public sealed partial class QuicListener : IDisposable
     {
         public QuicListener(IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
         public IPEndPoint ListenEndPoint => throw null;
@@ -34,7 +33,6 @@ namespace System.Net.Quic
         public ValueTask StartAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public ValueTask CloseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() => throw null;
-        public ValueTask DisposeAsync() => throw null;
     }
     public sealed class QuicStream : System.IO.Stream
     {
