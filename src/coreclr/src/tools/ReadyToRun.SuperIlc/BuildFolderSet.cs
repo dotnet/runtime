@@ -129,8 +129,7 @@ namespace ReadyToRun.SuperIlc
                 return false;
             }
 
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
             ResolveTestExclusions();
 
@@ -247,8 +246,7 @@ namespace ReadyToRun.SuperIlc
                 return true;
             }
 
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
             string coreRoot = _options.CoreRootDirectory.FullName;
             string[] frameworkFolderFiles = Directory.GetFiles(coreRoot);
@@ -461,8 +459,7 @@ namespace ReadyToRun.SuperIlc
 
         public bool Execute()
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            Stopwatch stopwatch = Stopwatch.StartNew();
             var executionsToRun = new List<ProcessInfo>();
 
             foreach (BuildFolder folder in FoldersToBuild)
@@ -517,8 +514,7 @@ namespace ReadyToRun.SuperIlc
 
         public bool Build()
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
             bool success = _options.Exe || Compile();
 
