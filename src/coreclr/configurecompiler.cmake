@@ -24,6 +24,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables and cross target component configure
 #     - for windows we use the passed in parameter to CMAKE to determine build arch
 #----------------------------------------
+set(CLR_CMAKE_PLATFORM_OS ${CMAKE_SYSTEM_NAME})
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
     if(CLR_CROSS_COMPONENTS_BUILD)
@@ -78,8 +79,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     if(DEFINED CLR_CMAKE_LINUX_ID)
         if(CLR_CMAKE_LINUX_ID STREQUAL tizen)
             set(CLR_CMAKE_TARGET_TIZEN_LINUX 1)
+            set(CLR_CMAKE_PLATFORM_OS ${CLR_CMAKE_LINUX_ID})
         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
             set(CLR_CMAKE_PLATFORM_ALPINE_LINUX 1)
+            set(CLR_CMAKE_PLATFORM_OS ${CLR_CMAKE_LINUX_ID})
         endif()
     endif(DEFINED CLR_CMAKE_LINUX_ID)
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -167,7 +170,7 @@ endif()
 
 # Set TARGET architecture variables
 # Target arch will be a cmake param (optional) for both windows as well as non-windows build
-# if target arch is not specified then host & target are same
+# if target arch is not specified then host & target arch are same
 if(NOT DEFINED CLR_CMAKE_TARGET_ARCH OR CLR_CMAKE_TARGET_ARCH STREQUAL "" )
   set(CLR_CMAKE_TARGET_ARCH ${CLR_CMAKE_HOST_ARCH})
 endif()
@@ -188,10 +191,23 @@ if (CLR_CMAKE_TARGET_ARCH STREQUAL x64)
     clr_unknown_arch()
 endif()
 
-# check if host & target arch combination are valid
-if(NOT(CLR_CMAKE_TARGET_ARCH STREQUAL CLR_CMAKE_HOST_ARCH))
-    if(NOT((CLR_CMAKE_PLATFORM_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM64) OR (CLR_CMAKE_PLATFORM_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM) OR (CLR_CMAKE_PLATFORM_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM)))
-        message(FATAL_ERROR "Invalid host and target arch combination")
+# Set TARGET architecture variables
+# Target os will be a cmake param (optional) for both windows as well as non-windows build
+# if target os is not specified then host & target os are same
+if (NOT DEFINED CLR_CMAKE_TARGET_OS OR CLR_CMAKE_TARGET_OS STREQUAL "" )
+  set(CLR_CMAKE_TARGET_OS ${CLR_CMAKE_PLATFORM_OS})
+endif()
+
+# check if host & target os/arch combination are valid
+if (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_PLATFORM_OS)
+    if(NOT(CLR_CMAKE_TARGET_ARCH STREQUAL CLR_CMAKE_HOST_ARCH))
+        if(NOT((CLR_CMAKE_PLATFORM_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM64) OR (CLR_CMAKE_PLATFORM_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM) OR (CLR_CMAKE_PLATFORM_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM)))
+            message(FATAL_ERROR "Invalid host and target arch combination")
+        endif()
+    endif()
+else()
+    if(NOT(CLR_CMAKE_PLATFORM_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_AMD64 AND (CLR_CMAKE_TARGET_OS STREQUAL Linux) AND (CLR_CMAKE_PLATFORM_OS STREQUAL Windows_NT)))
+        message(FATAL_ERROR "Invalid host and target os/arch combination")
     endif()
 endif()
 
