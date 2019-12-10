@@ -642,7 +642,7 @@ struct GCStatistics
     int cntReasons[reason_max];
 
     // count of condemned generation, by NGC and FGC:
-    int cntNGCGen[max_generation+1];
+    int cntNGCGen[max_generation];
     int cntFGCGen[max_generation];
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -1252,7 +1252,7 @@ public:
     size_t get_segment_size_hard_limit (uint32_t* num_heaps, bool should_adjust_num_heaps);
 
     PER_HEAP_ISOLATED
-    bool should_retry_other_heap (size_t size);
+    bool should_retry_other_heap (int gen_number, size_t size);
 
     PER_HEAP
     CObjectHeader* allocate (size_t jsize,
@@ -1575,7 +1575,7 @@ protected:
                                msl_take_state take_state);
 
     PER_HEAP
-    BOOL a_fit_free_list_large_p (size_t size,
+    BOOL a_fit_free_list_uoh_p (size_t size,
                                   alloc_context* acontext,
                                   uint32_t flags, 
                                   int align_const,
@@ -1641,7 +1641,7 @@ protected:
                       oom_reason* oom_r);
 
     PER_HEAP
-    allocation_state allocate_small (int gen_number,
+    allocation_state allocate_soh (int gen_number,
                                      size_t size,
                                      alloc_context* acontext,
                                      uint32_t flags,
@@ -1664,7 +1664,7 @@ protected:
     void add_saved_loh_state (allocation_state loh_state_to_save, EEThreadId thread_id);
 #endif //RECORD_LOH_STATE
     PER_HEAP
-    allocation_state allocate_large (int gen_number,
+    allocation_state allocate_uoh (int gen_number,
                                      size_t size,
                                      alloc_context* acontext,
                                      uint32_t flags,
@@ -2942,9 +2942,9 @@ protected:
     PER_HEAP
     BOOL ephemeral_gen_fit_p (gc_tuning_point tp);
     PER_HEAP
-    void sweep_uoh_objects (generation_num gen_num);
+    void sweep_uoh_objects (gc_generation_num gen_num);
     PER_HEAP
-    void relocate_in_uoh_objects (generation_num gen_num);
+    void relocate_in_uoh_objects (gc_generation_num gen_num);
     PER_HEAP
     void mark_through_cards_for_uoh_objects(card_fn fn, int oldest_gen_num, BOOL relocating
                                               CARD_MARKING_STEALING_ARG(gc_heap* hpt));
@@ -3299,7 +3299,7 @@ public:
     uint32_t fgn_maxgen_percent;
 
     PER_HEAP_ISOLATED
-    uint32_t fgn_uoh_percent;
+    uint32_t fgn_loh_percent;
 
     PER_HEAP_ISOLATED
     VOLATILE(bool) full_gc_approach_event_set;
@@ -4765,14 +4765,14 @@ struct loh_obj_and_pad
     plug        m_plug;
 };
 
-struct loh_padding_obj
+struct uoh_reloc_padding_obj
 {
     uint8_t*    mt;
     size_t      len;
     ptrdiff_t   reloc;
     plug        m_plug;
 };
-#define loh_padding_obj_size (sizeof(loh_padding_obj))
+#define uoh_reloc_padding_obj_size (sizeof(uoh_reloc_padding_obj))
 
 //flags description
 #define heap_segment_flags_readonly     1
@@ -4875,7 +4875,7 @@ BOOL heap_segment_unmappable_p (heap_segment* inst)
 inline
 BOOL heap_segment_uoh_p (heap_segment * inst)
 {
-    return !!(inst->flags & (heap_segment_flags_loh));
+    return !!(inst->flags & heap_segment_flags_loh);
 }
 
 #ifdef BACKGROUND_GC

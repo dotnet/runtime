@@ -41,19 +41,19 @@ void GCHeap::UpdatePreGCCounters()
         hp = gc_heap::g_heaps [hn];
 
         allocation_0 +=
-            dd_desired_allocation (hp->dynamic_data_of (0))-
-            dd_new_allocation (hp->dynamic_data_of (0));
+            dd_desired_allocation (hp->dynamic_data_of (soh_gen0))-
+            dd_new_allocation (hp->dynamic_data_of (soh_gen0));
         allocation_3 +=
-            dd_desired_allocation (hp->dynamic_data_of (max_generation+1))-
-            dd_new_allocation (hp->dynamic_data_of (max_generation+1));
+            dd_desired_allocation (hp->dynamic_data_of (loh_generation))-
+            dd_new_allocation (hp->dynamic_data_of (loh_generation));
     }
 #else
     allocation_0 =
-        dd_desired_allocation (hp->dynamic_data_of (0))-
-        dd_new_allocation (hp->dynamic_data_of (0));
+        dd_desired_allocation (hp->dynamic_data_of (soh_gen0))-
+        dd_new_allocation (hp->dynamic_data_of (soh_gen0));
     allocation_3 =
-        dd_desired_allocation (hp->dynamic_data_of (max_generation+1))-
-        dd_new_allocation (hp->dynamic_data_of (max_generation+1));
+        dd_desired_allocation (hp->dynamic_data_of (uoh_start_generation))-
+        dd_new_allocation (hp->dynamic_data_of (uoh_start_generation));
 
 #endif //MULTIPLE_HEAPS
 
@@ -132,7 +132,7 @@ void GCHeap::UpdatePostGCCounters()
 #endif //FEATURE_REDHAWK
 
     // per generation calculation.
-    for (int gen_index = 0; gen_index <= (max_generation+1); gen_index++)
+    for (int gen_index = 0; gen_index < total_generation_count; gen_index++)
     {
 #ifdef MULTIPLE_HEAPS
         int hn = 0;
@@ -157,7 +157,7 @@ void GCHeap::UpdatePostGCCounters()
                     g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
                 }
 
-                if ((gen_index == (max_generation+1)) && (condemned_gen == max_generation))
+                if ((gen_index == loh_generation) && (condemned_gen == max_generation))
                 {
                     g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
                 }
@@ -439,7 +439,7 @@ void GCHeap::DiagTraceGCSegments()
         }
 
         // large obj segments
-        for (seg = generation_start_segment (h->generation_of (max_generation+1)); seg != 0; seg = heap_segment_next(seg))
+        for (seg = generation_start_segment (h->generation_of (loh_generation)); seg != 0; seg = heap_segment_next(seg))
         {
             uint8_t* address = heap_segment_mem (seg);
             size_t size = heap_segment_reserved (seg) - heap_segment_mem (seg);
