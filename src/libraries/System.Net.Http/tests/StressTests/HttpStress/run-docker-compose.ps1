@@ -42,10 +42,7 @@ if ($useWindowsContainers)
     $env:DOCKERFILE="windows.Dockerfile"
 }
 
-Set-Location $PSScriptRoot
-docker-compose build  2>&1 | %{ "$_" } # $BUILD_ARGS.Split()
-
-#if (!$?) { exit 1 }
+docker-compose --file "$COMPOSE_FILE" build $BUILD_ARGS.Split()
 
 # Run the stress app
 
@@ -53,5 +50,5 @@ if (!$buildOnly)
 {
     $env:HTTPSTRESS_CLIENT_ARGS = $clientStressArgs
     $env:HTTPSTRESS_SERVER_ARGS = $serverStressArgs
-    docker-compose --file $COMPOSE_FILE up --abort-on-container-exit
+    docker-compose --file "$COMPOSE_FILE" up --abort-on-container-exit
 }
