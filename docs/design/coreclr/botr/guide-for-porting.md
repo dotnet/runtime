@@ -411,7 +411,7 @@ set of functionality that is architecture specific, including but not limited to
     executable, these stubs are often parsed to determine exactly what a given
     function is, what it is doing, where control flow will lead to, etc.
 
-#### Virtualcallstubcpu.h
+#### virtualcallstubcpu.h
 
 This header is used to provide implementation of various stubs as used by
 virtual stub dispatch. These stubs are the lookup, resolver, and dispatch stubs
