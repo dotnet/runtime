@@ -35,7 +35,7 @@ steps:
 - bash: |
     export CONFIGURATION=$(BUILD_CONFIGURATION)
     export DOCKER_IMAGE_TAG=$(sdkBaseImage)
-    $(dockerfilesFolder)/build-docker-sdk-linux.sh
+    $(dockerfilesFolder)/build-docker-sdk.sh
   displayName: Build Libraries
 
 - bash: |

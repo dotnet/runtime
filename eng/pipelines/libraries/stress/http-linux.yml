@@ -35,12 +35,12 @@ steps:
 - bash: |
     export CONFIGURATION=$(BUILD_CONFIGURATION)
     export DOCKER_IMAGE_TAG=$(sdkBaseImage)
-    $(dockerfilesFolder)/build-docker-sdk-linux.sh
+    $(dockerfilesFolder)/build-docker-sdk.sh
   displayName: Build Libraries
 
 - bash: |
     cd '$(HttpStressProject)'
-    docker build -t $(httpStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) .
+    ./run-docker-compose.ps1 -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
   displayName: Build HttpStress
 
 - bash: |
