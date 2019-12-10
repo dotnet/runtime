@@ -1,4 +1,3 @@
----
 Guide for porting .NET to a new processor architecture
 ---
 
@@ -19,17 +18,17 @@ As engineering continues along the development path, it is best if the logic can
 be placed into the master repository of the runtime as soon as possible. This
 will have 2 major effects.
 
-1.  Individual commits are easier to review
+1.  Individual commits are easier to review.
 
 2.  Not all approaches for fixing problems will always be considered acceptable.
     It is plausible that a some change may not ever be acceptable to take into
     the upstream git repo, and discovering such issues early can avoid large
-    amounts of sunk cost
+    amounts of sunk cost.
 
 3.  When some change is made which breaks other platforms, it will be relatively
     simple to identify the break. If changes are held until after all changes
     are complete and the product is fully functional, this work is likely to be
-    much more difficult
+    much more difficult.
 
 Stage 1 Initial Bring Up
 ------------------------
@@ -58,12 +57,12 @@ The process follows the following strategy
 
     -   Run a subset of the tests. Tests are arranged in a directory structure
         by category, so this subsetting mechanism will only need to be a
-        directory structure system
+        directory structure system.
 
     -   Some set of tests will need to be excluded on a test by test basis. Once
         the product is ready to ship, most of these disabled tests will need to
         have been re-enabled, but there are tests which will be disabled for
-        months/years as the product is brought up to quality
+        months/years as the product is brought up to quality.
 
     -   Produce crash or core dumps. The failure mode of many tests during this
         phase will be a crash. A test running tool that captures core dumps will
@@ -104,7 +103,7 @@ Stage 2 Expand scenario coverage
     tests, and adding the tests from the libraries repo will require XUnit to
     work well.
 
--   Once XUnit is functional, bring up the libraries/corefx set of tests. There
+-   Once XUnit is functional, bring up the libraries set of tests. There
     is quite a lot of the CoreCLR codebase that is largely only tested by the
     libraries test suites.
 
@@ -124,7 +123,7 @@ Stage 3 Focus on performance
         and implement optional assembly stubs where hand-written assembly would
         be faster than the equivalent C++ code.
 
-    -   Improve the backend code generation of the JIT
+    -   Improve the backend code generation of the JIT.
 
 -   Up until this point, engineers have probably been using the JIT for all code
     instead of bringing the Ready To Run compiler (crossgen/crossgen2) into
@@ -165,10 +164,10 @@ both the JIT and VM.
     the runtime supports a managed to managed abi as well as 3 separate native
     abis for interop, but this scheme is generally not recommended.) See the
     [CLR-ABI](clr-abi.md) document for how the existing architectures work. When 
-    defining the behavior of a new processor architecture abi for CoreCLR, we must maintain that
+    defining the behavior of a new processor architecture abi for CoreCLR, we must maintain that:
 
     1.  The this pointer is always passed in the same register regardless of
-        other parameters
+        other parameters.
 
     2.  Various stub types will require an extra “secret” parameter. Perf
         details typically drive exactly where these are placed.
@@ -193,7 +192,7 @@ both the JIT and VM.
     through the GDB JIT
     <https://sourceware.org/gdb/onlinedocs/gdb/JIT-Interface.html> . This
     support is conditional on an \#ifdef, but has been used in the past to
-    support bring up of
+    support bring up of new platforms.
 
 5.  EH Funclets. .NET requires a 2 pass exception model in order to properly
     support exception filters. This substantially differs from the typical
@@ -225,16 +224,19 @@ Notable components
     System.Reflection.ImageFileMachine enum, and the ProcessorArchitecture enum,
     and logic that manipulates it.
 
-4.  PE File format changes
+4.  PE File format changes to add a new architecture. Also, the C# compiler likely
+    also needs a new switch to generate machine specific code for the new 
+    architecture.
 
-5.  Crossgen/Crossgen2
+5.  Crossgen/Crossgen2 - As the AOT compilers that produce machine specific logic
+    from general purpose MSIL, these will be needed to improve startup performance.
 
-6.  R2RDump
+6.  R2RDump - This allows diagnosing issues in pre-compiled code.
 
 JIT
 ---
 
-See RyuJit porting guide
+See [Porting RyuJit](porting-ryujit.md)
 
 CLR VM
 ------
@@ -281,35 +283,35 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
     not require setting up a stack frame. Most of the casting helpers fall in
     this category.
 
-    1.  JIT_Stelem_Ref – very slightly faster version of
-        JIT_Stelem_Ref_Portable.
+    1.  `JIT_Stelem_Ref` – very slightly faster version of
+        `JIT_Stelem_Ref_Portable`.
 
 2.  General purpose correctness. Some helpers adjust the abi of whatever they
     call in interesting ways, manipulate/parse the “secret” arguments, or do
     other not quite compilable to standardized C concepts.
 
-    1.  CallDescrWorkerInternal – Needed to support VM to managed function
+    1.  `CallDescrWorkerInternal` – Needed to support VM to managed function
         calls. Necessary for all applications as this is how the main method is
         called.
 
-    2.  LazyMachStateCaptureState/HelperMethodFrameRestoreState – Needed to
+    2.  `LazyMachStateCaptureState`/`HelperMethodFrameRestoreState` – Needed to
         support a GC occurring with an FCALL or HCALL on the stack. (Incorrect
         implementations will cause unpredictable crashes during or after garbage
         collection)
 
-    3.  NDirectImportThunk – Needed to support saving off a set of arguments to
+    3.  `NDirectImportThunk` – Needed to support saving off a set of arguments to
         a p/invoke so that the runtime can find the actual target. Also uses one
         of the secret arguments (Used by all p/invoke methods)
 
-    4.  PrecodeFixupThunk – Needed to convert the secret argument from a
+    4.  `PrecodeFixupThunk` – Needed to convert the secret argument from a
         FixupPrecode\* to a MethodDesc\*. This function exists to reduce the
         code size of FixupPrecodes as there are (Used by many managed methods)
 
-    5.  ThePreStub - Needed to support saving off a set of arguments to the
+    5.  `ThePreStub` - Needed to support saving off a set of arguments to the
         stack so that the runtime can find or jit the right target method.
         (Needed for any jitted method to execute Used by all managed methods)
 
-    6.  ThePreStubPatch – Exists to provide a reliable spot for the managed
+    6.  `ThePreStubPatch` – Exists to provide a reliable spot for the managed
         debugger to put a breakpoint.
 
     7.  GC Write Barriers – These are used to provide the GC with information
@@ -325,42 +327,42 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP can be implemented as
         performance needs require.
 
-    8.  ComCallPreStub/ COMToCLRDispatchHelper /GenericComCallStub - not
+    8.  `ComCallPreStub`/ `COMToCLRDispatchHelper` /`GenericComCallStub` - not
         necessary for non-Windows platforms at this time
 
-    9.  TheUMEntryPrestub/ UMThunkStub - used to enter the runtime from
+    9.  `TheUMEntryPrestub`/ `UMThunkStub` - used to enter the runtime from
         non-managed code through entrypoints generated from the
         Marshal.GetFunctionPointerForDelagate api.
 
-    10. OnHijackTripThread - needed for thread suspension to support GC + other
+    10. `OnHijackTripThread` - needed for thread suspension to support GC + other
         suspension requiring events. This is typically not needed for very early
         stage bringup of the product, but will be needed for any decent size
         application
 
-    11. CallEHFunclet – Used to call catch, finally and fault funclets. Behavior
+    11. `CallEHFunclet` – Used to call catch, finally and fault funclets. Behavior
         is specific to exactly how funclets are implemented. Only used if
         USE_FUNCLET_CALL_HELPER is set
 
-    12. CallEHFilterFunclet – Used to call filter funclets. Behavior is specific
+    12. `CallEHFilterFunclet` – Used to call filter funclets. Behavior is specific
         to exactly how funclets are implemented. Only used if
         USE_FUNCLET_CALL_HELPER is set
 
-    13. ResolveWorkerChainLookupAsmStub/ ResolveWorkerAsmStub Used for virtual
+    13. `ResolveWorkerChainLookupAsmStub`/ `ResolveWorkerAsmStub` Used for virtual
         stub dispatch (virtual call support for interface, and some virtual
         methods). These work in tandem with the logic in virtualcallstubcpu.h to
         implement the logic described in [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 
-    14. ProfileEnter/ ProfileeLeave/ ProfileTailcall – Used to call function
+    14. `ProfileEnter`/ `ProfileeLeave`/ `ProfileTailcall` – Used to call function
         entry/exit profile functions acquired through the ICorProfiler
         interface. Used in VERY rare circumstances. It is reasonable to wait to
         implement these until the final stages of productization. Most profilers
         do not use this functionality.
 
-    15. JIT_PInvokeBegin/End – Leave/enter the managed runtime state. Necessary
+    15. `JIT_PInvokeBegin`/`JIT_PInvokeEnd` – Leave/enter the managed runtime state. Necessary
         for ReadyToRun pre-compiled pinvoke calls, so that they do not cause GC
         starvation
 
-    16. VarargPInvokeStub/ GenericPInvokeCalliHelper Used to support calli
+    16. `VarargPInvokeStub`/ `GenericPInvokeCalliHelper` Used to support calli
         pinvokes. It is expected that C\# 8.0 will increase use of this feature.
         Today use of this feature on Unix requires hand-written IL. On Windows
         this feature is commonly used by C++/CLI
@@ -369,7 +371,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
     locations for NullReferenceExceptions to be generated out of a SIGSEGV
     signal.
 
-    1.  JIT_MemSet, and JIT_MemCpy have this requirement
+    1.  `JIT_MemSet`, and `JIT_MemCpy` have this requirement
 
 #### cgencpu.h
 
