@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(CoreFX C)
 
+cmake_policy(SET CMP0083 NEW)
+
+include(CheckPIESupported)
+
+# All code we build should be compiled as position independent
+check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES C)
+if(NOT MSVC AND NOT CMAKE_C_LINK_PIE_SUPPORTED)
+  message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
+                  "PIE link options will not be passed to linker.")
+endif()
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -28,7 +40,6 @@ endif()
 add_compile_options(-Werror)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
-    # Build a static library so no -fPIC
     set(CLR_CMAKE_PLATFORM_WASM 1)
     add_definitions(-D_WASM_)
     # The emscripten build has additional warnings so -Werror breaks
@@ -37,7 +48,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
     add_compile_options(-Wno-alloca)
     add_compile_options(-Wno-implicit-int-float-conversion)
 else()
-  add_compile_options(-fPIC)
   set(GEN_SHARED_LIB 1)
 endif(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 
@@ -125,9 +135,6 @@ endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
-   set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")
-   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1")
-   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1")
 endif ()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -141,8 +148,7 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
     add_definitions(-D_BSD_SOURCE) # required for getline
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld -Xlinker --build-id=sha1")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  -fuse-ld=lld -Xlinker --build-id=sha1")
+    add_link_options(-fuse-ld=lld)
 endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
 if(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
@@ -164,6 +170,12 @@ endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_PLATFORM_UNIX)
+    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        add_link_options(-Wl,-bind_at_load)
+    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+        add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+    endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
     add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
