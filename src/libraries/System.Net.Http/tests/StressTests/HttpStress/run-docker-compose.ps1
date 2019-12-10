@@ -43,7 +43,7 @@ if ($useWindowsContainers)
 }
 
 Set-Location $PSScriptRoot
-Invoke-Expression "docker-compose build $($BUILD_ARGS.Split())"
+docker-compose build $BUILD_ARGS.Split()
 
 if (!$?) { exit 1 }
 
