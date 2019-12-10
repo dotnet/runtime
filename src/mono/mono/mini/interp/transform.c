@@ -6829,7 +6829,7 @@ cfold_failed:
 	case opcode: \
 		g_assert (sp [0].val.type == stack_type && sp [1].val.type == stack_type); \
 		result.type = STACK_VALUE_I4; \
-		result.field = (cast_type) sp [0].val.field relop (cast_type) sp [1].val.field; \
+		result.i = (cast_type) sp [0].val.field relop (cast_type) sp [1].val.field; \
 		break;
 
 
