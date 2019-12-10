@@ -209,7 +209,7 @@ Both files carry the filenames for dependencies that must be found. They can be 
 At last, the coreclr is loaded into memory and called to run the application.
 
 ### Probing for Assemblies
-Assemblies are found by looking through probing paths in a certain order. The first found matching assembly wins, and that location will be passed to CoreCLR. For example:
+Assemblies are found by looking through probing paths in a certain order.
 
 * In version 2.0, the local app location has priority over the shared framework locations and if the same assembly exists in both locations, the coreclr will end up using the local app's copy of that assembly.
 * In version 2.1and later, if multiple assemblies with the same name are found, the assembly with the highest version wins. This is necessary to avoid downgrading assembly versions requested by the application.
