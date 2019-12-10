@@ -114,35 +114,32 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     fx_definition_vector_t::iterator fx_end;
     resolver.get_app_fx_definition_range(&fx_begin, &fx_end);
 
+    pal::string_t resolved_frameworks;
     pal::string_t app_context_deps_str;
     fx_definition_vector_t::iterator fx_curr = fx_begin;
     while (fx_curr != fx_end)
     {
         if (fx_curr != fx_begin)
+        {
             app_context_deps_str += _X(';');
+
+            if (!resolved_frameworks.empty())
+            {
+                resolved_frameworks += _X(';');
+            }
+
+            // The first framework entry is skipped, becayse it
+            // corresponds to the app itself.
+            resolved_frameworks += _X("Framework:");
+            resolved_frameworks += (*fx_curr)->get_name();
+            resolved_frameworks += _X(", Requested:");
+            resolved_frameworks += (*fx_curr)->get_requested_version();
+            resolved_frameworks += _X(", Resolved:");
+            resolved_frameworks += (*fx_curr)->get_found_version();
+        }
 
         app_context_deps_str += (*fx_curr)->get_deps_file();
         ++fx_curr;
-    }
-
-    pal::string_t fx_resolution;
-    bool is_app = true;
-    for (const auto& fx : fx_definitions)
-    {
-        if (is_app)
-        {
-            is_app = false; // skip the app
-        }
-        else
-        {
-            fx_resolution += _X("Framework:");
-            fx_resolution += fx->get_name();
-            fx_resolution += _X(", Requested:");
-            fx_resolution += fx->get_requested_version();
-            fx_resolution += _X(", Resolved:");
-            fx_resolution += fx->get_found_version();
-            fx_resolution += _X(';');
-        }
     }
 
     pal::string_t clr_library_version;
@@ -165,7 +162,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     coreclr_properties.add(common_property::FxDepsFile, fx_deps_str.c_str());
     coreclr_properties.add(common_property::ProbingDirectories, resolver.get_lookup_probe_directories().c_str());
     coreclr_properties.add(common_property::FxProductVersion, clr_library_version.c_str());
-    coreclr_properties.add(common_property::FxResolution, fx_resolution.c_str());
+    coreclr_properties.add(common_property::ResolvedFrameworks, resolved_frameworks.c_str());
 
     if (!clrjit_path.empty())
         coreclr_properties.add(common_property::JitPath, clrjit_path.c_str());
