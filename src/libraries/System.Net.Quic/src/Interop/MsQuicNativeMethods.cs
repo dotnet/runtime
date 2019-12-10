@@ -195,13 +195,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct ConnectionEventDataLocalAddrChanged
         {
-            internal IntPtr Address; // TODO this needs to be IPV4 and IPV6
+            internal IntPtr Address;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct ConnectionEventDataPeerAddrChanged
         {
-            internal IntPtr Address; // TODO this needs to be IPV4 and IPV6
+            internal IntPtr Address;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -263,8 +263,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             internal bool EarlyDataAccepted => Data.Connected.EarlyDataAccepted;
             internal ulong NumBytes => Data.IdealSendBuffer.NumBytes;
-            internal IPEndPoint LocalAddress => null; // TODO
-            internal IPEndPoint PeerAddress => null; // TODO
             internal uint ShutdownBeginStatus => Data.ShutdownBegin.Status;
             internal ushort ShutdownBeginPeerStatus => Data.ShutdownBeginPeer.ErrorCode;
             internal bool ShutdownTimedOut => Data.ShutdownComplete.TimedOut;

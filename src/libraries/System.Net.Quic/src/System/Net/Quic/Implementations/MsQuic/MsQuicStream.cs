@@ -79,14 +79,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (inbound)
             {
                 _started = StartState.Finished;
-
                 _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
                 _canRead = true;
             }
             else
             {
                 _started = StartState.None;
-
                 _canWrite = true;
                 _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
             }
@@ -117,14 +115,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
-
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            ThrowIfDisposed();
 
             if (!_canWrite)
             {
                 throw new InvalidOperationException("Writing is not allowed on stream.");
             }
+
             lock (_sync)
             {
                 if (_sendState == SendState.Aborted)
@@ -151,12 +150,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             });
 
+            // Implicit start on first write.
             if (_started == StartState.None)
             {
                 _started = StartState.Started;
-                await StartAsync();
+                await StartWritesAsync();
             }
 
+            // TODO consider passing in FIN on last write (and exposing it somehow?)
             await SendAsync(buffer, QUIC_SEND_FLAG.NONE);
 
             lock (_sync)
@@ -172,9 +173,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             ThrowIfDisposed();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             if (!_canRead)
             {
                 throw new InvalidOperationException("Reading is not allowed on stream.");
@@ -217,6 +219,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             // longer than it needs to. We will need to benchmark this.
             int length = (int)await _receiveResettableCompletionSource.GetValueTask();
 
+            int actual = Math.Min(length, destination.Length);
+
             static unsafe void CopyToBuffer(Span<byte> destinationBuffer, List<QuicBuffer> sourceBuffers)
             {
                 Span<byte> slicedBuffer = destinationBuffer;
@@ -233,8 +237,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            int actual = Math.Min(length, destination.Length);
-
             CopyToBuffer(destination.Span, _receiveQuicBuffers);
 
             lock (_sync)
@@ -242,7 +244,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_readState == ReadState.IndividualReadComplete)
                 {
                     EnableReceive();
-                    // TODO this threw an exception (why was ReceiveComplete invalid?)
+                    // TODO this threw an exception during a stress run.
                     ReceiveComplete(actual);
                     _readState = ReadState.None;
                 }
@@ -343,7 +345,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
-                // TODO call shutdown here.
+                // TODO resolve graceful vs abortive dispose here. Will file a separate issue.
                 //_api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
                 _api._streamCloseDelegate?.Invoke(_ptr);
             }
@@ -368,9 +370,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             Dispose(false);
         }
 
-        // Synchronous shutdown current does a graceful shutdown, which must go async
-        // Close can be done synchronously, but there is not guarantee that all data will be sent to the client
-        // We probably need to reconsider how to handle dispose/shutdown cases.
         private void Dispose(bool disposing)
         {
             if (_disposed)
@@ -382,13 +381,14 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
-                // TODO call shutdown here.
+                // TODO resolve graceful vs abortive dispose here. Will file a separate issue.
                 //_api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
                 _api._streamCloseDelegate?.Invoke(_ptr);
             }
 
             _handle.Free();
             _api = null;
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             _disposed = true;
@@ -396,7 +396,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void EnableReceive()
         {
-            uint status = _api._streamReceiveSetEnabledDelegate(_ptr, enabled: true);
+            _api._streamReceiveSetEnabledDelegate(_ptr, enabled: true);
         }
 
         internal static uint NativeCallbackHandler(
@@ -514,7 +514,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         private uint HandleEventPeerRecvAbort()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            // TODO
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicConstants.Success;
@@ -574,7 +573,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             // TODO use another cts here? This is when both sides are shutdown.
-            // IDK if there is anything useful to do here.
+            // Completing both the reading and writing side is effectively equivalent.
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -639,7 +638,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             CleanupSendState();
-            // TODO throw if a write failed?
+
+            // TODO throw if a write was canceled.
             uint errorCode = evt.Data.SendComplete.Canceled;
 
             bool shouldComplete = false;
@@ -679,8 +679,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 GCHandle.ToIntPtr(_handle));
         }
 
-        // TODO prevent overlapping sends.
-        // TODO consider allowing overlapped reads.
+        // TODO prevent overlapping sends or consider supporting it.
         private unsafe ValueTask SendAsync(
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAG flags)
@@ -711,7 +710,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _sendResettableCompletionSource.GetTypelessValueTask();
         }
 
-        private ValueTask<uint> StartAsync()
+        private ValueTask<uint> StartWritesAsync()
         {
             uint status = _api._streamStartDelegate(
               _ptr,

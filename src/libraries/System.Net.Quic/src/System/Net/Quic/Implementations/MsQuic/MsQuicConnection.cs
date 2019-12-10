@@ -60,7 +60,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // constructor for outbound connections
-        // TODO eventually remove the MsQuicApi and nativeObjectPtr from this constructor as people will new this up.
         public MsQuicConnection(QuicClientConnectionOptions options)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -84,7 +83,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (!_connected)
                 {
-                    throw new InvalidOperationException("Listener must be started before getting endpoint.");
+                    throw new InvalidOperationException("Connection must be started before getting endpoint.");
                 }
 
                 return new IPEndPoint(_localEndPoint.Address, _localEndPoint.Port);
@@ -155,6 +154,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (Exception)
             {
+                // TODO we may want to either add a debug assert here or return specific error codes
+                // based on the exception caught.
                 return MsQuicConstants.InternalError;
             }
 
@@ -169,6 +170,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             _localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(inetAddress);
 
             _connected = true;
+            // I don't believe we need to lock here because
+            // handle event connected will not be called at the same time as
+            // handle event shutdown initiated by transport
             _connectTcs.Complete(MsQuicConstants.Success);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -267,14 +271,12 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            // TODO move idle timeout setting from this class
-            uint status = _api._connectionStartDelegate(
+            MsQuicStatusException.ThrowIfFailed(
+                _api._connectionStartDelegate(
                 _ptr,
                 (ushort)_remoteEndPoint.AddressFamily,
                 _remoteEndPoint.Address.ToString(),
-                (ushort)_remoteEndPoint.Port);
-
-            MsQuicStatusException.ThrowIfFailed(status);
+                (ushort)_remoteEndPoint.Port));
 
             return _connectTcs.GetTypelessValueTask();
         }
@@ -285,14 +287,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             IntPtr streamPtr = IntPtr.Zero;
-            uint status = _api._streamOpenDelegate(
+            MsQuicStatusException.ThrowIfFailed(
+                _api._streamOpenDelegate(
                 _ptr,
                 (uint)flags,
                 MsQuicStream.NativeCallbackHandler,
                 IntPtr.Zero,
-                out streamPtr);
-            // TODO this call is failing right now
-            MsQuicStatusException.ThrowIfFailed(status);
+                out streamPtr));
 
             MsQuicStream stream = new MsQuicStream(_api, this, flags, streamPtr, inbound: false);
 
@@ -333,7 +334,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             GCHandle handle = GCHandle.FromIntPtr(context);
             MsQuicConnection quicConnection = (MsQuicConnection)handle.Target;
-            // TODO quicConnection can be null
             return quicConnection.HandleEvent(ref connectionEventStruct);
         }
 
@@ -399,6 +399,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _handle.Free();
 
+            // TODO continue investigating when session shutdown can block.
             //_session?.Dispose();
             _disposed = true;
 

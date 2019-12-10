@@ -34,7 +34,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         private SslServerAuthenticationOptions _sslOptions;
 
         private volatile bool _disposed;
-
         private volatile bool _started;
         private IPEndPoint _listenEndPoint;
 
@@ -43,16 +42,17 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal MsQuicListener(QuicListenerOptions options)
         {
             _session = new MsQuicSession();
-            _ptr = _session.ListenerOpen(options);
-
-            _api = MsQuicApi.Api;
-            _sslOptions = options.ServerAuthenticationOptions;
-            _listenEndPoint = options.ListenEndPoint;
             _acceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(options.ListenBacklog)
             {
                 SingleReader = true,
                 SingleWriter = true
             });
+
+            _api = MsQuicApi.Api;
+            _sslOptions = options.ServerAuthenticationOptions;
+            _listenEndPoint = options.ListenEndPoint;
+
+            _ptr = _session.ListenerOpen(options);
         }
 
         internal override IPEndPoint ListenEndPoint
@@ -122,6 +122,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _ptr = IntPtr.Zero;
             _api = null;
+
             // TODO this call to session dispose hangs.
             //_session.Dispose();
             _disposed = true;
