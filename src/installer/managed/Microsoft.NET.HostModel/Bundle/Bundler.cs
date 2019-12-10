@@ -165,7 +165,7 @@ namespace Microsoft.NET.HostModel.Bundle
             if (duplicateGroups.Any())
             {
                 throw new ArgumentException("Invalid input specification: Found multiple entries with the same BundleRelativePath:"
-                    + string.Join("\n", duplicateGroups.SelectMany(o => o).Select(o => "  " + o.ToString())));
+                    + string.Join("\n", duplicateGroups.SelectMany(o => o)));
             }
 
             string bundlePath = Path.Combine(OutputDir, HostName);
