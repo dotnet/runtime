@@ -263,7 +263,7 @@ if (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_PLATFORM_OS)
     endif()
 else()
     if(NOT(CLR_CMAKE_PLATFORM_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_AMD64 AND (CLR_CMAKE_TARGET_OS STREQUAL Linux) AND (CLR_CMAKE_PLATFORM_OS STREQUAL Windows_NT)))
-        message(FATAL_ERROR "Invalid host and target os/arch combination")
+        message(FATAL_ERROR "Invalid host and target os/arch combination ${CLR_CMAKE_PLATFORM_OS}")
     endif()
 endif()
 
