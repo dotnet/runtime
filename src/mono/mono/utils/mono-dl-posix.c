@@ -132,12 +132,23 @@ mono_dl_lookup_symbol (MonoDl *module, const char *name)
 int
 mono_dl_convert_flags (int flags)
 {
-	int lflags = flags & MONO_DL_LOCAL? 0: RTLD_GLOBAL;
+	int lflags = 0;
+
+#ifdef ENABLE_NETCORE
+	// Specifying both will default to LOCAL
+	if (flags & MONO_DL_LOCAL)
+		lflags |= RTLD_LOCAL;
+	else if (flags & MONO_DL_GLOBAL)
+		lflags |= RTLD_GLOBAL;
+#else
+	lflags = flags & MONO_DL_LOCAL ? 0 : RTLD_GLOBAL;
+#endif
 
 	if (flags & MONO_DL_LAZY)
 		lflags |= RTLD_LAZY;
 	else
 		lflags |= RTLD_NOW;
+
 	return lflags;
 }
 
