@@ -115,6 +115,11 @@ namespace System.Text.Json.Tests
             Assert.Equal(defaultOptions.CommentHandling, newOptions.CommentHandling);
             Assert.Equal(defaultOptions.DuplicatePropertyNameHandling, newOptions.DuplicatePropertyNameHandling);
             Assert.Equal(defaultOptions.MaxDepth, newOptions.MaxDepth);
+
+            Assert.False(defaultOptions.AllowTrailingCommas);
+            Assert.Equal(JsonCommentHandling.Disallow, defaultOptions.CommentHandling);
+            Assert.Equal(DuplicatePropertyNameHandlingStrategy.Replace, defaultOptions.DuplicatePropertyNameHandling);
+            Assert.Equal(0, defaultOptions.MaxDepth);
         }
     }
 }
