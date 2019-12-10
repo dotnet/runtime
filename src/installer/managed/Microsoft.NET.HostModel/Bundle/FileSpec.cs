@@ -29,6 +29,11 @@ namespace Microsoft.NET.HostModel.Bundle
             return !string.IsNullOrWhiteSpace(SourcePath) && 
                    !string.IsNullOrWhiteSpace(BundleRelativePath);
         }
+        
+        public override string ToString()
+        {
+            return $"{SourcePath} ({BundleRelativePath})";
+        }
     }
 }
 
