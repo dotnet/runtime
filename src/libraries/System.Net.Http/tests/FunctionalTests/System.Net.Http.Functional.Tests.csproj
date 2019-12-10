@@ -120,6 +120,7 @@
     <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
     <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />
     <Compile Include="HttpClientHandlerTest.SslProtocols.cs" />
+    <Compile Include="HttpClientHandlerTestBase.SocketsHttpHandler.cs" />
     <Compile Include="DiagnosticsTests.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpClientEKUTest.cs" />

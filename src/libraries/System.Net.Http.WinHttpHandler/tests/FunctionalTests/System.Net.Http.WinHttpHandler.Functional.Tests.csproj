@@ -66,6 +66,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Asynchrony.cs">
       <Link>Common\System\Net\HttpClientHandlerTest.Asynchrony.cs</Link>
     </Compile>
+    <Compile Include="HttpClientHandlerTestBase.WinHttpHandler.cs" />
     <Compile Include="PlatformHandlerTest.cs" />
     <Compile Include="ServerCertificateTest.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />
