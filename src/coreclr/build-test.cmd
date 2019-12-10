@@ -612,12 +612,6 @@ REM Compile the managed assemblies in Core_ROOT before running the tests
 set AssemblyPath=%1
 set AssemblyName=%2
 
-REM Skip mscorlib since it is already precompiled.
-if /I "%AssemblyName%" == "mscorlib.dll" exit /b 0
-if /I "%AssemblyName%" == "mscorlib.ni.dll" exit /b 0
-REM don't precompile anything from CoreCLR
-if /I exist %CORE_ROOT_STAGE%\%AssemblyName% exit /b 0
-
 REM Don't precompile xunit.* files
 echo "%AssemblyName%" | findstr /b "xunit." >nul && (
   exit /b 0
