@@ -31,6 +31,7 @@ namespace ILCompiler
         public bool Tuning { get; set; }
         public bool Partial { get; set; }
         public bool Resilient { get; set; }
+        public bool GenerateMapFile { get; set; }
         public int Parallelism { get; set; }
 
 
@@ -145,6 +146,10 @@ namespace ILCompiler
                 new Option(new[] { "--parallelism" }, "Maximum number of threads to use during compilation")
                 { 
                     Argument = new Argument<int>(() => Environment.ProcessorCount)
+                },
+                new Option(new[] { "--generate-map-file" }, "Generate the map file")
+                {
+                    Argument = new Argument<bool>()
                 },
             };
         }

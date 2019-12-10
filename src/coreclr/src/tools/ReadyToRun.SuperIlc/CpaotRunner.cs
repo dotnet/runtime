@@ -49,6 +49,11 @@ namespace ReadyToRun.SuperIlc
             // Todo: Allow control of some of these
             yield return "--targetarch=x64";
 
+            if (_options.GenerateMapFile)
+            {
+                yield return "--generate-map-file";
+            }
+
             if (_options.Release)
             {
                 yield return "-O";
