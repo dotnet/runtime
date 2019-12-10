@@ -2933,7 +2933,7 @@ GCEvent gc_heap::full_gc_approach_event;
 
 GCEvent gc_heap::full_gc_end_event;
 
-uint32_t gc_heap::fgn_uoh_percent = 0;
+uint32_t gc_heap::fgn_loh_percent = 0;
 
 #ifdef BACKGROUND_GC
 BOOL gc_heap::fgn_last_gc_was_concurrent = FALSE;
@@ -4365,7 +4365,7 @@ typedef struct
         }
     };
 
-    void* get_initial_memory (generation_num gen, int h_number)
+    void* get_initial_memory (gc_generation_num gen, int h_number)
     {
         switch (gen)
         {
@@ -4377,7 +4377,7 @@ typedef struct
         }
     };
 
-    size_t get_initial_size (generation_num gen)
+    size_t get_initial_size (gc_generation_num gen)
     {
         switch (gen)
         {
@@ -4561,7 +4561,7 @@ void destroy_initial_memory()
     }
 }
 
-heap_segment* make_initial_segment (generation_num gen, int h_number)
+heap_segment* make_initial_segment (gc_generation_num gen, int h_number)
 {
     void* mem = memory_details.get_initial_memory (gen, h_number);
     size_t size = memory_details.get_initial_size (gen);
@@ -6426,23 +6426,27 @@ void gc_heap::fix_uoh_allocation_area (BOOL for_gc_p)
 {
     UNREFERENCED_PARAMETER(for_gc_p);
 
+    for(int i = uoh_start_generation; i < total_generation_count; i++)
+    {
 #ifdef _DEBUG
-    alloc_context* acontext =
+        alloc_context* acontext =
 #endif // _DEBUG
-    generation_alloc_context (large_object_generation);
-    assert (acontext->alloc_ptr == 0);
-    assert (acontext->alloc_limit == 0); 
+        generation_alloc_context (large_object_generation);
+        assert (acontext->alloc_ptr == 0);
+        assert (acontext->alloc_limit == 0); 
 
 #if 0
-    dprintf (3, ("Large object alloc context: ptr: %Ix, limit %Ix",
-                 (size_t)acontext->alloc_ptr, (size_t)acontext->alloc_limit));
-    fix_allocation_context (acontext, FALSE, get_alignment_constant (FALSE));
-    if (for_gc_p)
-    {
-        acontext->alloc_ptr = 0;
-        acontext->alloc_limit = acontext->alloc_ptr;
-    }
+        dprintf (3, ("UOH alloc context: gen: %Ix, ptr: %Ix, limit %Ix",
+                     i, (size_t)acontext->alloc_ptr, (size_t)acontext->alloc_limit));
+        fix_allocation_context (acontext, FALSE, get_alignment_constant (FALSE));
+        if (for_gc_p)
+        {
+            acontext->alloc_ptr = 0;
+            acontext->alloc_limit = acontext->alloc_ptr;
+        }
 #endif //0
+
+    }
 }
 
 //for_gc_p indicates that the work is being done for GC,
@@ -9699,7 +9703,7 @@ BOOL gc_heap::is_mark_set (uint8_t* o)
 
 // return the generation number of an object.
 // It is assumed that the object is valid.
-// Note that this will return max_generation for not-SOH objects
+// Note that this will return max_generation for UOH objects
 int gc_heap::object_gennum (uint8_t* o)
 {
     if (in_range_for_segment (o, ephemeral_heap_segment) &&
@@ -10221,7 +10225,7 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
             {
                 size_t reset_size = 0;
                 size_t region_size = high_address - base_address;
-                dprintf (3, ("h%d: uoh ww: [%Ix(%Id)", heap_number, (size_t)base_address, region_size));
+                dprintf (3, ("h%d, gen: %Ix, ww: [%Ix(%Id)", heap_number, i, (size_t)base_address, region_size));
                 //reset_ww_by_chunk (base_address, region_size);
                 reset_write_watch_for_gc_heap(base_address, region_size);
                 switch_on_reset (concurrent_p, &reset_size, region_size);
@@ -10672,7 +10676,7 @@ gc_heap::init_semi_shared()
         goto cleanup;
     }
 
-    fgn_uoh_percent = 0;
+    fgn_loh_percent = 0;
     full_gc_approach_event_set = false;
 
     memset (full_gc_counts, 0, sizeof (full_gc_counts));
@@ -12125,7 +12129,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
 #ifdef FEATURE_LOH_COMPACTION
         if (gen_number == loh_generation)
         {
-            old_allocated -= Align (loh_padding_obj_size, align_const);
+            old_allocated -= Align (uoh_reloc_padding_obj_size, align_const);
         }
 #endif //FEATURE_LOH_COMPACTION
 
@@ -12322,8 +12326,6 @@ void gc_heap::check_for_full_gc (int gen_num, size_t size)
     // if we detect full gc because of the allocation budget specified this is TRUE;
     // it's FALSE if it's due to other factors.
     BOOL alloc_factor = TRUE;
-    int i = 0;
-    int n = 0;
     int n_initial = gen_num;
     BOOL local_blocking_collection = FALSE;
     BOOL local_elevation_requested = FALSE;
@@ -12341,7 +12343,7 @@ void gc_heap::check_for_full_gc (int gen_num, size_t size)
 
     dynamic_data* dd_full = dynamic_data_of (gen_num);
     ptrdiff_t new_alloc_remain = 0;
-    uint32_t pct = (gen_num != max_generation) ? fgn_uoh_percent : fgn_maxgen_percent;
+    uint32_t pct = (gen_num != max_generation) ? fgn_loh_percent : fgn_maxgen_percent;
 
     for (int gen_index = 0; gen_index < total_generation_count; gen_index++)
     {
@@ -12372,14 +12374,15 @@ void gc_heap::check_for_full_gc (int gen_num, size_t size)
         size = 0;
     }
 
-    for (i = n+1; i < max_generation; i++)
+    int n = 0;
+    for (int i = 1; i <= max_generation; i++)
     {
-        if (get_new_allocation (i) <= 0)
-        {
-            n = min (i, max_generation);
-        }
-        else
-            break;
+            if (get_new_allocation (i) <= 0)
+            {
+                n = i;
+            }
+            else
+                break;
     }
 
     dprintf (2, ("FGN: h#%d: gen%d budget exceeded", heap_number, n));
@@ -12738,7 +12741,7 @@ void gc_heap::bgc_uoh_alloc_clr (uint8_t* alloc_start,
 }
 #endif //BACKGROUND_GC
 
-BOOL gc_heap::a_fit_free_list_large_p (size_t size,
+BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                                        alloc_context* acontext,
                                        uint32_t flags, 
                                        int align_const,
@@ -12749,7 +12752,7 @@ BOOL gc_heap::a_fit_free_list_large_p (size_t size,
     allocator* allocator = generation_allocator (gen);
 
 #ifdef FEATURE_LOH_COMPACTION
-    size_t loh_pad = gen_number == loh_generation ? Align (loh_padding_obj_size, align_const) : 0;
+    size_t uoh_reloc_pad = gen_number == loh_generation ? Align (uoh_reloc_padding_obj_size, align_const) : 0;
 #endif //FEATURE_LOH_COMPACTION
 
 #ifdef BACKGROUND_GC
@@ -12771,11 +12774,11 @@ BOOL gc_heap::a_fit_free_list_large_p (size_t size,
                 ptrdiff_t diff = free_list_size - size;
 
 #ifdef FEATURE_LOH_COMPACTION
-                diff -= loh_pad;
+                diff -= uoh_reloc_pad;
 #endif //FEATURE_LOH_COMPACTION
 
                 // must fit exactly or leave formattable space
-                if (diff == 0 || diff > (ptrdiff_t)Align (min_obj_size, align_const))
+                if ((diff == 0) || (diff > (ptrdiff_t)Align (min_obj_size, align_const)))
                 {
 #ifdef BACKGROUND_GC
                     cookie = bgc_alloc_lock->uoh_alloc_set (free_list);
@@ -12790,12 +12793,12 @@ BOOL gc_heap::a_fit_free_list_large_p (size_t size,
                                                     gen_number, align_const);
 
 #ifdef FEATURE_LOH_COMPACTION
-                    if (loh_pad)
+                    if (uoh_reloc_pad)
                     {
-                        make_unused_array (free_list, loh_pad);
-                        limit -= loh_pad;
-                        free_list += loh_pad;
-                        free_list_size -= loh_pad;
+                        make_unused_array (free_list, uoh_reloc_pad);
+                        limit -= uoh_reloc_pad;
+                        free_list += uoh_reloc_pad;
+                        free_list_size -= uoh_reloc_pad;
                     }
 #endif //FEATURE_LOH_COMPACTION
 
@@ -12869,10 +12872,10 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
     size_t pad = Align (min_obj_size, align_const);
 
 #ifdef FEATURE_LOH_COMPACTION
-    size_t loh_pad = Align (loh_padding_obj_size, align_const);
+    size_t uoh_reloc_pad = Align (uoh_reloc_padding_obj_size, align_const);
     if (gen_number == loh_generation)
     {
-        pad += loh_pad;
+        pad += uoh_reloc_pad;
     }
 #endif //FEATURE_LOH_COMPACTION
 
@@ -12929,9 +12932,9 @@ found_fit:
 #ifdef FEATURE_LOH_COMPACTION
     if (gen_number == loh_generation)
     {
-        make_unused_array (allocated, loh_pad);
-        allocated += loh_pad;
-        limit -= loh_pad;
+        make_unused_array (allocated, uoh_reloc_pad);
+        allocated += uoh_reloc_pad;
+        limit -= uoh_reloc_pad;
     }
 #endif //FEATURE_LOH_COMPACTION
 
@@ -13118,7 +13121,7 @@ BOOL gc_heap::soh_try_fit (int gen_number,
     return can_allocate;
 }
 
-allocation_state gc_heap::allocate_small (int gen_number,
+allocation_state gc_heap::allocate_soh (int gen_number,
                                           size_t size,
                                           alloc_context* acontext,
                                           uint32_t flags,
@@ -13403,7 +13406,7 @@ void gc_heap::bgc_untrack_uoh_alloc()
     }
 }
 
-int bg_allocate_spin(size_t min_gc_size, size_t bgc_begin_size, size_t bgc_size_increased, size_t end_size)
+int bgc_allocate_spin(size_t min_gc_size, size_t bgc_begin_size, size_t bgc_size_increased, size_t end_size)
 {
     if ((bgc_begin_size + bgc_size_increased) < (min_gc_size * 10))
     {
@@ -13438,7 +13441,7 @@ int gc_heap::bgc_loh_allocate_spin()
     size_t bgc_size_increased = bgc_loh_size_increased;
     size_t end_size = end_loh_size;
 
-    return bg_allocate_spin(min_gc_size, bgc_begin_size, bgc_size_increased, end_size);
+    return bgc_allocate_spin(min_gc_size, bgc_begin_size, bgc_size_increased, end_size);
 }
 
 #endif //BACKGROUND_GC
@@ -13546,7 +13549,7 @@ BOOL gc_heap::uoh_try_fit (int gen_number,
 {
     BOOL can_allocate = TRUE;
 
-    if (!a_fit_free_list_large_p (size, acontext, flags, align_const, gen_number))
+    if (!a_fit_free_list_uoh_p (size, acontext, flags, align_const, gen_number))
     {
         can_allocate = loh_a_fit_segment_end_p (gen_number, size,
                                                 acontext, flags, align_const,
@@ -13645,14 +13648,14 @@ void gc_heap::add_saved_loh_state (allocation_state loh_state_to_save, EEThreadI
 }
 #endif //RECORD_LOH_STATE
 
-bool gc_heap::should_retry_other_heap (size_t size)
+bool gc_heap::should_retry_other_heap (int gen_number, size_t size)
 {
 #ifdef MULTIPLE_HEAPS
     if (heap_hard_limit)
     {
         size_t total_heap_committed_recorded =
             current_total_committed - current_total_committed_bookkeeping;
-        size_t min_size = dd_min_size (g_heaps[0]->dynamic_data_of (loh_generation));
+        size_t min_size = dd_min_size (g_heaps[0]->dynamic_data_of (gen_number));
         size_t slack_space = max (commit_min_th, min_size);
         bool retry_p = ((total_heap_committed_recorded + size) < (heap_hard_limit - slack_space));
         dprintf (1, ("%Id - %Id - total committed %Id - size %Id = %Id, %s",
@@ -13668,7 +13671,7 @@ bool gc_heap::should_retry_other_heap (size_t size)
     }
 }
 
-allocation_state gc_heap::allocate_large (int gen_number,
+allocation_state gc_heap::allocate_uoh (int gen_number,
                                           size_t size,
                                           alloc_context* acontext,
                                           uint32_t flags,
@@ -13707,7 +13710,7 @@ allocation_state gc_heap::allocate_large (int gen_number,
                 disable_preemptive (cooperative_mode);
                 enter_spin_lock (&more_space_lock_uoh);
                 add_saved_spinlock_info (true, me_acquire, mt_alloc_large);
-                dprintf (SPINLOCK_LOG, ("[%d]spin Emsl loh", heap_number));
+                dprintf (SPINLOCK_LOG, ("[%d]spin Emsl uoh", heap_number));
             }
             else
             {
@@ -13730,7 +13733,7 @@ allocation_state gc_heap::allocate_large (int gen_number,
 
     // No variable values should be "carried over" from one state to the other.
     // That's why there are local variable for each state
-    allocation_state alloc_state = a_state_start;
+    allocation_state uoh_alloc_state = a_state_start;
 #ifdef RECORD_LOH_STATE
     EEThreadId current_thread_id;
     current_thread_id.SetToCurrentThread();
@@ -13739,12 +13742,12 @@ allocation_state gc_heap::allocate_large (int gen_number,
     // If we can get a new seg it means allocation will succeed.
     while (1)
     {
-        dprintf (3, ("[h%d]loh state is %s", heap_number, allocation_state_str[alloc_state]));
+        dprintf (3, ("[h%d]loh state is %s", heap_number, allocation_state_str[uoh_alloc_state]));
 
 #ifdef RECORD_LOH_STATE
-        add_saved_loh_state (loh_alloc_state, current_thread_id);
+        add_saved_loh_state (loh_uoh_alloc_state, current_thread_id);
 #endif //RECORD_LOH_STATE
-        switch (alloc_state)
+        switch (uoh_alloc_state)
         {
             case a_state_can_allocate:
             case a_state_cant_allocate:
@@ -13753,7 +13756,7 @@ allocation_state gc_heap::allocate_large (int gen_number,
             }
             case a_state_start:
             {
-                alloc_state = a_state_try_fit;
+                uoh_alloc_state = a_state_try_fit;
                 break;
             }
             case a_state_try_fit:
@@ -13763,12 +13766,12 @@ allocation_state gc_heap::allocate_large (int gen_number,
 
                 can_use_existing_p = uoh_try_fit (gen_number, size, acontext, flags,
                                                   align_const, &commit_failed_p, &oom_r);
-                alloc_state = (can_use_existing_p ?
+                uoh_alloc_state = (can_use_existing_p ?
                                         a_state_can_allocate : 
                                         (commit_failed_p ?
                                             a_state_trigger_full_compact_gc :
                                             a_state_acquire_seg));
-                assert ((alloc_state == a_state_can_allocate) == (acontext->alloc_ptr != 0));
+                assert ((uoh_alloc_state == a_state_can_allocate) == (acontext->alloc_ptr != 0));
                 break;
             }
             case a_state_try_fit_new_seg:
@@ -13781,8 +13784,8 @@ allocation_state gc_heap::allocate_large (int gen_number,
                 // Even after we got a new seg it doesn't necessarily mean we can allocate,
                 // another LOH allocating thread could have beat us to acquire the msl so
                 // we need to try again.
-                alloc_state = (can_use_existing_p ? a_state_can_allocate : a_state_try_fit);
-                assert ((alloc_state == a_state_can_allocate) == (acontext->alloc_ptr != 0));
+                uoh_alloc_state = (can_use_existing_p ? a_state_can_allocate : a_state_try_fit);
+                assert ((uoh_alloc_state == a_state_can_allocate) == (acontext->alloc_ptr != 0));
                 break;
             }
             case a_state_try_fit_after_cg:
@@ -13794,12 +13797,12 @@ allocation_state gc_heap::allocate_large (int gen_number,
                                                   align_const, &commit_failed_p, &oom_r);
                 // If we failed to commit, we bail right away 'cause we already did a
                 // full compacting GC.
-                alloc_state = (can_use_existing_p ?
+                uoh_alloc_state = (can_use_existing_p ?
                                         a_state_can_allocate :
                                         (commit_failed_p ?
                                             a_state_cant_allocate :
                                             a_state_acquire_seg_after_cg));
-                assert ((alloc_state == a_state_can_allocate) == (acontext->alloc_ptr != 0));
+                assert ((uoh_alloc_state == a_state_can_allocate) == (acontext->alloc_ptr != 0));
                 break;
             }
             case a_state_try_fit_after_bgc:
@@ -13809,12 +13812,12 @@ allocation_state gc_heap::allocate_large (int gen_number,
 
                 can_use_existing_p = uoh_try_fit (gen_number, size, acontext, flags,
                                                   align_const, &commit_failed_p, &oom_r);
-                alloc_state = (can_use_existing_p ?
+                uoh_alloc_state = (can_use_existing_p ?
                                         a_state_can_allocate :
                                         (commit_failed_p ?
                                             a_state_trigger_full_compact_gc :
                                             a_state_acquire_seg_after_bgc));
-                assert ((alloc_state == a_state_can_allocate) == (acontext->alloc_ptr != 0));
+                assert ((uoh_alloc_state == a_state_can_allocate) == (acontext->alloc_ptr != 0));
                 break;
             }
             case a_state_acquire_seg:
@@ -13825,7 +13828,7 @@ allocation_state gc_heap::allocate_large (int gen_number,
                 current_full_compact_gc_count = get_full_compact_gc_count();
 
                 can_get_new_seg_p = uoh_get_new_seg (gen_number, size, align_const, &did_full_compacting_gc, &oom_r);
-                alloc_state = (can_get_new_seg_p ? 
+                uoh_alloc_state = (can_get_new_seg_p ? 
                                         a_state_try_fit_new_seg : 
                                         (did_full_compacting_gc ? 
                                             a_state_check_retry_seg :
@@ -13843,7 +13846,7 @@ allocation_state gc_heap::allocate_large (int gen_number,
                 // Since we release the msl before we try to allocate a seg, other
                 // threads could have allocated a bunch of segments before us so
                 // we might need to retry.
-                alloc_state = (can_get_new_seg_p ? 
+                uoh_alloc_state = (can_get_new_seg_p ? 
                                         a_state_try_fit_after_cg : 
                                         a_state_check_retry_seg);
                 break;
@@ -13856,12 +13859,12 @@ allocation_state gc_heap::allocate_large (int gen_number,
                 current_full_compact_gc_count = get_full_compact_gc_count();
 
                 can_get_new_seg_p = uoh_get_new_seg (gen_number, size, align_const, &did_full_compacting_gc, &oom_r); 
-                alloc_state = (can_get_new_seg_p ? 
+                uoh_alloc_state = (can_get_new_seg_p ? 
                                         a_state_try_fit_new_seg : 
                                         (did_full_compacting_gc ? 
                                             a_state_check_retry_seg :
                                             a_state_trigger_full_compact_gc));
-                assert ((alloc_state != a_state_cant_allocate) || (oom_r != oom_no_failure));
+                assert ((uoh_alloc_state != a_state_cant_allocate) || (oom_r != oom_no_failure));
                 break;
             }
             case a_state_check_and_wait_for_bgc:
@@ -13870,7 +13873,7 @@ allocation_state gc_heap::allocate_large (int gen_number,
                 BOOL did_full_compacting_gc = FALSE;
 
                 bgc_in_progress_p = check_and_wait_for_bgc (awr_loh_oos_bgc, &did_full_compacting_gc, true);
-                alloc_state = (!bgc_in_progress_p ?
+                uoh_alloc_state = (!bgc_in_progress_p ?
                                         a_state_trigger_full_compact_gc : 
                                         (did_full_compacting_gc ? 
                                             a_state_try_fit_after_cg :
@@ -13888,8 +13891,8 @@ allocation_state gc_heap::allocate_large (int gen_number,
                 BOOL got_full_compacting_gc = FALSE;
 
                 got_full_compacting_gc = trigger_full_compact_gc (gr, &oom_r, true);
-                alloc_state = (got_full_compacting_gc ? a_state_try_fit_after_cg : a_state_cant_allocate);
-                assert ((alloc_state != a_state_cant_allocate) || (oom_r != oom_no_failure));
+                uoh_alloc_state = (got_full_compacting_gc ? a_state_try_fit_after_cg : a_state_cant_allocate);
+                assert ((uoh_alloc_state != a_state_cant_allocate) || (oom_r != oom_no_failure));
                 break;
             }
             case a_state_check_retry_seg:
@@ -13906,12 +13909,12 @@ allocation_state gc_heap::allocate_large (int gen_number,
                     }
                 }
     
-                alloc_state = (should_retry_gc ? 
+                uoh_alloc_state = (should_retry_gc ? 
                                         a_state_trigger_full_compact_gc : 
                                         (should_retry_get_seg ?
                                             a_state_try_fit_after_cg :
                                             a_state_cant_allocate));
-                assert ((alloc_state != a_state_cant_allocate) || (oom_r != oom_no_failure));
+                assert ((uoh_alloc_state != a_state_cant_allocate) || (oom_r != oom_no_failure));
                 break;
             }
             default:
@@ -13923,13 +13926,13 @@ allocation_state gc_heap::allocate_large (int gen_number,
     }
 
 exit:
-    if (alloc_state == a_state_cant_allocate)
+    if (uoh_alloc_state == a_state_cant_allocate)
     {
         assert (oom_r != oom_no_failure);
 
-        if ((oom_r != oom_cant_commit) && should_retry_other_heap (size))
+        if ((oom_r != oom_cant_commit) && should_retry_other_heap (gen_number, size))
         {
-            alloc_state = a_state_retry_allocate;
+            uoh_alloc_state = a_state_retry_allocate;
         }
         else
         {
@@ -13943,10 +13946,10 @@ exit:
         leave_spin_lock (&more_space_lock_uoh);
     }
 
-    assert ((alloc_state == a_state_can_allocate) ||
-            (alloc_state == a_state_cant_allocate) ||
-            (alloc_state == a_state_retry_allocate));
-    return alloc_state;
+    assert ((uoh_alloc_state == a_state_can_allocate) ||
+            (uoh_alloc_state == a_state_cant_allocate) ||
+            (uoh_alloc_state == a_state_retry_allocate));
+    return uoh_alloc_state;
 }
 
 // BGC's final mark phase will acquire the msl, so release it here and re-acquire.
@@ -13962,7 +13965,7 @@ void gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
     }
 #endif //BACKGROUND_GC
 
-     vm_heap->GarbageCollectGeneration (gen_number, gr);
+    vm_heap->GarbageCollectGeneration (gen_number, gr);
 
 #ifdef MULTIPLE_HEAPS
     if (!loh_p)
@@ -14092,8 +14095,8 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
     }
 
     allocation_state can_allocate = ((gen_number == 0) ?
-        allocate_small (gen_number, size, acontext, flags, align_const) :
-        allocate_large (gen_number, size, acontext, flags, align_const));
+        allocate_soh (gen_number, size, acontext, flags, align_const) :
+        allocate_uoh (gen_number, size, acontext, flags, align_const));
 
     if (can_allocate == a_state_can_allocate)
     {
@@ -15979,9 +15982,12 @@ int gc_heap::generation_to_condemn (int n_initial,
             generation_free_list_space (youngest_generation) +
             generation_free_obj_space (youngest_generation);
 
-        dd_fragmentation (dynamic_data_of (loh_generation)) = 
-            generation_free_list_space (large_object_generation) + 
-            generation_free_obj_space (large_object_generation);
+        for (int i = uoh_start_generation; i < total_generation_count; i++)
+        {
+            dd_fragmentation (dynamic_data_of (i)) = 
+                generation_free_list_space (generation_of (i)) + 
+                generation_free_obj_space (generation_of (i));
+        }
 
         //save new_allocation
         for (i = 0; i < total_generation_count; i++)
@@ -16011,14 +16017,17 @@ int gc_heap::generation_to_condemn (int n_initial,
 
         if (check_max_gen_alloc)
         {
-            //figure out if non-soh objects need to be collected.
-            if (get_new_allocation (loh_generation) <= 0)
+            //figure out if UOH objects need to be collected.
+            for (int i = uoh_start_generation; i < total_generation_count; i++)
             {
-                n = max_generation;
-                local_condemn_reasons->set_gen (gen_alloc_budget, n);
-                dprintf (BGC_TUNING_LOG, ("BTL[GTC]: trigger based on gen%d b: %Id",
-                         (loh_generation),
-                         get_new_allocation (loh_generation)));
+                if (get_new_allocation (i) <= 0)
+                {
+                    n = max_generation;
+                    local_condemn_reasons->set_gen (gen_alloc_budget, n);
+                    dprintf (BGC_TUNING_LOG, ("BTL[GTC]: trigger based on gen%d b: %Id",
+                             (i),
+                             get_new_allocation (i)));
+                }
             }
         }
 
@@ -16769,10 +16778,10 @@ void gc_heap::gc1()
 
         if (n != max_generation)
         {
-            // for gen0, update data for gen1
-            // for gen1, update data for gen2, loh, etc
-            int gen_limit = (n == 0) ? max_generation : total_generation_count;
-            for (int gen_number = (n + 1); gen_number < gen_limit; gen_number++)
+            // for gen < max_generation - 1, update data for gen + 1
+            // for gen == max_generation - 1, update data for max_generation, loh, etc
+            int highest_update_gen = (n < max_generation - 1) ? n + 1 : total_generation_count - 1;
+            for (int gen_number = (n + 1); gen_number <= highest_update_gen; gen_number++)
             {
                 get_gc_data_per_heap()->gen_data[gen_number].size_after = generation_size (gen_number);
                 get_gc_data_per_heap()->gen_data[gen_number].free_list_space_after = generation_free_list_space (generation_of (gen_number));
@@ -18428,7 +18437,7 @@ heap_segment* gc_heap::find_segment_per_heap (uint8_t* interior, BOOL small_segm
                 goto end_find_segment;
             }
 #else //BACKGROUND_GC
-            for (int i = max_generation + 1; i < total_generation_count; i++)
+            for (int i = uoh_start_generation; i < total_generation_count; i++)
             {
                 heap_segment* seg = generation_start_segment (generation_of (i));
                 do
@@ -22195,12 +22204,12 @@ BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* allo
 {
     dprintf (1235, ("trying to fit %Id(%Id) between %Ix and %Ix (%Id)",
         size,
-        (2* AlignQword (loh_padding_obj_size) +  size),
+        (2* AlignQword (uoh_reloc_padding_obj_size) +  size),
         alloc_pointer,
         alloc_limit,
         (alloc_limit - alloc_pointer)));
 
-    return ((alloc_pointer + 2* AlignQword (loh_padding_obj_size) +  size) <= alloc_limit);
+    return ((alloc_pointer + 2* AlignQword (uoh_reloc_padding_obj_size) +  size) <= alloc_limit);
 }
 
 uint8_t* gc_heap::loh_allocate_in_condemned (uint8_t* old_loc, size_t size)
@@ -22255,7 +22264,7 @@ retry:
                 else
                 {
                     if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg)) &&
-                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (loh_padding_obj_size)))))
+                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (uoh_reloc_padding_obj_size)))))
                     {
                         dprintf (1235, ("growing seg from %Ix to %Ix\n", heap_segment_committed (seg),
                                          (generation_allocation_pointer (gen) + size)));
@@ -22326,9 +22335,9 @@ retry:
         assert (generation_allocation_pointer (gen)>=
                 heap_segment_mem (generation_allocation_segment (gen)));
         uint8_t* result = generation_allocation_pointer (gen);
-        size_t loh_pad = AlignQword (loh_padding_obj_size);
+        size_t uoh_reloc_pad = AlignQword (uoh_reloc_padding_obj_size);
 
-        generation_allocation_pointer (gen) += size + loh_pad;
+        generation_allocation_pointer (gen) += size + uoh_reloc_pad;
         assert (generation_allocation_pointer (gen) <= generation_allocation_limit (gen));
 
         dprintf (1235, ("p: %Ix, l: %Ix (%Id)",
@@ -22336,8 +22345,8 @@ retry:
             generation_allocation_limit (gen),
             (generation_allocation_limit (gen) - generation_allocation_pointer (gen))));
 
-        assert (result + loh_pad);
-        return result + loh_pad;
+        assert (result + uoh_reloc_pad);
+        return result + uoh_reloc_pad;
     }
 }
 
@@ -22590,7 +22599,7 @@ void gc_heap::compact_loh()
             free_space_end = o;
             size_t size = AlignQword (size (o));
 
-            size_t loh_pad;
+            size_t uoh_reloc_pad;
             uint8_t* reloc = o;
             clear_marked (o);
 
@@ -22602,18 +22611,18 @@ void gc_heap::compact_loh()
                 uint8_t* plug = pinned_plug (m);
                 assert (plug == o);
 
-                loh_pad = pinned_len (m);
+                uoh_reloc_pad = pinned_len (m);
                 clear_pinned (o);
             }
             else
             {
-                loh_pad = AlignQword (loh_padding_obj_size);
+                uoh_reloc_pad = AlignQword (uoh_reloc_padding_obj_size);
 
                 reloc += loh_node_relocation_distance (o);
                 gcmemcopy (reloc, o, size, TRUE);
             }
 
-            thread_gap ((reloc - loh_pad), loh_pad, gen);
+            thread_gap ((reloc - uoh_reloc_pad), uoh_reloc_pad, gen);
 
             o = o + size;
             free_space_start = o;
@@ -33389,7 +33398,7 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, uint32_t flags, int
     size_t size = AlignQword (jsize);
     int align_const = get_alignment_constant (FALSE);
 #ifdef FEATURE_LOH_COMPACTION
-    size_t pad = Align (loh_padding_obj_size, align_const);
+    size_t pad = Align (uoh_reloc_padding_obj_size, align_const);
 #else
     size_t pad = 0;
 #endif //FEATURE_LOH_COMPACTION
@@ -33610,7 +33619,7 @@ BOOL gc_heap::background_object_marked (uint8_t* o, BOOL clearp)
 
 void gc_heap::background_delay_delete_uoh_segments()
 {
-    for (int i = max_generation + 1; i < total_generation_count; i++)
+    for (int i = uoh_start_generation; i < total_generation_count; i++)
     {
         generation* gen = generation_of (i);
         heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
@@ -34070,7 +34079,7 @@ void gc_heap::background_sweep()
 
     concurrent_print_time_delta ("Swe");
 
-    for (int i = max_generation + 1; i < total_generation_count; i++)
+    for (int i = uoh_start_generation; i < total_generation_count; i++)
     {
         heap_segment* uoh_seg = heap_segment_rw (generation_start_segment (generation_of (i)));
         PREFIX_ASSUME(uoh_seg  != NULL);
@@ -34382,7 +34391,7 @@ void gc_heap::background_sweep()
 }
 #endif //BACKGROUND_GC
 
-void gc_heap::sweep_uoh_objects (generation_num gen_num)
+void gc_heap::sweep_uoh_objects (gc_generation_num gen_num)
 {
     //this min value is for the sake of the dynamic tuning.
     //so we know that we are not starting even if we have no
@@ -34486,7 +34495,7 @@ void gc_heap::sweep_uoh_objects (generation_num gen_num)
     PREFIX_ASSUME(generation_allocation_segment(gen) != NULL);
 }
 
-void gc_heap::relocate_in_uoh_objects (generation_num gen_num)
+void gc_heap::relocate_in_uoh_objects (gc_generation_num gen_num)
 {
     relocate_args args;
     args.low = gc_low;
@@ -38342,7 +38351,7 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
 
     if (!small_heap_only)
     {
-        for (int i = max_generation + 1; i < total_generation_count; i++)
+        for (int i = uoh_start_generation; i < total_generation_count; i++)
         {
             heap_segment* seg2 = generation_start_segment (pGenGCHeap->generation_of (i));
 
@@ -38519,7 +38528,7 @@ bool GCHeap::RegisterForFullGCNotification(uint32_t gen2Percentage,
     pGenGCHeap->full_gc_end_event.Reset();
     pGenGCHeap->full_gc_approach_event_set = false;
 
-    pGenGCHeap->fgn_uoh_percent = lohPercentage;
+    pGenGCHeap->fgn_loh_percent = lohPercentage;
 
     return TRUE;
 }
@@ -38536,7 +38545,7 @@ bool GCHeap::CancelFullGCNotification()
     pGenGCHeap->fgn_maxgen_percent = 0;
 #endif //MULTIPLE_HEAPS
 
-    pGenGCHeap->fgn_uoh_percent = 0;
+    pGenGCHeap->fgn_loh_percent = 0;
     pGenGCHeap->full_gc_approach_event.Set();
     pGenGCHeap->full_gc_end_event.Set();
 
@@ -39724,7 +39733,7 @@ void checkGCWriteBarrier()
     {
         // go through non-soh object heaps
         int alignment = get_alignment_constant(FALSE);
-        for (int i = max_generation + 1; i < total_generation_count; i++)
+        for (int i = uoh_start_generation; i < total_generation_count; i++)
         {
             generation* gen = gc_heap::generation_of (i);
             heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
