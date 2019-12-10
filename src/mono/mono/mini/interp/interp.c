@@ -3783,7 +3783,7 @@ main_loop:
 				child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
 				alloc_stack_data (context, child_frame, imethod->alloca_size);
 #if DEBUG_INTERP
-				debug_enter (child_frame, out_tracing);
+				debug_enter (child_frame, &tracing);
 #endif
 			}
 
@@ -3987,7 +3987,7 @@ main_loop:
 				child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
 				alloc_stack_data (context, child_frame, imethod->alloca_size);
 #if DEBUG_INTERP
-				debug_enter (child_frame, out_tracing);
+				debug_enter (child_frame, &tracing);
 #endif
 			}
 
