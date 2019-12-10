@@ -24,6 +24,7 @@ namespace System.Text.Json
             {
                 _target = target;
                 _curIdx = -1;
+                Debug.Assert(target._parent != null);
 
                 if (target._parent is JsonDocument document)
                 {
@@ -33,7 +34,6 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    Debug.Assert(target._parent != null);
                     var jsonArray = (JsonArray)target._parent;
                     _endIdxOrVersion = jsonArray._version;
                 }

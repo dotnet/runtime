@@ -19,7 +19,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            result = default!;
+            result = default;
             return false;
         }
 
@@ -31,7 +31,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            result = default!;
+            result = default;
             return false;
         }
     }

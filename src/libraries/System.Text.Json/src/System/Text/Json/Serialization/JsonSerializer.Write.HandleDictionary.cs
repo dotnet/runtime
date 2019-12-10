@@ -81,12 +81,12 @@ namespace System.Text.Json
 
                     if (options.DictionaryKeyPolicy != null && state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
                     {
+                        Debug.Assert(key != null);
+                        key = options.DictionaryKeyPolicy.ConvertName(key);
                         if (key == null)
                         {
                             ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
                         }
-
-                        key = options.DictionaryKeyPolicy.ConvertName(key);
                     }
 
                     // An object or another enumerator requires a new stack frame.

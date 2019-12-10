@@ -119,7 +119,7 @@ namespace System.Text.Json
             }
 
             ArraySegment<byte> drained = ReadToEnd(utf8Json);
-
+            Debug.Assert(drained.Array != null);
             try
             {
                 return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
@@ -128,7 +128,6 @@ namespace System.Text.Json
             {
                 // Holds document content, clear it before returning it.
                 drained.AsSpan().Clear();
-                Debug.Assert(drained.Array != null);
                 ArrayPool<byte>.Shared.Return(drained.Array);
                 throw;
             }
@@ -169,7 +168,7 @@ namespace System.Text.Json
             CancellationToken cancellationToken = default)
         {
             ArraySegment<byte> drained = await ReadToEndAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-
+            Debug.Assert(drained.Array != null);
             try
             {
                 return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
@@ -178,7 +177,6 @@ namespace System.Text.Json
             {
                 // Holds document content, clear it before returning it.
                 drained.AsSpan().Clear();
-                Debug.Assert(drained.Array != null);
                 ArrayPool<byte>.Shared.Return(drained.Array);
                 throw;
             }

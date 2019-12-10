@@ -231,8 +231,7 @@ namespace System.Text.Json
     {
         protected JsonNamingPolicy() { }
         public static System.Text.Json.JsonNamingPolicy CamelCase { get { throw null; } }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("name")]
-        public abstract string? ConvertName(string? name);
+        public abstract string ConvertName(string name);
     }
     public abstract partial class JsonNode
     {
