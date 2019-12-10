@@ -42,7 +42,7 @@ if ($useWindowsContainers)
     $env:DOCKERFILE="windows.Dockerfile"
 }
 
-docker-compose --file $COMPOSE_FILE build $BUILD_ARGS.Split()
+docker-compose --file "$COMPOSE_FILE" build $BUILD_ARGS.Split()
 
 if (!$?) { exit 1 }
 
