@@ -51,7 +51,7 @@ namespace ReadyToRun.SuperIlc
 
             if (_options.GenerateMapFile)
             {
-                yield return "--generate-map-file";
+                yield return "--map";
             }
 
             if (_options.Release)

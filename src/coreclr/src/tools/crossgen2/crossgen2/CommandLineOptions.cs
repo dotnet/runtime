@@ -147,7 +147,7 @@ namespace ILCompiler
                 { 
                     Argument = new Argument<int>(() => Environment.ProcessorCount)
                 },
-                new Option(new[] { "--generate-map-file" }, "Generate the map file")
+                new Option(new[] { "--map" }, "Generate the map file")
                 {
                     Argument = new Argument<bool>()
                 },
