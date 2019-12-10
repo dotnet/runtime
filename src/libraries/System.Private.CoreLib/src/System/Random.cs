@@ -42,13 +42,13 @@ namespace System
         /*=========================================================================================
         **Action: Initializes a new instance of the Random class, using a specified seed value
         ===========================================================================================*/
-        public Random(int Seed)
+        public Random(int seed)
         {
             int ii = 0;
             int mj, mk;
 
             // Initialize our Seed array.
-            int subtraction = (Seed == int.MinValue) ? int.MaxValue : Math.Abs(Seed);
+            int subtraction = (seed == int.MinValue) ? int.MaxValue : Math.Abs(seed);
             mj = MSEED - subtraction;
             _seedArray[55] = mj;
             mk = 1;
