@@ -478,6 +478,15 @@ void MethodContext::dumpToConsole(int mcNumber)
     {
         printf(" method context #%d", mcNumber);
     }
+
+    // Dump method name, etc., to output.
+    char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
+    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE);
+    if (cbLen >= 0)
+    {
+        printf(" %s", bufferIdentityInfo);
+    }
+
     printf("\n");
 
 #define LWM(map, key, value) dumpLWM(this, map)
@@ -756,7 +765,7 @@ void MethodContext::recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD a
 }
 void MethodContext::dmpGetClassAttribs(DWORDLONG key, DWORD value)
 {
-    printf("GetClassAttribs key %016llX, value %u", key, value);
+    printf("GetClassAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value).c_str());
 }
 DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
 {
@@ -780,7 +789,7 @@ void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWOR
 }
 void MethodContext::dmpGetMethodAttribs(DWORDLONG key, DWORD value)
 {
-    printf("GetMethodAttribs key %016llX, value %u", key, value);
+    printf("GetMethodAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value).c_str());
 }
 DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
 {
@@ -1041,11 +1050,11 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
 
 void MethodContext::dmpGetMethodNameFromMetadata(Agnostic_CORINFO_METHODNAME_TOKENin key, Agnostic_CORINFO_METHODNAME_TOKENout value)
 {
-    unsigned char* methodName    = (unsigned char*)GetMethodName->GetBuffer(value.methodName);
-    unsigned char* className     = (unsigned char*)GetMethodName->GetBuffer(value.className);
-    unsigned char* namespaceName = (unsigned char*)GetMethodName->GetBuffer(value.namespaceName);
-    unsigned char* enclosingClassName = (unsigned char*)GetMethodName->GetBuffer(value.enclosingClassName);
-    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u nclosingClassNonNull-%u, value meth-'%s', "
+    unsigned char* methodName    = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
+    unsigned char* className     = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.className);
+    unsigned char* namespaceName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
+    unsigned char* enclosingClassName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
+    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u enclosingClassNonNull-%u, value meth-'%s', "
            "class-'%s', namespace-'%s' enclosingClass-'%s'",
            key.ftn, key.className, key.namespaceName, key.enclosingClassName, methodName, className, namespaceName, enclosingClassName);
     GetMethodNameFromMetadata->Unlock();
@@ -1384,7 +1393,7 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
            " ipl{at-%08X hnd-%016llX}"
            " sdi-%08X"
            " excp-%08X"
-           "stubLookup%s",
+           " stubLookup{%s}",
            value.hMethod, value.methodFlags, value.classFlags,
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.sig).c_str(),
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.verSig).c_str(), value.instParamLookup.accessType,

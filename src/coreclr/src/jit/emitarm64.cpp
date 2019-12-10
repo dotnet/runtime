@@ -1084,6 +1084,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_str:
         case INS_ldur:
         case INS_stur:
+        case INS_ld1:
             result = id->idOpSize();
             break;
 
@@ -11174,7 +11175,6 @@ void emitter::emitDispIns(
             break;
 
         case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
-            assert(insOptsNone(id->idInsOpt()));
             assert(emitGetInsSC(id) == 0);
             emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
             emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);

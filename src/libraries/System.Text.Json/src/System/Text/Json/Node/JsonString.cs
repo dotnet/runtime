@@ -109,7 +109,7 @@ namespace System.Text.Json
         ///   A return value indicates whether the conversion succeeded.
         /// </summary>
         /// <param name="value">
-        ///   When this method returns, contains the see cref="DateTime"/> value equivalent of the text contained in this instance,
+        ///   When this method returns, contains the <see cref="DateTime"/> value equivalent of the text contained in this instance,
         ///   if the conversion succeeded, or zero if the conversion failed.
         /// </param>
         /// <returns>

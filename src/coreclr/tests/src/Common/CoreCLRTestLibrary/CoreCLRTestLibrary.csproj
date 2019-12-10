@@ -7,11 +7,7 @@
     <DefineConstants>$(DefineConstants);$([System.String]::Copy('$(BuildArch)').ToUpper())</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateRunScript>false</GenerateRunScript>
-    <!-- Tests build for netcoreapp3.0, but use the test_dependencies
-         assets file, which has netcoreapp5.0 assets. Therefore the
-         assets file for this project must have netcoreapp5.0 assets,
-         but the project needs to build for 3.0. -->
-    <TargetFramework Condition=" '$(SetTFMForRestore)' == 'true' ">netcoreapp5.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <ProjectAssetsFile>$(SourceDir)Common\CoreCLRTestLibrary\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
   <ItemGroup>

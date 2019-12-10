@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -190,11 +191,19 @@ namespace ILCompiler
         private readonly JitConfigProvider _jitConfigProvider;
 
         /// <summary>
+        /// We only need one CorInfoImpl per thread, and we don't want to unnecessarily construct them
+        /// because their construction takes a significant amount of time.
+        /// </summary>
+        private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corInfoImpls;
+
+        /// <summary>
         /// Name of the compilation input MSIL file.
         /// </summary>
         private readonly string _inputFilePath;
 
         private bool _resilient;
+
+        private int _parallelism;
 
         public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
 
@@ -210,16 +219,19 @@ namespace ILCompiler
             JitConfigProvider configProvider,
             string inputFilePath,
             IEnumerable<ModuleDesc> modulesBeingInstrumented,
-            bool resilient)
+            bool resilient,
+            int parallelism)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, modulesBeingInstrumented, logger)
         {
             _resilient = resilient;
+            _parallelism = parallelism;
             NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
             _jitConfigProvider = configProvider;
 
             _inputFilePath = inputFilePath;
 
+            _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             CorInfoImpl.RegisterJITModule(configProvider);
         }
 
@@ -264,8 +276,11 @@ namespace ILCompiler
         {
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
-                ConditionalWeakTable<Thread, CorInfoImpl> cwt = new ConditionalWeakTable<Thread, CorInfoImpl>();
-                foreach (DependencyNodeCore<NodeFactory> dependency in obj)
+                ParallelOptions options = new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = _parallelism
+                };
+                Parallel.ForEach(obj, options, dependency =>
                 {
                     MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
@@ -280,7 +295,7 @@ namespace ILCompiler
                     {
                         using (PerfEventSource.StartStopEvents.JitMethodEvents())
                         {
-                            CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
+                            CorInfoImpl corInfoImpl = _corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                             corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
                         }
                     }
@@ -297,7 +312,7 @@ namespace ILCompiler
                     {
                         Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
-                }
+                });
             }
 
             if (_methodILCache.Count > 1000)

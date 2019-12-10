@@ -3928,7 +3928,7 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 break;
             case SIMDIntrinsicConvertToInt32:
             case SIMDIntrinsicConvertToInt64:
-                result = INS_fcvtns;
+                result = INS_fcvtzs;
                 break;
             case SIMDIntrinsicDiv:
                 result = INS_fdiv;

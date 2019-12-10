@@ -1011,9 +1011,6 @@ protected:
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 #endif // defined(_TARGET_XARCH_)
-#if defined(_TARGET_ARM64_)
-    void genSpecialIntrinsic(GenTreeHWIntrinsic* node);
-#endif // defined(_TARGET_XARCH_)
 #endif // FEATURE_HW_INTRINSICS
 
 #if !defined(_TARGET_64BIT_)

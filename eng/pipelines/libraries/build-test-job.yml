@@ -5,12 +5,14 @@ parameters:
   archType: ''
   framework: netcoreapp
   isOfficialBuild: false
+  liveCoreClrBuildConfig: ''
   timeoutInMinutes: 150
   container: ''
   publishTestArtifacs: true
   pool: ''
   testScope: ''
   variables: {}
+  condition: true
   runTests: false
 
 jobs:
@@ -22,14 +24,17 @@ jobs:
       archType:  ${{ parameters.archType }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      condition: ${{ parameters.condition }}
+      liveCoreClrBuildConfig: ${{ parameters.liveCoreClrBuildConfig }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
-      stepName: Test
+      name: test_build
+      displayName: 'Test Build'
 
       dependsOn:
-      - ${{ format('libraries_Build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
       variables:
         - _archiveTestsParameter: /p:ArchiveTests=true
@@ -41,9 +46,10 @@ jobs:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             displayName: Build Assets
-            artifactName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-            artifactFileName: ${{ format('libraries_bin_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}$(archiveExtension)
+            artifactName: $(librariesBuildArtifactName)
+            artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
+            cleanUnpackFolder: false
         
         - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
           displayName: Restore
@@ -61,5 +67,5 @@ jobs:
             archiveType: $(archiveType)
             archiveExtension: $(archiveExtension)
             tarCompression: $(tarCompression)
-            artifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}_{3}', parameters.framework, parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+            artifactName: $(librariesTestsArtifactName)
             displayName: Test Assets
