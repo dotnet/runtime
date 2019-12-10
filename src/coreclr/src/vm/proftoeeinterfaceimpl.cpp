@@ -138,6 +138,11 @@
 
 #include "metadataexports.h"
 
+#ifdef FEATURE_PERFTRACING
+#include "eventpipeprovider.h"
+#include "eventpipemetadatagenerator.h"
+#endif // FEATURE_PERFTRACING
+
 //---------------------------------------------------------------------------------------
 // Helpers
 
@@ -559,6 +564,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     else if (id == IID_ICorProfilerInfo11)
     {
         *pInterface = static_cast<ICorProfilerInfo11 *>(this);
+    }
+    else if (id == IID_ICorProfilerInfo12)
+    {
+        *pInterface = static_cast<ICorProfilerInfo12 *>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -7012,6 +7021,164 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
     }
 
     return SetEnvironmentVariableW(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVENTPIPE_PROVIDERID *pProviderID)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeCreateProvider.\n"));
+
+#ifdef FEATURE_PERFTRACING
+    if (szName == NULL || pProviderID == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        EventPipeProvider *pProvider = EventPipe::CreateProvider(szName, NULL, NULL);
+        if (pProvider == NULL)
+        {
+            hr = E_FAIL;
+        }
+        else
+        {
+            *pProviderID = reinterpret_cast<EVENTPIPE_PROVIDERID>(pProvider);
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#elif // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
+    EVENTPIPE_PROVIDERID provHandle,
+    const WCHAR *szName, 
+    UINT32 eventID,
+    UINT64 keywords,
+    UINT32 eventVersion,
+    UINT32 level,
+    BOOL needStack,
+    UINT32 cParamDescs,
+    COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
+    EVENTPIPE_EVENTID *pEventID)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeDefineEvent.\n"));
+#ifdef FEATURE_PERFTRACING
+    EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
+    if (pProvider == NULL || szName == NULL || pEventID == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (pParamDescs == NULL && cParamDescs <= 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        _ASSERTE(offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, szName));
+        EventPipeParameterDesc *params = reinterpret_cast<EventPipeParameterDesc *>(pParamDescs);
+        // TODO: should I check that keywords, version, etc are semantically valid? Probably, 
+        // also probably should check that the params are valid
+        size_t metadataLength;
+        BYTE *pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
+            eventID,
+            szName,
+            keywords,
+            eventVersion,
+            (EventPipeEventLevel)level,
+            params,
+            cParamDescs,
+            &metadataLength);
+
+        // Add the event.
+        EventPipeEvent *pEvent = pProvider->AddEvent(
+            eventID,
+            keywords,
+            eventVersion,
+            (EventPipeEventLevel)level,
+            needStack,
+            pMetadata,
+            (unsigned int)metadataLength);
+
+        // Delete the metadata after the event is created.
+        // The metadata blob will be copied into EventPipe-owned memory.
+        delete [] pMetadata;
+
+        *pEventID = reinterpret_cast<EVENTPIPE_EVENTID>(pEvent);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#elif // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
+    EVENTPIPE_EVENTID event,
+    BYTE *pData,
+    UINT32 length,
+    LPCGUID pActivityId,
+    LPCGUID pRelatedActivityId)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeWriteEvent.\n"));
+#ifdef FEATURE_PERFTRACING
+    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(event);
+
+    if (pEvent == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    EventPipe::WriteEvent(*pEvent, (BYTE *)pData, length, pActivityId, pRelatedActivityId);
+
+    return S_OK;
+#elif // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
 }
 
 /*

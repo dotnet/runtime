@@ -141,7 +141,7 @@ typedef struct _PROFILER_STACK_WALK_DATA PROFILER_STACK_WALK_DATA;
 // from the profiler implementation.  The profiler will call back on the v-table
 // to get at EE internals as required.
 
-class ProfToEEInterfaceImpl : public ICorProfilerInfo11
+class ProfToEEInterfaceImpl : public ICorProfilerInfo12
 {
 public:
 
@@ -642,6 +642,33 @@ public:
 
     // end ICorProfilerInfo11
 
+    // begin ICorProfilerInfo12
+
+    COM_METHOD EventPipeCreateProvider(
+        const WCHAR *szName,
+        EVENTPIPE_PROVIDERID *pProviderID);
+
+    COM_METHOD EventPipeDefineEvent(
+        EVENTPIPE_PROVIDERID provHandle,
+        const WCHAR *szName, 
+        UINT32 eventID,
+        UINT64 keywords,
+        UINT32 eventVersion,
+        UINT32 level,
+        BOOL needStack,
+        UINT32 cParamDescs,
+        COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
+        EVENTPIPE_EVENTID *pEventID);
+
+    COM_METHOD EventPipeWriteEvent(
+        EVENTPIPE_EVENTID event,
+        BYTE *pData,
+        UINT32 length,
+        LPCGUID pActivityId,
+        LPCGUID pRelatedActivityId);
+
+    // end ICorProfilerInfo12
+    
 protected:
 
     // Internal Helper Functions
