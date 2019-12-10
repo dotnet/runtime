@@ -7,7 +7,7 @@ steps:
   displayName: Download Checkout.bundle
 
 - script: |
-    $[ variables.setScriptToEchoAndFailOnNonZero ]
+    $(setScriptToEchoAndFailOnNonZero)
     git clone $(Pipeline.Workspace)/Checkout_bundle/Checkout.bundle .
     git remote set-url origin $(Build.Repository.Uri)
   displayName: Clone the repository from Checkout.bundle
