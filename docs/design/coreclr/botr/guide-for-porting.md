@@ -23,7 +23,7 @@ will have 2 major effects.
 
 2.  Not all approaches for fixing problems will always be considered acceptable.
     It is plausible that a some change may not ever be acceptable to take into
-    the public git repo, and discovering such issues early can avoid large
+    the upstream git repo, and discovering such issues early can avoid large
     amounts of sunk cost
 
 3.  When some change is made which breaks other platforms, it will be relatively
