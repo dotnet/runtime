@@ -5,12 +5,12 @@
 
 cd $(dirname $0)
 
-[ -z $DOCKER_IMAGE_TAG ] && IMAGE_TAG=dotnet-sdk-libs-current
+[ -z $DOCKER_IMAGE_TAG ] && DOCKER_IMAGE_TAG=dotnet-sdk-libs-current
 [ -z $CONFIGURATION ] && CONFIGURATION=Release
 
 REPO_ROOT_DIR=$(git rev-parse --show-toplevel)
 
-docker build --tag $(IMAGE_TAG) \
+docker build --tag $(DOCKER_IMAGE_TAG) \
              --build-arg CONFIGURATION=$(CONFIGURATION) \
              --file libraries-sdk.linux.Dockerfile \
              $REPO_ROOT_DIR

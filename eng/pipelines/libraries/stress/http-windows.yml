@@ -33,7 +33,7 @@ steps:
   lfs: false
 
 - powershell: |
-    $(dockerfilesFolder)/build-docker-sdk-windows.ps1
+    $(dockerfilesFolder)/build-docker-sdk-windows.ps1 -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
   displayName: Build Libraries
 
 - powershell: |
