@@ -371,7 +371,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
 
     1.  JIT_MemSet, and JIT_MemCpy have this requirement
 
-#### Cgencpu.h
+#### cgencpu.h
 
 This header is included by various code in the VM directory. It provides a large
 set of functionality that is architecture specific, including but not limited to
