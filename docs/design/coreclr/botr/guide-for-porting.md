@@ -1,5 +1,5 @@
 Guide for porting .NET to a new processor architecture
----
+========================
 
 This document is broken up into 2 major sections.
 
@@ -212,8 +212,8 @@ Components of the Runtime affected by a port to a new architecture
 Notable components
 
 1.  The JIT. The jit maintains the largest concentration of architecture
-    specific logic in the stack. This is not surprising. See the RyuJit porting
-    guide for guidance.
+    specific logic in the stack. This is not surprising. See [Porting RyuJit](porting-ryujit.md)
+    for guidance.
 
 2.  The CLR VM. The VM is a mix of completely architecture neutral logic, and
     very machine specific paths.
@@ -232,11 +232,6 @@ Notable components
     from general purpose MSIL, these will be needed to improve startup performance.
 
 6.  R2RDump - This allows diagnosing issues in pre-compiled code.
-
-JIT
----
-
-See [Porting RyuJit](porting-ryujit.md)
 
 CLR VM
 ------
