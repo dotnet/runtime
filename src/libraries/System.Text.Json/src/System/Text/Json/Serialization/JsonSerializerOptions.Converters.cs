@@ -211,7 +211,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(classTypeAttributeIsOn, propertyInfo);
                 }
 
-                converter = (JsonConverter?)Activator.CreateInstance(type);
+                converter = (JsonConverter)Activator.CreateInstance(type)!;
             }
 
             Debug.Assert(converter != null);

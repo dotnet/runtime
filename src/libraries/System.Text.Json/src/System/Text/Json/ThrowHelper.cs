@@ -611,6 +611,11 @@ namespace System.Text.Json
             ex.Source = ExceptionSourceValueToRethrowAsJsonException;
             return ex;
         }
+
+        public static InvalidOperationException GetInvalidOperationException_ExpectedChar(JsonTokenType tokenType)
+        {
+            return GetInvalidOperationException("char", tokenType);
+        }
     }
 
     internal enum ExceptionResource

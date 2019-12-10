@@ -12,7 +12,7 @@ namespace System.Text.Json
 {
     internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable
     {
-        private byte[]? _rentedBuffer;
+        private byte[] _rentedBuffer;
         private int _index;
 
         private const int MinimumBufferSize = 256;
@@ -86,7 +86,7 @@ namespace System.Text.Json
 
             ClearHelper();
             ArrayPool<byte>.Shared.Return(_rentedBuffer);
-            _rentedBuffer = null;
+            _rentedBuffer = null!;
         }
 
         public void Advance(int count)

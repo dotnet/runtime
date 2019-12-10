@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            string? propertyName = reader.GetString();
+            string propertyName = reader.GetString()!;
             if (propertyName == KeyName)
             {
                 k = ReadProperty<TKey>(ref reader, typeToConvert, options);
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            propertyName = reader.GetString();
+            propertyName = reader.GetString()!;
             if (propertyName == ValueName)
             {
                 v = ReadProperty<TValue>(ref reader, typeToConvert, options);

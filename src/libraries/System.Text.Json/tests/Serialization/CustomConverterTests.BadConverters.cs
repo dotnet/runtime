@@ -339,8 +339,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = @"{""MyType"":""ABC""}";
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithConverterWithoutPublicEmptyCtor>(json));
-            Assert.Equal("The converter specified on 'System.Text.Json.Serialization.Tests.CustomConverterTests+ClassWithConverterWithoutPublicEmptyCtor' " +
-                "does not derive from JsonConverter or have a public parameterless constructor.", ex.Message);
+            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+ClassWithConverterWithoutPublicEmptyCtor'", ex.Message);
         }
 
         [JsonConverter(typeof(ConverterWithoutPublicEmptyCtor))]
