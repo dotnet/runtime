@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # Builds libraries and produces a dotnet sdk docker image
 # that contains the current bits in its shared framework folder.
 
