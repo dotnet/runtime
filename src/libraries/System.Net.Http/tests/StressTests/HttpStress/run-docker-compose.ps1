@@ -42,7 +42,8 @@ if ($useWindowsContainers)
     $env:DOCKERFILE="windows.Dockerfile"
 }
 
-Invoke-Expression "docker-compose --file `"$COMPOSE_FILE`" build $($BUILD_ARGS.Split())"
+Set-Location $PSScriptRoot
+Invoke-Expression "docker-compose build $($BUILD_ARGS.Split())"
 
 if (!$?) { exit 1 }
 
