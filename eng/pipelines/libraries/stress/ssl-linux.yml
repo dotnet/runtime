@@ -33,9 +33,7 @@ steps:
   lfs: false
 
 - bash: |
-    export CONFIGURATION=$(BUILD_CONFIGURATION)
-    export DOCKER_IMAGE_TAG=$(sdkBaseImage)
-    $(dockerfilesFolder)/build-docker-sdk.sh
+    $(dockerfilesFolder)/build-docker-sdk.ps1 -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
   displayName: Build Libraries
 
 - bash: |

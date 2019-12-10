@@ -32,15 +32,15 @@ steps:
   fetchDepth: 1
   lfs: false
 
-# - powershell: |
-#     $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-#   displayName: Build Libraries
+- pwsh: |
+    $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+  displayName: Build Libraries
 
 - pwsh: |
-    $(httpStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) # -t $(sdkBaseImage)
+    $(httpStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
   displayName: Build HttpStress
 
-- powershell: |
+- pwsh: |
     cd '$(httpStressProject)'
     docker-compose up --abort-on-container-exit --no-color
   displayName: Run HttpStress

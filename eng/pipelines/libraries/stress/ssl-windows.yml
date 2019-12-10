@@ -32,16 +32,16 @@ steps:
   fetchDepth: 1
   lfs: false
 
-- powershell: |
+- pwsh: |
     $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
   displayName: Build Libraries
 
-- powershell: |
+- pwsh: |
     # we need to include the entire src/libraries folder in the build context due to Common/ dependencies
     docker build -t $(sslStressImage) --build-arg SDK_BASE_IMAGE=$(sdkBaseImage) --build-arg CONFIGURATION=$(BUILD_CONFIGURATION) -f $(sslStressProject)/windows.Dockerfile src/libraries
   displayName: Build SslStress
 
-- powershell: |
+- pwsh: |
     cd '$(sslStressProject)'
     docker-compose up --abort-on-container-exit --no-color
   displayName: Run SslStress
