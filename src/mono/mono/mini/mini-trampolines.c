@@ -1142,7 +1142,15 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			}
 		}
 
-		if (delegate->target && 
+		if (tramp_info->method == NULL && delegate->target != NULL && method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
+			/* tramp_info->method == NULL happens when someone asks us to JIT some delegate's
+			 * Invoke method (see compile_special).  In that case if method is virtual, the target
+			 * could be some derived class, so we need to find the correct override.
+			 */
+			/* FIXME: does it make sense that we get called with tramp_info for the Invoke? */
+			method = mono_object_get_virtual_method_internal (delegate->target, method);
+			enable_caching = FALSE;
+		} else if (delegate->target &&
 			method->flags & METHOD_ATTRIBUTE_VIRTUAL && 
 			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
 			mono_class_is_abstract (method->klass)) {
