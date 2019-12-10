@@ -212,7 +212,7 @@ At last, the coreclr is loaded into memory and called to run the application.
 Assemblies are found by looking through probing paths in a certain order.
 
 * In version 2.0, the local app location has priority over the shared framework locations and if the same assembly exists in both locations, the coreclr will end up using the local app's copy of that assembly.
-* In version 2.1and later, if multiple assemblies with the same name are found, the assembly with the highest version wins. This is necessary to avoid downgrading assembly versions requested by the application.
+* In version 2.1 and later, if multiple assemblies with the same name are found, the assembly with the highest version wins. This is necessary to avoid downgrading assembly versions requested by the application.
 
 In order to compare versions of an assembly, the assemblyVersion and fileVersion attributes will be added for each assembly in the deps.json files. The application and every framework contains a <name>.deps.json file. The assemblyVersion is compared first, and if equal, the fileVersion is used as a tie-breaker.
 
