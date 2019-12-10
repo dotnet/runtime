@@ -294,6 +294,10 @@ if %__SkipCrossArchNative% EQU 0 (
         if /i "%__BuildArch%"=="arm" (
             set __BuildCrossArchNative=1
         )
+
+        if /i "%__BuildOS%"=="Linux" (
+            if /i "%__BuildArch%"=="x64" set __BuildCrossArchNative=1
+        )
     )
 )
 
