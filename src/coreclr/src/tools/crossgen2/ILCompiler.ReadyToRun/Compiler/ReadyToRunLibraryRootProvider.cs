@@ -150,6 +150,9 @@ namespace ILCompiler
         /// </summary>
         public static void CheckCanGenerateMethod(MethodDesc method)
         {
+            // Ensure the method is loadable
+            ((CompilerTypeSystemContext)method.Context).EnsureLoadableMethod(method);
+
             MethodSignature signature = method.Signature;
 
             // Vararg methods are not supported in .NET Core
@@ -162,10 +165,6 @@ namespace ILCompiler
             {
                 CheckTypeCanBeUsedInSignature(signature[i]);
             }
-
-            // Ensure the containing type of the method is also resolvable
-            if (method.OwningType is DefType defType)
-                defType.ComputeTypeContainsGCPointers();
         }
 
         private static void CheckTypeCanBeUsedInSignature(TypeDesc type)
