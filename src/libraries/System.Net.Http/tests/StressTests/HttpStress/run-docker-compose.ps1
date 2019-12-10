@@ -43,8 +43,7 @@ if ($useWindowsContainers)
 }
 
 Set-Location $PSScriptRoot
-docker-compose --help
-docker-compose build # $BUILD_ARGS.Split()
+docker-compose build  2>&1 | %{ "$_" } # $BUILD_ARGS.Split()
 
 #if (!$?) { exit 1 }
 
