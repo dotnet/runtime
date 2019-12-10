@@ -140,6 +140,15 @@ set COMPlus_AltJitName=superpmi-shim-collector.dll
 (On Linux, use `libclrjit.so` and `libsuperpmi-shim-collector.so`.
 On Mac, use `libclrjit.dylib` and `libsuperpmi-shim-collector.dylib`.)
 
+Note that the `superpmi-shim-collector.dll` must live in the same directory as the `coreclr.dll`
+(or libcoreclr.so on Linux) that will be invoked when running .NET Core. This will normally be
+a `Core_Root` directory, since you must create such a directory to be able to run
+.NET Core applications (such as by using the `corerun` tool).
+
+If you want to collect using an official .NET Core build, you will need to build a matching set
+of superpmi binaries, and copy `superpmi-shim-collector.dll` to the correct directory. This
+option has not been tested (as far as I know).
+
 Then, cause the JIT to compile some code. Do one or more of:
 1. Run a managed scenario.
 2. Run managed code tests.
