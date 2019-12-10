@@ -159,27 +159,16 @@ namespace System.Net.Tests
 
         [Fact]
         [OuterLoop]
-        public void GetContext_StopIsCalled_GetContextUnblocked()
+        public async Task GetContext_StopIsCalled_GetContextUnblocked()
         {
             using var listenerFactory = new HttpListenerFactory();
             var listener = listenerFactory.GetListener();
             listener.Start();
-
-            var listenerTask = Task.Run(() =>
-            {
-                try
-                {
-                    var context = listener.GetContext();
-                }
-                catch (Exception)
-                {
-                }
-            });
-
-            Task.Delay(1000).Wait(1100); // let listenerTask to call GetContext
+            var listenerTask = Task.Run(() => Assert.Throws<HttpListenerException>(() => listener.GetContext()));
+            await Task.Delay(1000).TimeoutAfter(1100); // let listenerTask to call GetContext
             listener.Stop();
             listener.Close();
-            listenerTask.Wait();
+            await listenerTask.TimeoutAfter(10000);
         }
     }
 }
