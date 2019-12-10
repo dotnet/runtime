@@ -10,7 +10,6 @@ using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic
@@ -38,7 +37,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Resettable completions to be used for multiple calls to receive.
         private readonly ResettableCompletionSource<uint> _receiveResettableCompletionSource;
 
-        private readonly ResettableCompletionSource<uint> _shutdownResettableCompletionSource;
+        private readonly ResettableCompletionSource<uint> _shutdownWriteResettableCompletionSource;
 
         // Buffers to hold during a call to send.
         private readonly MemoryHandle[] _bufferArrays = new MemoryHandle[1];
@@ -52,7 +51,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private ReadState _readState;
 
-        private ShutdownState _shutdownState;
+        private ShutdownWriteState _shutdownState;
 
         private SendState _sendState;
 
@@ -91,7 +90,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _sendResettableCompletionSource = new ResettableCompletionSource<uint>();
             _receiveResettableCompletionSource = new ResettableCompletionSource<uint>();
-            _shutdownResettableCompletionSource = new ResettableCompletionSource<uint>();
+            _shutdownWriteResettableCompletionSource = new ResettableCompletionSource<uint>();
 
             SetCallbackHandler();
         }
@@ -243,9 +242,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_readState == ReadState.IndividualReadComplete)
                 {
-                    EnableReceive();
-                    // TODO this threw an exception during a stress run.
                     ReceiveComplete(actual);
+                    EnableReceive();
                     _readState = ReadState.None;
                 }
             }
@@ -285,16 +283,16 @@ namespace System.Net.Quic.Implementations.MsQuic
                 bool shouldComplete = false;
                 lock (_sync)
                 {
-                    if (_shutdownState == ShutdownState.None)
+                    if (_shutdownState == ShutdownWriteState.None)
                     {
-                        _shutdownState = ShutdownState.Canceled;
+                        _shutdownState = ShutdownWriteState.Canceled;
                         shouldComplete = true;
                     }
                 }
 
                 if (shouldComplete)
                 {
-                    _shutdownResettableCompletionSource.CompleteException(new OperationCanceledException("Shutdown was canceled"));
+                    _shutdownWriteResettableCompletionSource.CompleteException(new OperationCanceledException("Shutdown was canceled"));
                 }
             });
 
@@ -302,7 +300,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return _shutdownResettableCompletionSource.GetTypelessValueTask();
+            return _shutdownWriteResettableCompletionSource.GetTypelessValueTask();
         }
 
         // TODO consider removing sync-over-async with blocking calls.
@@ -412,7 +410,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEvent(ref StreamEvent evt)
         {
-            uint status = MsQuicConstants.Success;
+            uint status = MsQuicStatusCodes.Success;
 
             try
             {
@@ -475,7 +473,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (Exception)
             {
-                return MsQuicConstants.InternalError;
+                return MsQuicStatusCodes.InternalError;
             }
 
             return status;
@@ -508,7 +506,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Pending;
+            return MsQuicStatusCodes.Pending;
         }
 
         private uint HandleEventPeerRecvAbort()
@@ -516,7 +514,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleStartComplete()
@@ -537,12 +535,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
-                _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+                _sendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventSendShutdownComplete(ref MsQuicNativeMethods.StreamEvent evt)
@@ -551,33 +549,62 @@ namespace System.Net.Quic.Implementations.MsQuic
             bool shouldComplete = false;
             lock (_sync)
             {
-                if (_shutdownState == ShutdownState.None)
+                if (_shutdownState == ShutdownWriteState.None)
                 {
-                    _shutdownState = ShutdownState.Finished;
+                    _shutdownState = ShutdownWriteState.Finished;
                     shouldComplete = true;
                 }
             }
 
             if (shouldComplete)
             {
-                _shutdownResettableCompletionSource.Complete(MsQuicConstants.Success);
+                _shutdownWriteResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventShutdownComplete()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            // TODO use another cts here? This is when both sides are shutdown.
-            // Completing both the reading and writing side is effectively equivalent.
+            bool shouldReadComplete = false;
+            bool shouldShutdownWriteComplete = false;
+
+            lock (_sync)
+            {
+                // This event won't occur within the middle of a receive.
+                if (NetEventSource.IsEnabled) NetEventSource.Info("Completing resettable event source.");
+
+                if (_readState == ReadState.None)
+                {
+                    shouldReadComplete = true;
+                }
+
+                _readState = ReadState.ReadsCompleted;
+
+                if (_shutdownState == ShutdownWriteState.None)
+                {
+                    _shutdownState = ShutdownWriteState.Finished;
+                    shouldShutdownWriteComplete = true;
+                }
+            }
+
+            if (shouldReadComplete)
+            {
+                _receiveResettableCompletionSource.Complete(0);
+            }
+
+            if (shouldShutdownWriteComplete)
+            {
+                _shutdownWriteResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
+            }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventPeerSendAborted()
@@ -601,7 +628,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventPeerSendShutdown()
@@ -630,7 +657,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventSendComplete(ref StreamEvent evt)
@@ -654,12 +681,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
-                _sendResettableCompletionSource.Complete(MsQuicConstants.Success);
+                _sendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private void CleanupSendState()
@@ -755,7 +782,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             Aborted
         }
 
-        private enum ShutdownState
+        private enum ShutdownWriteState
         {
             None,
             Canceled,

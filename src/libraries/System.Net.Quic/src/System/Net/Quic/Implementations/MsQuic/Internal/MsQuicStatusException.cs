@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private static string GetMessage(uint status, string message)
         {
-            string errorCode = MsQuicConstants.GetError(status);
+            string errorCode = MsQuicStatusCodes.GetError(status);
             return $"Quic Error: {errorCode}. " + message;
         }
 

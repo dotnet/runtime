@@ -183,16 +183,16 @@ namespace System.Net.Quic.Implementations.MsQuic
                         }
                         break;
                     default:
-                        return MsQuicConstants.InternalError;
+                        return MsQuicStatusCodes.InternalError;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                return MsQuicConstants.InternalError;
+                return MsQuicStatusCodes.InternalError;
             }
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         protected void StopAcceptingConnections()

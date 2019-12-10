@@ -184,7 +184,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             MsQuicSecurityConfig secConfig = null;
             var tcs = new TaskCompletionSource<object>();
-            uint secConfigCreateStatus = MsQuicConstants.InternalError;
+            uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
             uint status;
             if (certificate != null)
             {

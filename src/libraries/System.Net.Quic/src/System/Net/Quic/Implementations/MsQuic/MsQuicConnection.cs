@@ -97,7 +97,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal uint HandleEvent(ref ConnectionEvent connectionEvent)
         {
-            uint status = MsQuicConstants.Success;
+            uint status = MsQuicStatusCodes.Success;
             try
             {
                 switch (connectionEvent.Type)
@@ -156,7 +156,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 // TODO we may want to either add a debug assert here or return specific error codes
                 // based on the exception caught.
-                return MsQuicConstants.InternalError;
+                return MsQuicStatusCodes.InternalError;
             }
 
             return status;
@@ -173,10 +173,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             // I don't believe we need to lock here because
             // handle event connected will not be called at the same time as
             // handle event shutdown initiated by transport
-            _connectTcs.Complete(MsQuicConstants.Success);
+            _connectTcs.Complete(MsQuicStatusCodes.Success);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventShutdownInitiatedByTransport(ConnectionEvent connectionEvent)
@@ -192,23 +192,23 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventShutdownInitiatedByPeer(ConnectionEvent connectionEvent)
         {
             _acceptQueue.Writer.Complete();
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventShutdownComplete(ConnectionEvent connectionEvent)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            _shutdownTcs.Complete(MsQuicConstants.Success);
+            _shutdownTcs.Complete(MsQuicStatusCodes.Success);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventNewStream(ConnectionEvent connectionEvent)
@@ -220,12 +220,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             _acceptQueue.Writer.TryWrite(msQuicStream);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         private uint HandleEventStreamsAvailable(ConnectionEvent connectionEvent)
         {
-            return MsQuicConstants.Success;
+            return MsQuicStatusCodes.Success;
         }
 
         internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
