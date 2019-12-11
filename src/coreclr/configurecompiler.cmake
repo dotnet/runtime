@@ -127,6 +127,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL SunOS)
   set(CLR_CMAKE_PLATFORM_SUNOS 1)
 endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 
+if(CMAKE_SYSTEM_NAME STREQUAL Windows)
+  set(CLR_CMAKE_PLATFORM_OS Windows_NT)
+endif(CMAKE_SYSTEM_NAME STREQUAL Windows)
+
 # "configureoptimization.cmake" must be included after CLR_CMAKE_PLATFORM_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 
@@ -543,6 +547,10 @@ elseif (CLR_CMAKE_TARGET_ARCH_I386)
 else ()
     clr_unknown_arch()
 endif ()
+
+if(CLR_MAKE_TARGET_OS STREQUAL Windows_NT)
+  add_definitions(-DTARGET_WINDOWS)
+endif(CLR_MAKE_TARGET_OS STREQUAL Windows_NT)
 
 #--------------------------------------
 # Compile Options
