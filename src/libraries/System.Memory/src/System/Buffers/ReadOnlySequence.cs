@@ -535,8 +535,8 @@ namespace System.Buffers
         /// <returns></returns>
         public long GetOffset(SequencePosition position)
         {
-            object? positionSequenceObject;
-            bool positionIsNotNull = (positionSequenceObject = position.GetObject()) != null;
+            object? positionSequenceObject = position.GetObject();
+            bool positionIsNotNull = positionSequenceObject != null;
             BoundsCheck(position, positionIsNotNull);
 
             object? startObject = _startObject;
