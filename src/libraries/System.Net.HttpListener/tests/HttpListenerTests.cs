@@ -165,7 +165,7 @@ namespace System.Net.Tests
             var listener = listenerFactory.GetListener();
             listener.Start();
             var listenerTask = Task.Run(() => Assert.Throws<HttpListenerException>(() => listener.GetContext()));
-            await Task.Delay(1000).TimeoutAfter(1100); // let listenerTask to call GetContext
+            await Task.Delay(1000).TimeoutAfter(1100); // Wait for listenerTask to call GetContext.
             listener.Stop();
             listener.Close();
             await listenerTask.TimeoutAfter(10000);
