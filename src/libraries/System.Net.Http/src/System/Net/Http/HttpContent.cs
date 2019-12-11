@@ -319,11 +319,7 @@ namespace System.Net.Http
 
         protected abstract Task SerializeToStreamAsync(Stream stream, TransportContext context);
 
-        // TODO #9071: Expose this publicly.  Until it's public, only sealed or internal types should override it, and then change
-        // their SerializeToStreamAsync implementation to delegate to this one.  They need to be sealed as otherwise an external
-        // type could derive from it and override SerializeToStreamAsync(stream, context) further, at which point when
-        // HttpClient calls SerializeToStreamAsync(stream, context, cancellationToken), their custom override will be skipped.
-        internal virtual Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected virtual Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
             SerializeToStreamAsync(stream, context);
 
         // TODO #38559: Expose something to enable this publicly.  For very specific HTTP/2 scenarios (e.g. gRPC), we need

@@ -124,13 +124,33 @@ namespace System.Net.Http.Functional.Tests
         {
             // Buffered CopyToAsync will pass the CT to the Stream.WriteAsync
             MockContent content = new MockContent();
+
+            Assert.Equal(0, content.SerializeToStreamAsyncCount);
             await content.LoadIntoBufferAsync();
+            Assert.Equal(1, content.SerializeToStreamAsyncCount);
 
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
 
             using MemoryStream ms = new MemoryStream();
             await Assert.ThrowsAsync<TaskCanceledException>(() => content.CopyToAsync(ms, cts.Token));
+            Assert.Equal(1, content.SerializeToStreamAsyncCount);
+            Assert.Equal(0, content.CreateContentReadStreamCount);
+        }
+
+        [Fact]
+        public async Task CopyToAsync_Unbuffered_CanBeCanceled()
+        {
+            // Unbuffered CopyToAsync will pass the CT to the SerializeToStreamAsync
+            MockContent content = new MockContent();
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            using MemoryStream ms = new MemoryStream();
+            await Assert.ThrowsAsync<TaskCanceledException>(() => content.CopyToAsync(ms, cts.Token));
+            Assert.Equal(1, content.SerializeToStreamAsyncCount);
+            Assert.Equal(0, content.CreateContentReadStreamCount);
         }
 
         [Fact]
@@ -866,9 +886,17 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
 
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+                throw new NotImplementedException(); // The overload with the CancellationToken should be called
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
             {
                 SerializeToStreamAsyncCount++;
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
 
                 if ((_options & MockOptions.ReturnNullInCopyToAsync) != 0)
                 {

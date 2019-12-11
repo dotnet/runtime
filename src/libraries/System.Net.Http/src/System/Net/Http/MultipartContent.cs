@@ -172,7 +172,7 @@ namespace System.Net.Http
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
             SerializeToStreamAsyncCore(stream, context, default);
 
-        internal override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(MultipartContent) ? SerializeToStreamAsyncCore(stream, context, cancellationToken) :
@@ -210,6 +210,8 @@ namespace System.Net.Http
             CreateContentReadStreamAsyncCore(CancellationToken.None);
 
         protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
+            // Only skip the original protected virtual CreateContentReadStreamAsync if this
+            // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(cancellationToken) :
             base.CreateContentReadStreamAsync(cancellationToken);
 
@@ -227,6 +229,8 @@ namespace System.Net.Http
                 // Each nested content.
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     HttpContent nestedContent = _nestedContent[contentIndex];
                     streams[streamIndex++] = EncodeStringToNewStream(SerializeHeadersToString(scratch, contentIndex, nestedContent));
 

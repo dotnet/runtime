@@ -124,7 +124,7 @@ namespace System.Net.Http
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
                 SerializeToStreamAsync(stream, context, CancellationToken.None);
 
-            internal override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
             {
                 using (Stream decompressedStream = TryCreateContentReadStream() ?? await CreateContentReadStreamAsync(cancellationToken).ConfigureAwait(false))
                 {
