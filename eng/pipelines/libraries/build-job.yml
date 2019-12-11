@@ -117,10 +117,17 @@ jobs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref/microsoft.netcore.app
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref/microsoft.netcore.app
 
+          - task: CopyFiles@2
             displayName: Prepare shared framework runtime folder to publish
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg/${{ parameters.framework }}/runtime
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg/${{ parameters.framework }}/runtime
+
+          - task: CopyFiles@2
+            displayName: Prepare docs folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/docs
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/docs
 
           - task: CopyFiles@2
             displayName: Prepare native folder to publish
@@ -139,6 +146,12 @@ jobs:
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/toolset
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/toolset
+
+          - task: CopyFiles@2
+            displayName: Prepare artifacts packages folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/packages
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
 
           - template: /eng/pipelines/common/upload-artifact-step.yml
             parameters:
