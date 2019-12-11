@@ -29,7 +29,12 @@ namespace System.Net.Http
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
             SerializeToStreamAsync(stream, context, CancellationToken.None);
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+#if HTTP_DLL || !NETSTANDARD
+        protected override
+#else
+        internal
+#endif
+            Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
 
