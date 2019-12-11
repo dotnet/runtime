@@ -4434,8 +4434,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
         regNumber  nextReg          = genRegNumFromMask(nextRegBit);
         RegRecord* regRecord        = getRegisterRecord(nextReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
-        if (assignedInterval == nullptr || (assignedInterval->isActive == false) ||
-            !varTypeIsGC(assignedInterval->registerType))
+        if (assignedInterval == nullptr || (assignedInterval->isActive == false))
         {
             continue;
         }
