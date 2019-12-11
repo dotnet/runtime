@@ -244,6 +244,9 @@ Notable components
 8.  coredistools - Necessary for GCStress (if determining instruction boundaries is
     non-trivial), as well as for SuperPMI asm diffs for JIT development.
 
+9.  debug and diagnostics components - The managed debugger and profiler are beyond
+    the scope of this document.
+
 CLR PAL
 ------
 The PAL provides a similar to Win32 api as the CLR codebase was originally designed
