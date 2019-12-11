@@ -266,7 +266,7 @@ class CoreclrArguments:
         self.verify(args,
                     "core_root",
                     check_and_return_default_core_root,
-                    "Error, incorrect core_root location.")
+                    "Error, Core_Root could not be determined, or points to a location that doesn't exist.")
 
         self.verify(args,
                     "product_location",

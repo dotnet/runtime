@@ -148,3 +148,16 @@ jobs:
       liveCoreClrBuildConfig: checked
       dependsOnBuildConfiguration: Release
       condition: false
+
+#
+# Installer Build and Test
+#
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    liveCoreClrBuildConfig: checked
+    liveLibrariesBuildConfig: Release
+    skipPlatforms:
+    # Not built by CoreCLR and Libraries yet.
+    - Linux_arm64
+    - Linux_musl_x64
+    - Linux_musl_arm64

@@ -130,6 +130,7 @@
     <Compile Include="JsonNode.AsJsonElementTests.cs" />
     <Compile Include="JsonNode.CloneTests.cs" />
     <Compile Include="JsonNode.TraversalTests.cs" />
+    <Compile Include="JsonNodeOptionsTests.cs" />
     <Compile Include="JsonNullTests.cs" />
     <Compile Include="JsonNumberTests.cs" />
     <Compile Include="JsonObjectTests.cs" />

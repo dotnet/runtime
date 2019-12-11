@@ -1,4 +1,5 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <FrameworkPackageName>Microsoft.NETCore.App</FrameworkPackageName>
@@ -78,6 +79,7 @@
       </FilesToPackage>
     </ItemGroup>
   </Target>
-  
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="localnetcoreapp.override.targets" />
 </Project>

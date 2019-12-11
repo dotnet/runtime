@@ -121,6 +121,7 @@
     <ItemGroup>
       <NetHostFiles Include="$(_NetHostOutputDir)nethost.h" />
       <NetHostFiles Include="$(_NetHostOutputDir)$(LibPrefix)nethost$(LibSuffix)" />
+      <NetHostFiles Include="$(_NetHostOutputDir)$(StaticLibPrefix)nethost$(StaticLibSuffix)" />
       <NetHostFiles Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(_NetHostOutputDir)nethost.lib" />
     </ItemGroup>
     <Copy SourceFiles="@(NetHostFiles)"

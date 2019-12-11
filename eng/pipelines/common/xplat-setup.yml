@@ -25,6 +25,8 @@ jobs:
           value: '\'
         - name: _msbuildCommand
           value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+        - name: setScriptToEchoAndFailOnNonZero
+          value: ''
 
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
@@ -39,7 +41,10 @@ jobs:
           value: '/'
         - name: _msbuildCommand
           value: ./eng/common/msbuild.sh --warnaserror false --ci
-      
+        # Set the bash script to display each command, and stop if any command exits nonzero.
+        - name: setScriptToEchoAndFailOnNonZero
+          value: 'set -xe'
+
       - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
         # This is only required for cross builds.
         - name: ROOTFS_DIR
@@ -48,6 +53,7 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
+    platform: ${{ parameters.platform }}
 
     ${{ if ne(parameters.container, '') }}:
       ${{ if eq(parameters.container.registry, 'mcr') }}:
@@ -94,4 +100,3 @@ jobs:
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:
       jobTemplate: ${{ parameters.jobTemplate }}
       jobParameters: ${{ parameters.jobParameters }}
-      platform: ${{ parameters.platform }}

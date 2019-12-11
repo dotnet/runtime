@@ -158,6 +158,7 @@
   <PropertyGroup>
     <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)'=='$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
     <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)'=='net472' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
+    <BinPlaceNETCoreAppPackage Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceNETCoreAppPackage>
   </PropertyGroup>
 
   <!--
