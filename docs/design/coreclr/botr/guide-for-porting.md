@@ -76,7 +76,7 @@ The process follows the following strategy
     getting some code to work is a prerequisite for handling more complex
     scenarios. When doing initial bringup, configuring the Gen0 budget of the GC
     to be a large number so that the GC does not attempt to run during most
-    tests is very useful. (Set `COMPlus_GCgen0size=999999999`)
+    tests is very useful. (Set `COMPlus_GCgen0size=99999999`)
 
 -   Once basic code is executing, the focus shifts to enabling the GC to work.
     In this initial phase, the correct choice is to enable conservative GC
@@ -299,7 +299,7 @@ must implement.
 
 4.  Precode/Prestub/Jumpstub generation
 
-5.  `callingconventions.h`/`argdestination.h` Providees an implementation of the ABI used by VM
+5.  `callingconventions.h`/`argdestination.h` Provides an implementation of the ABI used by VM
     components. The implementation made architecture specific via a long series of
     C preprocessor macros.
 
