@@ -114,8 +114,8 @@ jobs:
           - task: CopyFiles@2
             displayName: Prepare framework runtime folder to publish
             inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg/${{ parameters.framework }}/runtime
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg/${{ parameters.framework }}/runtime
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg/netcoreapp5.0/runtime # The hardcoded target framework should be removed when we drop the support for versionless targetframeworks from ci.
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg/netcoreapp5.0/runtime
 
           - task: CopyFiles@2
             displayName: Prepare native folder to publish
