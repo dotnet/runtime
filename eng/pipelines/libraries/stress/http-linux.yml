@@ -23,8 +23,6 @@ variables:
     value: $(sourcesRoot)/System.Net.Http/tests/StressTests/HttpStress
   - name: sdkBaseImage
     value: dotnet-sdk-libraries-current
-  - name: httpStressImage
-    value: httpstress
 
 steps:
 - checkout: self
