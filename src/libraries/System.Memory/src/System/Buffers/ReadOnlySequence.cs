@@ -535,14 +535,14 @@ namespace System.Buffers
         /// <returns></returns>
         public long GetOffset(SequencePosition position)
         {
-            bool positionIsNotNull = position.GetObject() != null;
+            object? positionSequenceObject;
+            bool positionIsNotNull = (positionSequenceObject = position.GetObject()) != null;
             BoundsCheck(position, positionIsNotNull);
 
             object? startObject = _startObject;
             object? endObject = _endObject;
 
             uint positionIndex = (uint)GetIndex(position);
-            object? positionSequenceObject = position.GetObject();
 
             // if sequence object is null we suppose start segment
             if (!positionIsNotNull)
