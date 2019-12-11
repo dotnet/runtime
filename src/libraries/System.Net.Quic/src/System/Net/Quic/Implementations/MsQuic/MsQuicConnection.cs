@@ -78,11 +78,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             get
             {
-                if (!_connected)
-                {
-                    throw new InvalidOperationException("Connection must be started before getting endpoint.");
-                }
-
                 return new IPEndPoint(_localEndPoint.Address, _localEndPoint.Port);
             }
         }
