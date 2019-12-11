@@ -36,17 +36,17 @@ jobs:
     lfs: false
 
   - bash: |
-    $(dockerfilesFolder)/build-docker-sdk.ps1 -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-  displayName: Build Libraries
+      $(dockerfilesFolder)/build-docker-sdk.ps1 -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+    displayName: Build Libraries
 
   - bash: |
-    $(sslStressProject)/run-docker-compose.ps1 -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
-  displayName: Build SslStress
+      $(sslStressProject)/run-docker-compose.ps1 -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+    displayName: Build SslStress
 
   - bash: |
-    cd '$(sslStressProject)'
-    docker-compose up --abort-on-container-exit --no-color
-  displayName: Run SslStress
+      cd '$(sslStressProject)'
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run SslStress
 
 - job: windows
   displayName: Docker Nano Server
