@@ -695,6 +695,10 @@ CORE_ROOT=
 
 source "$__ProjectRoot"/_build-commons.sh
 
+if [ "${__BuildArch}" != "${__HostArch}" ]; then
+    __CrossBuild=1
+fi
+
 # Set dependent variables
 __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"

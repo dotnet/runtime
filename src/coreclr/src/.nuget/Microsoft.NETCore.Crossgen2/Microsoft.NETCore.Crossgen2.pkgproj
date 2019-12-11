@@ -11,18 +11,17 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 
   <PropertyGroup>
-    <!-- We're publishing crossgen2 as framework dependent application in the runtime package for now since we only have
+    <!-- We're publishing crossgen2 in its own package as framework dependent application for now since we only have
         two simple scenarios we want to support in the short term: win_x64 to win_x64 and linux_x64 to linux_x64 compilations.
-        Once we have more complex targets, especially cross-platform and cross-architecture, crossgen2 should move to its own
-        package, and become a self-contained package.
+        Once we have more complex targets, especially cross-platform and cross-architecture, crossgen2 will become a self-contained package.
     -->
     <Crossgen2RuntimeConfigContents>
 {
   "runtimeOptions": {
-    "tfm": "netcoreapp3.0",
+    "tfm": "netcoreapp5.0",
     "framework": {
       "name": "Microsoft.NETCore.App",
-      "version": "5.0.0-alpha1.0"
+      "version": "5.0.100-alpha1-015772"
     }
   }
 }

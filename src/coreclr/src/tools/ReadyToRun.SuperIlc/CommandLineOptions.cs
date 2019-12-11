@@ -38,12 +38,14 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        GenerateMapFile(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
                         UseFramework(),
                         Release(),
                         LargeBubble(),
+                        Crossgen2Parallelism(),
                         ReferencePath(),
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
@@ -69,12 +71,14 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        GenerateMapFile(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
                         UseFramework(),
                         Release(),
                         LargeBubble(),
+                        Crossgen2Parallelism(),
                         ReferencePath(),
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
@@ -177,6 +181,9 @@ namespace ReadyToRun.SuperIlc
             Option NoCleanup() =>
                 new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
 
+            Option GenerateMapFile() =>
+                new Option(new[] { "--map" }, "Generate a map file (Crossgen2)", new Argument<bool>());
+
             Option DegreeOfParallelism() =>
                 new Option(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)", new Argument<int>());
 
@@ -194,6 +201,9 @@ namespace ReadyToRun.SuperIlc
 
             Option LargeBubble() =>
                 new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());
+
+            Option Crossgen2Parallelism() =>
+                new Option(new[] { "--crossgen2-parallelism" }, "Max number of threads to use in Crossgen2 (default = logical processor count)", new Argument<int>());
 
             Option IssuesPath() =>
                 new Option(new[] { "--issues-path", "-ip" }, "Path to issues.targets", new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore });

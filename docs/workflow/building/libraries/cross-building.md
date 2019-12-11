@@ -85,7 +85,7 @@ You can also build just managed code with:
 
     $ ./build.sh --arch arm /p:BuildNative=false
 
-The output is at `artifacts/bin/[BuildConfiguration]` where `BuildConfiguration` looks something like `netcoreapp-<OSGroup>-Debug-<Architecture>`. Ex: `artifacts/bin/netcoreapp-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md)
+The output is at `artifacts/bin/[BuildConfiguration]` where `BuildConfiguration` looks something like `netcoreapp-<OSGroup>-Debug-<Architecture>`. Ex: `artifacts/bin/netcoreapp-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](/docs/coding-guidelines/project-guidelines.md)
 
 Building corefx for Linux ARM Emulator
 =======================================

@@ -257,7 +257,7 @@ build_native()
     if [ $__StaticAnalyzer == 1 ]; then
         pushd "$intermediatesForBuild"
 
-        buildTool="$SCAN_BUILD_COMMAND $buildTool"
+        buildTool="$SCAN_BUILD_COMMAND -o $__BinDir/scan-build-log $buildTool"
         echo "Executing $buildTool install -j $__NumProc"
         $buildTool install -j $__NumProc
 

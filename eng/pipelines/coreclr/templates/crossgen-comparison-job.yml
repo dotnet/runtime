@@ -66,7 +66,7 @@ jobs:
     container: ${{ parameters.container }}
 
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 120
+      timeoutInMinutes: 150 # 2.5 hrs
 
     steps:
 
@@ -129,7 +129,7 @@ jobs:
         HelixTargetQueues: ${{ join(' ', parameters.helixQueues) }}
         ${{ if ne(variables['System.TeamProject'], 'internal') }}:
           Creator: $(Creator)
-        WorkItemTimeout: 1:00 # 1 hour
+        WorkItemTimeout: 2:00 # 2 hours
         WorkItemDirectory: '$(artifactsDirectory)'
         CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:

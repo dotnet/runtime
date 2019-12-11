@@ -5,6 +5,19 @@ pr:
     include:
     - master
     - release/*.*
+  paths:
+    include:
+    - '*'
+    - docs/manpages/*
+    exclude:
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
 
 jobs:
 #
@@ -135,3 +148,16 @@ jobs:
       liveCoreClrBuildConfig: checked
       dependsOnBuildConfiguration: Release
       condition: false
+
+#
+# Installer Build and Test
+#
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    liveCoreClrBuildConfig: checked
+    liveLibrariesBuildConfig: Release
+    skipPlatforms:
+    # Not built by CoreCLR and Libraries yet.
+    - Linux_arm64
+    - Linux_musl_x64
+    - Linux_musl_arm64
