@@ -128,13 +128,12 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
                 resolved_frameworks += _X(';');
             }
 
-            // The first framework entry is skipped, becayse it
-            // corresponds to the app itself.
+            // The first framework entry is skipped, because it corresponds to the app itself.
             resolved_frameworks += _X("Framework:");
             resolved_frameworks += (*fx_curr)->get_name();
-            resolved_frameworks += _X(", Requested:");
+            resolved_frameworks += _X(",Requested:");
             resolved_frameworks += (*fx_curr)->get_requested_version();
-            resolved_frameworks += _X(", Resolved:");
+            resolved_frameworks += _X(",Resolved:");
             resolved_frameworks += (*fx_curr)->get_found_version();
         }
 
