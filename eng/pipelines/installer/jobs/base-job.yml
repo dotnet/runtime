@@ -56,12 +56,12 @@ jobs:
 
   - name: LiveOverridePathArgs
     value: >-
-      $(CoreCLROverridePathArg)
-      $(CoreFXOverridePathArg)
+      $(CoreCLRArtifactsPathArg)
+      $(LibrariesConfigurationArg)
 
-  - name: CoreCLROverridePathArg
+  - name: CoreCLRArtifactsPathArg
     value: ''
-  - name: CoreFXOverridePathArg
+  - name: LibrariesConfigurationArg
     value: ''
 
   - name: CoreClrDownloadPath
@@ -78,8 +78,8 @@ jobs:
         parameters.liveCoreClrBuildConfig) }}
     - name: CoreClrDownloadPath
       value: 'artifacts/transport/coreclr'
-    - name: CoreCLROverridePathArg
-      value: /p:CoreCLROverridePath=${{ parameters.buildCommandSourcesDirectory }}$(CoreClrDownloadPath)
+    - name: CoreCLRArtifactsPathArg
+      value: /p:CoreCLRArtifactsPath=${{ parameters.buildCommandSourcesDirectory }}$(CoreClrDownloadPath)
     - name: CoreClrArtifactName
       value: CoreCLRProduct_$(liveCoreClrLegName)
 
@@ -91,11 +91,11 @@ jobs:
         parameters.archType,
         parameters.liveLibrariesBuildConfig) }}
     - name: LibrariesDownloadPath
-      value: 'artifacts/transport/libraries'
-    - name: CoreFXOverridePathArg
-      value: /p:CoreFXOverridePath=${{ parameters.buildCommandSourcesDirectory }}$(LibrariesDownloadPath)
+      value: 'artifacts'
     - name: LibrariesArtifactName
       value: libraries_bin_$(liveLibrariesLegName)
+    - name: LibrariesConfigurationArg
+      value: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
 
   dependsOn:
   - checkout
