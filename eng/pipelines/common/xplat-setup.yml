@@ -17,7 +17,7 @@ jobs:
       - name: _containsLibrariesChange
         value: $[ dependencies.checkout.outputs['SetPathVars_libraries.containschange'] ]
       - name: _containsInstallerChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_Installer.containschange'] ]
+        value: $[ dependencies.checkout.outputs['SetPathVars_installer.containschange'] ]
 
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension

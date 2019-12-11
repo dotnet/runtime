@@ -50,15 +50,15 @@ jobs:
     artifact: Checkout_bundle
     displayName: Upload Checkout.bundle
 
-  - ${{ if and(ne(parameters.paths[0], ''), in(variables['Build.Reason'], 'PullRequest')) }}:
+  - ${{ if and(ne(parameters.paths[0], ''), eq(variables['Build.Reason'], 'PullRequest')) }}:
     - ${{ each path in parameters.paths }}:
       - template: evaluate-changed-paths.yml
         parameters:
           subsetName: ${{ path.subset }} 
           arguments:
-          - -difftarget origin/$(System.PullRequest.TargetBranch)
-          - -subset ${{ path.subset }}
+          - --difftarget origin/$(System.PullRequest.TargetBranch)
+          - --subset ${{ path.subset }}
           - ${{ if ne(path.include[0], '') }}:
-            - -includepaths '${{ join('+', path.include) }}'
+            - --includepaths '${{ join('+', path.include) }}'
           - ${{ if ne(path.exclude[0], '') }}:
-            - -excludepaths '${{ join('+', path.exclude) }}'
+            - --excludepaths '${{ join('+', path.exclude) }}'
