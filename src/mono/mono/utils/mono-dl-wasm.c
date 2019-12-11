@@ -68,7 +68,7 @@ mono_dl_convert_flags (int flags)
 	else if (flags & MONO_DL_GLOBAL)
 		lflags |= RTLD_GLOBAL;
 #else
-	lflags = flags & MONO_DL_LOCAL ? 0 : RTLD_GLOBAL;
+	lflags = flags & MONO_DL_LOCAL ? RTLD_LOCAL : RTLD_GLOBAL;
 #endif
 
 	if (flags & MONO_DL_LAZY)
