@@ -1220,7 +1220,8 @@ namespace Internal.JitInterface
             }
             else
             {
-                // At this point, we knew it is a virtual call to targetMethod method, if it is a default interface method call, it should go through instantiating stub
+                // At this point, we knew it is a virtual call to targetMethod, 
+                // If it is also a default interface method call, it should go through instantiating stub.
                 useInstantiatingStub = useInstantiatingStub || (targetMethod.OwningType.IsInterface && !originalMethod.IsAbstract);
                 // Insert explicit null checks for cross-version bubble non-interface calls.
                 // It is required to handle null checks properly for non-virtual <-> virtual change between versions
