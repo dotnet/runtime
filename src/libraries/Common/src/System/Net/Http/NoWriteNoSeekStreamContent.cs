@@ -29,10 +29,10 @@ namespace System.Net.Http
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
             SerializeToStreamAsync(stream, context, CancellationToken.None);
 
-#if HTTP_DLL || !NETSTANDARD
-        protected override
-#else
+#if WIN_HTTP
         internal
+#else
+        protected override
 #endif
             Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
@@ -61,10 +61,10 @@ namespace System.Net.Http
             return copyTask;
         }
 
-#if HTTP_DLL
-        protected internal
-#else
+#if WIN_HTTP
         protected
+#else
+        protected internal
 #endif
             override bool TryComputeLength(out long length)
         {
@@ -83,7 +83,7 @@ namespace System.Net.Http
 
         protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult(_content);
 
-#if HTTP_DLL
+#if !WIN_HTTP
         internal override Stream TryCreateContentReadStream() => _content;
 
         internal override bool AllowDuplex => false;

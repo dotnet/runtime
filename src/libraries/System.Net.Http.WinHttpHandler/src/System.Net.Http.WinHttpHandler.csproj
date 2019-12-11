@@ -5,6 +5,7 @@
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);WIN_HTTP</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
