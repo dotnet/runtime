@@ -59,33 +59,20 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class PlatformHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
-        protected override HttpClient CreateHttpClient() => CreateHttpClient(new WinHttpHandler());
-
         public PlatformHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    /*public sealed class PlatformHandler_HttpProtocolTests : HttpProtocolTests
+    public sealed class PlatformHandler_HttpProtocolTests : HttpProtocolTests
     {
-        protected override HttpClient CreateHttpClient() => CreateHttpClient(new WinHttpHandler());
-
         public PlatformHandler_HttpProtocolTests(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
     {
         public PlatformHandler_HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
-    public sealed class PlatformHandler_DiagnosticsTest : DiagnosticsTest
-    {
-        public PlatformHandler_DiagnosticsTest(ITestOutputHelper output) : base(output) { }
-    }
-
-    // Test only WinHttpHandler since the CurlHandler was removed
+    /*// Test only WinHttpHandler since the CurlHandler was removed
     [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClient_SelectedSites_Test : HttpClient_SelectedSites_Test
     {

@@ -131,7 +131,9 @@
     <Compile Include="HttpMethodTest.cs" />
     <Compile Include="HttpRetryProtocolTests.cs" />
     <Compile Include="IdnaProtocolTests.cs" />
-    <Compile Include="HttpProtocolTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpProtocolTests.cs">
+      <Link>Common\System\Net\HttpProtocolTests.cs</Link>
+    </Compile>
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />

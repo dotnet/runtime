@@ -9,6 +9,8 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
+        protected static bool IsWinHttpHandler => true;
+
         protected WinHttpHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseHttp2);
 
         protected static WinHttpHandler CreateHttpClientHandler(string useHttp2LoopbackServerString) =>

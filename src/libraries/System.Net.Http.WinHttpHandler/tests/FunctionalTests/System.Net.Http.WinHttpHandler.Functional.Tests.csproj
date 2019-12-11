@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs">
@@ -65,6 +66,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Asynchrony.cs">
       <Link>Common\System\Net\HttpClientHandlerTest.Asynchrony.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpProtocolTests.cs">
+      <Link>Common\System\Net\HttpProtocolTests.cs</Link>
     </Compile>
     <Compile Include="HttpClientHandlerTestBase.WinHttpHandler.cs" />
     <Compile Include="PlatformHandlerTest.cs" />
