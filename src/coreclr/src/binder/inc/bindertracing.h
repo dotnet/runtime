@@ -12,6 +12,12 @@ class Assembly;
 class AssemblySpec;
 class PEAssembly;
 
+namespace BINDER_SPACE
+{
+    class Assembly;
+    class AssemblyName;
+}
+
 namespace BinderTracing
 {
     bool IsEnabled();
@@ -71,19 +77,62 @@ namespace BinderTracing
     class ResolutionAttemptedOperation
     {
     public:
+        // This must match the ResolutionAttemptedStage value map in ClrEtwAll.man
         enum class Stage : uint16_t
         {
             FindInLoadContext = 0,
             AssemblyLoadContextLoad = 1,
             PlatformAssemblies = 2,
             DefaultAssemblyLoadContextFallback = 3,
-            AssemblyLoadContextResolvingEvent = 4,
-            AppDomainAssemblyResolveEvent = 5,
+            ResolveSatelliteAssembly = 4,
+            AssemblyLoadContextResolvingEvent = 5,
+            AppDomainAssemblyResolveEvent = 6,
             NotYetStarted = 0xffff, // Used as flag to not fire event; not present in value map
         };
 
-    private:
+        struct AttemptInfo
+        {
+            BINDER_SPACE::AssemblyName *AssemblyNameObject;
+            INT_PTR ManagedAssemblyLoadContext;
+
+            PathString AssemblyName;
+            SString AssemblyLoadContext;
+        };
+
+    public:
+        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, INT_PTR managedALC, const HRESULT& hr);
+
+        void SetFoundAssembly(BINDER_SPACE::Assembly *assembly)
+        {
+            m_pFoundAssembly = assembly;
+        }
+
+        void GoToStage(Stage stage)
+        {
+            assert(m_stage != stage);
+            assert(stage != Stage::NotYetStarted);
+
+            // Going to a different stage should only happen if the current
+            // stage failed (or if the binding process wasn't yet started).
+            // Firing the event at this point not only helps timing each binding
+            // stage, but avoids keeping track of which stages were reached to
+            // resolve the assembly.
+            TraceStageEnd();
+            m_stage = stage;
+        }
+
 #ifdef FEATURE_EVENT_TRACE
+        ~ResolutionAttemptedOperation()
+        {
+            if (BinderTracing::IsEnabled())
+            {
+                TraceStageEnd();
+            }
+        }
+#endif // FEATURE_EVENT_TRACE
+
+    private:
+        // This must match the ResolutionAttemptedResult value map in ClrEtwAll.man
         enum class Result : uint16_t
         {
             Success = 0,
@@ -101,78 +150,12 @@ namespace BinderTracing
 
         Stage m_stage;
 
-        BINDER_SPACE::AssemblyName *m_pAssemblyName;
+        AttemptInfo m_attemptInfo;
+        bool m_populatedAttemptInfo;
+
         BINDER_SPACE::Assembly *m_pFoundAssembly;
 
-        INT_PTR m_pManagedALC;
-
-        bool m_tracingEnabled;
-
-        void TraceStageEnd(Stage resStage);
-#endif // FEATURE_EVENT_TRACE
-
-    public:
-        ResolutionAttemptedOperation(const HRESULT& hr)
-#ifdef FEATURE_EVENT_TRACE
-            : m_hr{hr}
-            , m_lastStage{Stage::NotYetStarted}
-            , m_pAssemblyName{nullptr}
-            , m_pFoundAssembly{nullptr}
-            , m_pManagedALC{0}
-            , m_tracingEnabled{EventEnabledResolutionAttempted()}
-#endif // FEATURE_EVENT_TRACE
-        {
-        }
-
-        void SetAssemblyName(BINDER_SPACE::AssemblyName *assemblyName)
-        {
-#ifdef FEATURE_EVENT_TRACE
-            m_pAssemblyName = assemblyName;
-#endif // FEATURE_EVENT_TRACE
-        }
-
-        void SetManagedALC(INT_PTR managedALC)
-        {
-#ifdef FEATURE_EVENT_TRACE
-            m_pManagedALC = managedALC;
-#endif // FEATURE_EVENT_TRACE
-        }
-
-        void SetFoundAssembly(BINDER_SPACE::Assembly *assembly)
-        {
-#ifdef FEATURE_EVENT_TRACE
-            m_pFoundAssembly = assembly;
-#endif // FEATURE_EVENT_TRACE
-        }
-
-        void GoToStage(Stage stage)
-        {
-#ifdef FEATURE_EVENT_TRACE
-            if (m_tracingEnabled)
-            {
-                assert(m_stage != stage);
-                assert(stage != Stage::NotYetStarted);
-
-                // Going to a different stage should only happen if the current
-                // stage failed (or if the binding process wasn't yet started).
-                // Firing the event at this point not only helps timing each binding
-                // stage, but avoids keeping track of which stages were reached to
-                // resolve the assembly.
-                TraceStageEnd();
-                m_stage = stage;
-            }
-#endif // FEATURE_EVENT_TRACE
-        }
-
-#ifdef FEATURE_EVENT_TRACE
-        ~ResolutionAttemptedOperation()
-        {
-            if (m_tracingEnabled)
-            {
-                TraceStageEnd();
-            }
-        }
-#endif // FEATURE_EVENT_TRACE
+        void TraceStageEnd();
     };
 
     // This must match the BindingPathSource value map in ClrEtwAll.man

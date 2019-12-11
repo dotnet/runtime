@@ -492,8 +492,9 @@
                       <map value="0x1" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextLoad)"/>
                       <map value="0x2" message="$(string.RuntimePublisher.ResolutionAttempted.PlatformAssemblies)"/>
                       <map value="0x3" message="$(string.RuntimePublisher.ResolutionAttempted.DefaultAssemblyLoadContextFallback)"/>
-                      <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent)"/>
-                      <map value="0x5" message="$(string.RuntimePublisher.ResolutionAttempted.AppDomainAssemblyResolveEvent)"/>
+                      <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.ResolveSatelliteAssembly)"/>
+                      <map value="0x5" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent)"/>
+                      <map value="0x6" message="$(string.RuntimePublisher.ResolutionAttempted.AppDomainAssemblyResolveEvent)"/>
                     </valueMap>
                     <valueMap name="ResolutionAttemptedResultMap">
                       <map value="0x0" message="$(string.RuntimePublisher.ResolutionAttempted.Success)"/>
@@ -7208,6 +7209,7 @@
                 <string id="RuntimePublisher.ResolutionAttempted.AssemblyLoadContextLoad" value="AssemblyLoadContextLoad"/>
                 <string id="RuntimePublisher.ResolutionAttempted.PlatformAssemblies" value="PlatformAssemblies" />
                 <string id="RuntimePublisher.ResolutionAttempted.DefaultAssemblyLoadContextFallback" value="DefaultAssemblyLoadContextFallback" />
+                <string id="RuntimePublisher.ResolutionAttempted.ResolveSatelliteAssembly" value="ResolveSatelliteAssembly" />
                 <string id="RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent" value="AssemblyLoadContextResolvingEvent" />
                 <string id="RuntimePublisher.ResolutionAttempted.AppDomainAssemblyResolveEvent" value="AppDomainAssemblyResolveEvent" />
                 <string id="RuntimePublisher.ResolutionAttempted.Success" value="Success" />

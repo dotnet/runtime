@@ -85,18 +85,6 @@ namespace
 #ifdef CROSSGEN_COMPILE
         alcName.Set(W("Custom"));
 #else // CROSSGEN_COMPILE
-        // Keeping a per-thread INT_PTR reference to a managed AssemblyLoadContext is
-        // sufficient to avoid repeatedly calling into managed code, as managedALC does not
-        // change between each resolve+bind operations.
-        static thread_local INT_PTR prevManagedALC;
-        static thread_local SString prevManagedALCName;
-
-        if (prevManagedALC == managedALC)
-        {
-            alcName.Set(prevManagedALCName);
-            return;
-        }
-
         OBJECTREF *alc = reinterpret_cast<OBJECTREF *>(managedALC);
 
         GCX_COOP();
@@ -114,9 +102,6 @@ namespace
         gc.alcName->GetSString(alcName);
 
         GCPROTECT_END();
-
-        prevManagedALC = managedALC;
-        prevManagedALCName = alcName;
 #endif // CROSSGEN_COMPILE
     }
 
@@ -194,6 +179,14 @@ namespace
 
         GetAssemblyLoadContextNameFromSpec(spec, request.AssemblyLoadContext);
     }
+
+    void PopulateAttemptInfo(/*inout*/ BinderTracing::ResolutionAttemptedOperation::AttemptInfo &info)
+    {
+        _ASSERTE(info.AssemblyNameObject != nullptr);
+
+        info.AssemblyNameObject->GetDisplayName(info.AssemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+        GetAssemblyLoadContextNameFromManagedALC(info.ManagedAssemblyLoadContext, info.AssemblyLoadContext);
+    }
 }
 
 bool BinderTracing::IsEnabled()
@@ -265,35 +258,46 @@ namespace BinderTracing
 
 namespace BinderTracing
 {
-#ifdef FEATURE_EVENT_TRACE
+    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, INT_PTR managedALC, const HRESULT& hr)
+        : m_hr { hr }
+        , m_stage { Stage::NotYetStarted }
+        , m_attemptInfo { assemblyName, managedALC }
+        , m_pFoundAssembly { nullptr }
+    {
+        _ASSERTE(assemblyName != nullptr);
+
+        if (!BinderTracing::IsEnabled())
+            return;
+
+        PopulateAttemptInfo(m_attemptInfo);
+        m_populatedAttemptInfo = true;
+    }
+
     void ResolutionAttemptedOperation::TraceStageEnd()
     {
-        if (stage == Stage::NotYetStarted)
-        {
+        if (!BinderTracing::IsEnabled() || m_stage == Stage::NotYetStarted)
             return;
-        }
 
-        StackSString errorMsg, resultAssemblyName, resultAssemblyPath;
-        uint16_t result;
+        if (!m_populatedAttemptInfo)
+            PopulateAttemptInfo(m_attemptInfo);
 
-        assert(m_pAssemblyName != nullptr);
-
+        Result result;
+        StackSString errorMsg;
         switch (m_hr)
         {
             case HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND):
                 static_assert(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) == COR_E_FILENOTFOUND,
                                 "COR_E_FILENOTFOUND has sane value");
 
-                result = static_cast<uint16_t>(Result::AssemblyNotFound);
-                // TODO: How do we signal the paths we tried looking this assembly in?
+                result = Result::AssemblyNotFound;
                 errorMsg.Set(W("Could not locate assembly"));
                 break;
 
             case FUSION_E_APP_DOMAIN_LOCKED:
-                result = static_cast<uint16_t>(Result::IncompatbileVersion);
+                result = Result::IncompatbileVersion;
 
                 {
-                    const auto &reqVersion = m_pAssemblyName->GetVersion();
+                    const auto &reqVersion = m_attemptInfo.AssemblyNameObject->GetVersion();
                     const auto &foundVersion = m_pFoundAssembly->GetAssemblyName()->GetVersion();
                     errorMsg.Printf(W("Assembly found, but requested version %d.%d.%d.%d is incompatible with found version %d.%d.%d.%d"),
                                     reqVersion->GetMajor(), reqVersion->GetMinor(),
@@ -304,7 +308,7 @@ namespace BinderTracing
                 break;
 
             case FUSION_E_REF_DEF_MISMATCH:
-                result = static_cast<uint16_t>(Result::MismatchedAssemblyName);
+                result = Result::MismatchedAssemblyName;
                 errorMsg.Printf(W("Name mismatch: found %s instead"),
                                 m_pFoundAssembly->GetAssemblyName()->GetSimpleName().GetUnicode());
                 break;
@@ -312,19 +316,21 @@ namespace BinderTracing
             default:
                 if (SUCCEEDED(m_hr))
                 {
-                    result = static_cast<uint16_t>(Result::Success);
+                    result = Result::Success;
                     // Leave errorMsg empty in this case.
                 }
                 else
                 {
-                    result = static_cast<uint16_t>(Result::Unknown);
-                    errorMsg.Printf(W("Resolution failed with unknown HRESULT (%08x)"), m_hr);
+                    result = Result::Failure;
+                    errorMsg.Printf(W("Resolution failed with HRESULT (%08x)"), m_hr);
                 }
         }
 
+        PathString resultAssemblyName;
+        StackSString resultAssemblyPath;
         if (m_pFoundAssembly != nullptr)
         {
-            resultAssemblyName = m_pFoundAssembly->GetAssemblyName()->GetSimpleName();
+            m_pFoundAssembly->GetAssemblyName()->GetDisplayName(resultAssemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
             resultAssemblyPath = m_pFoundAssembly->GetPEImage()->GetPath();
         }
         else
@@ -332,27 +338,16 @@ namespace BinderTracing
             assert(!SUCCEEDED(m_hr));
         }
 
-        StackSString assemblyLoadContext;
-        if (m_pManagedALC != 0)
-        {
-            GetAssemblyLoadContextNameFromManagedALC(m_pManagedALC, assemblyLoadContext);
-        }
-        else
-        {
-            assemblyLoadContext.Set(W("Default"));
-        }
-
         FireEtwResolutionAttempted(
             GetClrInstanceId(),
-            m_pAssemblyName->GetSimpleName(),
+            m_attemptInfo.AssemblyName,
             static_cast<uint16_t>(m_stage),
-            assemblyLoadContext,
-            result,
+            m_attemptInfo.AssemblyLoadContext,
+            static_cast<uint16_t>(result),
             resultAssemblyName,
             resultAssemblyPath,
             errorMsg);
     }
-#endif // FEATURE_EVENT_TRACE
 }
 
 void BinderTracing::PathProbed(const WCHAR *path, BinderTracing::PathSource source, HRESULT hr)

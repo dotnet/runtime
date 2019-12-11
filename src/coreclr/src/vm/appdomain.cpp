@@ -6218,10 +6218,6 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
 
     HRESULT hr = E_FAIL;
 
-    BinderTracing::ResolutionAttemptedOperation tracer{hr};
-
-    tracer.SetAssemblyName(pAssemblyName);
-
     // Switch to COOP mode since we are going to work with managed references
     GCX_COOP();
 
@@ -6246,8 +6242,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
     if (SUCCEEDED(hr))
     {
         bool fResolvedAssembly = false;
-
-        tracer.SetManagedALC(pManagedAssemblyLoadContextToBindWithin);
+        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pManagedAssemblyLoadContextToBindWithin, hr};
 
         // Allocate an AssemblyName managed object
         _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__ASSEMBLY_NAME));
@@ -6261,7 +6256,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
         {
             // Step 2 (of CLRPrivBinderAssemblyLoadContext::BindUsingAssemblyName) - Invoke Load method
             // This is not invoked for TPA Binder since it always returns NULL.
-            tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::FindInLoadContext);
+            tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::AssemblyLoadContextLoad);
 
             // Finally, setup arguments for invocation
             MethodDescCallSite methLoadAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVE);
@@ -6280,10 +6275,12 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 fResolvedAssembly = true;
             }
 
+            hr = fResolvedAssembly ? S_OK : COR_E_FILENOTFOUND;
+
             // Step 3 (of CLRPrivBinderAssemblyLoadContext::BindUsingAssemblyName)
             if (!fResolvedAssembly && !isSatelliteAssemblyRequest)
             {
-                tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::PlatformAssemblies);
+                tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::DefaultAssemblyLoadContextFallback);
 
                 // If we could not resolve the assembly using Load method, then attempt fallback with TPA Binder.
                 // Since TPA binder cannot fallback to itself, this fallback does not happen for binds within TPA binder.
@@ -6307,7 +6304,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             //
             // Attempt to resolve it using the ResolveSatelliteAssembly method.
             // Finally, setup arguments for invocation
-            tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::DefaultAssemblyLoadContextFallback);
+            tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::ResolveSatelliteAssembly);
 
             MethodDescCallSite methResolveSatelitteAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVESATELLITEASSEMBLY);
 
@@ -6325,6 +6322,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 // Set the flag indicating we found the assembly
                 fResolvedAssembly = true;
             }
+
+            hr = fResolvedAssembly ? S_OK : COR_E_FILENOTFOUND;
         }
 
         if (!fResolvedAssembly)
@@ -6352,6 +6351,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 // Set the flag indicating we found the assembly
                 fResolvedAssembly = true;
             }
+
+            hr = fResolvedAssembly ? S_OK : COR_E_FILENOTFOUND;
         }
 
         if (fResolvedAssembly && pResolvedAssembly == NULL)
