@@ -21,7 +21,7 @@ will have 2 major effects.
 1.  Individual commits are easier to review.
 
 2.  Not all approaches for fixing problems will always be considered acceptable.
-    It is plausible that a some change may not ever be acceptable to take into
+    It is plausible that a change may not ever be acceptable to take into
     the upstream git repo, and discovering such issues early can avoid large
     amounts of sunk cost.
 
@@ -260,7 +260,7 @@ there are also architecture specific components.
 1. pal.h - Contains architecture specific details for handling unwinding scenarios
     such as `CONTEXT` / `_KNONVOLATILE_CONTEXT_POINTERS`/ `_RUNTIME_FUNCTION`.
 
-2. Uwinding support in `seh-unwind.cpp`
+2. Unwinding support in `seh-unwind.cpp`
 
 3. context.cpp - Which manipulates and captures register contexts
 
