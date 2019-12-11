@@ -1,7 +1,6 @@
 <Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
-    <FrameworkPackageName>Microsoft.NETCore.App</FrameworkPackageName>
     <BuildFullPlatformManifest>false</BuildFullPlatformManifest>
     <CoreCLROSGroup Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLROSGroup>
     <CoreCLROSGroup Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLROSGroup>
