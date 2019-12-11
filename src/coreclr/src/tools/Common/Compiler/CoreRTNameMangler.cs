@@ -640,7 +640,7 @@ namespace ILCompiler
             lock (this)
             {
                 if (!_mangledStringLiterals.ContainsKey(literal))
-                        _mangledStringLiterals.Add(literal, mangledName);
+                    _mangledStringLiterals.Add(literal, mangledName);
             }
 
             return mangledName;
