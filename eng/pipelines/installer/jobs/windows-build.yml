@@ -1,69 +1,39 @@
 parameters:
   additionalMSBuildArguments: ''
-  displayName: ''
   publishRidAgnosticPackages: false
-  skipTests: $(SkipTests)
-  targetArchitecture: null
+  skipTests: false
+  archType: null
   timeoutInMinutes: 120
+  platform: ''
+  pool: ''
 
 jobs:
-  - job: ${{ parameters.name }}
-    displayName: ${{ parameters.name }}
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    pool:
-      # Use a hosted pool when possible.
-      ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        name: NetCorePublic-Pool
-        queue: buildpool.windows.10.amd64.vs2019.open
-      ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        name: NetCoreInternal-Pool
-        queue: buildpool.windows.10.amd64.vs2019
-    strategy:
-      matrix: 
-        debug:
-          _BuildConfig: Debug
-        release:
-          _BuildConfig: Release
-    workspace:
-      clean: all
-    variables: 
+- template: base-job.yml
+  parameters:
+    ${{ insert }}: ${{ parameters }}
+
+    buildVariables:
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
-        /p:OfficialBuildId=$(OfficialBuildId)
-        /p:TargetArchitecture=${{ parameters.targetArchitecture }}
+        /p:OfficialBuildId=$(Build.BuildNumber)
+        /p:TargetArchitecture=${{ parameters.archType }}
         /p:PortableBuild=true
         /p:SkipTests=${{ parameters.skipTests }}
       MsbuildSigningArguments: >-
         /p:CertificateId=400
         /p:DotNetSignType=$(SignType)
-      TargetArchitecture: ${{ parameters.targetArchitecture }}
+      TargetArchitecture: ${{ parameters.archType }}
 
-    steps:
-
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: NuGetAuthenticate@0
-
-      - task: MicroBuildSigningPlugin@2
-        displayName: Install MicroBuild plugin for Signing
-        inputs:
-          signType: $(SignType)
-          zipSources: false
-          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-        continueOnError: false
-        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
-
-    # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
-    # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
-    - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
-      displayName: Clear NuGet http cache (if exists)
+    buildSteps:
 
     - script: >-
-        $(buildScriptFileName).cmd -restore -build -ci -test
+        installer.cmd -restore -build -ci -test
+        $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
       displayName: Build
 
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - ${{ if eq(variables.isOfficialBuild, true) }}:
       - task: NuGetCommand@2
         displayName: Push Visual Studio NuPkgs
         inputs:
@@ -75,7 +45,3 @@ jobs:
           succeeded(),
           eq(variables['_BuildConfig'], 'Release'),
           ne(variables['DisableVSPublish'], 'true'))
-
-    - template: steps/upload-job-artifacts.yml
-      parameters:
-        name: ${{ parameters.name }}

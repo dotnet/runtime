@@ -117,11 +117,10 @@ jobs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref/microsoft.netcore.app
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref/microsoft.netcore.app
 
-          - task: CopyFiles@2
-            displayName: Prepare shared framework implementation assemblies to publish
+            displayName: Prepare shared framework runtime folder to publish
             inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg/netcoreapp/runtime
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg/netcoreapp/runtime
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg/${{ parameters.framework }}/runtime
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg/${{ parameters.framework }}/runtime
 
           - task: CopyFiles@2
             displayName: Prepare native folder to publish

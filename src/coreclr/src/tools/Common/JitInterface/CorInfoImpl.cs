@@ -421,7 +421,6 @@ namespace Internal.JitInterface
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
-
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
@@ -480,7 +479,7 @@ namespace Internal.JitInterface
 
             CorInfoType corInfoRetType = asCorInfoType(signature.ReturnType, &sig->retTypeClass);
             sig->_retType = (byte)corInfoRetType;
-            sig->retTypeSigClass = sig->retTypeClass; // The difference between the two is not relevant for ILCompiler
+            sig->retTypeSigClass = ObjectToHandle(signature.ReturnType);
 
             sig->flags = 0;    // used by IL stubs code
 
@@ -1655,10 +1654,6 @@ namespace Internal.JitInterface
             return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
         }
 
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
-        }
-
         private CORINFO_CLASS_STRUCT_* getBuiltinClass(CorInfoClassId classId)
         {
             switch (classId)
@@ -2789,16 +2784,6 @@ namespace Internal.JitInterface
         private void yieldExecution()
         {
             // Nothing to do
-        }
-
-        private void setEHcount(uint cEH)
-        {
-            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
-        }
-
-        private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
-        {
-            _ehClauses[EHnumber] = clause;
         }
 
         private bool logMsg(uint level, byte* fmt, IntPtr args)

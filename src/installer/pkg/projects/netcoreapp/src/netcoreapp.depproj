@@ -54,7 +54,6 @@
     </ItemGroup>
   </Target>
 
-
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="localnetcoreapp.override.targets" />
 </Project>

@@ -1,38 +1,25 @@
 parameters:
   name: ''
+  platform: ''
+  pool: ''
 
 jobs:
-- job: ${{ parameters.name }}
-  pool:
-    ${{ if eq(variables['System.TeamProject'], 'public') }}:
-      name: Hosted macOS
-    ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      name: Hosted Mac internal
-  strategy:
-    matrix: 
-      debug:
-        _BuildConfig: Debug
-      release:
-        _BuildConfig: Release
-  workspace:
-    clean: all
-  variables: 
-    CommonMSBuildArgs: >-
-      /p:Configuration=$(_BuildConfig)
-      /p:PortableBuild=true
-  steps:
+- template: base-job.yml
+  parameters:
+    ${{ insert }}: ${{ parameters }}
 
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-    - task: NuGetAuthenticate@0
+    buildVariables:
+      CommonMSBuildArgs: >-
+        /p:Configuration=$(_BuildConfig)
+        /p:PortableBuild=true
 
-  - script: >-
-      $(Build.SourcesDirectory)/$(buildScriptFileName).sh --restore --build --ci --test
-      /p:OfficialBuildId=$(OfficialBuildId)
-      /p:StripSymbols=true
-      $(CommonMSBuildArgs)
-    displayName: Build 
-    condition: succeeded()
+    buildSteps:
 
-  - template: steps/upload-job-artifacts.yml
-    parameters:
-      name: ${{ parameters.name }}
+    - script: >-
+        $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        /p:OfficialBuildId=$(Build.BuildNumber)
+        /p:StripSymbols=true
+        $(LiveOverridePathArgs)
+        $(CommonMSBuildArgs)
+      displayName: Build
+      condition: succeeded()

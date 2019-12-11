@@ -1,0 +1,173 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  archType: ''
+  osSubgroup: ''
+  timeoutInMinutes: 120
+  condition: true
+  container: ''
+  prepareSteps: []
+  buildSteps: []
+  dependsOn: []
+  variables: []
+  buildVariables: {}
+  name: ''
+  displayName: ''
+  pool: ''
+  workspace:
+    clean: all
+  strategy:
+    matrix:
+      release:
+        _BuildConfig: Release
+
+  buildCommandSourcesDirectory: '$(Build.SourcesDirectory)/'
+
+  liveCoreClrBuildConfig: ''
+  liveLibrariesBuildConfig: ''
+
+jobs:
+- job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
+  displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
+
+  condition: and(succeeded(), ${{ parameters.condition }})
+  pool: ${{ parameters.pool }}
+  strategy: ${{ parameters.strategy }}
+  timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+  ${{ if ne(parameters.workspace, '') }}:
+    workspace: ${{ parameters.workspace }}
+
+  variables:
+  - ${{ parameters.variables }}
+  - ${{ each variable in parameters.buildVariables }}:
+    - name: ${{ variable.key }}
+      value: ${{ variable.value }}
+
+  # Produce test-signed build for PR and Public builds
+  - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
+    - name: SignType
+      value: test
+
+  # Set up non-PR build from internal project
+  - ${{ if eq(variables.isOfficialBuild, true) }}:
+    - name: SignType
+      value: $[ coalesce(variables.OfficialSignType, 'real') ]
+
+  - name: LiveOverridePathArgs
+    value: >-
+      $(CoreCLROverridePathArg)
+      $(CoreFXOverridePathArg)
+
+  - name: CoreCLROverridePathArg
+    value: ''
+  - name: CoreFXOverridePathArg
+    value: ''
+
+  - name: CoreClrDownloadPath
+    value: ''
+  - name: LibrariesDownloadPath
+    value: ''
+
+  - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+    - name: liveCoreClrLegName
+      value: ${{ format('{0}{1}_{2}_{3}',
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveCoreClrBuildConfig) }}
+    - name: CoreClrDownloadPath
+      value: 'artifacts/transport/coreclr'
+    - name: CoreCLROverridePathArg
+      value: /p:CoreCLROverridePath=${{ parameters.buildCommandSourcesDirectory }}$(CoreClrDownloadPath)
+    - name: CoreClrArtifactName
+      value: CoreCLRProduct_$(liveCoreClrLegName)
+
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - name: liveLibrariesLegName
+      value: ${{ format('{0}{1}_{2}_{3}',
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveLibrariesBuildConfig) }}
+    - name: LibrariesDownloadPath
+      value: 'artifacts/transport/libraries'
+    - name: CoreFXOverridePathArg
+      value: /p:CoreFXOverridePath=${{ parameters.buildCommandSourcesDirectory }}$(LibrariesDownloadPath)
+    - name: LibrariesArtifactName
+      value: libraries_bin_$(liveLibrariesLegName)
+
+  dependsOn:
+  - checkout
+  - ${{ parameters.dependsOn }}
+  - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+    - coreclr_product_build_${{ format('{0}{1}_{2}_{3}',
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveCoreClrBuildConfig) }}
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - libraries_build_netcoreapp_${{ format('{0}{1}_{2}_{3}',
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveLibrariesBuildConfig) }}
+
+  steps:
+
+  - ${{ parameters.prepareSteps }}
+
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - task: NuGetAuthenticate@0
+
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
+      # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
+      - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
+        displayName: Clear NuGet http cache (if exists)
+
+      - task: MicroBuildSigningPlugin@2
+        displayName: Install MicroBuild plugin for Signing
+        inputs:
+          signType: $(SignType)
+          zipSources: false
+          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+        continueOnError: false
+        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+
+  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+  - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/$(CoreClrDownloadPath)
+        artifactFileName: '$(CoreClrArtifactName)$(archiveExtension)'
+        artifactName: '$(CoreClrArtifactName)'
+        displayName: 'CoreCLR artifacts'
+
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/$(LibrariesDownloadPath)
+        artifactFileName: '$(LibrariesArtifactName)$(archiveExtension)'
+        artifactName: '$(LibrariesArtifactName)'
+        displayName: 'Libraries artifacts'
+
+  - ${{ parameters.buildSteps }}
+
+  - template: steps/upload-job-artifacts.yml
+    parameters:
+      name: ${{ coalesce(parameters.name, parameters.platform) }}
+      skipTests: ${{ parameters.skipTests }}
+
+  - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - script: set -x && df -h
+      displayName: Check remaining storage space
+      condition: always()
+      continueOnError: true
+
+    # Force clean up machine in case any docker images are left behind
+    - ${{ if ne(parameters.container, '') }}:
+      - script: docker system prune -af && df -h
+        displayName: Run Docker clean up
+        condition: succeededOrFailed()

@@ -39,6 +39,7 @@
       <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
     </ItemGroup>
 
+    <!-- Determine Libraries OSGroup for this build. Copied from "local live-live" PR. -->
     <PropertyGroup>
       <_runtimeDirectory>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</_runtimeDirectory>
       <_crossGenPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', 'crossgen$(ApplicationFileExtension)'))</_crossGenPath>
