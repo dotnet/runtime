@@ -52,6 +52,10 @@
       <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="runtimes/$(PackageRID)/native" />
       <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
     </ItemGroup>
+
+    <ItemGroup>
+      <_docFilesToPackage Include="$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml" Condition="Exists('$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml')"/>
+    </ItemGroup>
   </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
