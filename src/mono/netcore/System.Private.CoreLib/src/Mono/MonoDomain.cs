@@ -23,11 +23,6 @@ namespace Mono
 		{
 			return; /* FIXME */
 		}
-		
-		private Assembly? DoAssemblyResolve (string name, Assembly requestingAssembly, bool refonly)
-		{
-			return null;
-		}
 
 		internal Assembly? DoTypeResolve (string name)
 		{

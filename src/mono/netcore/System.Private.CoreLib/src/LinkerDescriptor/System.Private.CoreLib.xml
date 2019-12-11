@@ -9,8 +9,6 @@
 			<method name="DoTypeResolve" />
 			<!-- appdomain.c: mono_domain_try_type_builder_resolve -->
 			<method name="DoTypeBuilderResolve" />
-			<!-- appdomain.c: mono_try_assembly_resolve -->
-			<method name="DoAssemblyResolve" />
 			<!-- appdomain.c: mono_domain_fire_assembly_load -->
 			<method name="DoAssemblyLoad" />
 		</type>
