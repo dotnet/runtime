@@ -211,6 +211,10 @@ both the JIT and VM.
 Components of the Runtime affected by a port to a new architecture
 ==================================================================
 
+This a list of the notable architecture specific components of the .NET runtime.
+The list is not complete, but covers most of the areas where work will need to
+be done.
+
 Notable components
 
 1.  The JIT. The jit maintains the largest concentration of architecture
@@ -262,6 +266,10 @@ there are also architecture specific components.
 
 4. jitsupport.cpp - Depending on how the features of the CPU are exposed, there
    may need to be code to call OS apis to gather information about CPU features.
+
+5. pal arch directory - https://github.com/davidwrighton/runtime/tree/master/src/coreclr/src/pal/src/arch
+   This directory primarily contains assembly stubs for architecture specific
+   handling of signals and exceptions.
 
 In addition to the PAL source code, there is a comprehensive set of PAL tests located
 in https://github.com/dotnet/runtime/tree/master/src/coreclr/src/pal/tests
