@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Options
     /// Implementation of <see cref="IOptionsMonitor{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">Options type.</typeparam>
-    public class OptionsMonitor<TOptions> : IOptionsMonitor<TOptions>, IDisposable where TOptions : class, new()
+    public class OptionsMonitor<TOptions> : IOptionsMonitor<TOptions>, IDisposable where TOptions : class
     {
         private readonly IOptionsMonitorCache<TOptions> _cache;
         private readonly IOptionsFactory<TOptions> _factory;

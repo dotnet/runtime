@@ -15,14 +15,14 @@ namespace Microsoft.Extensions.Configuration.CommandLine
     public partial class CommandLineConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider
     {
         public CommandLineConfigurationProvider(System.Collections.Generic.IEnumerable<string> args, System.Collections.Generic.IDictionary<string, string> switchMappings = null) { }
-        protected System.Collections.Generic.IEnumerable<string> Args { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        protected System.Collections.Generic.IEnumerable<string> Args { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public override void Load() { }
     }
     public partial class CommandLineConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         public CommandLineConfigurationSource() { }
-        public System.Collections.Generic.IEnumerable<string> Args { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
-        public System.Collections.Generic.IDictionary<string, string> SwitchMappings { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Collections.Generic.IEnumerable<string> Args { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Collections.Generic.IDictionary<string, string> SwitchMappings { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
 }
