@@ -492,16 +492,15 @@
                       <map value="0x1" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextLoad)"/>
                       <map value="0x2" message="$(string.RuntimePublisher.ResolutionAttempted.PlatformAssemblies)"/>
                       <map value="0x3" message="$(string.RuntimePublisher.ResolutionAttempted.DefaultAssemblyLoadContextFallback)"/>
-                      <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResovingEvent)"/>
-                      <map value="0x5" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent)"/>
+                      <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent)"/>
+                      <map value="0x5" message="$(string.RuntimePublisher.ResolutionAttempted.AppDomainAssemblyResolveEvent)"/>
                     </valueMap>
                     <valueMap name="ResolutionAttemptedResultMap">
                       <map value="0x0" message="$(string.RuntimePublisher.ResolutionAttempted.Success)"/>
                       <map value="0x1" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyNotFound)"/>
                       <map value="0x2" message="$(string.RuntimePublisher.ResolutionAttempted.MismatchedAssemblyName)"/>
                       <map value="0x3" message="$(string.RuntimePublisher.ResolutionAttempted.IncompatibleVersion)"/>
-                      <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.Started)"/>
-                      <map value="0x5" message="$(string.RuntimePublisher.ResolutionAttempted.Unknown)"/>
+                      <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.Failure)"/>
                     </valueMap>
 
                     <!-- BitMaps -->
@@ -6878,6 +6877,7 @@
                 <string id="RuntimePublisher.TieredCompilationResumeEventMessage" value="ClrInstanceID=%1;%nNewMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStartEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2;%nJittedMethodCount=%3" />
+
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
                 <string id="RundownPublisher.MethodDCStart_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7;%nReJITID=%8" />
@@ -7209,13 +7209,12 @@
                 <string id="RuntimePublisher.ResolutionAttempted.PlatformAssemblies" value="PlatformAssemblies" />
                 <string id="RuntimePublisher.ResolutionAttempted.DefaultAssemblyLoadContextFallback" value="DefaultAssemblyLoadContextFallback" />
                 <string id="RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent" value="AssemblyLoadContextResolvingEvent" />
-                <string id="RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent" value="AssemblyLoadContextResolvingEvent" />
+                <string id="RuntimePublisher.ResolutionAttempted.AppDomainAssemblyResolveEvent" value="AppDomainAssemblyResolveEvent" />
                 <string id="RuntimePublisher.ResolutionAttempted.Success" value="Success" />
                 <string id="RuntimePublisher.ResolutionAttempted.AssemblyNotFound" value="AssemblyNotFound" />
                 <string id="RuntimePublisher.ResolutionAttempted.MismatchedAssemblyName" value="MismatchedAssemblyName" />
                 <string id="RuntimePublisher.ResolutionAttempted.IncompatibleVersion" value="IncompatibleVersion" />
-                <string id="RuntimePublisher.ResolutionAttempted.Started" value="Started" />
-                <string id="RuntimePublisher.ResolutionAttempted.Unknown" value="Unknown" />
+                <string id="RuntimePublisher.ResolutionAttempted.Failure" value="Failure" />
 
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />

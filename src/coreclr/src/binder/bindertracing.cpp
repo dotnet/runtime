@@ -266,7 +266,7 @@ namespace BinderTracing
 namespace BinderTracing
 {
 #ifdef FEATURE_EVENT_TRACE
-    void ResolutionAttemptedOperation::FireEventForStage(Stage stage)
+    void ResolutionAttemptedOperation::TraceStageEnd()
     {
         if (stage == Stage::NotYetStarted)
         {
@@ -278,68 +278,58 @@ namespace BinderTracing
 
         assert(m_pAssemblyName != nullptr);
 
-        // If a resolution stage is reached (by calling GoToStage()), FireEventForStage() will
-        // be called twice: once it starts, and once it finishes.
-        if (m_lastStage != stage)
+        switch (m_hr)
         {
-            result = static_cast<uint16_t>(Result::Started);
-            // Leave errorMsg empty in this case.
+            case HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND):
+                static_assert(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) == COR_E_FILENOTFOUND,
+                                "COR_E_FILENOTFOUND has sane value");
+
+                result = static_cast<uint16_t>(Result::AssemblyNotFound);
+                // TODO: How do we signal the paths we tried looking this assembly in?
+                errorMsg.Set(W("Could not locate assembly"));
+                break;
+
+            case FUSION_E_APP_DOMAIN_LOCKED:
+                result = static_cast<uint16_t>(Result::IncompatbileVersion);
+
+                {
+                    const auto &reqVersion = m_pAssemblyName->GetVersion();
+                    const auto &foundVersion = m_pFoundAssembly->GetAssemblyName()->GetVersion();
+                    errorMsg.Printf(W("Assembly found, but requested version %d.%d.%d.%d is incompatible with found version %d.%d.%d.%d"),
+                                    reqVersion->GetMajor(), reqVersion->GetMinor(),
+                                    reqVersion->GetBuild(), reqVersion->GetRevision(),
+                                    foundVersion->GetMajor(), foundVersion->GetMinor(),
+                                    foundVersion->GetBuild(), foundVersion->GetRevision());
+                }
+                break;
+
+            case FUSION_E_REF_DEF_MISMATCH:
+                result = static_cast<uint16_t>(Result::MismatchedAssemblyName);
+                errorMsg.Printf(W("Name mismatch: found %s instead"),
+                                m_pFoundAssembly->GetAssemblyName()->GetSimpleName().GetUnicode());
+                break;
+
+            default:
+                if (SUCCEEDED(m_hr))
+                {
+                    result = static_cast<uint16_t>(Result::Success);
+                    // Leave errorMsg empty in this case.
+                }
+                else
+                {
+                    result = static_cast<uint16_t>(Result::Unknown);
+                    errorMsg.Printf(W("Resolution failed with unknown HRESULT (%08x)"), m_hr);
+                }
+        }
+
+        if (m_pFoundAssembly != nullptr)
+        {
+            resultAssemblyName = m_pFoundAssembly->GetAssemblyName()->GetSimpleName();
+            resultAssemblyPath = m_pFoundAssembly->GetPEImage()->GetPath();
         }
         else
         {
-            switch (m_hr)
-            {
-                case HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND):
-                    static_assert(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) == COR_E_FILENOTFOUND,
-                                  "COR_E_FILENOTFOUND has sane value");
-
-                    result = static_cast<uint16_t>(Result::AssemblyNotFound);
-                    // TODO: How do we signal the paths we tried looking this assembly in?
-                    errorMsg.Set(W("Could not locate assembly"));
-                    break;
-
-                case FUSION_E_APP_DOMAIN_LOCKED:
-                    result = static_cast<uint16_t>(Result::IncompatbileVersion);
-
-                    {
-                        const auto &reqVersion = m_pAssemblyName->GetVersion();
-                        const auto &foundVersion = m_pFoundAssembly->GetAssemblyName()->GetVersion();
-                        errorMsg.Printf(W("Assembly found, but requested version %d.%d.%d.%d is incompatible with found version %d.%d.%d.%d"),
-                                        reqVersion->GetMajor(), reqVersion->GetMinor(),
-                                        reqVersion->GetBuild(), reqVersion->GetRevision(),
-                                        foundVersion->GetMajor(), foundVersion->GetMinor(),
-                                        foundVersion->GetBuild(), foundVersion->GetRevision());
-                    }
-                    break;
-
-                case FUSION_E_REF_DEF_MISMATCH:
-                    result = static_cast<uint16_t>(Result::MismatchedAssemblyName);
-                    errorMsg.Printf(W("Name mismatch: found %s instead"),
-                                    m_pFoundAssembly->GetAssemblyName()->GetSimpleName().GetUnicode());
-                    break;
-
-                default:
-                    if (SUCCEEDED(m_hr))
-                    {
-                        result = static_cast<uint16_t>(Result::Success);
-                        // Leave errorMsg empty in this case.
-                    }
-                    else
-                    {
-                        result = static_cast<uint16_t>(Result::Unknown);
-                        errorMsg.Printf(W("Resolution failed with unknown HRESULT (%08x)"), m_hr);
-                    }
-            }
-
-            if (m_pFoundAssembly != nullptr)
-            {
-                resultAssemblyName = m_pFoundAssembly->GetAssemblyName()->GetSimpleName();
-                resultAssemblyPath = m_pFoundAssembly->GetPEImage()->GetPath();
-            }
-            else
-            {
-                assert(!SUCCEEDED(m_hr));
-            }
+            assert(!SUCCEEDED(m_hr));
         }
 
         StackSString assemblyLoadContext;
@@ -355,7 +345,7 @@ namespace BinderTracing
         FireEtwResolutionAttempted(
             GetClrInstanceId(),
             m_pAssemblyName->GetSimpleName(),
-            static_cast<uint16_t>(stage),
+            static_cast<uint16_t>(m_stage),
             assemblyLoadContext,
             result,
             resultAssemblyName,

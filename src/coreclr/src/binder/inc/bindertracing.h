@@ -86,12 +86,11 @@ namespace BinderTracing
 #ifdef FEATURE_EVENT_TRACE
         enum class Result : uint16_t
         {
-            Started = 0,
+            Success = 0,
             AssemblyNotFound = 1,
             IncompatbileVersion = 2,
             MismatchedAssemblyName = 3,
-            Success = 4,
-            Unknown = 5,
+            Failure = 4,
         };
 
         // A reference to an HRESULT stored in the same scope as this object lets
@@ -100,7 +99,7 @@ namespace BinderTracing
         // if an exception was thrown and captured by the EX_CATCH_HRESULT() macro.
         const HRESULT &m_hr;
 
-        Stage m_lastStage;
+        Stage m_stage;
 
         BINDER_SPACE::AssemblyName *m_pAssemblyName;
         BINDER_SPACE::Assembly *m_pFoundAssembly;
@@ -109,7 +108,7 @@ namespace BinderTracing
 
         bool m_tracingEnabled;
 
-        void FireEventForStage(Stage resStage);
+        void TraceStageEnd(Stage resStage);
 #endif // FEATURE_EVENT_TRACE
 
     public:
@@ -151,7 +150,7 @@ namespace BinderTracing
 #ifdef FEATURE_EVENT_TRACE
             if (m_tracingEnabled)
             {
-                assert(m_lastStage != stage);
+                assert(m_stage != stage);
                 assert(stage != Stage::NotYetStarted);
 
                 // Going to a different stage should only happen if the current
@@ -159,10 +158,8 @@ namespace BinderTracing
                 // Firing the event at this point not only helps timing each binding
                 // stage, but avoids keeping track of which stages were reached to
                 // resolve the assembly.
-                FireEventForStage(m_lastStage);
-
-                FireEventForStage(stage);
-                m_lastStage = stage;
+                TraceStageEnd();
+                m_stage = stage;
             }
 #endif // FEATURE_EVENT_TRACE
         }
@@ -172,7 +169,7 @@ namespace BinderTracing
         {
             if (m_tracingEnabled)
             {
-                FireEventForStage(m_lastStage);
+                TraceStageEnd();
             }
         }
 #endif // FEATURE_EVENT_TRACE
