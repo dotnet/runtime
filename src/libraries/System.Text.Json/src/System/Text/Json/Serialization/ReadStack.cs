@@ -18,7 +18,7 @@ namespace System.Text.Json
 
         private List<ReadStackFrame> _previous;
         public int _index;
-        private ReferenceResolver _referenceResolver;
+        private DefaultReferenceResolver _referenceResolver;
 
         public void AddReference(string key, object value)
         {

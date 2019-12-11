@@ -126,7 +126,7 @@ namespace System.Text.Json
                 // If is reference preserved array.
                 else if (state.Current.IsProcessingEnumerable())
                 {
-                    Type preservedObjType = typeof(JsonPreservedReference<>).MakeGenericType(state.Current.JsonClassInfo.Type);
+                    Type preservedObjType = state.Current.JsonClassInfo.PolicyProperty.GetJsonPreservedReferenceType();
                     // Re-Initialize the current frame.
                     state.Current.Initialize(preservedObjType, options);
                     state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();

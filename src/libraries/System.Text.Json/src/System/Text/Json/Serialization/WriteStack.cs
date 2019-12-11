@@ -15,7 +15,7 @@ namespace System.Text.Json
         private List<WriteStackFrame> _previous;
         private int _index;
 
-        private ReferenceResolver _referenceResolver;
+        private DefaultReferenceResolver _referenceResolver;
         private HashSet<object> _referenceStack;
 
         public void Push()

@@ -3,17 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
     internal class JsonPreservedReference<T>
     {
-        public JsonPreservedReference()
-        {
-            Values = default;
-            T copy = Values;
-        }
-
         public T Values { get; set; }
     }
 
@@ -81,6 +76,9 @@ namespace System.Text.Json
             }
         }
 
+        [PreserveDependency("get_Values", "System.Text.Json.JsonPreservedReference`1")]
+        [PreserveDependency("set_Values", "System.Text.Json.JsonPreservedReference`1")]
+        [PreserveDependency(".ctor()", "System.Text.Json.JsonPreservedReference`1")]
         private static void HandleStartObjectRef(JsonSerializerOptions options, ref ReadStack state)
         {
             Debug.Assert(!state.Current.IsProcessingDictionary());
@@ -93,26 +91,23 @@ namespace System.Text.Json
                 // A potential Preserved Array - Hit an StartObject while enumerable has not been initialized.
                 if (!state.Current.CollectionPropertyInitialized)
                 {
-                    //dummy code to force linking of Values
-                    new JsonPreservedReference<object>();
-
-                    //Check we are not dealing with an immutable collection or fixed size array.
+                    // Check we are not dealing with an immutable collection or fixed size array.
                     if (state.Current.JsonPropertyInfo.EnumerableConverter != null)
                     {
                         throw new JsonException("Immutable types and fixed size arrays cannot be preserved.");
                     }
 
+                    Type preservedObjType = state.Current.JsonPropertyInfo.GetJsonPreservedReferenceType();
+
                     // Is property.
                     if (state.Current.IsProcessingProperty(ClassType.Enumerable))
                     {
-                        Type preservedObjType = typeof(JsonPreservedReference<>).MakeGenericType(state.Current.JsonPropertyInfo.RuntimePropertyType); // is this the right property?
                         state.Push();
                         state.Current.Initialize(preservedObjType, options);
                     }
                     // Is root.
                     else
                     {
-                        Type preservedObjType = typeof(JsonPreservedReference<>).MakeGenericType(state.Current.JsonClassInfo.Type); // is this the right property?
                         // Re-Initialize the current frame.
                         state.Current.Initialize(preservedObjType, options);
                     }
@@ -207,7 +202,9 @@ namespace System.Text.Json
             object value;
             if (state.Current.IsPreservedArray)
             {
-                JsonPropertyInfo info = state.Current.JsonClassInfo.PropertyCache["Values"]; //Well-known property.
+                // Preserved JSON arrays are wrapped into JsonPreservedReference<T> where T is the original type of the enumerable
+                // and Values is the actual enumerable instance being preserved.
+                JsonPropertyInfo info = state.Current.JsonClassInfo.PropertyCache["Values"];
                 value = info.GetValueAsObject(state.Current.ReturnValue);
 
                 if (value == null)

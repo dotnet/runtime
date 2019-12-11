@@ -605,5 +605,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowJsonException_SerializationConverterWrite(ConverterBase);
             }
         }
+
+        public abstract Type GetJsonPreservedReferenceType();
     }
 }

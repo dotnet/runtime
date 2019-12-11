@@ -1,56 +1,56 @@
-﻿using System.Collections.Generic;
+﻿// Licensed to the.NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections.Generic;
 
 namespace System.Text.Json
 {
-    internal sealed class DefaultReferenceResolver : ReferenceResolver
+    internal sealed class DefaultReferenceResolver
     {
         private uint _referenceCount;
-        private BidirectionalDictionary<string, object> _preservedReferences;
+        private Dictionary<object, object> _referenceMapper;
 
-        public override void AddReference(string key, object value)
+        public DefaultReferenceResolver()
         {
-            if (_preservedReferences == null)
-            {
-                _preservedReferences = new BidirectionalDictionary<string, object>();
-            }
-            else if (_preservedReferences.TryGetByKey(key, out _))
+            // On deserialization: key is TKey.
+            // On serialization: value is TKey.
+            _referenceMapper = new Dictionary<object, object>();
+        }
+
+        // Used on deserialization.
+        public void AddReference(string key, object value)
+        {
+            if (!_referenceMapper.TryAdd(key, value))
             {
                 throw new JsonException($"Duplicated $id \"{key}\" found while preserving reference.");
             }
-
-            _preservedReferences.Add(key, value);
         }
 
-        public override string GetReference(object value)
+        // Used on serialization.
+        public string GetReference(object value)
         {
-            string key;
+            object key;
 
-            if (_preservedReferences == null)
-            {
-                _preservedReferences = new BidirectionalDictionary<string, object>();
-                key = (++_referenceCount).ToString();
-                _preservedReferences.Add(key, value);
-            }
-            else if (!_preservedReferences.TryGetByValue(value, out key))
+            if (!_referenceMapper.TryGetValue(value, out key))
             {
                 key = (++_referenceCount).ToString();
-                _preservedReferences.Add(key, value);
+                _referenceMapper.Add(value, key);
             }
 
-            return key;
+            return (string) key;
         }
 
-        public override bool IsReferenced(object value)
+        // Used on serialization.
+        public bool IsReferenced(object value)
         {
-            return _preservedReferences != null && _preservedReferences.TryGetByValue(value, out _);
+            return _referenceMapper.ContainsKey(value);
         }
 
-        public override object ResolveReference(string key)
+        // Used on deserialization.
+        public object ResolveReference(string key)
         {
-            object value = null;
-            _preservedReferences?.TryGetByKey(key, out value);
-
-            if (value == null)
+            if (!_referenceMapper.TryGetValue(key, out object value))
             {
                 throw new JsonException("Reference not found.");
             }
