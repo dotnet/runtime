@@ -559,7 +559,7 @@ HANDLES(SOCK_16a, "Send_array_icall", ves_icall_System_Net_Sockets_Socket_Send_a
 HANDLES(SOCK_17, "Send_icall", ves_icall_System_Net_Sockets_Socket_Send, gint32, 6, (gsize, char_ptr, gint32, gint32, gint32_ref, MonoBoolean))
 HANDLES(SOCK_18, "SetSocketOption_icall", ves_icall_System_Net_Sockets_Socket_SetSocketOption, void, 7, (gsize, gint32, gint32, MonoObject, MonoArray, gint32, gint32_ref))
 HANDLES(SOCK_19, "Shutdown_icall", ves_icall_System_Net_Sockets_Socket_Shutdown, void, 3, (gsize, gint32, gint32_ref))
-HANDLES(SOCK_20, "Socket_icall", ves_icall_System_Net_Sockets_Socket_Socket, gpointer, 5, (MonoObject, gint32, gint32, gint32, gint32_ref))
+HANDLES(SOCK_20, "Socket_icall", ves_icall_System_Net_Sockets_Socket_Socket_icall, gpointer, 4, (gint32, gint32, gint32, gint32_ref))
 HANDLES(SOCK_20a, "SupportsPortReuse", ves_icall_System_Net_Sockets_Socket_SupportPortReuse, MonoBoolean, 1, (MonoProtocolType))
 HANDLES(SOCK_21a, "cancel_blocking_socket_operation", ves_icall_cancel_blocking_socket_operation, void, 1, (MonoThreadObject))
 
