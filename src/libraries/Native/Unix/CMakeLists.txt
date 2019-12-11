@@ -1,17 +1,19 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(CoreFX C)
 
-cmake_policy(SET CMP0083 NEW)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+    cmake_policy(SET CMP0083 NEW)
 
-include(CheckPIESupported)
+    include(CheckPIESupported)
 
-# All code we build should be compiled as position independent
-check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES C)
-if(NOT MSVC AND NOT CMAKE_C_LINK_PIE_SUPPORTED)
-  message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
-                  "PIE link options will not be passed to linker.")
-endif()
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    # All code we build should be compiled as position independent
+    check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES C)
+    if(NOT MSVC AND NOT CMAKE_C_LINK_PIE_SUPPORTED)
+      message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
+                      "PIE link options will not be passed to linker.")
+    endif()
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 
 set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
