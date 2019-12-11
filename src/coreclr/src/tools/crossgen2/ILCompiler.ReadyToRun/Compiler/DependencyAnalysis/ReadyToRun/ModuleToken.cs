@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int CompareTo(ModuleToken other)
         {
-            int result = Token.CompareEnum(other.Token);
+            int result = ((int)Token).CompareTo((int)Token);
             if (result != 0)
                 return result;
 

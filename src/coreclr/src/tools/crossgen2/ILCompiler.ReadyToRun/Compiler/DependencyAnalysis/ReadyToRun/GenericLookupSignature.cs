@@ -172,11 +172,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             GenericLookupSignature otherNode = (GenericLookupSignature)other;
-            int result = _runtimeLookupKind.CompareEnum(otherNode._runtimeLookupKind);
+            int result = ((int)_runtimeLookupKind).CompareTo((int)otherNode._runtimeLookupKind);
             if (result != 0)
                 return result;
 
-            result = _fixupKind.CompareEnum(otherNode._fixupKind);
+            result = ((int)_fixupKind).CompareTo((int)otherNode._fixupKind);
             if (result != 0)
                 return result;
 

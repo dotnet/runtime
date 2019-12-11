@@ -56,7 +56,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private unsafe byte[] GetRvaData(int targetPointerSize)
         {
             int size = 0;
-            byte[] result = Array.Empty<byte>();
 
             MetadataReader metadataReader = _module.MetadataReader;
             BlobReader metadataBlob = new BlobReader(_module.PEReader.GetMetadata().Pointer, _module.PEReader.GetMetadata().Length);
@@ -78,7 +77,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     // We need to handle overlapping fields by reusing blobs based on the rva, and just update
                     // the size and contents
                     size = currentSize;
-                    result = new byte[AlignmentHelper.AlignUp(size, targetPointerSize)];
                 }
             }
 
@@ -88,6 +86,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (block.Length < size)
                 throw new BadImageFormatException();
 
+            byte[] result = new byte[AlignmentHelper.AlignUp(size, targetPointerSize)];
             block.GetContent(0, size).CopyTo(result);
             return result;
         }
