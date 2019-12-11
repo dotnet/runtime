@@ -51,6 +51,15 @@ jobs:
 - template: /eng/pipelines/common/checkout-job.yml
 
 #
+# Build CoreCLR and Libraries
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: release
+    platformGroup: all
+
+#
 # Build and Test
 #
 - template: /eng/pipelines/installer/installer-matrix.yml
@@ -61,3 +70,5 @@ jobs:
           _BuildConfig: Debug
         release:
           _BuildConfig: Release
+    liveCoreClrBuildConfig: release
+    liveLibrariesBuildConfig: Release
