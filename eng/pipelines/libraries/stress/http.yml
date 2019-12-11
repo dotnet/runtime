@@ -33,9 +33,9 @@ jobs:
 
   steps:
   - checkout: self
-      clean: true
-      fetchDepth: 1
-      lfs: false
+    clean: true
+    fetchDepth: 1
+    lfs: false
   
   - bash: |
       $(dockerfilesFolder)/build-docker-sdk.ps1 -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
