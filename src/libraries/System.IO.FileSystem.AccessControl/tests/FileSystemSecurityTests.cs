@@ -418,7 +418,11 @@ namespace System.IO
         {
             using TempDirectory tempDirectory = new TempDirectory();
             string longDir = CreateLongDirectory(tempDirectory.Path, create: false);
-            Assert.Throws<DirectoryNotFoundException>(() =>
+
+            // A non-existent directory path is considered:
+            // - In NetFX: an invalid name because paths that are too long are not correctly handled
+            // - NetCore: a valid name because long paths are correctly handled, and non-existent, as expected
+            AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() =>
             {
                 var security = new DirectorySecurity(longDir, AccessControlSections.Owner);
             });
@@ -431,12 +435,18 @@ namespace System.IO
             using TempDirectory tempDirectory = new TempDirectory();
             string longDir = CreateLongDirectory(tempDirectory.Path, create: false);
             string filePath = Path.Combine(longDir, "file.txt");
-            Assert.Throws<FileNotFoundException>(() =>
+
+            // A non-existent file path is considered:
+            // - In NetFX: an invalid name because paths that are too long are not correctly handled
+            // - NetCore: a valid name because long paths are correctly handled, and non-existent, as expected
+            AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() =>
             {
                 var security = new FileSecurity(filePath, AccessControlSections.Owner);
             });
         }
 
+        // Attempting to create a directory with a very long path in NetFX fails with DirectoryNotFoundException
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public void MaxLengthPath_DirectorySecurity()
         {
@@ -446,6 +456,8 @@ namespace System.IO
             Assert.NotNull(security);
         }
 
+        // Attempting to create a directory with a very long path in NetFX fails with DirectoryNotFoundException
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public void MaxLengthPath_FileSecurity()
         {
