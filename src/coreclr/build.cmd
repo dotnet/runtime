@@ -656,7 +656,7 @@ if %__BuildCoreLib% EQU 1 (
 
         if "%__BuildManagedTools%" == "1" (
             echo %__MsgPrefix%Publishing crossgen2...
-            call %__ProjectDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /p:BuildArch=%__BuildArch%
+            call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /p:BuildArch=%__BuildArch%
             
             if not !errorlevel! == 0 (
                 echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to build crossgen2.
@@ -706,7 +706,7 @@ if %__BuildCoreLib% EQU 1 (
                   )
                 )
 
-                set IBCMergeCommand=%__ProjectDir%\dotnet.cmd --roll-forward-on-no-candidate-fx 2 "!IbcMergePath!"
+                set IBCMergeCommand=%__RepoRootDir%\dotnet.cmd --roll-forward-on-no-candidate-fx 2 "!IbcMergePath!"
 
                 REM Merge the optimization data into the source DLL
                 set NEXTCMD=!IBCMergeCommand! -q -f -delete -mo "!InputAssemblyFile!" !RawOptimizationDataFile!
