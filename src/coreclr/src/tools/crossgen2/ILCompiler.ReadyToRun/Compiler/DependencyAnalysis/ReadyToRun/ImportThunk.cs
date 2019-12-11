@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Internal.Text;
 using Internal.ReadyToRunConstants;
 
@@ -13,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public partial class ImportThunk : AssemblyStubNode, ISymbolDefinitionNode
     {
-        enum Kind
+        public enum Kind
         {
             Eager,
             Lazy,
@@ -74,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             ImportThunk otherNode = (ImportThunk)other;
-            int result = _thunkKind.CompareTo(otherNode._thunkKind);
+            int result = _thunkKind.CompareEnum(otherNode._thunkKind);
             if (result != 0)
                 return result;
 
