@@ -39,7 +39,6 @@
       <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
     </ItemGroup>
 
-    <!-- Determine Libraries OSGroup for this build. Copied from "local live-live" PR. -->
     <PropertyGroup>
       <_runtimeDirectory>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</_runtimeDirectory>
       <_crossGenPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', 'crossgen$(ApplicationFileExtension)'))</_crossGenPath>
@@ -82,7 +81,6 @@
       <_crossgenPlatformDirectories Include="%(_filesToCrossGen.RootDir)%(_filesToCrossGen.Directory)" />
       <!-- the following path *must* be passed to crossgen as it has the CoreLib.ni.dll, it will not use the IL copy. -->
       <_crossgenPlatformDirectories Include="$(_runtimeDirectory)" />
-      <!-- the following need not be passed to crossgen but we do so to be safe. -->
       <_crossgenPlatformDirectories Include="$(_coreLibDirectory)" />
       <_crossgenPlatformDirectories Include="$(_fxLibDirectory)" />
     </ItemGroup>
@@ -93,5 +91,51 @@
       <_pathSeparatorEscaped>$([MSBuild]::Escape($([System.IO.Path]::PathSeparator.ToString())))</_pathSeparatorEscaped>
       <_crossgenPlatformAssemblies>@(_crossgenPlatformDirectories->'%(Identity)', '$(_pathSeparatorEscaped)')</_crossgenPlatformAssemblies>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="GetFilesFromPackageResolve">
+    <ItemGroup>
+      <!-- RID-specific: include all runtime files. -->
+      <RidSpecificFilesToPackage Include="@(ReferenceCopyLocalPaths)">
+        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native),
+             calculate it by looking for native in the path -->
+        <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
+      </RidSpecificFilesToPackage>
+      <!-- !!!BEGIN CHANGE Persist existing TargetPath. !!!-->
+      <RidSpecificFilesToPackage Condition="'%(RidSpecificFilesToPackage.TargetPath)' == ''">
+      <!-- !!!END CHANGE !!! -->
+        <TargetPath Condition="'%(RidSpecificFilesToPackage.IsNative)' != 'true'">runtimes/$(PackageRID)/lib/$(PackageTargetFramework)</TargetPath>
+        <TargetPath Condition="'%(RidSpecificFilesToPackage.IsNative)' == 'true'">runtimes/$(PackageRID)/native</TargetPath>
+      </RidSpecificFilesToPackage>
+      <!-- Ensure localization resource files make it to their subdirs. -->
+      <RidSpecificFilesToPackage Condition="'%(RidSpecificFilesToPackage.DestinationSubDirectory)' != ''">
+        <TargetPath>%(RidSpecificFilesToPackage.TargetPath)/%(RidSpecificFilesToPackage.DestinationSubDirectory)</TargetPath>
+      </RidSpecificFilesToPackage>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+      <FilesToPackage Include="@(RidSpecificFilesToPackage)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+      <!-- Not RID-specific: include all reference files. -->
+      <FilesToPackage Include="@(Reference)">
+        <TargetPath>ref/$(PackageTargetFramework)</TargetPath>
+      </FilesToPackage>
+
+      <!-- include all doc files -->
+      <_docFilesToPackage Include="%(FilesToPackage.RootDir)%(FilesToPackage.Directory)**\%(FilesToPackage.FileName).xml" />
+
+      <FilesToPackage Include="@(_docFilesToPackage)">
+        <TargetPath>ref/$(PackageTargetFramework)/%(RecursiveDir)</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+
+    <!-- Add versions file with the hashes of the repos we consume -->
+    <ItemGroup Condition="'$(FrameworkPackageName)' != ''">
+      <FilesToPackage Include="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt">
+        <TargetPath></TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
   </Target>
 </Project>
