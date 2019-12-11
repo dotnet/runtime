@@ -2627,13 +2627,6 @@ Thread::~Thread()
     }
 #endif // FEATURE_EVENT_TRACE
 
-#ifdef FEATURE_PERFTRACING
-    if (EventPipeThread::Get() != nullptr)
-    {
-        EventPipeThread::Get()->Release();
-    }
-#endif // FEATURE_PERFTRACING
-
     // Wait for another thread to leave its loop in DeadlockAwareLock::TryBeginEnterLock
     CrstHolder lock(&g_DeadlockAwareCrst);
 }

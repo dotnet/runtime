@@ -90,6 +90,7 @@ public:
 
 class EventPipeThread
 {
+    friend struct EventPipeThreadDestroyer;
     static EVENTPIPE_THREAD_LOCAL EventPipeThreadHolder gCurrentEventPipeThreadHolder;
 
     ~EventPipeThread();
@@ -169,6 +170,18 @@ public:
         return m_writingEventInProgress.Load();
     }
 };
+
+struct EventPipeThreadDestroyer
+{
+    ~EventPipeThreadDestroyer()
+    {
+        if (EventPipeThread::Get() != nullptr)
+        {
+            delete EventPipeThread::gCurrentEventPipeThreadHolder;
+        }
+    }
+};
+
 
 #endif // FEATURE_PERFTRACING
 

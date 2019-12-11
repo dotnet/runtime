@@ -109,6 +109,13 @@ thread_local
 #endif // !__GNUC__
 EventPipeThreadHolder EventPipeThread::gCurrentEventPipeThreadHolder;
 
+#ifndef __GNUC__
+__declspec(thread)
+#else // !__GNUC__
+thread_local
+#endif // !__GNUC__
+EventPipeThreadDestroyer destroyer;
+
 EventPipeThread::EventPipeThread()
 {
     CONTRACTL
@@ -180,12 +187,12 @@ void EventPipeThread::AddRef()
 void EventPipeThread::Release()
 {
     LIMITED_METHOD_CONTRACT;
-    if (FastInterlockDecrement(&m_refCount) == 0)
-    {
-        // https://isocpp.org/wiki/faq/freestore-mgmt#delete-this
-        // As long as you're careful, it's okay (not evil) for an object to commit suicide (delete this).
-        delete this;
-    }
+    // if (FastInterlockDecrement(&m_refCount) == 0)
+    // {
+    //     // https://isocpp.org/wiki/faq/freestore-mgmt#delete-this
+    //     // As long as you're careful, it's okay (not evil) for an object to commit suicide (delete this).
+    //     delete this;
+    // }
 }
 
 EventPipeThreadSessionState *EventPipeThread::GetOrCreateSessionState(EventPipeSession *pSession)
