@@ -529,6 +529,55 @@ namespace System.Buffers
         }
 
         /// <summary>
+        /// Translate opaque <see cref="SequencePosition"/> value to numerical position offset
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        public long GetOffset(SequencePosition position)
+        {
+            bool positionIsNotNull = position.GetObject() != null;
+            BoundsCheck(position, positionIsNotNull);
+
+            object? startObject = _startObject;
+            object? endObject = _endObject;
+
+            uint positionIndex = (uint)GetIndex(position);
+            object? positionSequenceObject = position.GetObject();
+
+            // if sequence object is null we suppose start segment
+            if (!positionIsNotNull)
+            {
+                positionSequenceObject = _startObject;
+                positionIndex = (uint)GetIndex(_startInteger);
+            }
+
+            // Single-Segment Sequence
+            if (startObject == endObject)
+            {
+                return positionIndex;
+            }
+            else
+            {
+                // Multi-Segment Sequence
+                ReadOnlySequenceSegment<T> currentSegment = (ReadOnlySequenceSegment<T>)startObject!;
+                while (currentSegment != null && currentSegment != positionSequenceObject)
+                {
+                    currentSegment = currentSegment.Next!;
+                }
+
+                // Hit the end of the segments but didn't find the segment
+                if (currentSegment is null)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+                }
+
+                Debug.Assert(currentSegment!.RunningIndex + positionIndex >= 0);
+
+                return currentSegment!.RunningIndex + positionIndex;
+            }
+        }
+
+        /// <summary>
         /// Returns a new <see cref="SequencePosition"/> at an <paramref name="offset"/> from the <paramref name="origin"/>
         /// </summary>
         public SequencePosition GetPosition(long offset, SequencePosition origin)

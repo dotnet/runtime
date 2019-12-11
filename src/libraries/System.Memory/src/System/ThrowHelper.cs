@@ -121,6 +121,6 @@ namespace System
         culture,
         manager,
         count,
-        writer,
+        writer
     }
 }

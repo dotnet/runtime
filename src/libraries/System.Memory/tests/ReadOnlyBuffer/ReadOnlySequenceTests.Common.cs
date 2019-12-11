@@ -107,6 +107,98 @@ namespace System.Memory.Tests
 
         #endregion
 
+        #region Offset
+
+        [Fact]
+        public void GetOffset_SingleSegment()
+        {
+            var buffer = new ReadOnlySequence<T>(new T[50]);
+            Assert.Equal(25, buffer.GetOffset(buffer.GetPosition(25)));
+        }
+
+        private (BufferSegment<T> bufferSegment1, BufferSegment<T> bufferSegment4) GetBufferSegment()
+        {
+            var bufferSegment1 = new BufferSegment<T>(new T[50]);
+            BufferSegment<T> bufferSegment2 = bufferSegment1.Append(new T[50]);
+            BufferSegment<T> bufferSegment3 = bufferSegment2.Append(new T[0]);
+            return (bufferSegment1, bufferSegment3.Append(new T[50]));
+        }
+
+        private ReadOnlySequence<T> GetFourSegmentsReadOnlySequence()
+        {
+            (BufferSegment<T> bufferSegment1, BufferSegment<T> bufferSegment4) = GetBufferSegment();
+            return new ReadOnlySequence<T>(bufferSegment1, 0, bufferSegment4, 50);
+        }
+
+        [Fact]
+        public void GetOffset_MultiSegment_FirstSegment()
+        {
+            ReadOnlySequence<T> buffer = GetFourSegmentsReadOnlySequence();
+            Assert.Equal(25, buffer.GetOffset(buffer.GetPosition(25)));
+        }
+
+        [Fact]
+        public void GetOffset_MultiSegment_LastSegment()
+        {
+            ReadOnlySequence<T> buffer = GetFourSegmentsReadOnlySequence();
+            Assert.Equal(125, buffer.GetOffset(buffer.GetPosition(125)));
+        }
+
+        [Fact]
+        public void GetOffset_MultiSegment_MiddleSegment()
+        {
+            ReadOnlySequence<T> buffer = GetFourSegmentsReadOnlySequence();
+            Assert.Equal(75, buffer.GetOffset(buffer.GetPosition(75)));
+        }
+
+        [Fact]
+        public void GetOffset_SingleSegment_NullPositionObject()
+        {
+            var buffer = new ReadOnlySequence<T>(new T[50]);
+            Assert.Equal(0, buffer.GetOffset(new SequencePosition(null, 25)));
+        }
+
+        [Fact]
+        public void GetOffset_MultiSegment_NullPositionObject()
+        {
+            ReadOnlySequence<T> buffer = GetFourSegmentsReadOnlySequence();
+            Assert.Equal(0, buffer.GetOffset(new SequencePosition(null, 25)));
+        }
+
+        [Fact]
+        public void GetOffset_SingleSegment_PositionOutOfRange()
+        {
+            var positionObject = new T[50];
+            var buffer = new ReadOnlySequence<T>(positionObject);
+            Assert.Throws<ArgumentOutOfRangeException>("position", () => buffer.GetOffset(new SequencePosition(positionObject, 75)));
+        }
+
+        [Fact]
+        public void GetOffset_MultiSegment_PositionOutOfRange()
+        {
+            (BufferSegment<T> bufferSegment1, BufferSegment<T> bufferSegment4) = GetBufferSegment();
+            var buffer = new ReadOnlySequence<T>(bufferSegment1, 0, bufferSegment4, 50);
+            Assert.Throws<ArgumentOutOfRangeException>("position", () => buffer.GetOffset(new SequencePosition(bufferSegment4, 200)));
+        }
+
+        [Fact]
+        public void GetOffset_MultiSegment_PositionOutOfRange_SegmentNotFound()
+        {
+            ReadOnlySequence<T> buffer = GetFourSegmentsReadOnlySequence();
+            ReadOnlySequence<T> buffer2 = GetFourSegmentsReadOnlySequence();
+            Assert.Throws<ArgumentOutOfRangeException>("position", () => buffer.GetOffset(buffer2.GetPosition(25)));
+        }
+
+        [Fact]
+        public void GetOffset_MultiSegment_InvalidSequencePositionSegment()
+        {
+            ReadOnlySequence<T> buffer = GetFourSegmentsReadOnlySequence();
+            ReadOnlySequence<T> buffer2 = new ReadOnlySequence<T>(new T[50]);
+            Assert.Throws<InvalidCastException>(() => buffer.GetOffset(buffer2.GetPosition(25)));
+        }
+
+        #endregion
+
         #region First
 
         [Fact]
