@@ -152,6 +152,7 @@ jobs:
         artifactFileName: '$(LibrariesArtifactName)$(archiveExtension)'
         artifactName: '$(LibrariesArtifactName)'
         displayName: 'Libraries artifacts'
+        cleanUnpackFolder: false
 
   - ${{ parameters.buildSteps }}
 
