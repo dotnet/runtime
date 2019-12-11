@@ -22,6 +22,7 @@ namespace ILCompiler
         private readonly EcmaModule _inputModule;
         private bool _ibcTuning;
         private bool _resilient;
+        private bool _generateMapFile;
         private int _parallelism;
         private string _jitPath;
 
@@ -91,6 +92,12 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseResilience(bool resilient)
         {
             _resilient = resilient;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseMapFile(bool generateMapFile)
+        {
+            _generateMapFile = generateMapFile;
             return this;
         }
 
@@ -185,6 +192,7 @@ namespace ILCompiler
                 _inputFilePath,
                 new ModuleDesc[] { _inputModule },
                 _resilient,
+                _generateMapFile,
                 _parallelism);
         }
     }

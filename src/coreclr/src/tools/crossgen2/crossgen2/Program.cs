@@ -323,6 +323,7 @@ namespace ILCompiler
                     builder
                         .UseIbcTuning(_commandLineOptions.Tuning)
                         .UseResilience(_commandLineOptions.Resilient)
+                        .UseMapFile(_commandLineOptions.GenerateMapFile)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseILProvider(ilProvider)
                         .UseJitPath(_commandLineOptions.JitPath)
