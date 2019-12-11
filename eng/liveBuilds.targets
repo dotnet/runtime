@@ -27,7 +27,7 @@
     </PropertyGroup>
     <ItemGroup>
       <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
-      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" />
+      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" IsNative="true" />
       <CoreCLRFiles Include="$(CoreCLRArtifactsPath)Redist/**/*.dll" />
       <CoreCLRFiles>
         <IsNative>true</IsNative>
