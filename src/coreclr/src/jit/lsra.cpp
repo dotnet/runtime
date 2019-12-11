@@ -4445,8 +4445,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
             // even if the rhs is not. See the CEE_STLOC* case in impImportBlockCode(). As a result,
             // we can have a 'GT_LCL_VAR' node with a GC type, when the lclVar itself is an integer type.
             // The emitter will mark this register as holding a GC type. Therfore we must spill this value.
-            // This was exposed by the Interop\StructMarshalling\ReversePInvoke\MarshalSeqStruct\
-            // DelegatePInvoke\DelegatePInvokeTest\DelegatePInvokeTest.dll test case on Arm32.
+            // This was exposed on Arm32 with EH write-thru.
             if ((assignedInterval->recentRefPosition != nullptr) &&
                 (assignedInterval->recentRefPosition->treeNode != nullptr))
             {
