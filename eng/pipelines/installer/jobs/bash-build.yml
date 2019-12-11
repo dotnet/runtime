@@ -1,50 +1,46 @@
 parameters:
+  platform: ''
+  dependsOn: []
   additionalMSBuildArgs: ''
   additionalRunArgs: ''
   crossBuild: false
   disableCrossgen: false
-  displayName: null
-  dockerImage: null
+  container: ''
   packageDistroList: null
-  skipTests: $(SkipTests)
-  strategy:
-    matrix:
-      debug:
-        _BuildConfig: Debug
-      release:
-        _BuildConfig: Release
-  targetArchitecture: x64
+  skipTests: false
+  archType: x64
   timeoutInMinutes: 120
+  pool: ''
+  crossrootfsDir: ''
+
 jobs:
-  - job: ${{ parameters.name }}
-    displayName: ${{ parameters.name }}
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    pool:
-      ${{ if and(eq(parameters.name, 'FreeBSD_x64'), ne(variables['System.TeamProject'], 'public')) }}:
-        name: dnceng-freebsd-internal
-      ${{ if ne(parameters.name, 'FreeBSD_x64') }}:
-        ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          name: NetCorePublic-Pool
-          queue: buildpool.ubuntu.1604.amd64.open
-        ${{ if ne(variables['System.TeamProject'], 'public') }}:
-          name: NetCoreInternal-Pool
-          queue: buildpool.ubuntu.1604.amd64
-    strategy: ${{ parameters.strategy }}
-    variables:
+- template: base-job.yml
+  parameters:
+    ${{ insert }}: ${{ parameters }}
+
+    # Do not attempt to clean workspace: the agent might not be able to remove the files because
+    # they may be owned by "root" due to the way this job uses Docker. This job does its own cleanup
+    # as a prepare step.
+    workspace: ''
+
+    # This job runs within several Docker containers, so Build.SourcesDirectory is not accurate.
+    buildCommandSourcesDirectory: '/root/runtime/'
+
+    buildVariables:
       # Preserve the NuGet authentication env vars into the Docker container.
       # The 'NuGetAuthenticate' build step may have set these.
       PreserveNuGetAuthDockerArgs: >-
         -e VSS_NUGET_URI_PREFIXES
         -e VSS_NUGET_ACCESSTOKEN
 
-      ${{ if ne(parameters.name, 'FreeBSD_x64')}}:
+      ${{ if ne(parameters.container, '') }}:
         RunArguments: >-
           docker run --privileged --rm
           -v "$(Build.SourcesDirectory):/root/runtime"
           -w="/root/runtime"
           $(PreserveNuGetAuthDockerArgs)
-          ${{ parameters.additionalRunArgs }}
-          ${{ parameters.dockerImage }}
+          -e ROOTFS_DIR=${{ parameters.crossrootfsDir }}
+          ${{ parameters.container }}
 
       ${{ if eq(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
@@ -54,13 +50,13 @@ jobs:
         MSBuildScript: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
       ${{ if not(and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))) }}:
-        BuildScript: ./$(buildScriptFileName).sh
+        BuildScript: ./installer.sh
         MSBuildScript: /root/runtime/eng/common/msbuild.sh
 
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
-        /p:OfficialBuildId=$(OfficialBuildId)
-        /p:TargetArchitecture=${{ parameters.targetArchitecture }}
+        /p:OfficialBuildId=$(Build.BuildNumber)
+        /p:TargetArchitecture=${{ parameters.archType }}
 
       # Don't put additionalMSBuildArgs as the last line. It may or may not have extra args. If the
       # parameter is empty, AzDO replaces it with empty space without chomping the extra newline.
@@ -71,6 +67,7 @@ jobs:
         /p:DisableCrossgen=${{ parameters.disableCrossgen }}
         /p:PortableBuild=${{ parameters.portableBuild }}
         /p:SkipTests=${{ parameters.skipTests }}
+        $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         ${{ parameters.additionalMSBuildArgs }}
         /p:StripSymbols=true
@@ -96,25 +93,24 @@ jobs:
 
       installersSubsetArg: --subset Installers
 
-    steps:
+    prepareSteps:
 
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: NuGetAuthenticate@0
+    - ${{ if ne(parameters.container, '') }}:
+      # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
+      # Clean up the build dirs ourselves in another Docker container to avoid failures.
+      # Using hosted agents is tracked by https://github.com/dotnet/core-setup/issues/4997
+      - script: |
+          set -x
+          docker run --rm \
+            -v "$(Agent.BuildDirectory):/root/build" \
+            -w /root/build \
+            ${{ parameters.container }} \
+            bash -c '
+              rm -v -rf a b s'
+          mkdir "$(Agent.BuildDirectory)/s"
+        displayName: Clean up old artifacts owned by root
 
-    # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
-    # Clean up the build dirs ourselves in another Docker container to avoid failures.
-    # Using hosted agents is tracked by https://github.com/dotnet/core-setup/issues/4997
-    - script: |
-        set -x
-        docker run --rm \
-          -v "$(Agent.BuildDirectory):/root/build" \
-          -w /root/build \
-          ${{ parameters.dockerImage }} \
-          bash -c '
-            rm -v -rf a b
-            cd s
-            git clean -xdf'
-      displayName: Clean up old artifacts owned by root
+    buildSteps:
 
     # Build binary and nuget packages
     - script: |
@@ -149,36 +145,22 @@ jobs:
             parameters:
               distroRid: ${{ rid }}
               image: ${{ packageBuild.image }}
-              outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.targetArchitecture }}
+              outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.archType }}
               packageStepDescription: Runtime Deps installers
               packagingArgs: /p:BuildDistroIndependentInstallers=false
               subsetArg: $(installersSubsetArg)
 
-    # Files may be owned by root because builds don't set user ID. The next AzDO step runs 'find' in
-    # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step
-    # prevents the failure by using chown to clean up our source tree.
-    - script: |
-        set -x
-        docker run --rm \
-          -v "$(Agent.BuildDirectory):/root/build" \
-          -w /root/build \
-          ${{ parameters.dockerImage }} \
-          bash -c "chown -R $(id -u):$(id -g) *"
-      displayName: Update file ownership from root to build agent account
-      continueOnError: true
-      condition: succeededOrFailed()
-
-    - template: steps/upload-job-artifacts.yml
-      parameters:
-        name: ${{ parameters.name }}
-
-    - script: df -h
-      displayName: Check space (df -h)
-      condition: always()
-      continueOnError: true
-
-    # Force clean up machine in case any docker images are left behind
-    - ${{ if ne(parameters.name, 'FreeBSD_x64')}}:
-      - script: docker system prune -af && df -h
-        displayName: Run Docker clean up
+    - ${{ if ne(parameters.container, '') }}:
+      # Files may be owned by root because builds don't set user ID. Later build steps run 'find' in
+      # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step
+      # prevents the failure by using chown to clean up our source tree.
+      - script: |
+          set -x
+          docker run --rm \
+            -v "$(Agent.BuildDirectory):/root/build" \
+            -w /root/build \
+            ${{ parameters.container }} \
+            bash -c "chown -R $(id -u):$(id -g) *"
+        displayName: Update file ownership from root to build agent account
+        continueOnError: true
         condition: succeededOrFailed()
