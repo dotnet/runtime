@@ -52,9 +52,21 @@ namespace System.Net.Sockets.Tests
             {
                 byte[] buffer = new byte[32];
 
-                await SendToAsync(socket, new ArraySegment<byte>(buffer), remoteEndpoint);
+                Task sendTask = SendToAsync(socket, new ArraySegment<byte>(buffer), remoteEndpoint);
 
-                Assert.NotNull(socket.LocalEndPoint);
+                // Asynchronous calls shall alter the property immediately:
+                if (!UsesSync)
+                {
+                    Assert.NotNull(socket.LocalEndPoint);
+                }
+                
+                await sendTask;
+
+                // In synchronous calls, we should wait for the completion of the helper task:
+                if (UsesSync)
+                {
+                    Assert.NotNull(socket.LocalEndPoint);
+                }
             }
         }
 
