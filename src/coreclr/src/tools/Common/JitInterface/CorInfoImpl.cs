@@ -1389,24 +1389,29 @@ namespace Internal.JitInterface
             return (uint)type.InstanceFieldAlignment.AsInt;
         }
 
+        private int MarkGcField(byte* gcPtrs, CorInfoGCType gcType)
+        {
+            // Ensure that if we have multiple fields with the same offset,
+            // that we don't double count the data in the gc layout.
+            if (*gcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
+            {
+                *gcPtrs = (byte)gcType;
+                return 1;
+            }
+            else
+            {
+                Debug.Assert(*gcPtrs == (byte)gcType);
+                return 0;
+            }
+        }
+
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
 
             if (type.IsByReferenceOfT || type.IsWellKnownType(WellKnownType.TypedReference))
             {
-                // Ensure that if we have multiple fields with the same offset, 
-                // that we don't double count the data in the gc layout.
-                if (*gcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
-                {
-                    *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
-                    result++;
-                }
-                else
-                {
-                    Debug.Assert(*gcPtrs == (byte)CorInfoGCType.TYPE_GC_BYREF);
-                }
-                return result;
+                return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
             }
 
             foreach (var field in type.GetFields())
@@ -1447,17 +1452,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    // Ensure that if we have multiple fields with the same offset, 
-                    // that we don't double count the data in the gc layout.
-                    if (*fieldGcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
-                    {
-                        *fieldGcPtrs = (byte)gcType;
-                        result++;
-                    }
-                    else
-                    {
-                        Debug.Assert(*fieldGcPtrs == (byte)gcType);
-                    }
+                    result += MarkGcField(fieldGcPtrs, gcType);
                 }
             }
             return result;
