@@ -24,6 +24,30 @@ jobs:
 # Checkout repository
 #
 - template: /eng/pipelines/common/checkout-job.yml
+  parameters:
+    paths:
+    - subset: coreclr
+      include:
+      - src/libraries/System.Private.CoreLib/*
+      exclude:
+      - src/installer/*
+      - src/libraries/*
+      - eng/pipelines/installer/*
+      - eng/pipelines/libraries/*
+    - subset: libraries
+      exclude:
+      - src/installer/*
+      - src/coreclr/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/installer/*
+    - subset: installer
+      include:
+      - docs/manpages/*
+      exclude:
+      - src/coreclr/*
+      - src/libraries/*
+      - eng/pipelines/coreclr/*
+      - eng/pipelines/libraries/*
 
 #
 # Build CoreCLR
