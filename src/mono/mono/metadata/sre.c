@@ -1650,15 +1650,16 @@ mono_is_sre_ctor_on_tb_inst (MonoClass *klass)
 static MonoReflectionTypeHandle
 mono_reflection_type_get_underlying_system_type (MonoReflectionTypeHandle t, MonoError *error)
 {
-	static MonoMethod *method_get_underlying_system_type = NULL;
 	HANDLE_FUNCTION_ENTER ();
 
 	error_init (error);
 
-	if (!method_get_underlying_system_type) {
+	MONO_STATIC_POINTER_INIT (MonoMethod, method_get_underlying_system_type)
+
 		method_get_underlying_system_type = mono_class_get_method_from_name_checked (mono_defaults.systemtype_class, "get_UnderlyingSystemType", 0, 0, error);
 		mono_error_assert_ok (error);
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, method_get_underlying_system_type)
 
 	MonoReflectionTypeHandle rt = MONO_HANDLE_NEW (MonoReflectionType, NULL);
 
