@@ -44,6 +44,9 @@ jobs:
     - name: ${{ variable.key }}
       value: ${{ variable.value }}
 
+  - name: OfficialBuildArg
+    value: ''
+
   # Produce test-signed build for PR and Public builds
   - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
     - name: SignType
