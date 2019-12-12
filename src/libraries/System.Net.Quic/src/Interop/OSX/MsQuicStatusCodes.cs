@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal static class MsQuicConstants
+    internal static class MsQuicStatusCodes
     {
         internal const uint Pending = unchecked((uint)-2);
         internal const uint Continue = unchecked((uint)-1);

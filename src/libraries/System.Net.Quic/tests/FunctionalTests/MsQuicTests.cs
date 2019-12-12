@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,8 +18,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task BasicTest()
         {
-            await DefaultListener.StartAsync();
-
             Task listenTask = Task.Run(async () =>
             {
                 using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
@@ -58,8 +57,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
-            await DefaultListener.StartAsync();
-
             for (int j = 0; j < 100; j++)
             {
                 Task listenTask = Task.Run(async () =>
@@ -124,8 +121,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleStreamsOnSingleConnection()
         {
-            await DefaultListener.StartAsync();
-
             Task listenTask = Task.Run(async () =>
             {
                 {
@@ -208,14 +203,14 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task AbortiveConnectionFromClient()
         {
-            await DefaultListener.StartAsync();
             using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
-            await clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
 
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+            await clientTask;
             // Close connection on client, verifying server connection is aborted.
             await clientConnection.CloseAsync();
-            var stream = await serverConnection.AcceptStreamAsync();
+            QuicStream stream = await serverConnection.AcceptStreamAsync();
 
             // Providers are alaways wrapped right now by a QuicStream. All fields are null here.
             // TODO make sure this returns null.
@@ -230,7 +225,6 @@ namespace System.Net.Quic.Tests
                 new IPEndPoint(IPAddress.Loopback, 0),
                 GetSslServerAuthenticationOptions()))
             {
-                await listener.StartAsync();
                 IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
                 using (QuicConnection clientConnection = new QuicConnection(

@@ -17,8 +17,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private unsafe MsQuicApi()
         {
-            uint status = (uint)Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration);
-            MsQuicStatusException.ThrowIfFailed(status);
+            MsQuicStatusException.ThrowIfFailed(Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration));
 
             MsQuicNativeMethods.NativeApi nativeRegistration = *registration;
 

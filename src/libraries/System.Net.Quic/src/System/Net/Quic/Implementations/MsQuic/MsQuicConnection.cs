@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -36,6 +37,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private bool _disposed;
         private bool _connected;
+        private MsQuicSecurityConfig _securityConfig;
 
         // Queue for accepted streams
         private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateUnbounded<MsQuicStream>(new UnboundedChannelOptions()
@@ -80,6 +82,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 return new IPEndPoint(_localEndPoint.Address, _localEndPoint.Port);
             }
+        }
+
+        internal async ValueTask SetSecurityConfigForConnection(X509Certificate cert)
+        {
+            _securityConfig = await MsQuicApi.Api.CreateSecurityConfig(cert);
+            // TODO this isn't being set correctly
+            MsQuicParameterHelpers.SetSecurityConfig(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.SEC_CONFIG, _securityConfig.NativeObjPtr);
         }
 
         internal override IPEndPoint RemoteEndPoint => new IPEndPoint(_remoteEndPoint.Address, _remoteEndPoint.Port);
@@ -359,7 +368,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _handle.Free();
             _session?.Dispose();
-
+            _securityConfig?.Dispose();
             _disposed = true;
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);

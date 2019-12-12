@@ -15,7 +15,6 @@ namespace System.Net.Quic.Implementations.MsQuic
     internal class MsQuicListener : QuicListenerProvider, IDisposable
     {
         // Security configuration for MsQuic
-        private MsQuicSecurityConfig _secConfig;
         private MsQuicSession _session;
 
         // Pointer to the underlying listener
@@ -31,7 +30,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         private SslServerAuthenticationOptions _sslOptions;
 
         private volatile bool _disposed;
-        private volatile bool _started;
         private IPEndPoint _listenEndPoint;
 
         private readonly Channel<MsQuicConnection> _acceptConnectionQueue;
@@ -49,16 +47,22 @@ namespace System.Net.Quic.Implementations.MsQuic
             _listenEndPoint = options.ListenEndPoint;
 
             _ptr = _session.ListenerOpen(options);
+
+            SetCallbackHandler();
+
+            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
+
+            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api._listenerStartDelegate(
+                _ptr,
+                ref address));
+
+            SetListenPort();
         }
 
         internal override IPEndPoint ListenEndPoint
         {
             get
             {
-                if (!_started)
-                {
-                    throw new InvalidOperationException("Listener must be started before getting endpoint.");
-                }
                 return new IPEndPoint(_listenEndPoint.Address, _listenEndPoint.Port);
             }
         }
@@ -73,6 +77,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_acceptConnectionQueue.Reader.TryRead(out MsQuicConnection connection))
                 {
+                    // resolve security config here.
+                    await connection.SetSecurityConfigForConnection(_sslOptions.ServerCertificate);
                     if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
                     return connection;
@@ -117,34 +123,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             _disposed = true;
         }
 
-        internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
+        internal override void Close()
         {
             ThrowIfDisposed();
 
             MsQuicApi.Api._listenerStopDelegate(_ptr);
-            return default;
-        }
-
-        internal override async ValueTask StartAsync(CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-
-            _secConfig = await MsQuicApi.Api.CreateSecurityConfig(_sslOptions?.ServerCertificate);
-
-            SetCallbackHandler();
-
-            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
-
-            uint status = MsQuicApi.Api._listenerStartDelegate(
-                _ptr,
-                ref address);
-
-            MsQuicStatusException.ThrowIfFailed(status);
-
-            // Requery the ListeneEndPoint as port 0 will get a different port
-            SetListenPort();
-
-            _started = true;
         }
 
         private unsafe void SetListenPort()
@@ -163,14 +146,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     case QUIC_LISTENER_EVENT.NEW_CONNECTION:
                         {
-                            evt.Data.NewConnection.SecurityConfig = _secConfig.NativeObjPtr;
                             NewConnectionInfo connectionInfo = *(NewConnectionInfo*)evt.Data.NewConnection.Info;
                             IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(*(SOCKADDR_INET*)connectionInfo.LocalAddress);
                             IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(*(SOCKADDR_INET*)connectionInfo.RemoteAddress);
                             MsQuicConnection msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, evt.Data.NewConnection.Connection);
                             _acceptConnectionQueue.Writer.TryWrite(msQuicConnection);
                         }
-                        break;
+                        // Always pend the new connection to wait for the security config to be resolved
+                        // TODO this doesn't need to be async always
+                        return MsQuicStatusCodes.Pending;
                     default:
                         return MsQuicStatusCodes.InternalError;
                 }
@@ -180,8 +164,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 Console.WriteLine(ex.Message);
                 return MsQuicStatusCodes.InternalError;
             }
-
-            return MsQuicStatusCodes.Success;
         }
 
         protected void StopAcceptingConnections()

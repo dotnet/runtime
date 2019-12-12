@@ -11,6 +11,6 @@ internal static partial class Interop
     internal static class MsQuic
     {
         [DllImport(Libraries.MsQuic)]
-        internal static unsafe extern int MsQuicOpen(int version, out MsQuicNativeMethods.NativeApi* registration);
+        internal static unsafe extern uint MsQuicOpen(int version, out MsQuicNativeMethods.NativeApi* registration);
     }
 }
