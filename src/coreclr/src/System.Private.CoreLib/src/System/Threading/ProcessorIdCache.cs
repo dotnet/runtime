@@ -19,18 +19,14 @@ namespace System.Threading
         private const int ProcessorIdCacheShift = 16;
         private const int ProcessorIdCacheCountDownMask = (1 << ProcessorIdCacheShift) - 1;
         // 50 is our best guess.
-        // Based on further calibration it is likley to be adjusted lower.
-        // In relatively rare cases of a slow GetCurrentProcessorNumber, it may be recalibrated to a higher number.
+        // Based on speed check it will be adjusted, typically lower.
+        // In relatively rare cases of a slow GetCurrentProcessorNumber, it may be adjusted to a higher number.
         private static int s_processorIdRefreshRate = 50;
         // We will not adjust higher than this though.
         private const int MaxIdRefreshRate = 5000;
 
         private static int RefreshCurrentProcessorId()
         {
-            double[]? calibrationSamples = s_CalibrationSamples;
-            if (calibrationSamples != null)
-                CalibrateOnce(calibrationSamples);
-
             int currentProcessorId = Thread.GetCurrentProcessorNumber();
 
             // On Unix, GetCurrentProcessorNumber() is implemented in terms of sched_getcpu, which
@@ -59,138 +55,62 @@ namespace System.Threading
             return currentProcessorIdCache >> ProcessorIdCacheShift;
         }
 
-        // We must collect multiple samples to account for irregularities caused by GC and context switches.
-        // Why we keep an array of samples and do not adjust as we go:
-        //   We expect that we will adjust the refresh rate down. If we do that early, we may end up forcing all
-        //   the calibration work to happen much sooner. There is no urgency in being calibrated while the app
-        //   is in start-up mode. That would just add to the "rush hour" traffic.
-        private static int s_CalibrationToDo;
-        private static int s_CalibrationDone;
-        // 10 is chosen to budget the sampling under 5 msec total, assuming 0.5 msec per sample.
-        private const int CalibrationSampleCount = 10;
-        private static double[]? s_CalibrationSamples = new double[CalibrationSampleCount * 2];
-
-        private static void CalibrateOnce(double[] calibrationSamples)
-        {
-            if (s_CalibrationToDo >= CalibrationSampleCount)
-                return;
-
-            int sample = Interlocked.Increment(ref s_CalibrationToDo) - 1;
-            if (sample >= CalibrationSampleCount)
-                return;
-
-            // Actual calibration step. Let's try to fit into ~50 usec.
-            int id = 0;
-            long t1 = 0;
-            long twentyMicrosecond = Stopwatch.Frequency / 50000;
-            int iters = 1;
-
-            // double the sample size until it is 1 msec.
-            // we may spend up to 40 usec in this loop in a worst case.
-            while (t1 < twentyMicrosecond)
-            {
-                iters *= 2;
-                t1 = Stopwatch.GetTimestamp();
-                for (int i = 0; i < iters; i++)
-                {
-                    id = Thread.GetCurrentProcessorNumber();
-                }
-                t1 = Stopwatch.GetTimestamp() - t1;
-            }
-
-            // assuming TLS takes 1/2 of ProcessorNumber time or less, this should take 10 usec or less
-            long t2 = Stopwatch.GetTimestamp();
-            for (int i = 0; i < iters; i++)
-            {
-                UninlinedThreadStatic();
-            }
-            long t3 = Stopwatch.GetTimestamp();
-
-            // if we have useful measurements, record a sample
-            if (id >= 0 && t1 > 0 && t3 - t2 > 0)
-            {
-                calibrationSamples[sample * 2] = (double)t1 / iters;            // ID
-                calibrationSamples[sample * 2 + 1] = (double)(t3 - t2) / iters; // TLS
-            }
-            else
-            {
-                // API is not functional or clock did not go forward.
-                // just pretend it was a very expensive sample with default ratio.
-                calibrationSamples[sample * 2] = (double)Stopwatch.Frequency * 50; // 50 sec;
-                calibrationSamples[sample * 2 + 1] = Stopwatch.Frequency; // 1 sec
-            }
-
-            // If this was the last sample computed, get best times and update the ratio of ID to TLS.
-            if (Interlocked.Increment(ref s_CalibrationDone) == CalibrationSampleCount)
-            {
-                double idMin = double.MaxValue;
-                double tlsMin = double.MaxValue;
-                for (int i = 0; i < CalibrationSampleCount; i++)
-                {
-                    idMin = Math.Min(idMin, calibrationSamples[i * 2]);       //ID
-                    tlsMin = Math.Min(tlsMin, calibrationSamples[i * 2 + 1]); //TLS
-                }
-
-                s_CalibrationSamples = null;
-                s_processorIdRefreshRate = Math.Min(MaxIdRefreshRate, (int)(idMin / tlsMin));
-            }
-        }
-
         // If GetCurrentProcessorNumber takes any nontrivial time (compared to TLS access), return false.
         // Check more than once - to make sure it was not because TLS was delayed by GC or a context switch.
-        internal static bool SimpleProcessorNumberSpeedCheck()
+        internal static unsafe int ProcessorNumberSpeedCheck()
         {
             // NOTE: We do not check the frequency of the Stopwatch.
+            //       The frequency often does not match the actual timer refresh rate anyways.
             //       If the resolution, precision or access time to the timer are inadequate for our measures here,
             //       the test will fail anyways.
 
-            // warm up the code paths.
-            int id = UninlinedThreadStatic() | Thread.GetCurrentProcessorNumber();
-            long oneMicrosecond = Stopwatch.Frequency / 1000000;
+            // default values pretend to be very long samples with default ratio
+            double minID = Stopwatch.Frequency * 50;  // 50 sec
+            double minTLS = Stopwatch.Frequency;      // 1 sec
 
-            // this loop should take < 50 usec. limit it to 100 usec just in case.
-            // If we are on slow hardware, we should calibrate anyways.
-            long limit = Stopwatch.Frequency / 10000 + Stopwatch.GetTimestamp();
+            // warm up the code paths.
+            UninlinedThreadStatic();
+            if (Thread.GetCurrentProcessorNumber() < 0)
+                return MaxIdRefreshRate;
+
+            long oneMicrosecond = Stopwatch.Frequency / 1000000;
             for (int i = 0; i < 10; i++)
             {
-                int iters = 1;
+                // we will measure at least 16 iterations and at least 1 microsecond
+                int iters = 16;
                 long t1 = 0;
-                // double the sample size until it is 1 usec.
                 while (t1 < oneMicrosecond)
                 {
                     iters *= 2;
                     t1 = Stopwatch.GetTimestamp();
                     for (int j = 0; j < iters; j++)
                     {
-                        id = Thread.GetCurrentProcessorNumber();
+                        Thread.GetCurrentProcessorNumber();
                     }
                     t1 = Stopwatch.GetTimestamp() - t1;
                 }
 
-                // assuming TLS cannot be a lot slower than getting ID, this should take 1-2 usec
-                long t2 = Stopwatch.GetTimestamp();
-                for (int j = 0; j < iters; j++)
-                {
-                    UninlinedThreadStatic();
-                }
-                long t3 = Stopwatch.GetTimestamp();
+                minID = Math.Min(minID, (double)t1 / iters);
 
-                // if getting ID took longer than 3x TLS access, we should consider caching.
-                if (t3 > limit || (t3 - t2) * 3 < t1)
+                // we will measure at least 16 iterations and at least 1 microsecond
+                iters = 16;
+                t1 = 0;
+                while (t1 < oneMicrosecond)
                 {
-                    return false;
+                    iters *= 2;
+                    t1 = Stopwatch.GetTimestamp();
+                    for (int j = 0; j < iters; j++)
+                    {
+                        UninlinedThreadStatic();
+                    }
+                    t1 = Stopwatch.GetTimestamp() - t1;
                 }
+
+                minTLS = Math.Min(minTLS, (double)t1 / iters);
             }
 
-            // Make sure the result was not negative, which would indicate "Not Supported"
-            if (id < 0)
-            {
-                return false;
-            }
-
-            // GetCurrentProcessorNumber  is fast, no more checks needed.
-            s_CalibrationSamples = null;
-            return true;
+            s_processorIdRefreshRate = Math.Min((int)(minID / minTLS), MaxIdRefreshRate);
+            return s_processorIdRefreshRate;
         }
 
         // NoInlining is to make sure JIT does not CSE and to have a better perf proxy for TLS access.
