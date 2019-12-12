@@ -634,13 +634,10 @@ REM subsequent compilations from picking it up as a reference
 set __CrossgenOutputFile="%CORE_ROOT%\temp.ni._dll"
 set __CrossgenCmd=
 
-if defined __Crossgen (
+if defined __DoCrossgen (
     set __CrossgenCmd=!__CrossgenExe! /Platform_Assemblies_Paths "!CORE_ROOT!" /in !AssemblyPath! /out !__CrossgenOutputFile! >nul 2>nul
 ) else (
     set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\*.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath! >nul 2>nul
-    echo !__CrossgenCmd!
-    !__CrossgenCmd!
-    set /a __exitCode = !errorlevel!
 )
 
 echo %__CrossgenCmd%
