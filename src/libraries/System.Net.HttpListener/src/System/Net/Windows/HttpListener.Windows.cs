@@ -451,6 +451,18 @@ namespace System.Net
                 if (NetEventSource.IsEnabled) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
                 _requestQueueBoundHandle?.Dispose();
                 _requestQueueHandle.Dispose();
+
+                // CancelIoEx is called after Dispose to prevent a race condition involving parallel GetContext and
+                // HttpReceiveHttpRequest calls. Otherwise, calling CancelIoEx before Dispose might block the synchronous
+                // GetContext call until the next request arrives.
+                try
+                {
+                    Interop.Kernel32.CancelIoEx(_requestQueueHandle, null); // This cancels the synchronous call to HttpReceiveHttpRequest
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Ignore the exception since it only means that the queue handle has been successfully disposed
+                }
             }
         }
 
