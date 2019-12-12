@@ -1185,7 +1185,8 @@ namespace System.Text.Json.Tests
         private class EmployeeExtensionData : Employee
         {
             [Serialization.JsonExtensionData]
-            public IDictionary<string, JsonElement> ExtensionData { get; set; }
+            [Newtonsoft.Json.JsonExtensionData]
+            public IDictionary<string, object> ExtensionData { get; set; }
         }
 
         [Fact]
@@ -1227,7 +1228,7 @@ namespace System.Text.Json.Tests
 
             // \u0024.* Valid (i.e: \u0024test)
             EmployeeExtensionData employee = JsonSerializer.Deserialize<EmployeeExtensionData>(json, _deserializeOptions);
-            Assert.Equal("test", employee.ExtensionData["$test"].GetString());
+            Assert.Equal("test", ((JsonElement)employee.ExtensionData["$test"]).GetString());
 
             Dictionary<string, string> dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(json, _deserializeOptions);
             Assert.Equal("test", dictionary["$test"]);

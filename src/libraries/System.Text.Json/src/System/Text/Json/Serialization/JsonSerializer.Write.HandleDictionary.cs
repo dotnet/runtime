@@ -41,16 +41,16 @@ namespace System.Text.Json
                     return true;
                 }
 
-                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
                 {
-                    if (WriteReferenceDictionary(ref state, writer, options, enumerable))
+                    if (options.ReferenceHandling.ShouldWritePreservedReferences())
                     {
-                        return WriteEndDictionary(ref state);
+                        if (WriteReferenceDictionary(ref state, writer, options, enumerable))
+                        {
+                            return WriteEndDictionary(ref state);
+                        }
                     }
-                }
-                else
-                {
-                    if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
+                    else
                     {
                         state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
                     }
@@ -145,18 +145,13 @@ namespace System.Text.Json
             else if (handling == ResolvedReferenceHandling.Preserve)
             {
                 // Object reference, write start and append $id.
-                // Should this also have ExtensionData condition?
-                // if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)?
                 state.Current.WriteReferenceObjectOrArrayStart(ClassType.Dictionary, writer, options, writeAsReference: false, referenceId: referenceId);
             }
             else
             {
                 // Value type, fallback on regular Write method.
                 // Is this even reachable for Dictionaries?
-                if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
-                {
-                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
-                }
+                state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
             }
 
             return false;

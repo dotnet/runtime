@@ -243,6 +243,32 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(expected, actual);
         }
+
+        [Fact]
+        public static void ExtensionDataDictionaryHandlesPreserveReferences()
+        {
+            Employee bob = new Employee { Name = "Bob" };
+
+            EmployeeExtensionData angela = new EmployeeExtensionData();
+            angela.Name = "Angela";
+
+            angela.Manager = bob;
+            bob.Subordinates = new List<Employee> { angela };
+
+            var extensionData = new Dictionary<string, object>();
+            extensionData["extString"] = "string value";
+            extensionData["extNumber"] = 100;
+            extensionData["extObject"] = bob;
+            extensionData["extArray"] = bob.Subordinates;
+
+            angela.ExtensionData = extensionData;
+
+            string expected = JsonConvert.SerializeObject(angela, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(angela, SystemTextJsonOptions(TestReferenceHandling.Preserve));
+
+            Assert.Equal(expected, actual);
+        }
+
         #endregion
 
         #region Root Array
