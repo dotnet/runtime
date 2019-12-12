@@ -749,7 +749,6 @@
 -nomethod System.Tests.AppDomainTests.AssemblyLoad
 -nomethod System.Tests.AppDomainTests.FirstChanceException_Called
 -nomethod System.Tests.AppDomainTests.AssemblyResolve_FirstChanceException
--nomethod System.Tests.AppDomainTests.AssemblyResolveInvalidAssemblyName
 
 # AssemblyLoadContext.SetProfileOptimizationRoot is no-op (not implemented)
 -nomethod System.Runtime.Tests.ProfileOptimizationTest.ProfileOptimization_CheckFileExists
