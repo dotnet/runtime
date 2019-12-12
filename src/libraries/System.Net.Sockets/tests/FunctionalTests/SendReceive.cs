@@ -43,6 +43,7 @@ namespace System.Net.Sockets.Tests
                 await Assert.ThrowsAsync(expectedExceptionType, () => SendAsync(s, new List<ArraySegment<byte>> { validBuffer, invalidBuffer }));
             }
         }
+
         [Fact]
         public async Task SendTo_Datagram_UDP_ShouldImplicitlyBindLocalEndpoint()
         {
