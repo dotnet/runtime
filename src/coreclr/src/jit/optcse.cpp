@@ -1592,10 +1592,18 @@ public:
 
         for (lclNum = 0, varDsc = m_pCompiler->lvaTable; lclNum < m_pCompiler->lvaCount; lclNum++, varDsc++)
         {
+            // Locals with no references don't use any local stack frame slots
             if (varDsc->lvRefCnt() == 0)
             {
                 continue;
             }
+
+            // Incoming stack arguments don't use any local stack frame slots
+            if (varDsc->lvIsParam && !varDsc->lvIsRegArg)
+            {
+                continue;
+            }
+
 
 #if FEATURE_FIXED_OUT_ARGS
             // Skip the OutgoingArgArea in computing frame size, since
