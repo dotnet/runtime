@@ -9,7 +9,7 @@ Scenarios:
       1st we evaluate changes for all paths except ones in excluded list. If we can not find
       any applicable changes like that, then we evaluate changes for incldued paths
       if any of these two finds changes, then a variable will be set to true.
-  In order to consume this variable you need to reference it via: $[ dependencies.checkout.outputs["SetPathVars_<subset>.containschange"] ]
+  In order to consume this variable in a yaml pipeline, reference it via: $[ dependencies.<JobName>.outputs["<StepName>_<subset>.containschange"] ]
 
   Example:
   -difftarget ''HEAD^1'' -subset coreclr -includepaths ''src/libraries/System.Private.CoreLib/*'' -excludepaths ''src/libraries/*+src/installer/*''
@@ -20,6 +20,13 @@ Scenarios:
 # Disable globbing in this bash script since we iterate over path patterns
 set -f
 
+# Stop script if unbound variable found (use ${var:-} if intentional)
+set -u
+
+# Stop script if command returns non-zero exit code.
+# Prevents hidden errors caused by missing error code propagation.
+set -e
+
 usage()
 {
   echo "Script that evaluates changed paths and emits an azure devops variable if the changes contained in the current HEAD against the difftarget meet the includepahts/excludepaths filters:"
@@ -27,7 +34,7 @@ usage()
   echo "  --excludepaths <value>     Escaped list of paths to exclude from diff separated by '+'. (i.e: 'src/libraries/*+'src/installer/*')"
   echo "  --includepaths <value>     Escaped list of paths to include on diff separated by '+'. (i.e: 'src/libraries/System.Private.CoreLib/*')"
   echo "  --subset                   Subset name for which we're evaluating in order to include it in logs"
-  echo "  --azurevariable            Name of azure devops variable to create if change meets filter criteria (Default: containschange)"
+  echo "  --azurevariable            Name of azure devops variable to create if change meets filter criteria"
   echo ""
 
   echo "Arguments can also be passed in with a single hyphen."
@@ -50,9 +57,8 @@ eng_root=`cd -P "$scriptroot/.." && pwd`
 exclude_paths=()
 include_paths=()
 subset_name=''
-azure_variable="containschange"
-ci=true
-diff_target=""
+azure_variable=''
+diff_target=''
 
 while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
@@ -88,29 +94,42 @@ while [[ $# > 0 ]]; do
   shift
 done
 
+ci=true # Needed in order to use pipeline-logging-functions.sh
 . "$eng_root/common/pipeline-logging-functions.sh"
 
-# expected args
-# $@: filter string
-function runGitDiff {
-  local _filter=$@
-  echo ""
-  echo "git diff -M -C -b --ignore-cr-at-eol --ignore-space-at-eol --exit-code --quiet $diff_target -- $_filter"
-  git diff -M -C -b --ignore-cr-at-eol --ignore-space-at-eol --exit-code --quiet $diff_target -- $_filter
-  git_diff_exit_code=$?
+# -- expected args --
+# $@: git diff arguments
+customGitDiff() {
+  (
+    set -x
+    git diff -M -C -b --ignore-cr-at-eol --ignore-space-at-eol "$@"
+  )
 }
 
-# expected args
+# runs git diff with supplied filter.
+# -- exit codes --
+# 0: No match was found
+# 1: At least 1 match was found
+#
+# -- expected args --
 # $@: filter string
-function printMatchedPaths {
+probePathsWithExitCode() {
+  local _filter=$@
+  echo ""
+  customGitDiff --exit-code --quiet $diff_target -- $_filter
+}
+
+# -- expected args --
+# $@: filter string
+printMatchedPaths() {
   local _subset=$subset_name
   local _filter=$@
   echo ""
   echo "----- Matching files for $_subset -----"
-  git diff -M -C -b --ignore-cr-at-eol --ignore-space-at-eol --name-only $diff_target -- $_filter
+  customGitDiff --name-only $diff_target -- $_filter
 }
 
-function probePaths {
+probePaths() {
   local _subset=$subset_name
   local _azure_devops_var_name=$azure_variable
   local exclude_path_string=""
@@ -129,8 +148,7 @@ function probePaths {
       fi
     done
 
-    runGitDiff $exclude_path_string
-    if [[ "$git_diff_exit_code" == "1" ]]; then
+    if ! probePathsWithExitCode $exclude_path_string; then
       found_applying_changes=true
       printMatchedPaths $exclude_path_string
     fi
@@ -148,8 +166,7 @@ function probePaths {
       fi
     done
 
-    runGitDiff $include_path_string
-    if [[ "$git_diff_exit_code" == "1" ]]; then
+    if ! probePathsWithExitCode $include_path_string; then
       found_applying_changes=true
       printMatchedPaths $include_path_string
     fi
