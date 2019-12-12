@@ -1555,9 +1555,8 @@ mono_w32socket_convert_error (gint error)
 
 #ifndef ENABLE_NETCORE
 MonoBoolean
-ves_icall_System_Net_Sockets_Socket_SupportPortReuse (MonoProtocolType proto, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_SupportPortReuse_icall (MonoProtocolType proto)
 {
-	error_init (error);
 #if defined (SO_REUSEPORT)
 	return TRUE;
 #else

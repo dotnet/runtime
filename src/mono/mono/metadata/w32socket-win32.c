@@ -274,9 +274,8 @@ mono_w32socket_convert_error (gint error)
 }
 
 MonoBoolean
-ves_icall_System_Net_Sockets_Socket_SupportPortReuse (MonoProtocolType proto, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_SupportPortReuse_icall (MonoProtocolType proto)
 {
-	error_init (error);
 	return TRUE;
 }
 

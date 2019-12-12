@@ -176,7 +176,7 @@ TYPED_HANDLE_DECL (MonoPeerCredData);
 
 ICALL_EXPORT
 gint32
-ves_icall_System_Net_Sockets_SocketException_WSAGetLastError (void);
+ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_icall (void);
 
 void
 mono_network_init(void);
