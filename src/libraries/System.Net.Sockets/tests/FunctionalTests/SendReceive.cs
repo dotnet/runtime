@@ -43,6 +43,20 @@ namespace System.Net.Sockets.Tests
                 await Assert.ThrowsAsync(expectedExceptionType, () => SendAsync(s, new List<ArraySegment<byte>> { validBuffer, invalidBuffer }));
             }
         }
+        [Fact]
+        public async Task SendTo_Datagram_UDP_ShouldImplicitlyBindLocalEndpoint()
+        {
+            IPEndPoint remoteEndpoint = new IPEndPoint(IPAddress.Parse("10.20.30.40"), 1234);
+
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                byte[] buffer = new byte[32];
+
+                await SendToAsync(socket, new ArraySegment<byte>(buffer), remoteEndpoint);
+
+                Assert.NotNull(socket.LocalEndPoint);
+            }
+        }
 
         [ActiveIssue(16945)]
         [OuterLoop] // TODO: Issue #11345
