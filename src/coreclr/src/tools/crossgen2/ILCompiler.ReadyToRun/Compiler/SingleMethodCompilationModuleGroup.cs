@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using System.Reflection.Metadata.Ecma335;
 
 namespace ILCompiler
 {
@@ -39,6 +40,24 @@ namespace ILCompiler
         public override bool GeneratesPInvoke(MethodDesc method)
         {
             return true;
+        }
+
+        public override bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token)
+        {
+            // TODO: implement if needed (needed if not compiling with large version bubble)
+            throw new NotImplementedException();
+        }
+
+        public override bool TryGetModuleTokenForExternalMethod(MethodDesc method, out ModuleToken token)
+        {
+            // TODO: implement if needed (needed if not compiling with large version bubble)
+            throw new NotImplementedException();
+        }
+
+        public override bool TryGetModuleTokenForExternalField(FieldDesc field, out ModuleToken token)
+        {
+            // TODO: implement if needed (needed if not compiling with large version bubble)
+            throw new NotImplementedException();
         }
     }
 }

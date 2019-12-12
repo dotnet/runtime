@@ -60,6 +60,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return token;
             }
 
+            // If the token was not lazily mapped, search the input compilation set for a type reference token
+            if (_compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
+            {
+                return token;
+            }
+
             // Reverse lookup failed
             if (throwIfNotFound)
             {
@@ -75,10 +81,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (_compilationModuleGroup.VersionsWithMethodBody(method) &&
-                method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            ModuleToken token;
+
+            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
-                return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+                if (_compilationModuleGroup.VersionsWithMethodBody(method))
+                {
+                    return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+                }
+                else if (_compilationModuleGroup.TryGetModuleTokenForExternalMethod(ecmaMethod, out token))
+                {
+                    return token;
+                }
             }
 
             // Reverse lookup failed
@@ -94,9 +108,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field is EcmaField ecmaField)
+            ModuleToken token;
+
+            if (field is EcmaField ecmaField)
             {
-                return new ModuleToken(ecmaField.Module, ecmaField.Handle);
+                if (_compilationModuleGroup.VersionsWithType(field.OwningType))
+                {
+                    return new ModuleToken(ecmaField.Module, ecmaField.Handle);
+                }
+                else if (_compilationModuleGroup.TryGetModuleTokenForExternalField(field, out token))
+                {
+                    return token;
+                }
             }
 
             TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -106,12 +129,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
             }
 
-            ModuleToken token;
             if (_fieldToRefTokens.TryGetValue(canonField, out token))
             {
                 return token;
             }
 
+            // Reverse lookup failed
             if (throwIfNotFound)
             {
                 throw new NotImplementedException(field.ToString());

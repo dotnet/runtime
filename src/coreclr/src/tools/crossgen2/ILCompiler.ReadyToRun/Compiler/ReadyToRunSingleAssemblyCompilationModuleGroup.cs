@@ -4,7 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
@@ -19,6 +19,10 @@ namespace ILCompiler
         private ProfileDataManager _profileGuidedCompileRestriction;
 
         private bool _compileGenericDependenciesFromVersionBubbleModuleSet;
+
+        private Dictionary<TypeDesc, ModuleToken> _typeRefsInCompilationModuleSet;
+        private Dictionary<MethodDesc, ModuleToken> _methodRefsInCompilationModuleSet;
+        private Dictionary<FieldDesc, ModuleToken> _fieldRefsInCompilationModuleSet;
 
         public ReadyToRunSingleAssemblyCompilationModuleGroup(
             TypeSystemContext context, 
@@ -209,6 +213,77 @@ namespace ILCompiler
                 return true;
 
             return !Marshaller.IsMarshallingRequired(method);
+        }
+
+        public override bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token)
+        {
+            Debug.Assert(!VersionsWithType(type));
+
+            if (_typeRefsInCompilationModuleSet == null)
+            {
+                _typeRefsInCompilationModuleSet = new Dictionary<TypeDesc, ModuleToken>();
+
+                foreach (var module in _compilationModuleSet)
+                {
+                    EcmaModule ecmaModule = (EcmaModule)module;
+                    foreach (var typeRefHandle in ecmaModule.MetadataReader.TypeReferences)
+                    {
+                        TypeDesc typeRef = ecmaModule.GetType(typeRefHandle);
+                        if (!_typeRefsInCompilationModuleSet.ContainsKey(typeRef))
+                        {
+                            _typeRefsInCompilationModuleSet.Add(typeRef, new ModuleToken(ecmaModule, typeRefHandle));
+                        }
+                    }
+                }
+            }
+
+            return _typeRefsInCompilationModuleSet.TryGetValue(type, out token);
+        }
+
+        private void MapExternalMethodsAndFields()
+        {
+            if (_methodRefsInCompilationModuleSet != null || _fieldRefsInCompilationModuleSet != null)
+                return;
+
+            _methodRefsInCompilationModuleSet = new Dictionary<MethodDesc, ModuleToken>();
+            _fieldRefsInCompilationModuleSet = new Dictionary<FieldDesc, ModuleToken>();
+
+            foreach (var module in _compilationModuleSet)
+            {
+                EcmaModule ecmaModule = (EcmaModule)module;
+                foreach (var memberReferenceHandle in ecmaModule.MetadataReader.MemberReferences)
+                {
+                    object fieldOrMethod = ecmaModule.GetObject(memberReferenceHandle);
+                    if (fieldOrMethod is FieldDesc field && !_fieldRefsInCompilationModuleSet.ContainsKey(field))
+                    {
+                        _fieldRefsInCompilationModuleSet.Add(field, new ModuleToken(ecmaModule, memberReferenceHandle));
+                    }
+                    else if (fieldOrMethod is MethodDesc method && !_methodRefsInCompilationModuleSet.ContainsKey(method))
+                    {
+                        _methodRefsInCompilationModuleSet.Add(method, new ModuleToken(ecmaModule, memberReferenceHandle));
+                    }
+                }
+            }
+        }
+
+        public override bool TryGetModuleTokenForExternalMethod(MethodDesc method, out ModuleToken token)
+        {
+            Debug.Assert(!VersionsWithMethodBody(method));
+
+            if (_methodRefsInCompilationModuleSet == null)
+                MapExternalMethodsAndFields();
+
+            return _methodRefsInCompilationModuleSet.TryGetValue(method, out token);
+        }
+
+        public override bool TryGetModuleTokenForExternalField(FieldDesc field, out ModuleToken token)
+        {
+            Debug.Assert(!VersionsWithType(field.OwningType));
+
+            if (_fieldRefsInCompilationModuleSet == null)
+                MapExternalMethodsAndFields();
+
+            return _fieldRefsInCompilationModuleSet.TryGetValue(field, out token);
         }
     }
 }
