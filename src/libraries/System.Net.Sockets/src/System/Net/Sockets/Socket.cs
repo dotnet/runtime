@@ -4121,6 +4121,12 @@ namespace System.Net.Sockets
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
+
+            if (_rightEndPoint == null)
+            {
+                _rightEndPoint = endPointSnapshot;
+            }
+
             SocketError socketError;
             try
             {
