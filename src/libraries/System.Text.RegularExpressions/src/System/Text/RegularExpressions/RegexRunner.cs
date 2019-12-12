@@ -342,9 +342,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void EnsureStorage()
         {
-            if (runstackpos < runtrackcount * 4)
+            int limit = runtrackcount * 4;
+
+            if (runstackpos < limit)
                 DoubleStack();
-            if (runtrackpos < runtrackcount * 4)
+
+            if (runtrackpos < limit)
                 DoubleTrack();
         }
 
@@ -382,9 +385,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void DoubleTrack()
         {
-            int[] newtrack;
-
-            newtrack = new int[runtrack!.Length * 2];
+            int[] newtrack = new int[runtrack!.Length * 2];
 
             Array.Copy(runtrack, 0, newtrack, runtrack.Length, runtrack.Length);
             runtrackpos += runtrack.Length;
@@ -397,9 +398,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void DoubleStack()
         {
-            int[] newstack;
-
-            newstack = new int[runstack!.Length * 2];
+            int[] newstack = new int[runstack!.Length * 2];
 
             Array.Copy(runstack, 0, newstack, runstack.Length, runstack.Length);
             runstackpos += runstack.Length;
@@ -411,9 +410,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void DoubleCrawl()
         {
-            int[] newcrawl;
-
-            newcrawl = new int[runcrawl!.Length * 2];
+            int[] newcrawl = new int[runcrawl!.Length * 2];
 
             Array.Copy(runcrawl, 0, newcrawl, runcrawl.Length, runcrawl.Length);
             runcrawlpos += runcrawl.Length;
@@ -456,11 +453,9 @@ namespace System.Text.RegularExpressions
         {
             if (end < start)
             {
-                int T;
-
-                T = end;
+                int t = end;
                 end = start;
-                start = T;
+                start = t;
             }
 
             Crawl(capnum);
@@ -474,22 +469,17 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void TransferCapture(int capnum, int uncapnum, int start, int end)
         {
-            int start2;
-            int end2;
-
-            // these are the two intervals that are cancelling each other
+            // these are the two intervals that are canceling each other
 
             if (end < start)
             {
-                int T;
-
-                T = end;
+                int t = end;
                 end = start;
-                start = T;
+                start = t;
             }
 
-            start2 = MatchIndex(uncapnum);
-            end2 = start2 + MatchLength(uncapnum);
+            int start2 = MatchIndex(uncapnum);
+            int end2 = start2 + MatchLength(uncapnum);
 
             // The new capture gets the innermost defined interval
 

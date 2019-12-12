@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 #
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
@@ -239,7 +239,7 @@ def main(args):
     clr_os = 'Windows_NT' if Is_windows else Unix_name_map[os.uname()[0]]
 
     if not os.path.exists(clr_core_root):
-        raise Exception('Core root path %s does not exist.' % (core_root))
+        raise Exception('Core root path %s does not exist.' % (clr_core_root))
 
     fx_bin = os.path.join(fx_root,
                           'artifacts',
@@ -248,7 +248,7 @@ def main(args):
                           'netcoreapp-%s-%s-%s' % (clr_os, build_type, arch))
 
     if not os.path.exists(fx_bin):
-        raise Exception('CoreFX bin path %s does not exist.' % (core_root))
+        raise Exception('CoreFX bin path %s does not exist.' % (fx_bin))
 
     patch_coreclr_root(clr_core_root, fx_bin)
 

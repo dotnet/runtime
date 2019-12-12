@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
                     ctorKey.Method,
                     isUnboxingStub: false,
-                    isInstantiatingStub: false,
+                    isInstantiatingStub: ctorKey.Method.Method.HasInstantiation,
                     isPrecodeImportRequired: false,
                     signatureContext: signatureContext);
 

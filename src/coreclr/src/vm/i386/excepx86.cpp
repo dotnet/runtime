@@ -2291,7 +2291,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     if (!pFunc)
         return SWA_CONTINUE;
 
-    if (pThread->IsRudeAbortInitiated() && !pThread->IsWithinCer(pCf))
+    if (pThread->IsRudeAbortInitiated())
     {
         return SWA_CONTINUE;
     }
@@ -2638,7 +2638,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
 
             pExInfo->m_EHClauseInfo.ResetInfo();
 
-            if (pThread->IsRudeAbortInitiated() && !pThread->IsWithinCer(pCf))
+            if (pThread->IsRudeAbortInitiated())
             {
                 if (fGiveDebuggerAndProfilerNotification)
                     EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionLeave(pFunc);
@@ -2737,7 +2737,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     Thread *pThread = GetThread();
 
     // If the thread is being RudeAbort, we will not run any finally
-    if (pThread->IsRudeAbortInitiated() && !pThread->IsWithinCer(pCf))
+    if (pThread->IsRudeAbortInitiated())
     {
         return SWA_CONTINUE;
     }

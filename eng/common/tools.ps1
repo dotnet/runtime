@@ -98,7 +98,7 @@ function Exec-Process([string]$command, [string]$commandArgs) {
   }
 }
 
-function InitializeDotNetCli([bool]$install) {
+function InitializeDotNetCli([bool]$install, [bool]$createSdkLocationFile) {
   if (Test-Path variable:global:_DotNetInstallDir) {
     return $global:_DotNetInstallDir
   }
@@ -146,6 +146,22 @@ function InitializeDotNetCli([bool]$install) {
     }
 
     $env:DOTNET_INSTALL_DIR = $dotnetRoot
+
+    if ($createSdkLocationFile) {
+      # Create a temporary file under the toolset dir and rename it to sdk.txt to avoid races.
+      do { 
+        $sdkCacheFileTemp = Join-Path $ToolsetDir $([System.IO.Path]::GetRandomFileName())
+      } 
+      until (!(Test-Path $sdkCacheFileTemp))
+      Set-Content -Path $sdkCacheFileTemp -Value $dotnetRoot
+
+      try {
+        Rename-Item -Force -Path $sdkCacheFileTemp 'sdk.txt'
+      } catch {
+        # Somebody beat us
+        Remove-Item -Path $sdkCacheFileTemp
+      }
+    }
   }
 
   # Add dotnet to PATH. This prevents any bare invocation of dotnet in custom

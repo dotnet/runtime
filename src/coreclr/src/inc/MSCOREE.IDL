@@ -29,9 +29,6 @@ interface IHostControl;
 cpp_quote("struct ICLRControl;")
 interface ICLRControl;
 
-// CLSID ComCallUnmarshal2
-cpp_quote("EXTERN_GUID(CLSID_ComCallUnmarshalV4, 0x45fb4600,0xe6e8,0x4928,0xb2,0x5e,0x50,0x47,0x6f,0xf7,0x94,0x25);")
-
 // IID ICLRRuntimeHost: uuid(90F1A06C-7712-4762-86B5-7A5EBA6BDB02)
 cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost, 0x90F1A06C, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02);")
 
@@ -96,22 +93,6 @@ typedef enum {
     WAIT_ALERTABLE = 0x2,
     WAIT_NOTINDEADLOCK = 0x4
 }WAIT_OPTION;
-
-typedef enum ETaskType
-{
-    TT_DEBUGGERHELPER = 0x1,
-    TT_GC = 0x2,
-    TT_FINALIZER = 0x4,
-    TT_THREADPOOL_TIMER = 0x8,
-    TT_THREADPOOL_GATE = 0x10,
-    TT_THREADPOOL_WORKER = 0x20,
-    TT_THREADPOOL_IOCOMPLETION = 0x40,
-    TT_ADUNLOAD = 0x80,
-    TT_USER = 0x100,
-    TT_THREADPOOL_WAIT = 0x200,
-
-    TT_UNKNOWN = 0x80000000,
-} ETaskType;
 
 typedef enum {
     // Default to minidump

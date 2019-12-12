@@ -60,6 +60,7 @@ set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
 set __LocalCoreFXPath=
+set __LocalCoreFXConfig=%__BuildType%
 set __SkipFXRestoreArg=
 set __GenerateLayoutOnly=0
 
@@ -106,6 +107,7 @@ if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "localcorefxpath"       (set __LocalCoreFXPath=%2&set __SkipFXRestoreArg=/p:__SkipFXRestore=true&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "localcorefxconfig"     (set __LocalCoreFXConfig=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
@@ -481,6 +483,8 @@ REM === The test host includes a dotnet executable, system libraries and CoreCLR
 REM ===
 REM =========================================================================================
 
+if not "%__LocalCoreFXPath%" == "" goto SkipBuildingCoreFXTestHost
+
 echo %__MsgPrefix%Building CoreFX test host
 
 set __BuildLogRootName=Tests_CoreFX_Testhost
@@ -505,6 +509,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:SkipBuildingCoreFXTestHost
+
 REM =========================================================================================
 REM ===
 REM === Create test wrappers.
@@ -525,7 +531,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
-call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\src\runtest.proj /nodereuse:false /p:BuildWrappers=true !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs%
+call "%__RepoRootDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\src\runtest.proj /nodereuse:false /p:BuildWrappers=true !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: XUnit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -576,9 +582,9 @@ REM ===
 REM =========================================================================================
 
 if NOT "%__LocalCoreFXPath%"=="" (
-    echo Patch CoreFX from %__LocalCoreFXPath%
+    echo Patch CoreFX from %__LocalCoreFXPath% ^(%__LocalCoreFXConfig%^)
     set NEXTCMD=python "%__ProjectDir%\tests\scripts\patch-corefx.py" -clr_core_root "%CORE_ROOT%"^
-    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__BuildType%
+    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__LocalCoreFXConfig%
     echo !NEXTCMD!
     !NEXTCMD!
 )
@@ -627,7 +633,7 @@ echo     win7-x64: Builds overlay for Windows 7
 echo crossgen: Precompiles the framework managed assemblies
 echo copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
 echo skipgeneratelayout: Do not generate the Core_Root layout or the CoreFX testhost.
-echo -generatelayoutonly: Generate the Core_Root layout without build managed or native test components
+echo generatelayoutonly: Generate the Core_Root layout without building managed or native test components
 echo targetsNonWindows:
 echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
 echo     Set to "" to disable default exclusion file.

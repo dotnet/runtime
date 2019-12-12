@@ -2402,6 +2402,14 @@ void Compiler::fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, uns
     }
 }
 
+//------------------------------------------------------------------------
+// fgComputeDoms: Compute immediate dominators, the dominator tree and
+//    and its pre/post-order travsersal numbers.
+//
+// Notes:
+//    Immediate dominator computation is based on "A Simple, Fast Dominance Algorithm"
+//    by Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy.
+//
 void Compiler::fgComputeDoms()
 {
     assert(!fgCheapPredsValid);
@@ -2425,8 +2433,7 @@ void Compiler::fgComputeDoms()
 
     BlockSet processedBlks(BlockSetOps::MakeEmpty(this));
 
-    fgBBInvPostOrder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1];
-    memset(fgBBInvPostOrder, 0, sizeof(BasicBlock*) * (fgBBNumMax + 1));
+    fgBBInvPostOrder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
 
     fgDfsInvPostOrder();
     noway_assert(fgBBInvPostOrder[0] == nullptr);
@@ -2600,14 +2607,7 @@ DomTreeNode* Compiler::fgBuildDomTree()
     JITDUMP("\nInside fgBuildDomTree\n");
 
     unsigned     bbArraySize = fgBBNumMax + 1;
-    DomTreeNode* domTree     = new (this, CMK_DominatorMemory) DomTreeNode[bbArraySize];
-
-    // Initialize all the data structures.
-    for (unsigned i = 0; i < bbArraySize; ++i)
-    {
-        domTree[i].firstChild  = nullptr;
-        domTree[i].nextSibling = nullptr;
-    }
+    DomTreeNode* domTree     = new (this, CMK_DominatorMemory) DomTreeNode[bbArraySize]{};
 
     BasicBlock* imaginaryRoot = fgFirstBB->bbIDom;
 
@@ -2624,7 +2624,7 @@ DomTreeNode* Compiler::fgBuildDomTree()
 
     // If the imaginary root is present then we'll need to create a forest instead of a tree.
     // Forest roots are chained via DomTreeNode::nextSibling and we keep track of this list's
-    // tail in order to append to it. The head of the list if fgFirstBB, by construction.
+    // tail in order to append to it. The head of the list is fgFirstBB, by construction.
     BasicBlock* rootListTail = fgFirstBB;
 
     // Traverse the entire block list to build the dominator tree. Skip fgFirstBB
@@ -2705,15 +2705,8 @@ void Compiler::fgNumberDomTree(DomTreeNode* domTree)
         void Begin()
         {
             unsigned bbArraySize           = m_compiler->fgBBNumMax + 1;
-            m_compiler->fgDomTreePreOrder  = new (m_compiler, CMK_DominatorMemory) unsigned[bbArraySize];
-            m_compiler->fgDomTreePostOrder = new (m_compiler, CMK_DominatorMemory) unsigned[bbArraySize];
-
-            // Initialize all the data structures.
-            for (unsigned i = 0; i < bbArraySize; ++i)
-            {
-                m_compiler->fgDomTreePreOrder[i]  = 0;
-                m_compiler->fgDomTreePostOrder[i] = 0;
-            }
+            m_compiler->fgDomTreePreOrder  = new (m_compiler, CMK_DominatorMemory) unsigned[bbArraySize]{};
+            m_compiler->fgDomTreePostOrder = new (m_compiler, CMK_DominatorMemory) unsigned[bbArraySize]{};
 
             // The preorder and postorder numbers.
             // We start from 1 to match the bbNum ordering.

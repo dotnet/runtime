@@ -937,29 +937,6 @@ BOOL Thread::IsExecutingWithinCer()
     return sContext.fWithinCer;
 }
 
-
-// Context structure used during stack walks to determine whether a given method is executing within a CER.
-struct CerStackCrawlContext
-{
-    MethodDesc *m_pStartMethod;         // First method we crawl (here for debug purposes)
-    bool        m_fFirstFrame;          // True for first callback only
-    bool        m_fWithinCer;           // The result
-};
-
-
-// Determine whether the method at the given depth in the thread's execution stack is executing within a CER.
-BOOL Thread::IsWithinCer(CrawlFrame *pCf)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return FALSE;
-}
-
 #if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
 BOOL Thread::IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck)
 {
@@ -1017,35 +994,11 @@ BOOL Thread::ReadyForAsyncException()
         return FALSE;
     }
 
-    if (IsAbortRequested() && HasThreadStateNC(TSNC_SOWorkNeeded))
-    {
-        return TRUE;
-    }
-
     if (GetThread() == this && HasThreadStateNC (TSNC_PreparingAbort) && !IsRudeAbort() )
     {
         STRESS_LOG0(LF_APPDOMAIN, LL_INFO10, "in Thread::ReadyForAbort  PreparingAbort\n");
         // Avoid recursive call
         return FALSE;
-    }
-
-    if (IsAbortPrevented())
-    {
-        //
-        // If the thread is marked to have a FuncEval abort request, then allow that to go through
-        // since we dont want to block funcEval aborts. Such requests are initiated by the
-        // right-side when the thread is doing funcEval and the exception would be caught in the
-        // left-side's funcEval implementation that will then clear the funcEval-abort-state from the thread.
-        //
-        // If another thread also marked this one for a non-FuncEval abort, then the left-side will
-        // proceed to [re]throw that exception post funcEval abort. When we come here next, we would follow
-        // the usual rules to raise the exception and if raised, to prevent the abort if applicable.
-        //
-        if (!IsFuncEvalAbort())
-        {
-            STRESS_LOG0(LF_APPDOMAIN, LL_INFO10, "in Thread::ReadyForAbort  prevent abort\n");
-            return FALSE;
-        }
     }
 
     // The thread requests not to be aborted.  Honor this for safe abort.
@@ -2708,11 +2661,6 @@ void Thread::HandleThreadAbort ()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
-    // It's possible we could go through here if we hit a hard SO and MC++ has called back
-    // into the runtime on this thread
-
-    FinishSOWork();
-
     if (IsAbortRequested() && GetAbortEndTime() < CLRGetTickCount64())
     {
         HandleThreadAbortTimeout();
@@ -2829,9 +2777,6 @@ void Thread::PerformPreemptiveGC()
         || GCHeapUtilities::IsGCInProgress(TRUE)
         || GCHeapUtilities::GetGCHeap()->GetGcCount() == 0    // Need something that works for isolated heap.
         || ThreadStore::HoldingThreadStore())
-        return;
-
-    if (Thread::ThreadsAtUnsafePlaces())
         return;
 
 #ifdef DEBUGGING_SUPPORTED
@@ -6540,8 +6485,7 @@ retry_for_debugger:
         // at a safepoint - since this is the exact same behaviour
         // that the debugger needs, just use it's code.
         if ((hr == ERROR_TIMEOUT)
-            || Thread::ThreadsAtUnsafePlaces()
-#ifdef DEBUGGING_SUPPORTED  // seriously?  When would we want to disable debugging support? :)
+#ifdef DEBUGGING_SUPPORTED
              || (CORDebuggerAttached() &&
             // When the debugger is synchronizing, trying to perform a GC could deadlock. The GC has the
             // threadstore lock and synchronization cannot complete until the debugger can get the

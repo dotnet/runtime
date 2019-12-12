@@ -1,0 +1,3 @@
+variables:
+- name: isOfficialBuild
+  value: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}

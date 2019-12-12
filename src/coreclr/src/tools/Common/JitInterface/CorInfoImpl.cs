@@ -422,7 +422,6 @@ namespace Internal.JitInterface
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
-
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
@@ -481,7 +480,7 @@ namespace Internal.JitInterface
 
             CorInfoType corInfoRetType = asCorInfoType(signature.ReturnType, &sig->retTypeClass);
             sig->_retType = (byte)corInfoRetType;
-            sig->retTypeSigClass = sig->retTypeClass; // The difference between the two is not relevant for ILCompiler
+            sig->retTypeSigClass = ObjectToHandle(signature.ReturnType);
 
             sig->flags = 0;    // used by IL stubs code
 
@@ -637,14 +636,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
-            {
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
-
-                if (method.IsRawPInvoke())
-                {
-                    result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
-                }
-            }
 
 #if READYTORUN
             if (method.RequireSecObject)
@@ -1402,7 +1394,7 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT)
+            if (type.IsByReferenceOfT || type.IsWellKnownType(WellKnownType.TypedReference))
             {
                 *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
                 return 1;
@@ -1661,10 +1653,6 @@ namespace Internal.JitInterface
             }
 
             return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
-        }
-
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
         }
 
         private CORINFO_CLASS_STRUCT_* getBuiltinClass(CorInfoClassId classId)
@@ -2210,13 +2198,22 @@ namespace Internal.JitInterface
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
 #endif
                     }
-                    else if (field.HasGCStaticBase)
-                    {
-                        helperId = ReadyToRunHelperId.GetGCStaticBase;
-                    }
                     else
                     {
-                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        helperId = field.HasGCStaticBase ?
+                            ReadyToRunHelperId.GetGCStaticBase :
+                            ReadyToRunHelperId.GetNonGCStaticBase;
+
+                        //
+                        // Currently, we only do this optimization for regular statics, but it
+                        // looks like it may be permissible to do this optimization for
+                        // thread statics as well.
+                        //
+                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
+                            (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
+                        {
+                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
+                        }
                     }
 
 #if READYTORUN
@@ -2532,13 +2529,12 @@ namespace Internal.JitInterface
         private byte* findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException("findNameOfToken"); }
 
-        SystemVStructClassificator _systemVStructClassificator = new SystemVStructClassificator();
-
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         {
             TypeDesc typeDesc = HandleToObject(structHnd);
 
-            return _systemVStructClassificator.getSystemVAmd64PassStructInRegisterDescriptor(typeDesc, structPassInRegDescPtr);
+            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(typeDesc, out *structPassInRegDescPtr);
+            return true;
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
@@ -2798,16 +2794,6 @@ namespace Internal.JitInterface
         private void yieldExecution()
         {
             // Nothing to do
-        }
-
-        private void setEHcount(uint cEH)
-        {
-            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
-        }
-
-        private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
-        {
-            _ehClauses[EHnumber] = clause;
         }
 
         private bool logMsg(uint level, byte* fmt, IntPtr args)
