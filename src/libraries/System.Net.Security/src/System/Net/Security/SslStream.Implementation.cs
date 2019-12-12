@@ -240,11 +240,12 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private void ProcessAuthentication()
+        private Task ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
         {
+            Task result = null;
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "Authenticate", "authenticate"));
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, isApm ? "BeginAuthenticate" :  "Authenticate", "authenticate"));
             }
 
             try
@@ -254,9 +255,15 @@ namespace System.Net.Security
                 //  A trick to discover and avoid cached sessions.
                 _CachedSession = CachedSessionStatus.Unknown;
 
-                ForceAuthentication(_context.IsServer, null);
+                if (isAsync)
+                {
+                    result = ForceAuthenticationAsync(_context.IsServer, null, cancellationToken);
+                }
+                else
+                {
+                    ForceAuthentication(_context.IsServer, null);
 
-                if (NetEventSource.IsEnabled)
+                    if (NetEventSource.IsEnabled)
                         NetEventSource.Log.SspiSelectedCipherSuite(nameof(ProcessAuthentication),
                                                                     SslProtocol,
                                                                     CipherAlgorithm,
@@ -265,19 +272,15 @@ namespace System.Net.Security
                                                                     HashStrength,
                                                                     KeyExchangeAlgorithm,
                                                                     KeyExchangeStrength);
-            }
-            catch (Exception)
-            {
-                // If an exception emerges synchronously, the asynchronous operation was not
-                // initiated, so no operation is in progress.
-                _nestedAuth = 0;
-                throw;
+                }
             }
             finally
             {
                 // Operation has completed.
                 _nestedAuth = 0;
             }
+
+            return result;
         }
 
         //
@@ -379,6 +382,17 @@ namespace System.Net.Security
             {
                 SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
             }
+
+            if (NetEventSource.IsEnabled)
+                NetEventSource.Log.SspiSelectedCipherSuite(nameof(ForceAuthenticationAsync),
+                                                                    SslProtocol,
+                                                                    CipherAlgorithm,
+                                                                    CipherStrength,
+                                                                    HashAlgorithm,
+                                                                    HashStrength,
+                                                                    KeyExchangeAlgorithm,
+                                                                    KeyExchangeStrength);
+
         }
 
         //

@@ -227,7 +227,7 @@ namespace System.Net.Security
         }
 
         internal IAsyncResult BeginAuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback asyncCallback, object asyncState) =>
-            TaskToApm.Begin(AuthenticateAsClientAsync(sslClientAuthenticationOptions, cancellationToken), asyncCallback, asyncState);
+            TaskToApm.Begin(AuthenticateAsClientApm(sslClientAuthenticationOptions, cancellationToken), asyncCallback, asyncState);
 
         public virtual void EndAuthenticateAsClient(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
@@ -266,7 +266,7 @@ namespace System.Net.Security
         }
 
         private IAsyncResult BeginAuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback asyncCallback, object asyncState) =>
-            TaskToApm.Begin(AuthenticateAsServerAsync(sslServerAuthenticationOptions, cancellationToken), asyncCallback, asyncState);
+            TaskToApm.Begin(AuthenticateAsServerApm(sslServerAuthenticationOptions, cancellationToken), asyncCallback, asyncState);
 
         public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
@@ -371,7 +371,17 @@ namespace System.Net.Security
 
             ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
 
-            return ForceAuthenticationAsync(false, null, cancellationToken);
+            return ProcessAuthentication(true, false, cancellationToken);
+        }
+
+        private Task AuthenticateAsClientApm(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
+        {
+            SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
+            SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
+
+            ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
+
+            return ProcessAuthentication(true, true, cancellationToken);
         }
 
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate) =>
@@ -409,7 +419,15 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
-            return ForceAuthenticationAsync(true, null, cancellationToken);
+            return ProcessAuthentication(true, false, cancellationToken);
+        }
+
+        private Task AuthenticateAsServerApm(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
+        {
+            SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
+            ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
+
+            return ProcessAuthentication(true, true, cancellationToken);
         }
 
         public virtual Task ShutdownAsync()
