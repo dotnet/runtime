@@ -39,23 +39,28 @@ namespace System.Net.Http.Tests
             AssertFormatException("te\u00E4xt", null);
         }
 
-        [Fact]
-        public void Ctor_NameValidFormat_SuccessfullyCreated()
+        [Theory]
+        [InlineData("text", null)]
+        [InlineData("host", "server.example.com:80")]
+        [InlineData("quoted", "\"value\"")]
+        public void Ctor_NameValidFormat_SuccessfullyCreated(string name, string value)
         {
-            NameValueHeaderValue nameValue = new NameValueHeaderValue("text", null);
-            Assert.Equal("text", nameValue.Name);
+            NameValueHeaderValue nameValue = new NameValueHeaderValue(name, value);
+            Assert.Equal(name, nameValue.Name);
+            Assert.Equal(value, nameValue.Value);
         }
 
-        [Fact]
-        public void Ctor_ValueInvalidFormat_ThrowFormatException()
+        [Theory]
+        [InlineData(" token ")]
+        [InlineData("token ")]
+        [InlineData(" token")]
+        [InlineData("\"quoted string with \" quotes\"")]
+        [InlineData("\"quoted string with \"two\" quotes\"")]
+        [InlineData("\"")]
+        public void Ctor_ValueInvalidFormat_ThrowFormatException(string value)
         {
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
-            AssertFormatException("text", " token ");
-            AssertFormatException("text", "token ");
-            AssertFormatException("text", " token");
-            AssertFormatException("text", "token string");
-            AssertFormatException("text", "\"quoted string with \" quotes\"");
-            AssertFormatException("text", "\"quoted string with \"two\" quotes\"");
+            AssertFormatException("text", value);
         }
 
         [Fact]
@@ -73,7 +78,6 @@ namespace System.Net.Http.Tests
         {
             // Just verify that the setter calls the same validation the ctor invokes.
             Assert.Throws<FormatException>(() => { var x = new NameValueHeaderValue("name"); x.Value = " x "; });
-            Assert.Throws<FormatException>(() => { var x = new NameValueHeaderValue("name"); x.Value = "x y"; });
         }
 
         [Fact]
