@@ -128,8 +128,6 @@ if /i "%1" == "-x86"                 (set __BuildArchX86=1&set processedArgs=!pr
 if /i "%1" == "-arm"                 (set __BuildArchArm=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-arm64"               (set __BuildArchArm64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "-linux"               (set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-
 if /i "%1" == "-debug"               (set __BuildTypeDebug=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -168,6 +166,8 @@ if [!__PassThroughArgs!]==[] (
 ) else (
     set __PassThroughArgs=%__PassThroughArgs% %1
 )
+
+if /i "%1" == "-linuxdac"            (set __BuildNativeCoreLib=0&set __BuildNative=0&set __CrossArch=x64&set __BuildCrossArchNative=1&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "-freebsdmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=FreeBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-linuxmscorlib"       (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -293,10 +293,6 @@ if %__SkipCrossArchNative% EQU 0 (
         )
         if /i "%__BuildArch%"=="arm" (
             set __BuildCrossArchNative=1
-        )
-
-        if /i "%__BuildOS%"=="Linux" (
-            if /i "%__BuildArch%"=="x64" set __BuildCrossArchNative=1
         )
     )
 )
