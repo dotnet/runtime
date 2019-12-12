@@ -364,7 +364,7 @@ namespace System.Net.Security
                 message  = await ReceiveBlobAsync(adapter, buffer, cancellationToken).ConfigureAwait(false);
                 if (message.Size > 0)
                 {
-                    // If there is message send it out even if call failed. It may contain TLS Altert.
+                    // If there is message send it out even if call failed. It may contain TLS Alert.
                     await InnerStream.WriteAsync(message.Payload, cancellationToken).ConfigureAwait(false);
                 }
 
@@ -942,7 +942,7 @@ namespace System.Net.Security
                         {
                             if (!_sslAuthenticationOptions.AllowRenegotiation)
                             {
-                                if (NetEventSource.IsEnabled) NetEventSource.Fail(this, "Renegotiation request but it is disabled");
+                                if (NetEventSource.IsEnabled) NetEventSource.Fail(this, "Renegotiation was requested but it is disallowed");
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
 
