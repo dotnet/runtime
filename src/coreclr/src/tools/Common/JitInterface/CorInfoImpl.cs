@@ -2197,13 +2197,22 @@ namespace Internal.JitInterface
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
 #endif
                     }
-                    else if (field.HasGCStaticBase)
-                    {
-                        helperId = ReadyToRunHelperId.GetGCStaticBase;
-                    }
                     else
                     {
-                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        helperId = field.HasGCStaticBase ?
+                            ReadyToRunHelperId.GetGCStaticBase :
+                            ReadyToRunHelperId.GetNonGCStaticBase;
+
+                        //
+                        // Currently, we only do this optimization for regular statics, but it
+                        // looks like it may be permissible to do this optimization for
+                        // thread statics as well.
+                        //
+                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
+                            (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
+                        {
+                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
+                        }
                     }
 
 #if READYTORUN
