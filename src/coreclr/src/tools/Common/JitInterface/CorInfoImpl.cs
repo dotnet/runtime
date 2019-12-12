@@ -1395,8 +1395,18 @@ namespace Internal.JitInterface
 
             if (type.IsByReferenceOfT || type.IsWellKnownType(WellKnownType.TypedReference))
             {
-                *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
-                return 1;
+                // Ensure that if we have multiple fields with the same offset, 
+                // that we don't double count the data in the gc layout.
+                if (*gcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
+                {
+                    *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
+                    result++;
+                }
+                else
+                {
+                    Debug.Assert(*gcPtrs == (byte)CorInfoGCType.TYPE_GC_BYREF);
+                }
+                return result;
             }
 
             foreach (var field in type.GetFields())
@@ -1450,7 +1460,6 @@ namespace Internal.JitInterface
                     }
                 }
             }
-
             return result;
         }
 
