@@ -288,6 +288,9 @@ namespace Internal.TypeSystem
                 // Work in a local variable to avoid lots of unnecessary volatile reads of _newHashTable since only this method can
                 // change it and we're under a lock
                 TValue[] newHashTable = new TValue[newSize];
+                // This is a rare "read-after-write" case where even x64/x86 needs fences.
+                // We must ensure that the publishing of _newHashTable happens before we read the first table
+                // entry from the pov of an external observer
                 Interlocked.Exchange(ref _newHashTable, newHashTable);
                 // Due to the volatile write above, any adds on other threads after this point will
                 // fail and be redone, thus writing to the new hash table.
@@ -490,7 +493,7 @@ namespace Internal.TypeSystem
 
             // Now that we've written to the local array, find out if that array has been
             // replaced by expansion. If it has, we need to restart and write to the new array.
-            if (Interlocked.CompareExchange(ref _newHashTable, hashTableLocal, hashTableLocal) != hashTableLocal)
+            if (_newHashTable != hashTableLocal)
             {
                 WriteAbortNullToLocation(hashTableLocal, tableIndex);
 
