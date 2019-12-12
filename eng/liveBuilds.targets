@@ -47,10 +47,6 @@
           $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
           $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
           $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
-
-      <CoreCLRCrossTargetFiles>
-        <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
-      </CoreCLRCrossTargetFiles>
     </ItemGroup>
 
     <Error Condition="'@(CoreCLRFiles)' == ''" Text="The CoreCLR subset category must be built before building this project." />

@@ -34,8 +34,25 @@
   <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
       <CoreCLRFiles>
-        <TargetPath>runtime/$(PackageRID)/native</TargetPath>
+        <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
       </CoreCLRFiles>
+
+      <CoreCLRFiles Condition="'%(FileName)' == 'crossgen'">
+        <TargetPath>tools</TargetPath>
+      </CoreCLRFiles>
+
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
+        <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'crossgen'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore')) and '$(TargetsWindows)' == 'true'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
       <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRCrossTargetFiles)" />
     </ItemGroup>
   </Target>

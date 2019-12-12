@@ -50,10 +50,6 @@
     to be able to find packages produced in the libraries phase and consumed in the installer phase.
   -->
   <PropertyGroup>
-    <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
-    <LibrariesShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'Shipping'))</LibrariesShippingPackagesDir>
-    <LibrariesNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'NonShipping'))</LibrariesNonShippingPackagesDir>
-
     <RestoreSources Condition="Exists('$(LibrariesShippingPackagesDir)')">$(RestoreSources);$(LibrariesShippingPackagesDir)</RestoreSources>
     <RestoreSources Condition="Exists('$(LibrariesNonShippingPackagesDir)')">$(RestoreSources);$(LibrariesNonShippingPackagesDir)</RestoreSources>
   </PropertyGroup>
