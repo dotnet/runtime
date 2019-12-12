@@ -63,10 +63,7 @@ namespace System.Net.Sockets.Tests
                 await sendTask;
 
                 // In synchronous calls, we should wait for the completion of the helper task:
-                if (UsesSync)
-                {
-                    Assert.NotNull(socket.LocalEndPoint);
-                }
+                Assert.NotNull(socket.LocalEndPoint);
             }
         }
 
