@@ -258,5 +258,81 @@ namespace System.Text.Json
                 throw new NotSupportedException(SR.Format(SR.DeserializeMissingParameterlessConstructor, invalidType));
             }
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataValuesInvalidToken()
+        {
+            throw new JsonException(SR.MetadataInvalidTokenAfterValues);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataReferenceNotFound()
+        {
+            throw new JsonException(SR.MetadataReferenceNotFound);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataValueWasNotString()
+        {
+            throw new JsonException(SR.MetadataValueWasNotString);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties()
+        {
+            throw new JsonException(SR.MetadataReferenceCannotContainOtherProperties);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataIdIsNotFirstProperty()
+        {
+            throw new JsonException(SR.MetadataIdIsNotFirstProperty);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataMissingIdBeforeValues()
+        {
+            throw new JsonException(SR.MetadataMissingIdBeforeValues);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataInvalidPropertyWithLeadingSign()
+        {
+            throw new JsonException(SR.MetadataInvalidPropertyWithLeadingSign);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataDuplicateIdFound(string id)
+        {
+            throw new JsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataInvalidReferenceToValueType(Type propertyType)
+        {
+            throw new JsonException(SR.Format(SR.MetadataInvalidReferenceToValueType, propertyType));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(Type propertyType)
+        {
+            throw new JsonException(SR.Format(SR.MetadataPreservedArrayFailed,
+                SR.MetadataPreservedArrayInvalidProperty,
+                SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataPreservedArrayValuesNotFound(Type propertyType)
+        {
+            throw new JsonException(SR.Format(SR.MetadataPreservedArrayFailed,
+                SR.MetadataPreservedArrayValuesNotFound,
+                SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(Type propertyType)
+        {
+            throw new JsonException(SR.Format(SR.MetadataCannotParsePreservedObjectToImmutable, propertyType));
+        }
     }
 }

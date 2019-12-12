@@ -10,7 +10,7 @@ namespace System.Text.Json
         {
             if (reader.TokenType != JsonTokenType.String)
             {
-                throw new JsonException("Value for metadata properties cannot be other than string.");
+                ThrowHelper.ThrowJsonException_MetadataValueWasNotString();
             }
 
             MetadataPropertyName metadata = state.Current.MetadataProperty;
@@ -73,24 +73,24 @@ namespace System.Text.Json
 
                 // Fail state.
                 // Set PropertyInfo or KeyName to write down the conflicting property name in JsonException.Path
-                if (!state.Current.IsProcessingDictionary())
+                if (state.Current.IsProcessingDictionary())
+                {
+                    state.Current.KeyName = reader.GetString();
+                }
+                else
                 {
                     JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
                     info.JsonPropertyName = propertyName.ToArray();
                     state.Current.JsonPropertyInfo = info;
                 }
-                else
-                {
-                    state.Current.KeyName = reader.GetString();
-                }
 
-                throw new JsonException("Properties that start with '$' are not allowed on preserve mode, you must either escape '$' or turn off preserve references.");
+                ThrowHelper.ThrowJsonException_MetadataInvalidPropertyWithLeadingSign();
             }
 
             return MetadataPropertyName.NoMetadata;
         }
 
-        private static void HandleReference(JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
+        private static void HandleReference(ref ReadStack state)
         {
             object referenceValue = state.ResolveReference(state.Current.ReferenceId);
             if (state.Current.IsProcessingProperty(ClassType.Dictionary))
@@ -101,7 +101,7 @@ namespace System.Text.Json
             else
             {
                 state.Current.ReturnValue = referenceValue;
-                HandleEndObjectRef(ref state);
+                HandleEndObject(ref state);
             }
 
             state.Current.ShouldHandleReference = false;
@@ -109,22 +109,23 @@ namespace System.Text.Json
 
         internal static void SetAsPreserved(ref ReadStackFrame frame)
         {
-            bool alreadyPreserving;
+            //bool alreadyPreserving;
             if (frame.IsProcessingProperty(ClassType.Dictionary))
             {
-                alreadyPreserving = frame.DictionaryPropertyIsPreserved;
+                //alreadyPreserving = frame.DictionaryPropertyIsPreserved;
                 frame.DictionaryPropertyIsPreserved = true;
             }
             else
             {
-                alreadyPreserving = frame.IsPreserved;
+                //alreadyPreserving = frame.IsPreserved;
                 frame.IsPreserved = true;
             }
 
-            if (alreadyPreserving)
-            {
-                throw new JsonException("Object already defines a reference identifier.");
-            }
+            // Unreachable, if more than one $id, error "$id must be the first property" will pop-up.
+            //if (alreadyPreserving)
+            //{
+            //    throw new JsonException("Object already defines a reference identifier.");
+            //}
         }
     }
 

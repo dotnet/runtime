@@ -43,6 +43,11 @@ namespace System.Text.Json
 
                     JsonTokenType tokenType = reader.TokenType;
 
+                    if (options.ReferenceHandling.ShouldReadPreservedReferences())
+                    {
+                        CheckValidTokenAfterMetadataValues(ref readStack, tokenType);
+                    }
+
                     if (JsonHelpers.IsInRangeInclusive(tokenType, JsonTokenType.String, JsonTokenType.False))
                     {
                         Debug.Assert(tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number || tokenType == JsonTokenType.True || tokenType == JsonTokenType.False);
@@ -86,6 +91,11 @@ namespace System.Text.Json
                             // Clear the current property in case it is a dictionary, since dictionaries must have EndProperty() called when completed.
                             // A non-dictionary property can also have EndProperty() called when completed, although it is redundant.
                             readStack.Current.EndProperty();
+                        }
+                        // Used for ReferenceHandling.Preserve.
+                        else if (readStack.Current.ShouldHandleReference)
+                        {
+                            HandleReference(ref readStack);
                         }
                         else if (readStack.Current.IsProcessingDictionary())
                         {
@@ -201,6 +211,19 @@ namespace System.Text.Json
             }
 
             return propertyName;
+        }
+
+        private static void CheckValidTokenAfterMetadataValues(ref ReadStack state, JsonTokenType tokenType)
+        {
+            if (state.Current.MetadataProperty == MetadataPropertyName.Values)
+            {
+                if (tokenType != JsonTokenType.StartArray)
+                {
+                    ThrowHelper.ThrowJsonException_MetadataValuesInvalidToken();
+                }
+
+                state.Current.MetadataProperty = MetadataPropertyName.NoMetadata;
+            }
         }
     }
 }

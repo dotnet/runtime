@@ -35,11 +35,6 @@ namespace System.Text.Json
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
 
-        // Reference Handling delegates for Serialization.
-        internal ReferenceHandlingStrategy HandleReference = JsonSerializer.DefaultOnReferencesStrategy;
-        internal WriteStart WriteStart = JsonSerializer.WriteObjectOrArrayStart;
-        internal PopReference PopReference = JsonSerializer.DefaultPopReference;
-
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
         /// </summary>
@@ -313,8 +308,6 @@ namespace System.Text.Json
                 VerifyMutable();
 
                 _referenceHandling = value;
-
-                JsonSerializer.SetReferenceHandlingDelegates(this);
             }
         }
 

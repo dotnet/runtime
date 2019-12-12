@@ -16,15 +16,18 @@ namespace System.Text.Json
             // On deserialization: key is TKey.
             // On serialization: value is TKey.
             _referenceMapper = new Dictionary<object, object>();
+            //TODO: add second dictionary that uses reference equals.
         }
 
         // Used on deserialization.
         public void AddReference(string key, object value)
         {
-            if (!_referenceMapper.TryAdd(key, value))
+            if (_referenceMapper.ContainsKey(key))
             {
-                throw new JsonException($"Duplicated $id \"{key}\" found while preserving reference.");
+                ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(key);
             }
+
+            _referenceMapper[key] = value;
         }
 
         // Used on serialization.
@@ -52,7 +55,7 @@ namespace System.Text.Json
         {
             if (!_referenceMapper.TryGetValue(key, out object value))
             {
-                throw new JsonException("Reference not found.");
+                ThrowHelper.ThrowJsonException_MetadataReferenceNotFound();
             }
 
             return value;

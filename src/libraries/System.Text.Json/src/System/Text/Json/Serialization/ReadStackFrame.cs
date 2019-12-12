@@ -41,6 +41,7 @@ namespace System.Text.Json
         public bool IsPreserved;
         public bool IsPreservedArray;
         public bool DictionaryPropertyIsPreserved;
+        // maybe I can remove ShouldHandleReference if I use ReferenceId = null as false.
         public bool ShouldHandleReference;
         public bool ReadMetadataValue;
         public MetadataPropertyName MetadataProperty;
@@ -171,9 +172,12 @@ namespace System.Text.Json
             JsonClassInfo = null;
             PropertyRefCache = null;
             ReturnValue = null;
+            // TODO: Try using a field condition to avoid setting these fields when feature is off.
+            //if(this.PreserveReference){
             IsPreserved = false;
             DictionaryPropertyIsPreserved = false;
             IsPreservedArray = false;
+            //}
             EndObject();
         }
 

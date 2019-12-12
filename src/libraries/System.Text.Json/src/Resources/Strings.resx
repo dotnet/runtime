@@ -447,4 +447,45 @@
   <data name="NotNodeJsonElementParent" xml:space="preserve">
     <value>This JsonElement instance was not built from a JsonNode and is immutable.</value>
   </data>
+  <data name="MetadataCannotParsePreservedObjectToImmutable" xml:space="preserve">
+    <value>Cannot parse preserved object to Array or Immutable. Type {0}.</value>
+  </data>
+  <data name="MetadataDuplicateIdFound" xml:space="preserve">
+    <value>Duplicated identifier '{0}' found while reading preserved object.</value>
+  </data>
+  <data name="MetadataIdIsNotFirstProperty" xml:space="preserve">
+    <value>The metadata property $id must be the first property in the JSON object.</value>
+  </data>
+  <data name="MetadataInvalidReferenceToValueType" xml:space="preserve">
+    <value>Invalid reference to value type {0}.</value>
+  </data>
+  <data name="MetadataInvalidTokenAfterValues" xml:space="preserve">
+    <value>Invalid token after $values metadata property.</value>
+  </data>
+  <data name="MetadataMissingIdBeforeValues" xml:space="preserve">
+    <value>Missing $id before $values on preserved array.</value>
+  </data>
+  <data name="MetadataPreservedArrayFailed" xml:space="preserve">
+    <value>Deserialization failed for one of these reasons:
+1. {0}
+2. {1}</value>
+  </data>
+  <data name="MetadataPreservedArrayInvalidProperty" xml:space="preserve">
+    <value>Invalid property in preserved array.</value>
+  </data>
+  <data name="MetadataPreservedArrayValuesNotFound" xml:space="preserve">
+    <value>Metadata $values property was not found in preserved array.</value>
+  </data>
+  <data name="MetadataReferenceCannotContainOtherProperties" xml:space="preserve">
+    <value>Reference objects must not contain other properties except for $ref.</value>
+  </data>
+  <data name="MetadataReferenceNotFound" xml:space="preserve">
+    <value>Reference not found.</value>
+  </data>
+  <data name="MetadataValueWasNotString" xml:space="preserve">
+    <value>Value for metadata properties $id and $ref must be of type string.</value>
+  </data>
+  <data name="MetadataInvalidPropertyWithLeadingSign" xml:space="preserve">
+    <value>Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references.</value>
+  </data>
 </root>

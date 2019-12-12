@@ -302,14 +302,7 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, isFinalBlock: true, state: default);
 
-                if (options.ReferenceHandling.PreserveHandlingOnDeserialize == PreserveReferencesHandling.All)
-                {
-                    ReadCoreRef(options, ref newReader, ref readStack);
-                }
-                else
-                {
-                    ReadCore(options, ref newReader, ref readStack);
-                }
+                ReadCore(options, ref newReader, ref readStack);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);

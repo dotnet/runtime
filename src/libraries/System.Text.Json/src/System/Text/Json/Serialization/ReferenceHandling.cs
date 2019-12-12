@@ -40,6 +40,16 @@ namespace System.Text.Json.Serialization
             _preserveHandlingOnDeserialize = preserveHandlingOnDeserialize;
             _loopHandling = loopHandling;
         }
+
+        internal bool ShouldReadPreservedReferences()
+        {
+            return _preserveHandlingOnDeserialize == PreserveReferencesHandling.All;
+        }
+
+        internal bool ShouldWritePreservedReferences()
+        {
+            return _preserveHandlingOnSerialize == PreserveReferencesHandling.All;
+        }
     }
 
     internal enum ReferenceLoopHandling

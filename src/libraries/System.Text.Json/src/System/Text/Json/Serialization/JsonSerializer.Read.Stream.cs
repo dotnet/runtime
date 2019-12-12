@@ -217,21 +217,10 @@ namespace System.Text.Json
             readStack.ReadAhead = !isFinalBlock;
             readStack.BytesConsumed = 0;
 
-            if (options.ReferenceHandling.PreserveHandlingOnDeserialize == PreserveReferencesHandling.All)
-            {
-                ReadCoreRef(
-                    options,
-                    ref reader,
-                    ref readStack);
-
-            }
-            else
-            {
-                ReadCore(
-                    options,
-                    ref reader,
-                    ref readStack);
-            }
+            ReadCore(
+                options,
+                ref reader,
+                ref readStack);
 
             readerState = reader.CurrentState;
         }

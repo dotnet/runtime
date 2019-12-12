@@ -25,30 +25,19 @@ namespace System.Text.Json
                 if (state.Current.CurrentValue == null)
                 {
                     state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options, writeNull: true);
-                    return WriteEndObject(ref state, writer, options);
+                    return WriteEndObject(ref state);
                 }
 
-                //Handle reference here
-                //if first seen
-                //just write the property $id for objects;
-                //or write { "$id": "#", "$values": current array } for arrays.
-                //if seen before
-                //just write { "$ref": "#" } and finish processing the object/array.
-
-                ResolvedReferenceHandling handling = options.HandleReference(ref state, out string referenceId, out bool writeAsReference, state.Current.CurrentValue);
-
-                if (handling == ResolvedReferenceHandling.Ignore)
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
                 {
-                    //Reference loop found, do not write anything and pop the frame from the stack.
-                    return WriteEndObject(ref state, writer, options);
+                    if (WriteReferenceObject(ref state, writer, options))
+                    {
+                        return WriteEndObject(ref state);
+                    }
                 }
-
-                //state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
-                options.WriteStart(ref state.Current, ClassType.Object, writer, options, writeAsReference: writeAsReference, referenceId: referenceId);
-
-                if (handling == ResolvedReferenceHandling.IsReference)
+                else
                 {
-                    return WriteEndObject(ref state, writer, options);
+                    state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
                 }
 
                 state.Current.MoveToNextProperty = true;
@@ -72,14 +61,14 @@ namespace System.Text.Json
             }
 
             writer.WriteEndObject();
-            return WriteEndObject(ref state, writer, options);
+            return WriteEndObject(ref state);
         }
 
-        private static bool WriteEndObject(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options)
+        private static bool WriteEndObject(ref WriteStack state)
         {
             if (state.Current.PopStackOnEndObject)
             {
-                state.Pop(writer, options);
+                state.Pop();
             }
 
             return true;
@@ -174,6 +163,30 @@ namespace System.Text.Json
 
                 state.Current.MoveToNextProperty = true;
             }
+        }
+
+        private static bool WriteReferenceObject(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options)
+        {
+            ResolvedReferenceHandling handling = state.PreserveReference(state.Current.CurrentValue, out string referenceId);
+
+            if (handling == ResolvedReferenceHandling.IsReference)
+            {
+                // Object written before, write { "$ref": "#" } and finish.
+                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Object, writer, options, writeAsReference: true, referenceId: referenceId);
+                return true;
+            }
+            else if (handling == ResolvedReferenceHandling.Preserve)
+            {
+                // Object reference, write start and append $id.
+                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Object, writer, options, writeAsReference: false, referenceId: referenceId);
+            }
+            else
+            {
+                // Value type, fallback on regular Write method.
+                state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
+            }
+
+            return false;
         }
     }
 }

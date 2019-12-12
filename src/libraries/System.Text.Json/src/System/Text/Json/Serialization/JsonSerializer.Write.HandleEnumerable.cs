@@ -33,28 +33,25 @@ namespace System.Text.Json
 
                     if (state.Current.PopStackOnEndCollection)
                     {
-                        state.Pop(writer, options);
+                        state.Pop();
                     }
 
                     return true;
                 }
 
-                ResolvedReferenceHandling handling = options.HandleReference(ref state, out string referenceId, out bool writeAsReference, enumerable);
-
-                if (handling == ResolvedReferenceHandling.Ignore)
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
                 {
-                    //Reference loop found and ignore handling specified, do not write anything and pop the frame from the stack in case the array has an independant frame.
-                    return WriteEndArray(ref state, writer, options);
+                    if (WriteReferenceEnumerable(ref state, writer, options, enumerable))
+                    {
+                        return WriteEndArray(ref state);
+                    }
                 }
+                else
+                {
+                    state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
+                }
+
                 state.Current.CollectionEnumerator = enumerable.GetEnumerator();
-
-                options.WriteStart(ref state.Current, ClassType.Enumerable, writer, options, writeAsReference: writeAsReference, referenceId: referenceId);
-
-                if (handling == ResolvedReferenceHandling.IsReference)
-                {
-                    // We don't need to enumerate, this is a reference and was already written in WriteObjectOrArrayStart.
-                    return WriteEndArray(ref state, writer, options);
-                }
             }
 
             if (state.Current.CollectionEnumerator.MoveNext())
@@ -89,27 +86,52 @@ namespace System.Text.Json
             // We are done enumerating.
             writer.WriteEndArray();
 
+            // Used for ReferenceHandling.Preserve
             if (state.Current.WriteWrappingBraceOnEndCollection)
             {
                 writer.WriteEndObject();
             }
 
-            return WriteEndArray(ref state, writer, options);
+            return WriteEndArray(ref state);
         }
 
-        private static bool WriteEndArray(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options)
+        private static bool WriteEndArray(ref WriteStack state)
         {
             if (state.Current.PopStackOnEndCollection)
             {
-                state.Pop(writer, options);
+                state.Pop();
             }
             else
             {
-                options.PopReference(ref state, true);
                 state.Current.EndArray();
             }
 
             return true;
+        }
+
+
+        private static bool WriteReferenceEnumerable(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, IEnumerable enumerable)
+        {
+            ResolvedReferenceHandling handling = state.PreserveReference(enumerable, out string referenceId);
+
+            if (handling == ResolvedReferenceHandling.IsReference)
+            {
+                // Object written before, write { "$ref": "#" } and finish.
+                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Enumerable, writer, options, writeAsReference: true, referenceId: referenceId);
+                return true;
+            }
+            else if (handling == ResolvedReferenceHandling.Preserve)
+            {
+                // Reference-type array, write as object and append $id and $values, at the end it write EndObject token using WriteWrappingBraceOnEndCollection.
+                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Enumerable, writer, options, writeAsReference: false, referenceId: referenceId);
+            }
+            else
+            {
+                // Value type or Immutable, fallback on regular Write method.
+                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
+            }
+
+            return false;
         }
     }
 }

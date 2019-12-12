@@ -35,17 +35,25 @@ namespace System.Text.Json
 
                     if (state.Current.PopStackOnEndCollection)
                     {
-                        state.Pop(writer, options);
+                        state.Pop();
                     }
 
                     return true;
                 }
 
-                ResolvedReferenceHandling handling = options.HandleReference(ref state, out string referenceId, out bool writeAsReference, enumerable);
-                if (handling == ResolvedReferenceHandling.Ignore)
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
                 {
-                    //Reference loop found, do not write anything and pop the frame from the stack.
-                    return WriteEndDictionary(ref state, writer, options);
+                    if (WriteReferenceDictionary(ref state, writer, options, enumerable))
+                    {
+                        return WriteEndDictionary(ref state);
+                    }
+                }
+                else
+                {
+                    if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
+                    {
+                        state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
+                    }
                 }
 
                 // Let the dictionary return the default IEnumerator from its IEnumerable.GetEnumerator().
@@ -53,17 +61,6 @@ namespace System.Text.Json
                 // For IDictionary<TKey, TVale>-derived classes this is normally IDictionaryEnumerator as well
                 // but may be IEnumerable<KeyValuePair<TKey, TValue>> if the dictionary only supports generics.
                 state.Current.CollectionEnumerator = enumerable.GetEnumerator();
-
-                if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
-                {
-                    options.WriteStart(ref state.Current, ClassType.Dictionary, writer, options, writeAsReference: writeAsReference, referenceId: referenceId);
-                }
-
-                // Return when writeAsReference is true.
-                if (handling == ResolvedReferenceHandling.IsReference)
-                {
-                    return WriteEndDictionary(ref state, writer, options);
-                }
             }
 
             if (state.Current.CollectionEnumerator.MoveNext())
@@ -118,22 +115,51 @@ namespace System.Text.Json
                 writer.WriteEndObject();
             }
 
-            return WriteEndDictionary(ref state, writer, options);
+            return WriteEndDictionary(ref state);
         }
 
-        private static bool WriteEndDictionary(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options)
+        private static bool WriteEndDictionary(ref WriteStack state)
         {
             if (state.Current.PopStackOnEndCollection)
             {
-                state.Pop(writer, options);
+                state.Pop();
             }
             else
             {
-                options.PopReference(ref state, true);
                 state.Current.EndDictionary();
             }
 
             return true;
+        }
+
+        private static bool WriteReferenceDictionary(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, IEnumerable enumerable)
+        {
+            ResolvedReferenceHandling handling = state.PreserveReference(enumerable, out string referenceId);
+
+            if (handling == ResolvedReferenceHandling.IsReference)
+            {
+                // Object written before, write { "$ref": "#" } and finish.
+                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Dictionary, writer, options, writeAsReference: true, referenceId: referenceId);
+                return true;
+            }
+            else if (handling == ResolvedReferenceHandling.Preserve)
+            {
+                // Object reference, write start and append $id.
+                // Should this also have ExtensionData condition?
+                // if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)?
+                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Dictionary, writer, options, writeAsReference: false, referenceId: referenceId);
+            }
+            else
+            {
+                // Value type, fallback on regular Write method.
+                // Is this even reachable for Dictionaries?
+                if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
+                {
+                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
+                }
+            }
+
+            return false;
         }
 
         internal static void WriteDictionary<TProperty>(

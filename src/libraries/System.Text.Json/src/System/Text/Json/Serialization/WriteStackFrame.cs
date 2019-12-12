@@ -29,7 +29,6 @@ namespace System.Text.Json
         public bool MoveToNextProperty;
 
         public bool WriteWrappingBraceOnEndCollection;
-        public bool KeepReferenceInSet;
 
         // The current property.
         public int PropertyEnumeratorIndex;

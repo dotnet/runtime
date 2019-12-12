@@ -140,22 +140,5 @@ namespace System.Text.Json
 
             writer.Flush();
         }
-
-
-        internal static void SetReferenceHandlingDelegates(JsonSerializerOptions options)
-        {
-            if (options.ReferenceHandling.PreserveHandlingOnSerialize == PreserveReferencesHandling.All)
-            {
-                options.WriteStart = WriteReferenceObjectOrArrayStart;
-                options.HandleReference = PreserveReferencesStrategy;
-                options.PopReference = (ref WriteStack _, bool __) => { }; //enpty delegate, we dont need to use the reference stack when optiong-in for preserve.
-            }
-            else
-            {
-                options.HandleReference = DefaultOnReferencesStrategy;
-                options.WriteStart = WriteObjectOrArrayStart;
-                options.PopReference = DefaultPopReference;
-            }
-        }
     }
 }

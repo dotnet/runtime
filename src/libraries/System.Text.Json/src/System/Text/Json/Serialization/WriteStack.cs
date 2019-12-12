@@ -16,7 +16,6 @@ namespace System.Text.Json
         private int _index;
 
         private DefaultReferenceResolver _referenceResolver;
-        private HashSet<object> _referenceStack;
 
         public void Push()
         {
@@ -62,12 +61,9 @@ namespace System.Text.Json
             }
         }
 
-        public void Pop(Utf8JsonWriter writer, JsonSerializerOptions options)
+        public void Pop()
         {
             Debug.Assert(_index > 0);
-
-            options.PopReference(ref this, false);
-
             Current = _previous[--_index];
         }
 
@@ -112,19 +108,25 @@ namespace System.Text.Json
             }
         }
 
-        public bool AddStackReference(object value)
+        internal ResolvedReferenceHandling PreserveReference(object value, out string referenceId)
         {
-            if (_referenceStack == null)
+            // Avoid emitting metadata to value types.
+            Type currentType = Current.JsonPropertyInfo?.DeclaredPropertyType ?? Current.JsonClassInfo.Type;
+            if (currentType.IsValueType)
             {
-                _referenceStack = new HashSet<object>(ReferenceEqualsEqualityComparer<object>.Comparer);
+                referenceId = default;
+                return ResolvedReferenceHandling.None;
             }
 
-            return _referenceStack.Add(value);
+            if (GetPreservedReference(value, out referenceId))
+            {
+                return ResolvedReferenceHandling.IsReference;
+            }
+
+            return ResolvedReferenceHandling.Preserve;
         }
 
-        public void PopStackReference(object value) => _referenceStack?.Remove(value);
-
-        // true if reference already existed; otherwise, false;
+        // true if reference already exists; otherwise, false;
         public bool GetPreservedReference(object value, out string id)
         {
             if (_referenceResolver == null)
@@ -132,10 +134,10 @@ namespace System.Text.Json
                 _referenceResolver = new DefaultReferenceResolver();
             }
 
-            bool isReference = _referenceResolver.IsReferenced(value);
+            bool handling = _referenceResolver.IsReferenced(value);
             id = _referenceResolver.GetReference(value);
 
-            return isReference;
+            return handling;
         }
     }
 }
