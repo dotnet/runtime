@@ -1537,7 +1537,7 @@ class CSE_Heuristic
 
     unsigned               aggressiveRefCnt;
     unsigned               moderateRefCnt;
-    unsigned               enregCount; // count of the number of enregisterable variables
+    unsigned               enregCount; // count of the number of enregistered variables
     bool                   largeFrame;
     bool                   hugeFrame;
     Compiler::codeOptimize codeOptKind;
@@ -1633,6 +1633,7 @@ public:
                 // will consider this LclVar as being enregistered.
                 // Now we reduce the remaining regAvailEstimate by
                 // an appropriate amount.
+                //
                 if (varDsc->lvRefCnt() <= 2)
                 {
                     // a single use single def LclVar only uses 1
@@ -1734,6 +1735,7 @@ public:
             printf("\n");
             printf("Aggressive CSE Promotion cutoff is %u\n", aggressiveRefCnt);
             printf("Moderate CSE Promotion cutoff is %u\n", moderateRefCnt);
+            printf("enregCount is %u\n", enregCount);
             printf("Framesize estimate is 0x%04X\n", frameSize);
             printf("We have a %s frame\n", hugeFrame ? "huge" : (largeFrame ? "large" : "small"));
         }
@@ -1807,17 +1809,29 @@ public:
         Compiler::CSEdsc* m_CseDsc;
 
         unsigned m_cseIndex;
-
         unsigned m_defCount;
         unsigned m_useCount;
-
         unsigned m_Cost;
         unsigned m_Size;
+        bool     m_IsAggressive;
+        bool     m_IsModerate;
+        bool     m_IsConservative;
+        bool     m_IsStressCSE;
 
     public:
-        CSE_Candidate(CSE_Heuristic* context, Compiler::CSEdsc* cseDsc) : m_context(context), m_CseDsc(cseDsc)
+        CSE_Candidate(CSE_Heuristic* context, Compiler::CSEdsc* cseDsc)
+            : m_context(context)
+            , m_CseDsc(cseDsc)
+            , m_cseIndex(m_CseDsc->csdIndex)
+            , m_defCount(0)
+            , m_useCount(0)
+            , m_Cost(0)
+            , m_Size(0)
+            , m_IsAggressive(false)
+            , m_IsModerate(false)
+            , m_IsConservative(false)
+            , m_IsStressCSE(false)
         {
-            m_cseIndex = m_CseDsc->csdIndex;
         }
 
         Compiler::CSEdsc* CseDsc()
@@ -1854,6 +1868,46 @@ public:
         {
             //            return (m_CseDsc->csdLiveAcrossCall != 0);
             return false; // The old behavior for now
+        }
+
+        void SetIsAggressive(bool value)
+        {
+            m_IsAggressive = value;
+        }
+
+        bool IsAggressive()
+        {
+            return m_IsAggressive;
+        }
+
+        void SetIsModerate(bool value)
+        {
+            m_IsModerate = value;
+        }
+
+        bool IsModerate()
+        {
+            return m_IsModerate;
+        }
+
+        void SetIsConservative(bool value)
+        {
+            m_IsConservative = value;
+        }
+
+        bool IsConservative()
+        {
+            return m_IsConservative;
+        }
+
+        void SetIsStressCSE(bool value)
+        {
+            m_IsStressCSE = value;
+        }
+
+        bool IsStressCSE()
+        {
+            return m_IsStressCSE;
         }
 
         void InitializeCounts()
@@ -2051,6 +2105,7 @@ public:
         {
             if (cseRefCnt >= aggressiveRefCnt)
             {
+                candidate->SetIsAggressive(true);
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
@@ -2074,53 +2129,58 @@ public:
                     }
                 }
             }
-            else if (largeFrame)
+            else // not aggressiveRefCnt
             {
-#ifdef DEBUG
-                if (m_pCompiler->verbose)
+                candidate->SetIsConservative(true);
+                if (largeFrame)
                 {
-                    printf("Codesize CSE Promotion (%s frame)\n", hugeFrame ? "huge" : "large");
-                }
+#ifdef DEBUG
+                    if (m_pCompiler->verbose)
+                    {
+                        printf("Codesize CSE Promotion (%s frame)\n", hugeFrame ? "huge" : "large");
+                    }
 #endif
 #ifdef _TARGET_XARCH_
-                /* The following formula is good choice when optimizing CSE for SMALL_CODE */
-                cse_def_cost = 6; // mov [EBP-0x00001FC],reg
-                cse_use_cost = 5; //     [EBP-0x00001FC]
-#else                             // _TARGET_ARM_
-                if (hugeFrame)
-                {
-                    cse_def_cost = 10 + (2 * slotCount); // movw/movt r10 and str reg,[sp+r10]
-                    cse_use_cost = 10 + (2 * slotCount);
-                }
-                else
-                {
-                    cse_def_cost = 6 + (2 * slotCount); // movw r10 and str reg,[sp+r10]
-                    cse_use_cost = 6 + (2 * slotCount);
-                }
+                    /* The following formula is good choice when optimizing CSE for SMALL_CODE */
+                    cse_def_cost = 6; // mov [EBP-0x00001FC],reg
+                    cse_use_cost = 5; //     [EBP-0x00001FC]
+#else                                 // _TARGET_ARM_
+                    if (hugeFrame)
+                    {
+                        cse_def_cost = 10 + (2 * slotCount); // movw/movt r10 and str reg,[sp+r10]
+                        cse_use_cost = 10 + (2 * slotCount);
+                    }
+                    else
+                    {
+                        cse_def_cost = 6 + (2 * slotCount); // movw r10 and str reg,[sp+r10]
+                        cse_use_cost = 6 + (2 * slotCount);
+                    }
 #endif
-            }
-            else // small frame
-            {
-#ifdef DEBUG
-                if (m_pCompiler->verbose)
-                {
-                    printf("Codesize CSE Promotion (small frame)\n");
                 }
+                else // small frame
+                {
+#ifdef DEBUG
+                    if (m_pCompiler->verbose)
+                    {
+                        printf("Codesize CSE Promotion (small frame)\n");
+                    }
 #endif
 #ifdef _TARGET_XARCH_
-                /* The following formula is good choice when optimizing CSE for SMALL_CODE */
-                cse_def_cost = 3 * slotCount; // mov [EBP-1C],reg
-                cse_use_cost = 2 * slotCount; //     [EBP-1C]
+                    /* The following formula is good choice when optimizing CSE for SMALL_CODE */
+                    cse_def_cost = 3 * slotCount; // mov [EBP-1C],reg
+                    cse_use_cost = 2 * slotCount; //     [EBP-1C]
 #else                                         // _TARGET_ARM_
-                cse_def_cost = 2 * slotCount; // str reg,[sp+0x9c]
-                cse_use_cost = 2 * slotCount; // ldr reg,[sp+0x9c]
+                    cse_def_cost = 2 * slotCount; // str reg,[sp+0x9c]
+                    cse_use_cost = 2 * slotCount; // ldr reg,[sp+0x9c]
 #endif
+                }
             }
         }
         else // not SMALL_CODE ...
         {
             if ((cseRefCnt >= aggressiveRefCnt) && canEnregister)
             {
+                candidate->SetIsAggressive(true);
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
@@ -2132,7 +2192,7 @@ public:
             }
             else if (cseRefCnt >= moderateRefCnt)
             {
-
+                candidate->SetIsModerate(true);
                 if (!candidate->LiveAcrossCall() && canEnregister)
                 {
 #ifdef DEBUG
@@ -2162,6 +2222,7 @@ public:
             }
             else // Conservative CSE promotion
             {
+                candidate->SetIsConservative(true);
                 if (!candidate->LiveAcrossCall() && canEnregister)
                 {
 #ifdef DEBUG
@@ -2299,6 +2360,8 @@ public:
     // It will also put cse0 into SSA if there is just one def.
     void PerformCSE(CSE_Candidate* successfulCandidate)
     {
+        const char* grabTempMessage = "CSE - unknown";
+
         unsigned cseRefCnt = (successfulCandidate->DefCount() * 2) + successfulCandidate->UseCount();
 
         if (successfulCandidate->LiveAcrossCall() != 0)
@@ -2319,10 +2382,27 @@ public:
             }
         }
 
+        if (successfulCandidate->IsAggressive())
+        {
+            grabTempMessage = "CSE - aggressive";
+        }
+        else if (successfulCandidate->IsModerate())
+        {
+            grabTempMessage = "CSE - moderate";
+        }
+        else if (successfulCandidate->IsConservative())
+        {
+            grabTempMessage = "CSE - conservative";
+        }
+        else if (successfulCandidate->IsStressCSE())
+        {
+            grabTempMessage = "CSE - stress mode";
+        }
+
         /* Introduce a new temp for the CSE */
 
         // we will create a  long lifetime temp for the new cse LclVar
-        unsigned  cseLclVarNum = m_pCompiler->lvaGrabTemp(false DEBUGARG("ValNumCSE"));
+        unsigned  cseLclVarNum = m_pCompiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
         var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
         if (varTypeIsStruct(cseLclVarTyp))
         {
