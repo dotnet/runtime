@@ -811,8 +811,12 @@ leave:
 gboolean
 mono_domain_has_type_resolve (MonoDomain *domain)
 {
+	// Check whether managed code is running, and if the managed AppDomain object doesn't exist neither does the event handler
+	if (!domain->domain)
+		return FALSE;
+
 #ifdef ENABLE_NETCORE
-	return FALSE;
+	return TRUE;
 #else
 	MonoObject *o;
 
@@ -822,10 +826,6 @@ mono_domain_has_type_resolve (MonoDomain *domain)
 		g_assert (field);
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
-
-	/*pedump doesn't create an appdomin, so the domain object doesn't exist.*/
-	if (!domain->domain)
-		return FALSE;
 
 	mono_field_get_value_internal ((MonoObject*)(domain->domain), field, &o);
 	return o != NULL;
@@ -855,13 +855,19 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *typebu
 
 	MonoReflectionAssemblyHandle ret = NULL_HANDLE_INIT;
 
+	// This will not work correctly on netcore
 	if (name) {
 		MonoStringHandle name_handle = mono_string_new_handle (mono_domain_get (), name, error);
 		goto_if_nok (error, exit);
-		ret = mono_domain_try_type_resolve_name (domain, name_handle, error);
+		ret = mono_domain_try_type_resolve_name (domain, NULL, name_handle, error);
 	} else {
+#ifndef ENABLE_NETCORE
 		MONO_HANDLE_DCL (MonoObject, typebuilder);
 		ret = mono_domain_try_type_resolve_typebuilder (domain, MONO_HANDLE_CAST (MonoReflectionTypeBuilder, typebuilder), error);
+#else
+		// TODO: make this work on netcore when working on SRE.TypeBuilder
+		g_assert_not_reached ();
+#endif
 	}
 
 exit:
@@ -869,6 +875,50 @@ exit:
 	HANDLE_FUNCTION_RETURN_OBJ (ret);
 }
 
+#ifdef ENABLE_NETCORE
+MonoReflectionAssemblyHandle
+mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, MonoStringHandle name, MonoError *error)
+{
+	MonoObjectHandle ret;
+	MonoReflectionAssemblyHandle assembly_handle;
+
+	HANDLE_FUNCTION_ENTER ();
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, method)
+
+		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+		g_assert (alc_class);
+		method = mono_class_get_method_from_name_checked (alc_class, "OnTypeResolve", -1, 0, error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
+
+	goto_if_nok (error, return_null);
+
+	g_assert (domain);
+	g_assert (MONO_HANDLE_BOOL (name));
+
+	if (mono_runtime_get_no_exec ())
+		goto return_null;
+
+	if (assembly) {
+		assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+		goto_if_nok (error, return_null);
+	}
+
+	gpointer args [2];
+	args [0] = assembly ? MONO_HANDLE_RAW (assembly_handle) : NULL;
+	args [1] = MONO_HANDLE_RAW (name);
+	ret = mono_runtime_try_invoke_handle (method, NULL_HANDLE, args, error);
+	goto_if_nok (error, return_null);
+	goto exit;
+
+return_null:
+	ret = NULL_HANDLE;
+
+exit:
+	HANDLE_FUNCTION_RETURN_REF (MonoReflectionAssembly, MONO_HANDLE_CAST (MonoReflectionAssembly, ret));
+}
+#else
 /**
  * mono_class_get_appdomain_do_type_resolve_method:
  *
@@ -879,9 +929,7 @@ mono_class_get_appdomain_do_type_resolve_method (MonoError *error)
 {
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-	// not cached yet, fill cache under caller's lock
-
-	method = mono_class_get_method_from_name_checked (mono_class_get_appdomain_class (), "DoTypeResolve", -1, 0, error);
+		method = mono_class_get_method_from_name_checked (mono_class_get_appdomain_class (), "DoTypeResolve", -1, 0, error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
@@ -901,9 +949,7 @@ mono_class_get_appdomain_do_type_builder_resolve_method (MonoError *error)
 {
 	MONO_STATIC_POINTER_INIT (MonoMethod, method)
 
-	// not cached yet, fill cache under caller's lock
-
-	method = mono_class_get_method_from_name_checked (mono_class_get_appdomain_class (), "DoTypeBuilderResolve", -1, 0, error);
+		method = mono_class_get_method_from_name_checked (mono_class_get_appdomain_class (), "DoTypeBuilderResolve", -1, 0, error);
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
@@ -924,7 +970,7 @@ mono_class_get_appdomain_do_type_builder_resolve_method (MonoError *error)
  * \returns A \c MonoReflectionAssembly or NULL if not found
  */
 MonoReflectionAssemblyHandle
-mono_domain_try_type_resolve_name (MonoDomain *domain, MonoStringHandle name, MonoError *error)
+mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, MonoStringHandle name, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 
@@ -992,6 +1038,7 @@ return_null:
 exit:
 	HANDLE_FUNCTION_RETURN_REF (MonoReflectionAssembly, MONO_HANDLE_CAST (MonoReflectionAssembly, ret));
 }
+#endif
 
 /**
  * mono_domain_owns_vtable_slot:

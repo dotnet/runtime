@@ -2234,6 +2234,7 @@ mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage
 
 	MonoType *type;
 	MonoReflectionAssemblyHandle reflection_assembly;
+	MonoDomain *domain = mono_alc_domain (alc);
 	GString *fullName = NULL;
 	GList *mod;
 
@@ -2247,7 +2248,7 @@ mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage
 
 	if (type)
 		goto exit;
-	if (!mono_domain_has_type_resolve (mono_domain_get ()))
+	if (!mono_domain_has_type_resolve (domain))
 		goto return_null;
 
 	if (type_resolve) {
@@ -2268,7 +2269,8 @@ mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage
 	MonoStringHandle name_handle;
 	name_handle = mono_string_new_handle (mono_domain_get (), fullName->str, error);
 	goto_if_nok (error, return_null);
-	reflection_assembly = mono_domain_try_type_resolve_name ( mono_domain_get (), name_handle, error);
+
+	reflection_assembly = mono_domain_try_type_resolve_name (domain, image->assembly, name_handle, error);
 	goto_if_nok (error, return_null);
 
 	if (MONO_HANDLE_BOOL (reflection_assembly)) {

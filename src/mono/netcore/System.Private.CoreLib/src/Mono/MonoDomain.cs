@@ -24,16 +24,6 @@ namespace Mono
 			return; /* FIXME */
 		}
 
-		internal Assembly? DoTypeResolve (string name)
-		{
-			return null;
-		}
-
-		internal Assembly? DoTypeBuilderResolve (System.Reflection.Emit.TypeBuilder tb)
-		{
-			return null;
-		}
-
 		public event UnhandledExceptionEventHandler UnhandledException;
 
 		public event EventHandler ProcessExit;

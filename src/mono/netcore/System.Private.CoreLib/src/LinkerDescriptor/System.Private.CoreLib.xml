@@ -5,10 +5,6 @@
 		<!-- domain.c: mono_defaults.appdomain_class -->
 		<type fullname="Mono.MonoDomain">
 			<field name="_mono_app_domain"/>
-			<!-- appdomain.c: mono_domain_try_type_resolve -->
-			<method name="DoTypeResolve" />
-			<!-- appdomain.c: mono_domain_try_type_builder_resolve -->
-			<method name="DoTypeBuilderResolve" />
 			<!-- appdomain.c: mono_domain_fire_assembly_load -->
 			<method name="DoAssemblyLoad" />
 		</type>
