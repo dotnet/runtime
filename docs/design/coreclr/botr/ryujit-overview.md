@@ -3,7 +3,7 @@ JIT Compiler Structure
 
 # Introduction
 
-RyuJIT is the code name for the next generation Just in Time Compiler (aka "JIT") for the .NET runtime. It was
+RyuJIT is the code name for the Just-In-Time Compiler (aka "JIT") for the .NET runtime. It was
 evolved from the JIT used for x86 (jit32) on .NET Framework, and ported to support all other architecture and
 platform targets supported by .NET Core.
 
@@ -19,8 +19,8 @@ or departing more drastically from the existing IR and architecture.
 
 # Execution Environment and External Interface
 
-RyuJIT provides both just in time and ahead-of-time compilation service for the .NET runtime. The runtime itself is
-variously called the EE (execution engine), the VM (virtual machine) or simply the CLR (common language runtime).
+RyuJIT provides both just-in-time and ahead-of-time compilation service for the .NET runtime. The runtime itself is
+variously called the EE (execution engine), the VM (virtual machine), or simply the CLR (common language runtime).
 Depending upon the configuration, the EE and JIT may reside in the same or different executable files. RyuJIT
 implements the JIT side of the JIT/EE interfaces:
 
