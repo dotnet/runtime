@@ -407,6 +407,7 @@ namespace ILCompiler
             for (int i = 0; i < failingMethod.Instantiation.Length; i++)
                 Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");
 
+            Console.WriteLine();
             return false;
         }
 

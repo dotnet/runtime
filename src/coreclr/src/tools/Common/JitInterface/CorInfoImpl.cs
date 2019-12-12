@@ -41,6 +41,7 @@ namespace Internal.JitInterface
             IA64 = 0x0200,
             AMD64 = 0x8664,
             ARM = 0x01c4,
+            ARM64 = 0xaa64,
         }
 
         private const string JitLibrary = "clrjitilc";
@@ -2887,19 +2888,41 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        // Translates relocation type constants used by JIT (defined in winnt.h) to RelocType enumeration
+        private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
+        {
+            if (targetArchitecture != TargetArchitecture.ARM64)
+                return (RelocType)fRelocType;
+
+            const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
+            const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+
+            switch (fRelocType)
+            {
+                case IMAGE_REL_ARM64_PAGEBASE_REL21:
+                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
+                case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                default:
+                    Debug.Fail("Invalid RelocType: " + fRelocType);
+                    return 0;
+            };
+        }
+
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
-            // slotNum is not unused
+            // slotNum is not used
             Debug.Assert(slotNum == 0);
 
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
+            TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
+
             if (locationBlock != BlockType.Code)
             {
                 // TODO: https://github.com/dotnet/corert/issues/3877
-                TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
                 if (targetArchitecture == TargetArchitecture.ARM)
                     return;
                 throw new NotImplementedException("Arbitrary relocs"); 
@@ -2938,12 +2961,13 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+            RelocType relocType = GetRelocType(targetArchitecture, fRelocType);
             // relocDelta is stored as the value
-            Relocation.WriteValue((RelocType)fRelocType, location, relocDelta);
+            Relocation.WriteValue(relocType, location, relocDelta);
 
             if (_relocs.Count == 0)
                 _relocs.EnsureCapacity(_code.Length / 32 + 1);
-            _relocs.Add(new Relocation((RelocType)fRelocType, relocOffset, relocTarget));
+            _relocs.Add(new Relocation(relocType, relocOffset, relocTarget));
         }
 
         private ushort getRelocTypeHint(void* target)
@@ -2977,7 +3001,7 @@ namespace Internal.JitInterface
                 case TargetArchitecture.ARM:
                     return (uint)ImageFileMachine.ARM;
                 case TargetArchitecture.ARM64:
-                    return (uint)ImageFileMachine.ARM;
+                    return (uint)ImageFileMachine.ARM64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }
