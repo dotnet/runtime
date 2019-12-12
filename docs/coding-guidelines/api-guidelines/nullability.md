@@ -75,11 +75,22 @@ As such, for now, we've annotated `Object.ToString` as returning `string?`.  We 
 
 In contrast, we've annotated `Exception.Message` (which is also virtual) as being non-nullable, even though technically a derived class could override it to return `null`, because doing so is so rare that we couldn't find any meaningful examples where `null` is returned.
 
+### Interface implementations
+
+- **DO** implement `IComparable<T?>` instead of `IComparable<T>` on a type `T` that is a reference type.
+- **DO** make an `IEquatable<T>` implementation oblivious when implemented on a type `T` that is a reference type.  `IEquatable<T>` is invariant by design.  However, the lack of covariance means that `T?` couldn't be used in places constrained to `T : IEquatable<T>`.  Until a better solution is available, we make such implementations oblivious so they can be used in all places, e.g.
+```C#
+public sealed class Version : ICloneable, IComparable, IComparable<Version?>,
+#nullable disable // see comment on String
+    IEquatable<Version>
+#nullable restore
+```
+
 ### Generic constraints
 
 Some special rules need to apply to generic constraints:
 
-- **DO** make a generic constraint oblivious when constraining `T : IEquatable<T>`.  This is to work around a limitation in nullable reference types, where we want the `T` to be usable with both `T` and `T?` (`IEquatable<T>` is invariant).  For example, instead of defining a method like:
+- **DO** make a generic constraint oblivious when constraining `T : IEquatable<T>`.  As with the above interfaces discussion, this is to work around a limitation, where we want the `T` to be usable with both `T` and `T?` (but `IEquatable<T>` is invariant).  For example, instead of defining a method like:
 ```C#
 public static bool Contains<T>(this System.Span<T> span, T value)
     where T : IEquatable<T>
