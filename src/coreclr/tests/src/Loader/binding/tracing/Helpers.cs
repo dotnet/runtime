@@ -69,10 +69,10 @@ namespace BinderTracingTests
             switch (pathSource)
             {
                 case ProbedPath.PathSource.AppNativeImagePaths:
-                    return Path.Combine(baseDirectory, $"{assemblyName}.ni.dll");
+                    return Path.Combine(baseDirectory, $"{assemblyName}.ni.{extension}");
                 case ProbedPath.PathSource.AppPaths:
                 case ProbedPath.PathSource.SatelliteSubdirectory:
-                    return Path.Combine(baseDirectory, $"{assemblyName}.dll");
+                    return Path.Combine(baseDirectory, $"{assemblyName}.{extension}");
                 default:
                     throw new ArgumentOutOfRangeException(nameof(pathSource));
             }
@@ -85,7 +85,7 @@ namespace BinderTracingTests
 
             return name1.Name == name2.Name
                 && ((name1.Version == null && name2.Version == null) || name1.Version == name2.Version)
-                && ((string.IsNullOrEmpty(name1.CultureName) && string.IsNullOrEmpty(name1.CultureName)) || name1.CultureName == name2.CultureName);
+                && ((string.IsNullOrEmpty(name1.CultureName) && string.IsNullOrEmpty(name2.CultureName)) || name1.CultureName == name2.CultureName);
         }
 
         private static void ValidateAssemblyName(AssemblyName expected, AssemblyName actual, string propertyName)

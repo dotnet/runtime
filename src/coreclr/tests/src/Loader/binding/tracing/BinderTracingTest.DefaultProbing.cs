@@ -44,6 +44,12 @@ namespace BinderTracingTests
                     },
                     new ProbedPath()
                     {
+                        FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppNativeImagePaths, assemblyName.Name, isExe: true),
+                        Source = ProbedPath.PathSource.AppNativeImagePaths,
+                        Result = COR_E_FILENOTFOUND
+                    },
+                    new ProbedPath()
+                    {
                         FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppPaths, assemblyName.Name, isExe: false),
                         Source = ProbedPath.PathSource.AppPaths,
                         Result = S_OK
@@ -80,14 +86,14 @@ namespace BinderTracingTests
                     },
                     new ProbedPath()
                     {
-                        FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppPaths, assemblyName, isExe: false),
-                        Source = ProbedPath.PathSource.AppPaths,
+                        FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppNativeImagePaths, assemblyName, isExe: true),
+                        Source = ProbedPath.PathSource.AppNativeImagePaths,
                         Result = COR_E_FILENOTFOUND
                     },
                     new ProbedPath()
                     {
-                        FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppNativeImagePaths, assemblyName, isExe: true),
-                        Source = ProbedPath.PathSource.AppNativeImagePaths,
+                        FilePath = Helpers.GetProbingFilePath(ProbedPath.PathSource.AppPaths, assemblyName, isExe: false),
+                        Source = ProbedPath.PathSource.AppPaths,
                         Result = COR_E_FILENOTFOUND
                     },
                     new ProbedPath()
