@@ -21,7 +21,7 @@ namespace ReadyToRun.SuperIlc
         public bool NoExe { get; set; }
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
-        public bool GenerateMapFile { get; set; }
+        public bool Map { get; set; }
         public FileInfo PackageList { get; set; }
         public int DegreeOfParallelism { get; set; }
         public bool Sequential { get; set; }
