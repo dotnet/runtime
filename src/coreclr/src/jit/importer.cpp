@@ -20652,7 +20652,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         return;
     }
 
-    // CT_INDRECT calls may use the cookie, bail if so...
+    // CT_INDIRECT calls may use the cookie, bail if so...
     //
     // If transforming these provides a benefit, we could save this off in the same way
     // we save the stub address below.
