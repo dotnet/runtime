@@ -79,6 +79,7 @@ try_get_method_nofail (MonoClass *klass, const char *method_name, int param_coun
 	return result;
 }
 
+// FIXME Consolidate the multiple functions named get_method_nofail.
 static MonoMethod*
 get_method_nofail (MonoClass *klass, const char *method_name, int param_count, int flags)
 {
