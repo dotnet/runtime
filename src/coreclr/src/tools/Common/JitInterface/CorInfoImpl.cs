@@ -2902,6 +2902,7 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        // Translates relocation type constants used by JIT (defined in winnt.h) to RelocType enumeration
         private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
         {
             if (targetArchitecture != TargetArchitecture.ARM64)
