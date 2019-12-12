@@ -2931,13 +2931,22 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         // srcCount = number of registers in which the value is returned by call
         GenTreeCall*    call        = op1->AsCall();
         ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        unsigned        regCount    = retTypeDesc->GetReturnRegCount();
         srcCount                    = retTypeDesc->GetReturnRegCount();
 
         for (int i = 0; i < srcCount; ++i)
         {
             BuildUse(op1, RBM_NONE, i);
         }
+    }
+    else if (op1->isContained() && op1->OperIs(GT_BITCAST))
+    {
+        GenTree*     bitCastSrc   = op1->gtGetOp1();
+        RegisterType registerType = bitCastSrc->TypeGet();
+        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
+
+        Interval* srcInterval = singleUseRef->getInterval();
+        assert(srcInterval->registerType == registerType);
+        srcCount = 1;
     }
 #ifndef TARGET_64BIT
     else if (varTypeIsLong(op1))
@@ -3011,26 +3020,6 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             }
         }
         newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, allRegs(storeLoc->TypeGet()));
-    }
-    else
-    {
-        if (storeLoc->gtOp1->OperIs(GT_BITCAST))
-        {
-            storeLoc->gtType = storeLoc->gtOp1->gtType = storeLoc->gtOp1->AsUnOp()->gtOp1->TypeGet();
-            RegisterType registerType                  = regType(storeLoc->TypeGet());
-            noway_assert(singleUseRef != nullptr);
-
-            Interval* srcInterval     = singleUseRef->getInterval();
-            srcInterval->registerType = registerType;
-
-            RefPosition* srcDefPosition = srcInterval->firstRefPosition;
-            assert(srcDefPosition != nullptr);
-            assert(srcDefPosition->refType == RefTypeDef);
-            assert(srcDefPosition->treeNode == storeLoc->gtOp1);
-
-            srcDefPosition->registerAssignment = allRegs(registerType);
-            singleUseRef->registerAssignment   = allRegs(registerType);
-        }
     }
 
     return srcCount;
