@@ -36,7 +36,7 @@ From the stress folder on powershell:
 PS> .\run-docker-compose.ps1 -b
 ```
 
-This will build libraries and stress suite to a linux docker image and initialize a stress run using docker-compose.
+This will build the libraries and stress suite to a linux docker image and initialize a stress run using docker-compose.
 
 #### Using Windows containers
 
