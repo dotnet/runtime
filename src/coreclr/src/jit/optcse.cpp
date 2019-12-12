@@ -1604,7 +1604,6 @@ public:
                 continue;
             }
 
-
 #if FEATURE_FIXED_OUT_ARGS
             // Skip the OutgoingArgArea in computing frame size, since
             // its size is not yet known and it doesn't affect local
@@ -1688,7 +1687,14 @@ public:
             LclVarDsc* varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
             var_types  varTyp = varDsc->TypeGet();
 
-            if (varDsc->lvDoNotEnregister)
+            // Locals with no references aren't enregistered
+            if (varDsc->lvRefCnt() == 0)
+            {
+                continue;
+            }
+
+            // Some LclVars always have stack homes
+            if ((varDsc->lvDoNotEnregister) || (varDsc->lvType == TYP_LCLBLK))
             {
                 continue;
             }
