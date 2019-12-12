@@ -163,8 +163,6 @@ cleanup (void)
 gboolean
 mono_threadpool_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, MonoError *error)
 {
-	static MonoClass *threadpool_class = NULL;
-	static MonoMethod *unsafe_queue_custom_work_item_method = NULL;
 	MonoDomain *current_domain;
 	MonoBoolean f;
 	gpointer args [2];
@@ -172,13 +170,19 @@ mono_threadpool_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, Mo
 	error_init (error);
 	g_assert (work_item);
 
-	if (!threadpool_class)
+	MONO_STATIC_POINTER_INIT (MonoClass, threadpool_class)
+
 		threadpool_class = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
 
-	if (!unsafe_queue_custom_work_item_method) {
+	MONO_STATIC_POINTER_INIT_END (MonoClass, threadpool_class)
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, unsafe_queue_custom_work_item_method)
+
 		unsafe_queue_custom_work_item_method = mono_class_get_method_from_name_checked (threadpool_class, "UnsafeQueueCustomWorkItem", 2, 0, error);
 		mono_error_assert_ok (error);
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, unsafe_queue_custom_work_item_method)
+
 	g_assert (unsafe_queue_custom_work_item_method);
 
 	f = FALSE;
@@ -445,15 +449,17 @@ mono_threadpool_cleanup (void)
 MonoAsyncResult *
 mono_threadpool_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params, MonoError *error)
 {
-	static MonoClass *async_call_klass = NULL;
 	MonoMethodMessage *message;
 	MonoAsyncResult *async_result;
 	MonoAsyncCall *async_call;
 	MonoDelegate *async_callback = NULL;
 	MonoObject *state = NULL;
 
-	if (!async_call_klass)
+	MONO_STATIC_POINTER_INIT (MonoClass, async_call_klass)
+
 		async_call_klass = mono_class_load_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
+
+	MONO_STATIC_POINTER_INIT_END (MonoClass, async_call_klass)
 
 	error_init (error);
 
