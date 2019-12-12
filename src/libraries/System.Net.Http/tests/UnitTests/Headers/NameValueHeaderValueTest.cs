@@ -43,6 +43,7 @@ namespace System.Net.Http.Tests
         [InlineData("text", null)]
         [InlineData("host", "server.example.com:80")]
         [InlineData("quoted", "\"value\"")]
+        [InlineData("empty", "")]
         public void Ctor_NameValidFormat_SuccessfullyCreated(string name, string value)
         {
             NameValueHeaderValue nameValue = new NameValueHeaderValue(name, value);
@@ -57,6 +58,7 @@ namespace System.Net.Http.Tests
         [InlineData("\"quoted string with \" quotes\"")]
         [InlineData("\"quoted string with \"two\" quotes\"")]
         [InlineData("\"")]
+        [InlineData(" ")]
         public void Ctor_ValueInvalidFormat_ThrowFormatException(string value)
         {
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
