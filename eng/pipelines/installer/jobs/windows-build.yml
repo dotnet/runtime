@@ -15,10 +15,10 @@ jobs:
     buildVariables:
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
-        /p:OfficialBuildId=$(Build.BuildNumber)
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:PortableBuild=true
         /p:SkipTests=${{ parameters.skipTests }}
+        $(OfficialBuildArg)
       MsbuildSigningArguments: >-
         /p:CertificateId=400
         /p:DotNetSignType=$(SignType)

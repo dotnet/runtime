@@ -53,6 +53,8 @@ jobs:
   - ${{ if eq(variables.isOfficialBuild, true) }}:
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
+    - name: OfficialBuildArg
+      value: /p:OfficialBuildId=$(Build.BuildNumber)
 
   - name: LiveOverridePathArgs
     value: >-
