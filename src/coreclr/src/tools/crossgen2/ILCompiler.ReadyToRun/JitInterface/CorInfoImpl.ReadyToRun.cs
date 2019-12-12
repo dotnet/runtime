@@ -889,6 +889,31 @@ namespace Internal.JitInterface
             return false;
         }
 
+        private bool IsGenericTooDeeplyNested(Instantiation instantiation, int nestingLevel)
+        {
+            const int MaxInstatiationNesting = 10;
+
+            if (nestingLevel == MaxInstatiationNesting)
+            {
+                return true;
+            }
+
+            foreach (TypeDesc instantiationType in instantiation)
+            {
+                if (instantiationType.HasInstantiation && IsGenericTooDeeplyNested(instantiationType.Instantiation, nestingLevel + 1))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsGenericTooDeeplyNested(Instantiation instantiation)
+        {
+            return IsGenericTooDeeplyNested(instantiation, 0);
+        }
+
         private void ceeInfoGetCallInfo(
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -928,6 +953,17 @@ namespace Internal.JitInterface
             useInstantiatingStub = originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
 
             callerMethod = HandleToObject(callerHandle);
+
+            if (originalMethod.HasInstantiation && IsGenericTooDeeplyNested(originalMethod.Instantiation))
+            {
+                throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
+            }
+
+            if (originalMethod.OwningType.HasInstantiation && IsGenericTooDeeplyNested(originalMethod.OwningType.Instantiation))
+            {
+                throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
+            }
+
             if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod))
             {
                 // We must abort inline attempts calling from outside of the version bubble being compiled
