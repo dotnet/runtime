@@ -1578,12 +1578,12 @@ public:
         sortTab          = nullptr;
         sortSiz          = 0;
 
-#ifdef _TARGET_XARCH_
+#ifdef _TARGET_X86_
         if (m_pCompiler->compLongUsed)
         {
             enregCount++;
         }
-#endif
+#endif // _TARGET_X86_
 
         unsigned   frameSize        = 0;
         unsigned   regAvailEstimate = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2) + 1);
@@ -1707,7 +1707,11 @@ public:
                 {
                     varTyp = TYP_STRUCT;
                 }
-                enregCount += genTypeStSz(varTyp);
+#ifdef _TARGET_64BIT_
+                enregCount++;
+#else
+                enregCount += genTypeStSz(varTyp);   // on 32-bit targets longs use two registers
+#endif
             }
 
             if ((aggressiveRefCnt == 0) && (enregCount > (CNT_CALLEE_ENREG * 3 / 2)))
