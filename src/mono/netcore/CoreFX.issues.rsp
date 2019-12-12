@@ -738,10 +738,6 @@
 ##  System.Runtime.Extensions.Tests
 ####################################################################
 
-# GC.GetGCMemoryInfo is not implemented
-# https://github.com/mono/mono/issues/15236
--nomethod System.Tests.AppDomainTests.MonitoringIsEnabled
-
 # Mono expands generic Types in stacktraces unlike the .NET Core (sounds more like a feature: https://gist.github.com/EgorBo/3abb37d2ff4fc904bc7472c62498f933)
 # https://github.com/mono/mono/issues/15315
 -nomethod System.Tests.EnvironmentStackTrace.StackTraceTest
