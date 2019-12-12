@@ -18,10 +18,8 @@ namespace System.Threading
 
         private const int ProcessorIdCacheShift = 16;
         private const int ProcessorIdCacheCountDownMask = (1 << ProcessorIdCacheShift) - 1;
-        // 50 is our best guess.
-        // Based on speed check it will be adjusted, typically lower.
-        // In relatively rare cases of a slow GetCurrentProcessorNumber, it may be adjusted to a higher number.
-        private static int s_processorIdRefreshRate = 50;
+        // Refresh rate of the cache. Will be derived from a speed check of GetCurrentProcessorNumber API.
+        private static int s_processorIdRefreshRate;
         // We will not adjust higher than this though.
         private const int MaxIdRefreshRate = 5000;
 
@@ -57,7 +55,7 @@ namespace System.Threading
 
         // If GetCurrentProcessorNumber takes any nontrivial time (compared to TLS access), return false.
         // Check more than once - to make sure it was not because TLS was delayed by GC or a context switch.
-        internal static unsafe int ProcessorNumberSpeedCheck()
+        internal static bool ProcessorNumberSpeedCheck()
         {
             // NOTE: We do not check the frequency of the Stopwatch.
             //       The frequency often does not match the actual timer refresh rate anyways.
@@ -70,16 +68,20 @@ namespace System.Threading
 
             // warm up the code paths.
             UninlinedThreadStatic();
+            // also check if API is actually functional (-1 means not supported)
             if (Thread.GetCurrentProcessorNumber() < 0)
-                return MaxIdRefreshRate;
+            {
+                s_processorIdRefreshRate = int.MaxValue;
+                return false;
+            }
 
             long oneMicrosecond = Stopwatch.Frequency / 1000000;
             for (int i = 0; i < 10; i++)
             {
                 // we will measure at least 16 iterations and at least 1 microsecond
-                int iters = 16;
-                long t1 = 0;
-                while (t1 < oneMicrosecond)
+                long t1;
+                int iters = 8;
+                do
                 {
                     iters *= 2;
                     t1 = Stopwatch.GetTimestamp();
@@ -88,29 +90,30 @@ namespace System.Threading
                         Thread.GetCurrentProcessorNumber();
                     }
                     t1 = Stopwatch.GetTimestamp() - t1;
-                }
+                } while (t1 < oneMicrosecond);
 
                 minID = Math.Min(minID, (double)t1 / iters);
 
-                // we will measure at least 16 iterations and at least 1 microsecond
-                iters = 16;
-                t1 = 0;
-                while (t1 < oneMicrosecond)
+                // we will measure at least 1 microsecond,
+                // and use at least 1/2 of ProcID iterations
+                // we assume that TLS can't be more than 2x slower than ProcID
+                iters /= 2;
+                do
                 {
-                    iters *= 2;
                     t1 = Stopwatch.GetTimestamp();
                     for (int j = 0; j < iters; j++)
                     {
                         UninlinedThreadStatic();
                     }
                     t1 = Stopwatch.GetTimestamp() - t1;
-                }
+                    iters *= 2;
+                } while (t1 < oneMicrosecond) ;
 
                 minTLS = Math.Min(minTLS, (double)t1 / iters);
             }
 
             s_processorIdRefreshRate = Math.Min((int)(minID / minTLS), MaxIdRefreshRate);
-            return s_processorIdRefreshRate;
+            return s_processorIdRefreshRate >= 3;
         }
 
         // NoInlining is to make sure JIT does not CSE and to have a better perf proxy for TLS access.

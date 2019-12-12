@@ -498,7 +498,7 @@ namespace System.Threading
         }
 
         // do a fast check and record in a readonly static so that it could become a JIT constant
-        private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck() <= 3;
+        private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
 
         internal void ResetThreadPoolThread()
         {
