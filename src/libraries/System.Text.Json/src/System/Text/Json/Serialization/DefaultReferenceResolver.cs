@@ -9,51 +9,48 @@ namespace System.Text.Json
     internal sealed class DefaultReferenceResolver
     {
         private uint _referenceCount;
-        private Dictionary<object, object> _referenceMapper;
+        private Dictionary<string, object> _keyObjectMap;
+        private Dictionary<object, string> _objectKeyMap;
 
         public DefaultReferenceResolver()
         {
-            // On deserialization: key is TKey.
-            // On serialization: value is TKey.
-            _referenceMapper = new Dictionary<object, object>();
-            //TODO: add second dictionary that uses reference equals.
+            _keyObjectMap = new Dictionary<string, object>();
+            _objectKeyMap = new Dictionary<object, string>(ReferenceEqualsEqualityComparer<object>.Comparer);
         }
 
         // Used on deserialization.
         public void AddReference(string key, object value)
         {
-            if (_referenceMapper.ContainsKey(key))
+            if (_keyObjectMap.ContainsKey(key))
             {
                 ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(key);
             }
 
-            _referenceMapper[key] = value;
+            _keyObjectMap[key] = value;
         }
 
         // Used on serialization.
         public string GetReference(object value)
         {
-            object key;
-
-            if (!_referenceMapper.TryGetValue(value, out key))
+            if (!_objectKeyMap.TryGetValue(value, out string key))
             {
                 key = (++_referenceCount).ToString();
-                _referenceMapper.Add(value, key);
+                _objectKeyMap.Add(value, key);
             }
 
-            return (string) key;
+            return key;
         }
 
         // Used on serialization.
         public bool IsReferenced(object value)
         {
-            return _referenceMapper.ContainsKey(value);
+            return _objectKeyMap.ContainsKey(value);
         }
 
         // Used on deserialization.
         public object ResolveReference(string key)
         {
-            if (!_referenceMapper.TryGetValue(key, out object value))
+            if (!_keyObjectMap.TryGetValue(key, out object value))
             {
                 ThrowHelper.ThrowJsonException_MetadataReferenceNotFound();
             }
