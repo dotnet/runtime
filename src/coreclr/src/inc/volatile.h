@@ -76,7 +76,7 @@
 #if defined(__GNUC__)
 #if defined(_ARM_) || defined(_ARM64_)
 // This is functionally equivalent to the MemoryBarrier() macro used on ARM on Windows.
-#define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb ish" : : : "memory")
+#define VOLATILE_MEMORY_BARRIER() __sync_synchronize()
 #else
 //
 // For GCC, we prevent reordering by the compiler by inserting the following after a volatile
