@@ -123,8 +123,12 @@
     <Compile Include="HttpClientHandlerTestBase.SocketsHttpHandler.cs" />
     <Compile Include="DiagnosticsTests.cs" />
     <Compile Include="HttpClientTest.cs" />
-    <Compile Include="HttpClientEKUTest.cs" />
-    <Compile Include="HttpClient.SelectedSitesTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs">
+      <Link>Common\System\Net\HttpClientEKUTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClient.SelectedSitesTest.cs">
+      <Link>Common\System\Net\HttpClient.SelectedSitesTest.cs</Link>
+    </Compile>
     <Compile Include="HttpConnectionKeyTest.cs" />
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpMessageInvokerTest.cs" />

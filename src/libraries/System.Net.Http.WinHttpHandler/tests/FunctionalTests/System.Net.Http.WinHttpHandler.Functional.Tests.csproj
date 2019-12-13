@@ -2,6 +2,7 @@
   <PropertyGroup>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <DefineConstants>$(DefineConstants);WINHTTPHANDLER_TEST</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs">
@@ -24,6 +25,15 @@
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs">
       <Link>Common\System\Net\Capability.Security.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs">
+      <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs">
+      <Link>Common\System\Net\HttpsTestServer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs">
+      <Link>Common\System\Net\VerboseTestLogging.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\DribbleStream.cs">
       <Link>Common\System\Net\DribbleStream.cs</Link>
@@ -69,6 +79,12 @@
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpProtocolTests.cs">
       <Link>Common\System\Net\HttpProtocolTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClient.SelectedSitesTest.cs">
+      <Link>Common\System\Net\HttpClient.SelectedSitesTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs">
+      <Link>Common\System\Net\HttpClientEKUTest.cs</Link>
     </Compile>
     <Compile Include="HttpClientHandlerTestBase.WinHttpHandler.cs" />
     <Compile Include="PlatformHandlerTest.cs" />
