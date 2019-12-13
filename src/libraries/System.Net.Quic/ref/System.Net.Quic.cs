@@ -48,7 +48,8 @@ namespace System.Net.Quic
         public override void Write(byte[] buffer, int offset, int count) => throw null;
         public long StreamId => throw null;
         public void AbortRead() => throw null;
-        public ValueTask ShutdownWriteAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> data, bool endStream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public ValueTask ShutdownWriteCompleted(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
     public class QuicClientConnectionOptions
     {

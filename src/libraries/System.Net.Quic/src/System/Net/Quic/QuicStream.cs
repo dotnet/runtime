@@ -105,7 +105,9 @@ namespace System.Net.Quic
 
         public void AbortRead() => _provider.AbortRead();
 
-        public ValueTask ShutdownWriteAsync(CancellationToken cancellationToken = default) => _provider.ShutdownWriteAsync(cancellationToken);
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffer, endStream, cancellationToken);
+
+        public ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownWriteCompleted(cancellationToken);
 
         protected override void Dispose(bool disposing)
         {

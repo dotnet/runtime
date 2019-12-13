@@ -108,7 +108,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return WriteAsync(buffer, endStream: false, cancellationToken);
+        }
+
+        internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -152,8 +157,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 await StartWritesAsync();
             }
 
-            // TODO consider passing in FIN on last write (and exposing it somehow?)
-            await SendAsync(buffer, QUIC_SEND_FLAG.NONE);
+            await SendAsync(buffer, endStream ? QUIC_SEND_FLAG.FIN : QUIC_SEND_FLAG.NONE);
 
             lock (_sync)
             {
@@ -267,7 +271,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal override ValueTask ShutdownWriteAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -292,7 +296,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             });
 
-            var status = MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
+            //var status = MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -705,6 +709,16 @@ namespace System.Net.Quic.Implementations.MsQuic
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAG flags)
         {
+            if (buffer.IsEmpty)
+            {
+                if ((flags & QUIC_SEND_FLAG.FIN) == QUIC_SEND_FLAG.FIN)
+                {
+                    // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
+                    MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
+                }
+                return default;
+            }
+
             MemoryHandle handle = buffer.Pin();
             _sendQuicBuffers[0].Length = (uint)buffer.Length;
             _sendQuicBuffers[0].Buffer = (byte*)handle.Pointer;

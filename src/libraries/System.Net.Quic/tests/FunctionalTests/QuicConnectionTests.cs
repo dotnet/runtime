@@ -170,7 +170,9 @@ namespace System.Net.Quic.Tests
         {
             byte[] readBuffer = new byte[1];
 
-            await s1.ShutdownWriteAsync();
+            await s1.WriteAsync(Memory<byte>.Empty, endStream: true);
+
+            await s1.ShutdownWriteCompleted();
 
             int bytesRead = await s2.ReadAsync(readBuffer);
             Assert.Equal(0, bytesRead);

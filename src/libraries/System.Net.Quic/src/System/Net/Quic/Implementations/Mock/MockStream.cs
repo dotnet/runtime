@@ -102,7 +102,12 @@ namespace System.Net.Quic.Implementations.Mock
             _socket.Send(buffer);
         }
 
-        internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return WriteAsync(buffer, endStream: false, cancellationToken);
+        }
+
+        internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
@@ -117,6 +122,11 @@ namespace System.Net.Quic.Implementations.Mock
             }
 
             await _socket.SendAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+
+            if (endStream)
+            {
+                _socket.Shutdown(SocketShutdown.Send);
+            }
         }
 
         internal override void Flush()
@@ -136,11 +146,10 @@ namespace System.Net.Quic.Implementations.Mock
             throw new NotImplementedException();
         }
 
-        internal override ValueTask ShutdownWriteAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
-            _socket.Shutdown(SocketShutdown.Send);
             return default;
         }
 

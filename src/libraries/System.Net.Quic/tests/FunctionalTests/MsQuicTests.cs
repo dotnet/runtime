@@ -29,8 +29,7 @@ namespace System.Net.Quic.Tests
                 Assert.Equal(s_data.Length, bytesRead);
                 Assert.True(s_data.Span.SequenceEqual(buffer));
 
-                await stream.WriteAsync(s_data);
-                await stream.ShutdownWriteAsync();
+                await stream.WriteAsync(s_data, endStream: true);
                 await connection.CloseAsync();
             });
 
@@ -40,13 +39,13 @@ namespace System.Net.Quic.Tests
                 await connection.ConnectAsync();
                 await using QuicStream stream = connection.OpenBidirectionalStream();
 
-                await stream.WriteAsync(s_data);
-                await stream.ShutdownWriteAsync();
+                await stream.WriteAsync(s_data, endStream: true);
 
                 byte[] memory = new byte[12];
                 int res = await stream.ReadAsync(memory);
 
                 Assert.True(s_data.Span.SequenceEqual(memory));
+                await stream.ShutdownWriteCompleted();
 
                 await connection.CloseAsync();
             });
@@ -81,8 +80,8 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WriteAsync(s_data);
                     }
-
-                    await stream.ShutdownWriteAsync();
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                    await stream.ShutdownWriteCompleted();
                     await connection.CloseAsync();
                 });
 
@@ -97,7 +96,7 @@ namespace System.Net.Quic.Tests
                         await stream.WriteAsync(s_data);
                     }
 
-                    await stream.ShutdownWriteAsync();
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
 
                     byte[] memory = new byte[12];
                     while (true)
@@ -110,6 +109,7 @@ namespace System.Net.Quic.Tests
                         Assert.True(s_data.Span.SequenceEqual(memory));
                     }
 
+                    await stream.ShutdownWriteCompleted();
                     await connection.CloseAsync();
                 });
 
@@ -151,11 +151,11 @@ namespace System.Net.Quic.Tests
                         Assert.True(s_data.Span.SequenceEqual(buffer));
                     }
 
-                    await stream.WriteAsync(s_data);
-                    await stream.ShutdownWriteAsync();
+                    await stream.WriteAsync(s_data, endStream: true);
+                    await stream.ShutdownWriteCompleted();
 
-                    await stream2.WriteAsync(s_data);
-                    await stream2.ShutdownWriteAsync();
+                    await stream2.WriteAsync(s_data, endStream: true);
+                    await stream2.ShutdownWriteCompleted();
 
                     await connection.CloseAsync();
                 }
@@ -168,10 +168,10 @@ namespace System.Net.Quic.Tests
                 await using QuicStream stream = connection.OpenBidirectionalStream();
                 await using QuicStream stream2 = connection.OpenBidirectionalStream();
 
-                await stream.WriteAsync(s_data);
-                await stream.ShutdownWriteAsync();
-                await stream2.WriteAsync(s_data);
-                await stream2.ShutdownWriteAsync();
+                await stream.WriteAsync(s_data, endStream: true);
+                await stream.ShutdownWriteCompleted();
+                await stream2.WriteAsync(s_data, endStream: true);
+                await stream2.ShutdownWriteCompleted();
 
                 byte[] memory = new byte[12];
                 while (true)
@@ -342,7 +342,8 @@ namespace System.Net.Quic.Tests
         {
             byte[] readBuffer = new byte[1];
 
-            await s1.ShutdownWriteAsync();
+            await s1.WriteAsync(Memory<byte>.Empty, endStream: true);
+            await s1.ShutdownWriteCompleted();
 
             int bytesRead = await s2.ReadAsync(readBuffer);
             Assert.Equal(0, bytesRead);
