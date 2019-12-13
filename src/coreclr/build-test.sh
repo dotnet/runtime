@@ -132,16 +132,6 @@ generate_layout()
     fi
 }
 
-patch_corefx_libraries()
-{
-    echo "${__MsgPrefix}Patching CORE_ROOT: '${CORE_ROOT}' with CoreFX libaries from enlistment '${__LocalCoreFXPath} (${__LocalCoreFXConfig})"
-
-    patchCoreFXArguments=("-clr_core_root" "${CORE_ROOT}" "-fx_root" "${__LocalCoreFXPath}" "-arch" "${__BuildArch}" "-build_type" "${__LocalCoreFXConfig}")
-    scriptPath="$__ProjectDir/tests/scripts"
-    echo "python ${scriptPath}/patch-corefx.py ${patchCoreFXArguments[@]}"
-    $__Python "${scriptPath}/patch-corefx.py" "${patchCoreFXArguments[@]}"
-}
-
 precompile_coreroot_fx()
 {
     local overlayDir=$CORE_ROOT
@@ -230,22 +220,6 @@ function is_skip_crossgen_test {
     done
     return 1
 }
-
-generate_testhost()
-{
-    echo "${__MsgPrefix}Generating test host..."
-
-    export TEST_HOST=$xUnitTestBinBase/testhost
-
-    if [ -d "${TEST_HOST}" ]; then
-        rm -rf $TEST_HOST
-    fi
-
-    mkdir -p $TEST_HOST
-
-    build_MSBuild_projects "Tests_Generate_TestHost" "${__ProjectDir}/tests/src/runtest.proj" "Creating test host" "/t:CreateTestHost"
-}
-
 
 build_Tests()
 {
@@ -371,10 +345,6 @@ build_Tests()
 
     if [ $__SkipGenerateLayout != 1 ]; then
         generate_layout
-
-        if [ ! -z "$__LocalCoreFXPath" ]; then
-            patch_corefx_libraries
-        fi
     fi
 }
 
@@ -574,10 +544,9 @@ usage_list=("-buildtestwrappersonly - only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-crossgen - Precompiles the framework managed assemblies in coreroot.")
 usage_list+=("-generatelayoutonly - only pull down dependencies and build coreroot.")
-usage_list+=("-generatetesthostonly - only pull down dependencies and build coreroot and the CoreFX testhost.")
 usage_list+=("-priority1 - include priority=1 tests in the build.")
 usage_list+=("-runtests - run tests after building them.")
-usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout or the CoreFX testhost.")
+usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiprestorepackages - skip package restore.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
@@ -630,14 +599,6 @@ handle_arguments() {
             __SkipGenerateLayout=1
             ;;
 
-        localcorefxpath=*|-localcorefxpath=*)
-            __LocalCoreFXPath=$(echo "$1" | cut -d'=' -f 2)
-            ;;
-
-        localcorefxconfig=*|-localcorefxconfig=*)
-            __LocalCoreFXConfig=$(echo "$1" | cut -d'=' -f 2)
-            ;;
-
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -684,7 +645,6 @@ __SkipRestore=""
 __SkipRestorePackages=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
-__LocalCoreFXPath=
 __LocalCoreFXConfig=${__BuildType}
 __UseNinja=0
 __VerboseBuild=0
@@ -754,9 +714,6 @@ elif [ ! -z "$__BuildTestWrappersOnly" ]; then
     build_test_wrappers
 else
     generate_layout
-    if [ ! -z "$__GenerateTestHostOnly" ]; then
-        generate_testhost
-    fi
 fi
 
 if [ $? -ne 0 ]; then

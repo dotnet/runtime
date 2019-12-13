@@ -59,7 +59,6 @@ set __DoCrossgen2=
 set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
-set __LocalCoreFXPath=
 set __LocalCoreFXConfig=%__BuildType%
 set __SkipFXRestoreArg=
 set __GenerateLayoutOnly=0
@@ -106,8 +105,6 @@ if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!proce
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "localcorefxpath"       (set __LocalCoreFXPath=%2&set __SkipFXRestoreArg=/p:__SkipFXRestore=true&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "localcorefxconfig"     (set __LocalCoreFXConfig=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
@@ -239,7 +236,7 @@ if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
 set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
 call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
-  
+
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
     exit /b 1
@@ -478,41 +475,6 @@ xcopy /s /y /i "%CORE_ROOT_STAGE%" "%CORE_ROOT%"
 
 REM =========================================================================================
 REM ===
-REM === Create the test host necessary for running CoreFX tests.
-REM === The test host includes a dotnet executable, system libraries and CoreCLR assemblies found in CORE_ROOT.
-REM ===
-REM =========================================================================================
-
-if not "%__LocalCoreFXPath%" == "" goto SkipBuildingCoreFXTestHost
-
-echo %__MsgPrefix%Building CoreFX test host
-
-set __BuildLogRootName=Tests_CoreFX_Testhost
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
-set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
-
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-  %__ProjectDir%\tests\src\runtest.proj /t:CreateTestHost /nodeReuse:false^
-  /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-  /p:UsePartialNGENOptimization=false /maxcpucount^
-  !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__UnprocessedBuildArgs%
-if errorlevel 1 (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Host failed. Refer to the build log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
-)
-
-:SkipBuildingCoreFXTestHost
-
-REM =========================================================================================
-REM ===
 REM === Create test wrappers.
 REM ===
 REM =========================================================================================
@@ -573,22 +535,6 @@ if defined __DoCrossgen2 (
 
 
 rd /s /q "%CORE_ROOT_STAGE%"
-
-
-REM =========================================================================================
-REM ===
-REM === Copy CoreFX assemblies if needed.
-REM ===
-REM =========================================================================================
-
-if NOT "%__LocalCoreFXPath%"=="" (
-    echo Patch CoreFX from %__LocalCoreFXPath% ^(%__LocalCoreFXConfig%^)
-    set NEXTCMD=python "%__ProjectDir%\tests\scripts\patch-corefx.py" -clr_core_root "%CORE_ROOT%"^
-    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__LocalCoreFXConfig%
-    echo !NEXTCMD!
-    !NEXTCMD!
-)
-
 
 REM =========================================================================================
 REM ===

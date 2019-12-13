@@ -378,9 +378,10 @@ namespace System
             }
         }
 
-        public static void AtLeastOneEquals<T>(T expected1, T expected2, T value) where T : IEquatable<T>
+        public static void AtLeastOneEquals<T>(T expected1, T expected2, T value)
         {
-            if (!(value.Equals(expected1) || value.Equals(expected2)))
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+            if (!(comparer.Equals(value, expected1) || comparer.Equals(value, expected2)))
                 throw new XunitException($"Expected: {expected1} || {expected2}{Environment.NewLine}Actual: {value}");
         }
 
