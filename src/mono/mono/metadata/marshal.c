@@ -4245,7 +4245,6 @@ MonoMethod *
 mono_marshal_get_struct_to_ptr (MonoClass *klass)
 {
 	MonoMethodBuilder *mb;
-	static MonoMethod *stoptr = NULL;
 	MonoMethod *res;
 	WrapperInfo *info;
 
@@ -4254,14 +4253,18 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 	mono_marshal_load_type_info (klass);
 
 	MonoMarshalType *marshal_info = mono_class_get_marshal_info (klass);
-	if (marshal_info->str_to_ptr)
-		return marshal_info->str_to_ptr;
 
-	if (!stoptr) {
+	if ((res = marshal_info->str_to_ptr))
+		return res;
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, stoptr)
+
 		ERROR_DECL (error);
 		stoptr = mono_class_get_method_from_name_checked (mono_defaults.marshal_class, "StructureToPtr", 3, 0, error);
 		mono_error_assert_ok (error);
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, stoptr)
+
 	g_assert (stoptr);
 
 	mb = mono_mb_new (klass, stoptr->name, MONO_WRAPPER_OTHER);
@@ -4403,7 +4406,6 @@ emit_synchronized_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 MonoMethod *
 mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 {
-	static MonoMethod *enter_method, *exit_method, *gettypefromhandle_method;
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
@@ -4453,24 +4455,26 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 
 	mono_marshal_lock ();
 
-	if (!enter_method) {
-		MonoMethodDesc *desc;
-
-		desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
+	MONO_STATIC_POINTER_INIT (MonoMethod, enter_method)
+		MonoMethodDesc *desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
 		enter_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 		g_assert (enter_method);
 		mono_method_desc_free (desc);
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, enter_method)
 
-		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+	MONO_STATIC_POINTER_INIT (MonoMethod, exit_method)
+		MonoMethodDesc *desc = mono_method_desc_new ("Monitor:Exit", FALSE);
 		exit_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 		g_assert (exit_method);
 		mono_method_desc_free (desc);
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, exit_method)
 
-		desc = mono_method_desc_new ("Type:GetTypeFromHandle", FALSE);
+	MONO_STATIC_POINTER_INIT (MonoMethod, gettypefromhandle_method)
+		MonoMethodDesc *desc = mono_method_desc_new ("Type:GetTypeFromHandle", FALSE);
 		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.systemtype_class);
 		g_assert (gettypefromhandle_method);
 		mono_method_desc_free (desc);
-	}
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, gettypefromhandle_method)
 
 	mono_marshal_unlock ();
 
@@ -4700,16 +4704,13 @@ emit_stelemref_noilgen (MonoMethodBuilder *mb)
 MonoMethod*
 mono_marshal_get_stelemref (void)
 {
-	static MonoMethod* ret = NULL;
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	WrapperInfo *info;
-	
-	if (ret)
-		return ret;
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, ret)
 	
 	mb = mono_mb_new (mono_defaults.object_class, "stelemref", MONO_WRAPPER_STELEMREF);
-	
 
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
 
@@ -4730,6 +4731,8 @@ mono_marshal_get_stelemref (void)
 	ret = mono_mb_create (mb, sig, 4, info);
 	mono_mb_free (mb);
 
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, ret)
+
 	return ret;
 }
 
@@ -4748,13 +4751,11 @@ mb_emit_byte_noilgen (MonoMethodBuilder *mb, guint8 op)
 MonoMethod*
 mono_marshal_get_gsharedvt_in_wrapper (void)
 {
-	static MonoMethod* ret = NULL;
+	MONO_STATIC_POINTER_INIT (MonoMethod, ret)
+
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	WrapperInfo *info;
-
-	if (ret)
-		return ret;
 	
 	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_in", MONO_WRAPPER_OTHER);
 	
@@ -4770,6 +4771,8 @@ mono_marshal_get_gsharedvt_in_wrapper (void)
 	ret = mono_mb_create (mb, sig, 4, info);
 	mono_mb_free (mb);
 
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, ret)
+
 	return ret;
 }
 
@@ -4781,13 +4784,11 @@ mono_marshal_get_gsharedvt_in_wrapper (void)
 MonoMethod*
 mono_marshal_get_gsharedvt_out_wrapper (void)
 {
-	static MonoMethod* ret = NULL;
+	MONO_STATIC_POINTER_INIT (MonoMethod, ret)
+
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	WrapperInfo *info;
-
-	if (ret)
-		return ret;
 	
 	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_out", MONO_WRAPPER_OTHER);
 	
@@ -4802,6 +4803,8 @@ mono_marshal_get_gsharedvt_out_wrapper (void)
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_GSHAREDVT_OUT);
 	ret = mono_mb_create (mb, sig, 4, info);
 	mono_mb_free (mb);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, ret)
 
 	return ret;
 }
@@ -5901,6 +5904,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		++class_marshal_info_count;
 		info2 = info;
 	}
+
 	mono_marshal_unlock ();
 
 	return info2;
