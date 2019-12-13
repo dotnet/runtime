@@ -56,19 +56,7 @@ namespace System.IO
         public static string GetMaxLengthRandomName()
         {
             string guid = Guid.NewGuid().ToString("N");
-            StringBuilder sb = new StringBuilder(MaxNameLength, MaxNameLength);
-            while (sb.Length < MaxNameLength)
-            {
-                try
-                {
-                    sb.Append(guid);
-                }
-                catch
-                {
-                    sb.Append(guid.Substring(0, MaxNameLength - sb.Length));
-                }
-            }
-            return sb.ToString();
+            return guid + new string('x', 255 - guid.Length);
         }
     }
 }
