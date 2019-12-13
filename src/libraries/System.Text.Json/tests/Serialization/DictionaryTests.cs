@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.Specialized;
 using System.Reflection;
 using System.Text.Encodings.Web;
 using Xunit;
@@ -937,6 +938,8 @@ namespace System.Text.Json.Serialization.Tests
 
         private class MyClass : IClass { }
 
+        private class MyNonGenericDictionary : Dictionary<string, int> { }
+
         private class MyFactory : JsonConverterFactory
         {
             public override bool CanConvert(Type typeToConvert)
@@ -963,6 +966,10 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        // This method generates 316 unique test cases for nested dictionaries up to 4
+        // levels deep, along with matching JSON, encompassing the various planes of
+        // dictionaries that can be combined: generic, non-generic, BCL, user-derived,
+        // immutable, mutable, readonly, concurrent, specialized.
         private static IEnumerable<(Type, string)> NestedDictionaryTypeData()
         {
             string testJson = @"{""Key"":1}";
@@ -970,22 +977,23 @@ namespace System.Text.Json.Serialization.Tests
             List<Type> genericDictTypes = new List<Type>()
             {
                 typeof(IDictionary<,>),
-                typeof(Dictionary<,>),
                 typeof(ConcurrentDictionary<,>),
+                typeof(GenericIDictionaryWrapper<,>),
             };
 
             List<Type> nonGenericDictTypes = new List<Type>()
             {
-                typeof(IDictionary),
                 typeof(Hashtable),
+                typeof(OrderedDictionary),
             };
 
             List<Type> baseDictionaryTypes = new List<Type>
             {
+                typeof(MyNonGenericDictionary),
                 typeof(IReadOnlyDictionary<string, MyClass>),
-                typeof(Dictionary<string, IClass>),
                 typeof(ConcurrentDictionary<string, int>),
-                typeof(ImmutableDictionary<string, object>),
+                typeof(ImmutableDictionary<string, IClass>),
+                typeof(GenericIDictionaryWrapper<string, int?>),
             };
             baseDictionaryTypes.AddRange(nonGenericDictTypes);
 
