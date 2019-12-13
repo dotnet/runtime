@@ -745,7 +745,6 @@
 # These events are not wired up in mono
 # https://github.com/mono/mono/issues/16246
 -nomethod System.Tests.AppDomainTests.ResourceResolve
--nomethod System.Tests.AppDomainTests.AssemblyLoad
 -nomethod System.Tests.AppDomainTests.FirstChanceException_Called
 -nomethod System.Tests.AppDomainTests.AssemblyResolve_FirstChanceException
 

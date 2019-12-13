@@ -12,7 +12,7 @@
  * Copyright 2012 Xamarin Inc
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
-#undef ASSEMBLY_LOAD_DEBUG
+
 #include <config.h>
 #include <glib.h>
 #include <string.h>
@@ -1594,32 +1594,32 @@ add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
 #endif
 
 static void
-mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error_out)
+mono_domain_fire_assembly_load_event (MonoDomain *domain, MonoAssembly *assembly, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
-	ERROR_DECL (error);
-	MonoDomain *domain = mono_alc_domain (alc);
-	MonoClass *klass;
-	MonoObjectHandle appdomain;
 
-	if (!MONO_BOOL (domain->domain))
-		goto leave; // This can happen during startup
+	g_assert (domain);
+	g_assert (assembly);
 
-	if (mono_runtime_get_no_exec ())
-		goto leave;
-
-#ifdef ASSEMBLY_LOAD_DEBUG
-	fprintf (stderr, "Loading %s into domain %s\n", assembly->aname.name, domain->friendly_name);
-#endif
-	appdomain = MONO_HANDLE_NEW (MonoObject, &domain->domain->mbr.obj);
-	klass = mono_handle_class (appdomain);
-
-	mono_domain_assemblies_lock (domain);
-	add_assemblies_to_domain (domain, assembly, NULL);
-	mono_domain_assemblies_unlock (domain);
 #ifdef ENABLE_NETCORE
-	add_assembly_to_alc (alc, assembly);
-#endif
+	MONO_STATIC_POINTER_INIT (MonoMethod, method)
+
+		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+		g_assert (alc_class);
+		method = mono_class_get_method_from_name_checked (alc_class, "OnAssemblyLoad", -1, 0, error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
+	goto_if_nok (error, exit);
+
+	MonoReflectionAssemblyHandle assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	goto_if_nok (error, exit);
+
+	gpointer args [1];
+	args [0] = MONO_HANDLE_RAW (assembly_handle);
+	mono_runtime_try_invoke_handle (method, NULL_HANDLE, args, error);
+#else
+	MonoObjectHandle appdomain = MONO_HANDLE_NEW (MonoObject, &domain->domain->mbr.obj);
+	MonoClass *klass = mono_handle_class (appdomain);
 
 	MONO_STATIC_POINTER_INIT (MonoClassField, assembly_load_field)
 
@@ -1629,11 +1629,11 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, assembly_load_field)
 
 	if (!MONO_HANDLE_GET_FIELD_BOOL (appdomain, MonoObject*, assembly_load_field))
-		goto leave; // No events waiting to be triggered
+		goto exit; // No events waiting to be triggered
 
 	MonoReflectionAssemblyHandle reflection_assembly;
 	reflection_assembly = mono_assembly_get_object_handle (domain, assembly, error);
-	mono_error_assert_ok (error);
+	goto_if_nok (error, exit);
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, assembly_load_method)
 
@@ -1645,9 +1645,40 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	void *params [1];
 	params [0] = MONO_HANDLE_RAW (reflection_assembly);
 	mono_runtime_invoke_handle_void (assembly_load_method, appdomain, params, error);
+#endif
+
+exit:
+	HANDLE_FUNCTION_RETURN ();
+}
+
+static void
+mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error_out)
+{
+	ERROR_DECL (error);
+	MonoDomain *domain = mono_alc_domain (alc);
+
+	g_assert (assembly);
+	g_assert (domain);
+
+	if (!MONO_BOOL (domain->domain))
+		goto leave; // This can happen during startup
+
+	if (mono_runtime_get_no_exec ())
+		goto leave;
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading assembly %s (%p) into domain %s (%p) and ALC %p", assembly->aname.name, assembly, domain->friendly_name, domain, alc);
+
+	mono_domain_assemblies_lock (domain);
+	add_assemblies_to_domain (domain, assembly, NULL);
+	mono_domain_assemblies_unlock (domain);
+#ifdef ENABLE_NETCORE
+	add_assembly_to_alc (alc, assembly);
+#endif
+
+	mono_domain_fire_assembly_load_event (domain, assembly, error_out);
+
 leave:
 	mono_error_cleanup (error);
-	HANDLE_FUNCTION_RETURN ();
 }
 
 static gboolean

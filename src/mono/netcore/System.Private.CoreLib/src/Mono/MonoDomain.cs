@@ -17,13 +17,6 @@ namespace Mono
 		#endregion
         #pragma warning restore 169
 
-		public event AssemblyLoadEventHandler AssemblyLoad;
-
-		private void DoAssemblyLoad (Assembly assembly)
-		{
-			return; /* FIXME */
-		}
-
 		public event UnhandledExceptionEventHandler UnhandledException;
 
 		public event EventHandler ProcessExit;
