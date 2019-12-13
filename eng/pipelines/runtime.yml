@@ -30,12 +30,22 @@ jobs:
       include:
       - src/libraries/System.Private.CoreLib/*
       exclude:
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
       - src/installer/*
       - src/libraries/*
       - eng/pipelines/installer/*
       - eng/pipelines/libraries/*
     - subset: libraries
       exclude:
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
       - src/installer/*
       - src/coreclr/*
       - eng/pipelines/coreclr/*
@@ -44,6 +54,11 @@ jobs:
       include:
       - docs/manpages/*
       exclude:
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
       - src/coreclr/*
       - src/libraries/*
       - eng/pipelines/coreclr/*
