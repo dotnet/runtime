@@ -17,9 +17,9 @@ jobs:
 
     - script: >-
         $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
-        /p:OfficialBuildId=$(Build.BuildNumber)
         /p:StripSymbols=true
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
+        $(OfficialBuildArg)
       displayName: Build
       condition: succeeded()
