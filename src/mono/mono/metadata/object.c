@@ -3700,16 +3700,17 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 	}
 
 	if (is_ptr) {
-		static MonoMethod *m;
 		gpointer args [2];
 		gpointer *ptr;
 
-		if (!m) {
+		MONO_STATIC_POINTER_INIT (MonoMethod, m)
+
 			MonoClass *ptr_klass = mono_class_get_pointer_class ();
 			m = mono_class_get_method_from_name_checked (ptr_klass, "Box", 2, METHOD_ATTRIBUTE_STATIC, error);
 			goto_if_nok (error, return_null);
 			g_assert (m);
-		}
+
+		MONO_STATIC_POINTER_INIT_END (MonoMethod, m)
 
 		v = &ptr;
 		if (is_literal) {
@@ -5626,7 +5627,6 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 		if (sig->ret->type == MONO_TYPE_PTR) {
 			MonoClass *pointer_class;
-			static MonoMethod *box_method;
 			void *box_args [2];
 			MonoObject *box_exc;
 
@@ -5635,10 +5635,11 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			 * convert it to a Pointer object.
 			 */
 			pointer_class = mono_class_get_pointer_class ();
-			if (!box_method) {
+
+			MONO_STATIC_POINTER_INIT (MonoMethod, box_method)
 				box_method = mono_class_get_method_from_name_checked (pointer_class, "Box", -1, 0, error);
 				mono_error_assert_ok (error);
-			}
+			MONO_STATIC_POINTER_INIT_END (MonoMethod, box_method)
 
 			g_assert (res->vtable->klass == mono_defaults.int_class);
 			box_args [0] = ((MonoIntPtr*)res)->m_value;
@@ -8179,13 +8180,14 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	static MonoClassField *f_safe_handle = NULL;
 	MonoSafeHandle *sh;
 
-	if (!f_safe_handle) {
+	MONO_STATIC_POINTER_INIT (MonoClassField, f_safe_handle)
+
 		f_safe_handle = mono_class_get_field_from_name_full (mono_defaults.manualresetevent_class, "safeWaitHandle", NULL);
 		g_assert (f_safe_handle);
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoClassField, f_safe_handle)
 
 	mono_field_get_value_internal ((MonoObject*)handle, f_safe_handle, &sh);
 	return sh->handle;
@@ -8199,16 +8201,19 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 MonoMethod*
 mono_get_context_capture_method (void)
 {
-	static MonoMethod *method;
-
 	/* older corlib revisions won't have the class (nor the method) */
 	MonoClass *execution_context = mono_class_try_get_execution_context_class ();
-	if (execution_context && !method) {
+	if (!execution_context)
+		return NULL;
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, method)
+
 		ERROR_DECL (error);
 		mono_class_init_internal (execution_context);
 		method = mono_class_get_method_from_name_checked (execution_context, "Capture", 0, 0, error);
 		mono_error_assert_ok (error);
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
 	return method;
 }
@@ -8374,13 +8379,13 @@ mono_message_init (MonoDomain *domain,
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	static MonoMethod *init_message_method = NULL;
+	MONO_STATIC_POINTER_INIT (MonoMethod, init_message_method)
 
-	if (!init_message_method) {
 		init_message_method = mono_class_get_method_from_name_checked (mono_defaults.mono_method_message_class, "InitMessage", 2, 0, error);
 		mono_error_assert_ok (error);
 		g_assert (init_message_method != NULL);
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, init_message_method)
 
 	error_init (error);
 	/* FIXME set domain instead? */
@@ -8540,18 +8545,19 @@ prepare_to_string_method (MonoObject *obj, void **target)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	static MonoMethod *to_string = NULL;
 	MonoMethod *method;
 	g_assert (target);
 	g_assert (obj);
 
 	*target = obj;
 
-	if (!to_string) {
+	MONO_STATIC_POINTER_INIT (MonoMethod, to_string)
+
 		ERROR_DECL (error);
 		to_string = mono_class_get_method_from_name_checked (mono_get_object_class (), "ToString", 0, METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_PUBLIC, error);
 		mono_error_assert_ok (error);
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, to_string)
 
 	method = mono_object_get_virtual_method_internal (obj, to_string);
 
@@ -8955,8 +8961,6 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	static MonoMethod *getter = NULL;
-
 	error_init (error);
 
 	MonoDomain *domain = mono_domain_get ();
@@ -8978,15 +8982,17 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 		mono_field_get_value_internal (tp->rp->unwrapped_server, field, res);
 		goto exit;
 	}
+
+	MONO_STATIC_POINTER_INIT (MonoMethod, getter)
 	
-	if (!getter) {
 		getter = mono_class_get_method_from_name_checked (mono_defaults.object_class, "FieldGetter", -1, 0, error);
 		goto_if_nok (error, return_null);
 		if (!getter) {
 			mono_error_set_not_supported (error, "Linked away.");
 			goto return_null;
 		}
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, getter)
 	
 	field_class = mono_class_from_mono_type_internal (field->type);
 
@@ -9079,18 +9085,18 @@ mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, Mono
 
 	error_init (error);
 
-	static MonoMethod *tp_load = NULL;
-
 	g_assert (mono_object_is_transparent_proxy (this_obj));
 
-	if (!tp_load) {
+	MONO_STATIC_POINTER_INIT (MonoMethod, tp_load)
+
 		tp_load = mono_class_get_method_from_name_checked (mono_defaults.transparent_proxy_class, "LoadRemoteFieldNew", -1, 0, error);
 		return_val_if_nok (error, NULL);
 		if (!tp_load) {
 			mono_error_set_not_supported (error, "Linked away.");
 			return NULL;
 		}
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, tp_load)
 	
 	/* MonoType *type = m_class_get_byval_arg (klass); */
 
@@ -9194,20 +9200,20 @@ mono_store_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, Mon
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	static MonoMethod *tp_store = NULL;
-
 	error_init (error);
 
 	g_assert (mono_object_is_transparent_proxy (this_obj));
 
-	if (!tp_store) {
+	MONO_STATIC_POINTER_INIT (MonoMethod, tp_store)
+
 		tp_store = mono_class_get_method_from_name_checked (mono_defaults.transparent_proxy_class, "StoreRemoteField", -1, 0, error);
 		return_val_if_nok (error, FALSE);
 		if (!tp_store) {
 			mono_error_set_not_supported (error, "Linked away.");
 			return FALSE;
 		}
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, tp_store)
 
 	gpointer args[3];
 	args [0] = &klass;
