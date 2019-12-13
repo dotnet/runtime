@@ -117,13 +117,13 @@ namespace System.Net.Http.Tests
             Assert.Equal("text/plain", mediaType.ToString());
 
             mediaType.CharSet = "utf-8";
-            Assert.Equal("text/plain; charset=utf-8", mediaType.ToString());
+            Assert.Equal("text/plain;charset=utf-8", mediaType.ToString());
 
             mediaType.Parameters.Add(new NameValueHeaderValue("custom", "\"custom value\""));
-            Assert.Equal("text/plain; charset=utf-8; custom=\"custom value\"", mediaType.ToString());
+            Assert.Equal("text/plain;charset=utf-8;custom=\"custom value\"", mediaType.ToString());
 
             mediaType.CharSet = null;
-            Assert.Equal("text/plain; custom=\"custom value\"", mediaType.ToString());
+            Assert.Equal("text/plain;custom=\"custom value\"", mediaType.ToString());
         }
 
         [Fact]

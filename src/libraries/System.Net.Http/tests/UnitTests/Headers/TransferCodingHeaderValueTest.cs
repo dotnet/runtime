@@ -61,10 +61,10 @@ namespace System.Net.Http.Tests
             Assert.Equal("custom", transferCoding.ToString());
 
             transferCoding.Parameters.Add(new NameValueHeaderValue("paramName", "\"param value\""));
-            Assert.Equal("custom; paramName=\"param value\"", transferCoding.ToString());
+            Assert.Equal("custom;paramName=\"param value\"", transferCoding.ToString());
 
             transferCoding.Parameters.Add(new NameValueHeaderValue("paramName2", "\"param value2\""));
-            Assert.Equal("custom; paramName=\"param value\"; paramName2=\"param value2\"",
+            Assert.Equal("custom;paramName=\"param value\";paramName2=\"param value2\"",
                 transferCoding.ToString());
         }
 

@@ -55,7 +55,7 @@ namespace System.Net.Http.Tests
 
             nameValue.Parameters.Add(new NameValueHeaderValue("param1", "value1"));
             nameValue.Parameters.Add(new NameValueHeaderValue("param2", "value2"));
-            Assert.Equal("text=token; param1=value1; param2=value2", nameValue.ToString());
+            Assert.Equal("text=token;param1=value1;param2=value2", nameValue.ToString());
         }
 
         [Fact]

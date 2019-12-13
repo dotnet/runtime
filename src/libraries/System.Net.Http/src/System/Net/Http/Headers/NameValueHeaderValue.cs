@@ -180,6 +180,11 @@ namespace System.Net.Http.Headers
                 if (leadingSeparator || (destination.Length > 0))
                 {
                     destination.Append(separator);
+
+                    if (!separator.Equals(';'))
+                    {
+                        destination.Append(' ');
+                    }
                 }
                 value.AddToStringBuilder(destination);
             }

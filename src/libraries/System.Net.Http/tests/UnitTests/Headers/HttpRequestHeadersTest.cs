@@ -90,10 +90,10 @@ namespace System.Net.Http.Tests
         public void Accept_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
             // Add a valid media-type with an invalid quality value
-            headers.TryAddWithoutValidation("Accept", "text/plain; q=a"); // invalid quality
+            headers.TryAddWithoutValidation("Accept", "text/plain;q=a"); // invalid quality
             Assert.NotNull(headers.Accept.First());
             Assert.Null(headers.Accept.First().Quality);
-            Assert.Equal("text/plain; q=a", headers.Accept.First().ToString());
+            Assert.Equal("text/plain;q=a", headers.Accept.First().ToString());
 
             headers.Clear();
             headers.TryAddWithoutValidation("Accept", "text/plain application/xml"); // no separator

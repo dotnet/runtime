@@ -348,34 +348,34 @@ namespace System.Net.Http.Tests
             Assert.Equal("inline", contentDisposition.ToString());
 
             contentDisposition.Name = "myname";
-            Assert.Equal("inline; name=myname", contentDisposition.ToString());
+            Assert.Equal("inline;name=myname", contentDisposition.ToString());
 
             contentDisposition.FileName = "my File Name";
-            Assert.Equal("inline; name=myname; filename=\"my File Name\"", contentDisposition.ToString());
+            Assert.Equal("inline;name=myname;filename=\"my File Name\"", contentDisposition.ToString());
 
             contentDisposition.CreationDate = new DateTimeOffset(new DateTime(2011, 2, 15, 8, 0, 0, DateTimeKind.Utc));
-            Assert.Equal("inline; name=myname; filename=\"my File Name\"; creation-date="
+            Assert.Equal("inline;name=myname;filename=\"my File Name\";creation-date="
                 + "\"Tue, 15 Feb 2011 08:00:00 GMT\"", contentDisposition.ToString());
 
             contentDisposition.Parameters.Add(new NameValueHeaderValue("custom", "\"custom value\""));
-            Assert.Equal("inline; name=myname; filename=\"my File Name\"; creation-date="
-                + "\"Tue, 15 Feb 2011 08:00:00 GMT\"; custom=\"custom value\"", contentDisposition.ToString());
+            Assert.Equal("inline;name=myname;filename=\"my File Name\";creation-date="
+                + "\"Tue, 15 Feb 2011 08:00:00 GMT\";custom=\"custom value\"", contentDisposition.ToString());
 
             contentDisposition.Name = null;
-            Assert.Equal("inline; filename=\"my File Name\"; creation-date="
-                + "\"Tue, 15 Feb 2011 08:00:00 GMT\"; custom=\"custom value\"", contentDisposition.ToString());
+            Assert.Equal("inline;filename=\"my File Name\";creation-date="
+                + "\"Tue, 15 Feb 2011 08:00:00 GMT\";custom=\"custom value\"", contentDisposition.ToString());
 
             contentDisposition.FileNameStar = "File%Name";
-            Assert.Equal("inline; filename=\"my File Name\"; creation-date="
-                + "\"Tue, 15 Feb 2011 08:00:00 GMT\"; custom=\"custom value\"; filename*=utf-8\'\'File%25Name",
+            Assert.Equal("inline;filename=\"my File Name\";creation-date="
+                + "\"Tue, 15 Feb 2011 08:00:00 GMT\";custom=\"custom value\";filename*=utf-8\'\'File%25Name",
                 contentDisposition.ToString());
 
             contentDisposition.FileName = null;
-            Assert.Equal("inline; creation-date=\"Tue, 15 Feb 2011 08:00:00 GMT\"; custom=\"custom value\";"
-                + " filename*=utf-8\'\'File%25Name", contentDisposition.ToString());
+            Assert.Equal("inline;creation-date=\"Tue, 15 Feb 2011 08:00:00 GMT\";custom=\"custom value\";"
+                + "filename*=utf-8\'\'File%25Name", contentDisposition.ToString());
 
             contentDisposition.CreationDate = null;
-            Assert.Equal("inline; custom=\"custom value\"; filename*=utf-8\'\'File%25Name",
+            Assert.Equal("inline;custom=\"custom value\";filename*=utf-8\'\'File%25Name",
                 contentDisposition.ToString());
         }
 
