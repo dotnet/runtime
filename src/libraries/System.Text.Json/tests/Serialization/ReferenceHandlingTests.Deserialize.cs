@@ -150,6 +150,30 @@ namespace System.Text.Json.Tests
             Assert.Equal(4, instance.MyList.Count);
             Assert.Same(instance.MyList, instance.MyListCopy);
         }
+
+        [Fact]
+        public static void PreservedArrayIntoInitializedProperty()
+        {
+            string json = @"{
+                ""$id"": ""1"",
+                ""SubordinatesString"": {
+                    ""$id"": ""2"",
+                    ""$values"": [
+                    ]
+                },
+                ""Manager"": {
+                    ""SubordinatesString"":{
+                        ""$ref"": ""2""
+                    }
+                }
+            }";
+
+            Employee employee = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            // presereved array.
+            Assert.Empty(employee.SubordinatesString);
+            // reference to preserved array.
+            Assert.Empty(employee.Manager.SubordinatesString);
+        }
         #endregion
 
         #region Root Dictionary
@@ -458,20 +482,6 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region Null/non-existent reference
-        [Fact]
-        public static void NormalDictionaryPropertyNull() //Make sure the serializer can understand lists that were wrapped in braces.
-        {
-            string json =
-            @"{
-                ""ContactsString"": null
-            }";
-
-            var opts = new JsonSerializerOptions { IgnoreNullValues = true };
-            var bob = new Employee();
-            Employee angela = JsonSerializer.Deserialize<Employee>(json, opts);
-            Assert.NotNull(angela.ContactsString);
-        }
-
         [Fact]
         public static void ObjectNull()
         {

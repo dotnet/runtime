@@ -116,9 +116,11 @@ namespace System.Text.Json
             }
             else
             {
+                // Set directly when handling preserved array
+                bool setPropertyDirectly = state.Current.IsPreservedArray;
                 state.Pop();
 
-                ApplyObjectToEnumerable(value, ref state);
+                ApplyObjectToEnumerable(value, ref state, setPropertyDirectly);
             }
         }
 
