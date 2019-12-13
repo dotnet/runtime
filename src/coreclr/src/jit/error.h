@@ -155,7 +155,7 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 
 #if defined(ALT_JIT)
 
-// This guy can return based on Config flag/Debugger
+// This can return based on Config flag/Debugger
 extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYIRAW(msg) notYetImplemented(msg, __FILE__, __LINE__)
 

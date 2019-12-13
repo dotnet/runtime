@@ -18,7 +18,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientMiniStress_NoVersion : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_NoVersion(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
 
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [InlineData(1000000)]
@@ -34,14 +33,12 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http2 : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http2(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool UseHttp2 => true;
     }
 
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http11 : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http11(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
 
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [MemberData(nameof(PostStressOptions))]

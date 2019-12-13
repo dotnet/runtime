@@ -102,48 +102,6 @@ void ThreadExceptionState::FreeAllStackTraces()
     }
 }
 
-void ThreadExceptionState::ClearThrowablesForUnload(IGCHandleStore* handleStore)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_EH_FUNCLETS
-    ExceptionTracker* pNode = m_pCurrentTracker;
-#else // FEATURE_EH_FUNCLETS
-    ExInfo*           pNode = &m_currentExInfo;
-#endif // FEATURE_EH_FUNCLETS
-
-    for ( ;
-          pNode != NULL;
-          pNode = pNode->m_pPrevNestedInfo)
-    {
-        if (handleStore->ContainsHandle(pNode->m_hThrowable))
-        {
-            pNode->DestroyExceptionHandle();
-        }
-    }
-}
-
-
-// After unwinding from an SO, there may be stale exception state.
-void ThreadExceptionState::ClearExceptionStateAfterSO(void* pStackFrameSP)
-{
-    WRAPPER_NO_CONTRACT;
-
-    #if defined(FEATURE_EH_FUNCLETS)
-        ExceptionTracker::PopTrackers(pStackFrameSP);
-    #else
-        // After unwinding from an SO, there may be stale exception state.  We need to
-        //  get rid of any state that assumes the handlers that have been unwound/unlinked.
-        //
-        // Because the ExState chains to entries that may be on the stack, and the
-        //  stack has been unwound, it may not be safe to reference any entries
-        //  other than the one of the Thread object.
-        //
-        // Consequently, we will simply Init() the ExInfo on the Thread object.
-        m_currentExInfo.Init();
-    #endif
-} // void ThreadExceptionState::ClearExceptionStateAfterSO()
-
 OBJECTREF ThreadExceptionState::GetThrowable()
 {
     CONTRACTL

@@ -78,7 +78,7 @@ struct SharedState
 
 
 // For the following helpers, we make no attempt to synchronize.  The app developer
-// is responsible for managing his own race conditions.
+// is responsible for managing their own race conditions.
 //
 // Note: if the internal Thread is NULL, this implies that the exposed object has
 //       finalized and then been resurrected.
@@ -1450,6 +1450,12 @@ FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
 {
     FCALL_CONTRACT;
 
+#ifndef FEATURE_PAL
+    PROCESSOR_NUMBER proc_no_cpu_group;
+    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
+    return (proc_no_cpu_group.Group << 6) | proc_no_cpu_group.Number;
+#else
     return ::GetCurrentProcessorNumber();
+#endif //!FEATURE_PAL
 }
 FCIMPLEND;

@@ -975,7 +975,7 @@ In typical managed app scenarios, services like WszCreateEvent are thin wrappers
 
 If you need to coordinate with unmanaged code, or if you need to do WaitForMultipleHandles ANY/ALL, you will have to avoid WszCreateEvent. If you really know what you are doing, go directly to the OS to obtain these handles. Everyone else should seek advice from someone who thoroughly understands the implications to our host. Obviously the general rule is that everyone should go through our hosted abstraction.
 
-Sometimes you might find yourself building the equivalent of a critical section, but using an event directly. The problem here is that we cannot identify the thread that owns the lock, because the owner isn't identified until he "leaves'" the lock by calling SetEvent or Pulse. Consider whether a Crst might be more appropriate.
+Sometimes you might find yourself building the equivalent of a critical section, but using an event directly. The problem here is that we cannot identify the thread that owns the lock, because the owner isn't identified until they "leave'" the lock by calling SetEvent or Pulse. Consider whether a Crst might be more appropriate.
 
 ### <a name="2.6.12"/>2.6.12 Do not get clever with "lockless" reader-writer data structures
 

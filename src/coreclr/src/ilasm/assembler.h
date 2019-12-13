@@ -54,12 +54,6 @@
 #ifdef FEATURE_PAL
 extern char *g_pszExeFile;
 #endif
-typedef int(STDAPICALLTYPE *MetaDataGetDispenserFunc) (
-    REFCLSID    rclsid,                 // The class to desired.
-    REFIID      riid,                   // Interface wanted on class factory.
-    LPVOID FAR  *ppv);                  // Return interface pointer here.
-
-extern MetaDataGetDispenserFunc metaDataGetDispenser;
 
 extern WCHAR   wzUniBuf[]; // Unicode conversion global buffer (assem.cpp)
 

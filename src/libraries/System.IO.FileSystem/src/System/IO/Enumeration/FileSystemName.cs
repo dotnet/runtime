@@ -32,7 +32,7 @@ namespace System.IO.Enumeration
         /// Change '*' and '?' to '&lt;', '&gt;' and '"' to match Win32 behavior. For compatibility, Windows
         /// changes some wildcards to provide a closer match to historical DOS 8.3 filename matching.
         /// </summary>
-        public static string TranslateWin32Expression(string expression)
+        public static string TranslateWin32Expression(string? expression)
         {
             if (string.IsNullOrEmpty(expression) || expression == "*" || expression == "*.*")
                 return "*";

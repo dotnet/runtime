@@ -21,7 +21,6 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HPackTest : HttpClientHandlerTestBase
     {
-        protected override bool UseSocketsHttpHandler => true;
         protected override bool UseHttp2 => true;
 
         public HPackTest(ITestOutputHelper output) : base(output)

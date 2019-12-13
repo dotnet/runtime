@@ -888,7 +888,7 @@ namespace System.Data.SqlClient
     }
 
     //
-    // note: it is the client's responsibility to know what size date time he is working with
+    // note: it is the client's responsibility to know what size date time they are working with
     //
     internal struct TdsDateTime
     {

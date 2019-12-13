@@ -12,10 +12,8 @@ namespace Internal.JitInterface
     using static SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR;
     using static SystemVClassificationType;
 
-    internal class SystemVStructClassificator
+    internal static class SystemVStructClassificator
     {
-        private Dictionary<TypeDesc, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR> _classificationCache = new Dictionary<TypeDesc, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR>();
-
         private struct SystemVStructRegisterPassingHelper
         {
             internal SystemVStructRegisterPassingHelper(int totalStructSize)
@@ -93,44 +91,37 @@ namespace Internal.JitInterface
             }
         }
 
-        public unsafe bool getSystemVAmd64PassStructInRegisterDescriptor(TypeDesc typeDesc, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
+        public static void GetSystemVAmd64PassStructInRegisterDescriptor(TypeDesc typeDesc, out SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structPassInRegDescPtr)
         {
-            structPassInRegDescPtr->passedInRegisters = false;
+            structPassInRegDescPtr = default;
+            structPassInRegDescPtr.passedInRegisters = false;
             
             int typeSize = typeDesc.GetElementSize().AsInt;
             if (typeDesc.IsValueType && (typeSize <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS))
             {
-                Debug.Assert((TypeDef2SystemVClassification(typeDesc) == SystemVClassificationTypeStruct) ||
-                             (TypeDef2SystemVClassification(typeDesc) == SystemVClassificationTypeTypedReference));
-
-                if (_classificationCache.TryGetValue(typeDesc, out SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor))
+                if ((TypeDef2SystemVClassification(typeDesc) != SystemVClassificationTypeStruct) &&
+                    (TypeDef2SystemVClassification(typeDesc) != SystemVClassificationTypeTypedReference))
                 {
-                    *structPassInRegDescPtr = descriptor;
+                    return;
                 }
-                else
+
+                SystemVStructRegisterPassingHelper helper = new SystemVStructRegisterPassingHelper(typeSize);
+                bool canPassInRegisters = ClassifyEightBytes(typeDesc, ref helper, 0);
+                if (canPassInRegisters)
                 {
-                    SystemVStructRegisterPassingHelper helper = new SystemVStructRegisterPassingHelper(typeSize);
-                    bool canPassInRegisters = ClassifyEightBytes(typeDesc, ref helper, 0);
-                    if (canPassInRegisters)
-                    {
-                        structPassInRegDescPtr->passedInRegisters = canPassInRegisters;
-                        structPassInRegDescPtr->eightByteCount = (byte)helper.EightByteCount;
-                        Debug.Assert(structPassInRegDescPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+                    structPassInRegDescPtr.passedInRegisters = canPassInRegisters;
+                    structPassInRegDescPtr.eightByteCount = (byte)helper.EightByteCount;
+                    Debug.Assert(structPassInRegDescPtr.eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
-                        structPassInRegDescPtr->eightByteClassifications0 = helper.EightByteClassifications[0];
-                        structPassInRegDescPtr->eightByteSizes0 = (byte)helper.EightByteSizes[0];
-                        structPassInRegDescPtr->eightByteOffsets0 = (byte)helper.EightByteOffsets[0];
+                    structPassInRegDescPtr.eightByteClassifications0 = helper.EightByteClassifications[0];
+                    structPassInRegDescPtr.eightByteSizes0 = (byte)helper.EightByteSizes[0];
+                    structPassInRegDescPtr.eightByteOffsets0 = (byte)helper.EightByteOffsets[0];
                         
-                        structPassInRegDescPtr->eightByteClassifications1 = helper.EightByteClassifications[1];
-                        structPassInRegDescPtr->eightByteSizes1 = (byte)helper.EightByteSizes[1];
-                        structPassInRegDescPtr->eightByteOffsets1 = (byte)helper.EightByteOffsets[1];
-                    }
-
-                    _classificationCache.Add(typeDesc, *structPassInRegDescPtr);
+                    structPassInRegDescPtr.eightByteClassifications1 = helper.EightByteClassifications[1];
+                    structPassInRegDescPtr.eightByteSizes1 = (byte)helper.EightByteSizes[1];
+                    structPassInRegDescPtr.eightByteOffsets1 = (byte)helper.EightByteOffsets[1];
                 }
             }
-
-            return true;
         }
 
         private static SystemVClassificationType TypeDef2SystemVClassification(TypeDesc typeDesc)

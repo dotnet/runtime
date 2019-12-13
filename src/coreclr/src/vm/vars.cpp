@@ -41,7 +41,7 @@ Volatile<LONG>       g_trtChgInFlight = 0;
 
 const char *         g_ExceptionFile;   // Source of the last thrown exception (COMPLUSThrow())
 DWORD                g_ExceptionLine;   // ... ditto ...
-void *               g_ExceptionEIP;    // Managed EIP of the last guy to call JITThrow.
+void *               g_ExceptionEIP;    // Managed EIP of the last JITThrow caller.
 #endif // _DEBUG
 void *               g_LastAccessViolationEIP;  // The EIP of the place we last threw an AV.   Used to diagnose stress issues.
 

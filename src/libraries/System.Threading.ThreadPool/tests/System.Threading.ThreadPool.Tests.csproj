@@ -6,7 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ThreadPoolTests.cs" />
-    <Compile Include="ThreadPoolTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">

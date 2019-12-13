@@ -350,7 +350,7 @@ namespace System.Xml.Xsl
 
         //------------------------------------------------
         // Transform methods which take a uri
-        // SxS Note: Annotations should propagate to the caller to have him either check that
+        // SxS Note: Annotations should propagate to the caller to have them either check that
         // the passed URIs are SxS safe or decide that they don't have to be SxS safe and
         // suppress the message.
         //------------------------------------------------

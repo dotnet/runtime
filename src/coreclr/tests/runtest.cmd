@@ -20,7 +20,7 @@ set "__RootBinDir=%__ProjectDir%\..\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set __ToolsDir=%__ProjectDir%\..\Tools
-set "DotNetCli=%__ProjectDir%\..\dotnet.cmd"
+set "DotNetCli=%__ProjectDir%\..\..\..\dotnet.cmd"
 
 set __Sequential=
 set __msbuildExtraArgs=

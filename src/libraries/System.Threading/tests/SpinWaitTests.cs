@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    public static partial class SpinWaitTests
+    public static class SpinWaitTests
     {
         [Fact]
         public static void RunSpinWaitTests()
@@ -35,6 +35,36 @@ namespace System.Threading.Tests
                "RunSpinWaitTests:  SpinUntil returned true when the condition i always false!");
             Assert.True(SpinWait.SpinUntil(() => true, 0),
                "RunSpinWaitTests:  SpinUntil returned false when the condition i always true!");
+        }
+
+        [Fact]
+        public static void SpinOnce_Sleep1Threshold()
+        {
+            SpinWait spinner = new SpinWait();
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sleep1Threshold", () => spinner.SpinOnce(-2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sleep1Threshold", () => spinner.SpinOnce(int.MinValue));
+            Assert.Equal(0, spinner.Count);
+
+            spinner.SpinOnce(sleep1Threshold: -1);
+            Assert.Equal(1, spinner.Count);
+            spinner.SpinOnce(sleep1Threshold: 0);
+            Assert.Equal(2, spinner.Count);
+            spinner.SpinOnce(sleep1Threshold: 1);
+            Assert.Equal(3, spinner.Count);
+            spinner.SpinOnce(sleep1Threshold: int.MaxValue);
+            Assert.Equal(4, spinner.Count);
+            int i = 5;
+            for (; i < 10; ++i)
+            {
+                spinner.SpinOnce(sleep1Threshold: -1);
+                Assert.Equal(i, spinner.Count);
+            }
+            for (; i < 20; ++i)
+            {
+                spinner.SpinOnce(sleep1Threshold: 15);
+                Assert.Equal(i, spinner.Count);
+            }
         }
     }
 }

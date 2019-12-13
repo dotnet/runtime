@@ -257,7 +257,7 @@ These conventions would be codified as well.
 
 Because it was already the case that methods outside the current module had to use an indirect call, versionability does not introduce more overhead for non-virtual method calls if inlining was not done. Thus the main cost of  making the native code version resilient is the requirement that no cross version bubble inlining can happen.
 
-The best solution to this problem is to avoid 'chatty' library designs (Unfortunately, `IEnumerable`, is such a chatty design, where each iteration does a `MoveNext` and `Current` property fetch). Another mitigation is the one mentioned previously: to allow clients of the library to selectively JIT compile some methods that make these chatty calls. Finally you can also use new custom `NonVersionableAttribute` attribute, which effectively changes the versioning contract to indicate that the library supplier has given up his right to change that method's body and thus it would be legal to inline.
+The best solution to this problem is to avoid 'chatty' library designs (Unfortunately, `IEnumerable`, is such a chatty design, where each iteration does a `MoveNext` and `Current` property fetch). Another mitigation is the one mentioned previously: to allow clients of the library to selectively JIT compile some methods that make these chatty calls. Finally you can also use new custom `NonVersionableAttribute` attribute, which effectively changes the versioning contract to indicate that the library supplier has given up their right to change that method's body and thus it would be legal to inline.
 
 The proposal is to disallow cross-version bubble inlining by default, and selectively allow inlining for critical methods (by giving up the right to change the method).
 

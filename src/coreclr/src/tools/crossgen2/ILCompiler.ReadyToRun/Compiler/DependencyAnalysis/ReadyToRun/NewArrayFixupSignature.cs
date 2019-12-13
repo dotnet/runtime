@@ -18,6 +18,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             _arrayType = arrayType;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableType(arrayType);
         }
 
         public override int ClassCode => 815543321;
@@ -26,11 +29,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
-            dataBuilder.AddSymbol(this);
 
-            EcmaModule targetModule = _signatureContext.GetTargetModule(_arrayType);
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.NewArray, targetModule, _signatureContext);
-            dataBuilder.EmitTypeSignature(_arrayType, innerContext);
+            if (!relocsOnly)
+            {
+                dataBuilder.AddSymbol(this);
+
+                EcmaModule targetModule = _signatureContext.GetTargetModule(_arrayType);
+                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.NewArray, targetModule, _signatureContext);
+                dataBuilder.EmitTypeSignature(_arrayType, innerContext);
+            }
 
             return dataBuilder.ToObjectData();
         }

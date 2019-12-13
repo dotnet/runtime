@@ -144,7 +144,7 @@ Disp::DefineScope(
     }
 #endif // ENC_DELTA_HACK
 
-    // Create a new coclass for this guy.
+    // Create a new coclass for this.
     pMeta = new (nothrow) RegMeta();
     IfNullGo(pMeta);
 

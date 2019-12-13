@@ -156,7 +156,7 @@ Assert failure(PID 13452 [0x0000348c], Thread: 10784 [0x2a20]): Consistency chec
 
 ## Using DotNetCli to run your .NET Core Application
 
-If you don't like the idea of copying files manually you can follow [these instructions](UsingDotNetCli.md) to use dotnet cli to do this for you.
+If you don't like the idea of copying files manually you can follow [these instructions](../UsingDotNetCli.md) to use dotnet cli to do this for you.
 However the steps described here are the simplest and most commonly used by CoreCLR developers for ad-hoc testing.
 
 ## Using CoreRun to run your .NET Core Application

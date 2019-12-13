@@ -63,7 +63,9 @@ class CoreclrArguments:
         self.arch = None
         self.build_type = None
         self.core_root = None
-        self.coreclr_repo_location = None
+        self.runtime_repo_location = None
+        self.artifacts_location = None
+        self.coreclr_dir = None
 
         self.default_build_type = default_build_type
 
@@ -156,6 +158,20 @@ class CoreclrArguments:
     ############################################################################
 
     def __initialize__(self, args):
+
+        def provide_default_host_os():
+            if _platform == "linux" or _platform == "linux2":
+                return "Linux"
+            elif _platform == "darwin":
+                return "OSX"
+            elif _platform == "win32":
+                return "Windows_NT"
+            else:
+                print("Unknown OS: %s" % self.host_os)
+                sys.exit(1)
+            
+            return None
+
         def check_host_os(host_os):
             if host_os is None:
                 host_os = provide_default_host_os()
@@ -165,16 +181,6 @@ class CoreclrArguments:
 
             else:
                 return host_os in self.valid_host_os
-
-        def check_arch(arch):
-            if arch is None:
-                arch = provide_default_arch()
-                assert(arch in self.valid_arches)
-
-                return arch
-
-            else:
-                return arch in self.valid_arches
 
         def provide_default_arch():
             platform_machine = platform.machine()
@@ -191,21 +197,16 @@ class CoreclrArguments:
             else:
                 raise RuntimeError("Unsupported platform")
 
-        def provide_default_host_os():
-            if _platform == "linux" or _platform == "linux2":
-                return "Linux"
-            elif _platform == "darwin":
-                return "OSX"
-            elif _platform == "win32":
-                return "Windows_NT"
+        def check_arch(arch):
+            if arch is None:
+                arch = provide_default_arch()
+                assert(arch in self.valid_arches)
+                return arch
             else:
-                print("Unknown OS: %s" % self.host_os)
-                sys.exit(1)
-            
-            return None
+                return arch in self.valid_arches
 
         def check_and_return_test_location(test_location):
-            default_test_location = os.path.join(self.coreclr_repo_location, "..", "..", "artifacts", "tests", "coreclr", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
+            default_test_location = os.path.join(self.artifacts_location, "tests", "coreclr", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
 
             if os.path.isdir(default_test_location) or not self.require_built_test_dir:
                 return default_test_location
@@ -227,7 +228,7 @@ class CoreclrArguments:
             return core_root
 
         def check_and_return_default_product_location(product_location):
-            default_product_location = os.path.join(self.bin_location, "Product", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
+            default_product_location = os.path.join(self.artifacts_location, "bin", "coreclr", "%s.%s.%s" % (self.host_os, self.arch, self.build_type))
 
             if os.path.isdir(default_product_location) or not self.require_built_product_dir:
                 return default_product_location
@@ -236,8 +237,9 @@ class CoreclrArguments:
 
             return product_location
 
-        self.coreclr_repo_location = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.bin_location = os.path.join(self.coreclr_repo_location, "artifacts")
+        self.runtime_repo_location = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        self.artifacts_location = os.path.join(self.runtime_repo_location, "artifacts")
+        self.coreclr_dir = os.path.join(self.runtime_repo_location, "src", "coreclr")
 
         self.verify(args,
                     "host_os",
@@ -248,7 +250,7 @@ class CoreclrArguments:
         self.verify(args, 
                     "arch",
                     check_arch,
-                    "Unsupported architecture: %s.\nSupported architectures: %s" % (args.arch, ", ".join(self.valid_arches)))
+                    "Unsupported architecture.\nSupported architectures: %s" % (", ".join(self.valid_arches)))
 
         self.verify(args,
                     "build_type",
@@ -264,7 +266,7 @@ class CoreclrArguments:
         self.verify(args,
                     "core_root",
                     check_and_return_default_core_root,
-                    "Error, incorrect core_root location.")
+                    "Error, Core_Root could not be determined, or points to a location that doesn't exist.")
 
         self.verify(args,
                     "product_location",

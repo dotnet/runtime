@@ -1,7 +1,16 @@
 variables:
+  - template: /eng/pipelines/common/variables.yml
   - name: buildScriptFileName
     value: libraries
   - name: sourcesRoot
     value: $(Build.SourcesDirectory)/src/libraries
   - name: pipelinesPath
     value: /eng/pipelines/libraries
+  - name: isFullMatrix
+    value: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
+  - name: includeWindowsOuterloop
+    value: ${{ or(endsWith(variables['Build.DefinitionName'], 'windows'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}
+  - name: includeLinuxOuterloop
+    value: ${{ or(endsWith(variables['Build.DefinitionName'], 'linux'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}
+  - name: includeOsxOuterloop
+    value: ${{ or(endsWith(variables['Build.DefinitionName'], 'osx'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}

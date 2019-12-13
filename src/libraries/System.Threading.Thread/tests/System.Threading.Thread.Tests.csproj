@@ -10,7 +10,6 @@
     <Compile Include="ExceptionTests.cs" />
     <Compile Include="ThreadExceptionEventArgsTests.cs" />
     <Compile Include="ThreadTests.cs" />
-    <Compile Include="ThreadTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs">

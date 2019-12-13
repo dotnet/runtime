@@ -15,7 +15,6 @@
 #define DECLARE_DATA
 
 #include "assembler.h"
-MetaDataGetDispenserFunc metaDataGetDispenser;
 
 void indexKeywords(Indx* indx); // defined in asmparse.y
 
@@ -231,7 +230,6 @@ Assembler::~Assembler()
 
 BOOL Assembler::Init()
 {
-    metaDataGetDispenser = (MetaDataGetDispenserFunc)MetaDataGetDispenser;
     if (m_pCeeFileGen != NULL) {
         if (m_pCeeFile)
             m_pCeeFileGen->DestroyCeeFile(&m_pCeeFile);

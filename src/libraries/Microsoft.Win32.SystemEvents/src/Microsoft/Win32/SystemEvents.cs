@@ -60,7 +60,7 @@ namespace Microsoft.Win32
         private static readonly object s_onSessionSwitchEvent = new object();
 
         // Our list of handler information.  This is a lookup of the above keys and objects that
-        // match a delegate with a SyncronizationContext so we can fire on the proper thread.
+        // match a delegate with a SynchronizationContext so we can fire on the proper thread.
         private static Dictionary<object, List<SystemEventInvokeInfo>> s_handlers;
 
         private SystemEvents()

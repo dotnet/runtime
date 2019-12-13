@@ -105,7 +105,7 @@ internal static partial class Interop
         EHOSTNOTFOUND    = 0x20001,           // Name lookup failed
 
         // POSIX permits these to have the same value and we make them always equal so
-        // that CoreFX cannot introduce a dependency on distinguishing between them that
+        // that we do not introduce a dependency on distinguishing between them that
         // would not work on all platforms.
         EOPNOTSUPP      = ENOTSUP,            // Operation not supported on socket.
         EWOULDBLOCK     = EAGAIN,             // Operation would block.

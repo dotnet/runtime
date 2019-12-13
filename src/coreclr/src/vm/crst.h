@@ -21,7 +21,7 @@
 //
 //    The fundamental rule of the hierarchy that threads can only request
 //    a crst whose level is lower than any crst currently held by the thread.
-//    E.g. if a thread current holds a level-3 crst, he can try to enter
+//    E.g. if a thread current holds a level-3 crst, it can try to enter
 //    a level-2 crst, but not a level-4 crst, nor a different level-3
 //    crst. This prevents the cyclic dependencies that lead to deadlock.
 //

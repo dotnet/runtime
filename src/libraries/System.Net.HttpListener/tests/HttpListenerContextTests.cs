@@ -14,6 +14,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [SkipOnCoreClr("System.Net.Tests are inestable")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerContextTests : IDisposable
     {

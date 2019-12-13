@@ -336,4 +336,26 @@
     </ItemGroup>
   </Target>
 
+  <!-- Override adding packages to get the crossgen tool to only pull down the WinRT targeting pack and DiaSymReader since we have everything else locally. -->
+  <Target Name="AddCrossgenToolPackageReferences"
+          BeforeTargets="CollectPackageReferences">
+    <ItemGroup>
+      <CrossgenToolPackageReference Include="$(MicrosoftTargetingPackPrivateWinRTPackage)" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" />
+
+      <!-- This tool is a prebuilt not buildable from source. -->
+      <CrossgenToolPackageReference
+        Condition="'$(DotNetBuildFromSource)' != 'true'"
+        Include="Microsoft.DiaSymReader.Native"
+        Version="$(MicrosoftDiaSymReaderNativeVersion)" />
+
+      <!--
+        If any tool packages are missing, add them with ExcludeAssets=All. Be careful not to modify
+        existing PackageReferences.
+      -->
+      <PackageReference
+        Include="@(CrossgenToolPackageReference)"
+        Exclude="@(PackageReference)"
+        ExcludeAssets="All"/>
+    </ItemGroup>
+  </Target>
 </Project>

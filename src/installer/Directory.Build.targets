@@ -11,6 +11,13 @@
 
   <Import Project="$(RepositoryEngineeringDir)DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
 
+  <!-- Define properties based on live-live information for locating packages. -->
+  <PropertyGroup>
+    <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
+    <LibrariesShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'Shipping'))</LibrariesShippingPackagesDir>
+    <LibrariesNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'NonShipping'))</LibrariesNonShippingPackagesDir>
+  </PropertyGroup>
+
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
   <Target Name="Pack" />
 
@@ -18,14 +25,6 @@
   <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
   <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(InstallerTasksAssemblyPath)" />
   <UsingTask TaskName="RegenerateReadmeTable" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-
-  <PropertyGroup>
-    <!--
-      Define this here (not just in Versions.props) because the SDK resets it
-      unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
-    -->
-    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
-  </PropertyGroup>
 
   <!-- Common target to find all sfxproj. In a target to avoid evaluating for every project. -->
   <Target Name="GetSharedFrameworkProjects">
@@ -136,12 +135,12 @@
 
     <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
       <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
-      
+
       <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostPackageRelease>
       <HostPackageRelease>$([System.String]::Copy('$(HostPackageRelease)').Replace('-', '_'))</HostPackageRelease>
-      
+
       <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
-      
+
       <HostResolverPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostResolverPackageRelease>
       <HostResolverPackageRelease>$([System.String]::Copy('$(HostResolverPackageRelease)').Replace('-', '_'))</HostResolverPackageRelease>
 

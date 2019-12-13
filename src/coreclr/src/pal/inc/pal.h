@@ -3000,20 +3000,6 @@ WideCharToMultiByte(
             IN LPCSTR lpDefaultChar,
             OUT LPBOOL lpUsedDefaultChar);
 
-PALIMPORT
-int
-PALAPI
-PAL_GetResourceString(
-        IN LPCSTR lpDomain,
-        IN LPCSTR lpResourceStr,
-        OUT LPWSTR lpWideCharStr,
-        IN int cchWideChar);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_BindResources(IN LPCSTR lpDomain);
-
 #define EXCEPTION_NONCONTINUABLE 0x1
 #define EXCEPTION_UNWINDING 0x2
 

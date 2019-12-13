@@ -28,10 +28,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(GetSelectedSites))]
         public async Task RetrieveSite_Succeeds(string site)
         {
-            // Not doing this in bulk for platform handlers.
-            if (!UseSocketsHttpHandler)
-                return;
-
             int remainingAttempts = 2;
             while (remainingAttempts-- > 0)
             {
@@ -114,7 +110,7 @@ namespace System.Net.Http.Functional.Tests
 
         private HttpClient CreateHttpClientForSiteVisit()
         {
-            HttpClient httpClient = CreateHttpClient(CreateHttpClientHandler(UseSocketsHttpHandler));
+            HttpClient httpClient = CreateHttpClient(CreateHttpClientHandler());
 
             // Some extra headers since some sites only give proper responses when they are present.
             httpClient.DefaultRequestHeaders.Add(

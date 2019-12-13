@@ -32,9 +32,6 @@ Revision History:
 
 #include <pthread.h>
 #include <locale.h>
-#if HAVE_LIBINTL_H
-#include <libintl.h>
-#endif // HAVE_LIBINTL_H
 #include <errno.h>
 
 #include <debugmacrosext.h>
@@ -561,69 +558,3 @@ EXIT:
 }
 
 extern char * g_szCoreCLRPath;
-
-/*++
-Function :
-
-PAL_BindResources - bind the resource domain to the path where the coreclr resides
-
-Returns TRUE if it succeeded, FALSE if it failed due to OOM
---*/
-BOOL
-PALAPI
-PAL_BindResources(IN LPCSTR lpDomain)
-{
-#if HAVE_LIBINTL_H
-    _ASSERTE(g_szCoreCLRPath != NULL);
-    char * coreCLRDirectoryPath;
-    PathCharString coreCLRDirectoryPathPS;
-    int len = strlen(g_szCoreCLRPath);
-    coreCLRDirectoryPath = coreCLRDirectoryPathPS.OpenStringBuffer(len);
-    if (NULL == coreCLRDirectoryPath)
-    {
-        return FALSE;
-    }
-    DWORD size = FILEGetDirectoryFromFullPathA(g_szCoreCLRPath, len, coreCLRDirectoryPath);
-    coreCLRDirectoryPathPS.CloseBuffer(size);
-
-    LPCSTR boundPath = bindtextdomain(lpDomain, coreCLRDirectoryPath);
-
-    return boundPath != NULL;
-#else // HAVE_LIBINTL_H
-    // UNIXTODO: Implement for Unixes without libintl if necessary
-    return TRUE;
-#endif // HAVE_LIBINTL_H
-}
-
-/*++
-Function :
-
-PAL_GetResourceString - get localized string for a specified resource.
-The string that is passed in should be the English string, since it
-will be returned if an appropriately localized version is not found.
-
-Returns number of characters retrieved, 0 if it failed.
---*/
-int
-PALAPI
-PAL_GetResourceString(
-        IN LPCSTR lpDomain,
-        IN LPCSTR lpResourceStr,
-        OUT LPWSTR lpWideCharStr,
-        IN int cchWideChar
-      )
-{
-#if HAVE_LIBINTL_H
-    // NOTE: dgettext returns the key if it fails to locate the appropriate
-    // resource. In our case, that will be the English string.
-    LPCSTR resourceString = dgettext(lpDomain, lpResourceStr);
-#else // HAVE_LIBINTL_H
-    // UNIXTODO: Implement for OSX using the native localization API
-
-    // This is a temporary solution until we add the real native resource support.
-    LPCSTR resourceString = lpResourceStr;
-#endif // HAVE_LIBINTL_H
-
-    int length = strlen(resourceString);
-    return UTF8ToUnicode(lpResourceStr, length + 1, lpWideCharStr, cchWideChar, 0);
-}

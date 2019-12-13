@@ -1635,15 +1635,6 @@ part2:
                     _ASSERTE(!"EE Shutting down after an assert");
 #endif
 
-
-#ifdef LOGGING
-                extern unsigned FcallTimeHist[11];
-#endif
-                LOG((LF_STUBS, LL_INFO10, "FcallHist %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d\n",
-                    FcallTimeHist[0], FcallTimeHist[1], FcallTimeHist[2], FcallTimeHist[3],
-                    FcallTimeHist[4], FcallTimeHist[5], FcallTimeHist[6], FcallTimeHist[7],
-                    FcallTimeHist[8], FcallTimeHist[9], FcallTimeHist[10]));
-
                 WriteJitHelperCountToSTRESSLOG();
 
                 STRESS_LOG0(LF_STARTUP, LL_INFO10, "EEShutdown shutting down logging");
