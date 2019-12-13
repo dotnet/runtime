@@ -172,12 +172,9 @@ namespace System.Text.Json
             JsonClassInfo = null;
             PropertyRefCache = null;
             ReturnValue = null;
-            // TODO: Try using a field condition to avoid setting these fields when feature is off.
-            //if(this.PreserveReference){
             IsPreserved = false;
             DictionaryPropertyIsPreserved = false;
             IsPreservedArray = false;
-            //}
             EndObject();
         }
 

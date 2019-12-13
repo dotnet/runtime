@@ -63,43 +63,6 @@ namespace System.Text.Json
             }
         }
 
-        private static void CreateDataExtensionProperty(
-            JsonPropertyInfo jsonPropertyInfo,
-            ref ReadStack state)
-        {
-            Debug.Assert(jsonPropertyInfo != null);
-            Debug.Assert(state.Current.ReturnValue != null);
-
-            IDictionary extensionData = (IDictionary)jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
-            if (extensionData == null)
-            {
-                // Create the appropriate dictionary type. We already verified the types.
-                Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.IsGenericType);
-                Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments().Length == 2);
-                Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[0].UnderlyingSystemType == typeof(string));
-                Debug.Assert(
-                    jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(object) ||
-                    jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(JsonElement));
-
-                extensionData = (IDictionary)jsonPropertyInfo.RuntimeClassInfo.CreateObject();
-                jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, extensionData);
-            }
-
-            // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.
-        }
-
-        private static MetadataPropertyName GetMetadataProperty(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader)
-        {
-            if (state.Current.ShouldHandleReference)
-            {
-                ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
-            }
-
-            MetadataPropertyName metadata = GetMetadataPropertyName(propertyName, ref state, ref reader);
-            state.Current.MetadataProperty = metadata;
-            return metadata;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void HandlePropertyNameDefault(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
@@ -158,6 +121,43 @@ namespace System.Text.Json
 
             // Increment the PropertyIndex so JsonClassInfo.GetProperty() starts with the next property.
             state.Current.PropertyIndex++;
+        }
+
+        private static void CreateDataExtensionProperty(
+            JsonPropertyInfo jsonPropertyInfo,
+            ref ReadStack state)
+        {
+            Debug.Assert(jsonPropertyInfo != null);
+            Debug.Assert(state.Current.ReturnValue != null);
+
+            IDictionary extensionData = (IDictionary)jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
+            if (extensionData == null)
+            {
+                // Create the appropriate dictionary type. We already verified the types.
+                Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.IsGenericType);
+                Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments().Length == 2);
+                Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[0].UnderlyingSystemType == typeof(string));
+                Debug.Assert(
+                    jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(object) ||
+                    jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(JsonElement));
+
+                extensionData = (IDictionary)jsonPropertyInfo.RuntimeClassInfo.CreateObject();
+                jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, extensionData);
+            }
+
+            // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.
+        }
+
+        private static MetadataPropertyName GetMetadataProperty(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader)
+        {
+            if (state.Current.ShouldHandleReference)
+            {
+                ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+            }
+
+            MetadataPropertyName metadata = GetMetadataPropertyName(propertyName, ref state, ref reader);
+            state.Current.MetadataProperty = metadata;
+            return metadata;
         }
 
         private static void ResolveMetadataOnDictionary(MetadataPropertyName metadata, ref ReadStack state)

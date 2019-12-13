@@ -12,11 +12,11 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Preserved JSON complex types will not be written/readen.
         /// </summary>
-        public static ReferenceHandling Default => new ReferenceHandling(PreserveReferencesHandling.None);
+        public static ReferenceHandling Default { get; } = new ReferenceHandling(PreserveReferencesHandling.None);
         /// <summary>
         /// Preserved JSON complex types will be written/readen.
         /// </summary>
-        public static ReferenceHandling Preserve => new ReferenceHandling(PreserveReferencesHandling.All);
+        public static ReferenceHandling Preserve { get; } = new ReferenceHandling(PreserveReferencesHandling.All);
 
         // For future, change to public if needed.
         internal PreserveReferencesHandling PreserveHandlingOnSerialize => _preserveHandlingOnSerialize;

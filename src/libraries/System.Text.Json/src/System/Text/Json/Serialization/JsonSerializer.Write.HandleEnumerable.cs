@@ -74,7 +74,6 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    JsonPropertyInfo previousPropertyInfo = state.Current.JsonPropertyInfo;
                     // An object or another enumerator requires a new stack frame.
                     object nextValue = state.Current.CollectionEnumerator.Current;
                     state.Push(elementClassInfo, nextValue);
