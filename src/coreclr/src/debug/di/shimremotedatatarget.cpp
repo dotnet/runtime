@@ -285,7 +285,7 @@ ShimRemoteDataTarget::ReadVirtual(
     }
     if (pcbRead != NULL)
     {
-        *pcbRead = (SUCCEEDED(hr) ? read : 0);
+        *pcbRead = ULONG32(SUCCEEDED(hr) ? read : 0);
     }
     return hr;
 }
