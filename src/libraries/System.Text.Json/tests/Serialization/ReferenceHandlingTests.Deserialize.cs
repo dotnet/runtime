@@ -1164,7 +1164,7 @@ namespace System.Text.Json.Tests
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
 
-            Assert.Equal("$.LeadingProperty", ex.Path);
+            Assert.Equal("$", ex.Path);
             // is it safe to compare using CR+LF? My guess is that this test might fail on UNIX-based.
             Assert.Contains("Deserialization failed for one of these reasons:\r\n1. Invalid property in preserved array.\r\n2. The JSON value could not be converted to ", ex.Message);
 
@@ -1176,7 +1176,7 @@ namespace System.Text.Json.Tests
 
             ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
 
-            Assert.Equal("$.TrailingProperty", ex.Path);
+            Assert.Equal("$", ex.Path);
             Assert.Contains("Deserialization failed for one of these reasons:\r\n1. Invalid property in preserved array.\r\n2. The JSON value could not be converted to ", ex.Message);
         }
         #endregion

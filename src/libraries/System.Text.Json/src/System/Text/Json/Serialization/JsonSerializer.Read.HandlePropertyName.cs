@@ -200,7 +200,7 @@ namespace System.Text.Json
             {
                 if (state.Current.IsPreservedArray)
                 {
-                    ThrowOnRegularPropertyInPreservedArray(propertyName, ref state, ref reader);
+                    ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(state.Current.JsonClassInfo.PropertyCache["Values"].DeclaredPropertyType);
                 }
                 // Regular property, call main logic for HandlePropertyName.
                 HandlePropertyNameDefault(propertyName, ref state, ref reader, options);
@@ -251,22 +251,6 @@ namespace System.Text.Json
                 state.Current.ReadMetadataValue = true;
                 state.Current.ShouldHandleReference = true;
             }
-        }
-
-        private static void ThrowOnRegularPropertyInPreservedArray(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader)
-        {
-            if (reader._stringHasEscaping)
-            {
-                int idx = propertyName.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(idx != -1);
-                propertyName = GetUnescapedString(propertyName, idx);
-            }
-
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
-            jsonPropertyInfo.JsonPropertyName = propertyName.ToArray();
-            state.Current.JsonPropertyInfo = jsonPropertyInfo;
-
-            ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(state.Current.JsonClassInfo.PropertyCache["Values"].DeclaredPropertyType);
         }
     }
 }
