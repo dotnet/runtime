@@ -325,10 +325,12 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Ptrs
                     == offsetof(MachState, m_Ptrs));
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState___pRetAddr
                     == offsetof(MachState, _pRetAddr));
+#if defined(TARGET_UNIX) && defined(PLATFORM_UNIX) // Fixme bad temporary workaround
 ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRip
                     == offsetof(LazyMachState, m_CaptureRip));
 ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRsp
                     == offsetof(LazyMachState, m_CaptureRsp));
+#endif
 
 #define               OFFSETOF__MethodDesc__m_wFlags        DBG_FRE(0x2E, 0x06)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodDesc__m_wFlags == offsetof(MethodDesc, m_wFlags));
