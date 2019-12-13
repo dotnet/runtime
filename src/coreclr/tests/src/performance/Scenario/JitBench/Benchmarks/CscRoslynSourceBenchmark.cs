@@ -18,9 +18,9 @@ namespace JitBench
             string cscSourceDownloadLink = "https://roslyninfra.blob.core.windows.net/perf-artifacts/CodeAnalysisRepro" +
                     (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".zip" : ".tar.gz");
             string sourceDownloadDir = Path.Combine(intermediateOutputDir, "roslynSource");
-            string sourceDir = Path.Combine(sourceDownloadDir, "CodeAnalysisRepro");
+            string TestSourceDir = Path.Combine(sourceDownloadDir, "CodeAnalysisRepro");
             CommandLineArguments = "@repro.rsp";
-            WorkingDirPath = sourceDir;
+            WorkingDirPath = TestSourceDir;
             if(useExistingSetup)
             {
                 return;

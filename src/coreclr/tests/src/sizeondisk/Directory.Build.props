@@ -2,6 +2,6 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
   <PropertyGroup>
-    <ProjectAssetsFile>$(SourceDir)performance/obj/project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(TestSourceDir)performance/obj/project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 </Project>

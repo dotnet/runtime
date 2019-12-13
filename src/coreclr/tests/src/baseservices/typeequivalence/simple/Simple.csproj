@@ -12,7 +12,7 @@
       <EmbedTypes>true</EmbedTypes>
     </ProjectReference>
     <ProjectReference Include="../impl/TypeImpl.csproj" />
-    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove('TypeEquivalence.targets', '$(MSBuildThisFileDirectory)../'))" />
 </Project>

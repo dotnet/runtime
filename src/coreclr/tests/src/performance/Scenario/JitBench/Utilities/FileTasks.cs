@@ -135,14 +135,14 @@ namespace JitBench
                    Run();
         }
 
-        public static void DirectoryCopy(string sourceDir, string destDir, ITestOutputHelper output = null, bool overwrite = true)
+        public static void DirectoryCopy(string TestSourceDir, string destDir, ITestOutputHelper output = null, bool overwrite = true)
         {
             if(output != null)
             {
-                output.WriteLine("Copying " + sourceDir + " -> " + destDir);
+                output.WriteLine("Copying " + TestSourceDir + " -> " + destDir);
             }
             
-            DirectoryInfo dir = new DirectoryInfo(sourceDir);
+            DirectoryInfo dir = new DirectoryInfo(TestSourceDir);
 
             DirectoryInfo[] dirs = dir.GetDirectories();
             if (!Directory.Exists(destDir))
@@ -207,22 +207,22 @@ namespace JitBench
             }
         }
 
-        public static void MoveDirectory(string sourceDirName, string destDirName, ITestOutputHelper output)
+        public static void MoveDirectory(string TestSourceDirName, string destDirName, ITestOutputHelper output)
         {
             if (output != null)
             {
-                output.WriteLine("Moving " + sourceDirName + " -> " + destDirName);
+                output.WriteLine("Moving " + TestSourceDirName + " -> " + destDirName);
             }
             int retries = 10;
             for (int i = 0; i < retries; i++)
             {
-                if (!Directory.Exists(sourceDirName) && Directory.Exists(destDirName))
+                if (!Directory.Exists(TestSourceDirName) && Directory.Exists(destDirName))
                 {
                     return;
                 }
                 try
                 {
-                    Directory.Move(sourceDirName, destDirName);
+                    Directory.Move(TestSourceDirName, destDirName);
                     return;
                 }
                 catch (IOException e) when (i < retries - 1)
