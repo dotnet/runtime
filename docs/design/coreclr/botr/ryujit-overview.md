@@ -521,6 +521,11 @@ t79 = ▌  LEA(b+(i*4)+16) byref
       ┌──▌  t79    byref
 t44 = ▌  IND       int
 ```
+Sometimes `Lowering` will insert nodes into the execution order before the node that it is currently handling.
+In such cases, it must ensure that they themselves are properly lowered. This includes:
+
+* Generating only legal `LIR` nodes that do not themselves require lowering.
+* Performing any needed containment analysis (e.g. `ContainCheckRange()`) on the newly added node(s).
 
 After all nodes are lowered, liveness is run in preparation for register allocation.
 
