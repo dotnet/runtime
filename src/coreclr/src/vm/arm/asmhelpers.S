@@ -37,7 +37,8 @@
         mov     r5,r0 // save pCallDescrData in r5
 
         ldr     r1, [r5,#CallDescrData__numStackSlots]
-        cbz     r1, LOCAL_LABEL(Ldonestack)
+        cmp     r1, #0
+        beq     LOCAL_LABEL(Ldonestack)
 
         // Add frame padding to ensure frame size is a multiple of 8 (a requirement of the OS ABI).
         // We push four registers (above) and numStackSlots arguments (below). If this comes to an odd number
@@ -61,7 +62,8 @@ LOCAL_LABEL(Ldonestack):
         // If FP arguments are supplied in registers (r3 != NULL) then initialize all of them from the pointer
         // given in r3. Do not use "it" since it faults in floating point even when the instruction is not executed.
         ldr     r3, [r5,#CallDescrData__pFloatArgumentRegisters]
-        cbz     r3, LOCAL_LABEL(LNoFloatingPoint)
+        cmp     r3, #0
+        beq     LOCAL_LABEL(LNoFloatingPoint)
         vldm    r3, {s0-s15}
 LOCAL_LABEL(LNoFloatingPoint):
 
@@ -81,8 +83,8 @@ LOCAL_LABEL(LNoFloatingPoint):
         ldr     r3, [r5,#CallDescrData__fpReturnSize]
 
         // Save FP return value if appropriate
-        cbz     r3, LOCAL_LABEL(LFloatingPointReturnDone)
-
+        cmp     r3, #0
+        beq     LOCAL_LABEL(LFloatingPointReturnDone)
         // Float return case
         // Do not use "it" since it faults in floating point even when the instruction is not executed.
         cmp     r3, #4
@@ -326,7 +328,8 @@ UMThunkStub_StackArgsSize = 10*4
         CHECK_STACK_ALIGNMENT
 
         bl                  C_FUNC(GetThread)
-        cbz                 r0, LOCAL_LABEL(UMThunkStub_DoThreadSetup)
+        cmp                 r0, #0
+        beq                 LOCAL_LABEL(UMThunkStub_DoThreadSetup)
 
 LOCAL_LABEL(UMThunkStub_HaveThread):
         mov                 r5, r0                  // r5 = Thread *
@@ -337,13 +340,15 @@ LOCAL_LABEL(UMThunkStub_HaveThread):
         str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
 
         ldr                 r3, [r2]
-        cbnz                r3, LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads)
+        cmp                 r3, #0
+        bne                 LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads)
 
 LOCAL_LABEL(UMThunkStub_InCooperativeMode):
         ldr                 r12, [r7, #UMThunkStub_HiddenArgOffset]
         ldr                 r3, [r12, #UMEntryThunk__m_pUMThunkMarshInfo]
         ldr                 r2, [r3, #UMThunkMarshInfo__m_cbActualArgSize]
-        cbz                 r2, LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
+        cmp                 r2, #0
+        beq                 LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
 
         add                 r0, r7, #UMThunkStub_StackArgsOffset // Source pointer
         add                 r0, r0, r2
@@ -593,9 +598,13 @@ NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
     // void       *profiledSp; // location of arguments on stack
     // LPVOID      hiddenArg;
     // UINT32      flags;
-    movw        r4, #1
+    lsr         r4, r4, #16
+    lsl         r4, r4, #16
+    orr         r4, r4, #1
     push        { /* flags      */ r4 }
-    movw        r4, #0
+    lsr         r4, r4, #16
+    lsl         r4, r4, #16
+    orr         r4, r4, #0
     push        { /* hiddenArg  */ r4 }
     add         r5, r11, #8
     push        { /* profiledSp */ r5 }
@@ -636,9 +645,13 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
     // void       *profiledSp; // location of arguments on stack
     // LPVOID      hiddenArg;
     // UINT32      flags;
-    movw        r4, #2
+    lsr         r4, r4, #16
+    lsl         r4, r4, #16
+    orr         r4, r4, #2
     push        { /* flags      */ r4 }
-    movw        r4, #0
+    lsr         r4, r4, #16
+    lsl         r4, r4, #16
+    orr         r4, r4, #0
     push        { /* hiddenArg  */ r4 }
     add         r5, r11, #8
     push        { /* profiledSp */ r5 }
@@ -679,9 +692,13 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
     // void       *profiledSp; // location of arguments on stack
     // LPVOID      hiddenArg;
     // UINT32      flags;
-    movw        r4, #2
+    lsr         r4, r4, #16
+    lsl         r4, r4, #16
+    orr         r4, r4, #2
     push        { /* flags      */ r4 }
-    movw        r4, #0
+    lsr         r4, r4, #16
+    lsl         r4, r4, #16
+    orr         r4, r4, #0
     push        { /* hiddenArg  */ r4 }
     add         r5, r11, #8
     push        { /* profiledSp */ r5 }
@@ -831,7 +848,9 @@ LOCAL_LABEL(checkStack_neg):
     NESTED_ENTRY stackProbe, _TEXT, NoHandler
     PROLOG_PUSH "{r5,r6}"
     mov         r6, r12
-    bfc         r6, #0, #0xc  // align down (4K)
+    lsr         r6, r6, #12
+    lsl         r6, r6, #12
+
 LOCAL_LABEL(stackProbe_loop):
     sub         r4,r4,#0x1000 // dec stack Limit by 4K as page size is 4K
     ldr         r5,[r4]       // try to read ... this should move the guard page
@@ -868,7 +887,6 @@ LOCAL_LABEL(stackProbe_loop):
     // Align stack
     alloc_stack  SIZEOF__FloatArgumentRegisters + 4
     vstm                sp, {d0-d7}
-
 
     CHECK_STACK_ALIGNMENT
 
@@ -988,6 +1006,7 @@ LOCAL_LABEL(stackProbe_loop):
     bl          C_FUNC(JIT_RareDisableHelperWorker)
 
     EPILOG_VPOP {d0-d3}
+
     EPILOG_POP "{r0-r1, r7,r8, r11, pc}"
 
     NESTED_END JIT_RareDisableHelper, _TEXT
@@ -1064,7 +1083,8 @@ LOCAL_LABEL(CallCppHelper3):
     // We retain arguments as they were passed and use r0 == array// r1 == idx// r2 == val
 
     // check for null array
-    cbz     r0, LOCAL_LABEL(ThrowNullReferenceException)
+    cmp     r0, #0
+    beq     LOCAL_LABEL(ThrowNullReferenceException)
 
     // idx bounds check
     ldr     r3,[r0,#ArrayBase__m_NumComponents]
@@ -1072,7 +1092,8 @@ LOCAL_LABEL(CallCppHelper3):
     bls     LOCAL_LABEL(ThrowIndexOutOfRangeException)
 
     // fast path to null assignment (doesn't need any write-barriers)
-    cbz     r2, LOCAL_LABEL(AssigningNull)
+    cmp     r2, #0
+    beq     LOCAL_LABEL(AssigningNull)
 
     // Verify the array-type and val-type matches before writing
     ldr     r12, [r0] // r12 = array MT
@@ -1169,8 +1190,12 @@ LOCAL_LABEL(DoWrite):
     .macro LOAD_GC_GLOBAL name, regName, globalName
 \name\()__\globalName\()_offset:
     __\name\()__\globalName\()_offset = (\name\()__\globalName\()_offset - \name)
+#ifdef __thumb__
         movw \regName, #0
         movt \regName, #0
+#else
+        mov \regName, #0
+#endif
     .endm
 
     .macro UPDATE_GC_SHADOW name, ptrReg, valReg
@@ -1219,7 +1244,12 @@ LOCAL_LABEL(DoWrite):
     LEAF_ENTRY \name, _TEXT
         START_WRITE_BARRIER \name
         .if(\mp)
+#ifndef _ARMV6_
             dmb
+#else
+            mov      r2, #0
+            mcr      p15,0,r2,c7,c10,4
+#endif
         .endif
 
         str r1, [r0]
@@ -1244,7 +1274,12 @@ LOCAL_LABEL(DoWrite):
     .macro JIT_CHECKEDWRITEBARRIER_MP name, post
     LEAF_ENTRY \name, _TEXT
         START_WRITE_BARRIER \name
+#ifndef _ARMV6_
         dmb
+#else
+        mov      r2, #0
+        mcr      p15,0,r2,c7,c10,4
+#endif
         str r1, [r0]
         CHECK_GC_HEAP_RANGE \name, r0, 1f
         UPDATE_GC_SHADOW \name, r0, r1
@@ -1260,7 +1295,12 @@ LOCAL_LABEL(DoWrite):
     LEAF_ENTRY \name, _TEXT
         START_WRITE_BARRIER \name
         .if(\mp)
+#ifndef _ARMV6_
             dmb
+#else
+            mov      r2, #0
+            mcr      p15,0,r2,c7,c10,4
+#endif
         .endif
 
         ldr r2, [r1]
@@ -1406,7 +1446,9 @@ DelayLoad_Helper\suffix:
 
         bl          C_FUNC(DynamicHelperWorker)
 
-        cbnz        r0, 0f
+        cmp         r0, 0
+        bne         0f
+
         ldr         r0, [sp,#(__PWTB_TransitionBlock+9*4)]  // The result is stored in the argument area of the transition block
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -1471,12 +1513,15 @@ DelayLoad_Helper\suffix:
         PROLOG_STACK_SAVE r7
 
         mov r5, sp                       // r5 points to some byte on the last probed page
-        bfc r5, #0, #PAGE_SIZE_LOG2      // r5 points to the **lowest address** on the last probed page
+        lsr     r5, r5, #PAGE_SIZE_LOG2
+        lsl     r5, r5, #PAGE_SIZE_LOG2
         mov sp, r5
 
 ProbeLoop:
                                          // Immediate operand for the following instruction can not be greater than 4095.
-        sub sp, #(PAGE_SIZE - 4)         // sp points to the **fourth** byte on the **next page** to probe
+        // sp points to the **fourth** byte on the **next page** to probe
+        sub sp, sp, #(PAGE_SIZE)
+        add sp, sp, #4
         ldr r5, [sp, #-4]!               // sp points to the lowest address on the **last probed** page
         cmp sp, r4
         bhi ProbeLoop                    // If (sp > r4), then we need to probe at least one more page.
