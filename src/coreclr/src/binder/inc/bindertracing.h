@@ -93,6 +93,7 @@ namespace BinderTracing
         struct AttemptInfo
         {
             BINDER_SPACE::AssemblyName *AssemblyNameObject;
+            UINT_PTR BinderID;
             INT_PTR ManagedAssemblyLoadContext;
 
             PathString AssemblyName;
@@ -101,6 +102,9 @@ namespace BinderTracing
 
     public:
         ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, INT_PTR managedALC, const HRESULT& hr);
+        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, UINT_PTR binderId, const HRESULT& hr);
+
+        void TraceBindResult(const BINDER_SPACE::BindResult &bindResult);
 
         void SetFoundAssembly(BINDER_SPACE::Assembly *assembly)
         {
@@ -117,7 +121,7 @@ namespace BinderTracing
             // Firing the event at this point not only helps timing each binding
             // stage, but avoids keeping track of which stages were reached to
             // resolve the assembly.
-            TraceStageEnd();
+            TraceStage(m_stage, m_hr, m_pFoundAssembly);
             m_stage = stage;
         }
 
@@ -126,18 +130,20 @@ namespace BinderTracing
         {
             if (BinderTracing::IsEnabled())
             {
-                TraceStageEnd();
+                TraceStage(m_stage, m_hr, m_pFoundAssembly);
             }
         }
 #endif // FEATURE_EVENT_TRACE
 
     private:
+        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, UINT_PTR binderId, INT_PTR managedALC, const HRESULT& hr);
+
         // This must match the ResolutionAttemptedResult value map in ClrEtwAll.man
         enum class Result : uint16_t
         {
             Success = 0,
             AssemblyNotFound = 1,
-            IncompatbileVersion = 2,
+            IncompatibleVersion = 2,
             MismatchedAssemblyName = 3,
             Failure = 4,
         };
@@ -155,7 +161,7 @@ namespace BinderTracing
 
         BINDER_SPACE::Assembly *m_pFoundAssembly;
 
-        void TraceStageEnd();
+        void TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly);
     };
 
     // This must match the BindingPathSource value map in ClrEtwAll.man

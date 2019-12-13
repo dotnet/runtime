@@ -206,7 +206,9 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
             ReleaseHolder<CLRPrivBinderAssemblyLoadContext> pBinder;
 
             SAFE_NEW(pBinder, CLRPrivBinderAssemblyLoadContext);
-            hr = pBinder->m_appContext.Init();
+            UINT_PTR binderId;
+            pBinder->GetBinderID(&binderId);
+            hr = pBinder->m_appContext.Init(binderId);
             if(SUCCEEDED(hr))
             {
                 // Save the reference to the AppDomain in which the binder lives

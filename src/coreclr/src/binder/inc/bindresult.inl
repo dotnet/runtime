@@ -25,6 +25,7 @@ BindResult::BindResult()
     m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
     m_pAssemblyName = NULL;
     m_pIUnknownAssembly = NULL;
+    m_attempts = new AttemptResult[2];
 }
 
 BindResult::~BindResult()
@@ -159,8 +160,38 @@ void BindResult::Reset()
     SAFE_RELEASE(m_pAssemblyName);
     m_pIUnknownAssembly = NULL;
     m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
+    m_attempts = new AttemptResult[2];
+}
+
+void BindResult::SetAttemptResult(HRESULT hr, ContextEntry *pContextEntry)
+{
+    Assembly *assembly = nullptr;
+    if (pContextEntry != nullptr)
+        assembly = static_cast<Assembly *>(pContextEntry->GetAssembly(TRUE /* fAddRef */));
+
+    // First entry is for result found in context
+    AttemptResult &result = m_attempts[0];
+    result.Assembly = assembly;
+    result.HResult = hr;
+    result.Attempted = true;
+}
+
+void BindResult::SetAttemptResult(HRESULT hr, Assembly *pAssembly)
+{
+    if (pAssembly != nullptr)
+        pAssembly->AddRef();
+
+    AttemptResult &result = m_attempts[1];
+    result.Assembly = pAssembly;
+    result.HResult = hr;
+    result.Attempted = true;
+}
+
+const BindResult::AttemptResult* BindResult::GetAttempt(bool foundInContext) const
+{
+    BindResult::AttemptResult &result = foundInContext ? m_attempts[0] : m_attempts[1];
+    return result.Attempted ? &result : nullptr;
 }
 
 }
-
 #endif

@@ -14,6 +14,7 @@
 
 #include "common.h"
 #include "bindertracing.h"
+#include "bindresult.hpp"
 
 #include "activitytracker.h"
 
@@ -82,6 +83,12 @@ namespace
 
     void GetAssemblyLoadContextNameFromManagedALC(INT_PTR managedALC, /* out */ SString &alcName)
     {
+        if (managedALC == GetAppDomain()->GetTPABinderContext()->GetManagedAssemblyLoadContext())
+        {
+            alcName.Set(W("Default"));
+            return;
+        }
+
 #ifdef CROSSGEN_COMPILE
         alcName.Set(W("Custom"));
 #else // CROSSGEN_COMPILE
@@ -185,7 +192,15 @@ namespace
         _ASSERTE(info.AssemblyNameObject != nullptr);
 
         info.AssemblyNameObject->GetDisplayName(info.AssemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
-        GetAssemblyLoadContextNameFromManagedALC(info.ManagedAssemblyLoadContext, info.AssemblyLoadContext);
+
+        if (info.ManagedAssemblyLoadContext != 0)
+        {
+            GetAssemblyLoadContextNameFromManagedALC(info.ManagedAssemblyLoadContext, info.AssemblyLoadContext);
+        }
+        else
+        {
+            GetAssemblyLoadContextNameFromBinderID(info.BinderID, GetAppDomain(), info.AssemblyLoadContext);
+        }
     }
 }
 
@@ -258,33 +273,65 @@ namespace BinderTracing
 
 namespace BinderTracing
 {
+    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, UINT_PTR binderID, const HRESULT& hr)
+        : ResolutionAttemptedOperation(assemblyName, binderID, 0, hr)
+    { }
+
     ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, INT_PTR managedALC, const HRESULT& hr)
+        : ResolutionAttemptedOperation(assemblyName, 0, managedALC, hr)
+    { }
+
+    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, UINT_PTR binderID, INT_PTR managedALC, const HRESULT& hr)
         : m_hr { hr }
         , m_stage { Stage::NotYetStarted }
-        , m_attemptInfo { assemblyName, managedALC }
+        , m_attemptInfo { assemblyName, binderID, managedALC }
         , m_pFoundAssembly { nullptr }
     {
-        _ASSERTE(assemblyName != nullptr);
-
         if (!BinderTracing::IsEnabled())
             return;
 
+        _ASSERTE(assemblyName != nullptr);
         PopulateAttemptInfo(m_attemptInfo);
         m_populatedAttemptInfo = true;
     }
 
-    void ResolutionAttemptedOperation::TraceStageEnd()
+    // This function simply traces out the two stages represented by the bind result.
+    // It does not change the stage/assembly of the ResolutionAttemptedOperation class instance.
+    void ResolutionAttemptedOperation::TraceBindResult(const BindResult &bindResult)
     {
-        if (!BinderTracing::IsEnabled() || m_stage == Stage::NotYetStarted)
+        if (!BinderTracing::IsEnabled())
+            return;
+
+        const BindResult::AttemptResult *attempt = bindResult.GetAttempt(true /*foundInContext*/);
+        if (attempt != nullptr)
+            TraceStage(Stage::FindInLoadContext, attempt->HResult, attempt->Assembly);
+
+        attempt = bindResult.GetAttempt(false /*foundInContext*/);
+        if (attempt != nullptr)
+            TraceStage(Stage::PlatformAssemblies, attempt->HResult, attempt->Assembly);
+    }
+
+    void ResolutionAttemptedOperation::TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly)
+    {
+        if (!BinderTracing::IsEnabled() || stage == Stage::NotYetStarted)
             return;
 
         if (!m_populatedAttemptInfo)
             PopulateAttemptInfo(m_attemptInfo);
 
+        PathString resultAssemblyName;
+        StackSString resultAssemblyPath;
+        if (resultAssembly != nullptr)
+        {
+            resultAssembly->GetAssemblyName()->GetDisplayName(resultAssemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+            resultAssemblyPath = resultAssembly->GetPEImage()->GetPath();
+        }
+
         Result result;
         StackSString errorMsg;
-        switch (m_hr)
+        switch (hr)
         {
+            case S_FALSE:
             case HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND):
                 static_assert(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) == COR_E_FILENOTFOUND,
                                 "COR_E_FILENOTFOUND has sane value");
@@ -294,29 +341,40 @@ namespace BinderTracing
                 break;
 
             case FUSION_E_APP_DOMAIN_LOCKED:
-                result = Result::IncompatbileVersion;
+                result = Result::IncompatibleVersion;
 
                 {
                     const auto &reqVersion = m_attemptInfo.AssemblyNameObject->GetVersion();
-                    const auto &foundVersion = m_pFoundAssembly->GetAssemblyName()->GetVersion();
-                    errorMsg.Printf(W("Assembly found, but requested version %d.%d.%d.%d is incompatible with found version %d.%d.%d.%d"),
-                                    reqVersion->GetMajor(), reqVersion->GetMinor(),
-                                    reqVersion->GetBuild(), reqVersion->GetRevision(),
-                                    foundVersion->GetMajor(), foundVersion->GetMinor(),
-                                    foundVersion->GetBuild(), foundVersion->GetRevision());
+                    errorMsg.Printf(W("Requested version %d.%d.%d.%d is incompatible with found version"),
+                        reqVersion->GetMajor(),
+                        reqVersion->GetMinor(),
+                        reqVersion->GetBuild(),
+                        reqVersion->GetRevision());
+                    if (resultAssembly != nullptr)
+                    {
+                        const auto &foundVersion = resultAssembly->GetAssemblyName()->GetVersion();
+                        errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
+                            foundVersion->GetMajor(),
+                            foundVersion->GetMinor(),
+                            foundVersion->GetBuild(),
+                            foundVersion->GetRevision());
+                    }
                 }
                 break;
 
             case FUSION_E_REF_DEF_MISMATCH:
                 result = Result::MismatchedAssemblyName;
-                errorMsg.Printf(W("Name mismatch: found %s instead"),
-                                m_pFoundAssembly->GetAssemblyName()->GetSimpleName().GetUnicode());
+                errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_attemptInfo.AssemblyName.GetUnicode());
+                if (resultAssembly != nullptr)
+                    errorMsg.AppendPrintf(W(" '%s'"), resultAssemblyName.GetUnicode());
+
                 break;
 
             default:
-                if (SUCCEEDED(m_hr))
+                if (SUCCEEDED(hr))
                 {
                     result = Result::Success;
+                    _ASSERTE(resultAssembly != nullptr);
                     // Leave errorMsg empty in this case.
                 }
                 else
@@ -326,22 +384,10 @@ namespace BinderTracing
                 }
         }
 
-        PathString resultAssemblyName;
-        StackSString resultAssemblyPath;
-        if (m_pFoundAssembly != nullptr)
-        {
-            m_pFoundAssembly->GetAssemblyName()->GetDisplayName(resultAssemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
-            resultAssemblyPath = m_pFoundAssembly->GetPEImage()->GetPath();
-        }
-        else
-        {
-            assert(!SUCCEEDED(m_hr));
-        }
-
         FireEtwResolutionAttempted(
             GetClrInstanceId(),
             m_attemptInfo.AssemblyName,
-            static_cast<uint16_t>(m_stage),
+            static_cast<uint16_t>(stage),
             m_attemptInfo.AssemblyLoadContext,
             static_cast<uint16_t>(result),
             resultAssemblyName,
