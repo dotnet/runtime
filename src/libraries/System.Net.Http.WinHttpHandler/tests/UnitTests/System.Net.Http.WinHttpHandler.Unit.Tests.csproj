@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
-    <DefineConstants>$(DefineConstants);WIN_HTTP_HANDLER</DefineConstants>
+    <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusions Include="System.Net.Http.WinHttpHandler" />

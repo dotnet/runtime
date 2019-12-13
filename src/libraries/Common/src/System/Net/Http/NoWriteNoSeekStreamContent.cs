@@ -61,7 +61,7 @@ namespace System.Net.Http
             return copyTask;
         }
 
-#if WIN_HTTP_HANDLER
+#if WINHTTPHANDLER_DLL
         protected
 #else
         protected internal
@@ -83,7 +83,7 @@ namespace System.Net.Http
 
         protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult(_content);
 
-#if !WIN_HTTP_HANDLER
+#if !WINHTTPHANDLER_DLL
         internal override Stream TryCreateContentReadStream() => _content;
 
         internal override bool AllowDuplex => false;
