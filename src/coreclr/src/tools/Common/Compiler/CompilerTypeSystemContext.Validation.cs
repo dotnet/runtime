@@ -21,6 +21,17 @@ namespace ILCompiler
             _validTypes.GetOrCreateValue(type);
         }
 
+        public void EnsureLoadableMethod(MethodDesc method)
+        {
+            EnsureLoadableType(method.OwningType);
+
+            if (method.HasInstantiation)
+            {
+                foreach (var instType in method.Instantiation)
+                    EnsureLoadableType(instType);
+            }
+        }
+
         class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
         {
             protected override bool CompareKeyToValue(TypeDesc key, TypeDesc value) => key == value;
@@ -96,8 +107,8 @@ namespace ILCompiler
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitons
-                if (type.IsGenericDefinition)
+                // Don't validate generic definitons or RuntimeDeterminiedTypes
+                if (type.IsGenericDefinition || type.IsRuntimeDeterminedType)
                 {
                     return type;
                 }
@@ -112,6 +123,11 @@ namespace ILCompiler
                 foreach (var intf in type.RuntimeInterfaces)
                 {
                     ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(intf.NormalizeInstantiation());
+                }
+
+                if (type.BaseType != null)
+                {
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type.BaseType);
                 }
 
                 var defType = (DefType)type;

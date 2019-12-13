@@ -11,10 +11,7 @@ namespace System
 {
     internal static partial class SpanHelpers // .T
     {
-        public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -50,10 +47,7 @@ namespace System
         }
 
         // Adapted from IndexOf(...)
-        public static unsafe bool Contains<T>(ref T searchSpace, T value, int length)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static unsafe bool Contains<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 
@@ -123,10 +117,7 @@ namespace System
             return true;
         }
 
-        public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 
@@ -213,10 +204,7 @@ namespace System
             return (int)(byte*)(index + 7);
         }
 
-        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 
@@ -320,10 +308,7 @@ namespace System
             return index + 7;
         }
 
-        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 
@@ -426,10 +411,7 @@ namespace System
             return index + 7;
         }
 
-        public static int IndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -454,10 +436,7 @@ namespace System
             return index;
         }
 
-        public static int LastIndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -491,10 +470,7 @@ namespace System
             return -1;
         }
 
-        public static int LastIndexOf<T>(ref T searchSpace, T value, int length)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 
@@ -575,10 +551,7 @@ namespace System
             return length + 7;
         }
 
-        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 
@@ -681,10 +654,7 @@ namespace System
             return length + 7;
         }
 
-        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 
@@ -787,10 +757,7 @@ namespace System
             return length + 7;
         }
 
-        public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -808,10 +775,7 @@ namespace System
             return index;
         }
 
-        public static bool SequenceEqual<T>(ref T first, ref T second, int length)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static bool SequenceEqual<T>(ref T first, ref T second, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 

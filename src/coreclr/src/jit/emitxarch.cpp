@@ -14024,10 +14024,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    // all others
-                    assert(!"unreached");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
-                    result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+                    // unhandled instruction insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -14051,9 +14049,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    // all others
-                    assert(!"unreached");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    // unhandled instruction insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
             }
             break;
 
@@ -14084,9 +14082,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    // all others
-                    assert(!"unreached");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    // unhandled instruction insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -14220,8 +14217,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    assert(!"Unhandled insFmt for INS_call");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    // unhandled instruction, insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -15063,12 +15060,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         default:
-            // static instruction s_ins = ins;
-            // printf("Unsupported instruction: %s", codeGen->genInsName(ins));
-            // assert(!"Unhandled ins for getInsExecutionCharacteristics");
-            // all other ins
-            result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
-            result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+            // unhandled instruction insFmt combination
+            perfScoreUnhandledInstruction(id, &result);
             break;
     }
 

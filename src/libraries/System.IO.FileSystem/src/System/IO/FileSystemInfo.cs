@@ -15,10 +15,10 @@ namespace System.IO
     public abstract partial class FileSystemInfo : MarshalByRefObject, ISerializable
     {
         // FullPath and OriginalPath are documented fields
-        protected string FullPath;          // fully qualified path of the file or directory
-        protected string OriginalPath;      // path passed in by the user
+        protected string FullPath = null!;          // fully qualified path of the file or directory
+        protected string OriginalPath = null!;      // path passed in by the user
 
-        internal string _name;
+        internal string _name = null!; // Fields initiated in derived classes
 
         protected FileSystemInfo(SerializationInfo info, StreamingContext context)
         {

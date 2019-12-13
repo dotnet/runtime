@@ -45,7 +45,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == '' AND '$(BuildArchitecture)' == 'arm64'">$(BuildArchitecture)</TargetArchitecture>
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
@@ -351,7 +350,7 @@
 
   <PropertyGroup>
     <LibPrefix Condition="'$(OSGroup)' != 'Windows_NT'">lib</LibPrefix>
-    <LibSuffix>.so</LibSuffix> 
+    <LibSuffix>.so</LibSuffix>
     <LibSuffix Condition="'$(OSGroup)' == 'Windows_NT'">.dll</LibSuffix>
     <LibSuffix Condition="'$(OSGroup)' == 'OSX'">.dylib</LibSuffix>
     <StaticLibPrefix>lib</StaticLibPrefix>

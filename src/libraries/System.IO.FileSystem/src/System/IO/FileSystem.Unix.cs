@@ -84,7 +84,7 @@ namespace System.IO
             {
                 // The operation failed.  Within reason, try to determine which path caused the problem
                 // so we can throw a detailed exception.
-                string path = null;
+                string? path = null;
                 bool isDirectory = false;
                 if (errorInfo.Error == Interop.Error.ENOENT)
                 {
@@ -116,7 +116,7 @@ namespace System.IO
         }
 
 
-        public static void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
+        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
         {
             if (destBackupFullPath != null)
             {
@@ -223,7 +223,8 @@ namespace System.IO
                 {
                     case Interop.Error.ENOENT:
                         // In order to match Windows behavior
-                        string directoryName = Path.GetDirectoryName(fullPath);
+                        string? directoryName = Path.GetDirectoryName(fullPath);
+                        Debug.Assert(directoryName != null);
                         if (directoryName.Length > 0 && !Directory.Exists(directoryName))
                         {
                             throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, true);
@@ -307,7 +308,7 @@ namespace System.IO
             int count = stackDir.Count;
             if (count == 0 && !somepathexists)
             {
-                string root = Path.GetPathRoot(fullPath);
+                string? root = Path.GetPathRoot(fullPath);
                 if (!DirectoryExists(root))
                 {
                     throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
@@ -406,7 +407,7 @@ namespace System.IO
 
         private static void RemoveDirectoryInternal(DirectoryInfo directory, bool recursive, bool throwOnTopLevelDirectoryNotFound)
         {
-            Exception firstException = null;
+            Exception? firstException = null;
 
             if ((directory.Attributes & FileAttributes.ReparsePoint) != 0)
             {
