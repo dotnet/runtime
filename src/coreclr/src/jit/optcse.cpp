@@ -1878,7 +1878,7 @@ public:
 
         bool LiveAcrossCall()
         {
-            return (m_CseDsc->csdLiveAcrossCall != 0);
+            return m_CseDsc->csdLiveAcrossCall;
         }
 
         void SetIsAggressive(bool value)
@@ -2226,9 +2226,21 @@ public:
                     }
 #endif
                     cse_def_cost   = 2;
-                    cse_use_cost   = 2;
-                    extra_yes_cost = BB_UNITY_WEIGHT * 2; // Extra cost in case we have to spill/restore a caller
-                                                          // saved register
+                    if (canEnregister)
+                    {
+                        if (enregCount < (CNT_CALLEE_ENREG * 3 / 2))
+                        {
+                            cse_use_cost = 1;
+                        }
+                        else
+                        {
+                            cse_use_cost = 2;
+                        }
+                    }
+                    else
+                    {
+                        cse_use_cost = 3;
+                    }
                 }
             }
             else // Conservative CSE promotion
@@ -2254,10 +2266,8 @@ public:
                         printf("Conservative CSE Promotion (%u < %u)\n", cseRefCnt, moderateRefCnt);
                     }
 #endif
-                    cse_def_cost   = 3;
+                    cse_def_cost   = 2;
                     cse_use_cost   = 3;
-                    extra_yes_cost = BB_UNITY_WEIGHT * 4; // Extra cost in case we have to spill/restore a caller
-                                                          // saved register
                 }
 
                 // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
