@@ -87,11 +87,11 @@ LDR R3, [R4, R0]
 
 #elif defined(__s390x__)
 
-#define STORE_STORE_FENCE do {} while (0)
-#define LOAD_LOAD_FENCE  do {} while (0)
-#define STORE_LOAD_FENCE do {} while (0)
-#define LOAD_STORE_FENCE do {} while (0)
-#define STORE_RELEASE_FENCE do {} while (0)
+#define STORE_STORE_FENCE   mono_compiler_barrier ()
+#define LOAD_LOAD_FENCE     mono_compiler_barrier ()
+#define STORE_LOAD_FENCE    mono_compiler_barrier ()
+#define LOAD_STORE_FENCE    mono_compiler_barrier ()
+#define STORE_RELEASE_FENCE mono_compiler_barrier ()
 
 #else
 
@@ -108,35 +108,35 @@ LDR R3, [R4, R0]
 #endif
 
 #ifndef STORE_STORE_FENCE
-#define STORE_STORE_FENCE
+#define STORE_STORE_FENCE   mono_compiler_barrier ()
 #endif 
 
 #ifndef LOAD_LOAD_FENCE
-#define LOAD_LOAD_FENCE
+#define LOAD_LOAD_FENCE     mono_compiler_barrier ()
 #endif 
 
 #ifndef STORE_LOAD_FENCE
-#define STORE_LOAD_FENCE
+#define STORE_LOAD_FENCE    mono_compiler_barrier ()
 #endif 
 
 #ifndef LOAD_STORE_FENCE
-#define LOAD_STORE_FENCE
+#define LOAD_STORE_FENCE    mono_compiler_barrier ()
 #endif 
 
 #ifndef STORE_RELEASE_FENCE
-#define STORE_RELEASE_FENCE
+#define STORE_RELEASE_FENCE mono_compiler_barrier ()
 #endif
 
 #ifndef LOAD_RELEASE_FENCE
-#define LOAD_RELEASE_FENCE
+#define LOAD_RELEASE_FENCE  mono_compiler_barrier ()
 #endif
 
 #ifndef STORE_ACQUIRE_FENCE
-#define STORE_ACQUIRE_FENCE
+#define STORE_ACQUIRE_FENCE mono_compiler_barrier ()
 #endif
 
 #ifndef LOAD_ACQUIRE_FENCE
-#define LOAD_ACQUIRE_FENCE
+#define LOAD_ACQUIRE_FENCE mono_compiler_barrier ()
 #endif
 
 
