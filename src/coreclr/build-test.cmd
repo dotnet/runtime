@@ -508,6 +508,21 @@ echo { "build_os": "%__BuildOS%", "build_arch": "%__BuildArch%", "build_type": "
 
 REM =========================================================================================
 REM ===
+REM === Copy CoreFX assemblies if needed.
+REM ===
+REM =========================================================================================
+
+if NOT "%__LocalCoreFXPath%"=="" (
+    echo Patch CoreFX from %__LocalCoreFXPath% ^(%__LocalCoreFXConfig%^)
+    set NEXTCMD=python "%__ProjectDir%\tests\scripts\patch-corefx.py" -clr_core_root "%CORE_ROOT%"^
+    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__LocalCoreFXConfig%
+    echo !NEXTCMD!
+    !NEXTCMD!
+)
+
+
+REM =========================================================================================
+REM ===
 REM === Crossgen assemblies if needed.
 REM ===
 REM =========================================================================================
@@ -635,9 +650,9 @@ set __CrossgenOutputFile="%CORE_ROOT%\temp.ni._dll"
 set __CrossgenCmd=
 
 if defined __DoCrossgen (
-    set __CrossgenCmd=!__CrossgenExe! /Platform_Assemblies_Paths "!CORE_ROOT!" /in !AssemblyPath! /out !__CrossgenOutputFile! >nul 2>nul
+    set __CrossgenCmd=!__CrossgenExe! /Platform_Assemblies_Paths "!CORE_ROOT!" /in !AssemblyPath! /out !__CrossgenOutputFile!
 ) else (
-    set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\*.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath! >nul 2>nul
+    set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath!
 )
 
 echo %__CrossgenCmd%
