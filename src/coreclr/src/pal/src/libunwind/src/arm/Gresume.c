@@ -57,9 +57,12 @@ arm_local_resume (unw_addr_space_t as, unw_cursor_t *cursor, void *arg)
       };
 
       asm __volatile__ (
+        ".arm\n"
         "ldmia %0, {r4-r12, lr}\n"
         "mov sp, r12\n"
         "bx lr\n"
+     "__f_from_arm:\n\t"
+        ".thumb"
         : : "r" (regs),
             "m" (*(struct regs_overlay *)regs)
       );
