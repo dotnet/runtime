@@ -465,7 +465,7 @@ As a rule of thumb, we throw on all cases where the JSON payload being read cont
  
 * Reference object is before preserved object (or preserved object was never spotted):
   * **Newtonsoft.Json**: Reference object evaluates as `null`.
-  * **S.T.Json**: Reference object evaluates as `null`.
+  * **S.T.Json**: Throw - Reference not found.
 ```json
 [
     {
@@ -482,7 +482,7 @@ As a rule of thumb, we throw on all cases where the JSON payload being read cont
 
 * Having more than one `$id` in the same object:
   * **Newtonsoft.Json**: last one wins, in the example, the reference object evaluates to `null` (if `$ref` would be `"2"`, it would evaluate to itself).
-  * **S.T.Json**: Throw - Object already defines a reference identifier.
+  * **S.T.Json**: Throw - $id must be the first property.   
 ```json
 {
     "$id": "1",
@@ -559,7 +559,7 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
 
 * Preserved array `$values` property is null
   * **Newtonsoft.Json**: Throw - Unexpected token while deserializing object: EndObject. Path ''.
-  * **S.T.Json**: Throw - Preserved array $values property was not present or its value is not an array.
+  * **S.T.Json**: Throw - Invalid token after $values metadata property.
 
   ```json
   {
@@ -570,7 +570,7 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
 
 * Preserved array `$values` property is a primitive value
   * **Newtonsoft.Json**: Unexpected token while deserializing object: EndObject. Path ''.
-  * **S.T.Json**: Throw - Preserved array $values property was not present or its value is not an array.
+  * **S.T.Json**: Throw - Invalid token after $values metadata property.
 
   ```json
   {
@@ -581,7 +581,7 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
 
 * Preserved array `$values` property contains object
   * **Newtonsoft.Json**: Unexpected token while deserializing object: EndObject. Path ''.
-  * **S.T.Json**: Throw - Preserved array $values property was not present or its value is not an array.
+  * **S.T.Json**: Throw - Invalid token after $values metadata property.
 
   ```json
   {
@@ -590,17 +590,33 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
   }
   ```
 
-## JSON Objects if not Collection (Class | Struct | Dictionary) - On Deserialize (and Serialize?)
+* Preserved array contains a property other than `$id` and `$values`
+  * **Newtonsoft.Json**: Ignores other properties.
+  * **S.T.Json**: Throw - Invalid property in preserved array.
+
+  ```json
+  {
+      "$id": "1",
+      "$values": [1, 2, 3],
+      "TrailingProperty": "Hello world"
+  }
+  ```
+
+## JSON Objects if not Enumerable (Class | Struct | Dictionary) - On Deserialize (and Serialize?)
 
 * `$ref` **Valid** under conditions:
   * must be the only property in the object.
 
 * `$id` **Valid** under conditions:
-  * must be the first property in the object
+  * must be the first property in the object.
 
-* `$values` **Not Valid**
+* `$values` **Not valid**
 
-* `$.*` **Valid**
+* `$.*` **Not valid**
+
+* `\u0024.*` **valid**
+
+* `\u0024id*` **valid** but not considered metadata.
 
 Note: For Dictionary keys on serialize, should we allow serializing keys `$id`, `$ref` and `$values`? If we allow it, then there is a potential round-tripping issue.
 Sample of similar issue with `DictionaryKeyPolicy`:
@@ -626,8 +642,13 @@ public static void TestDictionary_Collision()
 }
 ```
 
+Resolution for above issue: 
+On serialization, when a JSON property name, that is either a dictionary key or a CLR class property, starts with a '$' character, we must write the escaped character "\u0024" instead.
 
-## JSON Object if Collection - On Deserialize
+On deserialization, metadata will be digested by using only the raw bytes, so no encoded characters are allowed in metadata; to read JSON properties that start with a '$' you will need to pass it with the escaped '$' (\u0024) or turn the feature off.
+
+
+## JSON Object if Enumerable - On Deserialize
 
 * `$ref` **Valid** under conditions:
   * must be the only property in the object.
@@ -638,7 +659,7 @@ public static void TestDictionary_Collision()
 * `$values` **Valid** under conditions:
   * must be after `$id`
 
-* `$.*` **Not Valid**
+* `.*` **Not Valid** any property other than above metadata will not be valid.
 
 
 ## Immutable types
@@ -655,7 +676,7 @@ Note 2: When using immutable types and `ReferenceHandling.Preserve`, you will no
 ## Value types
 
 * **Serialization**: 
-The serializer emits an `$id` for every JSON complex type. That means that if you have a custom struct (which is value type), the serializer will append an `$id` to the JSON when serializing it. However, there will never be a reference to those `$ids`, since by default it uses `ReferenceEquals` when comparing the objects.
+The serializer emits an `$id` for every JSON complex type. However, to reduce bandwidth, structs will not be written with metadata, since it would be meaningless due `ReferenceEquals` is used when comparing the objects and no backpointer reference would be ever written to an struct.
 
 ```cs
 public static void SerializeStructs()
@@ -686,11 +707,9 @@ Output:
     "$id": "1",
     "$values": [
         {
-            "$id": "2",
             "Name": "Angela"
         },
         {
-            "$id": "3",
             "Name": "Angela"
         }
     ]
@@ -728,7 +747,7 @@ public static void DeserializeStructs()
 }
 ```
 
-In other words, having a `$ref` property in a struct, is never emitted by the serializer and reading such a payload (for instance, if the payload was hand-crafted) is not supported by the deserializer.
+In other words, having a `$ref` property in a struct, is never emitted by the serializer and reading such a payload (for instance, if the payload was hand-crafted) is not supported by the deserializer. However, since `Newtonsoft.Json` does emit `$id` for value-type objects `System.Text.Json` will allow reading struct objects that contain `$id`, regardless of not being able to create such payloads.
 
 ## Interaction with JsonPropertyNameAttribute
 Let's say you have the following class:
@@ -758,13 +777,21 @@ public static void DeSerializeWithPreserve()
         ReferenceHandling = ReferenceHandling.Preserve
     };
 
-    //Throw JsonException - PropertyName cannot start with '$' when Preserve References is enabled.
+    // The property will be emitted with the '$' encoded.
     string json = JsonSerializer.Serialize(root, opts);
-    
-    //Also throws the same exception.
-    EmployeeAnnotated obj = JsonSerializer.Deserialize(json, opts);
+    Console.WriteLine(json);
 }
 ```
+
+```json
+{
+    "\u0024id": null,
+    "\u0024ref": null,
+    "\u0024values": null
+}
+```
+
+If the name of your property starts with '$', either by using `JsonPropertyNameAttribute`, by using F#, or by any other reason, that leading '$' (and that one only), will be replaced with its encoded equivalent `\u0024`.
 
 # Future
 Things that we may want to consider building on top based on customer feedback:
