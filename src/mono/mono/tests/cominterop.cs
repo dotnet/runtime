@@ -270,6 +270,12 @@ public class Tests
 	public static extern int mono_test_cominterop_ccw_queryinterface ([MarshalAs (UnmanagedType.Interface)] IOtherTest itest);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_cominterop_ccw_queryinterface_foreign_thread ([MarshalAs (UnmanagedType.Interface)] ITest itest);
+
+	[DllImport ("libtest")]
+	public static extern int mono_test_cominterop_ccw_itest_foreign_thread ([MarshalAs (UnmanagedType.Interface)] ITest itest);
+
+	[DllImport("libtest")]
 	public static extern int mono_test_marshal_safearray_out_1dim_vt_bstr_empty ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
 
 	[DllImport("libtest")]
@@ -598,6 +604,7 @@ public class Tests
 			if (mono_test_cominterop_ccw_queryinterface (otherTest) != 0)
 				return 202;
 
+
 			if (mono_test_marshal_retval_ccw_itest(test, true) != 0)
 				return 203;
 
@@ -607,6 +614,19 @@ public class Tests
 
 			if (mono_test_default_interface_ccw(test) != 0)
 				return 205;
+
+			if (mono_test_cominterop_ccw_queryinterface_foreign_thread (test) != 0)
+				return 206;
+
+			{
+				ManagedTest mt = new ManagedTest ();
+				if (mono_test_cominterop_ccw_itest_foreign_thread (test) != 0)
+					return 207;
+				if (mt.Status != 0) {
+					Console.Error.WriteLine ("after mono_test_cominterop_ccw_itest_foreign_thread Status = {0}", mt.Status);
+					return 208;
+				}
+			}
 
 			#endregion // COM Callable Wrapper Tests
 
