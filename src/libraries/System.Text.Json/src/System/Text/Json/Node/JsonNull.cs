@@ -43,7 +43,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="other">The JSON null to compare against.</param>
         /// <returns><see langword="true"/></returns>
-        public bool Equals(JsonNull other) => true;
+        public bool Equals(JsonNull other) => !(other is null);
 
         /// <summary>
         ///   Compares values of two JSON nulls.
@@ -51,7 +51,18 @@ namespace System.Text.Json
         /// <param name="left">The JSON null to compare.</param>
         /// <param name="right">The JSON null to compare.</param>
         /// <returns><see langword="true"/></returns>
-        public static bool operator ==(JsonNull left, JsonNull right) => true;
+        public static bool operator ==(JsonNull left, JsonNull right)
+        {
+            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // so it can become a simple test
+            if (right is null)
+            {
+                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                return (left is null) ? true : false;
+            }
+
+            return right.Equals(left);
+        }
 
         /// <summary>
         ///   Compares values of two JSON nulls.
@@ -59,7 +70,7 @@ namespace System.Text.Json
         /// <param name="left">The JSON null to compare.</param>
         /// <param name="right">The JSON null to compare.</param>
         /// <returns><see langword="false"/></returns>
-        public static bool operator !=(JsonNull left, JsonNull right) => false;
+        public static bool operator !=(JsonNull left, JsonNull right) => !(left == right);
 
         /// <summary>
         ///   Creates a new JSON null that is a copy of the current instance.
