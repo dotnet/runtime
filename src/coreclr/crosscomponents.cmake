@@ -14,6 +14,8 @@ endif()
 if(NOT CLR_CMAKE_PLATFORM_LINUX AND NOT FEATURE_CROSSBITNESS)
     list (APPEND CLR_CROSS_COMPONENTS_LIST
         mscordaccore
-        mscordbi
+        if (CLR_CMAKE_PLATFORM_OS STREQUAL CLR_CMAKE_TARGET_OS)
+            mscordbi
+        endif (CLR_CMAKE_PLATFORM_OS STREQUAL CLR_CMAKE_TARGET_OS)
     )
 endif()
