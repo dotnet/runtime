@@ -32,14 +32,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
-        private readonly CompilerTypeSystemContext _typeSystemContext;
-
         private Func<EcmaModule, int> _moduleIndexLookup;
+
+        public CompilerTypeSystemContext CompilerContext { get; }
 
         public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
         {
             _compilationModuleGroup = compilationModuleGroup;
-            _typeSystemContext = typeSystemContext;
+            CompilerContext = typeSystemContext;
         }
 
         public void SetModuleIndexLookup(Func<EcmaModule, int> moduleIndexLookup)
@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             FieldDesc canonField = field;
             if (owningCanonType != field.OwningType)
             {
-                canonField = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
+                canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
             }
 
             ModuleToken token;
@@ -160,7 +160,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             FieldDesc canonField = field;
             if (owningCanonType != field.OwningType)
             {
-                canonField = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
+                canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
             }
 
             _fieldToRefTokens[canonField] = token;

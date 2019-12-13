@@ -37,6 +37,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _signatureContext = signatureContext;
             _isUnboxingStub = isUnboxingStub;
             _isInstantiatingStub = isInstantiatingStub;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableMethod(method.Method);
+            if (method.ConstrainedType != null)
+                signatureContext.Resolver.CompilerContext.EnsureLoadableType(method.ConstrainedType);
         }
 
         public MethodDesc Method => _method.Method;

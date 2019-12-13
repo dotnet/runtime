@@ -25,6 +25,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _fixupKind = fixupKind;
             _fieldDesc = fieldDesc;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableType(fieldDesc.OwningType);
         }
 
         public override int ClassCode => 271828182;
