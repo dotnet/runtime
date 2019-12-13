@@ -33,7 +33,8 @@
         ldr                 \VASigCookieReg, [\VASigCookieReg,#VASigCookie__pNDirectILStub]
 
         // if null goto stub generation
-        cbz                 \VASigCookieReg, \__PInvokeStubFuncName\()Label
+        cmp                 \VASigCookieReg, #0x0
+        beq                 \__PInvokeStubFuncName\()Label
 
         EPILOG_STACK_FREE   4
         EPILOG_BRANCH_REG   \VASigCookieReg
@@ -148,7 +149,8 @@
         // Check return trap
         ldr     r2, =g_TrapReturningThreads
         ldr     r2, [r2]
-        cbnz    r2, LOCAL_LABEL(RarePath)
+        cmp     r2, #0x0
+        bne     LOCAL_LABEL(RarePath)
 
         // pThread->m_pFrame = pFrame->m_Next
         ldr     r2, [r0, #Frame__m_Next]
