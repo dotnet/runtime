@@ -917,43 +917,50 @@ Return Value
     or nullptr otherwise.
 
 --*/
+static char* match_prefix(const char* name, char** list)
+{
+	if(*name == '\0')
+		return nullptr;
+	
+	for (int i = 0; list[i] != nullptr; ++i)
+	{
+		const char* pch = name;
+		char* p = list[i];
+
+		for (;;) {
+			if (*pch == '\0') {
+				if(*p == '=')
+					return p+1;
+					
+				if(*p == '\0') // no = sign -> empty value
+					return p;
+				
+				break;
+			}
+			
+			if (*pch++ != *p++) break;
+		}
+	}
+	
+	return nullptr;
+}
+	
 char* EnvironGetenv(const char* name, BOOL copyValue)
 {
-    char *retValue = nullptr;
+	CPalThread * pthrCurrent = InternalGetCurrentThread();
+	InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+	
+	char* retValue = match_prefix(name, palEnvironment);
+	
+	if ((retValue != nullptr) && copyValue)
+	{
+		retValue = strdup(retValue);
+	}
 
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
-
-    size_t nameLength = strlen(name);
-    for (int i = 0; palEnvironment[i] != nullptr; ++i)
-    {
-        if (strncmp(palEnvironment[i], name, nameLength) == 0)
-        {
-            char *equalsSignPosition = palEnvironment[i] + nameLength;
-
-            // If this is one of the variables which has no equals sign, we
-            // treat the whole thing as name, so the value is an empty string.
-            if (*equalsSignPosition == '\0')
-            {
-                retValue = (char *)"";
-                break;
-            }
-            else if (*equalsSignPosition == '=')
-            {
-                retValue = equalsSignPosition + 1;
-                break;
-            }
-        }
-    }
-
-    if ((retValue != nullptr) && copyValue)
-    {
-        retValue = strdup(retValue);
-    }
-
-    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
-    return retValue;
+	InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+	return retValue;
 }
+
 
 /*++
 Function:
