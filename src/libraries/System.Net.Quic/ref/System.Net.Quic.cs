@@ -30,6 +30,7 @@ namespace System.Net.Quic
         public QuicListener(IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
         public IPEndPoint ListenEndPoint => throw null;
         public System.Threading.Tasks.ValueTask<QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void Start() => throw null;
         public void Close() => throw null;
         public void Dispose() => throw null;
     }

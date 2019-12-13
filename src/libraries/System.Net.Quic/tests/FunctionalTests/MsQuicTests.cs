@@ -18,39 +18,46 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task BasicTest()
         {
-            Task listenTask = Task.Run(async () =>
+            for (int i = 0; i < 100; i++)
             {
-                using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
-                await using QuicStream stream = await connection.AcceptStreamAsync();
+                Task listenTask = Task.Run(async () =>
+                {
+                    using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
 
-                byte[] buffer = new byte[s_data.Length];
-                int bytesRead = await stream.ReadAsync(buffer);
+                    byte[] buffer = new byte[s_data.Length];
+                    int bytesRead = await stream.ReadAsync(buffer);
 
-                Assert.Equal(s_data.Length, bytesRead);
-                Assert.True(s_data.Span.SequenceEqual(buffer));
+                    Assert.Equal(s_data.Length, bytesRead);
+                    Assert.True(s_data.Span.SequenceEqual(buffer));
 
-                await stream.WriteAsync(s_data, endStream: true);
-                await connection.CloseAsync();
-            });
+                    await stream.WriteAsync(s_data, endStream: true);
+                    await stream.ShutdownWriteCompleted();
 
-            Task clientTask = Task.Run(async () =>
-            {
-                using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
-                await connection.ConnectAsync();
-                await using QuicStream stream = connection.OpenBidirectionalStream();
+                    await connection.CloseAsync();
+                });
 
-                await stream.WriteAsync(s_data, endStream: true);
+                Task clientTask = Task.Run(async () =>
+                {
+                    using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+                    await connection.ConnectAsync();
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
 
-                byte[] memory = new byte[12];
-                int res = await stream.ReadAsync(memory);
+                    await stream.WriteAsync(s_data, endStream: true);
 
-                Assert.True(s_data.Span.SequenceEqual(memory));
-                await stream.ShutdownWriteCompleted();
+                    byte[] memory = new byte[12];
+                    int bytesRead = await stream.ReadAsync(memory);
 
-                await connection.CloseAsync();
-            });
+                    Assert.Equal(s_data.Length, bytesRead);
+                    // TODO this failed once...
+                    Assert.True(s_data.Span.SequenceEqual(memory));
+                    await stream.ShutdownWriteCompleted();
 
-            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 10000);
+                    await connection.CloseAsync();
+                });
+
+                await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 10000);
+            }
         }
 
         [Fact]
@@ -225,6 +232,7 @@ namespace System.Net.Quic.Tests
                 new IPEndPoint(IPAddress.Loopback, 0),
                 GetSslServerAuthenticationOptions()))
             {
+                listener.Start();
                 IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
                 using (QuicConnection clientConnection = new QuicConnection(

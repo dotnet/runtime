@@ -36,7 +36,9 @@ namespace System.Net.Quic.Tests
 
         public QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
-            return new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
+            QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
+            listener.Start();
+            return listener;
         }
 
         public void Dispose()

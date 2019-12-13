@@ -48,15 +48,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _ptr = _session.ListenerOpen(options);
 
-            SetCallbackHandler();
-
-            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
-
-            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api._listenerStartDelegate(
-                _ptr,
-                ref address));
-
-            SetListenPort();
         }
 
         internal override IPEndPoint ListenEndPoint
@@ -121,6 +112,21 @@ namespace System.Net.Quic.Implementations.MsQuic
             // TODO this call to session dispose hangs.
             //_session.Dispose();
             _disposed = true;
+        }
+
+        internal override void Start()
+        {
+            ThrowIfDisposed();
+
+            SetCallbackHandler();
+
+            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
+
+            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api._listenerStartDelegate(
+                _ptr,
+                ref address));
+
+            SetListenPort();
         }
 
         internal override void Close()
