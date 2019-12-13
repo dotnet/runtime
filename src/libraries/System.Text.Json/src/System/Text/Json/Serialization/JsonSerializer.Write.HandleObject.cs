@@ -172,13 +172,13 @@ namespace System.Text.Json
             if (handling == ResolvedReferenceHandling.IsReference)
             {
                 // Object written before, write { "$ref": "#" } and finish.
-                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Object, writer, options, writeAsReference: true, referenceId: referenceId);
+                state.Current.WriteReferenceObject(writer, options, referenceId);
                 return true;
             }
             else if (handling == ResolvedReferenceHandling.Preserve)
             {
                 // Object reference, write start and append $id.
-                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Object, writer, options, writeAsReference: false, referenceId: referenceId);
+                state.Current.WritePreservedObjectOrArrayStart(ClassType.Object, writer, options, referenceId);
             }
             else
             {

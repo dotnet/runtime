@@ -116,13 +116,13 @@ namespace System.Text.Json
             if (handling == ResolvedReferenceHandling.IsReference)
             {
                 // Object written before, write { "$ref": "#" } and finish.
-                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Enumerable, writer, options, writeAsReference: true, referenceId: referenceId);
+                state.Current.WriteReferenceObject(writer, options, referenceId);
                 return true;
             }
             else if (handling == ResolvedReferenceHandling.Preserve)
             {
                 // Reference-type array, write as object and append $id and $values, at the end it write EndObject token using WriteWrappingBraceOnEndCollection.
-                state.Current.WriteReferenceObjectOrArrayStart(ClassType.Enumerable, writer, options, writeAsReference: false, referenceId: referenceId);
+                state.Current.WritePreservedObjectOrArrayStart(ClassType.Enumerable, writer, options, referenceId);
             }
             else
             {
