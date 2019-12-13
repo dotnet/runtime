@@ -1664,11 +1664,13 @@ void DbgTransportSession::TransportWorker()
         // We now loop receiving messages and processing them until the state changes.
         while (m_eState == SS_Open)
         {
+#ifndef RIGHT_SIDE_COMPILE
             // temporary data block used in DCB messages
             DebuggerIPCControlBlockTransport dcbt;
 
             // temporary virtual stack unwind context buffer
             CONTEXT frameContext;
+#endif
 
             // Read a message header block.
             if (!ReceiveBlock((PBYTE)&sReceiveHeader, sizeof(MessageHeader)))
