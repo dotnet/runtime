@@ -18446,7 +18446,7 @@ private:
         {
             // If we have an IND node and a field sequence then they should have the same type.
             // Otherwise it's best to forget the field sequence since the resulting LCL_FLD
-            // doesn't match a real struct field. Value numbering to protect itself from such
+            // doesn't match a real struct field. Value numbering protects itself from such
             // mismatches but there doesn't seem to be any good reason to generate a LCL_FLD
             // with a mismatched field sequence only to have to ignore it later.
 
@@ -18477,6 +18477,8 @@ private:
 
         indir->gtFlags = flags;
 
+        // Promoted struct vars aren't currently handled here so the created LCL_FLD can't be
+        // later transformed into a LCL_VAR and the variable cannot be enregistered.
         m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(Compiler::DNER_LocalField));
 
         INDEBUG(m_stmtModified = true;)
