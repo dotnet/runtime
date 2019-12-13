@@ -1878,8 +1878,7 @@ public:
 
         bool LiveAcrossCall()
         {
-            //            return (m_CseDsc->csdLiveAcrossCall != 0);
-            return false; // The old behavior for now
+            return (m_CseDsc->csdLiveAcrossCall != 0);
         }
 
         void SetIsAggressive(bool value)
