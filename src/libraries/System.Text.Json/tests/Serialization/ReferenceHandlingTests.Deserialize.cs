@@ -481,7 +481,6 @@ namespace System.Text.Json.Tests
             }";
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
-            Assert.Equal("Reference not found.", ex.Message);
             Assert.Equal("$.$ref", ex.Path);
         }
 
@@ -494,7 +493,6 @@ namespace System.Text.Json.Tests
             }";
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
-            Assert.Equal("Reference not found.", ex.Message);
             Assert.Equal("$.$ref", ex.Path);
         }
 
@@ -507,7 +505,6 @@ namespace System.Text.Json.Tests
             }";
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, Employee>>(json, _deserializeOptions));
-            Assert.Equal("Reference not found.", ex.Message);
             Assert.Equal("$.$ref", ex.Path);
         }
 
@@ -522,7 +519,6 @@ namespace System.Text.Json.Tests
             }";
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
-            Assert.Equal("Reference not found.", ex.Message);
             Assert.Equal("$.Manager.$ref", ex.Path);
         }
 
@@ -537,7 +533,6 @@ namespace System.Text.Json.Tests
             }";
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
-            Assert.Equal("Reference not found.", ex.Message);
             Assert.Equal("$.Subordinates.$ref", ex.Path);
         }
 
@@ -552,7 +547,6 @@ namespace System.Text.Json.Tests
             }";
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
-            Assert.Equal("Reference not found.", ex.Message);
             Assert.Equal("$.Contacts.$ref", ex.Path);
         }
 
@@ -753,7 +747,6 @@ namespace System.Text.Json.Tests
             ]";
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<EmployeeStruct>>(json, _deserializeOptions));
-            Assert.Contains("Invalid reference to value type ", ex.Message);
         }
         #endregion
 
@@ -903,7 +896,6 @@ namespace System.Text.Json.Tests
             }";
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Order>(json, _deserializeOptions));
-            Assert.Equal("Value for metadata properties $id and $ref must be of type string.", ex.Message);
             Assert.Equal("$.$id", ex.Path);
 
             json = @"[
@@ -918,7 +910,6 @@ namespace System.Text.Json.Tests
             ]";
 
             ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Order>>(json, _deserializeOptions));
-            Assert.Equal("Value for metadata properties $id and $ref must be of type string.", ex.Message);
             Assert.Equal("$[1].$ref", ex.Path);
         }
 
@@ -1082,7 +1073,7 @@ namespace System.Text.Json.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
 
             Assert.Equal("$", ex.Path);
-            Assert.Contains("Deserialization failed for one of these reasons:\r\n1. Metadata $values property was not found in preserved array.\r\n2. The JSON value could not be converted to ", ex.Message);
+            Assert.Contains(typeof(List<int>).ToString(), ex.Message);
         }
 
         [Fact]
@@ -1095,7 +1086,7 @@ namespace System.Text.Json.Tests
 
             // Not sure if is ok for Path to have this value.
             Assert.Equal("$.$id", ex.Path); 
-            Assert.Contains("Deserialization failed for one of these reasons:\r\n1. Metadata $values property was not found in preserved array.\r\n2. The JSON value could not be converted to ", ex.Message);
+            Assert.Contains(typeof(List<int>).ToString(), ex.Message);
         }
 
         [Fact]
@@ -1108,7 +1099,6 @@ namespace System.Text.Json.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
 
             Assert.Equal("$.$values", ex.Path);
-            Assert.Equal("Missing $id before $values on preserved array.", ex.Message);
         }
 
         [Fact]
@@ -1122,7 +1112,6 @@ namespace System.Text.Json.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
 
             Assert.Equal("$.$values", ex.Path); 
-            Assert.Equal("Invalid token after $values metadata property.", ex.Message);
         }
 
         [Fact]
@@ -1136,7 +1125,6 @@ namespace System.Text.Json.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
 
             Assert.Equal("$.$values", ex.Path);
-            Assert.Equal("Invalid token after $values metadata property.", ex.Message);
         }
 
         [Fact]
@@ -1150,7 +1138,6 @@ namespace System.Text.Json.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
 
             Assert.Equal("$.$values", ex.Path);
-            Assert.Equal("Invalid token after $values metadata property.", ex.Message);
         }
 
         [Fact]
@@ -1165,8 +1152,7 @@ namespace System.Text.Json.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
 
             Assert.Equal("$", ex.Path);
-            // is it safe to compare using CR+LF? My guess is that this test might fail on UNIX-based.
-            Assert.Contains("Deserialization failed for one of these reasons:\r\n1. Invalid property in preserved array.\r\n2. The JSON value could not be converted to ", ex.Message);
+            Assert.Contains(typeof(List<Employee>).ToString(), ex.Message);
 
             json = @"{
                 ""$id"": ""1"",
@@ -1177,7 +1163,7 @@ namespace System.Text.Json.Tests
             ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
 
             Assert.Equal("$", ex.Path);
-            Assert.Contains("Deserialization failed for one of these reasons:\r\n1. Invalid property in preserved array.\r\n2. The JSON value could not be converted to ", ex.Message);
+            Assert.Contains(typeof(List<Employee>).ToString(), ex.Message);
         }
         #endregion
 
@@ -1198,13 +1184,10 @@ namespace System.Text.Json.Tests
                 ""$values"": ""test""
             }";
 
-            //The reason for this message is that there is no reason for non-preserved arrays to contain $values, therefore we throw the same error for $.*
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeExtensionData>(json, _deserializeOptions));
-            Assert.Equal("Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references.", ex.Message);
             Assert.Equal("$.$values", ex.Path);
 
             ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, _deserializeOptions));
-            Assert.Equal("Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references.", ex.Message);
             Assert.Equal("$.$values", ex.Path);
 
             // $.* Not valid (i.e: $test)
@@ -1214,11 +1197,9 @@ namespace System.Text.Json.Tests
             }";
 
             ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeExtensionData>(json, _deserializeOptions));
-            Assert.Equal("Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references.", ex.Message);
             Assert.Equal("$.$test", ex.Path);
 
             ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, _deserializeOptions));
-            Assert.Equal("Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references.", ex.Message);
             Assert.Equal("$.$test", ex.Path);
 
             json = @"{
@@ -1247,7 +1228,6 @@ namespace System.Text.Json.Tests
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<string>>(json, _deserializeOptions));
             Assert.Equal("$.$ref", ex.Path);
-            Assert.Equal("Reference not found.", ex.Message);
 
             // $id Valid under conditions: must be the first property in the object.
             // $values Valid under conditions: must be after $id.
@@ -1267,7 +1247,6 @@ namespace System.Text.Json.Tests
             }";
 
             ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<string>>(json, _deserializeOptions));
-            Assert.Equal("Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references.", ex.Message);
         }
         #endregion
         #endregion

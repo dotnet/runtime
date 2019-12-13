@@ -48,9 +48,7 @@ namespace System.Text.Json.Tests
             a.Manager = a;
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(a));
-            //Assert.Equal("Invalid Reference Loop Detected!.", ex.Message);
             //TODO: Change default throw error msg in order to state that you can deal with loops with any of the other RefHandling options.
-            Assert.Contains("A possible object cycle was detected which is not supported.", ex.Message);
         }
 
         #region Root Object
