@@ -2124,8 +2124,8 @@ public:
                     printf("Aggressive CSE Promotion (%u >= %u)\n", cseRefCnt, aggressiveRefCnt);
                 }
 #endif
-                cse_def_cost = slotCount;
-                cse_use_cost = slotCount;
+                cse_def_cost = 1;
+                cse_use_cost = 1;
 
                 if (candidate->LiveAcrossCall() || !canEnregister)
                 {
@@ -2159,13 +2159,13 @@ public:
 #else                                 // _TARGET_ARM_
                     if (hugeFrame)
                     {
-                        cse_def_cost = 10 + (2 * slotCount); // movw/movt r10 and str reg,[sp+r10]
-                        cse_use_cost = 10 + (2 * slotCount);
+                        cse_def_cost = 10 + 2; // movw/movt r10 and str reg,[sp+r10]
+                        cse_use_cost = 10 + 2;
                     }
                     else
                     {
-                        cse_def_cost = 6 + (2 * slotCount); // movw r10 and str reg,[sp+r10]
-                        cse_use_cost = 6 + (2 * slotCount);
+                        cse_def_cost = 6 + 2; // movw r10 and str reg,[sp+r10]
+                        cse_use_cost = 6 + 2;
                     }
 #endif
                 }
@@ -2179,11 +2179,11 @@ public:
 #endif
 #ifdef _TARGET_XARCH_
                     /* The following formula is good choice when optimizing CSE for SMALL_CODE */
-                    cse_def_cost = 3 * slotCount; // mov [EBP-1C],reg
-                    cse_use_cost = 2 * slotCount; //     [EBP-1C]
+                    cse_def_cost = 3; // mov [EBP-1C],reg
+                    cse_use_cost = 2; //     [EBP-1C]
 #else                                         // _TARGET_ARM_
-                    cse_def_cost = 2 * slotCount; // str reg,[sp+0x9c]
-                    cse_use_cost = 2 * slotCount; // ldr reg,[sp+0x9c]
+                    cse_def_cost = 2; // str reg,[sp+0x9c]
+                    cse_use_cost = 2; // ldr reg,[sp+0x9c]
 #endif
                 }
             }
@@ -2199,8 +2199,8 @@ public:
                     printf("Aggressive CSE Promotion (%u >= %u)\n", cseRefCnt, aggressiveRefCnt);
                 }
 #endif
-                cse_def_cost = slotCount;
-                cse_use_cost = slotCount;
+                cse_def_cost = 1;
+                cse_use_cost = 1;
             }
             else if (cseRefCnt >= moderateRefCnt)
             {
@@ -2226,8 +2226,8 @@ public:
                                moderateRefCnt);
                     }
 #endif
-                    cse_def_cost   = 2 * slotCount;
-                    cse_use_cost   = 2 * slotCount;
+                    cse_def_cost   = 2;
+                    cse_use_cost   = 2;
                     extra_yes_cost = BB_UNITY_WEIGHT * 2; // Extra cost in case we have to spill/restore a caller
                                                           // saved register
                 }
@@ -2255,8 +2255,8 @@ public:
                         printf("Conservative CSE Promotion (%u < %u)\n", cseRefCnt, moderateRefCnt);
                     }
 #endif
-                    cse_def_cost   = 3 * slotCount;
-                    cse_use_cost   = 3 * slotCount;
+                    cse_def_cost   = 3;
+                    cse_use_cost   = 3;
                     extra_yes_cost = BB_UNITY_WEIGHT * 4; // Extra cost in case we have to spill/restore a caller
                                                           // saved register
                 }
@@ -2264,8 +2264,8 @@ public:
                 // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
                 if (m_pCompiler->lvaTrackedCount == lclMAX_TRACKED)
                 {
-                    cse_def_cost += slotCount;
-                    cse_use_cost += slotCount;
+                    cse_def_cost += 1;
+                    cse_use_cost += 1;
                 }
             }
 
@@ -2279,6 +2279,12 @@ public:
                 cse_def_cost++;
                 cse_use_cost++;
             }
+        }
+
+        if (slotCount > 1)
+        {
+            cse_def_cost *= slotCount;
+            cse_use_cost *= slotCount;
         }
 
         // estimate the cost from lost codesize reduction if we do not perform the CSE
