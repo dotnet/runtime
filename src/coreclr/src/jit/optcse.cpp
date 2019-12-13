@@ -1729,23 +1729,17 @@ public:
             {
                 if (CodeOptKind() == Compiler::SMALL_CODE)
                 {
-                    moderateRefCnt = varDsc->lvRefCnt();
+                    moderateRefCnt = varDsc->lvRefCnt() + (BB_UNITY_WEIGHT / 2);
                 }
                 else
                 {
-                    moderateRefCnt = varDsc->lvRefCntWtd();
+                    moderateRefCnt = varDsc->lvRefCntWtd() + (BB_UNITY_WEIGHT / 2);
                 }
             }
         }
-        unsigned mult = 3;
-        // use smaller value for mult when enregCount is in [0..4]
-        if (enregCount <= 4)
-        {
-            mult = (enregCount <= 2) ? 1 : 2;
-        }
 
-        aggressiveRefCnt = max(BB_UNITY_WEIGHT * mult, aggressiveRefCnt);
-        moderateRefCnt   = max((BB_UNITY_WEIGHT * mult) / 2, moderateRefCnt);
+        aggressiveRefCnt = max(BB_UNITY_WEIGHT * 2, aggressiveRefCnt);
+        moderateRefCnt   = max(BB_UNITY_WEIGHT, moderateRefCnt);
 
 #ifdef DEBUG
         if (m_pCompiler->verbose)
