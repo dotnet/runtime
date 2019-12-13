@@ -122,5 +122,5 @@
   </PropertyGroup>
 
   <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
-  <Import Project="$(ProjectDir)dependencies.props" />
+  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 </Project>
