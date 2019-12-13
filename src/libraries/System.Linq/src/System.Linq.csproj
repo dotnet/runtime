@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ContractProject Include="..\ref\System.Linq.csproj">
-      <TargetGroup>netcoreapp5.0</TargetGroup>
+      <TargetGroup>$(NetCoreAppCurrent)</TargetGroup>
     </ContractProject>
   </ItemGroup>
   <ItemGroup> <!-- Optimize for speed -->

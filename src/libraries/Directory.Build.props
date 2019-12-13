@@ -45,7 +45,7 @@
 
       See Documentation/coding-guidelines/project-guidelines.md for more details on our configurations.
     -->
-    <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp5.0</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)' == ''">$(NetCoreAppCurrent)</TargetGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
     <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>

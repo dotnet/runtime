@@ -93,8 +93,8 @@
 
       <CoreFXReferenceCopyLocalItems
         Include="
-          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'pkg', 'netcoreapp5.0', 'runtime', '$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*;
-          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'native', 'netcoreapp5.0-$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*"
+          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'pkg', '$(NetCoreAppCurrent)', 'runtime', '$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*;
+          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'native', '$(NetCoreAppCurrent)-$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*"
         NuGetPackageId="runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
     </ItemGroup>
 
