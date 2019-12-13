@@ -702,22 +702,18 @@ LoaderHeap *PEImage::IJWFixupData::GetThunkHeap()
     }
     CONTRACT_END
 
-        if (!m_DllThunkHeap)
+    if (!m_DllThunkHeap)
+    {
+        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
+            0,                                 // DWORD dwCommitBlockSize
+            ThunkHeapStubManager::g_pManager->GetRangeList(),
+            TRUE);                             // BOOL fMakeExecutable
+
+        if (FastInterlockCompareExchangePointer((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
         {
-            size_t * pPrivatePCLBytes = NULL;
-            size_t * pGlobalPCLBytes = NULL;
-
-            LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
-                0,                                 // DWORD dwCommitBlockSize
-                pPrivatePCLBytes,
-                ThunkHeapStubManager::g_pManager->GetRangeList(),
-                TRUE);                             // BOOL fMakeExecutable
-
-            if (FastInterlockCompareExchangePointer((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
-            {
-                delete pNewHeap;
-            }
+            delete pNewHeap;
         }
+    }
 
     RETURN m_DllThunkHeap;
 }

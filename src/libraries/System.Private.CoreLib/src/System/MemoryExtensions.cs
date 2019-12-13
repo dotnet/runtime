@@ -270,10 +270,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Contains<T>(this Span<T> span, T value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static bool Contains<T>(this Span<T> span, T value) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -300,10 +297,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Contains<T>(this ReadOnlySpan<T> span, T value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static bool Contains<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -329,10 +323,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(this Span<T> span, T value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -358,10 +349,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -389,10 +377,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(this Span<T> span, T value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -418,10 +403,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOf(
@@ -437,10 +419,7 @@ namespace System
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>
         {
             int length = span.Length;
 
@@ -489,10 +468,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(this ReadOnlySpan<T> span, T value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -518,10 +494,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -549,10 +522,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, T value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -578,10 +548,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOf(
@@ -600,10 +567,7 @@ namespace System
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -633,10 +597,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1, T value2)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -666,10 +627,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -769,10 +727,7 @@ namespace System
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -802,10 +757,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -835,10 +787,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -938,10 +887,7 @@ namespace System
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -961,10 +907,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -983,10 +926,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -1005,10 +945,7 @@ namespace System
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -1028,10 +965,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -1050,10 +984,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
         {
             if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
@@ -1069,10 +1000,7 @@ namespace System
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>
         {
             int length = span.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
@@ -1119,10 +1047,7 @@ namespace System
         /// Determines whether the specified sequence appears at the start of the span.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             int valueLength = value.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
@@ -1142,10 +1067,7 @@ namespace System
         /// Determines whether the specified sequence appears at the start of the span.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             int valueLength = value.Length;
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
@@ -1165,10 +1087,7 @@ namespace System
         /// Determines whether the specified sequence appears at the end of the span.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EndsWith<T>(this Span<T> span, ReadOnlySpan<T> value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static bool EndsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             int spanLength = span.Length;
             int valueLength = value.Length;
@@ -1193,10 +1112,7 @@ namespace System
         /// Determines whether the specified sequence appears at the end of the span.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value)
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-            where T : IEquatable<T>
-#nullable restore
+        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>
         {
             int spanLength = span.Length;
             int valueLength = value.Length;

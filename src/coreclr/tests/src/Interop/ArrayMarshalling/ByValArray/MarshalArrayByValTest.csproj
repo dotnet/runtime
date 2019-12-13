@@ -10,4 +10,7 @@
     <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
 </Project>

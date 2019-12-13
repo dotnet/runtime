@@ -1,13 +1,19 @@
 version: '3'
 services:
   client:
-    image: ${HTTPSTRESS_IMAGE:-httpstress}
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile}
+    image: httpstress
     links:
       - server
     environment:
       - HTTPSTRESS_ARGS=-runMode client -serverUri https://server:5001 ${HTTPSTRESS_CLIENT_ARGS}
   server:
-    image: ${HTTPSTRESS_IMAGE:-httpstress}
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile}
+    image: httpstress
     ports:
       - "5001:5001"
     environment:

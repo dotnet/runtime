@@ -1206,43 +1206,7 @@ HRESULT CorHost2::CreateObject(REFIID riid, void **ppUnk)
     return (hr);
 }
 
-
-//-----------------------------------------------------------------------------
-// MapFile - Maps a file into the runtime in a non-standard way
-//-----------------------------------------------------------------------------
-
-static PEImage *MapFileHelper(HANDLE hFile)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-
-    HandleHolder hFileMap(WszCreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL));
-    if (hFileMap == NULL)
-        ThrowLastError();
-
-    CLRMapViewHolder base(CLRMapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 0));
-    if (base == NULL)
-        ThrowLastError();
-
-    DWORD dwSize = SafeGetFileSize(hFile, NULL);
-    if (dwSize == 0xffffffff && GetLastError() != NOERROR)
-    {
-        ThrowLastError();
-    }
-    PEImageHolder pImage(PEImage::LoadFlat(base, dwSize));
-    return pImage.Extract();
-}
-
 LONG CorHost2::m_RefCount = 0;
-
-static Volatile<BOOL> fOneOnly = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // ICLRRuntimeHost::SetHostControl
@@ -1257,20 +1221,6 @@ HRESULT CorHost2::SetHostControl(IHostControl* pHostControl)
 HRESULT CorHost2::GetCLRControl(ICLRControl** pCLRControl)
 {
     return E_NOTIMPL;
-}
-
-void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    pMSEX->dwLength = sizeof(MEMORYSTATUSEX);
-    BOOL fRet = GlobalMemoryStatusEx(pMSEX);
-    _ASSERTE (fRet);
 }
 
 // This is the instance that exposes interfaces out to all the other DLLs of the CLR

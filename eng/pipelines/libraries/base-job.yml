@@ -5,7 +5,9 @@ parameters:
   osSubgroup: ''
   framework: ''
   isOfficialBuild: false
+  liveCoreClrBuildConfig: ''
   timeoutInMinutes: 150
+  condition: true
   container: ''
   steps: []
   dependsOn: []
@@ -14,42 +16,39 @@ parameters:
   displayName: ''
   testScope: ''
   pool: ''
-  stepName: ''
 
 jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
-      name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.stepName, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ if eq(parameters.framework, 'netcoreapp') }}:
-        displayName: ${{ format('{0} {1}{2} {3} {4}', parameters.stepName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       ${{ if ne(parameters.framework, 'netcoreapp') }}:
-        displayName: ${{ format('{0} {1} {2} {3} {4}', parameters.stepName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
 
       enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
       container: ${{ parameters.container }}
+      condition: and(succeeded(), ${{ parameters.condition }})
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
+        - _buildScriptFileName: libraries
         - _BuildConfig: ${{ parameters.buildConfig }}
+
         - _msbuildCommonParameters: ''
         - _stripSymbolsArg: ''
         - _runtimeOSArg: ''
-        - _portableArg: ''
         - _finalFrameworkArg: -framework ${{ parameters.framework }}
-        - _buildScript: $(buildScriptFileName)$(scriptExt)
+        - _buildScript: $(_buildScriptFileName)$(scriptExt)
         - _warnAsErrorArg: ''
         - _testScopeArg: ''
 
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
 
-        - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_rhel6')) }}:
-          - _runtimeOSArg: /p:RuntimeOS=rhel.6
-          - _portableArg: /p:PortableBuild=false
-        
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
           - _runtimeOSArg: /p:RuntimeOS=linux-musl
-        
+
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
           - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
 
@@ -65,19 +64,33 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
+        - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+        - _coreClrArtifactName: ''
+        - _coreClrDownloadPath: ''
+        - _coreClrArtifactsPathArg: ''
+
+        - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+          - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
+          - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
+          - _coreClrArtifactsPathArg: ' /p:CoreCLRArtifactsPath=$(_coreClrDownloadPath)'
+
+          # WebAssembly uses linux implementation detail
+          - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+            - _coreClrArtifactName: 'CoreCLRProduct_Linux_x64_${{ parameters.liveCoreClrBuildConfig }}'
+
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
           - _runtimeOSArg: /p:RuntimeOS=win10
 
         # Non-Windows variables
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - _msbuildCommand: ./eng/common/msbuild.sh --warnaserror false --ci
-          - _buildScript: ./$(buildScriptFileName)$(scriptExt)
+          - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_portableArg) $(_msbuildCommonParameters)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_coreClrArtifactsPathArg)
         - ${{ parameters.variables }}
 
       dependsOn:
@@ -90,16 +103,14 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
       steps:
-      - checkout: none
-        clean: true
+      - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
-      - download: current
-        artifact: Checkout_bundle
-        displayName: Download Checkout.bundle
-
-      - script: |
-          git clone $(Pipeline.Workspace)/Checkout_bundle/Checkout.bundle .
-          git remote set-url origin $(Build.Repository.Uri)
-        displayName: Clone the repository from Checkout.bundle
+      - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(_coreClrDownloadPath)
+            artifactFileName: '$(_coreClrArtifactName)$(archiveExtension)'
+            artifactName: '$(_coreClrArtifactName)'
+            displayName: 'CoreCLR build drop'
 
       - ${{ parameters.steps }}

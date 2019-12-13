@@ -1875,7 +1875,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 #endif // FEATURE_SIMD
 
     // record the offset
-    unsigned offset = tree->gtLclOffs;
+    unsigned offset = tree->GetLclOffs();
 
     // We must have a stack store with GT_STORE_LCL_FLD
     noway_assert(targetReg == REG_NA);
@@ -3928,7 +3928,7 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 break;
             case SIMDIntrinsicConvertToInt32:
             case SIMDIntrinsicConvertToInt64:
-                result = INS_fcvtns;
+                result = INS_fcvtzs;
                 break;
             case SIMDIntrinsicDiv:
                 result = INS_fdiv;
@@ -4974,7 +4974,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
     if (treeNode->OperGet() == GT_STORE_LCL_FLD)
     {
-        offs = treeNode->AsLclFld()->gtLclOffs;
+        offs = treeNode->AsLclFld()->GetLclOffs();
     }
 
     GenTree* op1 = treeNode->AsOp()->gtOp1;

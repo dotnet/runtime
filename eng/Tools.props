@@ -1,27 +1,28 @@
 <Project>
   <PropertyGroup>
     <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>
+    <EnableAnalyzers>true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- We need to import this props file which contains PackageReferences to analyzers so that
        analyzer build assets are imported via the Tools generated props and targets -->
-  <Import Project="$(RepositoryEngineeringDir)analyzers.props" Condition="Exists('$(RepositoryEngineeringDir)analyzers.props') and '$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)Analyzers.props" Condition="Exists('$(RepositoryEngineeringDir)Analyzers.props') and '$(DotNetBuildFromSource)' != 'true'" />
 
   <!-- source-built packages -->
   <ItemGroup>
     <!-- arcade -->
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
-    
+
     <!-- coreclr -->
     <!-- Download the package in the initial arcade restore step to work around race conditions when restoring an msbuild SDK. -->
     <PackageDownload Include="Microsoft.NET.Sdk.IL" Version="[$(MicrosoftNETSdkILVersion)]" />
 
-    <!-- corefx -->
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsVersion)" />
-
     <!-- roslyn -->
     <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+
+    <!-- mono -->
+    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksVersion)" PrivateAssets="all" IsImplicitlyDefined="true" ExcludeAssets="build" GeneratePathProperty="true" />
   </ItemGroup>
 
   <!-- excluded from offline portion of source build -->
@@ -41,7 +42,6 @@
     <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="Exists('$(RepositoryEngineeringDir)restore\docs.targets') and '$(DotNetBuildFromSource)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="Exists('$(RepositoryEngineeringDir)restore\optimizationData.targets') and '$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)restore\illink.targets" Condition="Exists('$(RepositoryEngineeringDir)restore\illink.targets') and '$(ILLinkTrimAssembly)' != 'false'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
 </Project>

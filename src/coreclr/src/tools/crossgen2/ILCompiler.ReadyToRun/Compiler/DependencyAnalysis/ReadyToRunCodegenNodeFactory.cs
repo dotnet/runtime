@@ -199,6 +199,26 @@ namespace ILCompiler.DependencyAnalysis
             public override bool Equals(object obj) => obj is ReadOnlyDataBlobKey && Equals((ReadOnlyDataBlobKey)obj);
             public override int GetHashCode() => Name.GetHashCode();
         }
+
+        protected struct FieldRvaKey : IEquatable<FieldRvaKey>
+        {
+            public readonly int Rva;
+            public readonly EcmaModule Module;
+
+            public FieldRvaKey(int rva, EcmaModule module)
+            {
+                Rva = rva;
+                Module = module;
+            }
+
+            public bool Equals(FieldRvaKey other) => Rva == other.Rva && Module.Equals(other.Module);
+            public override bool Equals(object obj) => obj is FieldRvaKey && Equals((FieldRvaKey)obj);
+            public override int GetHashCode()
+            {
+                int hashCode = Rva * 0x5498341 + 0x832424;
+                return hashCode * 23 + Module.GetHashCode();
+            }
+        }
     }
 
     // To make the code future compatible to the composite R2R story
@@ -293,9 +313,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new CopiedMethodILNode((EcmaMethod)method);
             });
 
-            _copiedFieldRvas = new NodeCache<EcmaField, CopiedFieldRvaNode>(ecmaField =>
+            _copiedFieldRvas = new NodeCache<FieldRvaKey, CopiedFieldRvaNode>(key =>
             {
-                return new CopiedFieldRvaNode(ecmaField);
+                return new CopiedFieldRvaNode(key.Module, key.Rva);
             });
 
             _copiedStrongNameSignatures = new NodeCache<EcmaModule, CopiedStrongNameSignatureNode>(module =>
@@ -843,7 +863,7 @@ namespace ILCompiler.DependencyAnalysis
             return _copiedMethodIL.GetOrAdd(method);
         }
 
-        private NodeCache<EcmaField, CopiedFieldRvaNode> _copiedFieldRvas;
+        private NodeCache<FieldRvaKey, CopiedFieldRvaNode> _copiedFieldRvas;
 
         public CopiedFieldRvaNode CopiedFieldRva(FieldDesc field)
         {
@@ -861,7 +881,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", TypeSystemContext.InputFilePaths.Keys)}");
             }
 
-            return _copiedFieldRvas.GetOrAdd(ecmaField);
+            return _copiedFieldRvas.GetOrAdd(new FieldRvaKey(ecmaField.GetFieldRvaValue(), ecmaField.Module));
         }
 
         private NodeCache<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures;

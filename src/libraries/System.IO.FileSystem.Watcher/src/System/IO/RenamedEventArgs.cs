@@ -9,13 +9,13 @@ namespace System.IO
     /// </devdoc>
     public class RenamedEventArgs : FileSystemEventArgs
     {
-        private readonly string _oldName;
+        private readonly string? _oldName;
         private readonly string _oldFullPath;
 
         /// <devdoc>
         ///    Initializes a new instance of the <see cref='System.IO.RenamedEventArgs'/> class.
         /// </devdoc>
-        public RenamedEventArgs(WatcherChangeTypes changeType, string directory, string name, string oldName)
+        public RenamedEventArgs(WatcherChangeTypes changeType, string directory, string? name, string? oldName)
             : base(changeType, directory, name)
         {
             _oldName = oldName;
@@ -36,7 +36,7 @@ namespace System.IO
         /// <devdoc>
         ///    Gets the old name of the affected file or directory.
         /// </devdoc>
-        public string OldName
+        public string? OldName
         {
             get
             {

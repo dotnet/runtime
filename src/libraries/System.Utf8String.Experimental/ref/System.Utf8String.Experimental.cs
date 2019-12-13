@@ -69,10 +69,7 @@ namespace System
         public static System.Text.Utf8Span AsSpan(this System.Utf8String? text, int start, int length) { throw null; }
         public static System.Utf8String ToUtf8String(this System.Text.Rune rune) { throw null; }
     }
-    public sealed partial class Utf8String : System.IComparable<System.Utf8String?>,
-#nullable disable
-        System.IEquatable<System.Utf8String>
-#nullable restore
+    public sealed partial class Utf8String : System.IComparable<System.Utf8String?>, System.IEquatable<System.Utf8String?>
     {
         public static readonly System.Utf8String Empty;
         [System.CLSCompliantAttribute(false)]

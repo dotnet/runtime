@@ -6496,17 +6496,25 @@ void Compiler::impCheckForPInvokeCall(
         // inlining in CoreRT. Skip the ambient conditions checks and profitability checks.
         if (!IsTargetAbi(CORINFO_CORERT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
         {
-            if (!impCanPInvokeInline())
+            if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
             {
-                return;
+                // Raw PInvoke call in PInvoke IL stub generated must be inlined to avoid infinite
+                // recursive calls to the stub.
             }
-
-            // Size-speed tradeoff: don't use inline pinvoke at rarely
-            // executed call sites.  The non-inline version is more
-            // compact.
-            if (block->isRunRarely())
+            else
             {
-                return;
+                if (!impCanPInvokeInline())
+                {
+                    return;
+                }
+
+                // Size-speed tradeoff: don't use inline pinvoke at rarely
+                // executed call sites.  The non-inline version is more
+                // compact.
+                if (block->isRunRarely())
+                {
+                    return;
+                }
             }
         }
 
@@ -10823,11 +10831,22 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else if (lhs->OperIsBlk())
                     {
-                        // Check for ADDR(LCL_VAR), or ADD(ADDR(LCL_VAR),CNS_INT))
-                        // (the latter may appear explicitly in the IL).
-                        // Local field stores will cause the stack to be spilled when
-                        // they are encountered.
-                        lclVar = lhs->AsBlk()->Addr()->IsLocalAddrExpr();
+                        // Check if LHS address is within some struct local, to catch
+                        // cases where we're updating the struct by something other than a stfld
+                        GenTree* addr = lhs->AsBlk()->Addr();
+
+                        // Catches ADDR(LCL_VAR), or ADD(ADDR(LCL_VAR),CNS_INT))
+                        lclVar = addr->IsLocalAddrExpr();
+
+                        // Catches ADDR(FIELD(... ADDR(LCL_VAR)))
+                        if (lclVar == nullptr)
+                        {
+                            GenTree* lclTree = nullptr;
+                            if (impIsAddressInLocal(addr, &lclTree))
+                            {
+                                lclVar = lclTree->AsLclVarCommon();
+                            }
+                        }
                     }
                     if (lclVar != nullptr)
                     {
@@ -20644,7 +20663,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         return;
     }
 
-    // CT_INDRECT calls may use the cookie, bail if so...
+    // CT_INDIRECT calls may use the cookie, bail if so...
     //
     // If transforming these provides a benefit, we could save this off in the same way
     // we save the stub address below.

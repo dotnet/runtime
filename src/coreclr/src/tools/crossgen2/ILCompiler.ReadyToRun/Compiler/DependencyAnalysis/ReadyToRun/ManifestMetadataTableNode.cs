@@ -4,12 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.Text;
-using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
@@ -36,14 +36,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly Dictionary<string, int> _assemblyRefToModuleIdMap;
 
         /// <summary>
-        /// Assembly references to store in the manifest metadata.
+        /// Map from module index to the AssemblyName for the module. This only contains modules
+        /// that were actually loaded and is populated by ModuleToIndex.
         /// </summary>
-        private readonly List<AssemblyName> _manifestAssemblies;
+        private readonly Dictionary<int, AssemblyName> _moduleIdToAssemblyNameMap;
+
 
         /// <summary>
         /// Registered signature emitters.
         /// </summary>
         private readonly List<ISignatureEmitter> _signatureEmitters;
+
+        /// <summary>
+        /// Number of assembly references in the input module
+        /// </summary>
+        private int _assemblyRefCount;
 
         /// <summary>
         /// ID corresponding to the next manifest metadata assemblyref entry.
@@ -69,14 +76,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             : base(inputModule.Context.Target)
         {
             _assemblyRefToModuleIdMap = new Dictionary<string, int>();
-            _manifestAssemblies = new List<AssemblyName>();
+            _moduleIdToAssemblyNameMap = new Dictionary<int, AssemblyName>();
             _signatureEmitters = new List<ISignatureEmitter>();
             _nodeFactory = nodeFactory;
 
             _inputModuleName = inputModule.Assembly.GetName().Name;
 
-            int assemblyRefCount = inputModule.MetadataReader.GetTableRowCount(TableIndex.AssemblyRef);
-            for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
+            _assemblyRefCount = inputModule.MetadataReader.GetTableRowCount(TableIndex.AssemblyRef);
+            for (int assemblyRefIndex = 1; assemblyRefIndex <= _assemblyRefCount; assemblyRefIndex++)
             {
                 AssemblyReferenceHandle assemblyRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
                 AssemblyReference assemblyRef = inputModule.MetadataReader.GetAssemblyReference(assemblyRefHandle);
@@ -85,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // AssemblyRefCount + 1 corresponds to ROWID 0 in the manifest metadata
-            _nextModuleId = assemblyRefCount + 2;
+            _nextModuleId = _assemblyRefCount + 2;
         }
 
         public void RegisterEmitter(ISignatureEmitter emitter)
@@ -95,9 +102,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int ModuleToIndex(EcmaModule module)
         {
-            AssemblyName assemblyName = module.Assembly.GetName();
+            if (!_nodeFactory.MarkingComplete)
+            {
+                // If we call this function before sorting is complete, we might have a determinism bug caused by
+                // compiling two functions in an arbitrary order and hence getting different module IDs.
+                throw new InvalidOperationException("Cannot get ModuleToIndex mapping until marking is complete.");
+            }
 
-            if (!_manifestAssemblies.Contains(assemblyName))
+            AssemblyName assemblyName = module.Assembly.GetName();
+            int assemblyRefIndex;
+            if (!_assemblyRefToModuleIdMap.TryGetValue(assemblyName.Name, out assemblyRefIndex))
+            {
+                assemblyRefIndex = _nextModuleId++;
+                _assemblyRefToModuleIdMap.Add(assemblyName.Name, assemblyRefIndex);
+            }
+
+            if ((assemblyRefIndex >= _assemblyRefCount + 2) && !_moduleIdToAssemblyNameMap.ContainsKey(assemblyRefIndex))
             {
                 if (_emissionCompleted)
                 {
@@ -108,14 +128,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // the verification logic would be broken at runtime.
                 Debug.Assert(_nodeFactory.CompilationModuleGroup.VersionsWithModule(module));
 
-                _manifestAssemblies.Add(assemblyName);
-                if (!_assemblyRefToModuleIdMap.ContainsKey(assemblyName.Name))
-                    _assemblyRefToModuleIdMap.Add(assemblyName.Name, _nextModuleId);
-
-                _nextModuleId++;
+                _moduleIdToAssemblyNameMap.Add(assemblyRefIndex, assemblyName);
             }
-
-            return _assemblyRefToModuleIdMap[assemblyName.Name];
+            return assemblyRefIndex;
         }
 
         public override int ClassCode => 791828335;
@@ -166,8 +181,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                fieldList: MetadataTokens.FieldDefinitionHandle(1),
                methodList: MetadataTokens.MethodDefinitionHandle(1));
 
-            foreach (AssemblyName assemblyName in _manifestAssemblies)
+            foreach (var idAndAssemblyName in _moduleIdToAssemblyNameMap.OrderBy(x => x.Key))
             {
+                AssemblyName assemblyName = idAndAssemblyName.Value;
                 AssemblyFlags assemblyFlags = 0;
                 byte[] publicKeyOrToken;
                 if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)

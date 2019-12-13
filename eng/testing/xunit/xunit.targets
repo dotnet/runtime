@@ -12,7 +12,7 @@
 
     <TestScope Condition="'$(TestScope)' == '' and '$(Outerloop)' == 'true'">all</TestScope>
     <_withCategories Condition="'$(TestScope)' == 'outerloop'">$(_withCategories);OuterLoop</_withCategories>
-    <_withoutCategories Condition="'$(ArchiveTest)' == 'true'">$(_withoutCategories);IgnoreForCI</_withoutCategories>
+    <_withoutCategories Condition="'$(ArchiveTests)' == 'true'">$(_withoutCategories);IgnoreForCI</_withoutCategories>
     <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
 

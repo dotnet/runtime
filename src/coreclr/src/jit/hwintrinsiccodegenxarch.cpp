@@ -498,13 +498,9 @@ void CodeGen::genHWIntrinsic_R_RM(
             switch (rmOp->OperGet())
             {
                 case GT_LCL_FLD:
-                {
-                    GenTreeLclFld* lclField = rmOp->AsLclFld();
-
-                    varNum = lclField->GetLclNum();
-                    offset = lclField->gtLclOffs;
+                    varNum = rmOp->AsLclFld()->GetLclNum();
+                    offset = rmOp->AsLclFld()->GetLclOffs();
                     break;
-                }
 
                 case GT_LCL_VAR:
                 {
@@ -684,13 +680,9 @@ void CodeGen::genHWIntrinsic_R_R_RM(
             switch (op2->OperGet())
             {
                 case GT_LCL_FLD:
-                {
-                    GenTreeLclFld* lclField = op2->AsLclFld();
-
-                    varNum = lclField->GetLclNum();
-                    offset = lclField->AsLclFld()->gtLclOffs;
+                    varNum = op2->AsLclFld()->GetLclNum();
+                    offset = op2->AsLclFld()->GetLclOffs();
                     break;
-                }
 
                 case GT_LCL_VAR:
                 {
@@ -852,13 +844,9 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
             switch (op2->OperGet())
             {
                 case GT_LCL_FLD:
-                {
-                    GenTreeLclFld* lclField = op2->AsLclFld();
-
-                    varNum = lclField->GetLclNum();
-                    offset = lclField->AsLclFld()->gtLclOffs;
+                    varNum = op2->AsLclFld()->GetLclNum();
+                    offset = op2->AsLclFld()->GetLclOffs();
                     break;
-                }
 
                 case GT_LCL_VAR:
                 {
@@ -1019,13 +1007,9 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
             switch (op2->OperGet())
             {
                 case GT_LCL_FLD:
-                {
-                    GenTreeLclFld* lclField = op2->AsLclFld();
-
-                    varNum = lclField->GetLclNum();
-                    offset = lclField->AsLclFld()->gtLclOffs;
+                    varNum = op2->AsLclFld()->GetLclNum();
+                    offset = op2->AsLclFld()->GetLclOffs();
                     break;
-                }
 
                 case GT_LCL_VAR:
                 {
@@ -1147,13 +1131,9 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
             switch (op3->OperGet())
             {
                 case GT_LCL_FLD:
-                {
-                    GenTreeLclFld* lclField = op3->AsLclFld();
-
-                    varNum = lclField->GetLclNum();
-                    offset = lclField->AsLclFld()->gtLclOffs;
+                    varNum = op3->AsLclFld()->GetLclNum();
+                    offset = op3->AsLclFld()->GetLclOffs();
                     break;
-                }
 
                 case GT_LCL_VAR:
                 {

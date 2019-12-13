@@ -55,7 +55,6 @@ class ThreadExceptionState
 public:
 
     void FreeAllStackTraces();
-    void ClearThrowablesForUnload(IGCHandleStore* handleStore);
 
 #ifdef _DEBUG
     typedef enum
@@ -102,9 +101,6 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif // DACCESS_COMPILE
-
-    // After unwinding from an SO, there may be stale exception state.
-    void ClearExceptionStateAfterSO(void* pStackFrameSP);
 
     enum ThreadExceptionFlag
     {

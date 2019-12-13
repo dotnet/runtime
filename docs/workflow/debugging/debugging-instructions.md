@@ -14,10 +14,10 @@ Debugging CoreCLR on Windows
 3. Right-click the INSTALL project and choose ‘Set as StartUp Project’
 4. Bring up the properties page for the INSTALL project
 5. Select Configuration Properties->Debugging from the left side tree control
-6. Set Command=`$(SolutionDir)..\..\product\Windows_NT.$(Platform).$(Configuration)\corerun.exe`
+6. Set Command=`$(SolutionDir)\..\..\..\bin\coreclr\Windows_NT.$(Platform).$(Configuration)\corerun.exe`
     1. This points to the folder where the built runtime binaries are present.
 7. Set Command Arguments=`<managed app you wish to run>` (e.g. HelloWorld.exe)
-8. Set Working Directory=`$(SolutionDir)..\..\product\Windows_NT.$(Platform).$(Configuration)`
+8. Set Working Directory=`$(SolutionDir)\..\..\..\bin\coreclr\Windows_NT.$(Platform).$(Configuration)`
     1. This points to the folder containing CoreCLR binaries.
 9. Press F11 to start debugging at wmain in corerun (or set a breakpoint in source and press F5 to run to it)
     1. As an example, set a breakpoint for the EEStartup function in ceemain.cpp to break into CoreCLR startup.
@@ -39,7 +39,7 @@ Only lldb is supported by SOS. Gdb can be used to debug the coreclr code but wit
 
 1. Perform a build of the coreclr repo.
 2. Install the corefx managed assemblies to the binaries directory.
-3. cd to build's binaries: `cd ~/coreclr/artifacts/Product/Linux.x64.Debug`
+3. cd to build's binaries: `cd ./artifacts/bin/coreclr/Linux.x64.Debug`
 4. Start lldb: `lldb-3.9 corerun HelloWorld.exe linux`
 6. Launch program: `process launch -s`
 7. To stop annoying breaks on SIGUSR1/SIGUSR2 signals used by the runtime run: `process handle -s false SIGUSR1 SIGUSR2`
