@@ -29,8 +29,5 @@ namespace System.Diagnostics.Contracts.Tests
 
             public void Dispose() { Contract.ContractFailed -= _handler; }
         }
-
-        [Conditional("INCLUDE_DEBUG_BEHAVIOR")]
-        internal static bool ReturnTrueIfCompiledInDebug => true;
     }
 }

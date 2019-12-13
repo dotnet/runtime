@@ -913,11 +913,13 @@ namespace System.Diagnostics.Tests
 
         public int EventCount;
         public DiagnosticSourceEvent LastEvent;
+
+        // Here just for debugging.  Lets you see the last 3 events that were sent.
         public DiagnosticSourceEvent SecondLast;
         public DiagnosticSourceEvent ThirdLast;
 
         /// <summary>
-        /// Sets the EventCount to 0 and LastEvent to null
+        /// Sets the EventCount to 0 and LastEvents to null
         /// </summary>
         public void ResetEventCountAndLastEvent()
         {
