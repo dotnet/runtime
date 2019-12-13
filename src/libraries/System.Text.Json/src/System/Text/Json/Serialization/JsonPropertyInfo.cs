@@ -238,9 +238,9 @@ namespace System.Text.Json
         // Use a field here (not a property) to avoid value semantics.
         public JsonEncodedText? EscapedName;
 
-        public static TAttribute? GetAttribute<TAttribute>(PropertyInfo? propertyInfo) where TAttribute : Attribute
+        public static TAttribute? GetAttribute<TAttribute>(PropertyInfo propertyInfo) where TAttribute : Attribute
         {
-            return (TAttribute?)propertyInfo?.GetCustomAttribute(typeof(TAttribute), inherit: false);
+            return (TAttribute?)propertyInfo.GetCustomAttribute(typeof(TAttribute), inherit: false);
         }
 
         public abstract Type GetDictionaryConcreteType();

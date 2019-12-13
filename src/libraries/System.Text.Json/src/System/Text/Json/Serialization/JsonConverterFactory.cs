@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions? options)
+        internal JsonConverter? GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));
             return CreateConverter(typeToConvert, options);
@@ -33,6 +33,6 @@ namespace System.Text.Json.Serialization
         /// <returns>
         /// An instance of a <see cref="JsonConverter{T}"/> where T is compatible with <paramref name="typeToConvert"/>.
         /// </returns>
-        public abstract JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions? options);
+        public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
     }
 }

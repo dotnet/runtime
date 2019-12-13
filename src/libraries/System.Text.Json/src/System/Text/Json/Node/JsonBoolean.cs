@@ -7,10 +7,7 @@ namespace System.Text.Json
     /// <summary>
     ///   Represents a mutable boolean JSON value.
     /// </summary>
-    public sealed class JsonBoolean : JsonNode,
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-        IEquatable<JsonBoolean>
-#nullable restore
+    public sealed class JsonBoolean : JsonNode, IEquatable<JsonBoolean>
     {
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonBoolean"/> class representing the value <see langword="false"/>.

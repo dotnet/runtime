@@ -60,7 +60,7 @@ namespace System.Text.Json
                         return default;
                     }
 
-                    var document = (JsonDocument?)_target._parent;
+                    var document = (JsonDocument)_target._parent;
                     return new JsonProperty(new JsonElement(document, _curIdx));
                 }
             }

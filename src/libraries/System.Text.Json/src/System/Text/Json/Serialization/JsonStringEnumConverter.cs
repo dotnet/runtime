@@ -57,7 +57,7 @@ namespace System.Text.Json.Serialization
         [PreserveDependency(
             ".ctor(System.Text.Json.Serialization.Converters.EnumConverterOptions, System.Text.Json.JsonNamingPolicy)",
             "System.Text.Json.Serialization.Converters.JsonConverterEnum`1")]
-        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions? options)
+        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
                 typeof(JsonConverterEnum<>).MakeGenericType(typeToConvert),

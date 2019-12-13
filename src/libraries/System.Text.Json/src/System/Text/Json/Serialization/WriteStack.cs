@@ -50,7 +50,7 @@ namespace System.Text.Json
             if (classType == ClassType.Enumerable || nextClassInfo.ClassType == ClassType.Dictionary)
             {
                 Current.PopStackOnEndCollection = true;
-                Current.JsonPropertyInfo = Current.JsonClassInfo.PolicyProperty!;
+                Current.JsonPropertyInfo = Current.JsonClassInfo.PolicyProperty;
             }
             else
             {

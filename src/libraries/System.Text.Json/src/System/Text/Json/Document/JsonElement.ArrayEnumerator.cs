@@ -59,7 +59,7 @@ namespace System.Text.Json
                         return jsonArray[_curIdx].AsJsonElement();
                     }
 
-                    var document = (JsonDocument?)_target._parent;
+                    var document = (JsonDocument)_target._parent;
                     return new JsonElement(document, _curIdx);
                 }
             }

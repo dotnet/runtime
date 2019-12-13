@@ -9,10 +9,7 @@ namespace System.Text.Json
     /// <summary>
     ///   Represents a mutable numeric JSON value.
     /// </summary>
-    public sealed class JsonNumber : JsonNode,
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-        IEquatable<JsonNumber>
-#nullable restore
+    public sealed class JsonNumber : JsonNode, IEquatable<JsonNumber>
     {
         private string _value = null!;
 

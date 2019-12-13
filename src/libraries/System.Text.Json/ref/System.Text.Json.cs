@@ -65,10 +65,7 @@ namespace System.Text.Json
         public bool MoveNext() { throw null; }
         void System.Collections.IEnumerator.Reset() { }
     }
-    public sealed partial class JsonBoolean : System.Text.Json.JsonNode,
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-        System.IEquatable<System.Text.Json.JsonBoolean>
-#nullable restore
+    public sealed partial class JsonBoolean : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonBoolean>
     {
         public JsonBoolean() { }
         public JsonBoolean(bool value) { }
@@ -274,10 +271,7 @@ namespace System.Text.Json
         public System.Text.Json.DuplicatePropertyNameHandlingStrategy DuplicatePropertyNameHandling { readonly get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
     }
-    public sealed partial class JsonNull : System.Text.Json.JsonNode,
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-        System.IEquatable<System.Text.Json.JsonNull>
-#nullable restore
+    public sealed partial class JsonNull : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonNull>
     {
         public JsonNull() { }
         public override System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
@@ -289,10 +283,7 @@ namespace System.Text.Json
         public static bool operator !=(System.Text.Json.JsonNull? left, System.Text.Json.JsonNull? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed partial class JsonNumber : System.Text.Json.JsonNode,
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-        System.IEquatable<System.Text.Json.JsonNumber>
-#nullable restore
+    public sealed partial class JsonNumber : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonNumber>
     {
         public JsonNumber() { }
         public JsonNumber(byte value) { }
@@ -472,10 +463,7 @@ namespace System.Text.Json
         public bool WriteIndented { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonConverter? GetConverter(System.Type typeToConvert) { throw null; }
     }
-    public sealed partial class JsonString : System.Text.Json.JsonNode,
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-        System.IEquatable<System.Text.Json.JsonString>
-#nullable restore
+    public sealed partial class JsonString : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonString>
     {
         public JsonString() { }
         public JsonString(System.DateTime value) { }

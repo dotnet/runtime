@@ -158,7 +158,7 @@ namespace System.Text.Json
                                 Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
                                 // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
-                                if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString!, jsonPropertyInfo))
+                                if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
                                 {
                                     JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
 
@@ -584,24 +584,27 @@ namespace System.Text.Json
                 return ClassType.Enumerable;
             }
 
-            Debug.Assert(type.FullName != null);
-            if (type.FullName.StartsWith("System.Collections.Generic.IEnumerable`1"))
+            if (type.FullName != null)
             {
-                elementType = type.GetGenericArguments()[0];
-                runtimeType = typeof(List<>).MakeGenericType(elementType);
-                addMethod = default;
-                return ClassType.Enumerable;
-            }
-            else if (type.FullName.StartsWith("System.Collections.Generic.IDictionary`2") ||
-                type.FullName.StartsWith("System.Collections.Generic.IReadOnlyDictionary`2"))
-            {
-                Type[] genericTypes = type.GetGenericArguments();
+                if (type.FullName.StartsWith("System.Collections.Generic.IEnumerable`1"))
+                {
+                    elementType = type.GetGenericArguments()[0];
+                    runtimeType = typeof(List<>).MakeGenericType(elementType);
+                    addMethod = default;
+                    return ClassType.Enumerable;
+                }
+                else if (type.FullName.StartsWith("System.Collections.Generic.IDictionary`2") ||
+                    type.FullName.StartsWith("System.Collections.Generic.IReadOnlyDictionary`2"))
+                {
+                    Type[] genericTypes = type.GetGenericArguments();
 
-                elementType = genericTypes[1];
-                runtimeType = typeof(Dictionary<,>).MakeGenericType(genericTypes[0], elementType);
-                addMethod = default;
-                return ClassType.Dictionary;
+                    elementType = genericTypes[1];
+                    runtimeType = typeof(Dictionary<,>).MakeGenericType(genericTypes[0], elementType);
+                    addMethod = default;
+                    return ClassType.Dictionary;
+                }
             }
+
 
             {
                 Type? genericIDictionaryType = type.GetInterface("System.Collections.Generic.IDictionary`2") ?? type.GetInterface("System.Collections.Generic.IReadOnlyDictionary`2");
