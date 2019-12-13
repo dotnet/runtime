@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;net472-Debug;net472-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AdditionalCacheTests\AdditionalCacheTests.cs" />

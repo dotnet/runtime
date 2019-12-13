@@ -8,7 +8,7 @@
     <BuildConfigurations>
       $(PackageConfigurations);
       netstandard2.0;
-      net472;
+      $(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

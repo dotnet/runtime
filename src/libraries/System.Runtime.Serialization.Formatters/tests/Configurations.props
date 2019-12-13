@@ -1,8 +1,8 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
-    <!-- Needs net472 configuration per bug (dotnet/corefx #17575) so tests are actively running in desktop -->
+    <!-- Needs $(NetFrameworkCurrent) configuration per bug (dotnet/corefx #17575) so tests are actively running in desktop -->
     <BuildConfigurations>
-      net472;
+      $(NetFrameworkCurrent);
       $(NetCoreAppCurrent);
     </BuildConfigurations>
   </PropertyGroup>

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Linux-Debug;$(NetCoreAppCurrent)-Linux-Release;$(NetCoreAppCurrent)-OSX-Debug;$(NetCoreAppCurrent)-OSX-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;net472-Debug;net472-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Linux-Debug;$(NetCoreAppCurrent)-Linux-Release;$(NetCoreAppCurrent)-OSX-Debug;$(NetCoreAppCurrent)-OSX-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />

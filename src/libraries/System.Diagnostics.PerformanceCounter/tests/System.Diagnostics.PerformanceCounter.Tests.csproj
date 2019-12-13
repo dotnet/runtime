@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Win32Resource>provider.res</Win32Resource>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;net472-Debug;net472-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PerformanceCounterTests.cs" />

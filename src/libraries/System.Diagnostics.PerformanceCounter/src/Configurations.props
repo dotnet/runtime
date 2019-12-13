@@ -8,7 +8,7 @@
     <BuildConfigurations>
       $(PackageConfigurations)
       $(NetCoreAppCurrent)-Windows_NT;
-      net472;
+      $(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

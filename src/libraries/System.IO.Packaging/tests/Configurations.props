@@ -2,7 +2,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       $(NetCoreAppCurrent);
-      net472;
+      $(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

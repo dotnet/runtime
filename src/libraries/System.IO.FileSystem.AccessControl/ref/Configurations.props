@@ -6,7 +6,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
-      net472;
+      $(NetFrameworkCurrent);
       net461;
     </BuildConfigurations>
   </PropertyGroup>

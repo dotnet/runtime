@@ -6,7 +6,7 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      _net472;
+      _$(NetFrameworkCurrent);
       $(NetCoreAppCurrent);
     </BuildConfigurations>
   </PropertyGroup>

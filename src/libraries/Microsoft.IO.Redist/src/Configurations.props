@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <BuildConfigurations>
-      net472;
+      $(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

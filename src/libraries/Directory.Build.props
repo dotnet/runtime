@@ -62,7 +62,7 @@
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
     <!-- Versionless netcoreapp and netfx needs to be removed after .yml scripts are finalized.-->
     <BuildConfiguration Condition="'$(TargetGroup)' == 'netcoreapp'">$(NetCoreAppCurrent)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
-    <BuildConfiguration Condition="'$(TargetGroup)' == 'netfx'">net472-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
+    <BuildConfiguration Condition="'$(TargetGroup)' == 'netfx'">$(NetFrameworkCurrent)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
 
     <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' and '$(BuildConfigurations)' == ''">package</BuildConfigurations>
@@ -158,7 +158,7 @@
   <!-- set properties for each vertical -->
   <PropertyGroup>
     <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)'=='$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
-    <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)'=='net472' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
+    <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)'=='$(NetFrameworkCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
     <BinPlaceNETCoreAppPackage Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceNETCoreAppPackage>
   </PropertyGroup>
 
@@ -258,7 +258,7 @@
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetGroup)'))</RefPath>
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
-    <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'net472'))</NetFxRefPath>
+    <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetFrameworkCurrent)'))</NetFxRefPath>
     <ILAsmToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ilasm'))</ILAsmToolPath>
 
     <!-- Helix properties -->
@@ -273,8 +273,8 @@
     <!-- Paths to binplace package content -->
     <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
-    <NetFxPackageRefPath>$(ArtifactsBinDir)pkg\net472\ref</NetFxPackageRefPath>
-    <NetFxPackageRuntimePath>$(ArtifactsBinDir)pkg\net472\lib</NetFxPackageRuntimePath>
+    <NetFxPackageRefPath>$(ArtifactsBinDir)pkg\$(NetFrameworkCurrent)\ref</NetFxPackageRefPath>
+    <NetFxPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetFrameworkCurrent)\lib</NetFxPackageRuntimePath>
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildConfiguration)'))</TestHostRootPath>
 
@@ -307,7 +307,7 @@
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
     <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
-    <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'net472'">true</BinPlaceNETFXRuntime>
+    <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
 
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 
