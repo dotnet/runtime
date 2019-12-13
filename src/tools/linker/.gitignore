@@ -32,4 +32,4 @@ bin/
 .packages
 artifacts
 
-monobuild/TestResults.xml
+test/Mono.Linker.Tests/TestResults.xml
