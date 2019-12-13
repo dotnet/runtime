@@ -27,10 +27,8 @@ if NOT [%ERRORLEVEL%] == [0] (
 
 set "dotnetPath=%__dotnetDir%\dotnet.exe"
 
-pushd %~dp0
 echo Running: "%dotnetPath%" %*
 call "%dotnetPath%" %*
-popd
 if NOT [%ERRORLEVEL%]==[0] (
   exit /b 1
 )
