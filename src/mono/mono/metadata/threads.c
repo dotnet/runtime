@@ -622,14 +622,14 @@ get_context_static_data (MonoAppContext *ctx, guint32 offset)
 static MonoThread**
 get_current_thread_ptr_for_domain (MonoDomain *domain, MonoInternalThread *thread)
 {
-	static MonoClassField *current_thread_field = NULL;
-
 	guint32 offset;
 
-	if (!current_thread_field) {
+	MONO_STATIC_POINTER_INIT (MonoClassField, current_thread_field)
+
 		current_thread_field = mono_class_get_field_from_name_full (mono_defaults.thread_class, "current_thread", NULL);
 		g_assert (current_thread_field);
-	}
+
+	MONO_STATIC_POINTER_INIT_END (MonoClassField, current_thread_field)
 
 	ERROR_DECL (thread_vt_error);
 	mono_class_vtable_checked (domain, mono_defaults.thread_class, thread_vt_error);
@@ -1232,15 +1232,17 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 		start_func (start_func_arg);
 	} else {
 #ifdef ENABLE_NETCORE
-		static MonoMethod *cb;
-
 		/* Call a callback in the RuntimeThread class */
 		g_assert (start_delegate == NULL);
-		if (!cb) {
+
+		MONO_STATIC_POINTER_INIT (MonoMethod, cb)
+
 			cb = mono_class_get_method_from_name_checked (internal->obj.vtable->klass, "StartCallback", 0, 0, error);
 			g_assert (cb);
 			mono_error_assert_ok (error);
-		}
+
+		MONO_STATIC_POINTER_INIT_END (MonoMethod, cb)
+
 		mono_runtime_invoke_checked (cb, internal, NULL, error);
 #else
 		void *args [1];
