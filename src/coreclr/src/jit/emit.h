@@ -1233,18 +1233,16 @@ protected:
 #define PERFSCORE_THROUGHPUT_4C 4.0f   // slower - 4 cycles
 #define PERFSCORE_THROUGHPUT_5C 5.0f   // slower - 5 cycles
 #define PERFSCORE_THROUGHPUT_6C 6.0f   // slower - 6 cycles
+#define PERFSCORE_THROUGHPUT_9C 9.0f   // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C 10.0f // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_19C 19.0f // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f // slower - 25 cycles
 #define PERFSCORE_THROUGHPUT_33C 33.0f // slower - 33 cycles
 #define PERFSCORE_THROUGHPUT_52C 52.0f // slower - 52 cycles
 #define PERFSCORE_THROUGHPUT_57C 57.0f // slower - 57 cycles
 
-#define PERFSCORE_THROUGHPUT_DEFAULT PERFSCORE_THROUGHPUT_1C
-
 #define PERFSCORE_LATENCY_ILLEGAL -1024.0f
-
-#define PERFSCORE_LATENCY_DEFAULT 1.0f
 
 #define PERFSCORE_LATENCY_ZERO 0.0f
 #define PERFSCORE_LATENCY_1C 1.0f
@@ -1260,7 +1258,11 @@ protected:
 #define PERFSCORE_LATENCY_11C 11.0f
 #define PERFSCORE_LATENCY_12C 12.0f
 #define PERFSCORE_LATENCY_13C 13.0f
+#define PERFSCORE_LATENCY_15C 15.0f
 #define PERFSCORE_LATENCY_16C 16.0f
+#define PERFSCORE_LATENCY_18C 18.0f
+#define PERFSCORE_LATENCY_20C 20.0f
+#define PERFSCORE_LATENCY_22C 22.0f
 #define PERFSCORE_LATENCY_23C 23.0f
 #define PERFSCORE_LATENCY_26C 26.0f
 #define PERFSCORE_LATENCY_62C 62.0f
@@ -1271,22 +1273,46 @@ protected:
 #define PERFSCORE_LATENCY_BRANCH_COND 2.0f     // includes cost of a possible misprediction
 #define PERFSCORE_LATENCY_BRANCH_INDIRECT 2.0f // includes cost of a possible misprediction
 
+#if defined(_TARGET_XARCH_)
+
 // a read,write or modify from stack location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_STACK 2.0f
-#define PERFSCORE_LATENCY_WR_STACK 2.0f
-#define PERFSCORE_LATENCY_RD_WR_STACK 5.0f
+#define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_2C
+#define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_2C
+#define PERFSCORE_LATENCY_RD_WR_STACK PERFSCORE_LATENCY_5C
 
 // a read, write or modify from constant location, possible def to use latency from L0 cache
-#define PERFSCORE_LATENCY_RD_CONST_ADDR 2.0f
-#define PERFSCORE_LATENCY_WR_CONST_ADDR 2.0f
-#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR 5.0f
+#define PERFSCORE_LATENCY_RD_CONST_ADDR PERFSCORE_LATENCY_2C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR PERFSCORE_LATENCY_2C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_5C
 
 // a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
 // plus an extra cost  (of 1.0) for a increased chance  of a cache miss
-#define PERFSCORE_LATENCY_RD_GENERAL 3.0f
-#define PERFSCORE_LATENCY_WR_GENERAL 3.0f
-#define PERFSCORE_LATENCY_RD_WR_GENERAL 6.0f
+#define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_6C
 
+#elif defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
+
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK PERFSCORE_LATENCY_3C
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
+
+#endif // _TARGET_XXX
+
+// Make this an enum:
+//
 #define PERFSCORE_MEMORY_NONE 0
 #define PERFSCORE_MEMORY_READ 1
 #define PERFSCORE_MEMORY_WRITE 2
@@ -1295,8 +1321,7 @@ protected:
 #define PERFSCORE_CODESIZE_COST_HOT 0.10f
 #define PERFSCORE_CODESIZE_COST_COLD 0.01f
 
-#define PERFSCORE_CALLEE_SPILL_COST                                                                                    \
-    0.75f // heuristicly derived - actual cost is one push and one pop, in the prolog/epilog
+#define PERFSCORE_CALLEE_SPILL_COST 0.75f
 
     struct insExecutionCharacteristics
     {
@@ -1305,8 +1330,11 @@ protected:
         unsigned insMemoryAccessKind;
     };
 
-    insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc* id);
     float insEvaluateExecutionCost(instrDesc* id);
+
+    insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc* id);
+
+    void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* result);
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 

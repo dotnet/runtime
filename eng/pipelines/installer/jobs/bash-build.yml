@@ -55,8 +55,8 @@ jobs:
 
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
-        /p:OfficialBuildId=$(Build.BuildNumber)
         /p:TargetArchitecture=${{ parameters.archType }}
+        $(OfficialBuildArg)
 
       # Don't put additionalMSBuildArgs as the last line. It may or may not have extra args. If the
       # parameter is empty, AzDO replaces it with empty space without chomping the extra newline.

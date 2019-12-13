@@ -31,7 +31,7 @@ namespace ILCompiler
         public bool Tuning { get; set; }
         public bool Partial { get; set; }
         public bool Resilient { get; set; }
-        public bool GenerateMapFile { get; set; }
+        public bool Map { get; set; }
         public int Parallelism { get; set; }
 
 

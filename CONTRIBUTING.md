@@ -45,7 +45,7 @@ We use and recommend the following workflow:
     - You can skip this step for trivial changes.
     - Reuse an existing issue on the topic, if there is one.
     - Get agreement from the team and the community that your proposed change is a good one.
-    - If your change adds a new API, follow the [API Review Process](docs/project/api-reivew-process.md).
+    - If your change adds a new API, follow the [API Review Process](docs/project/api-review-process.md).
     - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
 3. Create a branch off of master (`git checkout -b mybranch`).
@@ -66,7 +66,7 @@ Note: It is OK to create your PR as "[WIP]" on the upstream repo before the impl
 
 ## Up for Grabs
 
-The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/corefx/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
+The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/runtime/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
 
 ## Commit Messages
 
@@ -128,16 +128,16 @@ We encourage ports of CoreCLR to other platforms. There are multiple ports ongoi
 
 Chips:
 
-- [ARM32](https://github.com/dotnet/coreclr/labels/arch-arm32)
-- [ARM64](https://github.com/dotnet/coreclr/labels/arch-arm64)
-- [X86](https://github.com/dotnet/coreclr/labels/arch-x86)
+- [ARM32](https://github.com/dotnet/runtime/labels/arch-arm32)
+- [ARM64](https://github.com/dotnet/runtime/labels/arch-arm64)
+- [X86](https://github.com/dotnet/runtime/labels/arch-x86)
 
 Operating System:
 
-- [Linux](https://github.com/dotnet/coreclr/labels/os-linux)
-- [macOS](https://github.com/dotnet/coreclr/labels/os-mac-os-x)
-- [Windows Subsystem for Linux](https://github.com/dotnet/coreclr/labels/os-windows-wsl)
-- [FreeBSD](https://github.com/dotnet/coreclr/labels/os-freebsd)
+- [Linux](https://github.com/dotnet/runtime/labels/os-linux)
+- [macOS](https://github.com/dotnet/runtime/labels/os-mac-os-x)
+- [Windows Subsystem for Linux](https://github.com/dotnet/runtime/labels/os-windows-wsl)
+- [FreeBSD](https://github.com/dotnet/runtime/labels/os-freebsd)
 
 Note: Add links to install instructions for each of these ports.
 

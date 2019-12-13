@@ -1,5 +1,5 @@
-# Builds a dotnet sdk base image which contains corefx bits compiled from source
-ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:rhel7_prereqs_2
+# Builds and copies library artifacts into target dotnet sdk image
+ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-f39df28-20191023143754
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/core/sdk:3.0.100-buster
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
@@ -9,7 +9,7 @@ COPY . .
 
 ARG CONFIGURATION=Release
 ARG BUILD_SCRIPT_NAME=libraries
-RUN ./$BUILD_SCRIPT_NAME.sh -c $CONFIGURATION
+RUN ./libraries.sh -c $CONFIGURATION
 
 FROM $SDK_BASE_IMAGE as target
 

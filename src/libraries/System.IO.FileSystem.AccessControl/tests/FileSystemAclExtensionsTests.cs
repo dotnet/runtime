@@ -106,7 +106,7 @@ namespace System.IO
         [Fact]
         public void GetAccessControl_Filestream_InvalidArguments()
         {
-            Assert.Throws<NullReferenceException>(() => FileSystemAclExtensions.GetAccessControl((FileStream)null));
+            Assert.Throws<ArgumentNullException>("fileStream", () => FileSystemAclExtensions.GetAccessControl((FileStream)null));
         }
 
         [Fact]
@@ -175,7 +175,7 @@ namespace System.IO
         [Fact]
         public void SetAccessControl_FileStream_FileSecurity_InvalidArguments()
         {
-            Assert.Throws<NullReferenceException>(() => FileSystemAclExtensions.SetAccessControl((FileStream)null, (FileSecurity)null));
+            Assert.Throws<ArgumentNullException>("fileStream", () => FileSystemAclExtensions.SetAccessControl((FileStream)null, (FileSecurity)null));
         }
 
         [Fact]

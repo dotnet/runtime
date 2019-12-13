@@ -52,13 +52,8 @@ REM === Check if dotnet CLI and necessary directories exist
 REM ===
 REM =========================================================================================
 
-set __DotNetCmd=%__ThisScriptPath%..\dotnet.cmd
+set __DotNetCmd=%__ThisScriptPath%..\..\..\dotnet.cmd
 set __CsprojPath=%__ThisScriptPath%\stress_dependencies\stress_dependencies.csproj
-
-if not exist "%__DotNetCmd%" (
-    echo dotnet.exe does not exist: %__DotNetCmd%
-    goto Fail
-)
 
 REM Create directories needed
 if not exist "%__OutputDir%" md "%__OutputDir%"
