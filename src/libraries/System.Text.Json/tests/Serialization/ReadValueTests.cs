@@ -572,7 +572,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class FullNameNullTest
     {
-        private static void MyMethod<T>(List<T> param)
+        private static void EmptyGenericMethod<T>(List<T> param)
         {
         }
 
@@ -580,7 +580,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void TypeFullNameNullTest()
         {
             MethodInfo[] methods = typeof(FullNameNullTest).GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
-            var parameters = methods[0].GetParameters();
+            ParameterInfo[] parameters = methods[0].GetParameters();
             Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize("{}", parameters[0].ParameterType));
         }
     }

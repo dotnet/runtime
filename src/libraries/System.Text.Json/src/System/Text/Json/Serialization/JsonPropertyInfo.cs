@@ -355,7 +355,7 @@ namespace System.Text.Json
         protected virtual void OnWriteDictionary(ref WriteStackFrame current, Utf8JsonWriter writer) { }
         protected abstract void OnWriteEnumerable(ref WriteStackFrame current, Utf8JsonWriter writer);
 
-        public Type? ParentClassType { get; private set; }
+        public Type ParentClassType { get; private set; } = null!;
 
         public PropertyInfo? PropertyInfo { get; private set; }
 
