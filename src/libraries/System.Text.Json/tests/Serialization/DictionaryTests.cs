@@ -997,6 +997,9 @@ namespace System.Text.Json.Serialization.Tests
             };
             baseDictionaryTypes.AddRange(nonGenericDictTypes);
 
+            // This method has exponential behavior which this depth value significantly impacts.
+            // Don't change this value without checking how many test cases are generated and
+            // how long the tests run for.
             int maxTestDepth = 4;
 
             HashSet<(Type, string)> tests = new HashSet<(Type, string)>();
