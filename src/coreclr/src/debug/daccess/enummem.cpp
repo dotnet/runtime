@@ -21,7 +21,7 @@
 #include "binder.h"
 #include "win32threadpool.h"
 
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #include <dactablerva.h>
 #endif
 

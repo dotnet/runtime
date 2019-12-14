@@ -24,7 +24,7 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #include <dactablerva.h>
 #endif
 

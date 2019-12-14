@@ -61,4 +61,6 @@ if(CLR_CMAKE_HOST_UNIX)
   )
 
   add_dependencies(daccess dactablerva_header)
-endif(CLR_CMAKE_HOST_UNIX)
+elseif(CLR_CMAKE_TARGET_UNIX)
+  add_definitions(-DDAC_TABLE_RVA=0x0000000001235cf0)
+endif()
