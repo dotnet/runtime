@@ -746,6 +746,12 @@ namespace System.Runtime.Loader
             bool exists = Internal.IO.File.InternalExists(assemblyPath);
             if (!exists && Path.IsCaseSensitive)
             {
+#if CORECLR
+                if (AssemblyLoadContext.IsTracingEnabled())
+                {
+                    AssemblyLoadContext.TraceSatelliteSubdirectoryPathProbed(assemblyPath, HResults.COR_E_FILENOTFOUND);
+                }
+#endif // CORECLR
                 assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
                 exists = Internal.IO.File.InternalExists(assemblyPath);
             }
