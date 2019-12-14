@@ -126,11 +126,6 @@ generate_layout()
         fi
     fi
 
-    # Patch framework assemblies from a local source if requested
-    if [ ! -z "$__LocalCoreFXPath" ]; then
-        patch_corefx_libraries
-    fi
-
     # Precompile framework assemblies with crossgen if required
     if [[ $__DoCrossgen != 0 || $__DoCrossgen2 != 0 ]]; then
         precompile_coreroot_fx
