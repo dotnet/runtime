@@ -14,7 +14,6 @@
 #define UCHAR_SPACE ((UChar)0x0020)      // space
 #define UCHAR_NBSPACE ((UChar)0x00A0)    // space
 #define UCHAR_DIGIT ((UChar)0x0023)      // '#'
-#define UCHAR_SEMICOLON ((UChar)0x003B)  // ';'
 #define UCHAR_MINUS ((UChar)0x002D)      // '-'
 #define UCHAR_PERCENT ((UChar)0x0025)    // '%'
 #define UCHAR_OPENPAREN ((UChar)0x0028)  // '('
@@ -85,14 +84,14 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
     // minus sign
     if (isNegative && !minusAdded)
     {
-        size_t length = (iEnd - iStart) + 2;
-        destPattern = calloc(length, sizeof(char));
+        int length = (iEnd - iStart) + 2;
+        destPattern = calloc((size_t)length, sizeof(char));
         destPattern[index++] = '-';
     }
     else
     {
-        size_t length = (iEnd - iStart) + 1;
-        destPattern = calloc(length, sizeof(char));
+        int length = (iEnd - iStart) + 1;
+        destPattern = calloc((size_t)length, sizeof(char));
     }
 
     for (int i = iStart; i <= iEnd; i++)
@@ -164,7 +163,7 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t icuPatternLength = unum_toPattern(pNumberFormat, FALSE, NULL, 0, &ignore) + 1;
 
-    UChar* icuPattern = calloc(icuPatternLength, sizeof(UChar));
+    UChar* icuPattern = calloc((size_t)icuPatternLength, sizeof(UChar));
     if (icuPattern == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
@@ -200,7 +199,9 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
         }
     }
 
-    assert(FALSE); // should have found a valid pattern
+    // TODO: https://github.com/dotnet/runtime/issues/946
+    // assert(FALSE); // should have found a valid pattern
+
     free(normalizedPattern);
     return INVALID_FORMAT;
 }
@@ -418,7 +419,7 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
     switch (localeNumberData)
     {
         case LocaleNumber_LanguageId:
-            *value = uloc_getLCID(locale);
+            *value = (int32_t)uloc_getLCID(locale);
             break;
         case LocaleNumber_MeasurementSystem:
             status = GetMeasurementSystem(locale, value);

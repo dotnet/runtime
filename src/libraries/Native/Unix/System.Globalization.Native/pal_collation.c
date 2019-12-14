@@ -18,7 +18,7 @@ c_static_assert_msg(UCOL_GREATER > 0, "managed side requires greater than zero f
 c_static_assert_msg(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
 #define UCOL_IGNORABLE 0
-#define UCOL_PRIMARYORDERMASK 0xFFFF0000
+#define UCOL_PRIMARYORDERMASK ((int32_t)0xFFFF0000)
 #define UCOL_SECONDARYORDERMASK 0x0000FF00
 #define UCOL_TERTIARYORDERMASK 0x000000FF
 
@@ -53,13 +53,13 @@ struct SortHandle
 typedef struct { UChar* items; size_t size; } UCharList;
 
 // Hiragana character range
-const UChar hiraganaStart = 0x3041;
-const UChar hiraganaEnd = 0x309e;
-const UChar hiraganaToKatakanaOffset = 0x30a1 - 0x3041;
+static const UChar hiraganaStart = 0x3041;
+static const UChar hiraganaEnd = 0x309e;
+static const UChar hiraganaToKatakanaOffset = 0x30a1 - 0x3041;
 
 // Mapping between half- and fullwidth characters.
 // LowerChars are the characters that should sort lower than HigherChars
-const UChar g_HalfFullLowerChars[] = {
+static const UChar g_HalfFullLowerChars[] = {
     // halfwidth characters
     0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027, 0x0028, 0x0029, 0x002a, 0x002b, 0x002c, 0x002d, 0x002e, 0x002f,
     0x0030, 0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038, 0x0039, 0x003a, 0x003b, 0x003c, 0x003d, 0x003e,
@@ -80,7 +80,7 @@ const UChar g_HalfFullLowerChars[] = {
     0x315d, 0x315e, 0x315f, 0x3160, 0x3161, 0x3162, 0x3163
 
 };
-const UChar g_HalfFullHigherChars[] = {
+static const UChar g_HalfFullHigherChars[] = {
     // fullwidth characters
     0xff01, 0xff02, 0xff03, 0xff04, 0xff05, 0xff06, 0xff07, 0xff08, 0xff09, 0xff0a, 0xff0b, 0xff0c, 0xff0d, 0xff0e, 0xff0f,
     0xff10, 0xff11, 0xff12, 0xff13, 0xff14, 0xff15, 0xff16, 0xff17, 0xff18, 0xff19, 0xff1a, 0xff1b, 0xff1c, 0xff1d, 0xff1e,
@@ -100,7 +100,7 @@ const UChar g_HalfFullHigherChars[] = {
     0xffbe, 0xffc2, 0xffc3, 0xffc4, 0xffc5, 0xffc6, 0xffc7, 0xffca, 0xffcb, 0xffcc, 0xffcd, 0xffce, 0xffcf, 0xffd2, 0xffd3,
     0xffd4, 0xffd5, 0xffd6, 0xffd7, 0xffda, 0xffdb, 0xffdc
 };
-const int32_t g_HalfFullCharsLength = (sizeof(g_HalfFullHigherChars) / sizeof(UChar));
+static const int32_t g_HalfFullCharsLength = (sizeof(g_HalfFullHigherChars) / sizeof(UChar));
 
 /*
 ICU collation rules reserve any punctuation and whitespace characters for use in the syntax.
@@ -167,7 +167,7 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
         ((needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule) ? 5 * g_HalfFullCharsLength : 0);
 
     UChar* items;
-    customRules->items = items = malloc(capacity * sizeof(UChar));
+    customRules->items = items = malloc((size_t)capacity * sizeof(UChar));
     if (customRules->items == NULL)
     {
         free(customRules);
@@ -223,7 +223,7 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
         }
     }
 
-    customRules->size = items - customRules->items;
+    customRules->size = (size_t)(items - customRules->items);
 
     return customRules;
 }
@@ -234,7 +234,7 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
  *
  * On error, the return value is undefined.
  */
-UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options, UErrorCode* pErr)
+static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options, UErrorCode* pErr)
 {
     UColAttributeValue strength = ucol_getStrength(pCollator);
 
@@ -260,13 +260,13 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
     }
     else
     {
-        int32_t customRuleLength = customRules->size;
+        int32_t customRuleLength = (int32_t)customRules->size;
 
         int32_t localeRulesLength;
         const UChar* localeRules = ucol_getRules(pCollator, &localeRulesLength);
         int32_t completeRulesLength = localeRulesLength + customRuleLength + 1;
 
-        UChar* completeRules = calloc(completeRulesLength, sizeof(UChar));
+        UChar* completeRules = calloc((size_t)completeRulesLength, sizeof(UChar));
 
         for (int i = 0; i < localeRulesLength; i++)
         {
@@ -336,7 +336,7 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
     return U_SUCCESS(err) ? result : FALSE;
 }
 
-void CreateSortHandle(SortHandle** ppSortHandle)
+static void CreateSortHandle(SortHandle** ppSortHandle)
 {
     *ppSortHandle = (SortHandle*)malloc(sizeof(SortHandle));
     if ((*ppSortHandle) == NULL)
@@ -384,7 +384,7 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
     free(pSortHandle);
 }
 
-const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t options, UErrorCode* pErr)
+static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t options, UErrorCode* pErr)
 {
     if (options == 0)
     {
@@ -562,13 +562,18 @@ int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
     {
         int32_t srcIdx = i, trgIdx = 0;
         const UChar *src = lpSource, *trg = lpTarget;
-        UChar32 srcCodepoint, trgCodepoint;
 
         int32_t match = TRUE;
         while (trgIdx < cwTargetLength)
         {
+            UChar32 srcCodepoint, trgCodepoint;
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion"
             U16_NEXT(src, srcIdx, cwSourceLength, srcCodepoint);
             U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
+#pragma clang diagnostic pop
+
             if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
             {
                 match = FALSE;
@@ -676,10 +681,8 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
     }
 }
 
-int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t options, int32_t forwardSearch)
+static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t forwardSearch)
 {
-    assert(options <= CompareOptionsIgnoreCase);
-
     int32_t result = FALSE;
 
     UCollationElements* pPatternIterator = ucol_openElements(pCollator, pPattern, patternLength, pErrorCode);
@@ -701,7 +704,7 @@ int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, const UC
     return result;
 }
 
-int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
+static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
 {
     int32_t result = FALSE;
 
@@ -752,11 +755,11 @@ int32_t GlobalizationNative_StartsWith(
     }
     else
     {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, options, TRUE);
+        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE);
     }
 }
 
-int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
+static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength)
 {
     int32_t result = FALSE;
 
@@ -809,7 +812,7 @@ int32_t GlobalizationNative_EndsWith(
     }
     else
     {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, options, FALSE);
+        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, FALSE);
     }
 }
 
@@ -846,11 +849,13 @@ int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
 
     while (str1Idx < cwStr1Length && str2Idx < cwStr2Length)
     {
-        UChar32 str1Codepoint;
-        UChar32 str2Codepoint;
+        UChar32 str1Codepoint, str2Codepoint;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion"
         U16_NEXT(lpStr1, str1Idx, cwStr1Length, str1Codepoint);
         U16_NEXT(lpStr2, str2Idx, cwStr2Length, str2Codepoint);
+#pragma clang diagnostic pop
 
         if (str1Codepoint != str2Codepoint && u_toupper(str1Codepoint) != u_toupper(str2Codepoint))
         {

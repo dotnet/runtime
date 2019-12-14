@@ -6,8 +6,7 @@
 // Enable calling ICU functions through shims to enable support for
 // multiple versions of ICU.
 
-#ifndef __ICUSHIM_H__
-#define __ICUSHIM_H__
+#pragma once
 
 #include "config.h"
 #include "pal_compiler.h"
@@ -240,8 +239,6 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_getMatchedLength(...) usearch_getMatchedLength_ptr(__VA_ARGS__)
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
-
-#endif // __ICUSHIM_H__
 
 DLLEXPORT int32_t GlobalizationNative_LoadICU(void);
 

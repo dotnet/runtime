@@ -8,7 +8,7 @@
 #include "pal_icushim.h"
 #include "pal_normalization.h"
 
-const UNormalizer2* GetNormalizerForForm(NormalizationForm normalizationForm, UErrorCode* pErrorCode)
+static const UNormalizer2* GetNormalizerForForm(NormalizationForm normalizationForm, UErrorCode* pErrorCode)
 {
     switch (normalizationForm)
     {

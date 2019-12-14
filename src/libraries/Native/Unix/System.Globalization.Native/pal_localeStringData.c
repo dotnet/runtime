@@ -77,7 +77,7 @@ static UErrorCode GetLocaleIso639LanguageTwoLetterName(const char* locale, UChar
     UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
     int32_t length = uloc_getLanguage(locale, NULL, 0, &ignore) + 1;
 
-    char* buf = calloc(length, sizeof(char));
+    char* buf = calloc((size_t)length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
@@ -120,7 +120,7 @@ static UErrorCode GetLocaleIso3166CountryName(const char* locale, UChar* value, 
     UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
     int32_t length = uloc_getCountry(locale, NULL, 0, &ignore) + 1;
 
-    char* buf = calloc(length, sizeof(char));
+    char* buf = calloc((size_t)length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
@@ -143,7 +143,7 @@ static UErrorCode GetLocaleIso3166CountryCode(const char* locale, UChar* value, 
 {
     UErrorCode status = U_ZERO_ERROR;
     const char *pIsoCountryName = uloc_getISO3Country(locale);
-    int len = strlen(pIsoCountryName);
+    size_t len = strlen(pIsoCountryName);
 
     if (len == 0)
     {
@@ -333,7 +333,7 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
         default:
             status = U_UNSUPPORTED_ERROR;
             break;
-    };
+    }
 
     return UErrorCodeToBool(status);
 }

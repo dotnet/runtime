@@ -19,15 +19,9 @@ FOR_ALL_ICU_FUNCTIONS
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
 
-#define VERSION_PREFIX_NONE ""
-#define VERSION_PREFIX_SUSE "suse"
-
-// .[suse]x.x.x, considering the max number of decimal digits for each component
-#define MaxICUVersionStringLength (sizeof(VERSION_PREFIX_SUSE) + 33)
-
 #ifdef __APPLE__
 
-static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbolVersion)
+static int FindICULibs()
 {
 #ifndef OSX_ICU_LIBRARY_PATH
     c_static_assert_msg(false, "The ICU Library path is not defined");
@@ -48,6 +42,12 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 }
 
 #else // __APPLE__
+
+#define VERSION_PREFIX_NONE ""
+#define VERSION_PREFIX_SUSE "suse"
+
+// .[suse]x.x.x, considering the max number of decimal digits for each component
+#define MaxICUVersionStringLength (sizeof(VERSION_PREFIX_SUSE) + 33)
 
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
@@ -249,14 +249,26 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 // return 0 if failed to load ICU and 1 otherwise
 int32_t GlobalizationNative_LoadICU()
 {
+#ifdef __APPLE__
+
+    if (!FindICULibs())
+    {
+        return FALSE;
+    }
+
+    // Get pointers to all the ICU functions that are needed
+#define PER_FUNCTION_BLOCK(fn, lib) \
+    fn##_ptr = (__typeof(fn)*)dlsym(lib, #fn); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", #fn, dlerror()); abort(); }
+
+#else // __APPLE__
+
     char symbolName[128];
     char symbolVersion[MaxICUVersionStringLength + 1] = "";
 
     if (!FindICULibs(VERSION_PREFIX_NONE, symbolName, symbolVersion))
     {
-#ifndef __APPLE__
         if (!FindICULibs(VERSION_PREFIX_SUSE, symbolName, symbolVersion))
-#endif
         {
             return FALSE;
         }
@@ -269,13 +281,10 @@ int32_t GlobalizationNative_LoadICU()
     fn##_ptr = (__typeof(fn)*)dlsym(lib, symbolName); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
 
+#endif // __APPLE__
+
     FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
-
-#ifdef __APPLE__
-    // libicui18n initialized with libicuuc so we null it to avoid double closing same handle
-    libicui18n = NULL;
-#endif // __APPLE__
 
     return TRUE;
 }
@@ -287,20 +296,4 @@ int32_t GlobalizationNative_GetICUVersion()
     int32_t version;
     u_getVersion((uint8_t *) &version);
     return version;
-}
-
-__attribute__((destructor))
-void ShutdownICUShim()
-{
-    if (libicuuc != NULL)
-    {
-        dlclose(libicuuc);
-        libicuuc = NULL;
-    }
-
-    if (libicui18n != NULL)
-    {
-        dlclose(libicui18n);
-        libicui18n = NULL;
-    }
 }
