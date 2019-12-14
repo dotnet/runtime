@@ -28,6 +28,11 @@
 #include <dactablerva.h>
 #endif
 
+#ifndef DAC_TABLE_RVA
+size_t dacTableRva = 0x0000000001236cf0;
+#define DAC_TABLE_RVA dacTableRva
+#endif
+
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
