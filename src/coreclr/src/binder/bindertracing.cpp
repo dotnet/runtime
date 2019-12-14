@@ -329,59 +329,67 @@ namespace BinderTracing
 
         Result result;
         StackSString errorMsg;
-        switch (hr)
+        if (!m_exceptionMessage.IsEmpty())
         {
-            case S_FALSE:
-            case HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND):
-                static_assert(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) == COR_E_FILENOTFOUND,
-                                "COR_E_FILENOTFOUND has sane value");
+            errorMsg = m_exceptionMessage;
+            result = Result::Exception;
+        }
+        else
+        {
+            switch (hr)
+            {
+                case S_FALSE:
+                case HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND):
+                    static_assert(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) == COR_E_FILENOTFOUND,
+                                    "COR_E_FILENOTFOUND has sane value");
 
-                result = Result::AssemblyNotFound;
-                errorMsg.Set(W("Could not locate assembly"));
-                break;
+                    result = Result::AssemblyNotFound;
+                    errorMsg.Set(W("Could not locate assembly"));
+                    break;
 
-            case FUSION_E_APP_DOMAIN_LOCKED:
-                result = Result::IncompatibleVersion;
+                case FUSION_E_APP_DOMAIN_LOCKED:
+                    result = Result::IncompatibleVersion;
 
-                {
-                    const auto &reqVersion = m_attemptInfo.AssemblyNameObject->GetVersion();
-                    errorMsg.Printf(W("Requested version %d.%d.%d.%d is incompatible with found version"),
-                        reqVersion->GetMajor(),
-                        reqVersion->GetMinor(),
-                        reqVersion->GetBuild(),
-                        reqVersion->GetRevision());
-                    if (resultAssembly != nullptr)
                     {
-                        const auto &foundVersion = resultAssembly->GetAssemblyName()->GetVersion();
-                        errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
-                            foundVersion->GetMajor(),
-                            foundVersion->GetMinor(),
-                            foundVersion->GetBuild(),
-                            foundVersion->GetRevision());
+                        const auto &reqVersion = m_attemptInfo.AssemblyNameObject->GetVersion();
+                        errorMsg.Printf(W("Requested version %d.%d.%d.%d is incompatible with found version"),
+                            reqVersion->GetMajor(),
+                            reqVersion->GetMinor(),
+                            reqVersion->GetBuild(),
+                            reqVersion->GetRevision());
+                        if (resultAssembly != nullptr)
+                        {
+                            const auto &foundVersion = resultAssembly->GetAssemblyName()->GetVersion();
+                            errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
+                                foundVersion->GetMajor(),
+                                foundVersion->GetMinor(),
+                                foundVersion->GetBuild(),
+                                foundVersion->GetRevision());
+                        }
                     }
-                }
-                break;
+                    break;
 
-            case FUSION_E_REF_DEF_MISMATCH:
-                result = Result::MismatchedAssemblyName;
-                errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_attemptInfo.AssemblyName.GetUnicode());
-                if (resultAssembly != nullptr)
-                    errorMsg.AppendPrintf(W(" '%s'"), resultAssemblyName.GetUnicode());
+                case FUSION_E_REF_DEF_MISMATCH:
+                    result = Result::MismatchedAssemblyName;
+                    errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_attemptInfo.AssemblyName.GetUnicode());
+                    if (resultAssembly != nullptr)
+                        errorMsg.AppendPrintf(W(" '%s'"), resultAssemblyName.GetUnicode());
 
-                break;
+                    break;
 
-            default:
-                if (SUCCEEDED(hr))
-                {
-                    result = Result::Success;
-                    _ASSERTE(resultAssembly != nullptr);
-                    // Leave errorMsg empty in this case.
-                }
-                else
-                {
-                    result = Result::Failure;
-                    errorMsg.Printf(W("Resolution failed with HRESULT (%08x)"), m_hr);
-                }
+                default:
+                    if (SUCCEEDED(hr))
+                    {
+                        result = Result::Success;
+                        _ASSERTE(resultAssembly != nullptr);
+                        // Leave errorMsg empty in this case.
+                    }
+                    else
+                    {
+                        result = Result::Failure;
+                        errorMsg.Printf(W("Resolution failed with HRESULT (%08x)"), m_hr);
+                    }
+            }
         }
 
         FireEtwResolutionAttempted(

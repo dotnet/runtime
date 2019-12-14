@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -185,6 +186,32 @@ namespace BinderTracingTests
             };
         }
 
+        // Exception thrown in AssemblyLoadContext.Load:
+        //   ResolutionAttempted : FindInLoadContext        (CustomALC) [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextLoad  (CustomALC) [Exception]
+        [BinderTest]
+        public static BindOperation AssemblyLoadContextLoad_Exception()
+        {
+            var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
+            var assemblyPath = GetAssemblyInSubdirectoryPath(assemblyName.Name);
+            CustomALC alc = new CustomALC(nameof(AssemblyLoadContextLoad), true /*throwOnLoad*/);
+
+            Assert.Throws<FileLoadException, Exception>(() => alc.LoadFromAssemblyName(assemblyName));
+
+            return new BindOperation()
+            {
+                AssemblyName = assemblyName,
+                AssemblyLoadContext = alc.ToString(),
+                Success = false,
+                Cached = false,
+                ResolutionAttempts = new List<ResolutionAttempt>()
+                {
+                    GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, $"Exception on Load in '{alc.ToString()}'")
+                }
+            };
+        }
+
         // Successful load through default ALC fallback:
         //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
@@ -286,6 +313,35 @@ namespace BinderTracingTests
             }
         }
 
+        // Exception in AssemblyLoadContext.Resolving event handler:
+        //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [Exception]
+        [BinderTest(isolate: true)]
+        public static BindOperation AssemblyLoadContextResolvingEvent_Exception()
+        {
+            var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
+            using (var handlers = new Handlers(HandlerReturn.Exception, AssemblyLoadContext.Default))
+            {
+                Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName));
+
+                return new BindOperation()
+                {
+                    AssemblyName = assemblyName,
+                    AssemblyLoadContext = DefaultALC,
+                    Success = false,
+                    Cached = false,
+                    ResolutionAttempts = new List<ResolutionAttempt>()
+                    {
+                        GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, "Exception in handler for AssemblyLoadContext.Resolving")
+                    },
+                    AssemblyLoadContextResolvingHandlers = handlers.Invocations
+                };
+            }
+        }
+
         // Assembly is found in app path when attempted to load through full path:
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [Success]
@@ -317,6 +373,11 @@ namespace BinderTracingTests
             };
         }
 
+        private static ResolutionAttempt GetResolutionAttempt(AssemblyName assemblyName, ResolutionStage stage, AssemblyLoadContext alc, string exceptionMessage)
+        {
+            return GetResolutionAttempt(assemblyName, stage, alc, ResolutionResult.Exception, null, null, exceptionMessage);
+        }
+
         private static ResolutionAttempt GetResolutionAttempt(AssemblyName assemblyName, ResolutionStage stage, AssemblyLoadContext alc, ResolutionResult result, Assembly resultAssembly = null)
         {
             AssemblyName resultAssemblyName = null;
@@ -330,7 +391,7 @@ namespace BinderTracingTests
             return GetResolutionAttempt(assemblyName, stage, alc, result, resultAssemblyName, resultAssemblyPath);
         }
 
-        private static ResolutionAttempt GetResolutionAttempt(AssemblyName assemblyName, ResolutionStage stage, AssemblyLoadContext alc, ResolutionResult result, AssemblyName resultAssemblyName, string resultAssemblyPath)
+        private static ResolutionAttempt GetResolutionAttempt(AssemblyName assemblyName, ResolutionStage stage, AssemblyLoadContext alc, ResolutionResult result, AssemblyName resultAssemblyName, string resultAssemblyPath, string exceptionMessage = null)
         {
             var attempt = new ResolutionAttempt()
             {
@@ -342,17 +403,24 @@ namespace BinderTracingTests
                 ResultAssemblyPath = resultAssemblyPath
             };
 
-            switch (result)
+            if (!string.IsNullOrEmpty(exceptionMessage))
             {
-                case ResolutionAttempt.ResolutionResult.AssemblyNotFound:
-                    attempt.ErrorMessage = "Could not locate assembly";
-                    break;
-                case ResolutionAttempt.ResolutionResult.IncompatibleVersion:
-                    attempt.ErrorMessage = $"Requested version {assemblyName.Version} is incompatible with found version {resultAssemblyName.Version}";
-                    break;
-                case ResolutionAttempt.ResolutionResult.MismatchedAssemblyName:
-                    attempt.ErrorMessage = $"Requested assembly name '{assemblyName.FullName}' does not match found assembly name '{resultAssemblyName.FullName}'";
-                    break;
+                attempt.ErrorMessage = exceptionMessage;
+            }
+            else
+            {
+                switch (result)
+                {
+                    case ResolutionAttempt.ResolutionResult.AssemblyNotFound:
+                        attempt.ErrorMessage = "Could not locate assembly";
+                        break;
+                    case ResolutionAttempt.ResolutionResult.IncompatibleVersion:
+                        attempt.ErrorMessage = $"Requested version {assemblyName.Version} is incompatible with found version {resultAssemblyName.Version}";
+                        break;
+                    case ResolutionAttempt.ResolutionResult.MismatchedAssemblyName:
+                        attempt.ErrorMessage = $"Requested assembly name '{assemblyName.FullName}' does not match found assembly name '{resultAssemblyName.FullName}'";
+                        break;
+                }
             }
 
             return attempt;

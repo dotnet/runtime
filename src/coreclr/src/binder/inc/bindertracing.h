@@ -123,6 +123,12 @@ namespace BinderTracing
             // resolve the assembly.
             TraceStage(m_stage, m_hr, m_pFoundAssembly);
             m_stage = stage;
+            m_exceptionMessage.Clear();
+        }
+
+        void SetException(Exception *ex)
+        {
+            ex->GetMessage(m_exceptionMessage);
         }
 
 #ifdef FEATURE_EVENT_TRACE
@@ -146,6 +152,7 @@ namespace BinderTracing
             IncompatibleVersion = 2,
             MismatchedAssemblyName = 3,
             Failure = 4,
+            Exception = 5,
         };
 
         // A reference to an HRESULT stored in the same scope as this object lets
@@ -159,6 +166,7 @@ namespace BinderTracing
         AttemptInfo m_attemptInfo;
         bool m_populatedAttemptInfo;
 
+        SString m_exceptionMessage;
         BINDER_SPACE::Assembly *m_pFoundAssembly;
 
         void TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly);

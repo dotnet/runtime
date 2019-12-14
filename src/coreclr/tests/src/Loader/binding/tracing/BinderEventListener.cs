@@ -81,6 +81,7 @@ namespace BinderTracingTests
             IncompatibleVersion,
             MismatchedAssemblyName,
             Failure,
+            Exception,
         }
 
         public AssemblyName AssemblyName { get; internal set; }

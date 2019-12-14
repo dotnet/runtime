@@ -32,9 +32,12 @@ namespace BinderTracingTests
         {
             private string assemblyNameToLoad;
             private string assemblyPathToLoad;
+            private bool throwOnLoad;
 
-            public CustomALC(string name) : base(name)
-            { }
+            public CustomALC(string name, bool throwOnLoad = false) : base(name)
+            {
+                this.throwOnLoad = throwOnLoad;
+            }
 
             public void EnableLoad(string assemblyName, string path)
             {
@@ -44,6 +47,9 @@ namespace BinderTracingTests
 
             protected override Assembly Load(AssemblyName assemblyName)
             {
+                if (throwOnLoad)
+                    throw new Exception($"Exception on Load in '{ToString()}'");
+
                 if (!string.IsNullOrEmpty(assemblyNameToLoad) && assemblyName.Name == assemblyNameToLoad)
                     return LoadFromAssemblyPath(assemblyPathToLoad);
 

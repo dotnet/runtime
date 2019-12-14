@@ -502,6 +502,7 @@
                       <map value="0x2" message="$(string.RuntimePublisher.ResolutionAttempted.MismatchedAssemblyName)"/>
                       <map value="0x3" message="$(string.RuntimePublisher.ResolutionAttempted.IncompatibleVersion)"/>
                       <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.Failure)"/>
+                      <map value="0x5" message="$(string.RuntimePublisher.ResolutionAttempted.Exception)"/>
                     </valueMap>
 
                     <!-- BitMaps -->
@@ -7217,6 +7218,7 @@
                 <string id="RuntimePublisher.ResolutionAttempted.MismatchedAssemblyName" value="MismatchedAssemblyName" />
                 <string id="RuntimePublisher.ResolutionAttempted.IncompatibleVersion" value="IncompatibleVersion" />
                 <string id="RuntimePublisher.ResolutionAttempted.Failure" value="Failure" />
+                <string id="RuntimePublisher.ResolutionAttempted.Exception" value="Exception" />
 
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />
