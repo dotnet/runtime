@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -16,12 +14,12 @@ namespace System.Security.Cryptography
         public Oid(string oid)
         {
             // If we were passed the friendly name, retrieve the value String.
-            string oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
-            if (oidValue == null)
+            string? oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
+            if (oidValue is null)
             {
                 oidValue = oid;
             }
-            this.Value = oidValue;
+            Value = oidValue;
 
             _group = OidGroup.All;
         }
@@ -43,13 +41,13 @@ namespace System.Security.Cryptography
 
         public static Oid FromFriendlyName(string friendlyName, OidGroup group)
         {
-            if (friendlyName == null)
+            if (friendlyName is null)
             {
                 throw new ArgumentNullException(nameof(friendlyName));
             }
 
-            string oidValue = OidLookup.ToOid(friendlyName, group, fallBackToAllGroups: false);
-            if (oidValue == null)
+            string? oidValue = OidLookup.ToOid(friendlyName, group, fallBackToAllGroups: false);
+            if (oidValue is null)
                 throw new CryptographicException(SR.Cryptography_Oid_InvalidName);
 
             return new Oid(oidValue, friendlyName, group);
@@ -57,27 +55,27 @@ namespace System.Security.Cryptography
 
         public static Oid FromOidValue(string oidValue, OidGroup group)
         {
-            if (oidValue == null)
+            if (oidValue is null)
                 throw new ArgumentNullException(nameof(oidValue));
 
-            string friendlyName = OidLookup.ToFriendlyName(oidValue, group, fallBackToAllGroups: false);
-            if (friendlyName == null)
+            string? friendlyName = OidLookup.ToFriendlyName(oidValue, group, fallBackToAllGroups: false);
+            if (friendlyName is null)
                 throw new CryptographicException(SR.Cryptography_Oid_InvalidValue);
 
             return new Oid(oidValue, friendlyName, group);
         }
 
-        public string Value
+        public string? Value
         {
             get { return _value; }
             set { _value = value; }
         }
 
-        public string FriendlyName
+        public string? FriendlyName
         {
             get
             {
-                if (_friendlyName == null && _value != null)
+                if (_friendlyName is null && _value != null)
                 {
                     _friendlyName = OidLookup.ToFriendlyName(_value, _group, fallBackToAllGroups: true);
                 }
@@ -91,7 +89,7 @@ namespace System.Security.Cryptography
                 if (_friendlyName != null)
                 {
                     // If FindOidInfo fails, we return a null String
-                    string oidValue = OidLookup.ToOid(_friendlyName, _group, fallBackToAllGroups: true);
+                    string? oidValue = OidLookup.ToOid(_friendlyName, _group, fallBackToAllGroups: true);
                     if (oidValue != null)
                     {
                         _value = oidValue;
@@ -110,8 +108,8 @@ namespace System.Security.Cryptography
             _group = group;
         }
 
-        private string _value = null;
-        private string _friendlyName = null;
+        private string? _value;
+        private string? _friendlyName = null;
         private readonly OidGroup _group = OidGroup.All;
     }
 }

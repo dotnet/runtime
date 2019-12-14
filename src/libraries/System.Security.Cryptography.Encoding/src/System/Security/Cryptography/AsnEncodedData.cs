@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -13,31 +11,40 @@ namespace System.Security.Cryptography
     {
         protected AsnEncodedData()
         {
+            _oid = null;
+            _rawData = Array.Empty<byte>();
         }
 
         public AsnEncodedData(byte[] rawData)
+            : this ((Oid?)null, rawData)
         {
-            Reset(null, rawData);
+            // nothing to do here
         }
 
         public AsnEncodedData(AsnEncodedData asnEncodedData)
+            : this ()
         {
-            if (asnEncodedData == null)
+            if (asnEncodedData is null)
                 throw new ArgumentNullException(nameof(asnEncodedData));
-            Reset(asnEncodedData._oid, asnEncodedData._rawData);
+            _oid = asnEncodedData._oid;
+            _rawData = asnEncodedData._rawData;
         }
 
-        public AsnEncodedData(Oid oid, byte[] rawData)
+        public AsnEncodedData(Oid? oid, byte[] rawData)
         {
-            Reset(oid, rawData);
+            if (rawData is null)
+                throw new ArgumentNullException(nameof(rawData));
+            _oid = oid;
+            _rawData = rawData;
         }
 
         public AsnEncodedData(string oid, byte[] rawData)
+            : this(new Oid(oid), rawData)
         {
-            Reset(new Oid(oid), rawData);
+            // nothing to do here
         }
 
-        public Oid Oid
+        public Oid? Oid
         {
             get
             {
@@ -46,7 +53,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                _oid = (value == null) ? null : new Oid(value);
+                _oid = (value is null) ? null : new Oid(value);
             }
         }
 
@@ -60,7 +67,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
                 _rawData = value.CloneByteArray();
             }
@@ -68,27 +75,22 @@ namespace System.Security.Cryptography
 
         public virtual void CopyFrom(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
+            if (asnEncodedData is null)
                 throw new ArgumentNullException(nameof(asnEncodedData));
-            Reset(asnEncodedData._oid, asnEncodedData._rawData);
+            _oid = asnEncodedData._oid;
+            _rawData = asnEncodedData._rawData;
         }
 
-        public virtual string Format(bool multiLine)
+        public virtual string? Format(bool multiLine)
         {
             // Return empty string if no data to format.
-            if (_rawData == null || _rawData.Length == 0)
+            if (_rawData.Length == 0)
                 return string.Empty;
 
             return AsnFormatter.Instance.Format(_oid, _rawData, multiLine);
         }
 
-        private void Reset(Oid oid, byte[] rawData)
-        {
-            this.Oid = oid;
-            this.RawData = rawData;
-        }
-
-        private Oid _oid = null;
-        private byte[] _rawData = null;
+        private Oid? _oid;
+        private byte[] _rawData;
     }
 }

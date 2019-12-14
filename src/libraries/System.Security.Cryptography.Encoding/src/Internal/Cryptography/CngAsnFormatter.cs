@@ -7,13 +7,11 @@ using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-using Internal.NativeCrypto;
-
 namespace Internal.Cryptography
 {
     internal sealed class CngAsnFormatter : AsnFormatter
     {
-        protected override string FormatNative(Oid oid, byte[] rawData, bool multiLine)
+        protected override string? FormatNative(Oid? oid, byte[] rawData, bool multiLine)
         {
             // If OID is not present, then we can force CryptFormatObject
             // to use hex formatting by providing an empty OID string.
@@ -29,7 +27,7 @@ namespace Internal.Cryptography
             unsafe
             {
                 IntPtr oidValuePtr = Marshal.StringToHGlobalAnsi(oidValue);
-                char[] pooledarray = null;
+                char[]? pooledarray = null;
                 try
                 {
                     if (Interop.Crypt32.CryptFormatObject(X509_ASN_ENCODING, 0, dwFormatStrType, IntPtr.Zero, (byte*)oidValuePtr, rawData, rawData.Length, null, ref cbFormat))

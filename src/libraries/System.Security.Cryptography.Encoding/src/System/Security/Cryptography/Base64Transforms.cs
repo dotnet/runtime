@@ -8,6 +8,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
@@ -26,7 +27,7 @@ namespace System.Security.Cryptography
         public bool CanTransformMultipleBlocks => false;
         public virtual bool CanReuseTransform => true;
 
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset)
         {
             // inputCount < InputBlockSize is not allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount, InputBlockSize);
@@ -110,7 +111,7 @@ namespace System.Security.Cryptography
 
     public class FromBase64Transform : ICryptoTransform
     {
-        private byte[] _inputBuffer = new byte[4];
+        private byte[]? _inputBuffer = new byte[4];
         private int _inputIndex;
         private readonly FromBase64TransformMode _whitespaces;
 
@@ -129,19 +130,19 @@ namespace System.Security.Cryptography
         public bool CanTransformMultipleBlocks => true;
         public virtual bool CanReuseTransform => true;
 
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset)
         {
             // inputCount != InputBlockSize is allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 
-            if (_inputBuffer == null)
+            if (_inputBuffer is null)
                 ThrowHelper.ThrowObjectDisposed();
 
-            if (outputBuffer == null)
+            if (outputBuffer is null)
                 ThrowHelper.ThrowArgumentNull(ThrowHelper.ExceptionArgument.outputBuffer);
 
             // The common case is inputCount = InputBlockSize
-            byte[] tmpBufferArray = null;
+            byte[]? tmpBufferArray = null;
             Span<byte> tmpBuffer = stackalloc byte[StackAllocSize];
             if (inputCount > StackAllocSize)
             {
@@ -175,7 +176,7 @@ namespace System.Security.Cryptography
             // inputCount != InputBlockSize is allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 
-            if (_inputBuffer == null)
+            if (_inputBuffer is null)
             {
                 ThrowHelper.ThrowObjectDisposed();
             }
@@ -186,7 +187,7 @@ namespace System.Security.Cryptography
             }
 
             // The common case is inputCount <= Base64InputBlockSize
-            byte[] tmpBufferArray = null;
+            byte[]? tmpBufferArray = null;
             Span<byte> tmpBuffer = stackalloc byte[StackAllocSize];
             if (inputCount > StackAllocSize)
             {
@@ -290,7 +291,7 @@ namespace System.Security.Cryptography
             int bytesToTransform = _inputIndex + tmpBuffer.Length;
             Debug.Assert(bytesToTransform >= 4);
 
-            byte[] transformBufferArray = null;
+            byte[]? transformBufferArray = null;
             Span<byte> transformBuffer = stackalloc byte[StackAllocSize];
             if (bytesToTransform > StackAllocSize)
             {
@@ -298,7 +299,7 @@ namespace System.Security.Cryptography
             }
 
             // Copy _inputBuffer to transformBuffer and append tmpBuffer
-            Debug.Assert(_inputIndex < _inputBuffer.Length);
+            Debug.Assert(_inputIndex < _inputBuffer?.Length);
             _inputBuffer.AsSpan(0, _inputIndex).CopyTo(transformBuffer);
             tmpBuffer.CopyTo(transformBuffer.Slice(_inputIndex));
 
@@ -324,7 +325,7 @@ namespace System.Security.Cryptography
             ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
         }
 
-        private void ReturnToCryptoPool(byte[] array, int clearSize)
+        private void ReturnToCryptoPool(byte[]? array, int clearSize)
         {
             if (array != null)
             {
@@ -377,7 +378,7 @@ namespace System.Security.Cryptography
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (inputBuffer == null)
+            if (inputBuffer is null)
                 ThrowArgumentNull(ExceptionArgument.inputBuffer);
 
             if ((uint)inputCount > inputBuffer.Length)
@@ -398,11 +399,22 @@ namespace System.Security.Cryptography
                 ThrowArgumentOutOfRange(ExceptionArgument.inputCount);
         }
 
+        [DoesNotReturn]
         public static void ThrowArgumentNull(ExceptionArgument argument) => throw new ArgumentNullException(argument.ToString());
+
+        [DoesNotReturn]
         public static void ThrowArgumentOutOfRange(ExceptionArgument argument) => throw new ArgumentOutOfRangeException(argument.ToString(), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+        [DoesNotReturn]
         public static void ThrowInvalidOffLen() => throw new ArgumentException(SR.Argument_InvalidOffLen);
+
+        [DoesNotReturn]
         public static void ThrowObjectDisposed() => throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
+
+        [DoesNotReturn]
         public static void ThrowCryptographicException() => throw new CryptographicException(SR.Cryptography_SSE_InvalidDataSize);
+
+        [DoesNotReturn]
         public static void ThrowBase64FormatException() => throw new FormatException();
 
         public enum ExceptionArgument

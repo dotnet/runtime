@@ -13,21 +13,21 @@ namespace Internal.Cryptography
 
         internal static AsnFormatter Instance { get { return s_instance; } }
 
-        public string Format(Oid oid, byte[] rawData, bool multiLine)
+        public string? Format(Oid? oid, byte[] rawData, bool multiLine)
         {
             return FormatNative(oid, rawData, multiLine) ?? EncodeHexString(rawData);
         }
 
-        protected abstract string FormatNative(Oid oid, byte[] rawData, bool multiLine);
+        protected abstract string? FormatNative(Oid? oid, byte[] rawData, bool multiLine);
 
-        protected static string EncodeHexString(byte[] sArray, bool spaceSeparated = false)
+        protected static string? EncodeHexString(byte[] sArray, bool spaceSeparated = false)
         {
             return EncodeHexString(sArray, 0, (uint)sArray.Length, spaceSeparated);
         }
 
-        private static string EncodeHexString(byte[] sArray, uint start, uint end, bool spaceSeparated)
+        private static string? EncodeHexString(byte[]? sArray, uint start, uint end, bool spaceSeparated)
         {
-            string result = null;
+            string? result = null;
 
             if (sArray != null)
             {

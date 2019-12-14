@@ -12,12 +12,12 @@ namespace System.Security.Cryptography
         protected AsnEncodedData() { }
         public AsnEncodedData(byte[] rawData) { }
         public AsnEncodedData(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
-        public AsnEncodedData(System.Security.Cryptography.Oid oid, byte[] rawData) { }
+        public AsnEncodedData(System.Security.Cryptography.Oid? oid, byte[] rawData) { }
         public AsnEncodedData(string oid, byte[] rawData) { }
-        public System.Security.Cryptography.Oid Oid { get { throw null; } set { } }
+        public System.Security.Cryptography.Oid? Oid { get { throw null; } set { } }
         public byte[] RawData { get { throw null; } set { } }
         public virtual void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
-        public virtual string Format(bool multiLine) { throw null; }
+        public virtual string? Format(bool multiLine) { throw null; }
     }
     public sealed partial class AsnEncodedDataCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~FromBase64Transform() { }
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset) { throw null; }
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset) { throw null; }
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { throw null; }
     }
     public enum FromBase64TransformMode
@@ -68,8 +68,8 @@ namespace System.Security.Cryptography
         public Oid(System.Security.Cryptography.Oid oid) { }
         public Oid(string oid) { }
         public Oid(string value, string friendlyName) { }
-        public string FriendlyName { get { throw null; } set { } }
-        public string Value { get { throw null; } set { } }
+        public string? FriendlyName { get { throw null; } set { } }
+        public string? Value { get { throw null; } set { } }
         public static System.Security.Cryptography.Oid FromFriendlyName(string friendlyName, System.Security.Cryptography.OidGroup group) { throw null; }
         public static System.Security.Cryptography.Oid FromOidValue(string oidValue, System.Security.Cryptography.OidGroup group) { throw null; }
     }
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
         public int Count { get { throw null; } }
         public bool IsSynchronized { get { throw null; } }
         public System.Security.Cryptography.Oid this[int index] { get { throw null; } }
-        public System.Security.Cryptography.Oid this[string oid] { get { throw null; } }
+        public System.Security.Cryptography.Oid? this[string oid] { get { throw null; } }
         public object SyncRoot { get { throw null; } }
         public int Add(System.Security.Cryptography.Oid oid) { throw null; }
         public void CopyTo(System.Security.Cryptography.Oid[] array, int index) { }
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~ToBase64Transform() { }
-        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset) { throw null; }
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset) { throw null; }
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { throw null; }
     }
 }

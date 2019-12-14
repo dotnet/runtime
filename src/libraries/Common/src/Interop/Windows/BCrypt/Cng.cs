@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -70,8 +69,7 @@ namespace Internal.NativeCrypto
 
         public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(string pszAlgId, string pszImplementation, OpenAlgorithmProviderFlags dwFlags)
         {
-            SafeAlgorithmHandle hAlgorithm = null;
-            NTSTATUS ntStatus = Interop.BCryptOpenAlgorithmProvider(out hAlgorithm, pszAlgId, pszImplementation, (int)dwFlags);
+            NTSTATUS ntStatus = Interop.BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle hAlgorithm, pszAlgId, pszImplementation, (int)dwFlags);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 throw CreateCryptographicException(ntStatus);
             return hAlgorithm;
@@ -243,11 +241,11 @@ namespace Internal.NativeCrypto
 
     internal sealed class SafeKeyHandle : SafeBCryptHandle
     {
-        private SafeAlgorithmHandle _parentHandle = null;
+        private SafeAlgorithmHandle? _parentHandle = null;
 
         public void SetParentHandle(SafeAlgorithmHandle parentHandle)
         {
-            Debug.Assert(_parentHandle == null);
+            Debug.Assert(_parentHandle is null);
             Debug.Assert(parentHandle != null);
             Debug.Assert(!parentHandle.IsInvalid);
 
