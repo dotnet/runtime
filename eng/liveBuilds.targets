@@ -32,7 +32,7 @@
       <CoreCLRFiles>
         <IsNative>true</IsNative>
       </CoreCLRFiles>
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)**/System.Private.CoreLib.dll" />
       <CoreCLRFiles
         Include="
           $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
