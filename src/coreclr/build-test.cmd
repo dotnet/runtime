@@ -508,6 +508,21 @@ echo { "build_os": "%__BuildOS%", "build_arch": "%__BuildArch%", "build_type": "
 
 REM =========================================================================================
 REM ===
+REM === Copy CoreFX assemblies if needed.
+REM ===
+REM =========================================================================================
+
+if NOT "%__LocalCoreFXPath%"=="" (
+    echo Patch CoreFX from %__LocalCoreFXPath% ^(%__LocalCoreFXConfig%^)
+    set NEXTCMD=python "%__ProjectDir%\tests\scripts\patch-corefx.py" -clr_core_root "%CORE_ROOT%"^
+    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__LocalCoreFXConfig%
+    echo !NEXTCMD!
+    !NEXTCMD!
+)
+
+
+REM =========================================================================================
+REM ===
 REM === Crossgen assemblies if needed.
 REM ===
 REM =========================================================================================
@@ -516,7 +531,7 @@ set __CrossgenArg = ""
 if defined __DoCrossgen (
     set __CrossgenArg="/p:Crossgen=true"
     if "%__TargetsWindows%" == "1" (
-        echo %__MsgPrefix%Running crossgen on framework assemblies
+        echo %__MsgPrefix%Running crossgen on framework assemblies in CORE_ROOT: %CORE_ROOT%
         call :PrecompileFX
     ) else (
         echo "%__MsgPrefix%Crossgen only supported on Windows, for now"
@@ -526,7 +541,7 @@ if defined __DoCrossgen (
 if defined __DoCrossgen2 (
     set __CrossgenArg="/p:Crossgen2=true"
     if "%__BuildArch%" == "x64" (
-        echo %__MsgPrefix%Running crossgen2 on framework assemblies
+        echo %__MsgPrefix%Running crossgen2 on framework assemblies in CORE_ROOT: %CORE_ROOT%
         call :PrecompileFX
     ) else (
         echo "%__MsgPrefix%Crossgen2 only supported on x64, for now"
@@ -609,51 +624,56 @@ exit /b 0
 REM Compile the managed assemblies in Core_ROOT before running the tests
 :PrecompileAssembly
 
-REM Skip mscorlib since it is already precompiled.
-if /I "%2" == "mscorlib.dll" exit /b 0
-if /I "%2" == "mscorlib.ni.dll" exit /b 0
-REM don't precompile anything from CoreCLR
-if /I exist %CORE_ROOT_STAGE%\%2 exit /b 0
+set AssemblyPath=%1
+set AssemblyName=%2
 
 REM Don't precompile xunit.* files
-echo "%2" | findstr /b "xunit." >nul && (
+echo "%AssemblyName%" | findstr /b "xunit." >nul && (
   exit /b 0
 )
 
-set __CrossgenExe="%CORE_ROOT_STAGE%\crossgen.exe"
-if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT_STAGE%\x86\crossgen.exe" )
-if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%CORE_ROOT_STAGE%\x64\crossgen.exe" )
+REM Skip the Win32 API dll's
+if /i "%AssemblyName:~0,4%"=="api-" exit /b 0
+
+set __CrossgenExe="%CORE_ROOT%\crossgen.exe"
+if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT%\x86\crossgen.exe" )
+if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%CORE_ROOT%\x64\crossgen.exe" )
 set __CrossgenExe=%__CrossgenExe%
 
 if defined __DoCrossgen2 (
-    set __CrossgenExe="%CORE_ROOT_STAGE%\crossgen2\crossgen2.exe"
+    set __CrossgenExe="%CORE_ROOT%\crossgen2\crossgen2.exe"
 )
 
-set __CrossgenOutputFile="%CORE_ROOT%\temp.ni.dll"
+REM Intentionally avoid using the .dll extension to prevent
+REM subsequent compilations from picking it up as a reference
+set __CrossgenOutputFile="%CORE_ROOT%\temp.ni._dll"
+set __CrossgenCmd=
 
-if defined __Crossgen (
-    "!__CrossgenExe!" /Platform_Assemblies_Paths "!CORE_ROOT!" /in "%1" /out "!__CrossgenOutputFile" >nul 2>nul
-    set /a __exitCode = !errorlevel!
+if defined __DoCrossgen (
+    set __CrossgenCmd=!__CrossgenExe! /Platform_Assemblies_Paths "!CORE_ROOT!" /in !AssemblyPath! /out !__CrossgenOutputFile!
 ) else (
-    "!CORE_ROOT_STAGE!\crossgen2\crossgen2 -r:"!CORE_ROOT!\*.dll" -O --inputbubble -out:"__CrossgenOutputFile" "%1" >nul 2>nul
-    set /a __exitCode = !errorlevel!
+    set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath!
 )
+
+echo %__CrossgenCmd%
+%__CrossgenCmd%
+set /a __exitCode = !errorlevel!
 
 if "%__exitCode%" == "-2146230517" (
-    echo %2 is not a managed assembly.
+    echo %AssemblyPath% is not a managed assembly.
     exit /b 0
 )
 
 if %__exitCode% neq 0 (
-    echo Unable to precompile %2, Exit Code is %__exitCode%
+    echo Unable to precompile %AssemblyPath%, Exit Code is %__exitCode%
     exit /b 0
 )
 
 REM Delete original .dll & replace it with the Crossgened .dll
-del %1
-ren "%__CrossgenOutputFile%" %2
+del %AssemblyPath%
+ren "%__CrossgenOutputFile%" %AssemblyName%
 
-echo Successfully precompiled %2
+echo Successfully precompiled %AssemblyPath%
 exit /b 0
 
 :Exit_Failure
