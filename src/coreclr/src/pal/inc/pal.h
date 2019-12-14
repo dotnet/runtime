@@ -885,6 +885,21 @@ GetFileAttributesW(
 #define GetFileAttributes GetFileAttributesA
 #endif
 
+#ifdef __linux__
+typedef enum _MEMORY_RESOURCE_NOTIFICATION_TYPE {
+    LowMemoryResourceNotification,
+    HighMemoryResourceNotification,
+} MEMORY_RESOURCE_NOTIFICATION_TYPE;
+
+PALIMPORT
+HANDLE
+PALAPI
+CreateMemoryResourceNotification(
+            MEMORY_RESOURCE_NOTIFICATION_TYPE NotificationType);
+
+#define PAL_HAS_CREATE_MEMORY_RESOURCE_NOTIFICATION
+#endif // __linux__
+
 typedef enum _GET_FILEEX_INFO_LEVELS {
   GetFileExInfoStandard
 } GET_FILEEX_INFO_LEVELS;

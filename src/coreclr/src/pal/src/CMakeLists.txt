@@ -281,6 +281,12 @@ set(SOURCES
   thread/threadsusp.cpp
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+  list(APPEND SOURCES
+    memory/pressure.cpp
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
