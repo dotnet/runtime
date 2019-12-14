@@ -344,10 +344,6 @@ build_Tests()
     fi
 
     if [ $__SkipGenerateLayout != 1 ]; then
-        if [ ! -z "$__LocalCoreFXPath" ]; then
-            patch_corefx_libraries
-        fi
-
         generate_layout
     fi
 }
