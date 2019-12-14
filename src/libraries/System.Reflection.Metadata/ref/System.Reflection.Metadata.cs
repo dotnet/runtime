@@ -3132,6 +3132,7 @@ namespace System.Reflection.Metadata.Ecma335
 }
 namespace System.Reflection.PortableExecutable
 {
+    [System.FlagsAttribute]
     public enum Characteristics : ushort
     {
         RelocsStripped = (ushort)1,
