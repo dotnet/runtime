@@ -5527,7 +5527,7 @@ ClrDataAccess::Initialize(void)
 
     // Determine our platform based on the pre-processor macros set when we were built
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     #if defined(DBG_TARGET_X86)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_X86;
     #elif defined(DBG_TARGET_AMD64)
@@ -7028,7 +7028,7 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
 //
 HRESULT ClrDataAccess::VerifyDlls()
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Provide a knob for disabling this check if we really want to try and proceed anyway with a
     // DAC mismatch.  DAC behavior may be arbitrarily bad - globals probably won't be at the same
     // address, data structures may be laid out differently, etc.
@@ -7249,7 +7249,7 @@ bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
 HRESULT
 ClrDataAccess::GetDacGlobals()
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #ifdef DAC_TABLE_SIZE
     if (DAC_TABLE_SIZE != sizeof(g_dacGlobals))
     {
