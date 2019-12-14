@@ -3,7 +3,7 @@
     <!-- shared configurations between shims and apicompat -->
     <BuildConfigurations>
       $(BuildConfigurations);
-      netcoreapp;;
+      $(NetCoreAppCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 
