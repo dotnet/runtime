@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Options
         /// <typeparam name="TOptions">Options type.</typeparam>
         /// <param name="options">Options object.</param>
         /// <returns>Wrapped options object.</returns>
-        public static IOptions<TOptions> Create<TOptions>(TOptions options) where TOptions : class, new()
+        public static IOptions<TOptions> Create<TOptions>(TOptions options) where TOptions : class
         {
             return new OptionsWrapper<TOptions>(options);
         }
