@@ -52,6 +52,8 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
+        private static readonly bool IsGenericValueType = typeof(T).IsValueType;
+
         // store lower 31 bits of hash code
         private const int Lower31BitMask = 0x7FFFFFFF;
         // cutoff point, above which we won't do stackallocs. This corresponds to 100 integers.
@@ -267,7 +269,7 @@ namespace System.Collections.Generic
                 {
                     int hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
 
-                    if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                    if (IsGenericValueType)
                     {
                         // see note at "HashSet" level describing why "- 1" appears in for loop
                         for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
@@ -369,7 +371,7 @@ namespace System.Collections.Generic
                     hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
                     bucket = hashCode % _buckets!.Length;
 
-                    if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                    if (IsGenericValueType)
                     {
                         for (i = _buckets[bucket] - 1; i >= 0; last = i, i = slots[i].next)
                         {
@@ -1342,7 +1344,7 @@ namespace System.Collections.Generic
                 hashCode = value == null ? 0 : InternalGetHashCode(value.GetHashCode());
                 bucket = hashCode % _buckets!.Length;
 
-                if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (IsGenericValueType)
                 {
                     for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
                     {
@@ -1578,7 +1580,7 @@ namespace System.Collections.Generic
             {
                 int hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
 
-                if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (IsGenericValueType)
                 {
                     // see note at "HashSet" level describing why "- 1" appears in for loop
                     for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
