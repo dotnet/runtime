@@ -81,33 +81,9 @@ namespace System.Collections.Concurrent
             // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
             // the risk of tearing.
             //
-            // See http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-335.pdf
+            // See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
             //
-            Type valueType = typeof(TValue);
-            if (!valueType.IsValueType)
-            {
-                return true;
-            }
-
-            switch (Type.GetTypeCode(valueType))
-            {
-                case TypeCode.Boolean:
-                case TypeCode.Byte:
-                case TypeCode.Char:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.SByte:
-                case TypeCode.Single:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                    return true;
-                case TypeCode.Int64:
-                case TypeCode.Double:
-                case TypeCode.UInt64:
-                    return IntPtr.Size == 8;
-                default:
-                    return false;
-            }
+            return Unsafe.SizeOf<TValue>() <= IntPtr.Size;
         }
 
         /// <summary>
