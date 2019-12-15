@@ -70,21 +70,13 @@ namespace System.Collections.Concurrent
         private const int MaxLockNumber = 1024;
 
         // Whether TValue is a type that can be written atomically (i.e., with no danger of torn reads)
-        private static readonly bool s_isValueWriteAtomic = IsValueWriteAtomic();
-
-        /// <summary>
-        /// Determines whether type TValue can be written atomically
-        /// </summary>
-        private static bool IsValueWriteAtomic()
-        {
-            //
-            // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
-            // the risk of tearing.
-            //
-            // See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
-            //
-            return Unsafe.SizeOf<TValue>() <= IntPtr.Size;
-        }
+        //
+        // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
+        // the risk of tearing.
+        //
+        // See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
+        //
+        private static readonly bool s_isValueWriteAtomic = Unsafe.SizeOf<TValue>() <= IntPtr.Size;
 
         /// <summary>
         /// Initializes a new instance of the <see
