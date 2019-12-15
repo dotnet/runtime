@@ -32,7 +32,11 @@
       <CoreCLRFiles>
         <IsNative>true</IsNative>
       </CoreCLRFiles>
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
+      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
+                             Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')" />
+      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll"
+                             Condition="Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll') and '@(_systemPrivateCoreLib)' == ''" />
+      <CoreCLRFiles Include="@(_systemPrivateCoreLib)" />
       <CoreCLRFiles
         Include="
           $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
