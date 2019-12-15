@@ -71,7 +71,7 @@ namespace System.Threading
             // also check if API is actually functional (-1 means not supported)
             if (Thread.GetCurrentProcessorNumber() < 0)
             {
-                s_processorIdRefreshRate = int.MaxValue;
+                s_processorIdRefreshRate = ProcessorIdCacheCountDownMask;
                 return false;
             }
 
