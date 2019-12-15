@@ -235,7 +235,21 @@ struct FieldSeqNode
     bool IsConstantIndexFieldSeq();
 
     // returns true when this is the the pseudo #FirstElem field sequence or the pseudo #ConstantIndex field sequence
-    bool IsPseudoField();
+    bool IsPseudoField() const;
+
+    CORINFO_FIELD_HANDLE GetFieldHandle() const
+    {
+        assert(!IsPseudoField() && (m_fieldHnd != nullptr));
+        return m_fieldHnd;
+    }
+
+    FieldSeqNode* GetTail()
+    {
+        FieldSeqNode* tail = this;
+        while (tail->m_next != nullptr)
+            tail = tail->m_next;
+        return tail;
+    }
 
     // Make sure this provides methods that allow it to be used as a KeyFuncs type in SimplerHash.
     static int GetHashCode(FieldSeqNode fsn)

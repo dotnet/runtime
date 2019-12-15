@@ -18433,28 +18433,30 @@ private:
             return;
         }
 
-        if (val.Offset() > UINT16_MAX)
-        {
-            // TODO-ADDR: We should morph the address of the indir using MorphLocalAddress,
-            // once the current usage restrictions on LCL_VAR|FLD_ADDR are lifted.
-            return;
-        }
-
         FieldSeqNode* fieldSeq = val.FieldSeq();
 
-        if (indir->OperIs(GT_IND) && (fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
+        if ((fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
         {
-            // If we have an IND node and a field sequence then they should have the same type.
-            // Otherwise it's best to forget the field sequence since the resulting LCL_FLD
-            // doesn't match a real struct field. Value numbering protects itself from such
-            // mismatches but there doesn't seem to be any good reason to generate a LCL_FLD
-            // with a mismatched field sequence only to have to ignore it later.
-
-            assert(!fieldSeq->IsPseudoField());
-
-            if (indir->TypeGet() != JITtype2varType(m_compiler->info.compCompHnd->getFieldType(fieldSeq->m_fieldHnd)))
+            if (indir->OperIs(GT_IND))
             {
-                fieldSeq = nullptr;
+                // If we have an IND node and a field sequence then they should have the same type.
+                // Otherwise it's best to forget the field sequence since the resulting LCL_FLD
+                // doesn't match a real struct field. Value numbering protects itself from such
+                // mismatches but there doesn't seem to be any good reason to generate a LCL_FLD
+                // with a mismatched field sequence only to have to ignore it later.
+
+                if (indir->TypeGet() !=
+                    JITtype2varType(m_compiler->info.compCompHnd->getFieldType(fieldSeq->GetTail()->GetFieldHandle())))
+                {
+                    fieldSeq = nullptr;
+                }
+            }
+            else if (indir->OperIs(GT_FIELD))
+            {
+                // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
+                // handle so we cannot use FieldSeqNode::GetFieldHandle() because it asserts on such
+                // handles. ObjectAllocator should be changed to create LCL_FLD nodes directly.
+                assert(fieldSeq->GetTail()->m_fieldHnd == indir->AsField()->gtFldHnd);
             }
         }
 
