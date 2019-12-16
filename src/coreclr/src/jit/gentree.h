@@ -247,7 +247,9 @@ struct FieldSeqNode
     {
         FieldSeqNode* tail = this;
         while (tail->m_next != nullptr)
+        {
             tail = tail->m_next;
+        }
         return tail;
     }
 
