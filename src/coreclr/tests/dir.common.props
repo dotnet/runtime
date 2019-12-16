@@ -1,4 +1,5 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
+
   <Import Project="../Directory.Build.props" />
 
   <!-- This file contains common build properties for projects under
@@ -14,14 +15,13 @@
 
     <TestRelativeBasePath Condition="'$(TestRelativeBasePath)' == ''">$(MSBuildThisFileDirectory)src</TestRelativeBasePath>
     <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestRelativeBasePath), $(MSBuildProjectDirectory)))</BuildProjectRelativeDir>
-    <BuildProjectRelativeDir>$([MSBuild]::NormalizeDirectory('$(BuildProjectRelativeDir)', '$(MSBuildProjectName)'))</BuildProjectRelativeDir>
 
     <!-- BaseIntermediateOutputPath is used by the SDK as the location
          for the lock file, and props/targets from nuget packages. -->
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', 'obj', '$(OSPlatformConfig)', 'Managed', '$(BuildProjectRelativeDir)'))</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', 'obj', '$(OSPlatformConfig)', 'Managed', '$(BuildProjectRelativeDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
 
-    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(OSPlatformConfig)', '$(BuildProjectRelativeDir)'))</BaseOutputPath>
+    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(OSPlatformConfig)', '$(BuildProjectRelativeDir)', '$(MSBuildProjectName)'))</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
   </PropertyGroup>
   
@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(__SkipFXRestore)' == 'true' AND '$(ReferenceSystemPrivateCoreLib)' != 'true'" >
-    <Reference Include="$(__LocalCoreFXPath)\artifacts\bin\ref\$(NetCoreAppCurrent)\*.dll" Private="false" />
+    <Reference Include="$(ArtifactsBinDir)ref\$(NetCoreAppCurrent)\*.dll" Private="false" />
   </ItemGroup>
   
 </Project>

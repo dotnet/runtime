@@ -1,11 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
+
   <Import Project="dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
   <Import Project="dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
   <PropertyGroup>
     <LangVersion>8.0</LangVersion>
     <UseSharedCompilation>true</UseSharedCompilation>
+    <IsShipping>false</IsShipping>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -15,16 +16,14 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <TestProjectDir>$(MSBuildThisFileDirectory)</TestProjectDir>
-    <TestSourceDir>$(MSBuildThisFileDirectory)src\</TestSourceDir>
+    <CoreClrTestDir>$(MSBuildThisFileDirectory)</CoreClrTestDir>
+    <TestSourceDir>$(ProjectDir)src\</TestSourceDir>
   </PropertyGroup>
 
   <!-- Common properties -->
   <PropertyGroup>
-    <RootBinDir>$(MSBuildThisFileDirectory)..\..\..\artifacts\</RootBinDir>
-    <BinDir>$(RootBinDir)bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
-
-    <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
-    <TestWorkingDir>$(RootBinDir)tests\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
+    <BinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(OSPlatformConfig)'))</BinDir>
+    <TestWorkingDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(OSPlatformConfig)'))</TestWorkingDir>
 
     <AltJitArch>$(__AltJitArch)</AltJitArch>
   </PropertyGroup>
@@ -33,14 +32,14 @@
   <PropertyGroup>
     <!-- When not using the SDK, we want to set this property here so
          that BuildVersionFile gets the correct value. -->
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == '' Or '$(UsingMicrosoftNETSdk)' != 'true'">$(RootBinDir)obj\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</IntermediateOutputPath>
-    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\coreclr\$(BuildOS).$(BuildArch).$(BuildType)</OutputPath>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == '' Or '$(UsingMicrosoftNETSdk)' != 'true'">$(ArtifactsObjDir)</BaseIntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(OSPlatformConfig)</IntermediateOutputPath>
+    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\coreclr\$(OSPlatformConfig)</OutputPath>
   </PropertyGroup>
 
     <!-- Targeting Package paths -->
   <PropertyGroup>
-    <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(RootBinDir)TargetingPack\</TargetingPackPath>
+    <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(ArtifactsDir)TargetingPack\</TargetingPackPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">

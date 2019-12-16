@@ -197,6 +197,7 @@
   <Target Name="CopyAllNativeProjectReferenceBinaries" DependsOnTargets="ResolveCmakeNativeProjectReference;ConsolidateNativeProjectReference" />
 
   <Target Name="UpdateReferenceItems"
+          Condition="'$(UseLiveBuild)' != 'false'"
           BeforeTargets="BeforeResolveReferences"
   >
    <MSBuild Projects="$(MSBuildProjectFullPath)"
@@ -214,6 +215,7 @@
   </Target>
 
   <Target Name="GetLiveRefAssemblies" Returns="@(LibrariesRefAssembliesDlls)"
+          Condition="'$(UseLiveBuild)' != 'false'"
           DependsOnTargets="ResolveLibrariesFromLocalBuild">
     <ItemGroup>
       <LibrariesRefAssembliesDlls Include="@(LibrariesRefAssemblies)" Condition="'%(Extension)' == '.dll'" Private="false" />
@@ -223,28 +225,20 @@
   <Target Name="AfterBuild">
      <Copy SourceFiles="$(AssemblyName).reflect.xml"
            DestinationFolder="$(OutputPath)"
-       Condition="Exists('$(AssemblyName).reflect.xml')"/>
+           Condition="Exists('$(AssemblyName).reflect.xml')"/>
   </Target>
 
-  <PropertyGroup>
-    <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' != 'true'">
-    <ProjectAssetsFile></ProjectAssetsFile>
-  </PropertyGroup>
-
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(UseLiveBuild)' != 'false'">
+    <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
     <TargetArchitecture>$(BuildArch)</TargetArchitecture>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets"/>
+  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' != 'true'">
+    <ProjectAssetsFile />
+  </PropertyGroup>
 
   <Import Project="../../clr.featuredefines.props" />
 </Project>

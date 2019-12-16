@@ -93,12 +93,13 @@ $(_XunitEpilog)
         <![CDATA[
 <Project>
 
-  <Import Project="$(TestProjectDir)dir.sdkbuild.props" />
-
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
     <TestRelativeBasePath>$(XunitTestBinBase)\</TestRelativeBasePath>
     <RuntimeFrameworkVersion Condition="'$(__SkipFXRestore)' != 'true'">$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+    <DirectoryBuildPropsPath>$(CoreClrTestDir)Directory.Build.props</DirectoryBuildPropsPath>
+    <DirectoryBuildTargetsPath>$(CoreClrTestDir)Directory.Build.targets</DirectoryBuildTargetsPath>
+    <UseLiveBuild>false</UseLiveBuild>
  </PropertyGroup>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />

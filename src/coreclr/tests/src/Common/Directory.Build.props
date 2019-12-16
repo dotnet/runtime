@@ -2,9 +2,8 @@
 
   <Import Project="..\Directory.Build.props" />
 
-  <!-- This is only imported by helper tools which don't ship. -->
   <PropertyGroup>
-    <IsShipping>false</IsShipping>
+    <UseLiveBuild>false</UseLiveBuild>
   </PropertyGroup>
 
 </Project>

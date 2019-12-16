@@ -11,6 +11,7 @@
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
     <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+    <UseLiveBuild>true</UseLiveBuild>
   </PropertyGroup>
 
   <ItemGroup>
