@@ -335,8 +335,10 @@ HRESULT EEConfig::Init()
     fTieredCompilation_QuickJit = false;
     fTieredCompilation_QuickJitForLoops = false;
     fTieredCompilation_CallCounting = false;
+    fTieredCompilation_UseCallCountingStubs = false;
     tieredCompilation_CallCountThreshold = 1;
     tieredCompilation_CallCountingDelayMs = 0;
+    tieredCompilation_DeleteCallCountingStubsAfter = 0;
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -1203,14 +1205,19 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
         fTieredCompilation_CallCounting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCounting) != 0;
 
-        tieredCompilation_CallCountThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountThreshold);
-        if (tieredCompilation_CallCountThreshold < 1)
+        DWORD tieredCompilation_ConfiguredCallCountThreshold =
+            CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountThreshold);
+        if (tieredCompilation_ConfiguredCallCountThreshold == 0)
         {
             tieredCompilation_CallCountThreshold = 1;
         }
-        else if (tieredCompilation_CallCountThreshold > INT_MAX) // CallCounter uses 'int'
+        else if (tieredCompilation_ConfiguredCallCountThreshold > CallCountingManager::MaximumCallCountThreshold)
         {
-            tieredCompilation_CallCountThreshold = INT_MAX;
+            tieredCompilation_CallCountThreshold = CallCountingManager::MaximumCallCountThreshold;
+        }
+        else
+        {
+            tieredCompilation_CallCountThreshold = (UINT16)tieredCompilation_ConfiguredCallCountThreshold;
         }
 
         tieredCompilation_CallCountingDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountingDelayMs);
@@ -1231,6 +1238,23 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
                     tieredCompilation_CallCountingDelayMs = newDelay;
                 }
             }
+        }
+
+        if (fTieredCompilation_CallCounting)
+        {
+            fTieredCompilation_UseCallCountingStubs =
+                CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_UseCallCountingStubs) != 0;
+            if (fTieredCompilation_UseCallCountingStubs)
+            {
+                tieredCompilation_DeleteCallCountingStubsAfter =
+                    CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_DeleteCallCountingStubsAfter);
+            }
+        }
+
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_TC_AggressiveTiering) != 0)
+        {
+            tieredCompilation_CallCountThreshold = 1;
+            tieredCompilation_CallCountingDelayMs = 0;
         }
 
         if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())

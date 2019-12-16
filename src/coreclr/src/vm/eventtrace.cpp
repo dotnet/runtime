@@ -7003,9 +7003,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 #ifdef FEATURE_CODE_VERSIONING
         if (fGetCodeIds && pMD->IsVersionable())
         {
-            CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-            _ASSERTE(pCodeVersionManager->LockOwnedByCurrentThread());
-            nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, codeStart);
+            _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+            nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, codeStart);
             if (nativeCodeVersion.IsNull())
             {
                 // The code version manager hasn't been updated with the jitted code
@@ -7142,7 +7141,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
 #ifdef FEATURE_CODE_VERSIONING
         if (pDomainFilter)
         {
-            CodeVersionManager::TableLockHolder lkRejitMgrModule(pDomainFilter->GetCodeVersionManager());
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             SendEventsForJitMethodsHelper(
                 pLoaderAllocatorFilter,
                 dwEventOptions,

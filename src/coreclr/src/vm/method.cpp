@@ -4885,7 +4885,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot(
     WRAPPER_NO_CONTRACT;
 
     LoaderAllocator *mdLoaderAllocator = GetLoaderAllocator();
-    MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder;
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
     RecordAndBackpatchEntryPointSlot_Locked(
         mdLoaderAllocator,
@@ -4906,7 +4906,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     PCODE currentEntryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
     _ASSERTE(mdLoaderAllocator != nullptr);
     _ASSERTE(mdLoaderAllocator == GetLoaderAllocator());
     _ASSERTE(slotLoaderAllocator != nullptr);
@@ -4935,7 +4935,7 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
     _ASSERTE(entryPoint != NULL);
     _ASSERTE(isPrestubEntryPoint == (entryPoint == GetPrestubEntryPointToBackpatch()));
     _ASSERTE(!isPrestubEntryPoint || !onlyFromPrestubEntryPoint);
-    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
 
     LoaderAllocator *mdLoaderAllocator = GetLoaderAllocator();
     MethodDescBackpatchInfoTracker *backpatchInfoTracker = mdLoaderAllocator->GetMethodDescBackpatchInfoTracker();
@@ -5097,7 +5097,7 @@ void MethodDesc::SetMethodEntryPoint(PCODE addr)
 
     // Similarly to GetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
     // synchronized. Currently, the only caller synchronizes with the following lock.
-    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
 
     TADDR pSlot = GetAddrOfSlot();
 

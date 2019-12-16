@@ -7,46 +7,6 @@
 #include "asmconstants.h"
 
 //
-// FramedMethodFrame prolog
-//
-.macro STUB_PROLOG
-    // push ebp-frame
-    PROLOG_BEG
-
-    // save CalleeSavedRegisters
-    PROLOG_PUSH ebx
-    PROLOG_PUSH esi
-    PROLOG_PUSH edi
-
-    // push ArgumentRegisters
-    PROLOG_PUSH ecx
-    PROLOG_PUSH edx
-
-    // set frame pointer
-    PROLOG_END
-.endm
-
-//
-// FramedMethodFrame epilog
-//
-.macro STUB_EPILOG
-    // restore stack pointer
-    EPILOG_BEG
-
-    // pop ArgumentRegisters
-    EPILOG_POP edx
-    EPILOG_POP ecx
-
-    // pop CalleeSavedRegisters
-    EPILOG_POP edi
-    EPILOG_POP esi
-    EPILOG_POP ebx
-
-    // pop ebp-frame
-    EPILOG_END
-.endm
-
-//
 // FramedMethodFrame epilog
 //
 .macro STUB_EPILOG_RETURN

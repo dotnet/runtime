@@ -34,43 +34,79 @@ public:
 #ifdef FEATURE_TIERED_COMPILATION
 
 public:
-    bool OnMethodCodeVersionCalledFirstTime(MethodDesc* pMethodDesc);
-    bool OnMethodCodeVersionCalledSubsequently(MethodDesc* pMethodDesc);
-    void AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc);
-    void Shutdown();
+    void HandleCallCountingForFirstCall(MethodDesc* pMethodDesc);
+    bool TrySetCodeEntryPointAndRecordMethodForCallCounting(MethodDesc* pMethodDesc, PCODE codeEntryPoint);
+    void AsyncPromoteToTier1(NativeCodeVersion tier0NativeCodeVersion, bool *scheduleTieringBackgroundWorkRef);
     static CORJIT_FLAGS GetJitFlags(NativeCodeVersion nativeCodeVersion);
 
 private:
     bool IsTieringDelayActive();
-    bool TryInitiateTieringDelay();
     static void WINAPI TieringDelayTimerCallback(PVOID parameter, BOOLEAN timerFired);
-    static void TieringDelayTimerCallbackInAppDomain(LPVOID parameter);
-    void TieringDelayTimerCallbackWorker();
+    void DeactivateTieringDelay();
 
-    bool TryAsyncOptimizeMethods();
-    static DWORD StaticOptimizeMethodsCallback(void* args);
-    void OptimizeMethodsCallback();
-    void OptimizeMethods();
+public:
+    void AsyncCompleteCallCounting();
+
+public:
+    void ScheduleBackgroundWork();
+private:
+    void RequestBackgroundWork();
+    static DWORD StaticBackgroundWorkCallback(void* args);
+    void DoBackgroundWork();
+
+private:
     void OptimizeMethod(NativeCodeVersion nativeCodeVersion);
     NativeCodeVersion GetNextMethodToOptimize();
     BOOL CompileCodeVersion(NativeCodeVersion nativeCodeVersion);
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
 
-    bool IncrementWorkerThreadCountIfNeeded();
-    void DecrementWorkerThreadCount();
+#ifndef DACCESS_COMPILE
+private:
+    static CrstStatic s_lock;
+
+public:
+    static void StaticInitialize()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        // CodeVersionManager's lock is also CRST_UNSAFE_ANYMODE. To avoid having to unnecessarily take the TieredCompilation
+        // lock for larger sections of code before the CodeVersionManager's lock, it is instead taken after the
+        // CodeVersionManager's lock for the few cases where both locks need to be held, so it must also be CRST_UNSAFE_ANYMODE.
+        s_lock.Init(CrstTieredCompilation, CrstFlags(CRST_UNSAFE_ANYMODE));
+    }
+
 #ifdef _DEBUG
-    DWORD DebugGetWorkerThreadCount();
+public:
+    static bool IsLockOwnedByCurrentThread();
 #endif
 
-    Crst m_lock;
+public:
+    class LockHolder : private CrstHolder
+    {
+    public:
+        LockHolder() : CrstHolder(&s_lock)
+        {
+            WRAPPER_NO_CONTRACT;
+        }
+
+        LockHolder(const LockHolder &) = delete;
+        LockHolder &operator =(const LockHolder &) = delete;
+    };
+
+private:
+    class AutoResetIsBackgroundWorkScheduled;
+#endif // !DACCESS_COMPILE
+
+private:
     SList<SListElem<NativeCodeVersion>> m_methodsToOptimize;
     UINT32 m_countOfMethodsToOptimize;
-    BOOL m_isAppDomainShuttingDown;
-    DWORD m_countOptimizationThreadsRunning;
     UINT32 m_countOfNewMethodsCalledDuringDelay;
     SArray<MethodDesc*>* m_methodsPendingCountingForTier1;
     HANDLE m_tieringDelayTimerHandle;
+    bool m_isBackgroundWorkScheduled;
     bool m_tier1CallCountingCandidateMethodRecentlyRecorded;
+    bool m_isPendingCallCountingCompletion;
+    bool m_recentlyRequestedCallCountingCompletionAgain;
 
     CLREvent m_asyncWorkDoneEvent;
 

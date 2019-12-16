@@ -20,6 +20,7 @@
         .586
         .model  flat
 
+include asmmacros.inc
 include asmconstants.inc
 
         assume fs: nothing
@@ -137,39 +138,6 @@ endif
 
 endm  ; POP_CPFH_FOR_COM
 endif ; FEATURE_COMINTEROP
-
-;
-; FramedMethodFrame prolog
-;
-STUB_PROLOG  macro
-    ; push ebp-frame
-    push        ebp
-    mov         ebp,esp
-
-    ; save CalleeSavedRegisters
-    push        ebx
-    push        esi
-    push        edi
-
-    ; push ArgumentRegisters
-    push        ecx
-    push        edx
-endm
-
-;
-; FramedMethodFrame epilog
-;
-STUB_EPILOG macro
-    ; pop ArgumentRegisters
-    pop     edx
-    pop     ecx
-
-    ; pop CalleeSavedRegisters
-    pop edi
-    pop esi
-    pop ebx
-    pop ebp
-endm
 
 ;
 ; FramedMethodFrame epilog
