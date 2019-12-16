@@ -82,23 +82,19 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientEKUTest(ITestOutputHelper output) : base(output) { }
     }
 
-/*#if NETCOREAPP
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
+#if NETCOREAPP
     public sealed class PlatformHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
     {
         public PlatformHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
     {
         public PlatformHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test(ITestOutputHelper output) : base(output) { }
     }
 #endif
 
-    // Test only WinHttpHandler since the CurlHandler was removed
+    /*// Test only WinHttpHandler since the CurlHandler was removed
     [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test
     {

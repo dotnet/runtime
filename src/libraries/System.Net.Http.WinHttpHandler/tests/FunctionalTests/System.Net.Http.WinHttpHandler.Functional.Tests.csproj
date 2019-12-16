@@ -74,8 +74,14 @@
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs">
       <Link>Common\System\Threading\TrackingSynchronizationContext.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.AcceptAllCerts.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.AcceptAllCerts.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Asynchrony.cs">
       <Link>Common\System\Net\HttpClientHandlerTest.Asynchrony.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Decompression.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.Decompression.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpProtocolTests.cs">
       <Link>Common\System\Net\HttpProtocolTests.cs</Link>
@@ -91,5 +97,8 @@
     <Compile Include="ServerCertificateTest.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
   </ItemGroup>
 </Project>
