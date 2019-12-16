@@ -12,17 +12,17 @@
   <PropertyGroup>
     <OSPlatformConfig>$(BuildOS).$(Platform).$(Configuration)</OSPlatformConfig>
 
-    <TestSrcDir>$(MSBuildThisFileDirectory)src</TestSrcDir>
-    <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSrcDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
+    <TestRelativeBasePath Condition="'$(TestRelativeBasePath)' == ''">$(MSBuildThisFileDirectory)src</TestRelativeBasePath>
+    <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestRelativeBasePath), $(MSBuildProjectDirectory)))</BuildProjectRelativeDir>
+    <BuildProjectRelativeDir>$([MSBuild]::NormalizeDirectory('$(BuildProjectRelativeDir)', '$(MSBuildProjectName)'))</BuildProjectRelativeDir>
 
     <!-- BaseIntermediateOutputPath is used by the SDK as the location
          for the lock file, and props/targets from nuget packages. -->
-    <BaseIntermediateOutputPath>$(RootRepoDir)/artifacts/tests/coreclr/obj/$(OSPlatformConfig)/Managed/$(BuildProjectRelativeDir)</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', 'obj', '$(OSPlatformConfig)', 'Managed', '$(BuildProjectRelativeDir)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
 
-    <BaseOutputPath>$(RootRepoDir)/artifacts/tests/coreclr/$(OSPlatformConfig)/$(BuildProjectRelativeDir)</BaseOutputPath>
+    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(OSPlatformConfig)', '$(BuildProjectRelativeDir)'))</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
-
   </PropertyGroup>
   
   <PropertyGroup>

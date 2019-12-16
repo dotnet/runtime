@@ -97,6 +97,7 @@ $(_XunitEpilog)
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
+    <TestRelativeBasePath>$(XunitTestBinBase)\</TestRelativeBasePath>
     <RuntimeFrameworkVersion Condition="'$(__SkipFXRestore)' != 'true'">$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
  </PropertyGroup>
 
