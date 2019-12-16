@@ -139,7 +139,12 @@ $(_XunitEpilog)
   </Target>
 
   <Target Name="BuildXunitWrapper">
-    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" />
+    <!--
+      Restore and Build tasks shouldn't run in the same msbuild invocation as that could cause
+      issues with nuget auto-generated props/targets.
+    -->
+    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore" />
+    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Build" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)../testgrouping.proj" />
