@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release</Configurations>
-    <DefineConstants Condition="'$(TargetGroup)'!='net472'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
+    <DefineConstants Condition="'$(TargetsNetFx)' != 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
@@ -112,17 +112,6 @@
     <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
-    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
-      <Link>CommonTest\System\Buffers\ArrayBufferWriter.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="JsonArrayTests.cs" />
     <Compile Include="JsonBooleanTests.cs" />
     <Compile Include="JsonElementWithNodeParentTests.cs" />
@@ -135,5 +124,16 @@
     <Compile Include="JsonNumberTests.cs" />
     <Compile Include="JsonObjectTests.cs" />
     <Compile Include="JsonStringTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
+      <Link>CommonTest\System\Buffers\ArrayBufferWriter.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
 </Project>

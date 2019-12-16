@@ -51,7 +51,7 @@
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetFrameworkCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
