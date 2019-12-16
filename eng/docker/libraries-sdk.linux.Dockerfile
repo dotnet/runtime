@@ -9,7 +9,7 @@ COPY . .
 
 ARG CONFIGURATION=Release
 ARG BUILD_SCRIPT_NAME=libraries
-RUN ./coreclr/build.sh -release -skiptests -clang9 && \
+RUN ./src/coreclr/build.sh -release -skiptests -clang9 && \
     ./libraries.sh -c $CONFIGURATION /p:CoreCLRConfiguration=Release
 
 FROM $SDK_BASE_IMAGE as target
