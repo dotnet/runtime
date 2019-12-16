@@ -767,6 +767,7 @@ check_valid_generic_inst_arguments (MonoGenericInst *inst, MonoError *error)
 /*
  * Create the `MonoClass' for an instantiation of a generic type.
  * We only do this if we actually need it.
+ * This will sometimes return a GTD due to checking the cached_class.
  */
 MonoClass*
 mono_class_create_generic_inst (MonoGenericClass *gclass)
@@ -4140,10 +4141,20 @@ static void
 setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache)
 {
 	MonoGenericContext tmp_context;
+	MonoGenericClass *gclass;
 	int i;
 
+	// The interface can sometimes be a GTD in cases like IList
+	// See: https://github.com/mono/mono/issues/7095#issuecomment-470465597
+	if (mono_class_is_gtd (iface)) {
+		MonoType *ty = mono_class_gtd_get_canonical_inst (iface);
+		g_assert (ty->type == MONO_TYPE_GENERICINST);
+		gclass = ty->data.generic_class;
+	} else
+		gclass = mono_class_get_generic_class (iface);
+
 	tmp_context.class_inst = NULL;
-	tmp_context.method_inst = mono_class_get_generic_class (iface)->context.class_inst;
+	tmp_context.method_inst = gclass->context.class_inst;
 	//g_print ("setting up array interface: %s\n", mono_type_get_name_full (m_class_get_byval_arg (iface), 0));
 
 	for (i = 0; i < generic_array_method_num; i++) {
