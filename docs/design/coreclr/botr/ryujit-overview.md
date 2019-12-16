@@ -491,20 +491,20 @@ For example, this:
 ```
 t47 =    LCL_VAR   ref    V00 arg0
 t48 =    LCL_VAR   int    V01 arg1
-     ┌──▌  t48    int
+      ┌──▌  t48    int
 t51 = ▌  CAST      long <- int
 t52 =    CNS_INT   long   2
-     ┌──▌  t51    long
-     ├──▌  t52    long
+      ┌──▌  t51    long
+      ├──▌  t52    long
 t53 = ▌  LSH       long
 t54 =    CNS_INT   long   16 Fseq[#FirstElem]
-     ┌──▌  t53    long
-     ├──▌  t54    long
+      ┌──▌  t53    long
+      ├──▌  t54    long
 t55 = ▌  ADD       long
-     ┌──▌  t47    ref
-     ├──▌  t55    long
+      ┌──▌  t47    ref
+      ├──▌  t55    long
 t56 = ▌  ADD       byref
-     ┌──▌  t56    byref
+      ┌──▌  t56    byref
 t44 = ▌  IND       int
 ```
 
@@ -513,14 +513,19 @@ Is transformed into this, in which the addressing mode is explicit:
 ```
 t47 =    LCL_VAR   ref    V00 arg0
 t48 =    LCL_VAR   int    V01 arg1
-     ┌──▌  t48    int
+      ┌──▌  t48    int
 t51 = ▌  CAST      long <- int
-     ┌──▌  t47    ref
-     ├──▌  t51    long
+      ┌──▌  t47    ref
+      ├──▌  t51    long
 t79 = ▌  LEA(b+(i*4)+16) byref
-     ┌──▌  t79    byref
+      ┌──▌  t79    byref
 t44 = ▌  IND       int
 ```
+Sometimes `Lowering` will insert nodes into the execution order before the node that it is currently handling.
+In such cases, it must ensure that they themselves are properly lowered. This includes:
+
+* Generating only legal `LIR` nodes that do not themselves require lowering.
+* Performing any needed containment analysis (e.g. `ContainCheckRange()`) on the newly added node(s).
 
 After all nodes are lowered, liveness is run in preparation for register allocation.
 

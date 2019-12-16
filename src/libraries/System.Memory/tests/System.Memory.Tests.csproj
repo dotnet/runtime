@@ -4,7 +4,7 @@
     <IncludePartialFacadeTests>true</IncludePartialFacadeTests>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Byte.cs" />

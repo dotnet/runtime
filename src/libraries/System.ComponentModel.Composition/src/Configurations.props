@@ -6,8 +6,8 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      _netfx;
-      netcoreapp;
+      _$(NetFrameworkCurrent);
+      $(NetCoreAppCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -5,9 +5,9 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netcoreapp;
-      <!-- Use inbox facade on netfx -->
-      _netfx;
+      $(NetCoreAppCurrent);
+      <!-- Use inbox facade on $(NetFrameworkCurrent) -->
+      _$(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
