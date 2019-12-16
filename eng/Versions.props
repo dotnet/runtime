@@ -51,6 +51,14 @@
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>5.0.0-alpha1.19563.3</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNETSdkILVersion>5.0.0-alpha1.19563.3</MicrosoftNETSdkILVersion>
+    <XunitPerformanceApiVersion>1.0.0-beta-build0015</XunitPerformanceApiVersion>
+    <MicrosoftDiagnosticsTracingTraceEventVersion>2.0.43</MicrosoftDiagnosticsTracingTraceEventVersion>
+    <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
+    <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
+    <!-- Scenario tests install this version of Microsoft.NetCore.App, then patch coreclr binaries via xcopy. At the moment it is
+         updated manually whenever breaking changes require it to move forward, but it would be nice if we could update it automatically
+         as we do with many of the package versions above -->
+    <BaselineMicrosoftNetCoreAppVersion>2.1.0-preview3-26416-01</BaselineMicrosoftNetCoreAppVersion>
     <!-- Libraries dependencies -->
     <SystemTextJsonVersion>5.0.0-alpha.1.19563.6</SystemTextJsonVersion>
     <SystemTextEncodingsWebVersion>5.0.0-alpha.1.19563.6</SystemTextEncodingsWebVersion>
@@ -87,7 +95,6 @@
     <!-- Testing -->
     <MicrosoftNETTestSdkVersion>16.5.0-preview-20200103-01</MicrosoftNETTestSdkVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
-    <TraceEventVersion>2.0.5</TraceEventVersion>
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
     <XUnitXmlTestLoggerVersion>2.1.26</XUnitXmlTestLoggerVersion>
     <MoqVersion>4.12.0</MoqVersion>

@@ -325,7 +325,7 @@ def main(args):
         sys.exit(1)
 
     # Override the built corefx runtime (which it picked up by copying from packages determined
-    # by its dependencies.props file). Note that we always build Release corefx.
+    # by its Versions.props file). Note that we always build Release corefx.
     # We must copy all files, not just the files that already exist in the corefx runtime
     # directory. This is required so we copy over all altjit compilers.
     #

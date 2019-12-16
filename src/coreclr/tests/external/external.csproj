@@ -71,11 +71,11 @@
 
     <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="1.1.1" />
     <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
-    <PackageReference Include="xunit.performance.api" Version="$(XunitPerformanceApiPackageVersion)" />
-    <PackageReference Include="xunit.performance.core" Version="$(XunitPerformanceApiPackageVersion)" />
-    <PackageReference Include="xunit.performance.execution" Version="$(XunitPerformanceApiPackageVersion)" />
-    <PackageReference Include="xunit.performance.metrics" Version="$(XunitPerformanceApiPackageVersion)" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)" />
+    <PackageReference Include="xunit.performance.api" Version="$(XunitPerformanceApiVersion)" />
+    <PackageReference Include="xunit.performance.core" Version="$(XunitPerformanceApiVersion)" />
+    <PackageReference Include="xunit.performance.execution" Version="$(XunitPerformanceApiVersion)" />
+    <PackageReference Include="xunit.performance.metrics" Version="$(XunitPerformanceApiVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(MicrosoftDiagnosticsTracingTraceEventVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="xunit" Version="$(XUnitVersion)" />
     <PackageReference Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" GeneratePathProperty="True" />
