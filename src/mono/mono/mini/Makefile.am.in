@@ -825,7 +825,7 @@ MemoryIntrinsics.dll: MemoryIntrinsics.il
 
 GENMDESC_OPTS=
 
-GENMDESC_PRG=python $(srcdir)/genmdesc.py $(target_define) $(srcdir)
+GENMDESC_PRG=$(PYTHON) $(srcdir)/genmdesc.py $(target_define) $(srcdir)
 
 cpu-wasm.h: mini-ops.h cpu-wasm.md $(srcdir)/genmdesc.py
 	$(GENMDESC_PRG) cpu-wasm.h wasm_desc $(srcdir)/cpu-wasm.md
