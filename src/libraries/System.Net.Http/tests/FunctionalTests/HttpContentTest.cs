@@ -123,16 +123,16 @@ namespace System.Net.Http.Functional.Tests
         public async Task CopyToAsync_Buffered_CanBeCanceled()
         {
             // Buffered CopyToAsync will pass the CT to the Stream.WriteAsync
-            MockContent content = new MockContent();
+            var content = new MockContent();
 
             Assert.Equal(0, content.SerializeToStreamAsyncCount);
             await content.LoadIntoBufferAsync();
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
 
-            CancellationTokenSource cts = new CancellationTokenSource();
+            var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            using MemoryStream ms = new MemoryStream();
+            using var ms = new MemoryStream();
             await Assert.ThrowsAsync<TaskCanceledException>(() => content.CopyToAsync(ms, cts.Token));
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
             Assert.Equal(0, content.CreateContentReadStreamCount);
@@ -142,12 +142,12 @@ namespace System.Net.Http.Functional.Tests
         public async Task CopyToAsync_Unbuffered_CanBeCanceled()
         {
             // Unbuffered CopyToAsync will pass the CT to the SerializeToStreamAsync
-            MockContent content = new MockContent();
+            var content = new MockContent();
 
-            CancellationTokenSource cts = new CancellationTokenSource();
+            var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            using MemoryStream ms = new MemoryStream();
+            using var ms = new MemoryStream();
             await Assert.ThrowsAsync<TaskCanceledException>(() => content.CopyToAsync(ms, cts.Token));
             Assert.Equal(1, content.SerializeToStreamAsyncCount);
             Assert.Equal(0, content.CreateContentReadStreamCount);
@@ -546,7 +546,7 @@ namespace System.Net.Http.Functional.Tests
                         uri,
                         HttpCompletionOption.ResponseContentRead);
 
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
                     cts.Cancel();
 
                     string received = await response.Content.ReadAsStringAsync(cts.Token);
@@ -570,7 +570,7 @@ namespace System.Net.Http.Functional.Tests
                         uri,
                         HttpCompletionOption.ResponseHeadersRead);
 
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
                     cts.Cancel();
 
                     await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsStringAsync(cts.Token));
@@ -588,7 +588,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled()
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
+            var cts = new CancellationTokenSource();
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -633,7 +633,7 @@ namespace System.Net.Http.Functional.Tests
                         uri,
                         HttpCompletionOption.ResponseContentRead);
 
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
                     cts.Cancel();
 
                     byte[] receivedBytes = await response.Content.ReadAsByteArrayAsync(cts.Token);
@@ -658,7 +658,7 @@ namespace System.Net.Http.Functional.Tests
                         uri,
                         HttpCompletionOption.ResponseHeadersRead);
 
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
                     cts.Cancel();
 
                     await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.ReadAsByteArrayAsync(cts.Token));
@@ -676,7 +676,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled()
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
+            var cts = new CancellationTokenSource();
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -721,7 +721,7 @@ namespace System.Net.Http.Functional.Tests
                         uri,
                         HttpCompletionOption.ResponseContentRead);
 
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
                     cts.Cancel();
 
                     Stream receivedStream = await response.Content.ReadAsStreamAsync(cts.Token);
@@ -750,11 +750,11 @@ namespace System.Net.Http.Functional.Tests
                         uri,
                         HttpCompletionOption.ResponseHeadersRead);
 
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
                     cts.Cancel();
 
                     Stream receivedStream = await response.Content.ReadAsStreamAsync(cts.Token);
-                    MemoryStream ms = new MemoryStream();
+                    var ms = new MemoryStream();
                     await receivedStream.CopyToAsync(ms);
                     byte[] receivedBytes = ms.ToArray();
                     string received = Encoding.UTF8.GetString(receivedBytes);
@@ -769,9 +769,9 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ReadAsStreamAsync_Unbuffered_CustomContent_CanBeCanceled()
         {
-            MockContent content = new MockContent();
+            var content = new MockContent();
 
-            CancellationTokenSource cts = new CancellationTokenSource();
+            var cts = new CancellationTokenSource();
             cts.Cancel();
 
             await Assert.ThrowsAsync<TaskCanceledException>(() => content.ReadAsStreamAsync(cts.Token));

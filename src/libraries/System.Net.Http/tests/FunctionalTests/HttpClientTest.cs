@@ -373,14 +373,14 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetStringAsync_CanBeCanceled_AlreadyCanceledCts()
         {
-            SemaphoreSlim onClientFinished = new SemaphoreSlim(0, 1);
+            var onClientFinished = new SemaphoreSlim(0, 1);
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
                     using HttpClient httpClient = CreateHttpClient();
 
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
                     cts.Cancel();
 
                     await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStringAsync(uri, cts.Token));
@@ -395,7 +395,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetStringAsync_CanBeCanceled()
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
+            var cts = new CancellationTokenSource();
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -441,14 +441,14 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetByteArrayAsync_CanBeCanceled_AlreadyCanceledCts()
         {
-            SemaphoreSlim onClientFinished = new SemaphoreSlim(0, 1);
+            var onClientFinished = new SemaphoreSlim(0, 1);
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
                     using HttpClient httpClient = CreateHttpClient();
 
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
                     cts.Cancel();
 
                     await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetByteArrayAsync(uri, cts.Token));
@@ -463,7 +463,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetByteArrayAsync_CanBeCanceled()
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
+            var cts = new CancellationTokenSource();
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -497,7 +497,7 @@ namespace System.Net.Http.Functional.Tests
                     using HttpClient httpClient = CreateHttpClient();
 
                     Stream receivedStream = await httpClient.GetStreamAsync(uri);
-                    using MemoryStream ms = new MemoryStream();
+                    using var ms = new MemoryStream();
                     await receivedStream.CopyToAsync(ms);
                     byte[] receivedBytes = ms.ToArray();
                     string received = Encoding.UTF8.GetString(receivedBytes);
@@ -512,14 +512,14 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetStreamAsync_CanBeCanceled_AlreadyCanceledCts()
         {
-            SemaphoreSlim onClientFinished = new SemaphoreSlim(0, 1);
+            var onClientFinished = new SemaphoreSlim(0, 1);
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
                     using HttpClient httpClient = CreateHttpClient();
 
-                    CancellationTokenSource cts = new CancellationTokenSource();
+                    var cts = new CancellationTokenSource();
                     cts.Cancel();
 
                     await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStreamAsync(uri, cts.Token));
@@ -534,7 +534,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetStreamAsync_CanBeCanceled()
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
+            var cts = new CancellationTokenSource();
 
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
