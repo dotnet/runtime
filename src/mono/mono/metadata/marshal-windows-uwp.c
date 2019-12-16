@@ -10,16 +10,14 @@
 #include "mono/utils/mono-compiler.h"
 
 #if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
+
 #include <windows.h>
 #include "mono/metadata/marshal-windows-internals.h"
 
 void *
-mono_marshal_alloc_hglobal (size_t size, MonoError *error)
+mono_marshal_alloc_hglobal (size_t size)
 {
-	void* p = HeapAlloc (GetProcessHeap (), 0, size);
-	if (!p)
-		mono_error_set_out_of_memory (error, "");
-	return p;
+	return HeapAlloc (GetProcessHeap (), 0, size);
 }
 
 gpointer

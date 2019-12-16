@@ -261,4 +261,13 @@ ICALL_EXPORT gint32      ves_icall_System_Net_Sockets_Socket_Send_array_icall (g
 ICALL_EXPORT void        ves_icall_System_Net_Sockets_Socket_Shutdown_icall (gsize sock, gint32 how, gint32 *werror);
 ICALL_EXPORT MonoBoolean ves_icall_System_Net_Sockets_Socket_SupportPortReuse_icall (MonoProtocolType proto);
 
+ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem		(int);
+ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize	(gsize);
+ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal		(gsize);
+ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem	(gpointer ptr, int size);
+ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal		(gpointer, gsize);
+ICALL_EXPORT      char* ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi    (const gunichar2*, int);
+ICALL_EXPORT gunichar2*	ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni	(const gunichar2*, int);
+
+
 #endif // __MONO_METADATA_ICALL_DECL_H__

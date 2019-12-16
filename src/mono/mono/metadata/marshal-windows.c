@@ -9,6 +9,7 @@
 #include <glib.h>
 
 #if defined(HOST_WIN32)
+
 #include <winsock2.h>
 #include <windows.h>
 #include <objbase.h>
@@ -16,13 +17,11 @@
 #include "icall-decl.h"
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+
 void*
-mono_marshal_alloc_hglobal (size_t size, MonoError *error)
+mono_marshal_alloc_hglobal (size_t size)
 {
-	void* p = GlobalAlloc (GMEM_FIXED, size);
-	if (!p)
-		mono_error_set_out_of_memory (error, "");
-	return p;
+	return GlobalAlloc (GMEM_FIXED, size);
 }
 
 gpointer
@@ -36,6 +35,7 @@ mono_marshal_free_hglobal (gpointer ptr)
 {
 	GlobalFree (ptr);
 }
+
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 void*
@@ -57,30 +57,34 @@ mono_marshal_realloc_co_task_mem (gpointer ptr, size_t size)
 }
 
 char*
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error);
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length);
 
 char*
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length)
 {
 	g_assert_not_netcore ();
 
 	// FIXME pass mono_utf16_to_utf8 an allocator to avoid double alloc/copy.
 
+	ERROR_DECL (error);
+	size_t len = 0;
+	char* ret = NULL;
 	char* tres = mono_utf16_to_utf8 (s, length, error);
-	return_val_if_nok (error, NULL);
-	if (!tres)
-		return tres;
+	if (!tres || !is_ok (error))
+		goto exit;
 
 	/*
 	 * mono_utf16_to_utf8() returns a memory area at least as large as length,
 	 * even if it contains NULL characters. The copy we allocate here has to be equally
 	 * large.
 	 */
-	size_t len = MAX (strlen (tres) + 1, length);
-	char* ret = (char*)ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len, error);
+	len = MAX (strlen (tres) + 1, length);
+	ret = (char*)mono_marshal_alloc_hglobal_error (len, error);
 	if (ret)
 		memcpy (ret, tres, len);
+exit:
 	g_free (tres);
+	mono_error_set_pending_exception (error);
 	return ret;
 }
 

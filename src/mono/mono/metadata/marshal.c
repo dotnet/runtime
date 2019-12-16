@@ -4979,7 +4979,8 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 }
 
 #ifndef HOST_WIN32
-static void*
+
+void*
 mono_marshal_alloc_co_task_mem (size_t size)
 {
 	if (size == 0)
@@ -5001,6 +5002,7 @@ mono_marshal_alloc (gsize size, MonoError *error)
 	error_init (error);
 
 	res = mono_marshal_alloc_co_task_mem (size);
+
 	if (!res)
 		mono_error_set_out_of_memory (error, "Could not allocate %" G_GSIZE_FORMAT " bytes", size);
 
@@ -5015,11 +5017,13 @@ ves_icall_marshal_alloc_impl (gsize size, MonoError *error)
 }
 
 #ifndef HOST_WIN32
-static void
+
+void
 mono_marshal_free_co_task_mem (void *ptr)
 {
 	g_free (ptr);
 }
+
 #endif
 
 /**
@@ -5472,43 +5476,51 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 #ifndef HOST_WIN32
 
 char*
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error);
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *utf16, int length);
 
 char*
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *s, int length, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const gunichar2 *utf16, int length)
 {
 	g_assert_not_netcore ();
 
-	return mono_utf16_to_utf8 (s, length, error);
+	ERROR_DECL (error);
+
+	char * const utf8 = mono_utf16_to_utf8 (utf16, length, error);
+
+	mono_error_set_pending_exception (error);
+
+	return utf8;
 }
 
-static void *
-mono_marshal_alloc_hglobal (size_t size, MonoError *error)
+void *
+mono_marshal_alloc_hglobal (size_t size)
 {
-	void* p = g_try_malloc (size);
-	if (!p)
-		mono_error_set_out_of_memory (error, "");
-	return p;
+	return g_try_malloc (size);
 }
+
 #endif /* !HOST_WIN32 */
 
 gunichar2*
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length, MonoError *error);
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length);
 
 gunichar2*
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length)
 {
 	g_assert_not_netcore ();
 
 	if (!s)
 		return NULL;
 
+	ERROR_DECL (error);
+
 	gsize const len = ((gsize)length + 1) * 2;
-	gunichar2 *res = (gunichar2*)mono_marshal_alloc_hglobal (len, error);
+	gunichar2 *res = (gunichar2*)mono_marshal_alloc_hglobal_error (len, error);
 	if (res) {
 		memcpy (res, s, length * 2);
 		res [length] = 0;
 	}
+
+	mono_error_set_pending_exception (error);
 	return res;
 }
 
@@ -5590,45 +5602,59 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 }
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gsize size, MonoError *error)
+mono_marshal_alloc_hglobal_error (gsize size, MonoError *error)
 {
 	if (size == 0)
 		/* This returns a valid pointer for size 0 on MS.NET */
 		size = 4;
 
-	return mono_marshal_alloc_hglobal (size, error);
+	void* p = mono_marshal_alloc_hglobal (size);
+	if (!p)
+		mono_error_set_out_of_memory (error, "");
+	return p;
+}
+
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gsize size)
+{
+	ERROR_DECL (error);
+	void* result = mono_marshal_alloc_hglobal_error (size, error);
+	mono_error_set_pending_exception (error);
+	return result;
 }
 
 #ifndef HOST_WIN32
-static gpointer
+
+gpointer
 mono_marshal_realloc_hglobal (gpointer ptr, size_t size)
 {
 	return g_try_realloc (ptr, size);
 }
+
 #endif
 
 gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gsize size, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gsize size)
 {
-	if (ptr == NULL) {
+	gpointer res = ptr ? mono_marshal_realloc_hglobal (ptr, size) : NULL;
+
+	if (!res) {
+		ERROR_DECL (error);
 		mono_error_set_out_of_memory (error, "");
-		return NULL;
+		mono_error_set_pending_exception (error);
 	}
-
-	gpointer const res = mono_marshal_realloc_hglobal (ptr, size);
-
-	if (!res)
-		mono_error_set_out_of_memory (error, "");
 
 	return res;
 }
 
 #ifndef HOST_WIN32
-static void
+
+void
 mono_marshal_free_hglobal (gpointer ptr)
 {
 	g_free (ptr);
 }
+
 #endif
 
 void
@@ -5638,28 +5664,34 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr)
 }
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 {
 	void *res = mono_marshal_alloc_co_task_mem (size);
 
-	if (!res)
+	if (!res) {
+		ERROR_DECL (error);
 		mono_error_set_out_of_memory (error, "");
+		mono_error_set_pending_exception (error);
+	}
 
 	return res;
 }
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gsize size, MonoError *error);
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gsize size);
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gsize size, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gsize size)
 {
 	g_assert_not_netcore ();
 
 	void *res = mono_marshal_alloc_co_task_mem (size);
 
-	if (!res)
+	if (!res) {
+		ERROR_DECL (error);
 		mono_error_set_out_of_memory (error, "");
+		mono_error_set_pending_exception (error);
+	}
 
 	return res;
 }
@@ -5671,7 +5703,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
 }
 
 #ifndef HOST_WIN32
-static gpointer
+
+gpointer
 mono_marshal_realloc_co_task_mem (gpointer ptr, size_t size)
 {
 	return g_try_realloc (ptr, size);
@@ -5679,14 +5712,16 @@ mono_marshal_realloc_co_task_mem (gpointer ptr, size_t size)
 #endif
 
 gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size)
 {
 	void *res = mono_marshal_realloc_co_task_mem (ptr, size);
 
 	if (!res) {
+		ERROR_DECL (error);
 		mono_error_set_out_of_memory (error, "");
-		return NULL;
+		mono_error_set_pending_exception (error);
 	}
+
 	return res;
 }
 

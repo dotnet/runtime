@@ -746,9 +746,9 @@ NOHANDLES(ICALL(MARSHAL_1, "AddRefInternal", ves_icall_System_Runtime_InteropSer
 #else
 ICALL_TYPE(MARSHAL, "System.Runtime.InteropServices.Marshal", MARSHAL_2)
 #endif
-HANDLES(MARSHAL_2, "AllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem, gpointer,  1, (int))
-HANDLES(MARSHAL_51,"AllocCoTaskMemSize(uintptr)", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize, gpointer, 1, (gsize))
-HANDLES(MARSHAL_3, "AllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal, gpointer, 1, (gsize))
+NOHANDLES(ICALL(MARSHAL_2, "AllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem))
+NOHANDLES(ICALL(MARSHAL_51,"AllocCoTaskMemSize(uintptr)", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize))
+NOHANDLES(ICALL(MARSHAL_3, "AllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal))
 NOHANDLES(ICALL(MARSHAL_50, "BufferToBSTR", ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR))
 HANDLES(MARSHAL_4, "DestroyStructure", ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure, void, 2, (gpointer, MonoReflectionType))
 NOHANDLES(ICALL(MARSHAL_5, "FreeBSTR", ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR))
@@ -786,8 +786,8 @@ HANDLES(MARSHAL_21, "PtrToStructure(intptr,object)", ves_icall_System_Runtime_In
 #if !defined (DISABLE_COM) || defined (HOST_WIN32)
 NOHANDLES(ICALL(MARSHAL_22, "QueryInterfaceInternal", ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal))
 #endif
-HANDLES(MARSHAL_43, "ReAllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem, gpointer, 2, (gpointer, int))
-HANDLES(MARSHAL_23, "ReAllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal, gpointer, 2, (gpointer, gsize))
+NOHANDLES(ICALL(MARSHAL_43, "ReAllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem))
+NOHANDLES(ICALL(MARSHAL_23, "ReAllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal))
 #ifndef DISABLE_COM
 HANDLES(MARSHAL_49, "ReleaseComObjectInternal", ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal, gint32, 1, (MonoObject))
 #endif
@@ -797,8 +797,8 @@ NOHANDLES(ICALL(MARSHAL_29, "ReleaseInternal", ves_icall_System_Runtime_InteropS
 NOHANDLES(ICALL(MARSHAL_29a, "SetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_SetLastWin32Error))
 HANDLES(MARSHAL_30, "SizeOf", ves_icall_System_Runtime_InteropServices_Marshal_SizeOf, guint32, 1, (MonoReflectionType))
 HANDLES(MARSHAL_31, "SizeOfHelper", ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper, guint32, 2, (MonoReflectionType, MonoBoolean))
-HANDLES(MARSHAL_32, "StringToHGlobalAnsi", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi, char_ptr, 2, (const_gunichar2_ptr, int))
-HANDLES(MARSHAL_33, "StringToHGlobalUni", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni, gunichar2_ptr, 2, (const_gunichar2_ptr, int))
+NOHANDLES(ICALL(MARSHAL_32, "StringToHGlobalAnsi", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi))
+NOHANDLES(ICALL(MARSHAL_33, "StringToHGlobalUni", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni))
 HANDLES(MARSHAL_34, "StructureToPtr", ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr, void, 3, (MonoObject, gpointer, MonoBoolean))
 HANDLES(MARSHAL_35, "UnsafeAddrOfPinnedArrayElement", ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement, gpointer, 2, (MonoArray, int))
 HANDLES(MARSHAL_41, "copy_from_unmanaged_fixed", ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged, void, 5, (gconstpointer, gint32, MonoArray, gint32, gpointer))
