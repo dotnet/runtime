@@ -276,6 +276,8 @@ namespace Mono.Linker.Steps
 					return false;
 
 				bool changed = false;
+				ILProcessor ilprocessor = null;
+
 				var instrs = Body.Instructions;
 				for (int i = 0; i < instrs.Count; ++i) {
 					if (reachableMap [i])
@@ -284,7 +286,11 @@ namespace Mono.Linker.Steps
 					if (instrs [i].OpCode.Code == Code.Nop)
 						continue;
 
-					instrs [i] = Instruction.Create (OpCodes.Nop);
+					if (ilprocessor == null)
+						ilprocessor = Body.GetILProcessor ();
+
+					ilprocessor.Replace (instrs [i], Instruction.Create (OpCodes.Nop));
+
 					changed = true;
 					InstructionsReplaced++;
 				}
@@ -303,6 +309,9 @@ namespace Mono.Linker.Steps
 						if (instr.OpCode == OpCodes.Nop)
 							continue;
 
+						if (ilprocessor == null)
+							ilprocessor = Body.GetILProcessor ();
+
 						switch (instr.OpCode.StackBehaviourPop) {
 						case StackBehaviour.Pop1_pop1:
 
@@ -312,11 +321,12 @@ namespace Mono.Linker.Steps
 							// One of the operands is most likely constant and could just be removed instead of additional pop
 							//
 							if (index > 0 && IsSideEffectFreeLoad (instrs [index - 1])) {
-								instrs [index - 1] = Instruction.Create (OpCodes.Pop);
-								instrs [index] = Instruction.Create (OpCodes.Nop);
+								ilprocessor.Replace (instrs [index - 1], Instruction.Create (OpCodes.Pop));
+								ilprocessor.Replace (instrs [index], Instruction.Create (OpCodes.Nop));
 							} else {
-								instrs [index] = Instruction.Create (OpCodes.Pop);
-								instrs.Insert (index, Instruction.Create (OpCodes.Pop));
+								var pop = Instruction.Create (OpCodes.Pop);
+								ilprocessor.Replace (instrs [index], pop);
+								ilprocessor.InsertAfter (pop, Instruction.Create (OpCodes.Pop));
 
 								//
 								// conditionInstrsToRemove is always sorted and instead of
@@ -326,11 +336,11 @@ namespace Mono.Linker.Steps
 							}
 							break;
 						case StackBehaviour.Popi:
-							instrs [index] = Instruction.Create (OpCodes.Pop);
+							ilprocessor.Replace (instrs [index], Instruction.Create (OpCodes.Pop));
 							InstructionsReplaced++;
 							break;
 						default:
-							// Should never be reachedc
+							// Should never be reached
 							throw new NotImplementedException ();
 						}
 					}
