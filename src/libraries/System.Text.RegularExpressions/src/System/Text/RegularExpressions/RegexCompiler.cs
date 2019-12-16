@@ -3050,11 +3050,20 @@ namespace System.Text.RegularExpressions
                 charClass[RegexCharClass.CategoryLengthIndex] == 0 && // must not have any categories
                 charClass[RegexCharClass.SetStartIndex] < charClass[RegexCharClass.SetStartIndex + 1]) // valid range
             {
-                // (uint)ch - charClass[3] < charClass[4] - charClass[3]
-                Ldc(charClass[RegexCharClass.SetStartIndex]);
-                Sub();
-                Ldc(charClass[RegexCharClass.SetStartIndex + 1] - charClass[RegexCharClass.SetStartIndex]);
-                CltUn();
+                if (RegexCharClass.IsSingleton(charClass) || RegexCharClass.IsSingletonInverse(charClass))
+                {
+                    // ch == charClass[3]
+                    Ldc(charClass[3]);
+                    Ceq();
+                }
+                else
+                {
+                    // (uint)ch - charClass[3] < charClass[4] - charClass[3]
+                    Ldc(charClass[RegexCharClass.SetStartIndex]);
+                    Sub();
+                    Ldc(charClass[RegexCharClass.SetStartIndex + 1] - charClass[RegexCharClass.SetStartIndex]);
+                    CltUn();
+                }
 
                 // Negate the answer if the negation flag was set
                 if (RegexCharClass.IsNegated(charClass))
