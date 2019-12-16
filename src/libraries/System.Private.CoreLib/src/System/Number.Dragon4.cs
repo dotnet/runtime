@@ -227,8 +227,26 @@ namespace System
                 }
             }
 
-            // If (value >= 1), our estimate for digitExponent was too low
-            if (BigInteger.Compare(ref scaledValue, ref scale) >= 0)
+            bool isEven = (mantissa % 2) == 0;
+            bool estimateTooLow = false;
+
+            if (cutoffNumber == -1)
+            {
+                // When printing the shortest possible string, we want to
+                // take IEEE unbiased rounding into account so we can return
+                // shorter strings for various edge case values like 1.23E+22
+
+                BigInteger.Add(ref scaledValue, ref *pScaledMarginHigh, out BigInteger scaledValueHigh);
+                int cmpHigh = BigInteger.Compare(ref scaledValueHigh, ref scale);
+                estimateTooLow = isEven ? (cmpHigh >= 0) : (cmpHigh > 0);
+            }
+            else
+            {
+                estimateTooLow = BigInteger.Compare(ref scaledValue, ref scale) >= 0;
+            }
+
+            // Was our estimate for digitExponent was too low?
+            if (estimateTooLow)
             {
                 // The exponent estimate was incorrect.
                 // Increment the exponent and don't perform the premultiply needed for the first loop iteration.
@@ -329,8 +347,19 @@ namespace System
                     BigInteger.Add(ref scaledValue, ref *pScaledMarginHigh, out BigInteger scaledValueHigh);
 
                     // stop looping if we are far enough away from our neighboring values or if we have reached the cutoff digit
-                    low = BigInteger.Compare(ref scaledValue, ref scaledMarginLow) < 0;
-                    high = BigInteger.Compare(ref scaledValueHigh, ref scale) > 0;
+                    int cmpLow = BigInteger.Compare(ref scaledValue, ref scaledMarginLow);
+                    int cmpHigh = BigInteger.Compare(ref scaledValueHigh, ref scale);
+
+                    if (isEven)
+                    {
+                        low = (cmpLow <= 0);
+                        high = (cmpHigh >= 0);
+                    }
+                    else
+                    {
+                        low = (cmpLow < 0);
+                        high = (cmpHigh > 0);
+                    }
 
                     if (low || high || (digitExponent == cutoffExponent))
                     {

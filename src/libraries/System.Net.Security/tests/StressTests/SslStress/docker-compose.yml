@@ -1,13 +1,17 @@
 version: '3'
 services:
   client:
-    image: ${SSLSTRESS_IMAGE:-sslstress}
+    build:
+      context: ../../../../ # ~> src/libraries
+      dockerfile: ./System.Net.Security/tests/StressTests/SslStress//${DOCKERFILE:-Dockerfile}
     links:
       - server
     environment:
       - SSLSTRESS_ARGS=--mode client --server-endpoint server:5001 ${SSLSTRESS_CLIENT_ARGS}
   server:
-    image: ${SSLSTRESS_IMAGE:-sslstress}
+    build:
+      context: ../../../../ # ~> src/libraries
+      dockerfile: ./System.Net.Security/tests/StressTests/SslStress/${DOCKERFILE:-Dockerfile}
     ports:
       - "5001:5001"
     environment:

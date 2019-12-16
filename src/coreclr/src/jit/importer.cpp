@@ -10831,11 +10831,22 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else if (lhs->OperIsBlk())
                     {
-                        // Check for ADDR(LCL_VAR), or ADD(ADDR(LCL_VAR),CNS_INT))
-                        // (the latter may appear explicitly in the IL).
-                        // Local field stores will cause the stack to be spilled when
-                        // they are encountered.
-                        lclVar = lhs->AsBlk()->Addr()->IsLocalAddrExpr();
+                        // Check if LHS address is within some struct local, to catch
+                        // cases where we're updating the struct by something other than a stfld
+                        GenTree* addr = lhs->AsBlk()->Addr();
+
+                        // Catches ADDR(LCL_VAR), or ADD(ADDR(LCL_VAR),CNS_INT))
+                        lclVar = addr->IsLocalAddrExpr();
+
+                        // Catches ADDR(FIELD(... ADDR(LCL_VAR)))
+                        if (lclVar == nullptr)
+                        {
+                            GenTree* lclTree = nullptr;
+                            if (impIsAddressInLocal(addr, &lclTree))
+                            {
+                                lclVar = lclTree->AsLclVarCommon();
+                            }
+                        }
                     }
                     if (lclVar != nullptr)
                     {
@@ -20652,7 +20663,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         return;
     }
 
-    // CT_INDRECT calls may use the cookie, bail if so...
+    // CT_INDIRECT calls may use the cookie, bail if so...
     //
     // If transforming these provides a benefit, we could save this off in the same way
     // we save the stub address below.

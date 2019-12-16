@@ -16,7 +16,6 @@ namespace System.Security.AccessControl
         public DirectorySecurity(string name, AccessControlSections includeSections)
             : base(true, name, includeSections, true)
         {
-            Path.GetFullPath(name);
         }
     }
 }

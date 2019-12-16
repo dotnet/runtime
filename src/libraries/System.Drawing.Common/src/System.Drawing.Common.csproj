@@ -5,7 +5,7 @@
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS;FEATURE_SYSTEM_EVENTS</DefineConstants>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Unix-Debug;netcoreapp3.0-Unix-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;netcoreapp3.0-Unix-Debug;netcoreapp3.0-Unix-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Drawing\Bitmap.cs" />

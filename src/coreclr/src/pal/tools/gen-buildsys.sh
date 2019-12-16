@@ -23,7 +23,7 @@ then
   echo "Specify the path to the top level CMake file."
   echo "Specify the path that the build system files are generated in."
   echo "Specify the target architecture."
-  echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
+  echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG."
   echo "Optionally specify 'scan-build' to enable build with clang static analyzer."
   echo "Use the Ninja generator instead of the Unix Makefiles generator."
   echo "Pass additional arguments to CMake call."
@@ -84,7 +84,6 @@ $cmake_command \
   -G "$generator" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
-  "-DCMAKE_USER_MAKE_RULES_OVERRIDE=" \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \
   -S "$1" \
