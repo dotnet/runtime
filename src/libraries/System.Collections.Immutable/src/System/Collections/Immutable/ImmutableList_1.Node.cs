@@ -26,7 +26,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The key associated with this node.
             /// </summary>
-            private T _key;
+            private T _key = default!; // Defaulting for EmptyNode, shouldn't be null for non empty nodes so didn't annotated with [MaybeNull]
 
             /// <summary>
             /// A value indicating whether this node has been frozen (made immutable).
@@ -56,12 +56,12 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The left tree.
             /// </summary>
-            private Node _left;
+            private Node? _left;
 
             /// <summary>
             /// The right tree.
             /// </summary>
-            private Node _right;
+            private Node? _right;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableList{T}.Node"/> class
@@ -120,32 +120,32 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the left branch of this node.
             /// </summary>
-            public Node Left => _left;
+            public Node? Left => _left;
 
             /// <summary>
             /// Gets the left branch of this node.
             /// </summary>
-            IBinaryTree IBinaryTree.Left => _left;
+            IBinaryTree? IBinaryTree.Left => _left;
 
             /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
-            public Node Right => _right;
+            public Node? Right => _right;
 
             /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
-            IBinaryTree IBinaryTree.Right => _right;
+            IBinaryTree? IBinaryTree.Right => _right;
 
             /// <summary>
             /// Gets the left branch of this node.
             /// </summary>
-            IBinaryTree<T> IBinaryTree<T>.Left => _left;
+            IBinaryTree<T>? IBinaryTree<T>.Left => _left;
 
             /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
-            IBinaryTree<T> IBinaryTree<T>.Right => _right;
+            IBinaryTree<T>? IBinaryTree<T>.Right => _right;
 
             /// <summary>
             /// Gets the value represented by the current node.
@@ -172,6 +172,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     Requires.Range(index >= 0 && index < this.Count, nameof(index));
+                    Debug.Assert(_left != null && _right != null);
 
                     if (index < _left._count)
                     {
@@ -197,6 +198,7 @@ namespace System.Collections.Immutable
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
 
+                Debug.Assert(_left != null && _right != null);
                 if (index < _left._count)
                 {
                     return ref _left.ItemRef(index);
@@ -288,7 +290,7 @@ namespace System.Collections.Immutable
                     return CreateLeaf(key);
                 }
 
-                Node newRight = _right.Add(key);
+                Node newRight = _right!.Add(key);
                 Node result = this.MutateRight(newRight);
                 return result.IsBalanced ? result : result.BalanceRight();
             }
@@ -308,7 +310,7 @@ namespace System.Collections.Immutable
                     return CreateLeaf(key);
                 }
 
-                if (index <= _left._count)
+                if (index <= _left!._count)
                 {
                     Node newLeft = _left.Insert(index, key);
                     Node result = this.MutateLeft(newLeft);
@@ -316,7 +318,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
-                    Node newRight = _right.Insert(index - _left._count - 1, key);
+                    Node newRight = _right!.Insert(index - _left._count - 1, key);
                     Node result = this.MutateRight(newRight);
                     return result.IsBalanced ? result : result.BalanceRight();
                 }
@@ -336,7 +338,7 @@ namespace System.Collections.Immutable
                     return CreateRange(keys);
                 }
 
-                Node newRight = _right.AddRange(keys);
+                Node newRight = _right!.AddRange(keys);
                 Node result = this.MutateRight(newRight);
                 return result.BalanceMany();
             }
@@ -358,14 +360,14 @@ namespace System.Collections.Immutable
                 }
 
                 Node result;
-                if (index <= _left._count)
+                if (index <= _left!._count)
                 {
                     Node newLeft = _left.InsertRange(index, keys);
                     result = this.MutateLeft(newLeft);
                 }
                 else
                 {
-                    Node newRight = _right.InsertRange(index - _left._count - 1, keys);
+                    Node newRight = _right!.InsertRange(index - _left._count - 1, keys);
                     result = this.MutateRight(newRight);
                 }
 
@@ -380,6 +382,7 @@ namespace System.Collections.Immutable
             internal Node RemoveAt(int index)
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
+                Debug.Assert(_left != null && _right != null);
 
                 Node result = this;
                 if (index == _left._count)
@@ -404,7 +407,7 @@ namespace System.Collections.Immutable
                         // We have two children. Remove the next-highest node and replace
                         // this node with it.
                         var successor = _right;
-                        while (!successor._left.IsEmpty)
+                        while (!successor._left!.IsEmpty)
                         {
                             successor = successor._left;
                         }
@@ -482,7 +485,7 @@ namespace System.Collections.Immutable
                 Debug.Assert(!this.IsEmpty);
 
                 Node result = this;
-                if (index == _left._count)
+                if (index == _left!._count)
                 {
                     // We have a match.
                     result = this.MutateKey(value);
@@ -494,7 +497,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
-                    var newRight = _right.ReplaceAt(index - _left._count - 1, value);
+                    var newRight = _right!.ReplaceAt(index - _left._count - 1, value);
                     result = this.MutateRight(newRight);
                 }
 
@@ -575,7 +578,7 @@ namespace System.Collections.Immutable
             /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
             /// </param>
             /// <returns>The sorted list.</returns>
-            internal Node Sort(IComparer<T> comparer) => this.Sort(0, this.Count, comparer);
+            internal Node Sort(IComparer<T>? comparer) => this.Sort(0, this.Count, comparer);
 
             /// <summary>
             /// Sorts the elements in a range of elements in <see cref="ImmutableList{T}"/>
@@ -592,7 +595,7 @@ namespace System.Collections.Immutable
             /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
             /// </param>
             /// <returns>The sorted list.</returns>
-            internal Node Sort(int index, int count, IComparer<T> comparer)
+            internal Node Sort(int index, int count, IComparer<T>? comparer)
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0, nameof(count));
@@ -634,7 +637,7 @@ namespace System.Collections.Immutable
             /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
             /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
             /// </exception>
-            internal int BinarySearch(int index, int count, T item, IComparer<T> comparer)
+            internal int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0, nameof(count));
@@ -646,14 +649,14 @@ namespace System.Collections.Immutable
                 }
 
                 // If this node is not within range, defer to either branch as appropriate.
-                int thisNodeIndex = _left.Count; // this is only the index within the AVL tree, treating this node as root rather than a member of a larger tree.
+                int thisNodeIndex = _left!.Count; // this is only the index within the AVL tree, treating this node as root rather than a member of a larger tree.
                 if (index + count <= thisNodeIndex)
                 {
                     return _left.BinarySearch(index, count, item, comparer);
                 }
                 else if (index > thisNodeIndex)
                 {
-                    int result = _right.BinarySearch(index - thisNodeIndex - 1, count, item, comparer);
+                    int result = _right!.BinarySearch(index - thisNodeIndex - 1, count, item, comparer);
                     int offset = thisNodeIndex + 1;
                     return result < 0 ? result - offset : result + offset;
                 }
@@ -670,7 +673,7 @@ namespace System.Collections.Immutable
                 else if (compare > 0)
                 {
                     int adjustedCount = count - (thisNodeIndex - index) - 1;
-                    int result = adjustedCount < 0 ? -1 : _right.BinarySearch(0, adjustedCount, item, comparer);
+                    int result = adjustedCount < 0 ? -1 : _right!.BinarySearch(0, adjustedCount, item, comparer);
                     int offset = thisNodeIndex + 1;
                     return result < 0 ? result - offset : result + offset;
                 }
@@ -702,7 +705,7 @@ namespace System.Collections.Immutable
             /// <see cref="ImmutableList{T}"/>, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            internal int IndexOf(T item, IEqualityComparer<T> equalityComparer) => this.IndexOf(item, 0, this.Count, equalityComparer);
+            internal int IndexOf(T item, IEqualityComparer<T>? equalityComparer) => this.IndexOf(item, 0, this.Count, equalityComparer);
 
             /// <summary>
             /// Searches for the specified object and returns <c>true</c> if it is found, <c>false</c> otherwise.
@@ -746,7 +749,7 @@ namespace System.Collections.Immutable
             /// contains <paramref name="count"/> number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            internal int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
+            internal int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0, nameof(count));
@@ -789,7 +792,7 @@ namespace System.Collections.Immutable
             /// and ends at <paramref name="index"/>, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
+            internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0 && count <= this.Count, nameof(count));
@@ -1002,6 +1005,7 @@ namespace System.Collections.Immutable
             /// The first element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
+            [return: MaybeNull]
             internal T Find(Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
@@ -1014,7 +1018,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                return default(T);
+                return default(T)!;
             }
 
             /// <summary>
@@ -1039,7 +1043,7 @@ namespace System.Collections.Immutable
                     return ImmutableList<T>.Empty;
                 }
 
-                List<T> list = null;
+                List<T>? list = null;
                 foreach (var item in this)
                 {
                     if (match(item))
@@ -1147,6 +1151,7 @@ namespace System.Collections.Immutable
             /// The last element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
+            [return: MaybeNull]
             internal T FindLast(Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
@@ -1162,7 +1167,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                return default(T);
+                return default(T)!;
             }
 
             /// <summary>
@@ -1255,8 +1260,8 @@ namespace System.Collections.Immutable
                 // If this node is frozen, all its descendants must already be frozen.
                 if (!_frozen)
                 {
-                    _left.Freeze();
-                    _right.Freeze();
+                    _left!.Freeze();
+                    _right!.Freeze();
                     _frozen = true;
                 }
             }
@@ -1270,9 +1275,9 @@ namespace System.Collections.Immutable
             private Node RotateLeft()
             {
                 Debug.Assert(!this.IsEmpty);
-                Debug.Assert(!_right.IsEmpty);
+                Debug.Assert(!_right!.IsEmpty);
 
-                return _right.MutateLeft(this.MutateRight(_right._left));
+                return _right.MutateLeft(this.MutateRight(_right._left!));
             }
 
             /// <summary>
@@ -1282,9 +1287,9 @@ namespace System.Collections.Immutable
             private Node RotateRight()
             {
                 Debug.Assert(!this.IsEmpty);
-                Debug.Assert(!_left.IsEmpty);
+                Debug.Assert(!_left!.IsEmpty);
 
-                return _left.MutateRight(this.MutateLeft(_left._right));
+                return _left.MutateRight(this.MutateLeft(_left._right!));
             }
 
             /// <summary>
@@ -1294,15 +1299,15 @@ namespace System.Collections.Immutable
             private Node DoubleLeft()
             {
                 Debug.Assert(!this.IsEmpty);
-                Debug.Assert(!_right.IsEmpty);
-                Debug.Assert(!_right._left.IsEmpty);
+                Debug.Assert(!_right!.IsEmpty);
+                Debug.Assert(!_right!._left!.IsEmpty);
 
                 // The following is an optimized version of rotating the right child right, then rotating the parent left.
                 Node right = _right;
                 Node rightLeft = right._left;
                 return rightLeft.MutateBoth(
-                    left: this.MutateRight(rightLeft._left),
-                    right: right.MutateLeft(rightLeft._right));
+                    left: this.MutateRight(rightLeft._left!),
+                    right: right.MutateLeft(rightLeft._right!));
             }
 
             /// <summary>
@@ -1312,15 +1317,15 @@ namespace System.Collections.Immutable
             private Node DoubleRight()
             {
                 Debug.Assert(!this.IsEmpty);
-                Debug.Assert(!_left.IsEmpty);
-                Debug.Assert(!_left._right.IsEmpty);
+                Debug.Assert(!_left!.IsEmpty);
+                Debug.Assert(!_left._right!.IsEmpty);
 
                 // The following is an optimized version of rotating the left child left, then rotating the parent right.
                 Node left = _left;
                 Node leftRight = left._right;
                 return leftRight.MutateBoth(
-                    left: left.MutateRight(leftRight._left),
-                    right: this.MutateLeft(leftRight._right));
+                    left: left.MutateRight(leftRight._left!),
+                    right: this.MutateLeft(leftRight._right!));
             }
 
             /// <summary>
@@ -1334,7 +1339,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     Debug.Assert(!this.IsEmpty);
-                    return _right._height - _left._height;
+                    return _right!._height - _left!._height;
                 }
             }
 
@@ -1377,7 +1382,7 @@ namespace System.Collections.Immutable
                 Debug.Assert(!this.IsEmpty);
                 Debug.Assert(this.IsLeftHeavy);
 
-                return _left.BalanceFactor > 0 ? this.DoubleRight() : this.RotateRight();
+                return _left!.BalanceFactor > 0 ? this.DoubleRight() : this.RotateRight();
             }
 
             /// <summary>
@@ -1389,7 +1394,7 @@ namespace System.Collections.Immutable
                 Debug.Assert(!this.IsEmpty);
                 Debug.Assert(this.IsRightHeavy);
 
-                return _right.BalanceFactor < 0 ? this.DoubleLeft() : this.RotateLeft();
+                return _right!.BalanceFactor < 0 ? this.DoubleLeft() : this.RotateLeft();
             }
 
             /// <summary>
@@ -1403,16 +1408,19 @@ namespace System.Collections.Immutable
             private Node BalanceMany()
             {
                 Node tree = this;
+                Debug.Assert(tree._left != null && tree._right != null);
                 while (!tree.IsBalanced)
                 {
                     if (tree.IsRightHeavy)
                     {
                         tree = tree.BalanceRight();
+                        Debug.Assert(tree._left != null);
                         tree.MutateLeft(tree._left.BalanceMany());
                     }
                     else
                     {
                         tree = tree.BalanceLeft();
+                        Debug.Assert(tree._right != null);
                         tree.MutateRight(tree._right.BalanceMany());
                     }
                 }
@@ -1462,13 +1470,13 @@ namespace System.Collections.Immutable
 
                 if (_frozen)
                 {
-                    return new Node(_key, left, _right);
+                    return new Node(_key, left, _right!);
                 }
                 else
                 {
                     _left = left;
-                    _height = ParentHeight(left, _right);
-                    _count = ParentCount(left, _right);
+                    _height = ParentHeight(left, _right!);
+                    _count = ParentCount(left, _right!);
                     return this;
                 }
             }
@@ -1486,13 +1494,13 @@ namespace System.Collections.Immutable
 
                 if (_frozen)
                 {
-                    return new Node(_key, _left, right);
+                    return new Node(_key, _left!, right);
                 }
                 else
                 {
                     _right = right;
-                    _height = ParentHeight(_left, right);
-                    _count = ParentCount(_left, right);
+                    _height = ParentHeight(_left!, right);
+                    _count = ParentCount(_left!, right);
                     return this;
                 }
             }
@@ -1526,7 +1534,7 @@ namespace System.Collections.Immutable
 
                 if (_frozen)
                 {
-                    return new Node(key, _left, _right);
+                    return new Node(key, _left!, _right!);
                 }
                 else
                 {
@@ -1542,7 +1550,7 @@ namespace System.Collections.Immutable
             /// <returns>The root of the created node tree.</returns>
             private static Node CreateRange(IEnumerable<T> keys)
             {
-                ImmutableList<T> other;
+                ImmutableList<T>? other;
                 if (TryCastToImmutableList(keys, out other))
                 {
                     return other._root;
@@ -1573,7 +1581,7 @@ namespace System.Collections.Immutable
             /// The equality comparer to use for testing the node and value.
             /// </param>
             /// <returns></returns>
-            private static bool Contains(Node node, T value, IEqualityComparer<T> equalityComparer) => !node.IsEmpty && (equalityComparer.Equals(value, node._key) || Contains(node._left, value, equalityComparer) || Contains(node._right, value, equalityComparer));
+            private static bool Contains(Node node, T value, IEqualityComparer<T> equalityComparer) => !node.IsEmpty && (equalityComparer.Equals(value, node._key) || Contains(node._left!, value, equalityComparer) || Contains(node._right!, value, equalityComparer));
         }
     }
 }

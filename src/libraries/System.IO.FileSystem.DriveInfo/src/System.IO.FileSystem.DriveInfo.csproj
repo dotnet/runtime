@@ -69,7 +69,7 @@
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == '$(NetCoreAppCurrent)' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetFramework)' == '$(NetCoreAppCurrent)' ">
     <Compile Include="System\IO\DriveInfo.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>

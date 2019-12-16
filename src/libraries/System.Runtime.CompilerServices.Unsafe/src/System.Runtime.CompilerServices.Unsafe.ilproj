@@ -7,7 +7,7 @@
   <PropertyGroup>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
-    <IncludePath>include\$(TargetGroup)</IncludePath>
+    <IncludePath>include\$(TargetFramework)</IncludePath>
     <IncludePath Condition="'$(TargetsNetCoreApp)' == 'true'">include\netcoreapp</IncludePath>
     <IncludePath Condition="'$(TargetsNetFx)' == 'true'">include\netfx</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>

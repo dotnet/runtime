@@ -296,7 +296,7 @@ namespace System.Collections.Immutable
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
-        int BinarySearch(T item, IComparer<T> comparer);
+        int BinarySearch(T item, IComparer<T>? comparer);
 
         /// <summary>
         /// Searches a range of elements in the sorted <see cref="IReadOnlyList{T}"/>
@@ -327,6 +327,6 @@ namespace System.Collections.Immutable
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
-        int BinarySearch(int index, int count, T item, IComparer<T> comparer);
+        int BinarySearch(int index, int count, T item, IComparer<T>? comparer);
     }
 }

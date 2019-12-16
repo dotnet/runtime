@@ -16,10 +16,10 @@
     <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
     <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
 
-    <_targetGroupCategory Condition="'$(TargetsNetCoreApp)' == 'true'">netcoreapp</_targetGroupCategory>
-    <_targetGroupCategory Condition="'$(TargetsNetFx)' == 'true'">netfx</_targetGroupCategory>
+    <_targetCategory Condition="'$(TargetsNetCoreApp)' == 'true'">netcoreapp</_targetCategory>
+    <_targetCategory Condition="'$(TargetsNetFx)' == 'true'">netfx</_targetCategory>
 
-    <_withoutCategories>$(_withoutCategories);non$(_targetGroupCategory)tests</_withoutCategories>
+    <_withoutCategories>$(_withoutCategories);non$(_targetCategory)tests</_withoutCategories>
     <_withoutCategories Condition="'$(TargetOSCategory)' != ''">$(_withoutCategories);$(TargetOSCategory)</_withoutCategories>
   </PropertyGroup>
 

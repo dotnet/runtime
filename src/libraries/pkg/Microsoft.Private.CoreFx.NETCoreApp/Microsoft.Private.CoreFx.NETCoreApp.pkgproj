@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
-    <TargetFrameworkVersion>5.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>$(NETCoreAppCurrentVersion)</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
     <RefBinDir>$(NETCoreAppPackageRefPath)</RefBinDir>
     <LibBinDir>$(NETCoreAppPackageRuntimePath)</LibBinDir>

@@ -435,7 +435,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableHashSet<T> WithComparer(IEqualityComparer<T> equalityComparer)
+        public ImmutableHashSet<T> WithComparer(IEqualityComparer<T>? equalityComparer)
         {
             if (equalityComparer == null)
             {
