@@ -14,7 +14,7 @@ RUN ./libraries.sh -c $CONFIGURATION
 FROM $SDK_BASE_IMAGE as target
 
 ARG TESTHOST_LOCATION=/repo/artifacts/bin/testhost
-ARG TFM=netcoreapp
+ARG TFM=netcoreapp5.0
 ARG OS=Linux
 ARG ARCH=x64
 ARG CONFIGURATION=Release
