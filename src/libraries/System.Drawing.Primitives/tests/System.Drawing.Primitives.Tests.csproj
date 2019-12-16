@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ColorTranslatorTests.cs" />
@@ -22,10 +22,5 @@
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs">
       <Link>Common\System\Runtime\Serialization\Utils.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="SizeFTests.netcoreapp.cs" />
-    <Compile Include="ColorTests.netcoreapp.cs" />
-    <Compile Include="SizeTests.netcoreapp.cs" />
   </ItemGroup>
 </Project>

@@ -16,7 +16,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     // The results are as if you'd passed in a bindingFlags value of "Public | NonPublic | Instance | Static | FlattenHierarchy"
     // In addition, if "ignoreCase" was passed to Create(), BindingFlags.IgnoreCase is also in effect.
     //
-    // Results are sorted by declaring type. The members declared by the most derived type appear first, then those declared by his base class, and so on.
+    // Results are sorted by declaring type. The members declared by the most derived type appear first, then those declared by its base class, and so on.
     // The Disambiguation logic takes advantage of this.
     //
     // This object is a good candidate for long term caching.

@@ -151,6 +151,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Gets the "boxed" state machine object.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the async state machine.</typeparam>
         /// <param name="stateMachine">The state machine.</param>
+        /// <param name="taskField">The reference to the Task field storing the Task instance.</param>
         /// <returns>The "boxed" state machine.</returns>
         private static IAsyncStateMachineBox GetStateMachineBox<TStateMachine>(
             ref TStateMachine stateMachine,
@@ -427,16 +428,17 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Completes the already initialized task with the specified result.</summary>
         /// <param name="result">The result to use to complete the task.</param>
-        internal static void SetExistingTaskResult(Task<TResult> taskField, [AllowNull] TResult result)
+        /// <param name="task">The task to complete.</param>
+        internal static void SetExistingTaskResult(Task<TResult> task, [AllowNull] TResult result)
         {
-            Debug.Assert(taskField != null, "Expected non-null task");
+            Debug.Assert(task != null, "Expected non-null task");
 
             if (AsyncCausalityTracer.LoggingOn)
             {
-                AsyncCausalityTracer.TraceOperationCompletion(taskField, AsyncCausalityStatus.Completed);
+                AsyncCausalityTracer.TraceOperationCompletion(task, AsyncCausalityStatus.Completed);
             }
 
-            if (!taskField.TrySetResult(result))
+            if (!task.TrySetResult(result))
             {
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
             }

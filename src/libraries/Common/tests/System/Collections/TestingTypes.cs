@@ -366,5 +366,23 @@ namespace System.Collections.Tests
         public bool Equals(ValueDelegateEquatable other) => EqualsWorker(other);
     }
 
+    public sealed class TrackingEqualityComparer<T> : IEqualityComparer<T>
+    {
+        public int EqualsCalls;
+        public int GetHashCodeCalls;
+
+        public bool Equals(T x, T y)
+        {
+            EqualsCalls++;
+            return EqualityComparer<T>.Default.Equals(x, y);
+        }
+
+        public int GetHashCode(T obj)
+        {
+            GetHashCodeCalls++;
+            return EqualityComparer<T>.Default.GetHashCode(obj);
+        }
+    }
+
     #endregion
 }

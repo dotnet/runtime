@@ -17,7 +17,6 @@ namespace Microsoft.DotNet.Build.Tasks
         private const string PreferredPackagesProperty = "PackageConflictPreferredPackages";
         private static readonly Version ZeroVersion = new Version(0, 0, 0, 0);
 
-
         [Required]
         public ITaskItem[] Files { get; set; }
 
@@ -30,7 +29,6 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public string PlatformManifestFile { get; set; }
 
-        [Required]
         public string PropsFile { get; set; }
 
         [Required]
@@ -121,13 +119,19 @@ namespace Microsoft.DotNet.Build.Tasks
                 }
             }
 
-            var props = ProjectRootElement.Create();
-            var itemGroup = props.AddItemGroup();
-            // set the platform manifest when the platform is not being published as part of the app
-            itemGroup.Condition = "'$(RuntimeIdentifier)' == '' or '$(SelfContained)' != 'true'";
+            bool generatePropsFile = !string.IsNullOrWhiteSpace(PropsFile);
+            ProjectRootElement props = null;
 
-            var manifestFileName = Path.GetFileName(PlatformManifestFile);
-            itemGroup.AddItem(PlatformManifestsItem, $"$(MSBuildThisFileDirectory){manifestFileName}");
+            if (generatePropsFile)
+            {
+                props = ProjectRootElement.Create();
+                var itemGroup = props.AddItemGroup();
+                // set the platform manifest when the platform is not being published as part of the app
+                itemGroup.Condition = "'$(RuntimeIdentifier)' == '' or '$(SelfContained)' != 'true'";
+
+                var manifestFileName = Path.GetFileName(PlatformManifestFile);
+                itemGroup.AddItem(PlatformManifestsItem, $"$(MSBuildThisFileDirectory){manifestFileName}");
+            }
 
             Directory.CreateDirectory(Path.GetDirectoryName(PlatformManifestFile));
             using (var manifestWriter = File.CreateText(PlatformManifestFile))
@@ -143,13 +147,16 @@ namespace Microsoft.DotNet.Build.Tasks
                 }
             }
 
-            var propertyGroup = props.AddPropertyGroup();
-            propertyGroup.AddProperty(PreferredPackagesProperty, PreferredPackages);
+            if (!string.IsNullOrWhiteSpace(PropsFile))
+            {
+                var propertyGroup = props.AddPropertyGroup();
+                propertyGroup.AddProperty(PreferredPackagesProperty, PreferredPackages);
 
-            var versionPropertyName = $"_{PackageId.Replace(".", "_")}_Version";
-            propertyGroup.AddProperty(versionPropertyName, PackageVersion);
+                var versionPropertyName = $"_{PackageId.Replace(".", "_")}_Version";
+                propertyGroup.AddProperty(versionPropertyName, PackageVersion);
 
-            props.Save(PropsFile);
+                props.Save(PropsFile);
+            }
 
             return !Log.HasLoggedErrors;
         }

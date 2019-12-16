@@ -16,7 +16,6 @@ namespace JIT.HardwareIntrinsics.Arm
     static class Helpers
     {
 <#
-
         string[] typeNames = { "sbyte", "short", "int" };
         foreach (string typeName in typeNames)
         {
@@ -72,7 +71,63 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 <#
-    }
+        }
+
+        foreach (var type in new[] { (name: "byte", unsigned: "byte"),
+                                     (name: "int", unsigned: "uint"),
+                                     (name: "long", unsigned: "ulong"),
+                                     (name: "sbyte", unsigned: "byte"),
+                                     (name: "uint", unsigned: "uint"),
+                                     (name: "ulong", unsigned: "ulong") })
+        {
 #>
+        public static <#= type.name #> ReverseElementBits(<#= type.name #> op1)
+        {
+            <#= type.unsigned #> val = (<#= type.unsigned #>)op1;
+            <#= type.unsigned #> result = 0;
+            const int bitsize = sizeof(<#= type.unsigned #>) * 8;
+            const <#= type.unsigned #> cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (<#= type.unsigned #>)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (<#= type.name #>)result;
+        }
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong" })
+        {
+#>
+        public static <#= typeName #> BitwiseSelect(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3)
+        {
+            ulong result = 0;
+
+            for (int i = 0; i < 8 * sizeof(<#= typeName #>); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result | ((ulong)op2 & (1UL << i));
+                }
+                else
+                {
+                    result = result | ((ulong)op3 & (1UL << i));
+                }
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+<#
+        }
+#>
+        public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
+        public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
     }
 }

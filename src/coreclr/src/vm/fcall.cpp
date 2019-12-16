@@ -148,12 +148,6 @@ NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect)
     return objToProtect;
 }
 
-#ifdef _DEBUG
-
-unsigned FcallTimeHist[11];
-
-#endif
-
 #ifdef ENABLE_CONTRACTS
 
 /**************************************************************************************/

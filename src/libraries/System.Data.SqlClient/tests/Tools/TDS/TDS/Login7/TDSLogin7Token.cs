@@ -517,7 +517,7 @@ namespace Microsoft.SqlServer.TDS.Login7
             if (FeatureExt != null)
             {
                 // Write the offset of the feature extension offset (pointer to pointer)
-                variableProperties.Add(new TDSLogin7TokenOffsetProperty(GetType().GetProperty("FeatureExt"), (ushort)(variableProperties.Last().Position + variableProperties.Last().Length * 2), sizeof(uint) / 2, true));  // Should be 4 bytes, devided by 2 because the next guy multiplies by 2
+                variableProperties.Add(new TDSLogin7TokenOffsetProperty(GetType().GetProperty("FeatureExt"), (ushort)(variableProperties.Last().Position + variableProperties.Last().Length * 2), sizeof(uint) / 2, true));  // Should be 4 bytes, devided by 2 because the next step multiplies by 2
                 TDSUtilities.WriteUShort(destination, (ushort)variableProperties.Last().Position);
                 TDSUtilities.WriteUShort(destination, (ushort)(variableProperties.Last().Length * 2));  // Compensate for division by 2 above
             }

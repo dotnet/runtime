@@ -2935,10 +2935,9 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data)
     if (st == 0)
     {
         const SIZE_T BitsPerBitsetEntry = 8 * sizeof(UINT_PTR);
-        int nrcpus = PAL_GetTotalCpuCount();
 
         // Get info for as much processors as it is possible to fit into the resulting set
-        SIZE_T remainingCount = std::min(size * BitsPerBitsetEntry, (SIZE_T)nrcpus);
+        SIZE_T remainingCount = std::min(size * BitsPerBitsetEntry, (SIZE_T)CPU_SETSIZE);
         SIZE_T i = 0;
         while (remainingCount != 0)
         {

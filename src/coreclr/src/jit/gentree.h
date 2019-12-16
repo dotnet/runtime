@@ -1016,6 +1016,17 @@ public:
     void dumpLIRFlags();
 #endif
 
+    bool TypeIs(var_types type) const
+    {
+        return gtType == type;
+    }
+
+    template <typename... T>
+    bool TypeIs(var_types type, T... rest) const
+    {
+        return TypeIs(type) || TypeIs(rest...);
+    }
+
     bool OperIs(genTreeOps oper) const
     {
         return OperGet() == oper;
@@ -3109,22 +3120,44 @@ struct GenTreeLclVar : public GenTreeLclVarCommon
 
 struct GenTreeLclFld : public GenTreeLclVarCommon
 {
-    unsigned gtLclOffs; // offset into the variable to access
+private:
+    uint16_t      m_lclOffs;  // offset into the variable to access
+    FieldSeqNode* m_fieldSeq; // This LclFld node represents some sequences of accesses.
 
-    FieldSeqNode* gtFieldSeq; // This LclFld node represents some sequences of accesses.
-
-    // old/FE style constructor where load/store/addr share same opcode
+public:
     GenTreeLclFld(var_types type, unsigned lclNum, unsigned lclOffs)
-        : GenTreeLclVarCommon(GT_LCL_FLD, type, lclNum), gtLclOffs(lclOffs), gtFieldSeq(nullptr)
+        : GenTreeLclVarCommon(GT_LCL_FLD, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
     {
-        assert(sizeof(*this) <= s_gtNodeSizes[GT_LCL_FLD]);
+        assert(lclOffs <= UINT16_MAX);
     }
 
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs)
-        : GenTreeLclVarCommon(oper, type, lclNum), gtLclOffs(lclOffs), gtFieldSeq(nullptr)
+        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
     {
-        assert(sizeof(*this) <= s_gtNodeSizes[GT_LCL_FLD]);
+        assert(lclOffs <= UINT16_MAX);
     }
+
+    uint16_t GetLclOffs() const
+    {
+        return m_lclOffs;
+    }
+
+    void SetLclOffs(unsigned lclOffs)
+    {
+        assert(lclOffs <= UINT16_MAX);
+        m_lclOffs = static_cast<uint16_t>(lclOffs);
+    }
+
+    FieldSeqNode* GetFieldSeq() const
+    {
+        return m_fieldSeq;
+    }
+
+    void SetFieldSeq(FieldSeqNode* fieldSeq)
+    {
+        m_fieldSeq = fieldSeq;
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclFld() : GenTreeLclVarCommon()
     {
@@ -3861,7 +3894,7 @@ struct GenTreeCall final : public GenTree
 
 #define GTF_CALL_M_R2R_REL_INDIRECT        0x00002000 // GT_CALL -- ready to run call is indirected through a relative address
 #define GTF_CALL_M_DOES_NOT_RETURN         0x00004000 // GT_CALL -- call does not return
-#define GTF_CALL_M_SECURE_DELEGATE_INV     0x00008000 // GT_CALL -- call is in secure delegate
+#define GTF_CALL_M_WRAPPER_DELEGATE_INV    0x00008000 // GT_CALL -- call is in wrapper delegate
 #define GTF_CALL_M_FAT_POINTER_CHECK       0x00010000 // GT_CALL -- CoreRT managed calli needs transformation, that checks
                                                       // special bit in calli address. If it is set, then it is necessary
                                                       // to restore real function address and load hidden argument

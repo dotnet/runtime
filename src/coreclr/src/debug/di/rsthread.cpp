@@ -4020,7 +4020,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
 
 #endif // DBG_TARGET_AMD64 || defined(DBG_TARGET_ARM64)
 
-    // Remember that we've hijacked the guy.
+    // Remember that we've hijacked the thread.
     SetState(CUTS_GenericHijacked);
 
     LOG((LF_CORDB, LL_INFO1000000, "CUT::SGH: Current IP is 0x%08x\n", CORDbgGetIP(GetHijackCtx())));

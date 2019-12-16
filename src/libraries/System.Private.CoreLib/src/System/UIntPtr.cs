@@ -26,14 +26,12 @@ namespace System
         [Intrinsic]
         public static readonly UIntPtr Zero;
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe UIntPtr(uint value)
         {
             _value = (void*)value;
         }
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe UIntPtr(ulong value)
         {
@@ -44,7 +42,6 @@ namespace System
 #endif
         }
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe UIntPtr(void* value)
         {
@@ -91,7 +88,6 @@ namespace System
 #endif
         }
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe uint ToUInt32()
         {
@@ -102,31 +98,25 @@ namespace System
 #endif
         }
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe ulong ToUInt64() => (ulong)_value;
 
-        [Intrinsic]
         [NonVersionable]
         public static explicit operator UIntPtr(uint value) =>
             new UIntPtr(value);
 
-        [Intrinsic]
         [NonVersionable]
         public static explicit operator UIntPtr(ulong value) =>
             new UIntPtr(value);
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator UIntPtr(void* value) =>
             new UIntPtr(value);
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator void*(UIntPtr value) =>
             value._value;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator uint(UIntPtr value) =>
 #if BIT64
@@ -135,17 +125,14 @@ namespace System
             (uint)value._value;
 #endif
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe explicit operator ulong(UIntPtr value) =>
             (ulong)value._value;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe bool operator ==(UIntPtr value1, UIntPtr value2) =>
             value1._value == value2._value;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe bool operator !=(UIntPtr value1, UIntPtr value2) =>
             value1._value != value2._value;
@@ -154,7 +141,6 @@ namespace System
         public static UIntPtr Add(UIntPtr pointer, int offset) =>
             pointer + offset;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe UIntPtr operator +(UIntPtr pointer, int offset) =>
             new UIntPtr((nuint)pointer._value + (nuint)offset);
@@ -163,19 +149,16 @@ namespace System
         public static UIntPtr Subtract(UIntPtr pointer, int offset) =>
             pointer - offset;
 
-        [Intrinsic]
         [NonVersionable]
         public static unsafe UIntPtr operator -(UIntPtr pointer, int offset) =>
             new UIntPtr((nuint)pointer._value - (nuint)offset);
 
         public static int Size
         {
-            [Intrinsic]
             [NonVersionable]
             get => sizeof(nuint);
         }
 
-        [Intrinsic]
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 

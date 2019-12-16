@@ -478,6 +478,15 @@ void MethodContext::dumpToConsole(int mcNumber)
     {
         printf(" method context #%d", mcNumber);
     }
+
+    // Dump method name, etc., to output.
+    char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
+    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE);
+    if (cbLen >= 0)
+    {
+        printf(" %s", bufferIdentityInfo);
+    }
+
     printf("\n");
 
 #define LWM(map, key, value) dumpLWM(this, map)
@@ -756,7 +765,7 @@ void MethodContext::recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD a
 }
 void MethodContext::dmpGetClassAttribs(DWORDLONG key, DWORD value)
 {
-    printf("GetClassAttribs key %016llX, value %u", key, value);
+    printf("GetClassAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value).c_str());
 }
 DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
 {
@@ -780,7 +789,7 @@ void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWOR
 }
 void MethodContext::dmpGetMethodAttribs(DWORDLONG key, DWORD value)
 {
-    printf("GetMethodAttribs key %016llX, value %u", key, value);
+    printf("GetMethodAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value).c_str());
 }
 DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
 {
@@ -1041,11 +1050,11 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
 
 void MethodContext::dmpGetMethodNameFromMetadata(Agnostic_CORINFO_METHODNAME_TOKENin key, Agnostic_CORINFO_METHODNAME_TOKENout value)
 {
-    unsigned char* methodName    = (unsigned char*)GetMethodName->GetBuffer(value.methodName);
-    unsigned char* className     = (unsigned char*)GetMethodName->GetBuffer(value.className);
-    unsigned char* namespaceName = (unsigned char*)GetMethodName->GetBuffer(value.namespaceName);
-    unsigned char* enclosingClassName = (unsigned char*)GetMethodName->GetBuffer(value.enclosingClassName);
-    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u nclosingClassNonNull-%u, value meth-'%s', "
+    unsigned char* methodName    = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
+    unsigned char* className     = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.className);
+    unsigned char* namespaceName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
+    unsigned char* enclosingClassName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
+    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u enclosingClassNonNull-%u, value meth-'%s', "
            "class-'%s', namespace-'%s' enclosingClass-'%s'",
            key.ftn, key.className, key.namespaceName, key.enclosingClassName, methodName, className, namespaceName, enclosingClassName);
     GetMethodNameFromMetadata->Unlock();
@@ -1363,7 +1372,7 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
         value.instParamLookup.accessType = (DWORD)pResult->instParamLookup.accessType;
         value.instParamLookup.handle     = (DWORDLONG)pResult->instParamLookup.handle;
-        value.secureDelegateInvoke       = (DWORD)pResult->secureDelegateInvoke;
+        value.wrapperDelegateInvoke       = (DWORD)pResult->wrapperDelegateInvoke;
     }
     else
         ZeroMemory(&value, sizeof(Agnostic_CORINFO_CALL_INFO));
@@ -1384,11 +1393,11 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
            " ipl{at-%08X hnd-%016llX}"
            " sdi-%08X"
            " excp-%08X"
-           "stubLookup%s",
+           " stubLookup{%s}",
            value.hMethod, value.methodFlags, value.classFlags,
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.sig).c_str(),
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.verSig).c_str(), value.instParamLookup.accessType,
-           value.instParamLookup.handle, value.secureDelegateInvoke, value.exceptionCode,
+           value.instParamLookup.handle, value.wrapperDelegateInvoke, value.exceptionCode,
            SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.stubLookup).c_str());
 }
 void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -1471,7 +1480,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
     pResult->instParamLookup.accessType = (InfoAccessType)value.instParamLookup.accessType;
     pResult->instParamLookup.handle     = (CORINFO_GENERIC_HANDLE)value.instParamLookup.handle;
-    pResult->secureDelegateInvoke       = (BOOL)value.secureDelegateInvoke;
+    pResult->wrapperDelegateInvoke       = (BOOL)value.wrapperDelegateInvoke;
     *exceptionCode                      = (DWORD)value.exceptionCode;
 
     DEBUG_REP(dmpGetCallInfo(key, value));
@@ -3888,7 +3897,7 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     value.offsetOfGCState                            = (DWORD)pEEInfoOut->offsetOfGCState;
     value.offsetOfDelegateInstance                   = (DWORD)pEEInfoOut->offsetOfDelegateInstance;
     value.offsetOfDelegateFirstTarget                = (DWORD)pEEInfoOut->offsetOfDelegateFirstTarget;
-    value.offsetOfSecureDelegateIndirectCell         = (DWORD)pEEInfoOut->offsetOfSecureDelegateIndirectCell;
+    value.offsetOfWrapperDelegateIndirectCell        = (DWORD)pEEInfoOut->offsetOfWrapperDelegateIndirectCell;
     value.offsetOfTransparentProxyRP                 = (DWORD)pEEInfoOut->offsetOfTransparentProxyRP;
     value.offsetOfRealProxyServer                    = (DWORD)pEEInfoOut->offsetOfRealProxyServer;
     value.offsetOfObjArrayData                       = (DWORD)pEEInfoOut->offsetOfObjArrayData;
@@ -3914,7 +3923,7 @@ void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& valu
            value.inlinedCallFrameInfo.offsetOfCallSiteSP, value.inlinedCallFrameInfo.offsetOfCalleeSavedFP,
            value.inlinedCallFrameInfo.offsetOfCallTarget, value.inlinedCallFrameInfo.offsetOfReturnAddress,
            value.offsetOfThreadFrame, value.offsetOfGCState, value.offsetOfDelegateInstance,
-           value.offsetOfDelegateFirstTarget, value.offsetOfSecureDelegateIndirectCell,
+           value.offsetOfDelegateFirstTarget, value.offsetOfWrapperDelegateIndirectCell,
            value.offsetOfTransparentProxyRP, value.offsetOfRealProxyServer, value.offsetOfObjArrayData,
            value.sizeOfReversePInvokeFrame, value.osPageSize, value.maxUncheckedOffsetForNullObject, value.targetAbi,
            value.osType, value.osMajor, value.osMinor, value.osBuild);
@@ -3943,7 +3952,7 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->offsetOfGCState                    = (unsigned)value.offsetOfGCState;
         pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
         pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
-        pEEInfoOut->offsetOfSecureDelegateIndirectCell = (unsigned)value.offsetOfSecureDelegateIndirectCell;
+        pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
         pEEInfoOut->offsetOfTransparentProxyRP         = (unsigned)value.offsetOfTransparentProxyRP;
         pEEInfoOut->offsetOfRealProxyServer            = (unsigned)value.offsetOfRealProxyServer;
         pEEInfoOut->offsetOfObjArrayData               = (unsigned)value.offsetOfObjArrayData;
@@ -3971,7 +3980,7 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->offsetOfGCState                            = (unsigned)0xc;
         pEEInfoOut->offsetOfDelegateInstance                   = (unsigned)0x8;
         pEEInfoOut->offsetOfDelegateFirstTarget                = (unsigned)0x18;
-        pEEInfoOut->offsetOfSecureDelegateIndirectCell         = (unsigned)0x40;
+        pEEInfoOut->offsetOfWrapperDelegateIndirectCell        = (unsigned)0x40;
         pEEInfoOut->offsetOfTransparentProxyRP                 = (unsigned)0x8;
         pEEInfoOut->offsetOfRealProxyServer                    = (unsigned)0x18;
         pEEInfoOut->offsetOfObjArrayData                       = (unsigned)0x18;
@@ -6337,7 +6346,7 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
     return value;
 }
 
-int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
+int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName /* = false */)
 {
     char* obuff = buff;
 
@@ -6351,7 +6360,7 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
     repCompileMethod(&info, &flags);
 
     // Add the Method Signature
-    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, info.ftn, info.args));
+    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, info.ftn, info.args, ignoreMethodName));
     buff += t;
     len -= t;
 
@@ -6370,11 +6379,11 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
 
     return (int)(buff - obuff);
 }
-int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len)
+int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName /* = false */)
 {
     char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
 
-    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE);
+    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE, ignoreMethodName);
 
     if (cbLen < 0)
         return cbLen;

@@ -7,6 +7,15 @@ parameters:
   helixQueues: ''
   crossrootfsDir: ''
   stagedBuild: false
+  variables: {}
+  pool: ''
+
+  # When set to a non-empty value (Debug / Release), it determines libraries
+  # build configuration to use for the tests. Setting this property implies
+  # a dependency of this job on the appropriate libraries build and is used
+  # to construct the name of the Azure artifact representing libraries build
+  # to use for building the tests.
+  liveLibrariesBuildConfig: ''
 
 ### Crossgen-comparison job
 ###
@@ -21,7 +30,9 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'test/crossgen-comparison/'
+    pool: ${{ parameters.pool }}
 
     # Compute job name from template parameters
     name: ${{ format('test_crossgen_comparison_{0}{1}_{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -53,25 +64,40 @@ jobs:
       - name: productDirectory
         value: $(binDirectory)\coreclr
 
+    - ${{ parameters.variables }}
+
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    dependsOn:
+    - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
     container: ${{ parameters.container }}
 
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 120
+      timeoutInMinutes: 150 # 2.5 hrs
 
     steps:
 
     # Download product build
-    - template: download-artifact-step.yml
+    - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
         artifactName: '$(buildProductArtifactName)'
         displayName: 'product build'
+
+    # Optionally download live-built libraries
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesBuildArtifactName)'
+          displayName: 'live-built libraries'
 
 
     # Create directories and ensure crossgen is executable
@@ -124,17 +150,17 @@ jobs:
         HelixTargetQueues: ${{ join(' ', parameters.helixQueues) }}
         ${{ if ne(variables['System.TeamProject'], 'internal') }}:
           Creator: $(Creator)
-        WorkItemTimeout: 1:00 # 1 hour
-        WorkItemDirectory: '$(binDirectory)'
+        WorkItemTimeout: 2:00 # 2 hours
+        WorkItemDirectory: '$(artifactsDirectory)'
         CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
-            chmod +x     $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/crossgen;
+            chmod +x     $HELIX_WORKITEM_PAYLOAD/bin/coreclr/$(targetFlavor)/crossgen;
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
-            --crossgen   $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/crossgen
-            --il_corelib $HELIX_WORKITEM_PAYLOAD/coreclr/$(targetFlavor)/IL/System.Private.CoreLib.dll
-            --core_root  $HELIX_WORKITEM_PAYLOAD/tests/$(targetFlavor)/Tests/Core_Root
+            --crossgen   $HELIX_WORKITEM_PAYLOAD/bin/coreclr/$(targetFlavor)/crossgen
+            --il_corelib $HELIX_WORKITEM_PAYLOAD/bin/coreclr/$(targetFlavor)/IL/System.Private.CoreLib.dll
+            --core_root  $HELIX_WORKITEM_PAYLOAD/tests/coreclr/$(targetFlavor)/Tests/Core_Root
             --result_dir $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
             --base_dir   $HELIX_WORKITEM_PAYLOAD/log/$(crossFlavor)
@@ -143,9 +169,9 @@ jobs:
           WorkItemCommand:
             mkdir        %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
-            --crossgen   %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\crossgen
-            --il_corelib %HELIX_WORKITEM_PAYLOAD%\Product\$(targetFlavor)\IL\System.Private.CoreLib.dll
-            --core_root  %HELIX_WORKITEM_PAYLOAD%\tests\$(targetFlavor)\Tests\Core_Root
+            --crossgen   %HELIX_WORKITEM_PAYLOAD%\bin\coreclr\$(targetFlavor)\crossgen
+            --il_corelib %HELIX_WORKITEM_PAYLOAD%\bin\coreclr\$(targetFlavor)\IL\System.Private.CoreLib.dll
+            --core_root  %HELIX_WORKITEM_PAYLOAD%\tests\coreclr\$(targetFlavor)\Tests\Core_Root
             --result_dir %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
             --base_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(crossFlavor)

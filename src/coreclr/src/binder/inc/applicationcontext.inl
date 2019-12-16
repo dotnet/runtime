@@ -69,11 +69,6 @@ SimpleNameToFileNameMap * ApplicationContext::GetTpaList()
     return m_pTrustedPlatformAssemblyMap;
 }
 
-TpaFileNameHash * ApplicationContext::GetTpaFileNameList()
-{
-    return m_pFileNameHash;
-}
-
 StringArrayList * ApplicationContext::GetPlatformResourceRoots()
 {
     return &m_platformResourceRoots;

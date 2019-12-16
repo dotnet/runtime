@@ -14,11 +14,11 @@ jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
     - Linux_x64
@@ -28,22 +28,21 @@ jobs:
     jobParameters:
       testGroup: gc-longrunning
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: release
     platforms:
     - Linux_x64
     - Linux_arm64
     - Windows_NT_x64
     - Windows_NT_arm64
-    helixQueueGroup: ci
     jobParameters:
       testGroup: gc-longrunning
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: run-test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: release
     platforms:
     - Linux_x64
@@ -51,6 +50,7 @@ jobs:
     - Windows_NT_x64
     - Windows_NT_arm64
     helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     managedOsxBuild: false
     jobParameters:
       testGroup: gc-longrunning

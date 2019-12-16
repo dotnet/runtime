@@ -28,6 +28,28 @@
     </ItemGroup>
   </Target>
 
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
+  <Target Name="GenerateFileVersionProps">
+    <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
+                              PackageId="Microsoft.NETCore.App"
+                              PackageVersion="$(ProductVersion)"
+                              PlatformManifestFile="$(PlatformManifestFile)"
+                              PreferredPackages="Microsoft.NetCore.App"
+                              PermitDllAndExeFilesLackingFileVersion="true" />
+  </Target>
+
+  <!--
+    Shared framework deps file generation.
+    Produces a test shared-framework deps file.
+    To use invoke target directly specifying NETCoreAppTestSharedFrameworkPath property.
+  -->
+  <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
+  <Target Name="GenerateTestSharedFrameworkDepsFile">
+    <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
+                                         RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
+                                         TargetRuntimeIdentifier="$(PackageRID)" />
+  </Target>
+
   <!-- Generate launch settings support files to enable VS debugging. -->
   <Target Name="GenerateLaunchSettingsFiles" Condition="'$(EnableLaunchSettings)' == 'true'">
     <PropertyGroup>

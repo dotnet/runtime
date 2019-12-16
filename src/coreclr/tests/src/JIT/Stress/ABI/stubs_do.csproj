@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IlasmRoundTrip>true</IlasmRoundTrip>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>True</Optimize>
+    <CLRTestExecutionArguments>--instantiatingstubs --unboxingstubs --sharedgenericunboxingstubs --num-calls 100 --max-params 5 --no-ctrlc-summary</CLRTestExecutionArguments>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+</Project>

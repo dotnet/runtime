@@ -15,10 +15,6 @@
       https://github.com/dotnet/arcade/issues/388
   -->
 
-  <PropertyGroup>
-    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
-  </PropertyGroup>
-
   <Import Project="$(MSBuildThisFileDirectory)Subsets.props" />
 
   <Target Name="CheckSpecifiedSubsetValidity"
@@ -79,8 +75,8 @@
     </ItemGroup>
 
     <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="RepoRoot=$(RepoRoot)"
-             Targets="Restore;Build;CreateHostMachineInfoFile"/>
+             Properties="Configuration=Debug;Platform=AnyCPU"
+             Targets="Restore;Build"/>
 
     <WriteLinesToFile File="$(RepoTasksOutputFile)"
                       Lines="$(RepoTasksOutputFile)"
@@ -90,11 +86,11 @@
   <Target Name="GetRepoTasksSrc">
     <PropertyGroup>
       <RepoTasksDir>$(RepoTasksDir)</RepoTasksDir>
-      <RepoTasksOutputFile>$(ArtifactsObjDir)runtime.tasks\$(Configuration)\build-semaphore.txt</RepoTasksOutputFile>
+      <RepoTasksOutputFile>$(ArtifactsObjDir)runtime.tasks\Debug\build-semaphore.txt</RepoTasksOutputFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <RepoTasksSrc Include="$(RepoTasksDir)**\*.cs" />
+      <RepoTasksSrc Include="$(RepoTasksDir)**\*.cs*" />
     </ItemGroup>
   </Target>
 

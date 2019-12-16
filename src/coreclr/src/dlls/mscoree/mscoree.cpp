@@ -18,10 +18,6 @@
 
 #include "product_version.h"
 
-#ifdef FEATURE_COMINTEROP
-#include "ComCallUnmarshal.h"
-#endif // FEATURE_COMINTEROP
-
 #include <dbgenginemetrics.h>
 
 // Locals.
@@ -40,27 +36,20 @@ HINSTANCE g_hThisInst;  // This library.
 
 #include <shlwapi.h>
 
-#include <process.h> // for __security_init_cookie()
-
 extern "C" IExecutionEngine* IEE();
 
-#ifdef NO_CRT_INIT
-#define _CRT_INIT(hInstance, dwReason, lpReserved) (TRUE)
-#else
-extern "C" BOOL WINAPI _CRT_INIT(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
-#endif
+#ifdef PLATFORM_WINDOWS
 
+#include <process.h> // for __security_init_cookie()
+
+extern "C" BOOL WINAPI _CRT_INIT(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
 extern "C" BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
 
 // For the CoreClr, this is the real DLL entrypoint. We make ourselves the first entrypoint as
 // we need to capture coreclr's hInstance before the C runtime initializes. This function
 // will capture hInstance, let the C runtime initialize and then invoke the "classic"
 // DllMain that initializes everything else.
-extern "C"
-#ifdef FEATURE_PAL
-DLLEXPORT // For Win32 PAL LoadLibrary emulation
-#endif
-BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
+extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
     STATIC_CONTRACT_NOTHROW;
 
@@ -68,12 +57,10 @@ BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     switch (dwReason)
     {
         case DLL_PROCESS_ATTACH:
-#ifndef FEATURE_PAL
             // Make sure the /GS security cookie is initialized before we call anything else.
             // BinScope detects the call to __security_init_cookie in its "Has Non-GS-friendly
             // Initialization" check and makes it pass.
             __security_init_cookie();
-#endif // FEATURE_PAL
 
             // It's critical that we invoke InitUtilCode() before the CRT initializes.
             // We have a lot of global ctors that will break if we let the CRT initialize without
@@ -112,6 +99,9 @@ BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     return result;
 }
 
+#endif // PLATFORM_WINDOWS
+
+
 extern "C"
 #ifdef FEATURE_PAL
 DLLEXPORT // For Win32 PAL LoadLibrary emulation
@@ -124,6 +114,18 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     {
     case DLL_PROCESS_ATTACH:
         {
+#ifndef PLATFORM_WINDOWS
+            // It's critical that we invoke InitUtilCode() before the CRT initializes.
+            // We have a lot of global ctors that will break if we let the CRT initialize without
+            // this step having been done.
+
+            CoreClrCallbacks cccallbacks;
+            cccallbacks.m_hmodCoreCLR = (HINSTANCE)hInstance;
+            cccallbacks.m_pfnIEE = IEE;
+            cccallbacks.m_pfnGetCORSystemDirectory = GetCORSystemDirectoryInternaL;
+            InitUtilcode(cccallbacks);
+#endif
+
             // Save the module handle.
             g_hThisInst = (HINSTANCE)hInstance;
 
@@ -153,61 +155,6 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
     return TRUE;
 }
-
-#ifdef FEATURE_COMINTEROP
-// ---------------------------------------------------------------------------
-// %%Function: DllCanUnloadNowInternal
-//
-// Returns:
-//  S_FALSE                 - Indicating that COR, once loaded, may not be
-//                            unloaded.
-// ---------------------------------------------------------------------------
-STDAPI DllCanUnloadNowInternal(void)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    //we should never unload unless the process is dying
-    return S_FALSE;
-}  // DllCanUnloadNowInternal
-
-// ---------------------------------------------------------------------------
-// %%Function: DllRegisterServerInternal
-//
-// Description:
-//  Registers
-// ---------------------------------------------------------------------------
-STDAPI DllRegisterServerInternal(HINSTANCE hMod, LPCWSTR version)
-{
-
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(version));
-    } CONTRACTL_END;
-
-    return S_OK;
-}  // DllRegisterServerInternal
-
-// ---------------------------------------------------------------------------
-// %%Function: DllUnregisterServerInternal
-// ---------------------------------------------------------------------------
-STDAPI DllUnregisterServerInternal(void)
-{
-
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    return S_OK;
-
-}  // DllUnregisterServerInternal
-#endif // FEATURE_COMINTEROP
 
 #endif // CROSSGEN_COMPILE
 

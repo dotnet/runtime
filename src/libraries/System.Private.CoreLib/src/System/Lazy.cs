@@ -525,6 +525,7 @@ namespace System
         public bool IsValueCreated => _lazy.IsValueCreated;
 
         /// <summary>Returns the value of the Lazy object.</summary>
+        [MaybeNull]
         public T Value => _lazy.ValueForDebugDisplay;
 
         /// <summary>Returns the execution mode of the Lazy object</summary>

@@ -73,7 +73,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static Match Empty { get; } = new Match(null, 1, string.Empty, 0, 0, 0);
 
-        internal virtual void Reset(Regex regex, string text, int textbeg, int textend, int textstart)
+        internal void Reset(Regex regex, string text, int textbeg, int textend, int textstart)
         {
             _regex = regex;
             Text = text;
@@ -81,24 +81,16 @@ namespace System.Text.RegularExpressions
             _textend = textend;
             _textstart = textstart;
 
-            for (int i = 0; i < _matchcount.Length; i++)
+            int[] matchcount = _matchcount;
+            for (int i = 0; i < matchcount.Length; i++)
             {
-                _matchcount[i] = 0;
+                matchcount[i] = 0;
             }
 
             _balancing = false;
         }
 
-        public virtual GroupCollection Groups
-        {
-            get
-            {
-                if (_groupcoll == null)
-                    _groupcoll = new GroupCollection(this, null);
-
-                return _groupcoll;
-            }
-        }
+        public virtual GroupCollection Groups => _groupcoll ??= new GroupCollection(this, null);
 
         /// <summary>
         /// Returns a new Match with the results for the next match, starting
@@ -127,17 +119,13 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException(SR.NoResultOnFailed);
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
-            RegexReplacement repl = RegexReplacement.GetOrCreate(_regex._replref!, replacement, _regex.caps!, _regex.capsize,
-                _regex.capnames!, _regex.roptions);
-            Span<char> charInitSpan = stackalloc char[ReplaceBufferSize];
-            var vsb = new ValueStringBuilder(charInitSpan);
-
+            RegexReplacement repl = RegexReplacement.GetOrCreate(_regex._replref!, replacement, _regex.caps!, _regex.capsize, _regex.capnames!, _regex.roptions);
+            var vsb = new ValueStringBuilder(stackalloc char[ReplaceBufferSize]);
             repl.ReplacementImpl(ref vsb, this);
-
             return vsb.ToString();
         }
 
-        internal virtual ReadOnlySpan<char> GroupToStringImpl(int groupnum)
+        internal ReadOnlySpan<char> GroupToStringImpl(int groupnum)
         {
             int c = _matchcount[groupnum];
             if (c == 0)
@@ -180,27 +168,26 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Adds a capture to the group specified by "cap"
         /// </summary>
-        internal virtual void AddMatch(int cap, int start, int len)
+        internal void AddMatch(int cap, int start, int len)
         {
-            int capcount;
+            _matches[cap] ??= new int[2];
+            int[][] matches = _matches;
 
-            if (_matches[cap] == null)
-                _matches[cap] = new int[2];
+            int[] matchcount = _matchcount;
+            int capcount = matchcount[cap];
 
-            capcount = _matchcount[cap];
-
-            if (capcount * 2 + 2 > _matches[cap].Length)
+            if (capcount * 2 + 2 > matches[cap].Length)
             {
-                int[] oldmatches = _matches[cap];
+                int[] oldmatches = matches[cap];
                 int[] newmatches = new int[capcount * 8];
                 for (int j = 0; j < capcount * 2; j++)
                     newmatches[j] = oldmatches[j];
-                _matches[cap] = newmatches;
+                matches[cap] = newmatches;
             }
 
-            _matches[cap][capcount * 2] = start;
-            _matches[cap][capcount * 2 + 1] = len;
-            _matchcount[cap] = capcount + 1;
+            matches[cap][capcount * 2] = start;
+            matches[cap][capcount * 2 + 1] = len;
+            matchcount[cap] = capcount + 1;
         }
 
         /*
@@ -210,7 +197,7 @@ namespace System.Text.RegularExpressions
            If there were no such thing as backtracking, this would be as simple as calling RemoveMatch(cap).
            However, since we have backtracking, we need to keep track of everything.
          */
-        internal virtual void BalanceMatch(int cap)
+        internal void BalanceMatch(int cap)
         {
             _balancing = true;
 
@@ -220,15 +207,16 @@ namespace System.Text.RegularExpressions
 
             // first see if it is negative, and therefore is a reference to the next available
             // capture group for balancing.  If it is, we'll reset target to point to that capture.
-            if (_matches[cap][target] < 0)
-                target = -3 - _matches[cap][target];
+            int[][] matches = _matches;
+            if (matches[cap][target] < 0)
+                target = -3 - matches[cap][target];
 
             // move back to the previous capture
             target -= 2;
 
             // if the previous capture is a reference, just copy that reference to the end.  Otherwise, point to it.
-            if (target >= 0 && _matches[cap][target] < 0)
-                AddMatch(cap, _matches[cap][target], _matches[cap][target + 1]);
+            if (target >= 0 && matches[cap][target] < 0)
+                AddMatch(cap, matches[cap][target], matches[cap][target + 1]);
             else
                 AddMatch(cap, -3 - target, -4 - target /* == -3 - (target + 1) */ );
         }
@@ -236,7 +224,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Removes a group match by capnum
         /// </summary>
-        internal virtual void RemoveMatch(int cap)
+        internal void RemoveMatch(int cap)
         {
             _matchcount[cap]--;
         }
@@ -244,45 +232,54 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Tells if a group was matched by capnum
         /// </summary>
-        internal virtual bool IsMatched(int cap)
+        internal bool IsMatched(int cap)
         {
-            return cap < _matchcount.Length && _matchcount[cap] > 0 && _matches[cap][_matchcount[cap] * 2 - 1] != (-3 + 1);
+            int[] matchcount = _matchcount;
+            return (uint)cap < (uint)matchcount.Length && matchcount[cap] > 0 && _matches[cap][matchcount[cap] * 2 - 1] != (-3 + 1);
         }
 
         /// <summary>
         /// Returns the index of the last specified matched group by capnum
         /// </summary>
-        internal virtual int MatchIndex(int cap)
+        internal int MatchIndex(int cap)
         {
-            int i = _matches[cap][_matchcount[cap] * 2 - 2];
+            int[][] matches = _matches;
+
+            int i = matches[cap][_matchcount[cap] * 2 - 2];
             if (i >= 0)
                 return i;
 
-            return _matches[cap][-3 - i];
+            return matches[cap][-3 - i];
         }
 
         /// <summary>
         /// Returns the length of the last specified matched group by capnum
         /// </summary>
-        internal virtual int MatchLength(int cap)
+        internal int MatchLength(int cap)
         {
-            int i = _matches[cap][_matchcount[cap] * 2 - 1];
+            int[][] matches = _matches;
+
+            int i = matches[cap][_matchcount[cap] * 2 - 1];
             if (i >= 0)
                 return i;
 
-            return _matches[cap][-3 - i];
+            return matches[cap][-3 - i];
         }
 
         /// <summary>
         /// Tidy the match so that it can be used as an immutable result
         /// </summary>
-        internal virtual void Tidy(int textpos)
+        internal void Tidy(int textpos)
         {
-            int[] interval = _matches[0];
+            int[][] matches = _matches;
+
+            int[] interval = matches[0];
             Index = interval[0];
             Length = interval[1];
             _textpos = textpos;
-            _capcount = _matchcount[0];
+
+            int[] matchcount = _matchcount;
+            _capcount = matchcount[0];
 
             if (_balancing)
             {
@@ -292,13 +289,13 @@ namespace System.Text.RegularExpressions
                 // until we find a balance captures.  Then we check each subsequent entry.  If it's a balance
                 // capture (it's negative), we decrement j.  If it's a real capture, we increment j and copy
                 // it down to the last free position.
-                for (int cap = 0; cap < _matchcount.Length; cap++)
+                for (int cap = 0; cap < matchcount.Length; cap++)
                 {
                     int limit;
                     int[] matcharray;
 
-                    limit = _matchcount[cap] * 2;
-                    matcharray = _matches[cap];
+                    limit = matchcount[cap] * 2;
+                    matcharray = matches[cap];
 
                     int i = 0;
                     int j;
@@ -326,7 +323,7 @@ namespace System.Text.RegularExpressions
                         }
                     }
 
-                    _matchcount[cap] = j / 2;
+                    matchcount[cap] = j / 2;
                 }
 
                 _balancing = false;
@@ -334,16 +331,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        internal bool Debug
-        {
-            get
-            {
-                if (_regex == null)
-                    return false;
-
-                return _regex.Debug;
-            }
-        }
+        internal bool Debug => _regex != null && _regex.Debug;
 
         internal virtual void Dump()
         {
@@ -381,16 +369,7 @@ namespace System.Text.RegularExpressions
             _caps = caps;
         }
 
-        public override GroupCollection Groups
-        {
-            get
-            {
-                if (_groupcoll == null)
-                    _groupcoll = new GroupCollection(this, _caps);
-
-                return _groupcoll;
-            }
-        }
+        public override GroupCollection Groups => _groupcoll ??= new GroupCollection(this, _caps);
 
 #if DEBUG
         internal override void Dump()

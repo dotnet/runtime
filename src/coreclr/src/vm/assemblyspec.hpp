@@ -224,12 +224,8 @@ class AssemblySpec  : public BaseAssemblySpec
     // Load an assembly based on an explicit path
     static Assembly *LoadAssembly(LPCWSTR pFilePath);
 
-
-  private:
-    void MatchRetargetedPublicKeys(Assembly *pAssembly);
   public:
     void MatchPublicKeys(Assembly *pAssembly);
-    PEAssembly *ResolveAssemblyFile(AppDomain *pAppDomain);
 
     AppDomain *GetAppDomain()
     {

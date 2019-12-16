@@ -169,7 +169,7 @@ public:
         DWORD offsetOfGCState;
         DWORD offsetOfDelegateInstance;
         DWORD offsetOfDelegateFirstTarget;
-        DWORD offsetOfSecureDelegateIndirectCell;
+        DWORD offsetOfWrapperDelegateIndirectCell;
         DWORD offsetOfTransparentProxyRP;
         DWORD offsetOfRealProxyServer;
         DWORD offsetOfObjArrayData;
@@ -306,7 +306,7 @@ public:
         DWORD                         exactContextNeedsRuntimeLookup;
         Agnostic_CORINFO_LOOKUP       stubLookup; // first view of union.  others are matching or subordinate
         Agnostic_CORINFO_CONST_LOOKUP instParamLookup;
-        DWORD                         secureDelegateInvoke;
+        DWORD                         wrapperDelegateInvoke;
         DWORD                         exceptionCode;
     };
     struct Agnostic_GetMethodInfo
@@ -584,8 +584,8 @@ public:
     static int dumpStatTitleToBuffer(char* buff, int len);
     int methodSize;
 
-    int dumpMethodIdentityInfoToBuffer(char* buff, int len);
-    int dumpMethodMD5HashToBuffer(char* buff, int len);
+    int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false);
+    int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false);
 
     void recGlobalContext(const MethodContext& other);
 

@@ -9,6 +9,7 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -45,6 +46,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _fieldArgument = fieldArgument;
             _methodContext = methodContext;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            if (typeArgument != null)
+            {
+                signatureContext.Resolver.CompilerContext.EnsureLoadableType(typeArgument);
+            }
+            if (fieldArgument != null)
+            {
+                signatureContext.Resolver.CompilerContext.EnsureLoadableType(fieldArgument.OwningType);
+            }
+            if (methodArgument != null)
+            {
+                signatureContext.Resolver.CompilerContext.EnsureLoadableMethod(methodArgument.Method);
+                if (methodArgument.ConstrainedType != null)
+                    signatureContext.Resolver.CompilerContext.EnsureLoadableType(methodArgument.ConstrainedType);
+            }
         }
 
         public override int ClassCode => 258608008;
@@ -83,15 +100,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             switch (_runtimeLookupKind)
             {
                 case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM:
-                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionaryLookup;
+                    fixupToEmit = ReadyToRunFixupKind.TypeDictionaryLookup;
                     break;
 
                 case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM:
-                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionaryLookup;
+                    fixupToEmit = ReadyToRunFixupKind.MethodDictionaryLookup;
                     break;
 
                 case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
-                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup;
+                    fixupToEmit = ReadyToRunFixupKind.ThisObjDictionaryLookup;
                     contextTypeToEmit = _methodContext.ContextType;
                     break;
 
@@ -171,11 +188,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             GenericLookupSignature otherNode = (GenericLookupSignature)other;
-            int result = _runtimeLookupKind.CompareTo(otherNode._runtimeLookupKind);
+            int result = ((int)_runtimeLookupKind).CompareTo((int)otherNode._runtimeLookupKind);
             if (result != 0)
                 return result;
 
-            result = _fixupKind.CompareTo(otherNode._fixupKind);
+            result = ((int)_fixupKind).CompareTo((int)otherNode._fixupKind);
             if (result != 0)
                 return result;
 

@@ -107,7 +107,8 @@ namespace System
                 }
             }
 
-            if (sizeof(UIntPtr) > sizeof(int) && (byte*)minLength >= (byte*)(i + sizeof(int) / sizeof(char)))
+#if BIT64
+            if ((byte*)minLength >= (byte*)(i + sizeof(int) / sizeof(char)))
             {
                 if (Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) ==
                     Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
@@ -115,6 +116,7 @@ namespace System
                     i += sizeof(int) / sizeof(char);
                 }
             }
+#endif
 
             while ((byte*)i < (byte*)minLength)
             {
@@ -254,15 +256,15 @@ namespace System
             // remaining data that is shorter than a Vector length.
             while (lengthToExamine >= 4)
             {
-                ref char current = ref Add(ref searchSpace, offset);
+                ref char current = ref Unsafe.Add(ref searchSpace, offset);
 
                 if (value == current)
                     goto Found;
-                if (value == Add(ref current, 1))
+                if (value == Unsafe.Add(ref current, 1))
                     goto Found1;
-                if (value == Add(ref current, 2))
+                if (value == Unsafe.Add(ref current, 2))
                     goto Found2;
-                if (value == Add(ref current, 3))
+                if (value == Unsafe.Add(ref current, 3))
                     goto Found3;
 
                 offset += 4;
@@ -271,7 +273,7 @@ namespace System
 
             while (lengthToExamine > 0)
             {
-                if (value == Add(ref searchSpace, offset))
+                if (value == Unsafe.Add(ref searchSpace, offset))
                     goto Found;
 
                 offset++;
@@ -1030,10 +1032,6 @@ namespace System
         {
             return 3 - (BitOperations.LeadingZeroCount(match) >> 4);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref char Add(ref char source, nint elementOffset)
-            => ref Unsafe.Add(ref source, (IntPtr)elementOffset);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector<ushort> LoadVector(ref char start, nint offset)

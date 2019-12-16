@@ -2,15 +2,23 @@ trigger: none
 
 pr: none
 
+schedules:
+- cron: "0 6 * * *"
+  displayName: Mon through Sun at 10:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
 jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
     - Linux_x64
@@ -19,19 +27,21 @@ jobs:
     jobParameters:
       testGroup: innerloop
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platforms:
     - OSX_x64
     - Windows_NT_x64
     jobParameters:
       testGroup: innerloop
+      useLiveLibrariesBuildConfig: Release
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: run-test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     buildConfig: checked
     platforms:
     - Linux_x64
@@ -42,3 +52,4 @@ jobs:
       readyToRun: true
       crossgen2: true
       displayNameArgs: R2R_CG2
+      useLiveLibrariesBuildConfig: Release

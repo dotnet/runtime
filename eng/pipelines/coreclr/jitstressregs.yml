@@ -14,30 +14,32 @@ jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platformGroup: all
     jobParameters:
       testGroup: jitstressregs
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+    buildConfig: checked
+    platformGroup: all
+    jobParameters:
+      testGroup: jitstressregs
+      useLiveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platformGroup: all
     helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: jitstressregs
-
-- template: templates/platform-matrix.yml
-  parameters:
-    jobTemplate: run-test-job.yml
-    buildConfig: checked
-    platformGroup: all
-    helixQueueGroup: ci
-    jobParameters:
-      testGroup: jitstressregs
+      useLiveLibrariesBuildConfig: Release

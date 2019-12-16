@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-
 using Internal.TypeSystem;
-
 using Internal.JitInterface;
 using Internal.Text;
-using ILCompiler.DependencyAnalysisFramework;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -33,6 +29,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _targetMethod = targetMethod;
             _methodToken = methodToken;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableType(delegateType);
+            signatureContext.Resolver.CompilerContext.EnsureLoadableMethod(targetMethod.Method);
         }
 
         public override int ClassCode => 99885741;
@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!relocsOnly)
             {
-                SignatureContext innerContext = builder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor, _methodToken.Module, _signatureContext);
+                SignatureContext innerContext = builder.EmitFixup(r2rFactory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, _signatureContext);
 
                 builder.EmitMethodSignature(
                     new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null),
@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     enforceOwningType: false,
                     innerContext,
                     isUnboxingStub: false,
-                    isInstantiatingStub: false);
+                    isInstantiatingStub: _targetMethod.Method.HasInstantiation);
 
                 builder.EmitTypeSignature(_delegateType, innerContext);
             }

@@ -5,7 +5,12 @@ VisualStudioVersion = 16.0.28902.138
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "System.Private.CoreLib.csproj", "{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "System.Private.CoreLib.Shared", "..\..\..\libraries\System.Private.CoreLib\src\System.Private.CoreLib.Shared.shproj", "{845C8B26-350B-4E63-BD11-2C8150444E28}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\..\..\libraries\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems*{845c8b26-350b-4e63-bd11-2c8150444e28}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Checked|amd64 = Checked|amd64
 		Checked|arm = Checked|arm

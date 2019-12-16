@@ -232,7 +232,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
             if (GetFlag<Flag_hasThisArg>())
             {
                 m_argDescs[k].m_type = InterpreterType(CORINFO_TYPE_UNDEF);
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
                 MethodDesc *pMD = reinterpret_cast<MethodDesc*>(methInfo->ftn);
                 // The signature of the ILStubs may be misleading.
                 // If a StubTarget is ever set, we'll find the correct type by inspecting the
@@ -263,7 +263,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                     }
                 }
 
-#endif // FEATURE_STUBS_AS_IL
+#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
                 if (m_argDescs[k].m_type == InterpreterType(CORINFO_TYPE_UNDEF))
                 {
                     CORINFO_CLASS_HANDLE cls = comp->getMethodClass(methInfo->ftn);

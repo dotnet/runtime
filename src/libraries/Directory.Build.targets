@@ -1,4 +1,9 @@
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
+  <PropertyGroup>
+    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(_bc_OSGroup)</CoreCLROSGroup>
+    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(_bc_ConfigurationGroup)</CoreCLRConfiguration>
+  </PropertyGroup>
+
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
@@ -6,28 +11,6 @@
     <FileAlignment Condition="'$(FileAlignment)' == '512'" />
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
-  </PropertyGroup>
-  
-  <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
-  <Choose>
-    <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetsNetFx)' == 'true')">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants),INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
-      </PropertyGroup>
-      <ItemGroup>
-        <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
-      </ItemGroup>
-    </When>
-  </Choose>
-
-  <PropertyGroup>
-    <!--
-    For non-SDK projects that import this file and then import Microsoft.Common.targets,
-    tell Microsoft.Common.targets not to import Directory.Build.targets again
-    -->
-    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
-    <!-- This is a workaround to allow the SDK to accept the netcoreapp5.0 tfm until the SDK supports targeting this tfm. -->
-    <NETCoreAppMaximumVersion>5.0</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -62,29 +45,30 @@
 
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And ('$(IsReferenceAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' And ('$(IsRuntimeAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
+    <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
   </PropertyGroup>
 
   <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
     <!-- binplace to directories for the target vertical -->
-    <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceConfiguration>
     <!-- binplace to directories for packages -->
-    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
-      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime</RuntimePath>
-      <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app</RefPath>
+      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(_bc_OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
+      <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(ConfigurationGroup)</RefPath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' and '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceConfiguration>
 
     <!-- Setup the shared framework directory for testing -->
-    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(_bc_OSGroup)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="netfx-Windows_NT">
+    <BinPlaceConfiguration Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="$(NetFrameworkCurrent)-Windows_NT">
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
     </BinPlaceConfiguration>
 
@@ -104,7 +88,7 @@
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceConfiguration>
     <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or '$(_bc_TargetGroup)' != '$(NetCoreAppCurrent)')" Include="$(NetCoreAppCurrent)-$(_bc_OSGroup)">
       <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
     </BinPlaceConfiguration>
 
@@ -115,9 +99,12 @@
   <Import Project="$(RepositoryEngineeringDir)depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\launchSettings.targets" Condition="'$(EnableLaunchSettings)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.targets" />
-  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
   <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" />
 
   <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
@@ -178,17 +165,6 @@
     </ItemGroup>
   </Target>
 
-  <!-- Routing dotnet test to a test project's BuildAndTest target. -->
-  <Target Name="VSTest"
-          Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'"
-          DependsOnTargets="BuildAndTest" />
-
-  <Target Name="ValidateTestProjectConfigurations"
-          BeforeTargets="CoreCompile"
-          Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true' and '$(TargetsNetStandard)' == 'true'">
-    <Error Text="Targeting .NET Standard in a test project isn't supported." />
-  </Target>
-
   <PropertyGroup>
     <!--
     Hack workaround to skip the GenerateCompiledExpressionsTempFile target in
@@ -206,5 +182,17 @@
        by the NuGet package generation -->
   <Target Name="GetDocumentationFile"
           Returns="$(DocumentationFile)"/>
+
+  <!-- Adds Nullable annotation attributes to netstandard <= 2.0 builds -->
+  <Choose>
+    <When Condition="'$(Nullable)' != '' and ($(TargetFramework.StartsWith('netstandard1')) or '$(TargetFramework)' == 'netstandard2.0' or $(TargetFramework.StartsWith('netcoreapp2')) or '$(TargetsNetFx)' == 'true')">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants),INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+      </PropertyGroup>
+      <ItemGroup>
+        <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
 
 </Project>

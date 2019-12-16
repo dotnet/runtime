@@ -14,11 +14,11 @@ jobs:
 #
 # Checkout repository
 #
-- template: templates/checkout-job.yml
+- template: /eng/pipelines/common/checkout-job.yml
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm64
@@ -26,13 +26,15 @@ jobs:
     jobParameters:
       testGroup: jitstress-isas-arm
 
-- template: templates/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: test-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm64
     - Windows_NT_arm64
     helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: jitstress-isas-arm
+      useLiveLibrariesBuildConfig: Release

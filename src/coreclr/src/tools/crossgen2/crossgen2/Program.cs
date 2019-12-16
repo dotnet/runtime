@@ -311,10 +311,7 @@ namespace ILCompiler
                         inputFilePath = input.Value;
                         break;
                     }
-                    CompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath,
-                        ibcTuning: _commandLineOptions.Tuning,
-                        resilient: _commandLineOptions.Resilient);
-
+                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
@@ -324,6 +321,10 @@ namespace ILCompiler
                         DependencyTrackingLevel.None : (_commandLineOptions.GenerateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
                     builder
+                        .UseIbcTuning(_commandLineOptions.Tuning)
+                        .UseResilience(_commandLineOptions.Resilient)
+                        .UseMapFile(_commandLineOptions.Map)
+                        .UseParallelism(_commandLineOptions.Parallelism)
                         .UseILProvider(ilProvider)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
@@ -406,6 +407,7 @@ namespace ILCompiler
             for (int i = 0; i < failingMethod.Instantiation.Length; i++)
                 Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");
 
+            Console.WriteLine();
             return false;
         }
 

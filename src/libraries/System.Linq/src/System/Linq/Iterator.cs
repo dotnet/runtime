@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -34,8 +33,7 @@ namespace System.Linq
         {
             private readonly int _threadId;
             internal int _state;
-            [MaybeNull, AllowNull]
-            internal TSource _current = default; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/37138
+            internal TSource _current = default!;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Iterator{TSource}"/> class.
@@ -67,7 +65,7 @@ namespace System.Linq
             /// </remarks>
             public virtual void Dispose()
             {
-                _current = default;
+                _current = default!;
                 _state = -1;
             }
 

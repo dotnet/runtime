@@ -643,10 +643,8 @@ if %__BuildCoreLib% EQU 1 (
             exit /b !errorlevel!
         )
 
-        REM Disable warnAsError to work around VS bug (948084) where ucrt lib path is not set properly, resulting in CS1668
         powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-            %__ProjectDir%\src\build.proj -warnAsError:0^
-            /nodeReuse:false /p:PortableBuild=true /maxcpucount^
+            %__ProjectDir%\src\build.proj /nodeReuse:false /p:PortableBuild=true /maxcpucount^
             '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies build failed. Refer to the build log files for details.
@@ -658,7 +656,7 @@ if %__BuildCoreLib% EQU 1 (
 
         if "%__BuildManagedTools%" == "1" (
             echo %__MsgPrefix%Publishing crossgen2...
-            call %__ProjectDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /p:BuildArch=%__BuildArch%
+            call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /p:BuildArch=%__BuildArch%
             
             if not !errorlevel! == 0 (
                 echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to build crossgen2.
@@ -708,7 +706,7 @@ if %__BuildCoreLib% EQU 1 (
                   )
                 )
 
-                set IBCMergeCommand=%__ProjectDir%\dotnet.cmd --roll-forward-on-no-candidate-fx 2 "!IbcMergePath!"
+                set IBCMergeCommand=%__RepoRootDir%\dotnet.cmd --roll-forward-on-no-candidate-fx 2 "!IbcMergePath!"
 
                 REM Merge the optimization data into the source DLL
                 set NEXTCMD=!IBCMergeCommand! -q -f -delete -mo "!InputAssemblyFile!" !RawOptimizationDataFile!
@@ -913,7 +911,7 @@ if %__BuildTests% EQU 1 (
 ) else if %__GenerateLayout% EQU 1 (
     echo %__MsgPrefix%Generating layout for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    set NEXTCMD=call %__ProjectDir%\tests\runtest.cmd %__BuildArch% %__BuildType% GenerateLayoutOnly msbuildargs %__UnprocessedBuildArgs%
+    set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% generatelayoutonly %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
     !NEXTCMD!
 

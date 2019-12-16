@@ -8,6 +8,8 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -35,6 +37,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _signatureContext = signatureContext;
             _isUnboxingStub = isUnboxingStub;
             _isInstantiatingStub = isInstantiatingStub;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableMethod(method.Method);
+            if (method.ConstrainedType != null)
+                signatureContext.Resolver.CompilerContext.EnsureLoadableType(method.ConstrainedType);
         }
 
         public MethodDesc Method => _method.Method;
@@ -57,18 +64,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
             if (!_isUnboxingStub && !_isInstantiatingStub && _method.ConstrainedType == null &&
-                fixupKind == ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry)
+                fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
                 if (!_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
                 {
                     if (_method.Token.TokenType == CorTokenType.mdtMethodDef)
                     {
-                        fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_DefToken;
+                        fixupKind = ReadyToRunFixupKind.MethodEntry_DefToken;
                         optimized = true;
                     }
                     else if (_method.Token.TokenType == CorTokenType.mdtMemberRef)
                     {
-                        fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_RefToken;
+                        fixupKind = ReadyToRunFixupKind.MethodEntry_RefToken;
                         optimized = true;
                     }
                 }
@@ -129,7 +136,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             MethodFixupSignature otherNode = (MethodFixupSignature)other;
-            int result = _fixupKind.CompareTo(otherNode._fixupKind);
+            int result = ((int)_fixupKind).CompareTo((int)otherNode._fixupKind);
             if (result != 0)
                 return result;
 

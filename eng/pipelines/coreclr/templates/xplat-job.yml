@@ -9,6 +9,7 @@ parameters:
   crossrootfsDir: ''
   stagedBuild: false
   strategy: ''
+  pool: ''
 
   # arcade-specific parameters
   condition: ''
@@ -22,19 +23,16 @@ parameters:
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: job.yml
+- template: /eng/common/templates/job/job.yml
   parameters:
 
     name: ${{ parameters.name }}
     displayName: ${{ parameters.displayName }}
-
+    container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
       - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          - 'checkout_windows'
-        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          - 'checkout_unix'
+        - checkout
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -51,48 +49,10 @@ jobs:
 
     strategy: ${{ parameters.strategy }}
 
-    pool:
-
-      # Public Linux Build Pool
-      ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
-        name:  NetCorePublic-Pool
-        queue: BuildPool.Ubuntu.1604.Amd64.Open
-
-      # Official Build Linux Pool
-      ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
-        name: NetCoreInternal-Pool
-        queue: BuildPool.Ubuntu.1604.Amd64
-
-      # FreeBSD builds only in the internal project
-      ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
-        name: dnceng-freebsd-internal
-
-      # Public OSX Build Pool
-      ${{ if and(eq(parameters.osGroup, 'OSX'), ne(variables['System.TeamProject'], 'public')) }}:
-        name: Hosted Mac Internal
-
-      # Official Build OSX Pool
-      ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
-        name: Hosted MacOS
-
-      # Official Build Windows Pool
-      ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
-        name: NetCoreInternal-Pool
-        queue: BuildPool.Windows.10.Amd64.VS2019
-
-      # Public Windows Build Pool
-      ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
-        name: NetCorePublic-Pool
-        queue: BuildPool.Windows.10.Amd64.VS2019.Open
+    pool: ${{ parameters.pool }}
 
     workspace:
       clean: all
-
-    ${{ if ne(parameters.container, '') }}:
-      ${{ if eq(parameters.container.registry, 'mcr') }}:
-        container: ${{ format('{0}:{1}', 'mcr.microsoft.com/dotnet-buildtools/prereqs', parameters.container.image) }}
-      ${{ if ne(parameters.container.registry, 'mcr') }}:
-        container: ${{ format('{0}:{1}', parameters.container.registry, parameters.container.image) }}
 
     ${{ if eq(parameters.osGroup, 'Linux') }}:
       agentOs: Ubuntu
@@ -151,9 +111,6 @@ jobs:
         value: 'cross'
       - name: crossPackagesArg
         value: '-__DoCrossArchBuild=1'
-      # This is only required for cross builds.
-      - name: ROOTFS_DIR
-        value: ${{ parameters.crossrootfsDir }}
     - ${{ if eq(parameters.crossrootfsDir, '') }}:
       - name: crossArg
         value: ''
@@ -164,20 +121,6 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - checkout: none
-      clean: true
-
-    # Download the GIT repository
-    - template: download-artifact-step.yml
-      parameters:
-        displayName: 'GIT repository'
-        cleanUnpackFolder: false
-        unpackFolder: $(Build.SourcesDirectory)
-        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          artifactFileName: repo_windows.zip
-          artifactName: repo_windows
-        ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-          artifactFileName: repo_unix.tar.gz
-          artifactName: repo_unix
+    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     - ${{ parameters.steps }}

@@ -5,7 +5,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices.ComTypes;
 using System.StubHelpers;
 
@@ -199,7 +198,7 @@ namespace System.Runtime.InteropServices
         private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
         {
             var rt = (RuntimeType)structureType;
-            object structure = rt.CreateInstanceDefaultCtor(publicOnly: false, skipCheckThis: false, fillCache: false, wrapExceptions: true);
+            object structure = rt.CreateInstanceDefaultCtor(publicOnly: false, skipCheckThis: false, fillCache: false, wrapExceptions: true)!;
             PtrToStructureHelper(ptr, structure, allowValueClasses: true);
             return structure;
         }

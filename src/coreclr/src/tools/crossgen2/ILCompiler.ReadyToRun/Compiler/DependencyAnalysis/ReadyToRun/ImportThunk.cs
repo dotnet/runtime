@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Internal.Text;
-using Internal.TypeSystem;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -75,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             ImportThunk otherNode = (ImportThunk)other;
-            int result = _thunkKind.CompareTo(otherNode._thunkKind);
+            int result = ((int)_thunkKind).CompareTo((int)otherNode._thunkKind);
             if (result != 0)
                 return result;
 

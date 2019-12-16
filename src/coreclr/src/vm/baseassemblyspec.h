@@ -172,48 +172,9 @@ public:
     BOOL CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompareFlags = ASC_Default);
     static int CompareStrings(LPCUTF8 string1, LPCUTF8 string2);
     static BOOL RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAssemblySpec* pDef);
-    static BOOL VerifyBindingString(LPCWSTR pwStr);
 
     void GetFileOrDisplayName(DWORD flags, SString &result) const;
     void GetDisplayName(DWORD flags, SString &result) const;
-
-    inline void GetPublicKey(
-        PBYTE * ppbPublicKey,
-        DWORD * pcbPublicKey) const
-    {
-        LIMITED_METHOD_CONTRACT;
-        PRECONDITION(HasPublicKey());
-        if (ppbPublicKey != nullptr)
-        {
-            *ppbPublicKey = m_pbPublicKeyOrToken;
-        }
-        if (pcbPublicKey != nullptr)
-        {
-            *pcbPublicKey = m_cbPublicKeyOrToken;
-        }
-    }
-
-    inline void GetPublicKeyToken(
-        PBYTE * ppbPublicKeyToken,
-        DWORD * pcbPublicKeyToken) const
-    {
-        LIMITED_METHOD_CONTRACT;
-        PRECONDITION(HasPublicKeyToken());
-        if (ppbPublicKeyToken != nullptr)
-        {
-            *ppbPublicKeyToken = m_pbPublicKeyOrToken;
-        }
-        if (pcbPublicKeyToken != nullptr)
-        {
-            *pcbPublicKeyToken = m_cbPublicKeyOrToken;
-        }
-    }
-
-    inline BOOL IsRetargetable() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return IsAfRetargetable(m_dwFlags);
-    }
 
 protected:
     static BOOL CompareRefToDef(const BaseAssemblySpec *pRef, const BaseAssemblySpec *pDef);

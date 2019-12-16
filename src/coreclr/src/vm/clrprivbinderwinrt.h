@@ -22,9 +22,6 @@
 
 #include "coreclr/corebindresult.h"
 
-// IBindResult maps directly to its one and only implementation on CoreCLR.
-typedef CoreBindResult IBindResult;
-
 //=====================================================================================================================
 // Forward declarations
 class CLRPrivBinderWinRT;
@@ -158,11 +155,6 @@ public:
         IAssemblyName * pIAssemblyName,
         ICLRPrivAssembly ** ppPrivAssembly);
 
-    // Binds WinRT assemblies only.
-    HRESULT BindWinRTAssemblyByName(
-        IAssemblyName * pIAssemblyName,
-        IBindResult ** ppIBindResult);
-
     HRESULT GetAssemblyAndTryFindNativeImage(SString &sWinmdFilename, LPCWSTR pwzSimpleName, BINDER_SPACE::Assembly ** ppAssembly);
     // On Phone the application's APP_PATH CoreCLR hosting config property is used as the app
     // package graph for RoResolveNamespace to find 3rd party WinMDs.  This method wires up
@@ -257,17 +249,10 @@ public:
     CLRPrivAssemblyWinRT(
         CLRPrivBinderWinRT *                         pBinder,
         CLRPrivBinderUtil::CLRPrivResourcePathImpl * pResourceIL,
-        IBindResult *                                pIBindResult,
+        CoreBindResult *                             pBindResult,
         BOOL                                         fShareable);
 
     ~CLRPrivAssemblyWinRT();
-
-    HRESULT GetIBindResult(
-        IBindResult ** ppIBindResult);
-
-    static HRESULT GetIBindResult(
-        ICLRPrivAssembly * pPrivAssembly,
-        IBindResult **     ppIBindResult);
 
     //=============================================================================================
     // IUnknown interface methods
@@ -335,7 +320,7 @@ private:
     ReleaseHolder<CLRPrivBinderUtil::CLRPrivResourcePathImpl> m_pResourceIL;
     // This cannot be a holder as there can be a race to assign to it.
     ICLRPrivResource * m_pIResourceNI;
-    ReleaseHolder<IBindResult> m_pIBindResult;
+    ReleaseHolder<CoreBindResult> m_pBindResult;
     Volatile<DWORD> m_dwImageTypes;
     ReleaseHolder<ICLRPrivBinder> m_FallbackBinder;
 };  // class CLRPrivAssemblyWinRT

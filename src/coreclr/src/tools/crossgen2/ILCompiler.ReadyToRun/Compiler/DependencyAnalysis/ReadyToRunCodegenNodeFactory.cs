@@ -15,6 +15,8 @@ using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.Text;
 using Internal.TypeSystem.Ecma;
+using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -197,6 +199,26 @@ namespace ILCompiler.DependencyAnalysis
             public override bool Equals(object obj) => obj is ReadOnlyDataBlobKey && Equals((ReadOnlyDataBlobKey)obj);
             public override int GetHashCode() => Name.GetHashCode();
         }
+
+        protected struct FieldRvaKey : IEquatable<FieldRvaKey>
+        {
+            public readonly int Rva;
+            public readonly EcmaModule Module;
+
+            public FieldRvaKey(int rva, EcmaModule module)
+            {
+                Rva = rva;
+                Module = module;
+            }
+
+            public bool Equals(FieldRvaKey other) => Rva == other.Rva && Module.Equals(other.Module);
+            public override bool Equals(object obj) => obj is FieldRvaKey && Equals((FieldRvaKey)obj);
+            public override int GetHashCode()
+            {
+                int hashCode = Rva * 0x5498341 + 0x832424;
+                return hashCode * 23 + Module.GetHashCode();
+            }
+        }
     }
 
     // To make the code future compatible to the composite R2R story
@@ -263,12 +285,12 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelayLoadHelperMethodImport(
                     this,
                     DispatchImports,
-                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper_Obj,
+                    ReadyToRunHelper.DelayLoad_Helper_Obj,
                     key.Method,
                     useVirtualCall: false,
                     useInstantiatingStub: true,
                     MethodSignature(
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                        ReadyToRunFixupKind.VirtualEntry,
                         key.Method,
                         signatureContext: key.SignatureContext,
                         isUnboxingStub: key.IsUnboxingStub,
@@ -291,9 +313,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new CopiedMethodILNode((EcmaMethod)method);
             });
 
-            _copiedFieldRvas = new NodeCache<EcmaField, CopiedFieldRvaNode>(ecmaField =>
+            _copiedFieldRvas = new NodeCache<FieldRvaKey, CopiedFieldRvaNode>(key =>
             {
-                return new CopiedFieldRvaNode(ecmaField);
+                return new CopiedFieldRvaNode(key.Module, key.Rva);
             });
 
             _copiedStrongNameSignatures = new NodeCache<EcmaModule, CopiedStrongNameSignatureNode>(module =>
@@ -382,7 +404,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new PrecodeMethodImport(
                         this,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                        ReadyToRunFixupKind.MethodEntry,
                         method,
                         CreateMethodEntrypointNodeHelper(method, isUnboxingStub, isInstantiatingStub, signatureContext),
                         isUnboxingStub,
@@ -393,7 +415,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new LocalMethodImport(
                         this,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                        ReadyToRunFixupKind.MethodEntry,
                         method,
                         CreateMethodEntrypointNodeHelper(method, isUnboxingStub, isInstantiatingStub, signatureContext),
                         isUnboxingStub,
@@ -406,7 +428,7 @@ namespace ILCompiler.DependencyAnalysis
                 // First time we see a given external method - emit indirection cell and the import entry
                 return new ExternalMethodImport(
                     this,
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                    ReadyToRunFixupKind.MethodEntry,
                     method,
                     isUnboxingStub,
                     isInstantiatingStub,
@@ -604,21 +626,21 @@ namespace ILCompiler.DependencyAnalysis
 
             // All ready-to-run images have a module import helper which gets patched by the runtime on image load
             ModuleImport = new Import(EagerImports, new ReadyToRunHelperSignature(
-                ILCompiler.ReadyToRunHelper.Module));
+                ReadyToRunHelper.Module));
             graph.AddRoot(ModuleImport, "Module import is required by the R2R format spec");
 
             if (Target.Architecture != TargetArchitecture.X86)
             {
                 Import personalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
-                    ILCompiler.ReadyToRunHelper.PersonalityRoutine));
+                    ReadyToRunHelper.PersonalityRoutine));
                 PersonalityRoutine = new ImportThunk(
-                    ILCompiler.ReadyToRunHelper.PersonalityRoutine, this, personalityRoutineImport, useVirtualCall: false);
+                    ReadyToRunHelper.PersonalityRoutine, this, personalityRoutineImport, useVirtualCall: false);
                 graph.AddRoot(PersonalityRoutine, "Personality routine is faster to root early rather than referencing it from each unwind info");
 
                 Import filterFuncletPersonalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
-                    ILCompiler.ReadyToRunHelper.PersonalityRoutineFilterFunclet));
+                    ReadyToRunHelper.PersonalityRoutineFilterFunclet));
                 FilterFuncletPersonalityRoutine = new ImportThunk(
-                    ILCompiler.ReadyToRunHelper.PersonalityRoutineFilterFunclet, this, filterFuncletPersonalityRoutineImport, useVirtualCall: false);
+                    ReadyToRunHelper.PersonalityRoutineFilterFunclet, this, filterFuncletPersonalityRoutineImport, useVirtualCall: false);
                 graph.AddRoot(FilterFuncletPersonalityRoutine, "Filter funclet personality routine is faster to root early rather than referencing it from each unwind info");
             }
 
@@ -729,19 +751,19 @@ namespace ILCompiler.DependencyAnalysis
             switch (helperId)
             {
                 case ReadyToRunHelperId.GetGCStaticBase:
-                    r2rHelper = ILCompiler.ReadyToRunHelper.GenericGcStaticBase;
+                    r2rHelper = ReadyToRunHelper.GenericGcStaticBase;
                     break;
 
                 case ReadyToRunHelperId.GetNonGCStaticBase:
-                    r2rHelper = ILCompiler.ReadyToRunHelper.GenericNonGcStaticBase;
+                    r2rHelper = ReadyToRunHelper.GenericNonGcStaticBase;
                     break;
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
-                    r2rHelper = ILCompiler.ReadyToRunHelper.GenericGcTlsBase;
+                    r2rHelper = ReadyToRunHelper.GenericGcTlsBase;
                     break;
 
                 case ReadyToRunHelperId.GetThreadNonGcStaticBase:
-                    r2rHelper = ILCompiler.ReadyToRunHelper.GenericNonGcTlsBase;
+                    r2rHelper = ReadyToRunHelper.GenericNonGcTlsBase;
                     break;
 
                 default:
@@ -758,7 +780,7 @@ namespace ILCompiler.DependencyAnalysis
                 HelperImports,
                 GetGenericStaticHelper(helperKey.HelperId),
                 TypeSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
+                    ReadyToRunFixupKind.Invalid,
                     (TypeDesc)helperKey.Target,
                     InputModuleContext));
         }
@@ -770,7 +792,7 @@ namespace ILCompiler.DependencyAnalysis
                 HelperImports,
                 GetGenericStaticHelper(helperKey.HelperId),
                 TypeSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
+                    ReadyToRunFixupKind.Invalid,
                     (TypeDesc)helperKey.Target,
                     InputModuleContext));
         }
@@ -841,7 +863,7 @@ namespace ILCompiler.DependencyAnalysis
             return _copiedMethodIL.GetOrAdd(method);
         }
 
-        private NodeCache<EcmaField, CopiedFieldRvaNode> _copiedFieldRvas;
+        private NodeCache<FieldRvaKey, CopiedFieldRvaNode> _copiedFieldRvas;
 
         public CopiedFieldRvaNode CopiedFieldRva(FieldDesc field)
         {
@@ -859,7 +881,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", TypeSystemContext.InputFilePaths.Keys)}");
             }
 
-            return _copiedFieldRvas.GetOrAdd(ecmaField);
+            return _copiedFieldRvas.GetOrAdd(new FieldRvaKey(ecmaField.GetFieldRvaValue(), ecmaField.Module));
         }
 
         private NodeCache<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures;

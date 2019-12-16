@@ -1,29 +1,10 @@
 <Project>
-  <!-- Base repo layout properties -->
-  <PropertyGroup>
-    <RepoRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), global.json))</RepoRoot>
-    <RepoRoot>$([MSBuild]::EnsureTrailingSlash('$(RepoRoot)'))</RepoRoot>
-    <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
-    <LibrariesProjectRoot>$(MSBuildThisFileDirectory)</LibrariesProjectRoot>
-    <RepositoryUrl>git://github.com/dotnet/corefx</RepositoryUrl>
-  </PropertyGroup>
-
   <PropertyGroup>
     <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
   <Import Project="..\..\Directory.Build.props" />
 
   <PropertyGroup>
-    <!--
-    For non-SDK projects that import this file and then import Microsoft.Common.props,
-    tell Microsoft.Common.props not to import Directory.Build.props again
-    -->
-    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
-
-    <!-- We use the compiler toolset that comes from NuGet Packages rather than the SDK built-in.
-    This one sets UseSharedCompilation to false by default. -->
-    <UseSharedCompilation>true</UseSharedCompilation>
-
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
   </PropertyGroup>
@@ -60,7 +41,7 @@
 
       See Documentation/coding-guidelines/project-guidelines.md for more details on our configurations.
     -->
-    <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)' == ''">$(NetCoreAppCurrent)</TargetGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
     <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
@@ -75,20 +56,30 @@
 
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
+    <!-- Versionless netcoreapp and netfx needs to be removed after .yml scripts are finalized.-->
+    <BuildConfiguration Condition="'$(TargetGroup)' == 'netcoreapp'">$(NetCoreAppCurrent)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
+    <BuildConfiguration Condition="'$(TargetGroup)' == 'netfx'">$(NetFrameworkCurrent)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
 
     <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' and '$(BuildConfigurations)' == ''">package</BuildConfigurations>
   </PropertyGroup>
 
-  <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.props" />
+
+  <!-- Define test projects and companions -->
   <PropertyGroup>
-    <IsPrerelease>true</IsPrerelease>
+    <IsTestProject>false</IsTestProject>
+    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
+
+    <IsTestSupportProject>false</IsTestSupportProject>
+    <IsTestSupportProject Condition="($(MSBuildProjectFullPath.Contains('\tests\')) OR $(MSBuildProjectFullPath.Contains('/tests/'))) AND '$(IsTestProject)' != 'true'">true</IsTestSupportProject>
+    <IsTestProject Condition="'$(IsTestSupportProject)' == 'true'">true</IsTestProject>
+
+    <!-- Treat test assemblies as non-shipping (do not publish or sign them). -->
+    <IsShipping Condition="'$(IsTestProject)' == 'true'">false</IsShipping>
   </PropertyGroup>
 
-  <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.props" />
-  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.props" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
-
-  <PropertyGroup>    
+  <PropertyGroup>
     <EnableProjectRestore Condition="'$(IsTestProject)' == 'true'">true</EnableProjectRestore>
   </PropertyGroup>
 
@@ -96,8 +87,6 @@
 
   <!-- Common repo directories -->
   <PropertyGroup>
-    <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin'))</ArtifactsBinDir>
-
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
     <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildConfiguration)'))</NativeBinDir>
 
@@ -107,16 +96,14 @@
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
-    <OutputType>Library</OutputType>
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <RunApiCompatForSrc>$(IsSourceProject)</RunApiCompatForSrc>
     <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
-    <!-- Build as portable by default -->
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
-    <!-- Used for launchSettings.json and runtime config files. -->
-    <AppDesignerFolder>Properties</AppDesignerFolder>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -154,6 +141,7 @@
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(ArchGroup)</_packageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(ArchGroup)</PackageRID>
+    <TargetArchitecture>$(ArchGroup)</TargetArchitecture>
   </PropertyGroup>
 
   <!-- Set some shortcuts for more terse conditions in project files -->
@@ -165,8 +153,9 @@
 
   <!-- set properties for each vertical -->
   <PropertyGroup>
-    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)'=='netcoreapp' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
-    <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)'=='netfx' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
+    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)'=='$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
+    <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)'=='$(NetFrameworkCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
+    <BinPlaceNETCoreAppPackage Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceNETCoreAppPackage>
   </PropertyGroup>
 
   <!--
@@ -193,14 +182,14 @@
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
     <DebugType Condition="'$(TargetsNetFx)' == 'true' and '$(OS)' == 'Windows_NT'" />
-    
+
     <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
 
     <!-- TODO-NULLABLE: Remove once netstandard has annotations for Debug.Assert, string.IsNullOrEmpty, etc. -->
     <NoWarn Condition="'$(TargetsNetFx)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
-    
+
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
     <When Condition="'$(ConfigurationGroup)'=='Debug'">
@@ -235,23 +224,13 @@
 
   <!-- Language configuration -->
   <PropertyGroup>
-    <!-- default to allowing all language features -->
-    <LangVersion>latest</LangVersion>
-    <LangVersion Condition="'$(Language)' == 'C#'">preview</LangVersion>
     <Features>strict;nullablePublicOnly</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Deterministic>true</Deterministic>
-
     <!-- We decided to keep this disabled by default to see some history of way have a look at https://github.com/dotnet/corefx/issues/3140 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-
-    <!-- Suppress preview message as we are usually using preview SDK versions. -->
-    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
-
-    <!-- Resource naming bug: https://github.com/microsoft/msbuild/issues/4740 -->
-    <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
+    <EnableAnalyzers Condition="'$(EnableProjectRestore)' == 'true' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
@@ -275,7 +254,7 @@
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetGroup)'))</RefPath>
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
-    <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netfx'))</NetFxRefPath>
+    <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetFrameworkCurrent)'))</NetFxRefPath>
     <ILAsmToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ilasm'))</ILAsmToolPath>
 
     <!-- Helix properties -->
@@ -287,14 +266,11 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 
-    <!-- project file to use when resolving ReferenceFromRuntime items -->
-    <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj</RuntimeProjectFile>
-
     <!-- Paths to binplace package content -->
-    <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\netcoreapp\ref</NETCoreAppPackageRefPath>
-    <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\netcoreapp\lib</NETCoreAppPackageRuntimePath>
-    <NetFxPackageRefPath>$(ArtifactsBinDir)pkg\netfx\ref</NetFxPackageRefPath>
-    <NetFxPackageRuntimePath>$(ArtifactsBinDir)pkg\netfx\lib</NetFxPackageRuntimePath>
+    <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
+    <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
+    <NetFxPackageRefPath>$(ArtifactsBinDir)pkg\$(NetFrameworkCurrent)\ref</NetFxPackageRefPath>
+    <NetFxPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetFrameworkCurrent)\lib</NetFxPackageRuntimePath>
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildConfiguration)'))</TestHostRootPath>
 
@@ -304,57 +280,10 @@
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
-    <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinPlaceTestSharedFramework>
-    <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'netfx'">true</BinPlaceNETFXRuntime>
-
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
-
-    <TestHostRuntimePath Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(NETCoreAppTestSharedFrameworkPath)</TestHostRuntimePath>
-    <TestHostRuntimePath Condition="'$(BinPlaceNETFXRuntime)' == 'true'">$(TestHostRootPath)</TestHostRuntimePath>
-
-    <PlatformManifestFile>$(TestHostRuntimePath)PlatformManifest.txt</PlatformManifestFile>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(PlatformManifestFile)' != '' and '$(IsTestProject)' == 'true'">
-    <PackageConflictPlatformManifests Include="$(PlatformManifestFile)" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
-    <EnableLaunchSettings Condition="'$(EnableLaunchSettings)' == '' and '$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
-  </PropertyGroup>
-
-  <!-- Test properties for full build. -->
-  <PropertyGroup Condition="'$(TestAllProjects)' == 'true'">
-    <GenerateFullCoverageReport Condition="'$(GenerateFullCoverageReport)' == ''">true</GenerateFullCoverageReport>
-  </PropertyGroup>
-
   <Import Project="$(RepositoryEngineeringDir)references.props" />
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
-
-  <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
-    <!-- Set the documentation output file globally. -->
-    <DocumentationFile Condition="'$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-  </PropertyGroup>
-
-  <!-- Additional optimizations -->
-  <PropertyGroup>
-    <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
-    <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Experimental packages should not be stable -->
-    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Experimental'))">true</SuppressFinalPackageVersion>
-    <IsShippingAssembly Condition="$(MSBuildProjectName.Contains('Experimental'))">false</IsShippingAssembly>
-
-    <!-- We don't want Private packages to be shipped to NuGet.org -->
-    <IsShippingPackage Condition="$(MSBuildProjectName.Contains('Private')) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
-  </PropertyGroup>
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -364,13 +293,42 @@
     <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
     <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
 
-    <CodeAnalysisRuleset>$(LibrariesProjectRoot)CodeAnalysis.ruleset</CodeAnalysisRuleset>
-    <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
+    <!-- Set the documentation output file globally. -->
+    <DocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+
+    <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
+    <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
-    <ProjectReference Include="$(CommonTestPath)\CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+  <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
+    <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
+    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
+    <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
+
+    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
+
+    <TestHostRuntimePath Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(NETCoreAppTestSharedFrameworkPath)</TestHostRuntimePath>
+    <TestHostRuntimePath Condition="'$(BinPlaceNETFXRuntime)' == 'true'">$(TestHostRootPath)</TestHostRuntimePath>
+
+    <PlatformManifestFile Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(TestHostRuntimePath)PlatformManifest.txt</PlatformManifestFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PlatformManifestFile)' != '' and '$(IsTestProject)' == 'true'">
+    <PackageConflictPlatformManifests Include="$(PlatformManifestFile)" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
+    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
+    <EnableTestSupport>true</EnableTestSupport>
+    <EnableCoverageSupport Condition="'$(Coverage)' == 'true' and '$(CoverageSupported)' != 'false'">true</EnableCoverageSupport>
+    <EnableLaunchSettings Condition="'$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
   <!-- Use msbuild path functions as that property is used in bash scripts. -->
   <ItemGroup>
@@ -403,6 +361,4 @@
     <CLSCompliant Condition="'$(CLSCompliant)' == '' and '$(IsTestProject)' == 'true'">false</CLSCompliant>
     <CLSCompliant Condition="'$(CLSCompliant)' == ''">true</CLSCompliant>
   </PropertyGroup>
-
-  <Import Condition="'$(EnableProjectRestore)' == 'true' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'" Project="$(RepositoryEngineeringDir)analyzers.props" />
 </Project>

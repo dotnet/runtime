@@ -56,7 +56,7 @@ namespace System
         {
             // Call the worker method that has more performant but less user friendly signature.
             T o = this.Target;
-            target = o;
+            target = o!;
             return o != null;
         }
 

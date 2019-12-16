@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.CorConstants;
+
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class ImportSectionNode : EmbeddedObjectNode

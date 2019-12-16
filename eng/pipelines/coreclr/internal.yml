@@ -33,7 +33,7 @@ stages:
     #
     # Checkout repository
     #
-    - template: templates/checkout-job.yml
+    - template: /eng/pipelines/common/checkout-job.yml
 
   - stage: build
     displayName: Build
@@ -41,9 +41,9 @@ stages:
     #
     # Release builds
     #
-    - template: templates/platform-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: build-job.yml
+        jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
         buildConfig: release
         platformGroup: all
         stagedBuild: true
@@ -70,7 +70,6 @@ stages:
         - build_Linux_arm64_release
         - build_Linux_musl_x64_release
         - build_Linux_musl_arm64_release
-        - build_Linux_rhel6_x64_release
         - build_Linux_x64_release
         - build_OSX_x64_release
         - build_Windows_NT_x64_release
@@ -91,9 +90,9 @@ stages:
     #
     # Release test builds
     #
-    - template: templates/platform-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: build-test-job.yml
+        jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
         buildConfig: release
         platforms:
         - Linux_arm
@@ -103,7 +102,6 @@ stages:
         - Windows_NT_arm64
         - Windows_NT_x64
         - Windows_NT_x86
-        helixQueueGroup: all
         stagedBuild: true
         jobParameters:
           testGroup: outerloop
@@ -112,12 +110,13 @@ stages:
     #
     # Release JIT test executions
     #
-    - template: templates/platform-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: run-test-job.yml
+        jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
         buildConfig: release
         platformGroup: all
         helixQueueGroup: all
+        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
         stagedBuild: true
         jobParameters:
           testGroup: outerloop
@@ -126,13 +125,14 @@ stages:
     #
     # Release R2R test executions
     #
-    - template: templates/platform-matrix.yml
+    - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
-        jobTemplate: run-test-job.yml
+        jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
         buildConfig: release
         platformGroup: all
         helixQueueGroup: all
         stagedBuild: true
+        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
         jobParameters:
           readyToRun: true
           displayNameArgs: R2R

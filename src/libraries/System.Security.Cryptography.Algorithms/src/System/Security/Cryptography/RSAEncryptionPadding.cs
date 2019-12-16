@@ -100,7 +100,7 @@ namespace System.Security.Cryptography
 
         public bool Equals(RSAEncryptionPadding other)
         {
-            return other != null
+            return !object.ReferenceEquals(other, null)
                 && _mode == other._mode
                 && _oaepHashAlgorithm == other._oaepHashAlgorithm;
         }

@@ -64,6 +64,14 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
         return;
     }
 
+#ifdef FEATURE_PAL
+    int err = PAL_InitializeDLL();
+    if (err != 0)
+    {
+        return;
+    }
+#endif
+
     g_jitHost = jitHost;
 
     assert(!JitConfig.isInitialized());
@@ -148,12 +156,7 @@ void jitShutdown(bool processIsTerminating)
 
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 
-extern "C"
-#ifdef FEATURE_PAL
-    DLLEXPORT // For Win32 PAL LoadLibrary emulation
-#endif
-    BOOL WINAPI
-    DllMain(HANDLE hInstance, DWORD dwReason, LPVOID pvReserved)
+extern "C" DLLEXPORT BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID pvReserved)
 {
     if (dwReason == DLL_PROCESS_ATTACH)
     {
@@ -205,6 +208,11 @@ ICorJitCompiler* g_realJitCompiler = nullptr;
 
 DLLEXPORT ICorJitCompiler* __stdcall getJit()
 {
+    if (!g_jitInitialized)
+    {
+        return nullptr;
+    }
+
     if (ILJitter == nullptr)
     {
         ILJitter = new (CILJitSingleton) CILJit();

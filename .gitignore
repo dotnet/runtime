@@ -50,6 +50,7 @@ cross/android-rootfs/
 #NUNIT
 *.VisualState.xml
 TestResult.xml
+testResults.xml
 
 # Build Results of an ATL Project
 [Dd]ebugPS/
@@ -275,6 +276,7 @@ Session.vim
 
 # Visual Studio Code
 .vscode/
+.devcontainer/
 
 # Private test configuration and binaries.
 config.ps1

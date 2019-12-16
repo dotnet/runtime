@@ -21,7 +21,6 @@ IID_ICLRDataEnumMemoryRegionsCallback
 nativeStringResourceTable_mscorrc_debug
 
 ; All the # exports are prefixed with DAC_
-#PAL_BindResources
 #PAL_CatchHardwareExceptionHolderEnter
 #PAL_CatchHardwareExceptionHolderExit
 #PAL_bsearch
@@ -33,7 +32,6 @@ nativeStringResourceTable_mscorrc_debug
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetNumaProcessorNode
 #PAL_GetPALDirectoryW
-#PAL_GetResourceString
 #PAL_get_stdout
 #PAL_get_stderr
 #PAL_GetCurrentThread

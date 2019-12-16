@@ -22,7 +22,6 @@
 
     <!-- CI machines doesn't have net472 targeting pack installed yet and we hit: https://github.com/dotnet/corefx/issues/29906 -->
     <TargetFrameworksToExclude Include="net472" />
-    <TargetFrameworksToExclude Include="netfx" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -155,7 +154,7 @@
 
   <Target Name="ArchiveHelixItems"
           DependsOnTargets="GenerateProjects;CopyProducedPackages"
-          Condition="'$(ArchiveTests.ToLower())' == 'packages' or '$(ArchiveTests.ToLower())' == 'all'">
+          Condition="'$(ArchiveTests)' == 'true'">
 
     <MakeDir Directories="$(TestArchiveTestsRoot)" />
     <ZipDirectory
@@ -173,7 +172,7 @@
 
   <Target Name="RestoreProjects"
           DependsOnTargets="GenerateProjects"
-          Condition="'$(ArchiveTests.ToLower())' != 'packages' and '$(ArchiveTests.ToLower())' != 'all'">
+          Condition="'$(ArchiveTests)' != 'true'">
 
     <PropertyGroup>
       <TestRestoreCommand>$(TestDotNetPath)</TestRestoreCommand>
@@ -191,7 +190,7 @@
 
   <Target Name="BuildProjects"
           DependsOnTargets="RestoreProjects"
-          Condition="'$(ArchiveTests.ToLower())' != 'packages' and '$(ArchiveTests.ToLower())' != 'all'">
+          Condition="'$(ArchiveTests)' != 'true'">
 
     <PropertyGroup>
       <TestBuildCommand>$(TestDotNetPath)</TestBuildCommand>

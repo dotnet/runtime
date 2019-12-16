@@ -19,8 +19,8 @@ namespace System.IO
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
 
             int fAccess =
-                ((_access & FileAccess.Read) == FileAccess.Read ? GENERIC_READ : 0) |
-                ((_access & FileAccess.Write) == FileAccess.Write ? GENERIC_WRITE : 0);
+                ((_access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
+                ((_access & FileAccess.Write) == FileAccess.Write ? Interop.Kernel32.GenericOperations.GENERIC_WRITE : 0);
 
             // Our Inheritable bit was stolen from Windows, but should be set in
             // the security attributes class.  Don't leave this bit set.
@@ -90,7 +90,7 @@ namespace System.IO
             return (fileMode & (Interop.NtDll.FILE_SYNCHRONOUS_IO_ALERT | Interop.NtDll.FILE_SYNCHRONOUS_IO_NONALERT)) > 0;
         }
 
-        private static void VerifyHandleIsSync(SafeFileHandle handle, int fileType, FileAccess access)
+        private static void VerifyHandleIsSync(SafeFileHandle handle)
         {
             // As we can accurately check the handle type when we have access to NtQueryInformationFile we don't need to skip for
             // any particular file handle type.

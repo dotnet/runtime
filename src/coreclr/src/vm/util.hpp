@@ -638,8 +638,6 @@ typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
 #endif
 #endif // FEATURE_PAL
 
-void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX);
-
 #define SetupThreadForComCall(OOMRetVal)            \
     MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk()); \
     if (CURRENT_THREAD == NULL)                     \

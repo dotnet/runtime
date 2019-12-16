@@ -1703,7 +1703,7 @@ struct CORINFO_CALL_INFO
 
     CORINFO_CONST_LOOKUP    instParamLookup;    // Used by Ready-to-Run
 
-    BOOL                    secureDelegateInvoke;
+    BOOL                    wrapperDelegateInvoke;
 };
 
 //----------------------------------------------------------------------------
@@ -1830,8 +1830,8 @@ struct CORINFO_EE_INFO
     unsigned    offsetOfDelegateInstance;
     unsigned    offsetOfDelegateFirstTarget;
 
-    // Secure delegate offsets
-    unsigned    offsetOfSecureDelegateIndirectCell;
+    // Wrapper delegate offsets
+    unsigned    offsetOfWrapperDelegateIndirectCell;
 
     // Remoting offsets
     unsigned    offsetOfTransparentProxyRP;
@@ -2026,7 +2026,7 @@ public:
     //
     /**********************************************************************************/
 
-    // return flags (defined above, CORINFO_FLG_PUBLIC ...)
+    // return flags (a bitfield of CorInfoFlags values)
     virtual DWORD getMethodAttribs (
             CORINFO_METHOD_HANDLE       ftn         /* IN */
             ) = 0;
@@ -2370,7 +2370,7 @@ public:
     //     GetTypeFromHandle(handle) == obj.GetType()
     virtual BOOL canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls) = 0;
 
-    // return flags (defined above, CORINFO_FLG_PUBLIC ...)
+    // return flags (a bitfield of CorInfoFlags values)
     virtual DWORD getClassAttribs (
             CORINFO_CLASS_HANDLE    cls
             ) = 0;

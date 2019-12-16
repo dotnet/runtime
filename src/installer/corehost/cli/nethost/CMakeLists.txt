@@ -23,10 +23,12 @@ if(WIN32)
 endif()
 
 include(../lib.cmake)
+include(../lib_static.cmake)
 
 add_definitions(-DFEATURE_LIBHOST=1)
 add_definitions(-DNETHOST_EXPORT)
 
 install(FILES nethost.h DESTINATION corehost)
 install(TARGETS nethost DESTINATION corehost)
+install(TARGETS libnethost DESTINATION corehost)
 install_symbols(nethost corehost)

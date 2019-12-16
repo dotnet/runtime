@@ -8,8 +8,8 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.JitInterface;
-using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.CorConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int CompareTo(ModuleToken other)
         {
-            int result = Token.CompareTo(other.Token);
+            int result = ((int)Token).CompareTo((int)other.Token);
             if (result != 0)
                 return result;
 
@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return new SignatureContext(Module, resolver);
         }
 
-        public MetadataReader MetadataReader => Module.PEReader.GetMetadataReader();
+        public MetadataReader MetadataReader => Module.MetadataReader;
 
         public CorTokenType TokenType => SignatureBuilder.TypeFromToken(Token);
 

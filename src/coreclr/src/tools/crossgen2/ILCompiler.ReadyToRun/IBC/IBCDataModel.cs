@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-using ILCompiler.DependencyAnalysis.ReadyToRun;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.IBC
 {

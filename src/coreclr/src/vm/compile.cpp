@@ -165,7 +165,7 @@ HRESULT CEECompileInfo::CreateDomain(ICorCompilationDomain **ppDomain,
     {
         GCX_COOP();
 
-        pCompilationDomain->CreateFusionContext();
+        pCompilationDomain->CreateBinderContext();
 
         pCompilationDomain->SetFriendlyName(W("Compilation Domain"));
         SystemDomain::System()->LoadDomain(pCompilationDomain);

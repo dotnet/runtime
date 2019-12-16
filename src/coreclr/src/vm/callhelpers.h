@@ -513,8 +513,6 @@ enum EEToManagedCallFlags
     MAKE_CURRENT_THREAD_AVAILABLE();                                            \
     DECLARE_CPFH_EH_RECORD(CURRENT_THREAD);                                     \
     _ASSERTE(CURRENT_THREAD);                                                   \
-    _ASSERTE(!CURRENT_THREAD->IsAbortPrevented() ||                             \
-             CURRENT_THREAD->IsAbortCheckDisabled());                           \
     _ASSERTE((CURRENT_THREAD->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);     \
     /* This bit should never be set when we call into managed code.  The */     \
     /* stack walking code explicitly clears this around any potential calls */  \

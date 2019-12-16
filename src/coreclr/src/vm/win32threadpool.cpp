@@ -120,9 +120,6 @@ LONG ThreadpoolMgr::Initialization=0;           // indicator of whether the thre
 // Cacheline aligned, hot variable
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) unsigned int ThreadpoolMgr::LastDequeueTime; // used to determine if work items are getting thread starved
 
-// Move out of from preceeding variables' cache line
-DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) int ThreadpoolMgr::offset_counter = 0;
-
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestHead);        // Head of work request queue
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestTail);        // Head of work request queue
 
@@ -1736,29 +1733,6 @@ void ThreadpoolMgr::RecycleMemory(LPVOID mem, enum MemType memType)
     }
 }
 
-#define THROTTLE_RATE  0.10 /* rate by which we increase the delay as number of threads increase */
-
-// This is to avoid the 64KB/1MB aliasing problem present on Pentium 4 processors,
-// which can significantly impact performance with HyperThreading enabled
-DWORD WINAPI ThreadpoolMgr::intermediateThreadProc(PVOID arg)
-{
-    WRAPPER_NO_CONTRACT;
-
-    offset_counter++;
-    if (offset_counter * offset_multiplier > (int)GetOsPageSize())
-        offset_counter = 0;
-
-    (void)_alloca(offset_counter * offset_multiplier);
-
-    intermediateThreadParam* param = (intermediateThreadParam*)arg;
-
-    LPTHREAD_START_ROUTINE ThreadFcnPtr = param->lpThreadFunction;
-    PVOID args = param->lpArg;
-    delete param;
-
-    return ThreadFcnPtr(args);
-}
-
 Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpArgs, BOOL *pIsCLRThread)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -1813,22 +1787,14 @@ Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStart
         if (bOK != TRUE)
             return NULL;
 #endif // !FEATURE_PAL
-        NewHolder<intermediateThreadParam> lpThreadArgs(new (nothrow) intermediateThreadParam);
-        if (lpThreadArgs != NULL)
-        {
-            lpThreadArgs->lpThreadFunction = lpStartAddress;
-            lpThreadArgs->lpArg = lpArgs;
-            threadHandle = CreateThread(NULL,               // security descriptor
-                                        0,                  // default stack size
-                                        intermediateThreadProc,
-                                        lpThreadArgs,       // arguments
-                                        CREATE_SUSPENDED,
-                                        &threadId);
+        threadHandle = CreateThread(NULL,               // security descriptor
+                                    0,                  // default stack size
+                                    lpStartAddress,
+                                    lpArgs,
+                                    CREATE_SUSPENDED,
+                                    &threadId);
 
-            SetThreadName(threadHandle, W(".NET ThreadPool Worker"));
-            if (threadHandle != NULL)
-                lpThreadArgs.SuppressRelease();
-        }
+        SetThreadName(threadHandle, W(".NET ThreadPool Worker"));
 #ifndef FEATURE_PAL
         UndoRevert(bReverted, token);
 #endif // !FEATURE_PAL

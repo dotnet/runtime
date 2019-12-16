@@ -62,11 +62,26 @@ namespace System.IO
 
         public static FileSecurity GetAccessControl(this FileStream fileStream)
         {
+            if (fileStream == null)
+            {
+                throw new ArgumentNullException(nameof(fileStream));
+            }
+
             return fileStream.GetAccessControl();
         }
 
         public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
         {
+            if (fileStream == null)
+            {
+                throw new ArgumentNullException(nameof(fileStream));
+            }
+
+            if (fileSecurity == null)
+            {
+                throw new ArgumentNullException(nameof(fileSecurity));
+            }
+
             fileStream.SetAccessControl(fileSecurity);
         }
     }

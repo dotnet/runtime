@@ -11,7 +11,7 @@ namespace MS.Internal.Xml.Cache
 {
     /// <summary>
     /// This is the default XPath/XQuery data model cache implementation.  It will be used whenever
-    /// the user does not supply his own XPathNavigator implementation.
+    /// the user does not supply their own XPathNavigator implementation.
     /// </summary>
     internal sealed class XPathDocumentNavigator : XPathNavigator, IXmlLineInfo
     {

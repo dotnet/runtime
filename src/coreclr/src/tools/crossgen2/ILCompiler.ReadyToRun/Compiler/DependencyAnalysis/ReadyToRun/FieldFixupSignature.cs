@@ -8,6 +8,7 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -24,6 +25,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _fixupKind = fixupKind;
             _fieldDesc = fieldDesc;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableType(fieldDesc.OwningType);
         }
 
         public override int ClassCode => 271828182;
@@ -55,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             FieldFixupSignature otherNode = (FieldFixupSignature)other;
-            int result = _fixupKind.CompareTo(otherNode._fixupKind);
+            int result = ((int)_fixupKind).CompareTo((int)otherNode._fixupKind);
             if (result != 0)
                 return result;
 

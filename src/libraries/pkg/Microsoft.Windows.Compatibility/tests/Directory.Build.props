@@ -8,6 +8,6 @@
     <NETCoreAppMaximumVersion>99.9</NETCoreAppMaximumVersion>
     <PackageConflictPreferredPackages Condition="'$(TargetFramework)' != 'netcoreapp2.0'">Microsoft.Private.CoreFx.NETCoreApp;runtime.$(RuntimeIdentifiers).Microsoft.Private.CoreFx.NETCoreApp;$(PackageConflictPreferredPackages)</PackageConflictPreferredPackages>
     <DisableImplicitFrameworkReferences Condition="$(TargetFramework.Contains('netcoreapp'))">true</DisableImplicitFrameworkReferences>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 </Project>

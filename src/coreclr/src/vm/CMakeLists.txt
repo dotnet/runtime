@@ -654,7 +654,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
         ${ARCH_SOURCES_DIR}/GenericComPlusCallStubs.asm
         ${ARCH_SOURCES_DIR}/getstate.asm
-        ${ARCH_SOURCES_DIR}/InstantiatingStub.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetThread.asm

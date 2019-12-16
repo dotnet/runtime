@@ -19,6 +19,13 @@ namespace System.Threading.Channels
         /// </summary>
         public virtual Task Completion => ChannelUtilities.s_neverCompletingTask;
 
+        /// <summary>Gets whether <see cref="Count"/> is available for use on this <see cref="ChannelReader{T}"/> instance.</summary>
+        public virtual bool CanCount => false;
+
+        /// <summary>Gets the current number of items available from this channel reader.</summary>
+        /// <exception cref="NotSupportedException">Counting is not supported on this instance.</exception>
+        public virtual int Count => throw new NotSupportedException();
+
         /// <summary>Attempts to read an item from the channel.</summary>
         /// <param name="item">The read item, or a default value if no item could be read.</param>
         /// <returns>true if an item was read; otherwise, false if no item was read.</returns>

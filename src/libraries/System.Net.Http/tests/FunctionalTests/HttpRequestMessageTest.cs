@@ -224,12 +224,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HEAD")]
         public async Task HttpRequest_BodylessMethod_NoContentLength(string method)
         {
-            if (IsWinHttpHandler)
-            {
-                // Some platform handlers differ but we don't take it as failure.
-                return;
-            }
-
             using (HttpClient client = CreateHttpClient())
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>

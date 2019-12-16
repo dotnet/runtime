@@ -177,7 +177,7 @@ namespace Internal.Cryptography.Pal
                         }
                         else
                         {
-                            // Found our first cert that has a private key. Set him up as our chosen one but keep iterating
+                            // Found our first cert that has a private key. Set it up as our chosen one but keep iterating
                             // as we need to free up the keys of any remaining certs.
                             pCertContext.Dispose();
                             pCertContext = pEnumContext.Duplicate();

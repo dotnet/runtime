@@ -40,6 +40,7 @@
 #endif // FEATURE_COMINTEROP
 
 #define g_IntrinsicsNS g_RuntimeNS ".Intrinsics"
+#define g_NumericsNS   g_SystemNS  ".Numerics"
 
 #define g_InternalCompilerServicesNS "Internal.Runtime.CompilerServices"
 #define g_CompilerServicesNS g_RuntimeNS ".CompilerServices"
