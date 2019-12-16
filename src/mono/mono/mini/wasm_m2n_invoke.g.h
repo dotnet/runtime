@@ -288,6 +288,26 @@ wasm_invoke_iiliiii (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_if (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(float arg_0);
+	T func = (T)target_func;
+	int res = func (*(float*)&margs->fargs [FIDX (0)]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_id (void *target_func, InterpMethodArguments *margs)
+{
+	typedef int (*T)(double arg_0);
+	T func = (T)target_func;
+	int res = func (margs->fargs [FIDX (0)]);
+	*(int*)margs->retval = res;
+
+}
+
+static void
 wasm_invoke_iif (void *target_func, InterpMethodArguments *margs)
 {
 	typedef int (*T)(int arg_0, float arg_1);
@@ -728,6 +748,16 @@ wasm_invoke_ddd (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_dddd (void *target_func, InterpMethodArguments *margs)
+{
+	typedef double (*T)(double arg_0, double arg_1, double arg_2);
+	T func = (T)target_func;
+	double res = func (margs->fargs [FIDX (0)], margs->fargs [FIDX (1)], margs->fargs [FIDX (2)]);
+	*(double*)margs->retval = res;
+
+}
+
+static void
 wasm_invoke_vif (void *target_func, InterpMethodArguments *margs)
 {
 	typedef void (*T)(int arg_0, float arg_1);
@@ -801,11 +831,31 @@ wasm_invoke_ff (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_ffi (void *target_func, InterpMethodArguments *margs)
+{
+	typedef float (*T)(float arg_0, int arg_1);
+	T func = (T)target_func;
+	float res = func (*(float*)&margs->fargs [FIDX (0)], (int)(gssize)margs->iargs [0]);
+	*(float*)margs->retval = res;
+
+}
+
+static void
 wasm_invoke_fff (void *target_func, InterpMethodArguments *margs)
 {
 	typedef float (*T)(float arg_0, float arg_1);
 	T func = (T)target_func;
 	float res = func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)]);
+	*(float*)margs->retval = res;
+
+}
+
+static void
+wasm_invoke_ffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef float (*T)(float arg_0, float arg_1, float arg_2);
+	T func = (T)target_func;
+	float res = func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)]);
 	*(float*)margs->retval = res;
 
 }
@@ -1573,6 +1623,11 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 					}
 				}
 			}
+			else if (cookie[2] == '\0') {
+				// found: IF depth 6
+				wasm_invoke_if (target_func, margs);
+				return;
+			}
 		}
 		else if (cookie[1] == 'D') {
 			if (cookie[2] == 'I') {
@@ -1585,6 +1640,11 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 						}
 					}
 				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: ID depth 7
+				wasm_invoke_id (target_func, margs);
+				return;
 			}
 		}
 		else if (cookie[1] == 'L') {
@@ -1659,30 +1719,16 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 		}
 	}
 	else if (cookie[0] == 'D') {
-		if (cookie[1] == 'I') {
+		if (cookie[1] == 'D') {
 			if (cookie[2] == 'D') {
 				if (cookie[3] == 'D') {
 					if (cookie[4] == '\0') {
-						// found: DIDD depth 8
-						wasm_invoke_didd (target_func, margs);
+						// found: DDDD depth 8
+						wasm_invoke_dddd (target_func, margs);
 						return;
 					}
 				}
 				else if (cookie[3] == '\0') {
-					// found: DID depth 8
-					wasm_invoke_did (target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == '\0') {
-				// found: DI depth 7
-				wasm_invoke_di (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == 'D') {
-			if (cookie[2] == 'D') {
-				if (cookie[3] == '\0') {
 					// found: DDD depth 8
 					wasm_invoke_ddd (target_func, margs);
 					return;
@@ -1690,51 +1736,86 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 			}
 			else if (cookie[2] == 'I') {
 				if (cookie[3] == '\0') {
-					// found: DDI depth 9
+					// found: DDI depth 8
 					wasm_invoke_ddi (target_func, margs);
 					return;
 				}
 			}
 			else if (cookie[2] == '\0') {
-				// found: DD depth 9
+				// found: DD depth 8
 				wasm_invoke_dd (target_func, margs);
+				return;
+			}
+		}
+		else if (cookie[1] == 'I') {
+			if (cookie[2] == 'D') {
+				if (cookie[3] == 'D') {
+					if (cookie[4] == '\0') {
+						// found: DIDD depth 9
+						wasm_invoke_didd (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: DID depth 9
+					wasm_invoke_did (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: DI depth 8
+				wasm_invoke_di (target_func, margs);
 				return;
 			}
 		}
 	}
 	else if (cookie[0] == 'F') {
-		if (cookie[1] == 'I') {
+		if (cookie[1] == 'F') {
 			if (cookie[2] == 'F') {
 				if (cookie[3] == 'F') {
 					if (cookie[4] == '\0') {
-						// found: FIFF depth 9
-						wasm_invoke_fiff (target_func, margs);
+						// found: FFFF depth 9
+						wasm_invoke_ffff (target_func, margs);
 						return;
 					}
 				}
 				else if (cookie[3] == '\0') {
-					// found: FIF depth 9
-					wasm_invoke_fif (target_func, margs);
+					// found: FFF depth 9
+					wasm_invoke_fff (target_func, margs);
 					return;
 				}
 			}
-			else if (cookie[2] == '\0') {
-				// found: FI depth 8
-				wasm_invoke_fi (target_func, margs);
-				return;
-			}
-		}
-		else if (cookie[1] == 'F') {
-			if (cookie[2] == 'F') {
+			else if (cookie[2] == 'I') {
 				if (cookie[3] == '\0') {
-					// found: FFF depth 9
-					wasm_invoke_fff (target_func, margs);
+					// found: FFI depth 9
+					wasm_invoke_ffi (target_func, margs);
 					return;
 				}
 			}
 			else if (cookie[2] == '\0') {
 				// found: FF depth 9
 				wasm_invoke_ff (target_func, margs);
+				return;
+			}
+		}
+		else if (cookie[1] == 'I') {
+			if (cookie[2] == 'F') {
+				if (cookie[3] == 'F') {
+					if (cookie[4] == '\0') {
+						// found: FIFF depth 10
+						wasm_invoke_fiff (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: FIF depth 10
+					wasm_invoke_fif (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: FI depth 9
+				wasm_invoke_fi (target_func, margs);
 				return;
 			}
 		}
