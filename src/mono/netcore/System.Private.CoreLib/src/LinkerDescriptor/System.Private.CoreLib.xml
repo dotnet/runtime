@@ -25,6 +25,8 @@
 		  <method name="OnAssemblyResolve"/>
 		  <!-- native-library.c: netcore_resolve_with_load () -->
 		  <method name="MonoResolveUnmanagedDll"/>
+		  <!-- appdomain.c: mono_domain_fire_assembly_load_event -->
+		  <method name="OnAssemblyLoad"/>
 		</type>
 		
 		<!-- marshal.c: emit_marshal_custom (should not be used on devices)
