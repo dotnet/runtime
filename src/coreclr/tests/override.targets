@@ -1,4 +1,4 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <!--
     Overrides for all other targets (including build tools) can go in this file.
   -->
@@ -10,11 +10,10 @@
   <Target Name="AddDesignTimeFacadeReferences"
       Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true'"
       BeforeTargets="ResolveReferences"
-      DependsOnTargets="GetReferenceAssemblyPaths"
-  >
+      DependsOnTargets="GetReferenceAssemblyPaths">
 
     <ItemGroup>
-      <ReferencePath Include="$(RootRepoDir)\artifacts\bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\System.Private.CoreLib.dll" />
+      <ReferencePath Include="$(ArtifactsBinDir)coreclr\$(BuildOS).$(BuildArch).$(BuildType)\System.Private.CoreLib.dll" />
     </ItemGroup>
   </Target>
 

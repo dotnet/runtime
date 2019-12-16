@@ -3,8 +3,8 @@
 
   <PropertyGroup>
     <PackageDescriptionFile>$(MSBuildThisFileDirectory)/descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(CoreclrDir)/LICENSE.TXT</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(CoreclrDir)/THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <PackageLicenseFile>$(CoreClrProjectRoot)/LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(CoreClrProjectRoot)/THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
 
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
 

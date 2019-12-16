@@ -3,26 +3,83 @@
   <PropertyGroup>
     <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
+
   <Import Project="..\..\Directory.Build.props" />
 
-  <!-- Ensure our properties are set before Arcade defines defaults -->
-  <Import Project="dir.common.props" />
+  <!-- Paths need to be defined before the Arcade SDK is imported. -->
+  <PropertyGroup>
+    <BaseOutputPath>$(ArtifactsBinDir)coreclr\$(MSBuildProjectName)\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(ArtifactsObjDir)coreclr\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+  <!-- Set default Configuration and Platform -->
+  <PropertyGroup>
+    <BuildArch>$(__BuildArch)</BuildArch>
+    <BuildArch Condition="'$(__BuildArch)'==''">x64</BuildArch>
+    <BuildArch Condition="'$(__BuildArch)' == 'amd64'">x64</BuildArch>
+
+    <BuildType>$(__BuildType)</BuildType>
+    <BuildType Condition="'$(__BuildType)'==''">Debug</BuildType>
+    <BuildType Condition="'$(__BuildType)' == 'debug'">Debug</BuildType>
+    <BuildType Condition="'$(__BuildType)' == 'release'">Release</BuildType>
+    <BuildType Condition="'$(__BuildType)' == 'checked'">Checked</BuildType>
+
+    <BuildOS>$(__BuildOS)</BuildOS>
+    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</BuildOS>
+    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</BuildOS>
+    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</BuildOS>
+
+    <!-- TODO: converge on one property for BuildOS and __BuildOS (and similar), and remove these extra lines. -->
+    <__BuildOS>$(BuildOS)</__BuildOS>
+    <__BuildArch>$(BuildArch)</__BuildArch>
+
+    <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
+    <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
+
+    <PlatformConfigPathPart>$(BuildOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
+  </PropertyGroup>
+
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <!-- Common properties -->
+  <PropertyGroup>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <BinDir>$(ArtifactsBinDir)coreclr\$(PlatformConfigPathPart)\</BinDir>
+    <PackagesBinDir>$(BinDir).nuget\</PackagesBinDir>
+  </PropertyGroup>
+
+  <!-- Set up common target properties that we use to conditionally include sources -->
+  <PropertyGroup>
+    <TargetsFreeBSD Condition="'$(BuildOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(BuildOS)' == 'Linux'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(BuildOS)' == 'NetBSD'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
+
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
+
+    <!-- We are only tracking Linux Distributions for Nuget RID mapping -->
+    <DistroRid Condition="'$(TargetsLinux)' == 'true'">$(__DistroRid)</DistroRid>
+
+    <!-- Folder for cross target components -->
+    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm64'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Set the kind of PDB to Portable -->
+    <DebugType>Portable</DebugType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)' != 'true'">false</SignAssembly>
+    <CL_MPCount>$(NumberOfCores)</CL_MPCount>
+    <!-- Enables Strict mode for Roslyn compiler -->
+    <Features>strict;nullablePublicOnly</Features>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
     <Copyright>$(CopyrightNetFoundation)</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)'!='true'">false</SignAssembly>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <CL_MPCount>$(NumberOfCores)</CL_MPCount>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- Enables Strict mode for Roslyn compiler -->
-    <Features>strict;nullablePublicOnly</Features>
-  </PropertyGroup>
 </Project>
