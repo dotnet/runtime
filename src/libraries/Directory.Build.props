@@ -5,10 +5,6 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <PropertyGroup>
-    <!-- We use the compiler toolset that comes from NuGet Packages rather than the SDK built-in.
-    This one sets UseSharedCompilation to false by default. -->
-    <UseSharedCompilation>true</UseSharedCompilation>
-
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
   </PropertyGroup>
