@@ -100,6 +100,9 @@ namespace BinderTracing
             SString AssemblyLoadContext;
         };
 
+    public: // static
+        static void TraceAppDomainAssemblyResolve(AssemblySpec *spec, PEAssembly *resultAssembly, Exception *exception = nullptr);
+
     public:
         ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, INT_PTR managedALC, const HRESULT& hr);
         ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, UINT_PTR binderId, const HRESULT& hr);

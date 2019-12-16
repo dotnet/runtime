@@ -305,7 +305,9 @@ namespace BINDER_SPACE
         BindResult bindResult;
 
         // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), hr};
+        NewHolder<BinderTracing::ResolutionAttemptedOperation> tracer;
+        if (pAssemblyName != nullptr)
+            tracer = new BinderTracing::ResolutionAttemptedOperation(pAssemblyName, pApplicationContext->GetBinderID(), hr);
 
 #ifndef CROSSGEN_COMPILE
     Retry:
@@ -353,7 +355,9 @@ namespace BINDER_SPACE
 #endif
 
     Exit:
-        tracer.TraceBindResult(bindResult);
+        if (tracer != nullptr)
+            tracer->TraceBindResult(bindResult);
+
         if (bindResult.HaveResult())
         {
 #ifndef CROSSGEN_COMPILE

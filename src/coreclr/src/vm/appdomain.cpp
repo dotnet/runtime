@@ -5085,10 +5085,13 @@ PEAssembly *AppDomain::TryResolveAssemblyUsingEvent(AssemblySpec *pSpec)
             pFile->AddRef();
             result = pFile;
         }
+
+        BinderTracing::ResolutionAttemptedOperation::TraceAppDomainAssemblyResolve(pSpec, result);
     }
     EX_HOOK
     {
         Exception *pEx = GET_EXCEPTION();
+        BinderTracing::ResolutionAttemptedOperation::TraceAppDomainAssemblyResolve(pSpec, nullptr, pEx);
         if (!pEx->IsTransient())
         {
             AddExceptionToCache(pSpec, pEx);

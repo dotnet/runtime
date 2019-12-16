@@ -98,14 +98,15 @@ namespace BinderTracingTests
         private static void ValidateResolutionAttempts(List<ResolutionAttempt> expected, List<ResolutionAttempt> actual)
         {
             if (expected.Count > 0)
-                Assert.AreEqual(expected.Count, actual.Count, "Unexpected resolution attempt count");
+                Assert.AreEqual(expected.Count, actual.Count,
+                    $"Unexpected resolution attempt count. Actual events:{Environment.NewLine}{string.Join(Environment.NewLine, actual.Select(a => a.ToString()))}");
 
             for (var i = 0; i < expected.Count; i++)
             {
                 var a = actual[i];
                 var e = expected[i];
 
-                string expectedActualMessage = $"{Environment.NewLine}Expected resolution attempt:{Environment.NewLine}{e.ToString()}Actual resolution attempt:{Environment.NewLine}{a.ToString()}";
+                string expectedActualMessage = $"{Environment.NewLine}Expected resolution attempt:{Environment.NewLine}{e.ToString()}{Environment.NewLine}Actual resolution attempt:{Environment.NewLine}{a.ToString()}";
                 ValidateAssemblyName(e.AssemblyName, a.AssemblyName, nameof(ResolutionAttempt.AssemblyName));
                 Assert.AreEqual(e.Stage, a.Stage, $"Unexpected value for {nameof(ResolutionAttempt.Stage)} {expectedActualMessage}");
                 Assert.AreEqual(e.AssemblyLoadContext, a.AssemblyLoadContext, $"Unexpected value for {nameof(ResolutionAttempt.AssemblyLoadContext)} {expectedActualMessage}");

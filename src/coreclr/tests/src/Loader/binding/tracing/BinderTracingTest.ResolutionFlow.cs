@@ -73,6 +73,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [AssemblyNotFound]
         [BinderTest(isolate: true, testSetup: nameof(LoadSubdirectoryAssembly_InstanceALC))]
         public static BindOperation FindInLoadContext_IncompatibleVersion()
         {
@@ -92,7 +93,8 @@ namespace BinderTracingTests
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alcInstance, ResolutionResult.AssemblyNotFound),
-                    GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alcInstance, ResolutionResult.AssemblyNotFound)
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alcInstance, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, alcInstance, ResolutionResult.AssemblyNotFound)
                 }
             };
         }
@@ -126,6 +128,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [MismatchedAssemblyName]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (DefaultALC)    [AssemblyNotFound]
         [BinderTest(isolate: true)]
         public static BindOperation PlatformAssemblies_MismatchedAssemblyName()
         {
@@ -152,7 +155,8 @@ namespace BinderTracingTests
                 {
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.MismatchedAssemblyName, UseDependentAssembly().GetName(), assemblyPath),
-                    GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound)
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound)
                 }
             };
         }
@@ -193,7 +197,7 @@ namespace BinderTracingTests
         public static BindOperation AssemblyLoadContextLoad_Exception()
         {
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
-            var assemblyPath = GetAssemblyInSubdirectoryPath(assemblyName.Name);
+            var assemblyPath = Helpers.GetAssemblyInSubdirectoryPath(assemblyName.Name);
             CustomALC alc = new CustomALC(nameof(AssemblyLoadContextLoad), true /*throwOnLoad*/);
 
             Assert.Throws<FileLoadException, Exception>(() => alc.LoadFromAssemblyName(assemblyName));
@@ -338,6 +342,153 @@ namespace BinderTracingTests
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, "Exception in handler for AssemblyLoadContext.Resolving")
                     },
                     AssemblyLoadContextResolvingHandlers = handlers.Invocations
+                };
+            }
+        }
+
+        // Successful load through AssemblyLoadContext.Resolving event (Custom ALC):
+        //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [Exception]
+        [BinderTest(isolate: true)]
+        public static BindOperation AssemblyLoadContextResolvingEvent_CustomALC_Exception()
+        {
+            var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
+            CustomALC alc = new CustomALC(nameof(AssemblyLoadContextResolvingEvent_CustomALC_Exception));
+            using (var handlers = new Handlers(HandlerReturn.Exception, alc))
+            {
+                Assert.Throws<FileLoadException, Exception>(() => alc.LoadFromAssemblyName(assemblyName));
+
+                return new BindOperation()
+                {
+                    AssemblyName = assemblyName,
+                    AssemblyLoadContext = alc.ToString(),
+                    Success = false,
+                    Cached = false,
+                    ResolutionAttempts = new List<ResolutionAttempt>()
+                    {
+                        GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alc, "Exception in handler for AssemblyLoadContext.Resolving")
+                    },
+                    AssemblyLoadContextResolvingHandlers = handlers.Invocations
+                };
+            }
+        }
+
+        // Successful load through AppDomain.AssemblyResolve event (Custom ALC):
+        //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [Success]
+        [BinderTest(isolate: true)]
+        public static BindOperation AppDomainAssemblyResolveEvent_CustomALC()
+        {
+            var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
+            CustomALC alc = new CustomALC(nameof(AppDomainAssemblyResolveEvent_CustomALC));
+            using (var handlers = new Handlers(HandlerReturn.RequestedAssembly))
+            {
+                Assembly asm = alc.LoadFromAssemblyName(assemblyName);
+
+                return new BindOperation()
+                {
+                    AssemblyName = assemblyName,
+                    AssemblyLoadContext = alc.ToString(),
+                    Success = true,
+                    ResultAssemblyName = asm.GetName(),
+                    ResultAssemblyPath = asm.Location,
+                    Cached = false,
+                    ResolutionAttempts = new List<ResolutionAttempt>()
+                    {
+                        GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, alc, ResolutionResult.Success, asm)
+                    },
+                    AppDomainAssemblyResolveHandlers = handlers.Invocations
+                };
+            }
+        }
+
+        // Successful load through AssemblyLoadContext.Resolving event (default ALC):
+        //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (DefaultALC)    [Success]
+        [BinderTest(isolate: true)]
+        public static BindOperation AppDomainAssemblyResolveEvent_DefaultALC()
+        {
+            var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
+            using (var handlers = new Handlers(HandlerReturn.RequestedAssembly))
+            {
+                Assembly asm = AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
+
+                return new BindOperation()
+                {
+                    AssemblyName = assemblyName,
+                    AssemblyLoadContext = DefaultALC,
+                    Success = true,
+                    ResultAssemblyName = asm.GetName(),
+                    ResultAssemblyPath = asm.Location,
+                    Cached = false,
+                    ResolutionAttempts = new List<ResolutionAttempt>()
+                    {
+                        GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, AssemblyLoadContext.Default, ResolutionResult.Success, asm)
+                    },
+                    AppDomainAssemblyResolveHandlers = handlers.Invocations
+                };
+            }
+        }
+
+        // Exception in AppDomain.AssemblyResolve event handler:
+        //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [Exception]
+        [BinderTest(isolate: true)]
+        public static BindOperation AppDomainAssemblyResolveEvent_Exception()
+        {
+            var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
+            CustomALC alc = new CustomALC(nameof(AppDomainAssemblyResolveEvent_Exception));
+            using (var handlers = new Handlers(HandlerReturn.Exception))
+            {
+                Assert.Throws<FileLoadException, Exception>(() => alc.LoadFromAssemblyName(assemblyName));
+
+                return new BindOperation()
+                {
+                    AssemblyName = assemblyName,
+                    AssemblyLoadContext = alc.ToString(),
+                    Success = false,
+                    Cached = false,
+                    ResolutionAttempts = new List<ResolutionAttempt>()
+                    {
+                        GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alc, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, alc, "Exception in handler for AppDomain.AssemblyResolve")
+                    },
+                    AppDomainAssemblyResolveHandlers = handlers.Invocations
                 };
             }
         }

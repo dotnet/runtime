@@ -187,6 +187,7 @@ namespace
         GetAssemblyLoadContextNameFromSpec(spec, request.AssemblyLoadContext);
     }
 
+    const WCHAR *s_assemblyNotFoundMessage = W("Could not locate assembly");
     void PopulateAttemptInfo(/*inout*/ BinderTracing::ResolutionAttemptedOperation::AttemptInfo &info)
     {
         _ASSERTE(info.AssemblyNameObject != nullptr);
@@ -287,10 +288,11 @@ namespace BinderTracing
         , m_attemptInfo { assemblyName, binderID, managedALC }
         , m_pFoundAssembly { nullptr }
     {
+        _ASSERTE(assemblyName != nullptr);
+
         if (!BinderTracing::IsEnabled())
             return;
 
-        _ASSERTE(assemblyName != nullptr);
         PopulateAttemptInfo(m_attemptInfo);
         m_populatedAttemptInfo = true;
     }
@@ -344,7 +346,7 @@ namespace BinderTracing
                                     "COR_E_FILENOTFOUND has sane value");
 
                     result = Result::AssemblyNotFound;
-                    errorMsg.Set(W("Could not locate assembly"));
+                    errorMsg.Set(s_assemblyNotFoundMessage);
                     break;
 
                 case FUSION_E_APP_DOMAIN_LOCKED:
@@ -401,6 +403,47 @@ namespace BinderTracing
             resultAssemblyName,
             resultAssemblyPath,
             errorMsg);
+    }
+
+    // static
+    void ResolutionAttemptedOperation::TraceAppDomainAssemblyResolve(AssemblySpec *spec, PEAssembly *resultAssembly, Exception *exception)
+    {
+        Result result;
+        StackSString errorMessage;
+        StackSString resultAssemblyName;
+        StackSString resultAssemblyPath;
+        if (exception != nullptr)
+        {
+            exception->GetMessage(errorMessage);
+            result = Result::Exception;
+        }
+        else if (resultAssembly != nullptr)
+        {
+            result = Result::Success;
+            resultAssemblyPath = resultAssembly->GetPath();
+            resultAssembly->GetDisplayName(resultAssemblyName);
+        }
+        else
+        {
+            result = Result::AssemblyNotFound;
+            errorMessage.Set(s_assemblyNotFoundMessage);
+        }
+
+        StackSString assemblyName;
+        spec->GetDisplayName(ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN, assemblyName);
+
+        StackSString alcName;
+        GetAssemblyLoadContextNameFromSpec(spec, alcName);
+
+        FireEtwResolutionAttempted(
+            GetClrInstanceId(),
+            assemblyName,
+            static_cast<uint16_t>(Stage::AppDomainAssemblyResolveEvent),
+            alcName,
+            static_cast<uint16_t>(result),
+            resultAssemblyName,
+            resultAssemblyPath,
+            errorMessage);
     }
 }
 
