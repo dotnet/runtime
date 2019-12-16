@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "pal_localeNumberData.h"
 
@@ -199,6 +200,9 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
             return i;
         }
     }
+
+    fprintf(stderr, "Pattern: >>>%s<<<", normalizedPattern);
+    abort();
 
     assert(FALSE); // should have found a valid pattern
     free(normalizedPattern);
