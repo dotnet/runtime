@@ -23,13 +23,13 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The remaining forwards stack of the queue being enumerated.
             /// </summary>
-            private ImmutableStack<T> _remainingForwardsStack;
+            private ImmutableStack<T>? _remainingForwardsStack;
 
             /// <summary>
             /// The remaining backwards stack of the queue being enumerated.
             /// Its order is reversed when the field is first initialized.
             /// </summary>
-            private ImmutableStack<T> _remainingBackwardsStack;
+            private ImmutableStack<T>? _remainingBackwardsStack;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Enumerator"/> struct.
@@ -61,7 +61,7 @@ namespace System.Collections.Immutable
                     {
                         return _remainingForwardsStack.Peek();
                     }
-                    else if (!_remainingBackwardsStack.IsEmpty)
+                    else if (!_remainingBackwardsStack!.IsEmpty)
                     {
                         return _remainingBackwardsStack.Peek();
                     }
@@ -90,12 +90,12 @@ namespace System.Collections.Immutable
                 {
                     _remainingForwardsStack = _remainingForwardsStack.Pop();
                 }
-                else if (!_remainingBackwardsStack.IsEmpty)
+                else if (!_remainingBackwardsStack!.IsEmpty)
                 {
                     _remainingBackwardsStack = _remainingBackwardsStack.Pop();
                 }
 
-                return !_remainingForwardsStack.IsEmpty || !_remainingBackwardsStack.IsEmpty;
+                return !_remainingForwardsStack.IsEmpty || !_remainingBackwardsStack!.IsEmpty;
             }
         }
 
@@ -112,13 +112,13 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The remaining forwards stack of the queue being enumerated.
             /// </summary>
-            private ImmutableStack<T> _remainingForwardsStack;
+            private ImmutableStack<T>? _remainingForwardsStack;
 
             /// <summary>
             /// The remaining backwards stack of the queue being enumerated.
             /// Its order is reversed when the field is first initialized.
             /// </summary>
-            private ImmutableStack<T> _remainingBackwardsStack;
+            private ImmutableStack<T>? _remainingBackwardsStack;
 
             /// <summary>
             /// A value indicating whether this enumerator has been disposed.
@@ -152,7 +152,7 @@ namespace System.Collections.Immutable
                     {
                         return _remainingForwardsStack.Peek();
                     }
-                    else if (!_remainingBackwardsStack.IsEmpty)
+                    else if (!_remainingBackwardsStack!.IsEmpty)
                     {
                         return _remainingBackwardsStack.Peek();
                     }
@@ -169,7 +169,7 @@ namespace System.Collections.Immutable
             /// </summary>
             object IEnumerator.Current
             {
-                get { return this.Current; }
+                get { return this.Current!; }
             }
 
             /// <summary>
@@ -190,12 +190,12 @@ namespace System.Collections.Immutable
                 {
                     _remainingForwardsStack = _remainingForwardsStack.Pop();
                 }
-                else if (!_remainingBackwardsStack.IsEmpty)
+                else if (!_remainingBackwardsStack!.IsEmpty)
                 {
                     _remainingBackwardsStack = _remainingBackwardsStack.Pop();
                 }
 
-                return !_remainingForwardsStack.IsEmpty || !_remainingBackwardsStack.IsEmpty;
+                return !_remainingForwardsStack.IsEmpty || !_remainingBackwardsStack!.IsEmpty;
             }
 
             /// <summary>
