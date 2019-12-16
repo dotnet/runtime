@@ -62,8 +62,8 @@ namespace System.Collections.Tests
         {
             List<T> list = GenericListFactory(count);
 
-            Assert.Throws<ArgumentOutOfRangeException>("sourceIndex", () => { Span<T> span = new T[count]; list.CopyTo(-1, count, span); });
-            Assert.Throws<ArgumentOutOfRangeException>("sourceIndex", () => { Span<T> span = new T[count]; list.CopyTo(int.MinValue, count, span); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Span<T> span = new T[count]; list.CopyTo(-1, count, span); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Span<T> span = new T[count]; list.CopyTo(int.MinValue, count, span); });
         }
 
         [Theory]
@@ -72,35 +72,35 @@ namespace System.Collections.Tests
         {
             List<T> list = GenericListFactory(count);
 
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => { Span<T> span = new T[count]; list.CopyTo(0, -1, span); });
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => { Span<T> span = new T[count]; list.CopyTo(0, int.MinValue, span); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Span<T> span = new T[count]; list.CopyTo(0, -1, span); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Span<T> span = new T[count]; list.CopyTo(0, int.MinValue, span); });
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void CopyToSpan_SourceIndexLargerThanListCount_ThrowsAnyArgumentException(int count)
+        public void CopyToSpan_SourceIndexLargerThanListCount_ThrowsArgumentOutOfRangeException(int count)
         {
             List<T> list = GenericListFactory(count);
 
-            Assert.Throws<ArgumentException>(() => { Span<T> span = new T[count]; list.CopyTo(count + 1, 0, span); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Span<T> span = new T[count]; list.CopyTo(count + 1, 0, span); });
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void CopyToSpan_CountLargerThanListCount_ThrowsAnyArgumentException(int count)
+        public void CopyToSpan_CountLargerThanListCount_ThrowsArgumentOutOfRangeException(int count)
         {
             List<T> list = GenericListFactory(count);
 
-            Assert.Throws<ArgumentException>(() => { Span<T> span = new T[count]; list.CopyTo(0, count + 1, span); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Span<T> span = new T[count]; list.CopyTo(0, count + 1, span); });
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void CopyToSpan_SourceIndexPlusCountLargerThanListCount_ThrowsAnyArgumentException(int count)
+        public void CopyToSpan_SourceIndexPlusCountLargerThanListCount_ThrowsArgumentOutOfRangeException(int count)
         {
             List<T> list = GenericListFactory(count);
 
-            Assert.Throws<ArgumentException>(() => { Span<T> span = new T[count]; list.CopyTo(1, count, span); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Span<T> span = new T[count]; list.CopyTo(1, count, span); });
         }
 
         [Theory]
