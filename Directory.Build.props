@@ -26,10 +26,12 @@
     <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin'))</ArtifactsBinDir>
   </PropertyGroup>
 
-  <!-- The NetCoreApp TFM to build and test against. -->
+  <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v5.0</NetCoreAppCurrentTargetFrameworkMoniker>
-    <NetCoreAppCurrent>netcoreapp5.0</NetCoreAppCurrent>
+    <NETCoreAppCurrentVersion>5.0</NETCoreAppCurrentVersion>
+    <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v$(NETCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
+    <NetCoreAppCurrent>netcoreapp$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <NetFrameworkCurrent>net472</NetFrameworkCurrent>
   </PropertyGroup>
 
   <!--
