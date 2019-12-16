@@ -25,8 +25,8 @@ namespace BasicEventSourceTests
 {
     public partial class TestsManifestGeneration
     {
-
-        [Fact]
+        /// ETW only works with elevated process
+        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
         public void Test_EventSource_EtwManifestGeneration()
         {
             RemoteExecutor.Invoke(() =>
@@ -57,7 +57,7 @@ namespace BasicEventSourceTests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
         public void Test_EventSource_EtwManifestGenerationRollover()
         {
             RemoteExecutor.Invoke(() =>
@@ -72,8 +72,8 @@ namespace BasicEventSourceTests
                     }
                 }))
                 {
-                    var initialFileName = @"initialFile.etl";
-                    var rolloverFile = @"rolloverFile.etl";
+                    var initialFileName = @"E:\temp\initialFile.etl";
+                    var rolloverFile = @"E:\temp\rolloverFile.etl";
                     var tracesession = new TraceEventSession("testname", initialFileName);
 
                     tracesession.EnableProvider("SimpleEventSource");
@@ -112,7 +112,7 @@ namespace BasicEventSourceTests
                 }
             };
             source.Process();
-            File.Delete(fileName);
+            //File.Delete(fileName);
             return sawManifestData;
         }
     }
