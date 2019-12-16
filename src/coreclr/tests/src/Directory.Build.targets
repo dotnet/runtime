@@ -229,7 +229,7 @@
   </Target>
 
   <PropertyGroup Condition="'$(UseLiveBuild)' != 'false'">
-    <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
     <TargetArchitecture>$(BuildArch)</TargetArchitecture>

@@ -6,12 +6,6 @@
 
   <Import Project="..\..\Directory.Build.props" />
 
-  <!-- Paths need to be defined before the Arcade SDK is imported. -->
-  <PropertyGroup>
-    <BaseOutputPath>$(ArtifactsBinDir)coreclr\$(MSBuildProjectName)\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(ArtifactsObjDir)coreclr\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-  </PropertyGroup>
-
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <BuildArch>$(__BuildArch)</BuildArch>
@@ -36,7 +30,16 @@
     <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
 
-    <PlatformConfigPathPart>$(BuildOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
+    <OSPlatformConfig>$(BuildOS).$(BuildArch).$(BuildType)</OSPlatformConfig>
+  </PropertyGroup>
+
+    <!-- Paths need to be defined before the Arcade SDK is imported. -->
+  <PropertyGroup>
+    <BaseRootOutputPath>$(ArtifactsBinDir)coreclr\</BaseRootOutputPath>
+    <BaseOutputPath>$(BaseRootOutputPath)$(MSBuildProjectName)\</BaseOutputPath>
+    <BaseRootIntermediateOutputPath>$(ArtifactsObjDir)coreclr\</BaseRootIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(BaseRootIntermediateOutputPath)$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <RuntimePath>$(BaseRootOutputPath)$(OSPlatformConfig)\</RuntimePath>
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
@@ -44,7 +47,7 @@
   <!-- Common properties -->
   <PropertyGroup>
     <SourceDir>$(ProjectDir)src\</SourceDir>
-    <BinDir>$(ArtifactsBinDir)coreclr\$(PlatformConfigPathPart)\</BinDir>
+    <BinDir>$(RuntimePath)</BinDir>
     <PackagesBinDir>$(BinDir).nuget\</PackagesBinDir>
   </PropertyGroup>
 

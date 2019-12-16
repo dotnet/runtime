@@ -39,8 +39,6 @@
 
   <!-- Platform detection -->
   <PropertyGroup>
-    <RunningOnUnix Condition="'$(OS)'!='Windows_NT'">true</RunningOnUnix>
-
     <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'core'">true</RunningOnCore>
   </PropertyGroup>
 

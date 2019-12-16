@@ -13,7 +13,7 @@
       DependsOnTargets="GetReferenceAssemblyPaths">
 
     <ItemGroup>
-      <ReferencePath Include="$(ArtifactsBinDir)coreclr\$(BuildOS).$(BuildArch).$(BuildType)\System.Private.CoreLib.dll" />
+      <ReferencePath Include="$(RuntimePath)System.Private.CoreLib.dll" />
     </ItemGroup>
   </Target>
 

@@ -96,7 +96,7 @@ $(_XunitEpilog)
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
     <TestRelativeBasePath>$(XunitTestBinBase)\</TestRelativeBasePath>
-    <RuntimeFrameworkVersion Condition="'$(__SkipFXRestore)' != 'true'">$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
     <DirectoryBuildPropsPath>$(CoreClrTestDir)Directory.Build.props</DirectoryBuildPropsPath>
     <DirectoryBuildTargetsPath>$(CoreClrTestDir)Directory.Build.targets</DirectoryBuildTargetsPath>
     <UseLiveBuild>false</UseLiveBuild>
