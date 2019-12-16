@@ -17,8 +17,6 @@
     <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
-
   <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(BuildOS)' == 'Windows_NT'">
     <ItemGroup>
       <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
