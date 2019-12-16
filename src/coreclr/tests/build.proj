@@ -20,9 +20,7 @@
   <ItemGroup>
     <RestoreProjects Include="$(MSBuildThisFileDirectory)scripts\scripts.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\test_dependencies\test_dependencies.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\test_runtime\test_runtime.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\CoreFX\CoreFX.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)external\external.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\ilasm\ilasm.ilproj" />
   </ItemGroup>

@@ -106,7 +106,7 @@ jobs:
 
   steps:
 
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+  - ${{ if eq(variables.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@0
 
   - task: DownloadBuildArtifacts@0

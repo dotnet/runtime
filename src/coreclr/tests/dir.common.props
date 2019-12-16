@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(__SkipFXRestore)' == 'true' AND '$(ReferenceSystemPrivateCoreLib)' != 'true'" >
-    <Reference Include="$(__LocalCoreFXPath)\artifacts\bin\ref\netcoreapp\*.dll" Private="false" />
+    <Reference Include="$(__LocalCoreFXPath)\artifacts\bin\ref\$(NetCoreAppCurrent)\*.dll" Private="false" />
   </ItemGroup>
   
 </Project>

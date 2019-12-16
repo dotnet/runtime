@@ -18,7 +18,6 @@
          subsequent restore only copies files that don't already exist
          in CORE_ROOT, so assets from the first project file win. -->
     <CoreRootProjectFiles Include="$(SourceDir)Common\test_dependencies\test_dependencies.csproj" />
-    <CoreRootProjectFiles Include="$(SourceDir)Common\test_runtime\test_runtime.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
