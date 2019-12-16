@@ -1132,14 +1132,29 @@ namespace System.Text.RegularExpressions
 
                 Leftcharnext();
 
-                EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
-                BrtrueFar(l2);
+                if (!RegexCharClass.IsSingleton(_fcPrefix.GetValueOrDefault().Prefix))
+                {
+                    EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
+                    BrtrueFar(l2);
+                }
+                else
+                {
+                    Ldc(RegexCharClass.SingletonChar(_fcPrefix.GetValueOrDefault().Prefix));
+                    Beq(l2);
+                }
 
                 MarkLabel(l5);
 
                 Ldloc(cLocal);
                 Ldc(0);
-                BgtFar(l1);
+                if (!RegexCharClass.IsSingleton(_fcPrefix.GetValueOrDefault().Prefix))
+                {
+                    BgtFar(l1);
+                }
+                else
+                {
+                    Bgt(l1);
+                }
 
                 Ldc(0);
                 BrFar(l3);

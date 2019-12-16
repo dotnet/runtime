@@ -279,11 +279,11 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Simple optimization. If a set is an inverse singleton or empty, it's transformed accordingly.
+        /// Simple optimization. If a set is a singleton, an inverse singleton, or empty, it's transformed accordingly.
         /// </summary>
         private RegexNode ReduceSet()
         {
-            // Extract empty-set, one and not-one case as special
+            // Extract empty-set, one, and not-one case as special
 
             Debug.Assert(Str != null);
 
@@ -291,6 +291,12 @@ namespace System.Text.RegularExpressions
             {
                 NType = Nothing;
                 Str = null;
+            }
+            else if (RegexCharClass.IsSingleton(Str))
+            {
+                Ch = RegexCharClass.SingletonChar(Str);
+                Str = null;
+                NType += (One - Set);
             }
             else if (RegexCharClass.IsSingletonInverse(Str))
             {

@@ -451,71 +451,138 @@ namespace System.Text.RegularExpressions
 
             // We now loop through looking for the first matching character.  This is a hot loop, so we lift out as many
             // branches as we can.  Each operation requires knowing whether this is a) right-to-left vs left-to-right, and
-            // b) case-sensitive vs case-insensitive.  So, we split it all out into 4 loops, for each combination of these.
-            // It's duplicated code, but it allows the inner loop to be much tighter than if everything were combined with
-            // multiple branches on each operation.  We can also then use spans to avoid bounds checks in at least the forward
-            // iteration direction where the JIT is able to detect the pattern.
+            // b) case-sensitive vs case-insensitive, and c) a singleton or not.  So, we split it all out into 8 loops, for
+            // each combination of these. It's duplicated code, but it allows the inner loop to be much tighter than if
+            // everything were combined with multiple branches on each operation.  We can also then use spans to avoid bounds
+            // checks in at least the forward iteration direction where the JIT is able to detect the pattern.
 
-            if (!_rightToLeft)
+            if (RegexCharClass.IsSingleton(set))
             {
-                ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                if (!_caseInsensitive)
+                char ch = RegexCharClass.SingletonChar(set);
+
+                if (!_rightToLeft)
                 {
-                    // left-to-right, case-sensitive
-                    for (int i = 0; i < span.Length; i++)
+                    ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
+                    if (!_caseInsensitive)
                     {
-                        if (RegexCharClass.CharInClass(span[i], set, ref _code.FCPrefixAsciiLookup))
+                        // singleton, left-to-right, case-sensitive
+                        int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(ch);
+                        if (i >= 0)
                         {
                             runtextpos += i;
                             return true;
                         }
                     }
+                    else
+                    {
+                        // singleton, left-to-right, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = 0; i < span.Length; i++)
+                        {
+                            if (ch == ti.ToLower(span[i]))
+                            {
+                                runtextpos += i;
+                                return true;
+                            }
+                        }
+                    }
+
+                    runtextpos = runtextend;
                 }
                 else
                 {
-                    // left-to-right, case-insensitive
-                    TextInfo ti = _culture.TextInfo;
-                    for (int i = 0; i < span.Length; i++)
+                    if (!_caseInsensitive)
                     {
-                        if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref _code.FCPrefixAsciiLookup))
+                        // singleton, right-to-left, case-sensitive
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
                         {
-                            runtextpos += i;
-                            return true;
+                            if (ch == runtext![i])
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
                         }
                     }
-                }
+                    else
+                    {
+                        // singleton, right-to-left, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        {
+                            if (ch == ti.ToLower(runtext![i]))
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
+                        }
+                    }
 
-                runtextpos = runtextend;
+                    runtextpos = runtextbeg;
+                }
             }
             else
             {
-                if (!_caseInsensitive)
+                if (!_rightToLeft)
                 {
-                    // right-to-left, case-sensitive
-                    for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                    ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
+                    if (!_caseInsensitive)
                     {
-                        if (RegexCharClass.CharInClass(runtext![i], set, ref _code.FCPrefixAsciiLookup))
+                        // set, left-to-right, case-sensitive
+                        for (int i = 0; i < span.Length; i++)
                         {
-                            runtextpos = i + 1;
-                            return true;
+                            if (RegexCharClass.CharInClass(span[i], set, ref _code.FCPrefixAsciiLookup))
+                            {
+                                runtextpos += i;
+                                return true;
+                            }
                         }
                     }
+                    else
+                    {
+                        // set, left-to-right, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = 0; i < span.Length; i++)
+                        {
+                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref _code.FCPrefixAsciiLookup))
+                            {
+                                runtextpos += i;
+                                return true;
+                            }
+                        }
+                    }
+
+                    runtextpos = runtextend;
                 }
                 else
                 {
-                    // right-to-left, case-insensitive
-                    TextInfo ti = _culture.TextInfo;
-                    for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                    if (!_caseInsensitive)
                     {
-                        if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set, ref _code.FCPrefixAsciiLookup))
+                        // set, right-to-left, case-sensitive
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
                         {
-                            runtextpos = i + 1;
-                            return true;
+                            if (RegexCharClass.CharInClass(runtext![i], set, ref _code.FCPrefixAsciiLookup))
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
                         }
                     }
-                }
+                    else
+                    {
+                        // set, right-to-left, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        {
+                            if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set, ref _code.FCPrefixAsciiLookup))
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
+                        }
+                    }
 
-                runtextpos = runtextbeg;
+                    runtextpos = runtextbeg;
+                }
             }
 
             return false;

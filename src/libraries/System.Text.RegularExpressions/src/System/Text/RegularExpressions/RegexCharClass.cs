@@ -733,7 +733,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static char SingletonChar(string set)
         {
-            Debug.Assert(IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
+            Debug.Assert(IsSingleton(set) || IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
             return set[SetStartIndex];
         }
 
@@ -747,6 +747,20 @@ namespace System.Text.RegularExpressions
             charClass[SetLengthIndex] == 0 &&
             !IsNegated(charClass) &&
             !IsSubtraction(charClass);
+
+        /// <summary><c>true</c> if the set contains a single character only</summary>
+        /// <remarks>
+        /// This will happen not only from character classes manually written to contain a single character,
+        /// but much more frequently by the implementation/parser itself, e.g. when looking for \n as part of
+        /// finding the end of a line, when processing an alternation like "hello|hithere" where the first
+        /// character of both options is the same, etc.
+        /// </remarks>
+        public static bool IsSingleton(string set) =>
+            set[CategoryLengthIndex] == 0 &&
+            set[SetLengthIndex] == 2 &&
+            !IsNegated(set) &&
+            !IsSubtraction(set) &&
+            (set[SetStartIndex] == LastChar || set[SetStartIndex] + 1 == set[SetStartIndex + 1]);
 
         public static bool IsSingletonInverse(string set) =>
             set[CategoryLengthIndex] == 0 &&
