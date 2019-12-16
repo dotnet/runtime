@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -51,6 +52,135 @@ namespace System.Collections.Tests
             }
         }
 
+        #endregion
+
+        #region CopyTo_Span
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_NegativeSourceIndex_ThrowsArgumentOutOfRangeException(int count)
+        {
+            List<T> list = GenericListFactory(count);
+
+            Assert.Throws<ArgumentOutOfRangeException>("sourceIndex", () => { Span<T> span = new T[count]; list.CopyTo(-1, count, span); });
+            Assert.Throws<ArgumentOutOfRangeException>("sourceIndex", () => { Span<T> span = new T[count]; list.CopyTo(int.MinValue, count, span); });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_NegativeCount_ThrowsArgumentOutOfRangeException(int count)
+        {
+            List<T> list = GenericListFactory(count);
+
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => { Span<T> span = new T[count]; list.CopyTo(0, -1, span); });
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => { Span<T> span = new T[count]; list.CopyTo(0, int.MinValue, span); });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_SourceIndexLargerThanListCount_ThrowsAnyArgumentException(int count)
+        {
+            List<T> list = GenericListFactory(count);
+
+            Assert.Throws<ArgumentException>(() => { Span<T> span = new T[count]; list.CopyTo(count + 1, 0, span); });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_CountLargerThanListCount_ThrowsAnyArgumentException(int count)
+        {
+            List<T> list = GenericListFactory(count);
+
+            Assert.Throws<ArgumentException>(() => { Span<T> span = new T[count]; list.CopyTo(0, count + 1, span); });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_SourceIndexPlusCountLargerThanListCount_ThrowsAnyArgumentException(int count)
+        {
+            List<T> list = GenericListFactory(count);
+
+            Assert.Throws<ArgumentException>(() => { Span<T> span = new T[count]; list.CopyTo(1, count, span); });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_NotEnoughSpaceInSpan_ThrowsArgumentException(int count)
+        {
+            if (count > 0)
+            {
+                List<T> list = GenericListFactory(count);
+
+                Assert.Throws<ArgumentException>("destination", () => { Span<T> span = new T[count - 1]; list.CopyTo(0, count, span); });
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_ExactlyEnoughSpaceInArray(int count)
+        {
+            List<T> list = GenericListFactory(count);
+            Span<T> span = new T[count];
+            list.CopyTo(0, count, span);
+            Assert.True(Enumerable.SequenceEqual(list, span.ToArray()));
+
+            span = new T[count];
+            list.CopyTo(span);
+            Assert.True(Enumerable.SequenceEqual(list, span.ToArray()));
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_SpanIsLargerThanCollection(int count)
+        {
+            List<T> list = GenericListFactory(count);
+            Span<T> span = new T[count * 3 / 2];
+            list.CopyTo(span);
+
+            Assert.True(Enumerable.SequenceEqual(list, span.Slice(0, count).ToArray()));
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_SourceIndexGreaterThanZero(int count)
+        {
+            if (count > 0)
+            {
+                List<T> list = GenericListFactory(count);
+                Span<T> span = new T[count];
+                list.CopyTo(1, count - 1, span);
+
+                Assert.True(Enumerable.SequenceEqual(list.Skip(1), span.Slice(0, count - 1).ToArray()));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_CountSmallerListCount(int count)
+        {
+            if (count > 0)
+            {
+                List<T> list = GenericListFactory(count);
+                Span<T> span = new T[count];
+                list.CopyTo(0, count - 1, span);
+
+                Assert.True(Enumerable.SequenceEqual(list.Take(count - 1), span.Slice(0, count - 1).ToArray()));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_SourceIndexGreaterThanZeroCountSmallerListCount(int count)
+        {
+            if (count > 1)
+            {
+                List<T> list = GenericListFactory(count);
+                Span<T> span = new T[count];
+                list.CopyTo(1, count - 2, span);
+
+                Assert.True(Enumerable.SequenceEqual(list.Skip(1).Take(count - 2), span.Slice(0, count - 2).ToArray()));
+            }
+        }
         #endregion
 
         [Theory]

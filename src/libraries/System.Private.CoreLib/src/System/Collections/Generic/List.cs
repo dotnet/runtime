@@ -7,6 +7,15 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if BIT64
+using nint = System.Int64;
+using nuint = System.UInt64;
+#else
+using nint = System.Int32;
+using nuint = System.UInt32;
+#endif
+
 namespace System.Collections.Generic
 {
     // Implements a variable-size List that uses an array of objects to store the
@@ -391,6 +400,39 @@ namespace System.Collections.Generic
         {
             // Delegate rest of error checking to Array.Copy.
             Array.Copy(_items, 0, array, arrayIndex, _size);
+        }
+
+        public void CopyTo(int sourceIndex, int count, Span<T> destination)
+        {
+            if (sourceIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (count < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (_size - sourceIndex < count)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+            }
+
+            if (count > destination.Length)
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            if (_size > 0 && count > 0)
+            {
+                Buffer.Memmove(ref destination[0], ref _items[sourceIndex], (nuint)count);
+            }
+        }
+
+       public void CopyTo(Span<T> destination)
+        {
+            CopyTo(0, _size, destination);
         }
 
         // Ensures that the capacity of this list is at least the given minimum
