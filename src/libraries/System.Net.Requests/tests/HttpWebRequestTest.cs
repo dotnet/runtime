@@ -1559,7 +1559,7 @@ namespace System.Net.Tests
         [InlineData(false)]
         public async Task ContentType_AddHeaderWithNoContent_SendRequest_HeaderGetsSent(bool useSsl)
         {
-            const string ContentType = "text/plain; charset=utf-8";
+            const string ContentType = "text/plain;charset=utf-8";
             var options = new LoopbackServer.Options { UseSsl = useSsl };
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>

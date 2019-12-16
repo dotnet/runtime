@@ -197,7 +197,7 @@ namespace System.Net.Tests
 
         [Theory]
         [InlineData("text/html")]
-        [InlineData("text/html; charset=utf-8")]
+        [InlineData("text/html;charset=utf-8")]
         [InlineData("TypeAndNoSubType")]
         public async Task ContentType_ServerResponseHasContentTypeHeader_ContentTypeReceivedCorrectly(string expectedContentType)
         {
