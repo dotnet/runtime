@@ -3,7 +3,7 @@
   <Import Project="Directory.Build.props" />
 
   <PropertyGroup>
-    <ApiCompatTarget>$(TargetGroup)</ApiCompatTarget>
+    <ApiCompatTarget>$(TargetFramework)</ApiCompatTarget>
     <ApiCompatTarget Condition="'$(TargetsNetCoreApp)' == 'true'">netcoreapp</ApiCompatTarget>
     <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
     <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.txt</ApiCompatBaselineFile>
@@ -40,7 +40,7 @@
     <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
 
     <Exec Command="$(_ApiCompatCommand) &quot;@(NetFxReference -> '$(NetFxRefPath)%(Identity).dll')&quot; $(BaselineApiCompatArgs) @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
-          Condition="'$(TargetGroup)' == '$(NetCoreAppCurrent)' and '$(BaselineApiCompat)' == 'true'"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(BaselineApiCompat)' == 'true'"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
@@ -48,7 +48,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing net472 to $(ApiCompatTarget)" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NetFrameworkCurrent) to $(TargetFramework)" />
 
 
     <!--
