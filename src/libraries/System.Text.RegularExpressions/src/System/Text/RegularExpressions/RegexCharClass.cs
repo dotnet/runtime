@@ -769,6 +769,47 @@ namespace System.Text.RegularExpressions
             !IsSubtraction(set) &&
             (set[SetStartIndex] == LastChar || set[SetStartIndex] + 1 == set[SetStartIndex + 1]);
 
+        /// <summary>Gets all of the characters in the specified set, storing them into the provided span.</summary>
+        /// <param name="set">The character class.</param>
+        /// <param name="chars">The span into which the chars should be stored.</param>
+        /// <returns>
+        /// The number of stored chars.  If they won't all fit, 0 is returned.
+        /// </returns>
+        /// <remarks>
+        /// Only considers character classes that only contain sets (no categories), no negation,
+        /// and no subtraction... just simple sets containing starting/ending pairs.
+        /// </remarks>
+        public static int GetSetChars(string set, Span<char> chars)
+        {
+            int setLength = set[SetLengthIndex];
+            if (setLength == 0 ||
+                setLength % 2 != 0 ||
+                set[CategoryLengthIndex] != 0 ||
+                IsNegated(set) ||
+                IsSubtraction(set))
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int i = SetStartIndex; i < SetStartIndex + setLength; i += 2)
+            {
+                int curSetStart = set[i];
+                int curSetEnd = set[i + 1];
+                for (int c = curSetStart; c < curSetEnd; c++)
+                {
+                    if (count >= chars.Length)
+                    {
+                        return 0;
+                    }
+
+                    chars[count++] = (char)c;
+                }
+            }
+
+            return count;
+        }
+
         internal static bool IsSubtraction(string charClass) =>
             charClass.Length > SetStartIndex +
             charClass[CategoryLengthIndex] +

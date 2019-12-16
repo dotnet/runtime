@@ -48,6 +48,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_stringIndexOf = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
@@ -1201,20 +1204,11 @@ namespace System.Text.RegularExpressions
                 Ldc(0);
                 Ret();
             }
-            else // for left-to-right, use span to avoid bounds checks when doing normal forward iteration recognized by the JIT
+            else // for left-to-right, we can take advantage of vectorization and JIT optimizations
             {
-                LocalBuilder charInClassLocal = _temp1Local;
                 LocalBuilder iLocal = _temp2Local;
-                _temp3Local = DeclareReadOnlySpanChar();
-                LocalBuilder textSpanLocal = _temp3Local;
-
                 Label returnFalseLabel = DefineLabel();
-                Label checkSpanLengthLabel = DefineLabel();
-                Label loopBody = DefineLabel();
-                Label charNotInClassLabel = DefineLabel();
-
-                // string runtext = this.runtext
-                Mvfldloc(s_runtextField, _runtextLocal);
+                Label updatePosAndReturnFalse = DefineLabel();
 
                 // if (runtextend - runtextpos > 0)
                 Ldthisfld(s_runtextendField);
@@ -1223,53 +1217,146 @@ namespace System.Text.RegularExpressions
                 Ldc(0);
                 BleFar(returnFalseLabel);
 
-                // ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                Ldloc(_runtextLocal);
-                Ldthisfld(s_runtextposField);
-                Ldthisfld(s_runtextendField);
-                Ldthisfld(s_runtextposField);
-                Sub();
-                Call(s_stringAsSpanMethod);
-                Stloc(textSpanLocal);
+                // string runtext = this.runtext
+                Mvfldloc(s_runtextField, _runtextLocal);
 
-                // for (int i = 0;
-                Ldc(0);
-                Stloc(iLocal);
-                BrFar(checkSpanLengthLabel);
+                Span<char> setChars = stackalloc char[3];
+                int setCharsCount;
+                if (!_fcPrefix.GetValueOrDefault().CaseInsensitive &&
+                    (setCharsCount = RegexCharClass.GetSetChars(_fcPrefix.GetValueOrDefault().Prefix, setChars)) > 0)
+                {
+                    // This is a case-sensitive class with a small number of characters in the class, small enough
+                    // that we can generate an IndexOf{Any} call.  That takes advantage of optimizations in
+                    // IndexOf{Any}, such as vectorization, which our open-coded loop through the span doesn't have.
+                    switch (setCharsCount)
+                    {
+                        case 1:
+                            // int i = runtext.IndexOf(setChars[0], runtextpos, runtextend - runtextpos);
+                            Ldloc(_runtextLocal);
+                            Ldc(setChars[0]);
+                            Ldthisfld(s_runtextposField);
+                            Ldthisfld(s_runtextendField);
+                            Ldthisfld(s_runtextposField);
+                            Sub();
+                            Call(s_stringIndexOf);
+                            Stloc(iLocal);
 
-                // if (CharInClass(span[i], "..."))
-                MarkLabel(loopBody);
-                Ldloca(textSpanLocal);
-                Ldloc(iLocal);
-                Call(s_spanGetItemMethod);
-                LdindU2();
-                EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
-                BrfalseFar(charNotInClassLabel);
+                            // if (i >= 0)
+                            Ldloc(iLocal);
+                            Ldc(0);
+                            BltFar(updatePosAndReturnFalse);
 
-                // runtextpos += i; return true;
-                Ldthis();
-                Ldthisfld(s_runtextposField);
-                Ldloc(iLocal);
-                Add();
-                Stfld(s_runtextposField);
-                Ldc(1);
-                Ret();
+                            // runtextpos = i; return true;
+                            Mvlocfld(iLocal, s_runtextposField);
+                            Ldc(1);
+                            Ret();
+                            break;
 
-                // for (...; ...; i++)
-                MarkLabel(charNotInClassLabel);
-                Ldloc(iLocal);
-                Ldc(1);
-                Add();
-                Stloc(iLocal);
+                        case 2:
+                        case 3:
+                            // int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOfAny(setChars[0], setChars[1]{, setChars[2]});
+                            Ldloc(_runtextLocal);
+                            Ldthisfld(s_runtextposField);
+                            Ldthisfld(s_runtextendField);
+                            Ldthisfld(s_runtextposField);
+                            Sub();
+                            Call(s_stringAsSpanMethod);
+                            Ldc(setChars[0]);
+                            Ldc(setChars[1]);
+                            if (setCharsCount == 3)
+                            {
+                                Ldc(setChars[2]);
+                                Call(s_spanIndexOfAnyCharCharChar);
+                            }
+                            else
+                            {
+                                Call(s_spanIndexOfAnyCharChar);
+                            }
+                            Stloc(iLocal);
 
-                // for (...; i < span.Length; ...);
-                MarkLabel(checkSpanLengthLabel);
-                Ldloc(iLocal);
-                Ldloca(textSpanLocal);
-                Call(s_spanGetLengthMethod);
-                BltFar(loopBody);
+                            // if (i >= 0)
+                            Ldloc(iLocal);
+                            Ldc(0);
+                            BltFar(updatePosAndReturnFalse);
+
+                            // runtextpos = i; return true;
+                            Ldthis();
+                            Ldthisfld(s_runtextposField);
+                            Ldloc(iLocal);
+                            Add();
+                            Stfld(s_runtextposField);
+                            Ldc(1);
+                            Ret();
+                            break;
+
+                        default:
+                            Debug.Fail("Unexpected setCharsCount: " + setCharsCount);
+                            break;
+                    }
+                }
+                else
+                {
+                    // Either this isn't a class with just a few characters in it, or this is case insensitive.
+                    // Either way, create a span and iterate through it rather than the original string in order
+                    // to avoid bounds checks on each access.
+
+                    LocalBuilder charInClassLocal = _temp1Local;
+                    _temp3Local = DeclareReadOnlySpanChar();
+                    LocalBuilder textSpanLocal = _temp3Local;
+
+                    Label checkSpanLengthLabel = DefineLabel();
+                    Label charNotInClassLabel = DefineLabel();
+                    Label loopBody = DefineLabel();
+
+                    // ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
+                    Ldloc(_runtextLocal);
+                    Ldthisfld(s_runtextposField);
+                    Ldthisfld(s_runtextendField);
+                    Ldthisfld(s_runtextposField);
+                    Sub();
+                    Call(s_stringAsSpanMethod);
+                    Stloc(textSpanLocal);
+
+                    // for (int i = 0;
+                    Ldc(0);
+                    Stloc(iLocal);
+                    BrFar(checkSpanLengthLabel);
+
+                    // if (CharInClass(span[i], "..."))
+                    MarkLabel(loopBody);
+                    Ldloca(textSpanLocal);
+                    Ldloc(iLocal);
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
+                    BrfalseFar(charNotInClassLabel);
+
+                    // runtextpos += i; return true;
+                    Ldthis();
+                    Ldthisfld(s_runtextposField);
+                    Ldloc(iLocal);
+                    Add();
+                    Stfld(s_runtextposField);
+                    Ldc(1);
+                    Ret();
+
+                    // for (...; ...; i++)
+                    MarkLabel(charNotInClassLabel);
+                    Ldloc(iLocal);
+                    Ldc(1);
+                    Add();
+                    Stloc(iLocal);
+
+                    // for (...; i < span.Length; ...);
+                    MarkLabel(checkSpanLengthLabel);
+                    Ldloc(iLocal);
+                    Ldloca(textSpanLocal);
+                    Call(s_spanGetLengthMethod);
+                    BltFar(loopBody);
+                }
 
                 // runtextpos = runtextend;
+                MarkLabel(updatePosAndReturnFalse);
                 Ldthis();
                 Ldthisfld(s_runtextendField);
                 Stfld(s_runtextposField);
