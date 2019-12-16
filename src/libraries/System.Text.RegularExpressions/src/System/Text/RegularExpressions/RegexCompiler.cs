@@ -307,7 +307,7 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldind_U2).</summary>
         private void LdindU2() => _ilg!.Emit(OpCodes.Ldind_U2);
 
-        /// <summary>A macro for _ilg.Emit(OpCodes.Stloc).</summary>
+        /// <summary>A macro for _ilg.Emit(OpCodes.Stloc_S).</summary>
         private void Stloc(LocalBuilder lt) => _ilg!.Emit(OpCodes.Stloc_S, lt);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldarg_0).</summary>
@@ -317,7 +317,7 @@ namespace System.Text.RegularExpressions
         private void Ldthisfld(FieldInfo ft)
         {
             Ldthis();
-            _ilg!.Emit(OpCodes.Ldfld, ft);
+            Ldfld(ft);
         }
 
         /// <summary>A macro for Ldthis(); Ldfld(); Stloc();</summary>
@@ -334,6 +334,9 @@ namespace System.Text.RegularExpressions
             Ldloc(lt);
             Stfld(ft);
         }
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldfld).</summary>
+        private void Ldfld(FieldInfo ft) => _ilg!.Emit(OpCodes.Ldfld, ft);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Stfld).</summary>
         private void Stfld(FieldInfo ft) => _ilg!.Emit(OpCodes.Stfld, ft);
@@ -401,8 +404,30 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Beq_S) (short jump).</summary>
         private void Beq(Label l) => _ilg!.Emit(OpCodes.Beq_S, l);
 
-        /// <summary>A macro for the Ldlen instruction).</summary>
+        /// <summary>A macro for the Ldlen instruction.</summary>
         private void Ldlen() => _ilg!.Emit(OpCodes.Ldlen);
+
+        /// <summary>A macro for the Ldelem_I4 instruction.</summary>
+        private void LdelemI4() => _ilg!.Emit(OpCodes.Ldelem_I4);
+
+        /// <summary>A macro for the Stelem_I4 instruction.</summary>
+        private void StelemI4() => _ilg!.Emit(OpCodes.Stelem_I4);
+
+        private void Switch(Label[] table) => _ilg!.Emit(OpCodes.Switch, table);
+
+        /// <summary>Declares a local int.</summary>
+        private LocalBuilder DeclareInt32() => _ilg!.DeclareLocal(typeof(int));
+
+        /// <summary>Declares a local CultureInfo.</summary>
+        private LocalBuilder? DeclareCultureInfo() => _ilg!.DeclareLocal(typeof(CultureInfo)); // cache local variable to avoid unnecessary TLS
+
+        /// <summary>Declares a local int[].</summary>
+        private LocalBuilder DeclareInt32Array() => _ilg!.DeclareLocal(typeof(int[]));
+
+        /// <summary>Declares a local string.</summary>
+        private LocalBuilder DeclareString() => _ilg!.DeclareLocal(typeof(string));
+
+        private LocalBuilder DeclareReadOnlySpanChar() => _ilg!.DeclareLocal(typeof(ReadOnlySpan<char>));
 
         /// <summary>Loads the char to the right of the current position.</summary>
         private void Rightchar()
@@ -499,83 +524,83 @@ namespace System.Text.RegularExpressions
         /// <summary>Prologue to code that will push an element on the tracking stack.</summary>
         private void ReadyPushTrack()
         {
-            _ilg!.Emit(OpCodes.Ldloc_S, _runtrackLocal!);
-            _ilg.Emit(OpCodes.Ldloc_S, _runtrackposLocal!);
-            _ilg.Emit(OpCodes.Ldc_I4_1);
-            _ilg.Emit(OpCodes.Sub);
-            _ilg.Emit(OpCodes.Dup);
-            _ilg.Emit(OpCodes.Stloc_S, _runtrackposLocal!);
+            Ldloc(_runtrackLocal!);
+            Ldloc(_runtrackposLocal!);
+            Ldc(1);
+            Sub();
+            Dup();
+            Stloc(_runtrackposLocal!);
         }
 
         /// <summary>Pops an element off the tracking stack (leave it on the operand stack).</summary>
         private void PopTrack()
         {
-            _ilg!.Emit(OpCodes.Ldloc_S, _runtrackLocal!);
-            _ilg.Emit(OpCodes.Ldloc_S, _runtrackposLocal!);
-            _ilg.Emit(OpCodes.Dup);
-            _ilg.Emit(OpCodes.Ldc_I4_1);
-            _ilg.Emit(OpCodes.Add);
-            _ilg.Emit(OpCodes.Stloc_S, _runtrackposLocal!);
-            _ilg.Emit(OpCodes.Ldelem_I4);
+            Ldloc(_runtrackLocal!);
+            Ldloc(_runtrackposLocal!);
+            Dup();
+            Ldc(1);
+            Add();
+            Stloc(_runtrackposLocal!);
+            LdelemI4();
         }
 
         /// <summary>Retrieves the top entry on the tracking stack without popping.</summary>
         private void TopTrack()
         {
-            _ilg!.Emit(OpCodes.Ldloc_S, _runtrackLocal!);
-            _ilg.Emit(OpCodes.Ldloc_S, _runtrackposLocal!);
-            _ilg.Emit(OpCodes.Ldelem_I4);
+            Ldloc(_runtrackLocal!);
+            Ldloc(_runtrackposLocal!);
+            LdelemI4();
         }
 
         /// <summary>Saves the value of a local variable on the grouping stack.</summary>
         private void PushStack(LocalBuilder lt)
         {
             ReadyPushStack();
-            _ilg!.Emit(OpCodes.Ldloc_S, lt);
+            Ldloc(lt);
             DoPush();
         }
 
         /// <summary>Prologue to code that will replace the ith element on the grouping stack.</summary>
         internal void ReadyReplaceStack(int i)
         {
-            _ilg!.Emit(OpCodes.Ldloc_S, _runstackLocal!);
-            _ilg.Emit(OpCodes.Ldloc_S, _runstackposLocal!);
+            Ldloc(_runstackLocal!);
+            Ldloc(_runstackposLocal!);
             if (i != 0)
             {
                 Ldc(i);
-                _ilg.Emit(OpCodes.Add);
+                Add();
             }
         }
 
         /// <summary>Prologue to code that will push an element on the grouping stack.</summary>
         private void ReadyPushStack()
         {
-            _ilg!.Emit(OpCodes.Ldloc_S, _runstackLocal!);
-            _ilg.Emit(OpCodes.Ldloc_S, _runstackposLocal!);
-            _ilg.Emit(OpCodes.Ldc_I4_1);
-            _ilg.Emit(OpCodes.Sub);
-            _ilg.Emit(OpCodes.Dup);
-            _ilg.Emit(OpCodes.Stloc_S, _runstackposLocal!);
+            Ldloc(_runstackLocal!);
+            Ldloc(_runstackposLocal!);
+            Ldc(1);
+            Sub();
+            Dup();
+            Stloc(_runstackposLocal!);
         }
 
         /// <summary>Retrieves the top entry on the stack without popping.</summary>
         private void TopStack()
         {
-            _ilg!.Emit(OpCodes.Ldloc_S, _runstackLocal!);
-            _ilg.Emit(OpCodes.Ldloc_S, _runstackposLocal!);
-            _ilg.Emit(OpCodes.Ldelem_I4);
+            Ldloc(_runstackLocal!);
+            Ldloc(_runstackposLocal!);
+            LdelemI4();
         }
 
         /// <summary>Pops an element off the grouping stack (leave it on the operand stack).</summary>
         private void PopStack()
         {
-            _ilg!.Emit(OpCodes.Ldloc_S, _runstackLocal!);
-            _ilg.Emit(OpCodes.Ldloc_S, _runstackposLocal!);
-            _ilg.Emit(OpCodes.Dup);
-            _ilg.Emit(OpCodes.Ldc_I4_1);
-            _ilg.Emit(OpCodes.Add);
-            _ilg.Emit(OpCodes.Stloc_S, _runstackposLocal!);
-            _ilg.Emit(OpCodes.Ldelem_I4);
+            Ldloc(_runstackLocal!);
+            Ldloc(_runstackposLocal!);
+            Dup();
+            Ldc(1);
+            Add();
+            Stloc(_runstackposLocal!);
+            LdelemI4();
         }
 
         /// <summary>Pops 1 element off the grouping stack and discards it.</summary>
@@ -584,20 +609,20 @@ namespace System.Text.RegularExpressions
         /// <summary>Pops i elements off the grouping stack and discards them.</summary>
         private void PopDiscardStack(int i)
         {
-            _ilg!.Emit(OpCodes.Ldloc_S, _runstackposLocal!);
+            Ldloc(_runstackposLocal!);
             Ldc(i);
-            _ilg.Emit(OpCodes.Add);
-            _ilg.Emit(OpCodes.Stloc_S, _runstackposLocal!);
+            Add();
+            Stloc(_runstackposLocal!);
         }
 
         /// <summary>Epilogue to code that will replace an element on a stack (use Ld* in between).</summary>
-        private void DoReplace() => _ilg!.Emit(OpCodes.Stelem_I4);
+        private void DoReplace() => StelemI4();
 
         /// <summary>Epilogue to code that will push an element on a stack (use Ld* in between).</summary>
-        private void DoPush() => _ilg!.Emit(OpCodes.Stelem_I4);
+        private void DoPush() => StelemI4();
 
         /// <summary>Jump to the backtracking switch.</summary>
-        private void Back() => _ilg!.Emit(OpCodes.Br, _backtrack);
+        private void Back() => BrFar(_backtrack);
 
         /// <summary>
         /// Branch to the MSIL corresponding to the regex code at i
@@ -650,7 +675,7 @@ namespace System.Text.RegularExpressions
         private Label AdvanceLabel() => _labels![NextCodepos()];
 
         /// <summary>Goto the next (forward) operation.</summary>
-        private void Advance() => _ilg!.Emit(OpCodes.Br, AdvanceLabel());
+        private void Advance() => BrFar(AdvanceLabel());
 
         /// <summary>Sets the culture local to CultureInfo.CurrentCulture.</summary>
         private void InitLocalCultureInfo()
@@ -693,7 +718,7 @@ namespace System.Text.RegularExpressions
             for (codepos = 0; codepos < _codes.Length; codepos += RegexCode.OpcodeSize(_codes[codepos]))
             {
                 _goto[codepos] = -1;
-                _labels[codepos] = _ilg!.DefineLabel();
+                _labels[codepos] = DefineLabel();
             }
 
             _uniquenote = new int[Uniquecount];
@@ -751,7 +776,7 @@ namespace System.Text.RegularExpressions
                 table[i] = _notes![i]._label;
             }
 
-            _ilg!.Emit(OpCodes.Switch, table);
+            Switch(table);
         }
 
         /// <summary>
@@ -765,7 +790,7 @@ namespace System.Text.RegularExpressions
                 BacktrackNote n = _notes![i];
                 if (n._flags != 0)
                 {
-                    _ilg!.MarkLabel(n._label);
+                    MarkLabel(n._label);
                     _codepos = n._codepos;
                     _backpos = i;
                     _regexopcode = _codes![n._codepos] | n._flags;
@@ -783,10 +808,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void GenerateFindFirstChar()
         {
-            _runtextposLocal = DeclareInt();
+            _runtextposLocal = DeclareInt32();
             _runtextLocal = DeclareString();
-            _temp1Local = DeclareInt();
-            _temp2Local = DeclareInt();
+            _temp1Local = DeclareInt32();
+            _temp2Local = DeclareInt32();
             _cultureLocal = null;
             if (!_options.HasFlag(RegexOptions.CultureInvariant))
             {
@@ -1029,7 +1054,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 Ldloc(chLocal);
-                _ilg!.Emit(OpCodes.Switch, table);
+                Switch(table);
 
                 for (int i = _bmPrefix.LowASCII; i <= _bmPrefix.HighASCII; i++)
                 {
@@ -1265,41 +1290,27 @@ namespace System.Text.RegularExpressions
             Ret();
         }
 
-        /// <summary>Declares a local int.</summary>
-        private LocalBuilder DeclareInt() => _ilg!.DeclareLocal(typeof(int));
-
-        /// <summary>Declares a local CultureInfo.</summary>
-        private LocalBuilder? DeclareCultureInfo() => _ilg!.DeclareLocal(typeof(CultureInfo)); // cache local variable to avoid unnecessary TLS
-
-        /// <summary>Declares a local int[].</summary>
-        private LocalBuilder DeclareIntArray() => _ilg!.DeclareLocal(typeof(int[]));
-
-        /// <summary>Declares a local string.</summary>
-        private LocalBuilder DeclareString() => _ilg!.DeclareLocal(typeof(string));
-
-        private LocalBuilder DeclareReadOnlySpanChar() => _ilg!.DeclareLocal(typeof(ReadOnlySpan<char>));
-
         /// <summary>Generates the code for "RegexRunner.Go".</summary>
         protected void GenerateGo()
         {
             // declare some locals
 
-            _runtextposLocal = DeclareInt();
+            _runtextposLocal = DeclareInt32();
             _runtextLocal = DeclareString();
-            _runtrackposLocal = DeclareInt();
-            _runtrackLocal = DeclareIntArray();
-            _runstackposLocal = DeclareInt();
-            _runstackLocal = DeclareIntArray();
-            _temp1Local = DeclareInt();
-            _temp2Local = DeclareInt();
-            _temp3Local = DeclareInt();
+            _runtrackposLocal = DeclareInt32();
+            _runtrackLocal = DeclareInt32Array();
+            _runstackposLocal = DeclareInt32();
+            _runstackLocal = DeclareInt32Array();
+            _temp1Local = DeclareInt32();
+            _temp2Local = DeclareInt32();
+            _temp3Local = DeclareInt32();
             if (_hasTimeout)
             {
-                _loopTimeoutCounterLocal = DeclareInt();
+                _loopTimeoutCounterLocal = DeclareInt32();
             }
-            _runtextbegLocal = DeclareInt();
-            _runtextendLocal = DeclareInt();
-            _runtextstartLocal = DeclareInt();
+            _runtextbegLocal = DeclareInt32();
+            _runtextendLocal = DeclareInt32();
+            _runtextstartLocal = DeclareInt32();
 
             _cultureLocal = null;
             if (!_options.HasFlag(RegexOptions.CultureInvariant))
