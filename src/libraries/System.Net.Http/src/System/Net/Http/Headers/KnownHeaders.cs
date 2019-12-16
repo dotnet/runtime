@@ -20,7 +20,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader AccessControlAllowCredentials = new KnownHeader("Access-Control-Allow-Credentials");
         public static readonly KnownHeader AccessControlAllowHeaders = new KnownHeader("Access-Control-Allow-Headers");
         public static readonly KnownHeader AccessControlAllowMethods = new KnownHeader("Access-Control-Allow-Methods");
-        public static readonly KnownHeader AccessControlAllowOrigin = new KnownHeader("Access-Control-Allow-Origin");
+        public static readonly KnownHeader AccessControlAllowOrigin = new KnownHeader("Access-Control-Allow-Origin", StaticTable.AccessControlAllowOrigin);
         public static readonly KnownHeader AccessControlExposeHeaders = new KnownHeader("Access-Control-Expose-Headers");
         public static readonly KnownHeader AccessControlMaxAge = new KnownHeader("Access-Control-Max-Age");
         public static readonly KnownHeader Age = new KnownHeader("Age", HttpHeaderType.Response | HttpHeaderType.NonTrailing, TimeSpanHeaderParser.Parser, null, StaticTable.Age);
