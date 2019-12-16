@@ -209,6 +209,7 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
         add_compile_options(-Wno-null-conversion)
     else()
         add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror=conversion-null>)
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
     endif()
 endif()
 
