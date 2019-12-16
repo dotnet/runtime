@@ -961,10 +961,17 @@ void UMEntryThunk::Terminate()
     CONTRACTL
     {
         NOTHROW;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
     m_code.Poison();
+
+    if (GetObjectHandle())
+    {
+        DestroyLongWeakHandle(GetObjectHandle());
+        m_pObjectHandle = 0;
+    }
 
     s_thunkFreeList.AddToList(this);
 }

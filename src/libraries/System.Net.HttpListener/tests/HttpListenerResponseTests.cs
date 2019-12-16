@@ -57,6 +57,7 @@ namespace System.Net.Tests
         }
     }
 
+    [SkipOnCoreClr("System.Net.Tests are inestable")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerResponseTests : HttpListenerResponseTestBase
     {
@@ -112,6 +113,7 @@ namespace System.Net.Tests
         [InlineData(" \r \t \n", 123)]
         [InlineData("http://microsoft.com", 155)]
         [InlineData("  http://microsoft.com  ", 155)]
+        [SkipOnCoreClr("System.Net.Tests are inestable")]
         public async Task Redirect_Invoke_SetsRedirectionProperties(string url, int expectedNumberOfBytes)
         {
             string expectedUrl = url?.Trim() ?? "";

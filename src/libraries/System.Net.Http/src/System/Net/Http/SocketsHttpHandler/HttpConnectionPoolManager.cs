@@ -162,14 +162,14 @@ namespace System.Net.Http
             return hostHeader;
         }
 
-        private static HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri proxyUri, bool isProxyConnect)
+        private HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri proxyUri, bool isProxyConnect)
         {
             Uri uri = request.RequestUri;
 
             if (isProxyConnect)
             {
                 Debug.Assert(uri == proxyUri);
-                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri);
+                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri, GetIdentityIfDefaultCredentialsUsed(_settings._defaultCredentialsUsedForProxy));
             }
 
             string sslHostName = null;
@@ -187,6 +187,8 @@ namespace System.Net.Http
                 }
             }
 
+            string identity = GetIdentityIfDefaultCredentialsUsed(proxyUri != null ? _settings._defaultCredentialsUsedForProxy : _settings._defaultCredentialsUsedForServer);
+
             if (proxyUri != null)
             {
                 Debug.Assert(HttpUtilities.IsSupportedNonSecureScheme(proxyUri.Scheme));
@@ -195,29 +197,29 @@ namespace System.Net.Http
                     if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme))
                     {
                         // Non-secure websocket connection through proxy to the destination.
-                        return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, uri.IdnHost, uri.Port, null, proxyUri);
+                        return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, uri.IdnHost, uri.Port, null, proxyUri, identity);
                     }
                     else
                     {
                         // Standard HTTP proxy usage for non-secure requests
                         // The destination host and port are ignored here, since these connections
                         // will be shared across any requests that use the proxy.
-                        return new HttpConnectionKey(HttpConnectionKind.Proxy, null, 0, null, proxyUri);
+                        return new HttpConnectionKey(HttpConnectionKind.Proxy, null, 0, null, proxyUri, identity);
                     }
                 }
                 else
                 {
                     // Tunnel SSL connection through proxy to the destination.
-                    return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri);
+                    return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity);
                 }
             }
             else if (sslHostName != null)
             {
-                return new HttpConnectionKey(HttpConnectionKind.Https, uri.IdnHost, uri.Port, sslHostName, null);
+                return new HttpConnectionKey(HttpConnectionKind.Https, uri.IdnHost, uri.Port, sslHostName, null, identity);
             }
             else
             {
-                return new HttpConnectionKey(HttpConnectionKind.Http, uri.IdnHost, uri.Port, null, null);
+                return new HttpConnectionKey(HttpConnectionKind.Http, uri.IdnHost, uri.Port, null, null, identity);
             }
         }
 
@@ -408,6 +410,11 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
+        private static string GetIdentityIfDefaultCredentialsUsed(bool defaultCredentialsUsed)
+        {
+            return defaultCredentialsUsed ? CurrentUserIdentityProvider.GetIdentity() : string.Empty;
+        }
+
         internal readonly struct HttpConnectionKey : IEquatable<HttpConnectionKey>
         {
             public readonly HttpConnectionKind Kind;
@@ -415,21 +422,23 @@ namespace System.Net.Http
             public readonly int Port;
             public readonly string SslHostName;     // null if not SSL
             public readonly Uri ProxyUri;
+            public readonly string Identity;
 
-            public HttpConnectionKey(HttpConnectionKind kind, string host, int port, string sslHostName, Uri proxyUri)
+            public HttpConnectionKey(HttpConnectionKind kind, string host, int port, string sslHostName, Uri proxyUri, string identity)
             {
                 Kind = kind;
                 Host = host;
                 Port = port;
                 SslHostName = sslHostName;
                 ProxyUri = proxyUri;
+                Identity = identity;
             }
 
             // In the common case, SslHostName (when present) is equal to Host.  If so, don't include in hash.
             public override int GetHashCode() =>
                 (SslHostName == Host ?
-                    HashCode.Combine(Kind, Host, Port, ProxyUri) :
-                    HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri));
+                    HashCode.Combine(Kind, Host, Port, ProxyUri, Identity) :
+                    HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri, Identity));
 
             public override bool Equals(object obj) =>
                 obj != null &&
@@ -441,7 +450,8 @@ namespace System.Net.Http
                 Host == other.Host &&
                 Port == other.Port &&
                 ProxyUri == other.ProxyUri &&
-                SslHostName == other.SslHostName;
+                SslHostName == other.SslHostName &&
+                Identity == other.Identity;
         }
     }
 }

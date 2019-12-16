@@ -2,7 +2,8 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework Condition="'$(BuildingInsideVisualStudio)' == 'true'">netcoreapp3.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>

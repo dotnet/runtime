@@ -77,12 +77,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_DontDisposeResponse_EventuallyUnblocksWaiters()
         {
-            if (!UseSocketsHttpHandler)
-            {
-                // Issue #27067. Hang.
-                return;
-            }
-
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())

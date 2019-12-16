@@ -1,9 +1,10 @@
 parameters:
   name: ''
+  skipTests: false
 
 steps:
 # Upload build outputs as build artifacts only if internal and not PR, to save storage space.
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+- ${{ if eq(variables.isOfficialBuild, true) }}:
   - task: CopyFiles@2
     displayName: Prepare job-specific Artifacts subdirectory
     inputs:
@@ -23,17 +24,17 @@ steps:
       artifactType: container
     condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
 
-# Always upload test outputs and build logs.
-- task: PublishTestResults@2
-  displayName: Publish Test Results
-  inputs:
-    testResultsFormat: 'xUnit'
-    testResultsFiles: '*.xml'
-    searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
-    mergeTestResults: true
-    testRunTitle: ${{ parameters.name }}-$(_BuildConfig)
-  continueOnError: true
-  condition: always()
+- ${{ if eq(parameters.skipTests, false) }}:
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testResultsFormat: 'xUnit'
+      testResultsFiles: '*.xml'
+      searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
+      mergeTestResults: true
+      testRunTitle: Installer-${{ parameters.name }}-$(_BuildConfig)
+    continueOnError: true
+    condition: always()
 
 - task: CopyFiles@2
   displayName: Prepare BuildLogs staging directory
@@ -51,6 +52,6 @@ steps:
   displayName: Publish BuildLogs
   inputs:
     PathtoPublish: '$(Build.StagingDirectory)/BuildLogs'
-    ArtifactName: Logs-${{ parameters.name }}-$(_BuildConfig)
+    ArtifactName: Installer-Logs-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: succeededOrFailed()

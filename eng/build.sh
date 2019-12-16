@@ -83,8 +83,14 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:ConfigurationGroup=$val -configuration $val"
       shift 2
       ;;
+      # This should be removed after we have finalized our ci build pipeline.
      -framework|-f)
       val="$(echo "$2" | awk '{print tolower($0)}')"
+      if [ "$val" == "netcoreapp" ]; then
+        val=netcoreapp5.0
+      elif [ "$val" == "netfx" ]; then
+        val=net472
+      fi
       arguments="$arguments /p:TargetGroup=$val"
       shift 2
       ;;

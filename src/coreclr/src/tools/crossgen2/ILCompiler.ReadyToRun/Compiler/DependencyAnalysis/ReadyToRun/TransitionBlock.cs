@@ -361,7 +361,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <summary>
         /// X64 properties common to Windows and Unix ABI.
         /// </summary>
-        private abstract class X64TransitionBlock : TransitionBlock
+        internal abstract class X64TransitionBlock : TransitionBlock
         {
             public override TargetArchitecture Architecture => TargetArchitecture.X64;
             public override int PointerSize => 8;
@@ -398,9 +398,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int EnregisteredReturnTypeIntegerMaxSize => 8;
         }
 
-        private sealed class X64UnixTransitionBlock : X64TransitionBlock
+        internal sealed class X64UnixTransitionBlock : X64TransitionBlock
         {
             public static readonly TransitionBlock Instance = new X64UnixTransitionBlock();
+
+            public override bool IsX64UnixABI => true;
 
             public const int NUM_FLOAT_ARGUMENT_REGISTERS = 8;
 
@@ -414,6 +416,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int OffsetOfFloatArgumentRegisters => SizeOfM128A * NUM_FLOAT_ARGUMENT_REGISTERS;
             public override int EnregisteredParamTypeMaxSize => 16;
             public override int EnregisteredReturnTypeIntegerMaxSize => 16;
+            public override bool IsArgPassedByRef(TypeHandle th) => false;
         }
 
         private sealed class Arm32TransitionBlock : TransitionBlock

@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_SystemEvents</GeneratePlatformNotSupportedAssemblyMessage>
-    <Configurations>net461-Debug;net461-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
@@ -146,7 +146,7 @@
     <Compile Include="Microsoft\Win32\UserPreferenceChangingEventArgs.cs" />
     <Compile Include="Microsoft\Win32\UserPreferenceChangingEventHandler.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs">
       <Link>Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs</Link>
     </Compile>
@@ -168,7 +168,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
     <Reference Include="System.ComponentModel.TypeConverter" />
   </ItemGroup>
 </Project>

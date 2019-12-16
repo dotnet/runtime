@@ -269,8 +269,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // ReportPointersFromValueTypeArg
             if (argDest.IsStructPassedInRegs())
             {
-                // ReportPointersFromStructPassedInRegs
-                throw new NotImplementedException();
+                argDest.ReportPointersFromStructInRegisters(type, delta, frame);
+                return;
             }
             // ReportPointersFromValueType
             if (type.IsByRefLike)

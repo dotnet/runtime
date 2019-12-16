@@ -26,7 +26,7 @@ bool unique(MethodContext* mc)
     mc->repCompileMethod(&newInfo, &newFlags);
 
     char* md5Buff = new char[MD5_HASH_BUFFER_SIZE];
-    mc->dumpMethodMD5HashToBuffer(md5Buff, MD5_HASH_BUFFER_SIZE);
+    mc->dumpMethodMD5HashToBuffer(md5Buff, MD5_HASH_BUFFER_SIZE, /* ignoreMethodName */ true);
 
     if (inFile->GetIndex(newInfo.ILCodeSize) == -1)
         inFile->Add(newInfo.ILCodeSize, new DenseLightWeightMap<char*>());

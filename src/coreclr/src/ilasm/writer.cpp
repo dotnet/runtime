@@ -30,7 +30,7 @@ HRESULT Assembler::InitMetaData()
 
     if(bClock) bClock->cMDInitBegin = GetTickCount();
 
-    hr = metaDataGetDispenser(CLSID_CorMetaDataDispenser,
+    hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
         IID_IMetaDataDispenserEx, (void **)&m_pDisp);
     if (FAILED(hr))
         goto exit;

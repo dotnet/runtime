@@ -1312,6 +1312,8 @@ void fgArgInfo::ArgsComplete()
                 fgArgTabEntry* prevArgTabEntry = argTable[prevInx];
                 assert(prevArgTabEntry->argNum < curArgTabEntry->argNum);
 
+                // TODO-CQ: We should also allow LCL_VAR_ADDR and LCL_FLD_ADDR here, they're
+                // side effect free leaf nodes that like constant can be evaluated at any point.
                 if (prevArgTabEntry->GetNode()->gtOper != GT_CNS_INT)
                 {
                     prevArgTabEntry->needTmp = true;
@@ -3944,9 +3946,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // (tmp.ptr=argx),(tmp.type=handle)
             GenTreeLclFld* destPtrSlot  = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__dataPtr);
             GenTreeLclFld* destTypeSlot = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__type);
-            destPtrSlot->gtFieldSeq     = GetFieldSeqStore()->CreateSingleton(GetRefanyDataField());
+            destPtrSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyDataField()));
             destPtrSlot->gtFlags |= GTF_VAR_DEF;
-            destTypeSlot->gtFieldSeq = GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField());
+            destTypeSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField()));
             destTypeSlot->gtFlags |= GTF_VAR_DEF;
 
             GenTree* asgPtrSlot  = gtNewAssignNode(destPtrSlot, argx->AsOp()->gtOp1);
@@ -4661,7 +4663,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             assert(varNum < lvaCount);
             LclVarDsc* varDsc = &lvaTable[varNum];
 
-            unsigned baseOffset = (argValue->OperGet() == GT_LCL_FLD) ? argValue->AsLclFld()->gtLclOffs : 0;
+            unsigned baseOffset = argValue->OperIs(GT_LCL_FLD) ? argValue->AsLclFld()->GetLclOffs() : 0;
             unsigned lastOffset = baseOffset + structSize;
 
             // The allocated size of our LocalVar must be at least as big as lastOffset
@@ -5446,18 +5448,23 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         GenTree* arrRef2 = nullptr; // The second copy will be used in array address expression
         GenTree* index2  = nullptr;
 
-        // If the arrRef expression involves an assignment, a call or reads from global memory,
-        // then we *must* allocate a temporary in which to "localize" those values,
-        // to ensure that the same values are used in the bounds check and the actual
-        // dereference.
-        // Also we allocate the temporary when the arrRef is sufficiently complex/expensive.
-        // Note that if 'arrRef' is a GT_FIELD, it has not yet been morphed so its true
-        // complexity is not exposed. (Without that condition there are cases of local struct
-        // fields that were previously, needlessly, marked as GTF_GLOB_REF, and when that was
-        // fixed, there were some regressions that were mostly ameliorated by adding this condition.)
+        // If the arrRef or index expressions involves an assignment, a call or reads from global memory,
+        // then we *must* allocate a temporary in which to "localize" those values, to ensure that the
+        // same values are used in the bounds check and the actual dereference.
+        // Also we allocate the temporary when the expresion is sufficiently complex/expensive.
         //
+        // Note that if the expression is a GT_FIELD, it has not yet been morphed so its true complexity is
+        // not exposed. Without that condition there are cases of local struct fields that were previously,
+        // needlessly, marked as GTF_GLOB_REF, and when that was fixed, there were some regressions that
+        // were mostly ameliorated by adding this condition.
+        //
+        // Likewise, allocate a temporary if the expression is a GT_LCL_FLD node. These used to be created
+        // after fgMorphArrayIndex from GT_FIELD trees so this preserves the existing behavior. This is
+        // perhaps a decision that should be left to CSE but FX diffs show that it is slightly better to
+        // do this here.
+
         if ((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) ||
-            gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY) || (arrRef->OperGet() == GT_FIELD))
+            gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY) || arrRef->OperIs(GT_FIELD, GT_LCL_FLD))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             arrRefDefn            = gtNewTempAssign(arrRefTmpNum, arrRef);
@@ -5470,16 +5477,10 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             noway_assert(arrRef2 != nullptr);
         }
 
-        // If the index expression involves an assignment, a call or reads from global memory,
-        // we *must* allocate a temporary in which to "localize" those values,
-        // to ensure that the same values are used in the bounds check and the actual
-        // dereference.
-        // Also we allocate the temporary when the index is sufficiently complex/expensive.
-        //
         if ((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || gtComplexityExceeds(&index, MAX_ARR_COMPLEXITY) ||
-            (arrRef->OperGet() == GT_FIELD))
+            index->OperIs(GT_FIELD, GT_LCL_FLD))
         {
-            unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
+            unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
             indexDefn            = gtNewTempAssign(indexTmpNum, index);
             index                = gtNewLclvNode(indexTmpNum, index->TypeGet());
             index2               = gtNewLclvNode(indexTmpNum, index->TypeGet());
@@ -5757,7 +5758,7 @@ GenTree* Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType,
         // Create a node representing the local pointing to the base of the args
         GenTree* ptrArg =
             gtNewOperNode(GT_SUB, TYP_I_IMPL, gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL),
-                          gtNewIconNode(varDsc->lvStkOffs - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES +
+                          gtNewIconNode(varDsc->lvStkOffs - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES -
                                         lclOffs));
 
         // Access the argument through the local
@@ -8549,13 +8550,18 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         const bool forceRemorph = false;
         return fgMorphLocalVar(tree, forceRemorph);
     }
-#ifdef _TARGET_X86_
     else if (tree->gtOper == GT_LCL_FLD)
     {
+        if (lvaGetDesc(tree->AsLclFld())->lvAddrExposed)
+        {
+            tree->gtFlags |= GTF_GLOB_REF;
+        }
+
+#ifdef _TARGET_X86_
         if (info.compIsVarArgs)
         {
-            GenTree* newTree =
-                fgMorphStackArgForVarArgs(tree->AsLclFld()->GetLclNum(), tree->gtType, tree->AsLclFld()->gtLclOffs);
+            GenTree* newTree = fgMorphStackArgForVarArgs(tree->AsLclFld()->GetLclNum(), tree->TypeGet(),
+                                                         tree->AsLclFld()->GetLclOffs());
             if (newTree != nullptr)
             {
                 if (newTree->OperIsBlk() && ((tree->gtFlags & GTF_VAR_DEF) == 0))
@@ -8565,8 +8571,8 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
                 return newTree;
             }
         }
-    }
 #endif // _TARGET_X86_
+    }
     else if (tree->gtOper == GT_FTN_ADDR)
     {
         CORINFO_CONST_LOOKUP addrInfo;
@@ -9785,7 +9791,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 assert(dest->gtOper == GT_LCL_FLD);
                 blockWidth = genTypeSize(dest->TypeGet());
                 destAddr   = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
-                destFldSeq = dest->AsLclFld()->gtFieldSeq;
+                destFldSeq = dest->AsLclFld()->GetFieldSeq();
             }
         }
         else
@@ -9867,7 +9873,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             srcLclNum     = srcLclVarTree->GetLclNum();
             if (rhs->OperGet() == GT_LCL_FLD)
             {
-                srcFldSeq = rhs->AsLclFld()->gtFieldSeq;
+                srcFldSeq = rhs->AsLclFld()->GetFieldSeq();
             }
         }
         else if (rhs->OperIsIndir())
@@ -10403,10 +10409,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                             {
                                 srcLclVarTree->gtFlags |= GTF_VAR_CAST;
                                 srcLclVarTree->ChangeOper(GT_LCL_FLD);
-                                srcLclVarTree->gtType                 = destType;
-                                srcLclVarTree->AsLclFld()->gtFieldSeq = curFieldSeq;
-                                src                                   = srcLclVarTree;
-                                done                                  = true;
+                                srcLclVarTree->gtType = destType;
+                                srcLclVarTree->AsLclFld()->SetFieldSeq(curFieldSeq);
+                                src  = srcLclVarTree;
+                                done = true;
                             }
                         }
                     }
@@ -12882,8 +12888,8 @@ DONE_MORPHING_CHILDREN:
                             if ((fieldSeq != nullptr) && (temp->OperGet() == GT_LCL_FLD))
                             {
                                 // Append the field sequence, change the type.
-                                temp->AsLclFld()->gtFieldSeq =
-                                    GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
+                                temp->AsLclFld()->SetFieldSeq(
+                                    GetFieldSeqStore()->Append(temp->AsLclFld()->GetFieldSeq(), fieldSeq));
                                 temp->gtType = typ;
 
                                 foldAndReturnTemp = true;
@@ -13005,29 +13011,29 @@ DONE_MORPHING_CHILDREN:
                     if (temp->OperGet() == GT_LCL_FLD)
                     {
                         lclFld = temp->AsLclFld();
-                        lclFld->gtLclOffs += (unsigned short)ival1;
-                        lclFld->gtFieldSeq = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeq);
+                        lclFld->SetLclOffs(lclFld->GetLclOffs() + static_cast<unsigned>(ival1));
+                        lclFld->SetFieldSeq(GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeq));
                     }
                     else // we have a GT_LCL_VAR
                     {
                         assert(temp->OperGet() == GT_LCL_VAR);
                         temp->ChangeOper(GT_LCL_FLD); // Note that this typically makes the gtFieldSeq "NotAField",
                         // unless there is a zero filed offset associated with 'temp'.
-                        lclFld            = temp->AsLclFld();
-                        lclFld->gtLclOffs = (unsigned short)ival1;
+                        lclFld = temp->AsLclFld();
+                        lclFld->SetLclOffs(static_cast<unsigned>(ival1));
 
-                        if (lclFld->gtFieldSeq == FieldSeqStore::NotAField())
+                        if (lclFld->GetFieldSeq() == FieldSeqStore::NotAField())
                         {
                             if (fieldSeq != nullptr)
                             {
                                 // If it does represent a field, note that.
-                                lclFld->gtFieldSeq = fieldSeq;
+                                lclFld->SetFieldSeq(fieldSeq);
                             }
                         }
                         else
                         {
                             // Append 'fieldSeq' to the existing one
-                            lclFld->gtFieldSeq = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeq);
+                            lclFld->SetFieldSeq(GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeq));
                         }
                     }
                     temp->gtType      = tree->gtType;
@@ -17010,7 +17016,7 @@ void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)
     if (varTypeIsStruct(varDsc) && (varDsc->lvPromoted))
     {
         // Promoted struct
-        unsigned   fldOffset     = tree->AsLclFld()->gtLclOffs;
+        unsigned   fldOffset     = tree->AsLclFld()->GetLclOffs();
         unsigned   fieldLclIndex = 0;
         LclVarDsc* fldVarDsc     = nullptr;
 
@@ -17569,16 +17575,18 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     //
     class Value
     {
-        GenTree* m_node;
-        unsigned m_lclNum;
-        unsigned m_offset;
-        bool     m_address;
+        GenTree*      m_node;
+        FieldSeqNode* m_fieldSeq;
+        unsigned      m_lclNum;
+        unsigned      m_offset;
+        bool          m_address;
         INDEBUG(bool m_consumed;)
 
     public:
         // Produce an unknown value associated with the specified node.
         Value(GenTree* node)
             : m_node(node)
+            , m_fieldSeq(nullptr)
             , m_lclNum(BAD_VAR_NUM)
             , m_offset(0)
             , m_address(false)
@@ -17624,22 +17632,90 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             return m_offset;
         }
 
+        // Get the location's field sequence.
+        FieldSeqNode* FieldSeq() const
+        {
+            return m_fieldSeq;
+        }
+
         //------------------------------------------------------------------------
         // Location: Produce a location value.
         //
         // Arguments:
-        //    lclNum - the local variable number
-        //    offset - the byte offset of the location (used for GT_LCL_FLD nodes)
+        //    lclVar - a GT_LCL_VAR node that defines the location
         //
         // Notes:
-        //   - (lclnum, offset) => LOCATION(lclNum, offset)
+        //   - (lclnum) => LOCATION(lclNum, 0)
         //
-        void Location(unsigned lclNum, unsigned offset = 0)
+        void Location(GenTreeLclVar* lclVar)
         {
+            assert(lclVar->OperIs(GT_LCL_VAR));
             assert(!IsLocation() && !IsAddress());
 
-            m_lclNum = lclNum;
-            m_offset = offset;
+            m_lclNum = lclVar->GetLclNum();
+
+            assert(m_offset == 0);
+            assert(m_fieldSeq == nullptr);
+        }
+
+        //------------------------------------------------------------------------
+        // Address: Produce an address value from a GT_LCL_VAR_ADDR node.
+        //
+        // Arguments:
+        //    lclVar - a GT_LCL_VAR_ADDR node that defines the address
+        //
+        // Notes:
+        //   - (lclnum) => ADDRESS(lclNum, 0)
+        //
+        void Address(GenTreeLclVar* lclVar)
+        {
+            assert(lclVar->OperIs(GT_LCL_VAR_ADDR));
+            assert(!IsLocation() && !IsAddress());
+
+            m_lclNum  = lclVar->GetLclNum();
+            m_address = true;
+
+            assert(m_offset == 0);
+            assert(m_fieldSeq == nullptr);
+        }
+
+        //------------------------------------------------------------------------
+        // Location: Produce a location value.
+        //
+        // Arguments:
+        //    lclFld - a GT_LCL_FLD node that defines the location
+        //
+        // Notes:
+        //   - (lclnum, lclOffs) => LOCATION(lclNum, offset)
+        //
+        void Location(GenTreeLclFld* lclFld)
+        {
+            assert(lclFld->OperIs(GT_LCL_FLD));
+            assert(!IsLocation() && !IsAddress());
+
+            m_lclNum   = lclFld->GetLclNum();
+            m_offset   = lclFld->GetLclOffs();
+            m_fieldSeq = lclFld->GetFieldSeq();
+        }
+
+        //------------------------------------------------------------------------
+        // Address: Produce an address value from a LCL_FLD_ADDR node.
+        //
+        // Arguments:
+        //    lclFld - a GT_LCL_FLD_ADDR node that defines the address
+        //
+        // Notes:
+        //   - (lclnum, lclOffs) => ADDRESS(lclNum, offset)
+        //
+        void Address(GenTreeLclFld* lclFld)
+        {
+            assert(lclFld->OperIs(GT_LCL_FLD_ADDR));
+            assert(!IsLocation() && !IsAddress());
+
+            m_lclNum   = lclFld->GetLclNum();
+            m_offset   = lclFld->GetLclOffs();
+            m_fieldSeq = lclFld->GetFieldSeq();
+            m_address  = true;
         }
 
         //------------------------------------------------------------------------
@@ -17660,9 +17736,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
             if (val.IsLocation())
             {
-                m_address = true;
-                m_lclNum  = val.m_lclNum;
-                m_offset  = val.m_offset;
+                m_address  = true;
+                m_lclNum   = val.m_lclNum;
+                m_offset   = val.m_offset;
+                m_fieldSeq = val.m_fieldSeq;
             }
 
             INDEBUG(val.Consume();)
@@ -17672,8 +17749,9 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         // Field: Produce a location value from an address value.
         //
         // Arguments:
-        //    val    - the input value
-        //    offset - the offset to add to the existing location offset
+        //    val - the input value
+        //    field - the FIELD node that uses the input address value
+        //    fieldSeqStore - the compiler's field sequence store
         //
         // Return Value:
         //    `true` if the value was consumed. `false` if the input value
@@ -17687,7 +17765,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         //     if the offset overflows then location is not representable, must escape
         //   - UNKNOWN => UNKNOWN
         //
-        bool Field(Value& val, unsigned offset)
+        bool Field(Value& val, GenTreeField* field, FieldSeqStore* fieldSeqStore)
         {
             assert(!IsLocation() && !IsAddress());
 
@@ -17698,7 +17776,8 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
             if (val.IsAddress())
             {
-                ClrSafeInt<unsigned> newOffset = ClrSafeInt<unsigned>(val.m_offset) + ClrSafeInt<unsigned>(offset);
+                ClrSafeInt<unsigned> newOffset =
+                    ClrSafeInt<unsigned>(val.m_offset) + ClrSafeInt<unsigned>(field->gtFldOffset);
 
                 if (newOffset.IsOverflow())
                 {
@@ -17707,6 +17786,15 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
                 m_lclNum = val.m_lclNum;
                 m_offset = newOffset.Value();
+
+                if (field->gtFldMayOverlap)
+                {
+                    m_fieldSeq = FieldSeqStore::NotAField();
+                }
+                else
+                {
+                    m_fieldSeq = fieldSeqStore->Append(val.m_fieldSeq, fieldSeqStore->CreateSingleton(field->gtFldHnd));
+                }
             }
 
             INDEBUG(val.Consume();)
@@ -17740,8 +17828,9 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
             if (val.IsAddress())
             {
-                m_lclNum = val.m_lclNum;
-                m_offset = val.m_offset;
+                m_lclNum   = val.m_lclNum;
+                m_offset   = val.m_offset;
+                m_fieldSeq = val.m_fieldSeq;
             }
 
             INDEBUG(val.Consume();)
@@ -17880,13 +17969,25 @@ public:
             case GT_LCL_VAR:
                 assert(TopValue(0).Node() == node);
 
-                TopValue(0).Location(node->AsLclVar()->GetLclNum());
+                TopValue(0).Location(node->AsLclVar());
+                break;
+
+            case GT_LCL_VAR_ADDR:
+                assert(TopValue(0).Node() == node);
+
+                TopValue(0).Address(node->AsLclVar());
                 break;
 
             case GT_LCL_FLD:
                 assert(TopValue(0).Node() == node);
 
-                TopValue(0).Location(node->AsLclFld()->GetLclNum(), node->AsLclFld()->gtLclOffs);
+                TopValue(0).Location(node->AsLclFld());
+                break;
+
+            case GT_LCL_FLD_ADDR:
+                assert(TopValue(0).Node() == node);
+
+                TopValue(0).Address(node->AsLclFld());
                 break;
 
             case GT_ADDR:
@@ -17903,7 +18004,7 @@ public:
                     assert(TopValue(1).Node() == node);
                     assert(TopValue(0).Node() == node->AsField()->gtFldObj);
 
-                    if (!TopValue(1).Field(TopValue(0), node->AsField()->gtFldOffset))
+                    if (!TopValue(1).Field(TopValue(0), node->AsField(), m_compiler->GetFieldSeqStore()))
                     {
                         // Either the address comes from a location value (e.g. FIELD(IND(...)))
                         // or the field offset has overflowed.
@@ -18056,6 +18157,15 @@ private:
         }
 #endif // _TARGET_64BIT_
 
+        // TODO-ADDR: For now use LCL_VAR_ADDR and LCL_FLD_ADDR only as call arguments and assignment sources.
+        // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
+        // could be changed to OBJ(LCL_FLD_ADDR) but then DefinesLocalAddr does not recognize
+        // LCL_FLD_ADDR (even though it does recognize LCL_VAR_ADDR).
+        if (user->OperIs(GT_CALL, GT_ASG))
+        {
+            MorphLocalAddress(val);
+        }
+
         INDEBUG(val.Consume();)
     }
 
@@ -18141,6 +18251,14 @@ private:
             {
                 m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField ? varDsc->lvParentLcl : val.LclNum());
             }
+            else if (node->OperIs(GT_IND, GT_FIELD))
+            {
+                // TODO-ADDR: This should also work with OBJ and BLK but that typically requires
+                // struct typed LCL_FLDs which are not yet supported. Also, OBJs that are call
+                // arguments requires special care - at least because of the current PUTARG_STK
+                // codegen that requires OBJs.
+                MorphLocalIndir(val, user);
+            }
         }
 
         INDEBUG(val.Consume();)
@@ -18211,6 +18329,161 @@ private:
                 assert(indir->OperIs(GT_IND, GT_DYN_BLK));
                 return 0;
         }
+    }
+
+    //------------------------------------------------------------------------
+    // MorphLocalAddress: Change a tree that represents a local variable address
+    //    to a single LCL_VAR_ADDR or LCL_FLD_ADDR node.
+    //
+    // Arguments:
+    //    val - a value that represents the local address
+    //
+    void MorphLocalAddress(const Value& val)
+    {
+        assert(val.IsAddress());
+        assert(val.Node()->TypeIs(TYP_BYREF, TYP_I_IMPL));
+        assert(m_compiler->lvaVarAddrExposed(val.LclNum()));
+
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
+
+        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        {
+            // TODO-ADDR: For now we ignore promoted and "implict by ref" variables,
+            // they require additional changes in subsequent phases.
+            return;
+        }
+
+        GenTree* addr = val.Node();
+
+        if (val.Offset() > UINT16_MAX)
+        {
+            // The offset is too large to store in a LCL_FLD_ADDR node,
+            // use ADD(LCL_VAR_ADDR, offset) instead.
+            addr->ChangeOper(GT_ADD);
+            addr->AsOp()->gtOp1 = m_compiler->gtNewLclVarAddrNode(val.LclNum());
+            addr->AsOp()->gtOp2 = m_compiler->gtNewIconNode(val.Offset(), val.FieldSeq());
+        }
+        else if ((val.Offset() != 0) || (val.FieldSeq() != nullptr))
+        {
+            addr->ChangeOper(GT_LCL_FLD_ADDR);
+            addr->AsLclFld()->SetLclNum(val.LclNum());
+            addr->AsLclFld()->SetLclOffs(val.Offset());
+            addr->AsLclFld()->SetFieldSeq(val.FieldSeq());
+        }
+        else
+        {
+            addr->ChangeOper(GT_LCL_VAR_ADDR);
+            addr->AsLclVar()->SetLclNum(val.LclNum());
+        }
+
+        // Local address nodes never have side effects (nor any other flags, at least at this point).
+        addr->gtFlags = 0;
+
+        INDEBUG(m_stmtModified = true;)
+    }
+
+    //------------------------------------------------------------------------
+    // MorphLocalIndir: Change a tree that represents an indirect access to a struct
+    //    variable to a single LCL_FLD node.
+    //
+    // Arguments:
+    //    val - a value that represents the local indirection
+    //    user - the indirection's user node
+    //
+    void MorphLocalIndir(const Value& val, GenTree* user)
+    {
+        assert(val.IsLocation());
+
+        GenTree* indir = val.Node();
+        assert(indir->OperIs(GT_IND, GT_FIELD));
+
+        if ((indir->OperIs(GT_IND) && indir->AsIndir()->IsVolatile()) ||
+            (indir->OperIs(GT_FIELD) && indir->AsField()->IsVolatile()))
+        {
+            return;
+        }
+
+        if (varTypeIsStruct(indir->TypeGet()))
+        {
+            // TODO-ADDR: Skip struct indirs for now, they require struct typed LCL_FLDs.
+            // Also skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
+            // but there are exceptions - fgMorphFieldAssignToSIMDIntrinsicSet for example.
+            return;
+        }
+
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
+
+        if (varDsc->TypeGet() != TYP_STRUCT)
+        {
+            // TODO-ADDR: Skip integral/floating point variables for now, they're more
+            // complicated to transform. We can always turn an indirect access of such
+            // a variable into a LCL_FLD but that blocks enregistration so we need to
+            // detect those case where we can use LCL_VAR instead, perhaps in conjuction
+            // with CAST and/or BITCAST.
+            // Also skip SIMD variables for now, fgMorphFieldAssignToSIMDIntrinsicSet and
+            // others need to be updated to recognize LCL_FLDs.
+            return;
+        }
+
+        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        {
+            // TODO-ADDR: For now we ignore promoted and "implict by ref" variables,
+            // they require additional changes in subsequent phases
+            // (e.g. fgMorphImplicitByRefArgs does not handle LCL_FLD nodes).
+            return;
+        }
+
+        FieldSeqNode* fieldSeq = val.FieldSeq();
+
+        if ((fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
+        {
+            if (indir->OperIs(GT_IND))
+            {
+                // If we have an IND node and a field sequence then they should have the same type.
+                // Otherwise it's best to forget the field sequence since the resulting LCL_FLD
+                // doesn't match a real struct field. Value numbering protects itself from such
+                // mismatches but there doesn't seem to be any good reason to generate a LCL_FLD
+                // with a mismatched field sequence only to have to ignore it later.
+
+                if (indir->TypeGet() !=
+                    JITtype2varType(m_compiler->info.compCompHnd->getFieldType(fieldSeq->GetTail()->GetFieldHandle())))
+                {
+                    fieldSeq = nullptr;
+                }
+            }
+            else if (indir->OperIs(GT_FIELD))
+            {
+                // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
+                // handle so we cannot use FieldSeqNode::GetFieldHandle() because it asserts on such
+                // handles. ObjectAllocator should be changed to create LCL_FLD nodes directly.
+                assert(fieldSeq->GetTail()->m_fieldHnd == indir->AsField()->gtFldHnd);
+            }
+        }
+
+        indir->ChangeOper(GT_LCL_FLD);
+        indir->AsLclFld()->SetLclNum(val.LclNum());
+        indir->AsLclFld()->SetLclOffs(val.Offset());
+        indir->AsLclFld()->SetFieldSeq(fieldSeq == nullptr ? FieldSeqStore::NotAField() : fieldSeq);
+
+        unsigned flags = 0;
+
+        if (user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
+        {
+            flags |= GTF_VAR_DEF | GTF_DONT_CSE;
+
+            if (genTypeSize(indir->TypeGet()) < m_compiler->lvaLclExactSize(val.LclNum()))
+            {
+                flags |= GTF_VAR_USEASG;
+            }
+        }
+
+        indir->gtFlags = flags;
+
+        // Promoted struct vars aren't currently handled here so the created LCL_FLD can't be
+        // later transformed into a LCL_VAR and the variable cannot be enregistered.
+        m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(Compiler::DNER_LocalField));
+
+        INDEBUG(m_stmtModified = true;)
     }
 
     //------------------------------------------------------------------------
@@ -18331,9 +18604,9 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
         case GT_LCL_FLD:
         {
             GenTreeLclFld* lclFld = addr->AsLclFld();
-            fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeqZero);
-            lclFld->gtFieldSeq    = fieldSeqUpdate;
-            fieldSeqRecorded      = true;
+            fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeqZero);
+            lclFld->SetFieldSeq(fieldSeqUpdate);
+            fieldSeqRecorded = true;
             break;
         }
 
@@ -18343,9 +18616,9 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
                 fieldSeqNode = addr->AsOp()->gtOp1;
 
                 GenTreeLclFld* lclFld = addr->AsOp()->gtOp1->AsLclFld();
-                fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeqZero);
-                lclFld->gtFieldSeq    = fieldSeqUpdate;
-                fieldSeqRecorded      = true;
+                fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeqZero);
+                lclFld->SetFieldSeq(fieldSeqUpdate);
+                fieldSeqRecorded = true;
             }
             break;
 
@@ -18449,7 +18722,6 @@ void Compiler::fgMarkAddressExposedLocals()
 
 bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt)
 {
-
     GenTree* tree = stmt->GetRootNode();
     assert(tree->OperGet() == GT_ASG);
 
@@ -18520,31 +18792,44 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
         fgRemoveStmt(block, stmt->GetNextStmt());
     }
 
-    GenTree* copyBlkDst = createAddressNodeForSIMDInit(originalLHS, simdSize);
-    if (simdStructNode->OperIsLocal())
-    {
-        setLclRelatedToSIMDIntrinsic(simdStructNode);
-    }
-    GenTree* copyBlkAddr = copyBlkDst;
-    if (copyBlkAddr->gtOper == GT_LEA)
-    {
-        copyBlkAddr = copyBlkAddr->AsAddrMode()->Base();
-    }
-    GenTreeLclVarCommon* localDst = nullptr;
-    if (copyBlkAddr->IsLocalAddrExpr(this, &localDst, nullptr))
-    {
-        setLclRelatedToSIMDIntrinsic(localDst);
-    }
+    GenTree* dstNode;
 
-    if (simdStructNode->TypeGet() == TYP_BYREF)
+    if (originalLHS->OperIs(GT_LCL_FLD))
     {
-        assert(simdStructNode->OperIsLocal());
-        assert(lvaIsImplicitByRefLocal(simdStructNode->AsLclVarCommon()->GetLclNum()));
-        simdStructNode = gtNewIndir(simdType, simdStructNode);
+        dstNode         = originalLHS;
+        dstNode->gtType = simdType;
+        dstNode->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
     }
     else
     {
-        assert(varTypeIsSIMD(simdStructNode));
+        GenTree* copyBlkDst = createAddressNodeForSIMDInit(originalLHS, simdSize);
+        if (simdStructNode->OperIsLocal())
+        {
+            setLclRelatedToSIMDIntrinsic(simdStructNode);
+        }
+        GenTree* copyBlkAddr = copyBlkDst;
+        if (copyBlkAddr->gtOper == GT_LEA)
+        {
+            copyBlkAddr = copyBlkAddr->AsAddrMode()->Base();
+        }
+        GenTreeLclVarCommon* localDst = nullptr;
+        if (copyBlkAddr->IsLocalAddrExpr(this, &localDst, nullptr))
+        {
+            setLclRelatedToSIMDIntrinsic(localDst);
+        }
+
+        if (simdStructNode->TypeGet() == TYP_BYREF)
+        {
+            assert(simdStructNode->OperIsLocal());
+            assert(lvaIsImplicitByRefLocal(simdStructNode->AsLclVarCommon()->GetLclNum()));
+            simdStructNode = gtNewIndir(simdType, simdStructNode);
+        }
+        else
+        {
+            assert(varTypeIsSIMD(simdStructNode));
+        }
+
+        dstNode = gtNewOperNode(GT_IND, simdType, copyBlkDst);
     }
 
 #ifdef DEBUG
@@ -18557,13 +18842,16 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     }
 #endif
 
-    GenTree* dstNode = gtNewOperNode(GT_IND, simdType, copyBlkDst);
-    tree             = gtNewAssignNode(dstNode, simdStructNode);
+    tree = gtNewAssignNode(dstNode, simdStructNode);
 
     stmt->SetRootNode(tree);
 
     // Since we generated a new address node which didn't exist before,
     // we should expose this address manually here.
+    // TODO-ADDR: Remove this when LocalAddressVisitor transforms all
+    // local field access into LCL_FLDs, at that point we would be
+    // combining 2 existing LCL_FLDs or 2 FIELDs that do not reference
+    // a local and thus cannot result in a new address exposed local.
     LocalAddressVisitor visitor(this);
     visitor.VisitStmt(stmt);
 

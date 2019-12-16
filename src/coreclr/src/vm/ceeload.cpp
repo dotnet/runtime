@@ -6689,22 +6689,18 @@ LoaderHeap *Module::GetThunkHeap()
     }
     CONTRACT_END
 
-        if (!m_pThunkHeap)
+    if (!m_pThunkHeap)
+    {
+        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
+            0,                                 // DWORD dwCommitBlockSize
+            ThunkHeapStubManager::g_pManager->GetRangeList(),
+            TRUE);                             // BOOL fMakeExecutable
+
+        if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
         {
-            size_t * pPrivatePCLBytes = NULL;
-            size_t * pGlobalPCLBytes = NULL;
-
-            LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
-                0,                                 // DWORD dwCommitBlockSize
-                pPrivatePCLBytes,
-                ThunkHeapStubManager::g_pManager->GetRangeList(),
-                TRUE);                             // BOOL fMakeExecutable
-
-            if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
-            {
-                delete pNewHeap;
-            }
+            delete pNewHeap;
         }
+    }
 
     RETURN m_pThunkHeap;
 }

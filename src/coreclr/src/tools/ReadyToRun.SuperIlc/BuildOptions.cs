@@ -21,6 +21,7 @@ namespace ReadyToRun.SuperIlc
         public bool NoExe { get; set; }
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
+        public bool Map { get; set; }
         public FileInfo PackageList { get; set; }
         public int DegreeOfParallelism { get; set; }
         public bool Sequential { get; set; }
@@ -28,6 +29,7 @@ namespace ReadyToRun.SuperIlc
         public bool UseFramework { get; set; }
         public bool Release { get; set; }
         public bool LargeBubble { get; set; }
+        public int Crossgen2Parallelism { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }

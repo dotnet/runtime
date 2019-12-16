@@ -3,7 +3,7 @@
     <AssemblyName>System.Net.WebSockets</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.netcoreapp.cs" />

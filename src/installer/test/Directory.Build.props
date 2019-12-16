@@ -9,7 +9,7 @@
     <TestRestoreNuGetConfigFile>$(ArtifactsObjDir)TestNuGetConfig\NuGet.config</TestRestoreNuGetConfigFile>
     <InternalNupkgCacheDir>$(ArtifactsObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
-    <TestInfraTargetFramework>netcoreapp3.0</TestInfraTargetFramework>
+    <TestInfraTargetFramework>$(NetCoreAppCurrent)</TestInfraTargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>

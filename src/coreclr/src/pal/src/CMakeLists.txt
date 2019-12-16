@@ -320,20 +320,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-  find_library(INTL intl)
   target_link_libraries(coreclrpal
     pthread
     rt
     ${UNWIND_LIBS}
-    ${INTL}
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-  if(CLR_CMAKE_PLATFORM_ALPINE_LINUX OR CLR_CMAKE_PLATFORM_ANDROID)
-    find_library(INTL intl)
-  endif()
-
   # On Android, we don't need to link with gcc_s, pthread and rt
   if(NOT CLR_CMAKE_PLATFORM_ANDROID)
     target_link_libraries(coreclrpal
@@ -360,7 +354,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   if(CLR_MAKE_PLATFORM_ANDROID)
     find_library(ANDROID_SUPPORT NAMES android-support)
     find_library(ANDROID_GLOB NAMES android-glob)
-    find_library(INTL NAMES intl)
 
     if(ANDROID_SUPPORT STREQUAL ANDROID_SUPPORT-NOTFOUND)
       message(FATAL_ERROR "Cannot find android-support.")
@@ -369,19 +362,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     if(ANDROID_GLOB STREQUAL ANDROID_GLOB-NOTFOUND)
       message(FATAL_ERROR "Cannot find android-glob.")
     endif()
-
-    if(INTL STREQUAL INTL-NOTFOUND)
-      message(FATAL_ERROR "Cannot find libintl.")
-    endif()
   endif()
 
   target_link_libraries(coreclrpal
     dl
   )
-
-  if(NOT INTL STREQUAL INTL-NOTFOUND)
-    target_link_libraries(coreclrpal ${INTL})
-  endif(NOT INTL STREQUAL INTL-NOTFOUND)
 
   if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     target_link_libraries(coreclrpal ${UNWIND_LIBS})
@@ -394,13 +379,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     find_library(UNWIND unwind)
   endif()
   add_definitions(-D_KMEMUSER)
-  find_library(INTL intl)
   find_library(KVM kvm)
   target_link_libraries(coreclrpal
     pthread
     rt
     ${UNWIND}
-    ${INTL}
     ${KVM}
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)

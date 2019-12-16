@@ -235,7 +235,23 @@ struct FieldSeqNode
     bool IsConstantIndexFieldSeq();
 
     // returns true when this is the the pseudo #FirstElem field sequence or the pseudo #ConstantIndex field sequence
-    bool IsPseudoField();
+    bool IsPseudoField() const;
+
+    CORINFO_FIELD_HANDLE GetFieldHandle() const
+    {
+        assert(!IsPseudoField() && (m_fieldHnd != nullptr));
+        return m_fieldHnd;
+    }
+
+    FieldSeqNode* GetTail()
+    {
+        FieldSeqNode* tail = this;
+        while (tail->m_next != nullptr)
+        {
+            tail = tail->m_next;
+        }
+        return tail;
+    }
 
     // Make sure this provides methods that allow it to be used as a KeyFuncs type in SimplerHash.
     static int GetHashCode(FieldSeqNode fsn)
@@ -1015,6 +1031,17 @@ public:
 #ifdef DEBUG
     void dumpLIRFlags();
 #endif
+
+    bool TypeIs(var_types type) const
+    {
+        return gtType == type;
+    }
+
+    template <typename... T>
+    bool TypeIs(var_types type, T... rest) const
+    {
+        return TypeIs(type) || TypeIs(rest...);
+    }
 
     bool OperIs(genTreeOps oper) const
     {
@@ -3109,22 +3136,44 @@ struct GenTreeLclVar : public GenTreeLclVarCommon
 
 struct GenTreeLclFld : public GenTreeLclVarCommon
 {
-    unsigned gtLclOffs; // offset into the variable to access
+private:
+    uint16_t      m_lclOffs;  // offset into the variable to access
+    FieldSeqNode* m_fieldSeq; // This LclFld node represents some sequences of accesses.
 
-    FieldSeqNode* gtFieldSeq; // This LclFld node represents some sequences of accesses.
-
-    // old/FE style constructor where load/store/addr share same opcode
+public:
     GenTreeLclFld(var_types type, unsigned lclNum, unsigned lclOffs)
-        : GenTreeLclVarCommon(GT_LCL_FLD, type, lclNum), gtLclOffs(lclOffs), gtFieldSeq(nullptr)
+        : GenTreeLclVarCommon(GT_LCL_FLD, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
     {
-        assert(sizeof(*this) <= s_gtNodeSizes[GT_LCL_FLD]);
+        assert(lclOffs <= UINT16_MAX);
     }
 
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs)
-        : GenTreeLclVarCommon(oper, type, lclNum), gtLclOffs(lclOffs), gtFieldSeq(nullptr)
+        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
     {
-        assert(sizeof(*this) <= s_gtNodeSizes[GT_LCL_FLD]);
+        assert(lclOffs <= UINT16_MAX);
     }
+
+    uint16_t GetLclOffs() const
+    {
+        return m_lclOffs;
+    }
+
+    void SetLclOffs(unsigned lclOffs)
+    {
+        assert(lclOffs <= UINT16_MAX);
+        m_lclOffs = static_cast<uint16_t>(lclOffs);
+    }
+
+    FieldSeqNode* GetFieldSeq() const
+    {
+        return m_fieldSeq;
+    }
+
+    void SetFieldSeq(FieldSeqNode* fieldSeq)
+    {
+        m_fieldSeq = fieldSeq;
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclFld() : GenTreeLclVarCommon()
     {
@@ -3211,6 +3260,13 @@ struct GenTreeField : public GenTree
         gtFieldLookup.addr = nullptr;
 #endif
     }
+
+    // True if this field is a volatile memory operation.
+    bool IsVolatile() const
+    {
+        return (gtFlags & GTF_FLD_VOLATILE) != 0;
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeField() : GenTree()
     {
@@ -5005,6 +5061,18 @@ struct GenTreeIndir : public GenTreeOp
     {
     }
 
+    // True if this indirection is a volatile memory operation.
+    bool IsVolatile() const
+    {
+        return (gtFlags & GTF_IND_VOLATILE) != 0;
+    }
+
+    // True if this indirection is an unaligned memory operation.
+    bool IsUnaligned() const
+    {
+        return (gtFlags & GTF_IND_UNALIGNED) != 0;
+    }
+
 #if DEBUGGABLE_GENTREE
 protected:
     friend GenTree;
@@ -5054,18 +5122,6 @@ public:
     {
         assert((m_layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         return (m_layout != nullptr) ? m_layout->GetSize() : 0;
-    }
-
-    // True if this BlkOpNode is a volatile memory operation.
-    bool IsVolatile() const
-    {
-        return (gtFlags & GTF_BLK_VOLATILE) != 0;
-    }
-
-    // True if this BlkOpNode is an unaligned memory operation.
-    bool IsUnaligned() const
-    {
-        return (gtFlags & GTF_BLK_UNALIGNED) != 0;
     }
 
     // Instruction selection: during codegen time, what code sequence we will be using

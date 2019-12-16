@@ -20,7 +20,7 @@
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true'"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
           AfterTargets="PrepareForRun"
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />

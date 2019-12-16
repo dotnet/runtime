@@ -448,7 +448,6 @@ public:
         ReflectClassBaseObject *pDeclaringType);
     static FCDECL3(Object *, GetCustomModifiers, SignatureNative* pSig, INT32 parameter, CLR_BOOL fRequired);
     static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
-    static FCDECL4(FC_BOOL_RET, CompareSigForAppCompat, SignatureNative* pLhs, ReflectClassBaseObject * pTypeLhs, SignatureNative* pRhs, ReflectClassBaseObject * pTypeRhs);
 
 
     BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (m_managedCallingConvention & CALLCONV_HasThis); }

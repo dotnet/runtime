@@ -50,15 +50,31 @@ namespace System.Text.Json
                 return false;
             }
 
-            int length = JsonReaderHelper.GetUtf8ByteCount(source);
+            int maxLength = checked(source.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
 
-            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
+            Span<byte> bytes = maxLength <= JsonConstants.StackallocThreshold
                 ? stackalloc byte[JsonConstants.StackallocThreshold]
-                : new byte[length];
+                : new byte[maxLength];
 
-            JsonReaderHelper.GetUtf8FromText(source, bytes);
+            int length = JsonReaderHelper.GetUtf8FromText(source, bytes);
 
-            return TryParseAsISO(bytes.Slice(0, length), out value);
+            bytes = bytes.Slice(0, length);
+
+            if (bytes.IndexOf(JsonConstants.BackSlash) != -1)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTime(bytes, out value);
+            }
+
+            Debug.Assert(bytes.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (TryParseAsISO(bytes, out DateTime tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
         }
 
         public static bool TryParseAsISO(ReadOnlySpan<char> source, out DateTimeOffset value)
@@ -69,15 +85,31 @@ namespace System.Text.Json
                 return false;
             }
 
-            int length = JsonReaderHelper.GetUtf8ByteCount(source);
+            int maxLength = checked(source.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
 
-            Span<byte> bytes = length <= JsonConstants.StackallocThreshold
+            Span<byte> bytes = maxLength <= JsonConstants.StackallocThreshold
                 ? stackalloc byte[JsonConstants.StackallocThreshold]
-                : new byte[length];
+                : new byte[maxLength];
 
-            JsonReaderHelper.GetUtf8FromText(source, bytes);
+            int length = JsonReaderHelper.GetUtf8FromText(source, bytes);
 
-            return TryParseAsISO(bytes.Slice(0, length), out value);
+            bytes = bytes.Slice(0, length);
+
+            if (bytes.IndexOf(JsonConstants.BackSlash) != -1)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTimeOffset(bytes, out value);
+            }
+
+            Debug.Assert(bytes.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (TryParseAsISO(bytes, out DateTimeOffset tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

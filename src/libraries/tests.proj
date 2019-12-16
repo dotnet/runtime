@@ -10,8 +10,9 @@
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We currently only test with C# projects. -->
-    <Project Condition="'$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
     <Project Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\**\*.Tests.csproj" />
+    <Project Condition="'$(SkipTestRestore)' != 'true' and '$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
+    <Project Condition="'$(SkipTestRestore)' == 'true' and '$(DirectoryToBuild)' == ''" Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">

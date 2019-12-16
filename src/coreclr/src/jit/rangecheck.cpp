@@ -313,9 +313,9 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
     {
         // To determine the lower bound, ask if the loop increases monotonically.
         bool increasing = IsMonotonicallyIncreasing(tree, false);
-        JITDUMP("IsMonotonicallyIncreasing %d", increasing);
         if (increasing)
         {
+            JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
             GetRangeMap()->RemoveAll();
             *pRange = GetRange(block, tree, true DEBUGARG(0));
         }
@@ -338,7 +338,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     }
     if (op1->OperGet() != GT_LCL_VAR)
     {
-        JITDUMP("Not monotonic because op1 is not lclVar.\n");
+        JITDUMP("Not monotonically increasing because op1 is not lclVar.\n");
         return false;
     }
     switch (op2->OperGet())
@@ -351,7 +351,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
             return (op2->AsIntConCommon()->IconValue() >= 0) && IsMonotonicallyIncreasing(op1, false);
 
         default:
-            JITDUMP("Not monotonic because expression is not recognized.\n");
+            JITDUMP("Not monotonically increasing because expression is not recognized.\n");
             return false;
     }
 }
@@ -414,7 +414,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
             }
             if (!IsMonotonicallyIncreasing(use.GetNode(), rejectNegativeConst))
             {
-                JITDUMP("Phi argument not monotonic\n");
+                JITDUMP("Phi argument not monotonically increasing\n");
                 return false;
             }
         }
@@ -771,7 +771,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 }
 
 // Compute the range for a binary operation.
-Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monotonic DEBUGARG(int indent))
+Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
     assert(binop->OperIs(GT_ADD));
 
@@ -791,7 +791,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         }
         else
         {
-            op1Range = GetRange(block, op1, monotonic DEBUGARG(indent));
+            op1Range = GetRange(block, op1, monIncreasing DEBUGARG(indent));
         }
         MergeAssertion(block, op1, &op1Range DEBUGARG(indent + 1));
     }
@@ -813,7 +813,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         }
         else
         {
-            op2Range = GetRange(block, op2, monotonic DEBUGARG(indent));
+            op2Range = GetRange(block, op2, monIncreasing DEBUGARG(indent));
         }
         MergeAssertion(block, op2, &op2Range DEBUGARG(indent + 1));
     }
@@ -831,7 +831,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
 // Compute the range for a local var definition.
 Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
                                           GenTreeLclVarCommon* lcl,
-                                          bool monotonic DEBUGARG(int indent))
+                                          bool monIncreasing DEBUGARG(int indent))
 {
     LclSsaVarDsc* ssaDef = GetSsaDefAsg(lcl);
     if (ssaDef == nullptr)
@@ -846,7 +846,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
         JITDUMP("----------------------------------------------------\n");
     }
 #endif
-    Range range = GetRange(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2(), monotonic DEBUGARG(indent));
+    Range range = GetRange(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2(), monIncreasing DEBUGARG(indent));
     if (!BitVecOps::MayBeUninit(block->bbAssertionIn))
     {
         JITDUMP("Merge assertions from " FMT_BB ":%s for assignment about [%06d]\n", block->bbNum,
@@ -1039,17 +1039,32 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     }
     GetOverflowMap()->Set(expr, overflows, OverflowMap::Overwrite);
     m_pSearchPath->Remove(expr);
+    JITDUMP("[%06d] %s\n", Compiler::dspTreeID(expr), ((overflows) ? "overflows" : "does not overflow"));
     return overflows;
 }
 
-// Compute the range recursively by asking for the range of each variable in the dependency chain.
-// eg.: c = a + b; ask range of "a" and "b" and add the results.
-// If the result cannot be determined i.e., the dependency chain does not terminate in a value,
-// but continues to loop, which will happen with phi nodes. We end the looping by calling the
-// value as "dependent" (dep).
-// If the loop is proven to be "monotonic", then make liberal decisions while merging phi node.
-// eg.: merge((0, dep), (dep, dep)) = (0, dep)
-Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic DEBUGARG(int indent))
+//------------------------------------------------------------------------
+// ComputeRange: Compute the range recursively by asking for the range of each variable in the dependency chain.
+//
+// Arguments:
+//   block - the block that contains `expr`;
+//   expr - expression to compute the range for;
+//   monIncreasing - true if `expr` is proven to be monotonically increasing;
+//   indent - debug printing indent.
+//
+// Return value:
+//   'expr' range as lower and upper limits.
+//
+// Notes:
+//   eg.: c = a + b; ask range of "a" and "b" and add the results.
+//   If the result cannot be determined i.e., the dependency chain does not terminate in a value,
+//   but continues to loop, which will happen with phi nodes we end the looping by calling the
+//   value as "dependent" (dep).
+//   If the loop is proven to be "monIncreasing", then make liberal decisions for the lower bound
+//   while merging phi node. eg.: merge((0, dep), (dep, dep)) = (0, dep),
+//   merge((0, 1), (dep, dep)) = (0, dep), merge((0, 5), (dep, 10)) = (0, 10).
+//
+Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
 {
     bool  newlyAdded = !m_pSearchPath->Set(expr, block, SearchPath::Overwrite);
     Range range      = Limit(Limit::keUndef);
@@ -1099,13 +1114,13 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic 
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
     {
-        range = ComputeRangeForLocalDef(block, expr->AsLclVarCommon(), monotonic DEBUGARG(indent + 1));
+        range = ComputeRangeForLocalDef(block, expr->AsLclVarCommon(), monIncreasing DEBUGARG(indent + 1));
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // If add, then compute the range for the operands and add them.
     else if (expr->OperGet() == GT_ADD)
     {
-        range = ComputeRangeForBinOp(block, expr->AsOp(), monotonic DEBUGARG(indent + 1));
+        range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
     else if (expr->OperGet() == GT_PHI)
@@ -1120,14 +1135,14 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic 
             }
             else
             {
-                argRange = GetRange(block, use.GetNode(), monotonic DEBUGARG(indent + 1));
+                argRange = GetRange(block, use.GetNode(), monIncreasing DEBUGARG(indent + 1));
             }
             assert(!argRange.LowerLimit().IsUndef());
             assert(!argRange.UpperLimit().IsUndef());
             MergeAssertion(block, use.GetNode(), &argRange DEBUGARG(indent + 1));
             JITDUMP("Merging ranges %s %s:", range.ToString(m_pCompiler->getAllocatorDebugOnly()),
                     argRange.ToString(m_pCompiler->getAllocatorDebugOnly()));
-            range = RangeOps::Merge(range, argRange, monotonic);
+            range = RangeOps::Merge(range, argRange, monIncreasing);
             JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
         }
     }
@@ -1176,7 +1191,7 @@ void Indent(int indent)
 #endif
 
 // Get the range, if it is already computed, use the cached range value, else compute it.
-Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr, bool monotonic DEBUGARG(int indent))
+Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
@@ -1191,7 +1206,7 @@ Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr, bool monotonic DEBU
 
     Range* pRange = nullptr;
     Range  range =
-        GetRangeMap()->Lookup(expr, &pRange) ? *pRange : ComputeRange(block, expr, monotonic DEBUGARG(indent));
+        GetRangeMap()->Lookup(expr, &pRange) ? *pRange : ComputeRange(block, expr, monIncreasing DEBUGARG(indent));
 
 #ifdef DEBUG
     if (m_pCompiler->verbose)

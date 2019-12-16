@@ -80,7 +80,11 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     itttt ne
     addne r0, CONTEXT_D0
     vstmiane r0!, {d0-d15}
+#if CLR_ARM_FPU_CAPABILITY & 0x4
     vstmiane r0!, {d16-d31}
+#else
+    addne r0, r0, #128
+#endif
     subne r0, CONTEXT_D31
 
     // Make sure sp is restored
@@ -130,7 +134,11 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     itttt ne
     addne r0, CONTEXT_D0
     vldmiane r0!, {d0-d15}
+#if CLR_ARM_FPU_CAPABILITY & 0x4
     vldmiane r0, {d16-d31}
+#else
+    nopne
+#endif
     subne r0, CONTEXT_D16
 
     itt ne

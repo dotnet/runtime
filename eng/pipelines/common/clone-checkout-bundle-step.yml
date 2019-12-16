@@ -1,0 +1,13 @@
+steps:
+- checkout: none
+  clean: true
+
+- download: current
+  artifact: Checkout_bundle
+  displayName: Download Checkout.bundle
+
+- script: |
+    $(setScriptToEchoAndFailOnNonZero)
+    git clone $(Pipeline.Workspace)/Checkout_bundle/Checkout.bundle .
+    git remote set-url origin $(Build.Repository.Uri)
+  displayName: Clone the repository from Checkout.bundle

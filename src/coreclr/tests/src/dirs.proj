@@ -6,7 +6,6 @@
       <DisabledProjects Include="TestWrappers*\**\*.csproj" />
       <DisabledProjects Include="*\**\cs_template.csproj" />
       <DisabledProjects Include="Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
-      <DisabledProjects Include="Common\test_runtime\test_runtime.csproj" />
       <DisabledProjects Include="Common\test_dependencies\test_dependencies.csproj" />
       <DisabledProjects Include="Common\CoreFX\TestFileSetup\CoreFX.TestUtils.TestFileSetup.csproj" />
       <DisabledProjects Include="Common\PerfHarness\PerfHarness.csproj" />
@@ -16,7 +15,6 @@
       <DisabledProjects Include="Loader\classloader\generics\regressions\DD117522\Test.csproj" />
       <DisabledProjects Include="Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
       <DisabledProjects Include="reflection\GenericAttribute\GenericAttributeTests.csproj" />
-      <DisabledProjects Include="Common\CoreFX\CoreFX.csproj" />
       <DisabledProjects Include="Common\ilasm\ilasm.ilproj" />
     </ItemGroup>
 

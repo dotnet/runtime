@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.1.0.0</AssemblyVersion>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netcoreapp3.0-Unix-Debug;netcoreapp3.0-Unix-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netcoreapp3.0-Unix-Debug;netcoreapp3.0-Unix-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyOpenSSL</GeneratePlatformNotSupportedAssemblyMessage>
