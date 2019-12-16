@@ -1,4 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>false</IsTestProject>
@@ -9,15 +10,12 @@
     <TargetArchitecture>$(BuildArch)</TargetArchitecture>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
+    <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
   </ItemGroup>
-  <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
-
-  <PropertyGroup>
-    <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
-  </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
 
@@ -32,4 +30,5 @@
       <RuntimeCopyLocalItems Include="@(LibrariesRuntimeFiles)" />
     </ItemGroup>
   </Target>
+
 </Project>

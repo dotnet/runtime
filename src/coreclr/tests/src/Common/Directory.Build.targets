@@ -1,11 +1,5 @@
 <Project>
-  <!--
-    Common files don't take part in the root tests\src\Directory.Build.targets
-    This file prevents them from including it as it gets included in its place
-    If they ever need to take part, we can conditionally include them as documented
-    here https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build#directorybuildprops-and-directorybuildtargets
-  -->
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('disableversioncheck.targets', '$(MSBuildThisFileDirectory)../'))" />
+  <Import Project="..\Directory.Build.targets" />
 
   <ItemGroup>
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
