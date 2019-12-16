@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly JsonEncodedText _keyName = JsonEncodedText.Encode(KeyName, encoder: null);
         private static readonly JsonEncodedText _valueName = JsonEncodedText.Encode(ValueName, encoder: null);
 
-        public override KeyValuePair<TKey, TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions? options)
+        public override KeyValuePair<TKey, TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.StartObject)
             {
@@ -92,7 +92,7 @@ namespace System.Text.Json.Serialization.Converters
             return new KeyValuePair<TKey, TValue>(k, v);
         }
 
-        private T ReadProperty<T>(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions? options)
+        private T ReadProperty<T>(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             T k;
 

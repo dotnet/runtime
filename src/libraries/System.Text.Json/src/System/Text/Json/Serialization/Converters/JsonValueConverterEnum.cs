@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
             _namingPolicy = namingPolicy;
         }
 
-        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions? options)
+        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             JsonTokenType token = reader.TokenType;
 
@@ -152,7 +152,7 @@ namespace System.Text.Json.Serialization.Converters
                 (s_negativeSign == null || !value.StartsWith(s_negativeSign)));
         }
 
-        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions? options)
+        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
             // If strings are allowed, attempt to write it out as a string value
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))

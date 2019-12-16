@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class JsonConverterChar : JsonConverter<char>
     {
-        public override char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions? options)
+        public override char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             string? str = reader.GetString();
             if (string.IsNullOrEmpty(str) || str.Length > 1)
@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Converters
             return str[0];
         }
 
-        public override void Write(Utf8JsonWriter writer, char value, JsonSerializerOptions? options)
+        public override void Write(Utf8JsonWriter writer, char value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(
 #if BUILDING_INBOX_LIBRARY
