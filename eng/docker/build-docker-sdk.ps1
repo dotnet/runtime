@@ -9,6 +9,8 @@ Param(
   [switch][Alias('w')]$buildWindowsContainers
 )
 
+$ErrorActionPreference = "Stop"
+
 $REPO_ROOT_DIR=$(git -C "$PSScriptRoot" rev-parse --show-toplevel)
 
 if ($buildWindowsContainers)
