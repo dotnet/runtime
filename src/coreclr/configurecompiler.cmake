@@ -546,9 +546,13 @@ if(CLR_CMAKE_PLATFORM_UNIX_ARM)
      set(CLR_ARM_ARCH_TYPE armv7-a)
    endif(NOT DEFINED CLR_ARM_ARCH_TYPE)
 
+   if (NOT DEFINED CLR_ARM_ARCH_INSTRUCTION)
+     set(CLR_ARM_ARCH_INSTRUCTION -mthumb)
+   endif(NOT DEFINED CLR_ARM_ARCH_INSTRUCTION)
+
    # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
    # we have to set the triple by adding a compiler argument
-   add_compile_options(-mthumb)
+   add_compile_options(${CLR_ARM_ARCH_INSTRUCTION})
    add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
    if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
      set(CLR_ARM_FPU_CAPABILITY 0x7)
