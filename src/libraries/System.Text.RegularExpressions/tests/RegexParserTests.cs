@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Reflection;
 using Xunit;
 using Xunit.Sdk;
@@ -880,6 +881,14 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual: No exception thrown");
+        }
+
+        [Fact]
+        public void TestPattern()
+        {
+            Debugger.Launch();
+            string pattern = @"[b-\-a]";
+            var regex = new Regex(pattern);
         }
     }
 }
