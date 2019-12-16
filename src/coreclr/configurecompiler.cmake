@@ -542,6 +542,10 @@ if(CLR_CMAKE_PLATFORM_UNIX_ARM)
      set(CLR_ARM_FPU_TYPE vfpv3)
    endif(NOT DEFINED CLR_ARM_FPU_TYPE)
 
+   if (NOT DEFINED CLR_ARM_ARCH_TYPE)
+     set(CLR_ARM_ARCH_TYPE armv7-a)
+   endif(NOT DEFINED CLR_ARM_ARCH_TYPE)
+
    # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
    # we have to set the triple by adding a compiler argument
    add_compile_options(-mthumb)
@@ -550,7 +554,7 @@ if(CLR_CMAKE_PLATFORM_UNIX_ARM)
      set(CLR_ARM_FPU_CAPABILITY 0x7)
    endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
    add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
-   add_compile_options(-march=armv7-a)
+   add_compile_options(-march=${CLR_ARM_ARCH_TYPE})
    if(ARM_SOFTFP)
      add_definitions(-DARM_SOFTFP)
      add_compile_options(-mfloat-abi=softfp)
