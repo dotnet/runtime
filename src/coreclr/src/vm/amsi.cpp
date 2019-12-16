@@ -8,6 +8,7 @@
 #include "common.h"
 #include "amsi.h"
 
+
 namespace
 {
     // https://docs.microsoft.com/en-us/windows/desktop/api/amsi/

@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Tests
 {
-
     public partial class AppContextTests
     {
         [Fact]
