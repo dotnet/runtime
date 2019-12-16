@@ -10607,7 +10607,7 @@ const instruction INS_SQRT = INS_vsqrt;
 #ifdef _TARGET_ARM64_
 
 const instruction INS_MULADD     = INS_madd;
-const instruction INS_BREAKPOINT = INS_bkpt;
+const instruction INS_BREAKPOINT = INS_brk;
 
 const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;
