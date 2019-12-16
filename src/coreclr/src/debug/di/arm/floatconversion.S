@@ -9,7 +9,7 @@
 //     output: the double corresponding to the ULONGLONG input value
 
 LEAF_ENTRY FPFillR8, .TEXT
-        .thumb
+        .arm
         vldr  D0, [R0]
         bx   lr
 LEAF_END FPFillR8, .TEXT
