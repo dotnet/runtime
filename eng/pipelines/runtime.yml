@@ -64,13 +64,8 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
 
-#
-# Build CoreCLR
-#
-- template: /eng/pipelines/common/platform-matrix.yml
+- template: /eng/pipelines/common/platform-matrix-multijob.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: checked
     platforms:
     - OSX_x64
     - Linux_x64
@@ -79,124 +74,76 @@ jobs:
     - Windows_NT_x64
     - Windows_NT_arm
     - Windows_NT_arm64
-    jobParameters:
-      testGroup: innerloop
+    jobTemplates:
 
-#
-# Build libraries using live CoreLib from CoreCLR
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Release
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    jobParameters:
-      isOfficialBuild: false
-      liveCoreClrBuildConfig: checked
+    #
+    # Build CoreCLR
+    #
+    - jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      buildConfig: checked
+      jobParameters:
+        testGroup: innerloop
 
-#
-# Test builds using live libraries build
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
-    buildConfig: checked
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    jobParameters:
-      testGroup: innerloop
-      liveLibrariesBuildConfig: Release
+    #
+    # Build libraries using live CoreLib from CoreCLR
+    #
+    - jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      jobParameters:
+        isOfficialBuild: false
+        liveCoreClrBuildConfig: checked
 
-#
-# CoreCLR Test executions
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
-    buildConfig: checked
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: innerloop
-      liveLibrariesBuildConfig: Release
-      condition: false
+    #
+    # Test builds using live libraries build
+    #
+    - jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+      buildConfig: checked
+      jobParameters:
+        testGroup: innerloop
+        liveLibrariesBuildConfig: Release
 
-#
-# Libraries Test Build
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-    buildConfig: Release
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    jobParameters:
-      isOfficialBuild: false
-      testScope: innerloop
-      liveCoreClrBuildConfig: checked
+    #
+    # CoreCLR Test executions
+    #
+    - jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+      buildConfig: checked
+      helixQueueGroup: pr
+      helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+      jobParameters:
+        testGroup: innerloop
+        liveLibrariesBuildConfig: Release
+        condition: false
 
-#
-# Libraries Test Execution
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    buildConfig: Release
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    jobParameters:
-      isOfficialBuild: false
-      isFullMatrix: false
-      framework: netcoreapp
-      testScope: innerloop
-      liveCoreClrBuildConfig: checked
-      dependsOnBuildConfiguration: Release
-      condition: false
+    #
+    # Libraries Test Build
+    #
+    - jobTemplate: /eng/pipelines/libraries/build-test-job.yml
+      buildConfig: Release
+      jobParameters:
+        isOfficialBuild: false
+        testScope: innerloop
+        liveCoreClrBuildConfig: checked
 
-#
-# Installer Build and Test
-#
-- template: /eng/pipelines/installer/installer-matrix.yml
-  parameters:
-    liveCoreClrBuildConfig: checked
-    liveLibrariesBuildConfig: Release
-    skipPlatforms:
-    # Not built by CoreCLR and Libraries yet.
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_musl_arm64
+    #
+    # Libraries Test Execution
+    #
+    - jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+      buildConfig: Release
+      helixQueueGroup: pr
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: false
+        isFullMatrix: false
+        framework: netcoreapp
+        testScope: innerloop
+        liveCoreClrBuildConfig: checked
+        dependsOnBuildConfiguration: Release
+        condition: false
+
+    #
+    # Installer Build and Test
+    #
+    - jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+      jobParameters:
+        liveCoreClrBuildConfig: checked
+        liveLibrariesBuildConfig: Release
