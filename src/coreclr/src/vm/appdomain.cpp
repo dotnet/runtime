@@ -6245,7 +6245,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
     if (SUCCEEDED(hr))
     {
         bool fResolvedAssembly = false;
-        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pManagedAssemblyLoadContextToBindWithin, hr};
+        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, 0 /*binderID*/, pManagedAssemblyLoadContextToBindWithin, hr};
 
         // Allocate an AssemblyName managed object
         _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(MscorlibBinder::GetClass(CLASS__ASSEMBLY_NAME));

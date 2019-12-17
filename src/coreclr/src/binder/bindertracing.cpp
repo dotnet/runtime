@@ -259,14 +259,6 @@ namespace BinderTracing
 
 namespace BinderTracing
 {
-    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, UINT_PTR binderID, const HRESULT& hr)
-        : ResolutionAttemptedOperation(assemblyName, binderID, 0, hr)
-    { }
-
-    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, INT_PTR managedALC, const HRESULT& hr)
-        : ResolutionAttemptedOperation(assemblyName, 0, managedALC, hr)
-    { }
-
     ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, UINT_PTR binderID, INT_PTR managedALC, const HRESULT& hr)
         : m_hr { hr }
         , m_stage { Stage::NotYetStarted }
@@ -274,12 +266,16 @@ namespace BinderTracing
         , m_assemblyNameObject { assemblyName }
         , m_pFoundAssembly { nullptr }
     {
-        _ASSERTE(assemblyName != nullptr);
+        _ASSERTE(binderID != 0 || managedALC != 0);
 
         if (!m_tracingEnabled)
             return;
 
-        m_assemblyNameObject->GetDisplayName(m_assemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+        // When binding the main assembly (by code base instead of name), the assembly name will be null. In this special case, we just
+        // leave the assembly name empty.
+        if (m_assemblyNameObject != nullptr)
+            m_assemblyNameObject->GetDisplayName(m_assemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+
         if (managedALC != 0)
         {
             GetAssemblyLoadContextNameFromManagedALC(managedALC, m_assemblyLoadContextName);
@@ -343,12 +339,18 @@ namespace BinderTracing
                     result = Result::IncompatibleVersion;
 
                     {
-                        const auto &reqVersion = m_assemblyNameObject->GetVersion();
-                        errorMsg.Printf(W("Requested version %d.%d.%d.%d is incompatible with found version"),
-                            reqVersion->GetMajor(),
-                            reqVersion->GetMinor(),
-                            reqVersion->GetBuild(),
-                            reqVersion->GetRevision());
+                        errorMsg.Set(W("Requested version"));
+                        if (m_assemblyNameObject != nullptr)
+                        {
+                            const auto &reqVersion = m_assemblyNameObject->GetVersion();
+                            errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
+                                reqVersion->GetMajor(),
+                                reqVersion->GetMinor(),
+                                reqVersion->GetBuild(),
+                                reqVersion->GetRevision());
+                        }
+
+                        errorMsg.Append(W(" is incompatible with found version"));
                         if (resultAssembly != nullptr)
                         {
                             const auto &foundVersion = resultAssembly->GetAssemblyName()->GetVersion();

@@ -50,6 +50,14 @@ namespace BINDER_SPACE
             HRESULT HResult;
             ReleaseHolder<Assembly> Assembly;
             bool Attempted = false;
+
+            void Set(const AttemptResult *result);
+
+            void Reset()
+            {
+                Assembly = nullptr;
+                Attempted = false;
+            }
         };
 
         // Set attempt result for binding to existing context entry
@@ -64,7 +72,9 @@ namespace BINDER_SPACE
         DWORD m_dwResultFlags;
         AssemblyName *m_pAssemblyName;
         ReleaseHolder<IUnknown> m_pIUnknownAssembly;
-        NewArrayHolder<AttemptResult> m_attempts;
+
+        AttemptResult m_inContextAttempt;
+        AttemptResult m_defaultAssembliesAttempt;
     };
 };
 

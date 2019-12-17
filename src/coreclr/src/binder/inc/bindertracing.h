@@ -94,8 +94,8 @@ namespace BinderTracing
         static void TraceAppDomainAssemblyResolve(AssemblySpec *spec, PEAssembly *resultAssembly, Exception *exception = nullptr);
 
     public:
-        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, INT_PTR managedALC, const HRESULT& hr);
-        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, UINT_PTR binderId, const HRESULT& hr);
+        // One of binder ID and managed ALC is expected to be non-zero. If the managed ALC is set, binder ID is ignored.
+        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, UINT_PTR binderId, INT_PTR managedALC, const HRESULT& hr);
 
         void TraceBindResult(const BINDER_SPACE::BindResult &bindResult);
 
@@ -141,7 +141,6 @@ namespace BinderTracing
 #endif // FEATURE_EVENT_TRACE
 
     private:
-        ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, UINT_PTR binderId, INT_PTR managedALC, const HRESULT& hr);
 
         // This must match the ResolutionAttemptedResult value map in ClrEtwAll.man
         enum class Result : uint16_t

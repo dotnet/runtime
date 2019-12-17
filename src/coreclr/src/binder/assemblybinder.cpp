@@ -305,9 +305,7 @@ namespace BINDER_SPACE
         BindResult bindResult;
 
         // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-        NewHolder<BinderTracing::ResolutionAttemptedOperation> tracer;
-        if (pAssemblyName != nullptr)
-            tracer = new BinderTracing::ResolutionAttemptedOperation(pAssemblyName, pApplicationContext->GetBinderID(), hr);
+        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
 
 #ifndef CROSSGEN_COMPILE
     Retry:
@@ -355,8 +353,7 @@ namespace BINDER_SPACE
 #endif
 
     Exit:
-        if (tracer != nullptr)
-            tracer->TraceBindResult(bindResult);
+        tracer.TraceBindResult(bindResult);
 
         if (bindResult.HaveResult())
         {
@@ -1305,7 +1302,7 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
     *ppAssembly = NULL;
 
     // Tracing happens outside the binder lock to avoid calling into managed code within the lock
-    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), hr};
+    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
 
     // Attempt the actual bind (eventually more than once)
 Retry:
