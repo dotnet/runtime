@@ -24,7 +24,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader AccessControlExposeHeaders = new KnownHeader("Access-Control-Expose-Headers");
         public static readonly KnownHeader AccessControlMaxAge = new KnownHeader("Access-Control-Max-Age");
         public static readonly KnownHeader Age = new KnownHeader("Age", HttpHeaderType.Response | HttpHeaderType.NonTrailing, TimeSpanHeaderParser.Parser, null, StaticTable.Age);
-        public static readonly KnownHeader Allow = new KnownHeader("Allow", HttpHeaderType.Content | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser, null, StaticTable.Allow);
+        public static readonly KnownHeader Allow = new KnownHeader("Allow", HttpHeaderType.Content, GenericHeaderParser.TokenListParser, null, StaticTable.Allow);
         public static readonly KnownHeader AltSvc = new KnownHeader("Alt-Svc");
         public static readonly KnownHeader Authorization = new KnownHeader("Authorization", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.SingleValueAuthenticationParser, null, StaticTable.Authorization);
         public static readonly KnownHeader CacheControl = new KnownHeader("Cache-Control", HttpHeaderType.General | HttpHeaderType.NonTrailing, CacheControlHeaderParser.Parser, null, StaticTable.CacheControl);
