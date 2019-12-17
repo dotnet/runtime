@@ -48,7 +48,7 @@ jobs:
     displayName: Run HttpStress
 
 - job: windows
-  displayName: Docker Nano Server
+  displayName: Docker NanoServer
   timeoutInMinutes: 120
   pool:
     vmImage: 'windows-latest'
