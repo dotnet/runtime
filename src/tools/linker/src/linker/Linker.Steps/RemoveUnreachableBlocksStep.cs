@@ -289,7 +289,7 @@ namespace Mono.Linker.Steps
 					if (ilprocessor == null)
 						ilprocessor = Body.GetILProcessor ();
 
-					ilprocessor.Replace (instrs [i], Instruction.Create (OpCodes.Nop));
+					ilprocessor.Replace (i, Instruction.Create (OpCodes.Nop));
 
 					changed = true;
 					InstructionsReplaced++;
@@ -321,11 +321,11 @@ namespace Mono.Linker.Steps
 							// One of the operands is most likely constant and could just be removed instead of additional pop
 							//
 							if (index > 0 && IsSideEffectFreeLoad (instrs [index - 1])) {
-								ilprocessor.Replace (instrs [index - 1], Instruction.Create (OpCodes.Pop));
-								ilprocessor.Replace (instrs [index], Instruction.Create (OpCodes.Nop));
+								ilprocessor.Replace (index - 1, Instruction.Create (OpCodes.Pop));
+								ilprocessor.Replace (index, Instruction.Create (OpCodes.Nop));
 							} else {
 								var pop = Instruction.Create (OpCodes.Pop);
-								ilprocessor.Replace (instrs [index], pop);
+								ilprocessor.Replace (index, pop);
 								ilprocessor.InsertAfter (pop, Instruction.Create (OpCodes.Pop));
 
 								//
@@ -336,7 +336,7 @@ namespace Mono.Linker.Steps
 							}
 							break;
 						case StackBehaviour.Popi:
-							ilprocessor.Replace (instrs [index], Instruction.Create (OpCodes.Pop));
+							ilprocessor.Replace (index, Instruction.Create (OpCodes.Pop));
 							InstructionsReplaced++;
 							break;
 						default:
