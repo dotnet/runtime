@@ -29,10 +29,10 @@ namespace System.Linq
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         System.Linq.IQueryable System.Linq.IQueryProvider.CreateQuery(System.Linq.Expressions.Expression expression) { throw null; }
-        System.Linq.IQueryable<S> System.Linq.IQueryProvider.CreateQuery<S>(System.Linq.Expressions.Expression expression) { throw null; }
+        System.Linq.IQueryable<TElement> System.Linq.IQueryProvider.CreateQuery<TElement>(System.Linq.Expressions.Expression expression) { throw null; }
         object System.Linq.IQueryProvider.Execute(System.Linq.Expressions.Expression expression) { throw null; }
-        S System.Linq.IQueryProvider.Execute<S>(System.Linq.Expressions.Expression expression) { throw null; }
-        public override string ToString() { throw null; }
+        TElement System.Linq.IQueryProvider.Execute<TElement>(System.Linq.Expressions.Expression expression) { throw null; }
+        public override string? ToString() { throw null; }
     }
     public static partial class Queryable
     {

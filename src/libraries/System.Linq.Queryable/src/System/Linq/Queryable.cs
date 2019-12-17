@@ -22,9 +22,9 @@ namespace System.Linq
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
-            IQueryable queryable = source as IQueryable;
+            IQueryable? queryable = source as IQueryable;
             if (queryable != null) return queryable;
-            Type enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
+            Type? enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
             if (enumType == null)
                 throw Error.ArgumentNotIEnumerableGeneric(nameof(source));
             return EnumerableQuery.Create(enumType.GenericTypeArguments[0], source);
@@ -168,7 +168,7 @@ namespace System.Linq
 
         private static Expression GetSourceExpression<TSource>(IEnumerable<TSource> source)
         {
-            IQueryable<TSource> q = source as IQueryable<TSource>;
+            IQueryable<TSource>? q = source as IQueryable<TSource>;
             return q != null ? q.Expression : Expression.Constant(source, typeof(IEnumerable<TSource>));
         }
 

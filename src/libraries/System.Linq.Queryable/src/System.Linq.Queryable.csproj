@@ -3,6 +3,7 @@
     <AssemblyName>System.Linq.Queryable</AssemblyName>
     <RootNamespace>System.Linq.Queryable</RootNamespace>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Linq\CachedReflection.cs" />

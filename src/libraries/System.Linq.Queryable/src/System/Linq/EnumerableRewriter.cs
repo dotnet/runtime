@@ -15,9 +15,9 @@ namespace System.Linq
     {
         // We must ensure that if a LabelTarget is rewritten that it is always rewritten to the same new target
         // or otherwise expressions using it won't match correctly.
-        private Dictionary<LabelTarget, LabelTarget> _targetCache;
+        private Dictionary<LabelTarget, LabelTarget>? _targetCache;
         // Finding equivalent types can be relatively expensive, and hitting with the same types repeatedly is quite likely.
-        private Dictionary<Type, Type> _equivalentTypeCache;
+        private Dictionary<Type, Type>? _equivalentTypeCache;
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
@@ -28,9 +28,9 @@ namespace System.Linq
             if (obj != m.Object || args != m.Arguments)
             {
                 MethodInfo mInfo = m.Method;
-                Type[] typeArgs = (mInfo.IsGenericMethod) ? mInfo.GetGenericArguments() : null;
+                Type[]? typeArgs = (mInfo.IsGenericMethod) ? mInfo.GetGenericArguments() : null;
 
-                if ((mInfo.IsStatic || mInfo.DeclaringType.IsAssignableFrom(obj.Type))
+                if ((mInfo.IsStatic || mInfo.DeclaringType!.IsAssignableFrom(obj.Type))
                     && ArgsMatch(mInfo, args, typeArgs))
                 {
                     // current method is still valid
@@ -46,7 +46,7 @@ namespace System.Linq
                 else
                 {
                     // rebind to new method
-                    MethodInfo method = FindMethod(mInfo.DeclaringType, mInfo.Name, args, typeArgs);
+                    MethodInfo method = FindMethod(mInfo.DeclaringType!, mInfo.Name, args, typeArgs);
                     args = FixupQuotedArgs(method, args);
                     return Expression.Call(obj, method, args);
                 }
@@ -59,7 +59,7 @@ namespace System.Linq
             ParameterInfo[] pis = mi.GetParameters();
             if (pis.Length > 0)
             {
-                List<Expression> newArgs = null;
+                List<Expression>? newArgs = null;
                 for (int i = 0, n = pis.Length; i < n; i++)
                 {
                     Expression arg = argList[i];
@@ -98,7 +98,7 @@ namespace System.Linq
                 Type strippedType = StripExpression(expr.Type);
                 if (type.IsAssignableFrom(strippedType))
                 {
-                    Type elementType = type.GetElementType();
+                    Type elementType = type.GetElementType()!;
                     NewArrayExpression na = (NewArrayExpression)expr;
                     List<Expression> exprs = new List<Expression>(na.Expressions.Count);
                     for (int i = 0, n = na.Expressions.Count; i < n; i++)
@@ -136,7 +136,7 @@ namespace System.Linq
 
         private Type GetEquivalentType(Type type)
         {
-            Type equiv;
+            Type? equiv;
             if (_equivalentTypeCache == null)
             {
                 // Pre-loading with the non-generic IQueryable and IEnumerable not only covers this case
@@ -170,7 +170,7 @@ namespace System.Linq
                         .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
                         .Select(i => new { Info = i, GenType = i.GetGenericTypeDefinition() })
                         .ToArray();
-                    Type typeArg = singleTypeGenInterfacesWithGetType
+                    Type? typeArg = singleTypeGenInterfacesWithGetType
                         .Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>))
                         .Select(i => i.Info.GenericTypeArguments[0])
                         .Distinct()
@@ -194,7 +194,7 @@ namespace System.Linq
 
         protected override Expression VisitConstant(ConstantExpression c)
         {
-            EnumerableQuery sq = c.Value as EnumerableQuery;
+            EnumerableQuery? sq = c.Value as EnumerableQuery;
             if (sq != null)
             {
                 if (sq.Enumerable != null)
@@ -211,21 +211,21 @@ namespace System.Linq
 
 
 
-        private static ILookup<string, MethodInfo> s_seqMethods;
-        private static MethodInfo FindEnumerableMethod(string name, ReadOnlyCollection<Expression> args, params Type[] typeArgs)
+        private static ILookup<string, MethodInfo>? s_seqMethods;
+        private static MethodInfo FindEnumerableMethod(string name, ReadOnlyCollection<Expression> args, params Type[]? typeArgs)
         {
             if (s_seqMethods == null)
             {
                 s_seqMethods = typeof(Enumerable).GetStaticMethods().ToLookup(m => m.Name);
             }
-            MethodInfo mi = s_seqMethods[name].FirstOrDefault(m => ArgsMatch(m, args, typeArgs));
+            MethodInfo? mi = s_seqMethods[name].FirstOrDefault(m => ArgsMatch(m, args, typeArgs));
             Debug.Assert(mi != null, "All static methods with arguments on Queryable have equivalents on Enumerable.");
             if (typeArgs != null)
                 return mi.MakeGenericMethod(typeArgs);
             return mi;
         }
 
-        private static MethodInfo FindMethod(Type type, string name, ReadOnlyCollection<Expression> args, Type[] typeArgs)
+        private static MethodInfo FindMethod(Type type, string name, ReadOnlyCollection<Expression> args, Type[]? typeArgs)
         {
             using (IEnumerator<MethodInfo> en = type.GetStaticMethods().Where(m => m.Name == name).GetEnumerator())
             {
@@ -241,7 +241,7 @@ namespace System.Linq
             throw Error.NoMethodOnTypeMatchingArguments(name, type);
         }
 
-        private static bool ArgsMatch(MethodInfo m, ReadOnlyCollection<Expression> args, Type[] typeArgs)
+        private static bool ArgsMatch(MethodInfo m, ReadOnlyCollection<Expression> args, Type[]? typeArgs)
         {
             ParameterInfo[] mParams = m.GetParameters();
             if (mParams.Length != args.Count)
@@ -269,7 +269,7 @@ namespace System.Linq
                 if (parameterType == null)
                     return false;
                 if (parameterType.IsByRef)
-                    parameterType = parameterType.GetElementType();
+                    parameterType = parameterType.GetElementType()!;
                 Expression arg = args[i];
                 if (!parameterType.IsAssignableFrom(arg.Type))
                 {
@@ -290,8 +290,8 @@ namespace System.Linq
         private static Type StripExpression(Type type)
         {
             bool isArray = type.IsArray;
-            Type tmp = isArray ? type.GetElementType() : type;
-            Type eType = TypeHelper.FindGenericType(typeof(Expression<>), tmp);
+            Type tmp = isArray ? type.GetElementType()! : type;
+            Type? eType = TypeHelper.FindGenericType(typeof(Expression<>), tmp);
             if (eType != null)
                 tmp = eType.GetGenericArguments()[0];
             if (isArray)
@@ -343,7 +343,7 @@ namespace System.Linq
 
         protected override LabelTarget VisitLabelTarget(LabelTarget node)
         {
-            LabelTarget newTarget;
+            LabelTarget? newTarget;
             if (_targetCache == null)
                 _targetCache = new Dictionary<LabelTarget, LabelTarget>();
             else if (_targetCache.TryGetValue(node, out newTarget))
