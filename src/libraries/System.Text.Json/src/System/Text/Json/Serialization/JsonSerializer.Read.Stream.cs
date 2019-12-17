@@ -57,7 +57,7 @@ namespace System.Text.Json
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static ValueTask<object> DeserializeAsync(
+        public static ValueTask<object?> DeserializeAsync(
             Stream utf8Json,
             Type returnType,
             JsonSerializerOptions? options = null,
@@ -69,7 +69,7 @@ namespace System.Text.Json
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
 
-            return ReadAsync<object>(utf8Json, returnType, options, cancellationToken);
+            return ReadAsync<object?>(utf8Json, returnType, options, cancellationToken);
         }
 
         private static async ValueTask<TValue> ReadAsync<TValue>(

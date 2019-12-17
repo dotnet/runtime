@@ -33,6 +33,6 @@ namespace System.Text.Json.Serialization
         /// <returns>
         /// An instance of a <see cref="JsonConverter{T}"/> where T is compatible with <paramref name="typeToConvert"/>.
         /// </returns>
-        public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
+        public abstract JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options);
     }
 }

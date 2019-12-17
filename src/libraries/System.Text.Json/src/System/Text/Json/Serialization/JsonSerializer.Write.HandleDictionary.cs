@@ -170,11 +170,11 @@ namespace System.Text.Json
 
             if (value == null)
             {
-                writer.WriteNull(key!);
+                writer.WriteNull(key);
             }
             else
             {
-                writer.WritePropertyName(key!);
+                writer.WritePropertyName(key);
                 converter.Write(writer, value, options);
             }
         }
