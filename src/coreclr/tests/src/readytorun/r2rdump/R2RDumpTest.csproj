@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLSCompliant>false</CLSCompliant>
-    <R2RDumpCommand>$([MSBuild]::NormalizePath('$(RuntimePath)', 'netcoreapp2.0', 'R2RDump.dll'))</R2RDumpCommand>
+    <R2RDumpCommand>$([MSBuild]::NormalizePath('$(BinDir)', 'netcoreapp2.0', 'R2RDump.dll'))</R2RDumpCommand>
     <DotnetToolCommand>$(RepoRoot)dotnet</DotnetToolCommand>
     <CLRTestExecutionArguments>$(CoreClrProjectRoot)tests\src\readytorun\r2rdump\files\$(OSPlatformConfig)\</CLRTestExecutionArguments>
     <!-- Test unsupported outside of windows -->

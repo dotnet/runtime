@@ -13,7 +13,7 @@
       DependsOnTargets="GetReferenceAssemblyPaths">
 
     <ItemGroup>
-      <ReferencePath Include="$(RuntimePath)System.Private.CoreLib.dll" />
+      <ReferencePath Include="$(BinDir)System.Private.CoreLib.dll" />
     </ItemGroup>
   </Target>
 

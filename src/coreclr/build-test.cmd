@@ -124,16 +124,6 @@ if %__Priority% GTR 0 (
     set "__PriorityArg=/p:CLRTestPriorityToBuild=%__Priority%"
 )
 
-set TargetsWindowsArg=
-set TargetsWindowsMsbuildArg=
-if "%__TargetsWindows%"=="1" (
-    set TargetsWindowsArg=-TargetsWindows=true
-    set TargetsWindowsMsbuildArg=/p:TargetsWindows=true
-) else if "%__TargetsWindows%"=="0" (
-    set TargetsWindowsArg=-TargetsWindows=false
-    set TargetsWindowsMsbuildArg=/p:TargetsWindows=false
-)
-
 @if defined _echo @echo on
 
 set __CommonMSBuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
@@ -354,7 +344,6 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! -warnAsError:0
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /nodeReuse:false
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__Logging!
-        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !TargetsWindowsMsbuildArg!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__msbuildArgs!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__PriorityArg!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__UnprocessedBuildArgs!
@@ -375,7 +364,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         )
     ) else (
         REM Disable warnAsError - coreclr issue 19922
-        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
+        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !__msbuildArgs!  !__PriorityArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -490,7 +479,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
-call "%__RepoRootDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\src\runtest.proj /nodereuse:false /p:BuildWrappers=true !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__UnprocessedBuildArgs%
+call "%__RepoRootDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\src\runtest.proj /nodereuse:false /p:BuildWrappers=true !__Logging! %__msbuildArgs% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: XUnit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%

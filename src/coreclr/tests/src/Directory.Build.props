@@ -2,9 +2,7 @@
 
   <Import Project="..\Directory.Build.props" />
 
-  <!-- Setup the default paths -->
   <PropertyGroup>
-    <BinDir>$(TestWorkingDir)</BinDir>
     <NativeTestIntermediatesDir>$([MSBuild]::NormalizeDirectory('$(TestWorkingIntermediateDir', 'native'))</NativeTestIntermediatesDir>
   </PropertyGroup>
 

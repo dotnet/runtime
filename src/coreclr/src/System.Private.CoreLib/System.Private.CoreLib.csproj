@@ -318,8 +318,8 @@
     <Compile Include="### Build from the command line once to generate NativeRuntimeEventSource.cs ###"
             Condition="'$(FeaturePerfTracing)' == 'true' and
                        '$(BuildingInsideVisualStudio)' == 'true' and
-                       !exists('$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs')"/>
-    <Compile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+                       !Exists('$(ArtifactsObjDir)coreclr\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs')"/>
+    <Compile Include="$(ArtifactsObjDir)coreclr\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
       <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.cs</Link>
     </Compile>
   </ItemGroup>

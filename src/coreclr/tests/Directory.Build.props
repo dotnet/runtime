@@ -13,9 +13,7 @@
     <CoreClrTestDir>$(MSBuildThisFileDirectory)</CoreClrTestDir>
     <TestSourceDir>$(CoreClrTestDir)src\</TestSourceDir>
 
-    <!-- TODO: Clean these two properties up. -->
     <TargetingPackPath>$(ArtifactsBinDir)TargetingPack\</TargetingPackPath>
-    <BinDir>$(RuntimePath)</BinDir>
 
     <TestWorkingDir>$([MSBuild]::NormalizeDirectory('$(BaseRootOutputPath)', '$(OSPlatformConfig)', 'tests'))</TestWorkingDir>
     <TestWorkingIntermediateDir>$([MSBuild]::NormalizeDirectory('$(BaseRootIntermediateOutputPath)', '$(OSPlatformConfig)', 'tests'))</TestWorkingIntermediateDir>

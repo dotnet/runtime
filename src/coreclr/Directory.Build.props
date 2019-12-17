@@ -16,6 +16,7 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(BuildArch)</TargetArchitecture>
 
     <BuildType Condition="'$(BuildType)' == ''">$(__BuildType)</BuildType>
+    <BuildType Condition="'$(BuildType)' == ''">$(Configuration)</BuildType>
     <BuildType Condition="'$(BuildType)' == '' or '$(BuildType)' == 'debug'">Debug</BuildType>
     <BuildType Condition="'$(BuildType)' == 'release'">Release</BuildType>
     <BuildType Condition="'$(BuildType)' == 'checked'">Checked</BuildType>
@@ -32,11 +33,14 @@
 
     <!-- Paths need to be defined before the Arcade SDK is imported. -->
   <PropertyGroup>
-    <BaseRootOutputPath>$(ArtifactsBinDir)coreclr\</BaseRootOutputPath>
+    <BinDir>$(ArtifactsBinDir)coreclr\$(OSPlatformConfig)\</BinDir>
+    <SourceDir>$(MSBuildThisFileDirectory)src\</SourceDir>
+    <PackagesBinDir>$(BinDir).nuget\</PackagesBinDir>
+
+    <BaseRootOutputPath>$(BinDir)</BaseRootOutputPath>
     <BaseOutputPath>$(BaseRootOutputPath)$(MSBuildProjectName)\</BaseOutputPath>
-    <BaseRootIntermediateOutputPath>$(ArtifactsObjDir)coreclr\</BaseRootIntermediateOutputPath>
+    <BaseRootIntermediateOutputPath>$(ArtifactsObjDir)coreclr\$(OSPlatformConfig)\</BaseRootIntermediateOutputPath>
     <BaseIntermediateOutputPath>$(BaseRootIntermediateOutputPath)$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-    <RuntimePath>$(BaseRootOutputPath)$(OSPlatformConfig)\</RuntimePath>
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
@@ -83,13 +87,6 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
-
-  <!-- Common properties -->
-  <PropertyGroup>
-    <SourceDir>$(ProjectDir)src\</SourceDir>
-    <BinDir>$(RuntimePath)</BinDir>
-    <PackagesBinDir>$(BinDir).nuget\</PackagesBinDir>
-  </PropertyGroup>
 
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
