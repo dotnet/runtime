@@ -420,7 +420,7 @@ namespace System.Numerics.Tests
             VerifyParseToString(num1, ns, failureNotExpected, Fix(num1.Trim(), ((ns & NumberStyles.AllowHexSpecifier) != 0), failureNotExpected));
         }
 
-        static partial void VerifyParseSpanToString(string num1, NumberStyles ns, bool failureNotExpected, string expected)
+        static void VerifyParseSpanToString(string num1, NumberStyles ns, bool failureNotExpected, string expected)
         {
             if (failureNotExpected)
             {
@@ -477,7 +477,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        static partial void VerifySimpleFormatParseSpan(string num1, NumberFormatInfo nfi, BigInteger expected, bool failureExpected)
+        static void VerifySimpleFormatParseSpan(string num1, NumberFormatInfo nfi, BigInteger expected, bool failureExpected)
         {
             if (!failureExpected)
             {
@@ -514,7 +514,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        static partial void VerifyFormatParseSpan(string num1, NumberStyles ns, NumberFormatInfo nfi, BigInteger expected, bool failureExpected)
+        static void VerifyFormatParseSpan(string num1, NumberStyles ns, NumberFormatInfo nfi, BigInteger expected, bool failureExpected)
         {
             if (!failureExpected)
             {
