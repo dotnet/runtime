@@ -98,12 +98,6 @@
       <Imports>netcoreapp3.0</Imports>
       <CompatibleWith>netstandard2.1</CompatibleWith>
     </TargetGroups>
-    <!-- netcoreapp is an alias for netcoreapp5.0 -->
-    <TargetGroups Include="netcoreapp">
-      <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-      <Imports>$(NetCoreAppCurrent)</Imports>
-      <CompatibleWith>netstandard2.1</CompatibleWith>
-    </TargetGroups>
     <TargetGroups Include="net45">
       <TargetFramework>net45</TargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
@@ -155,13 +149,6 @@
       <TargetFramework>net472</TargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
       <Imports>net471</Imports>
-      <CompatibleWith>netstandard2.0</CompatibleWith>
-    </TargetGroups>
-    <!-- netfx is an alias for net472 -->
-    <TargetGroups Include="netfx">
-      <TargetFramework>net472</TargetFramework>
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
-      <Imports>net472</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="win8">

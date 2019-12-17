@@ -5,8 +5,8 @@
       netstandard1.1;
     </PackageConfigurations>
     <BuildConfigurations>
-      netcoreapp-Windows_NT;
-      netcoreapp-Unix;
+      $(NetCoreAppCurrent)-Windows_NT;
+      $(NetCoreAppCurrent)-Unix;
       $(PackageConfigurations);
     </BuildConfigurations>
   </PropertyGroup>

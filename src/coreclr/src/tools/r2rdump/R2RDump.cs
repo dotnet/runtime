@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -15,7 +16,7 @@ using System.Xml;
 
 namespace R2RDump
 {
-    public class DumpOptions
+    public class DumpOptions : IAssemblyResolver
     {
         public FileInfo[] In { get; set; }
         public FileInfo Out { get; set; }

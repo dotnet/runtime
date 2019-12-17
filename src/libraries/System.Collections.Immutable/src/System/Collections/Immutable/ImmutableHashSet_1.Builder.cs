@@ -57,7 +57,7 @@ namespace System.Collections.Immutable
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableHashSet<T> _immutable;
+            private ImmutableHashSet<T>? _immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.

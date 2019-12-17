@@ -1,9 +1,9 @@
 <Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp;
+      $(NetCoreAppCurrent);
       netstandard2.0;
-      netfx;
+      $(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
   <Import Project="..\Directory.Build.props" />

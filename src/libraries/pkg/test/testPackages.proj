@@ -22,7 +22,6 @@
 
     <!-- CI machines doesn't have net472 targeting pack installed yet and we hit: https://github.com/dotnet/corefx/issues/29906 -->
     <TargetFrameworksToExclude Include="net472" />
-    <TargetFrameworksToExclude Include="netfx" />
   </ItemGroup>
 
   <PropertyGroup>

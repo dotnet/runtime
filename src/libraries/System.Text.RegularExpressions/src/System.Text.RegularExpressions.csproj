@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILED</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILEAPIS</DefineConstants>
+    <DefineConstants>$(DefineConstants);FEATURE_COMPILED</DefineConstants>
+    <DefineConstants>$(DefineConstants);FEATURE_COMPILEAPIS</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -41,6 +41,11 @@
     <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
+    <!-- Files that enable compiled feature -->
+    <Compile Include="System\Text\RegularExpressions\CompiledRegexRunnerFactory.cs" />
+    <Compile Include="System\Text\RegularExpressions\CompiledRegexRunner.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexCompiler.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexLWCGCompiler.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
@@ -53,13 +58,6 @@
     </Compile>
     <Compile Include="System\Text\ValueStringBuilder.Reverse.cs" />
   </ItemGroup>
-  <!-- Files that enable compiled feature -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\Text\RegularExpressions\CompiledRegexRunnerFactory.cs" />
-    <Compile Include="System\Text\RegularExpressions\CompiledRegexRunner.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexCompiler.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexLWCGCompiler.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
@@ -71,9 +69,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-  </ItemGroup>
-  <!-- References required for compiled feature -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <!-- References required for compiled feature -->
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
