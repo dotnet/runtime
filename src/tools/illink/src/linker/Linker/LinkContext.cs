@@ -454,5 +454,10 @@ namespace Mono.Linker {
 		/// Option to remove .interfaceimpl for interface types that are not used
 		/// </summary>
 		UnusedInterfaces = 1 << 4,
+
+		/// <summary>
+		/// Option to do interprocedural constant propagation on return values
+		/// </summary>
+		IPConstantPropagation = 1 << 5
 	}
 }
