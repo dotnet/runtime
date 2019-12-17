@@ -140,11 +140,18 @@ $(_XunitEpilog)
 
   <Target Name="BuildXunitWrapper">
     <!--
-      Restore and Build tasks shouldn't run in the same msbuild invocation as that could cause
-      issues with nuget auto-generated props/targets.
+      Restore and Build tasks shouldn't run in the same msbuild invocation as that could cause issues
+      with nuget auto-generated props/targets. https://github.com/microsoft/msbuild/issues/2811 for more context.
     -->
-    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore" />
-    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Build" />
+    <ItemGroup>
+      <XUnitWrapperProjectFile Include="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" />
+    </ItemGroup>
+    <MSBuild Projects="@(XUnitWrapperProjectFile)"
+             Targets="Restore"
+             Properties="__BuildPhase=Restore" />
+    <MSBuild Projects="@(XUnitWrapperProjectFile)"
+             Targets="Build"
+             Properties="__BuildPhase=Build" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)../testgrouping.proj" />
