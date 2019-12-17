@@ -117,12 +117,3 @@ static void InitializeOpenSSLShim()
 #undef NEW_REQUIRED_FUNCTION
 #undef REQUIRED_FUNCTION
 }
-
-__attribute__((destructor))
-static void ShutdownOpenSSLShim()
-{
-    if (libssl != NULL)
-    {
-        dlclose(libssl);
-    }
-}

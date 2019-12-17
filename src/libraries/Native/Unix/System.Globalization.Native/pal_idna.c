@@ -8,10 +8,10 @@
 #include "pal_icushim.h"
 #include "pal_idna.h"
 
-const uint32_t AllowUnassigned = 0x1;
-const uint32_t UseStd3AsciiRules = 0x2;
+static const uint32_t AllowUnassigned = 0x1;
+static const uint32_t UseStd3AsciiRules = 0x2;
 
-uint32_t GetOptions(uint32_t flags)
+static uint32_t GetOptions(uint32_t flags)
 {
     // Using Nontransitional to Unicode and Check ContextJ to match the current behavior of .NET on Windows
     uint32_t options = UIDNA_NONTRANSITIONAL_TO_UNICODE | UIDNA_CHECK_CONTEXTJ;
@@ -51,7 +51,7 @@ int32_t GlobalizationNative_ToAscii(
     int32_t asciiStrLen = uidna_nameToASCII(pIdna, lpSrc, cwSrcLength, lpDst, cwDstLength, &info, &err);
 
     // To have a consistent behavior with Windows, we mask out the error when having 2 hyphens in the third and fourth place.
-    info.errors &= ~UIDNA_ERROR_HYPHEN_3_4;
+    info.errors &= (uint32_t)~UIDNA_ERROR_HYPHEN_3_4;
 
     uidna_close(pIdna);
 
@@ -70,7 +70,7 @@ Return values:
 >0: the length of the converted string (not including the null terminator).
 */
 int32_t GlobalizationNative_ToUnicode(
-    int32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
+    uint32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
 {
     UErrorCode err = U_ZERO_ERROR;
     UIDNAInfo info = UIDNA_INFO_INITIALIZER;

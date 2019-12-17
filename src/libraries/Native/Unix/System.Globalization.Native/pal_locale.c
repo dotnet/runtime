@@ -96,14 +96,14 @@ void u_charsToUChars_safe(const char* str, UChar* value, int32_t valueLength, UE
         return;
     }
 
-    int len = strlen(str);
-    if (len >= valueLength)
+    size_t len = strlen(str);
+    if (len >= (size_t)valueLength)
     {
         *err = U_BUFFER_OVERFLOW_ERROR;
         return;
     }
 
-    u_charsToUChars(str, value, len + 1);
+    u_charsToUChars(str, value, (int32_t)(len + 1));
 }
 
 int32_t FixupLocaleName(UChar* value, int32_t valueLength)
@@ -160,7 +160,7 @@ int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
         if (pLocaleName[0] == 0) // unexpected empty name
             return -2;
 
-        int32_t localeNameLength = strlen(pLocaleName);
+        int32_t localeNameLength = (int32_t)strlen(pLocaleName);
 
         totalLength += localeNameLength + 1; // add 1 for the name length
 

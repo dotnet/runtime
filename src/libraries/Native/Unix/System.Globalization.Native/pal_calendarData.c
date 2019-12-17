@@ -21,9 +21,9 @@
 
 #define JAPANESE_LOCALE_AND_CALENDAR "ja_JP@calendar=japanese"
 
-const UChar UDAT_MONTH_DAY_UCHAR[] = {'M', 'M', 'M', 'M', 'd', '\0'};
-const UChar UDAT_YEAR_NUM_MONTH_DAY_UCHAR[] = {'y', 'M', 'd', '\0'};
-const UChar UDAT_YEAR_MONTH_UCHAR[] = {'y', 'M', 'M', 'M', 'M', '\0'};
+static const UChar UDAT_MONTH_DAY_UCHAR[] = {'M', 'M', 'M', 'M', 'd', '\0'};
+static const UChar UDAT_YEAR_NUM_MONTH_DAY_UCHAR[] = {'y', 'M', 'd', '\0'};
+static const UChar UDAT_YEAR_MONTH_UCHAR[] = {'y', 'M', 'M', 'M', 'M', '\0'};
 
 /*
 Function:
@@ -224,7 +224,7 @@ static int InvokeCallbackForDatePattern(const char* locale,
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t patternLen = udat_toPattern(pFormat, FALSE, NULL, 0, &ignore) + 1;
 
-    UChar* pattern = calloc(patternLen, sizeof(UChar));
+    UChar* pattern = calloc((size_t)patternLen, sizeof(UChar));
     if (pattern == NULL)
     {
         udat_close(pFormat);
@@ -264,7 +264,7 @@ static int InvokeCallbackForDateTimePattern(const char* locale,
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, NULL, 0, &ignore) + 1;
 
-    UChar* bestPattern = calloc(patternLen, sizeof(UChar));
+    UChar* bestPattern = calloc((size_t)patternLen, sizeof(UChar));
     if (bestPattern == NULL)
     {
         udatpg_close(pGenerator);
@@ -328,13 +328,13 @@ static int32_t EnumSymbols(const char* locale,
         UErrorCode ignore = U_ZERO_ERROR;
         int symbolLen = udat_getSymbols(pFormat, type, i, NULL, 0, &ignore) + 1;
 
-        if (symbolLen <= sizeof(stackSymbolBuf) / sizeof(stackSymbolBuf[0]))
+        if ((size_t)symbolLen <= sizeof(stackSymbolBuf) / sizeof(stackSymbolBuf[0]))
         {
             symbolBuf = stackSymbolBuf;
         }
         else
         {
-            symbolBuf = calloc(symbolLen, sizeof(UChar));
+            symbolBuf = calloc((size_t)symbolLen, sizeof(UChar));
             if (symbolBuf == NULL)
             {
                 err = U_MEMORY_ALLOCATION_ERROR;
@@ -591,12 +591,12 @@ int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
     ucal_set(pCal, UCAL_DATE, 1);
 
     int32_t currentEra;
-    for (int i = 0; U_SUCCESS(err) && i <= 12; i++)
+    for (int month = 0; U_SUCCESS(err) && month <= 12; month++)
     {
         currentEra = ucal_get(pCal, UCAL_ERA, &err);
         if (currentEra == era)
         {
-            for (int i = 0; U_SUCCESS(err) && i < 31; i++)
+            for (int day = 0; U_SUCCESS(err) && day < 31; day++)
             {
                 // subtract 1 day at a time until we get out of the specified Era
                 ucal_add(pCal, UCAL_DATE, -1, &err);
