@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using ILCompiler.Reflection.ReadyToRun;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -189,10 +194,10 @@ namespace R2RDump
                 string instr;
                 int instrSize = _disassembler.GetInstruction(rtf, imageOffset, rtfOffset, out instr);
 
-                if (_r2r.Machine == Machine.Amd64 && ((Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes.ContainsKey(codeOffset))
+                if (_r2r.Machine == Machine.Amd64 && ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes.ContainsKey(codeOffset))
                 {
-                    List<Amd64.UnwindCode> codes = ((Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[codeOffset];
-                    foreach (Amd64.UnwindCode code in codes)
+                    List<ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode> codes = ((ILCompiler.Reflection.ReadyToRun.Amd64.UnwindInfo)rtf.UnwindInfo).UnwindCodes[codeOffset];
+                    foreach (ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode code in codes)
                     {
                         _writer.Write($"{indentString}{code.UnwindOp} {code.OpInfoStr}");
                         if (code.NextFrameOffset != -1)

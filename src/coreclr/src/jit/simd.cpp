@@ -2112,26 +2112,6 @@ bool Compiler::areFieldsContiguous(GenTree* first, GenTree* second)
     return false;
 }
 
-//----------------------------------------------------------------------
-// areLocalFieldsContiguous: Check whether two local field are contiguous
-//
-// Arguments:
-//    first - the first local field
-//    second - the second local field
-//
-// Return Value:
-//    If the first field is located before second field, and they are located contiguously,
-//    then return true. Otherwise, return false.
-//
-bool Compiler::areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second)
-{
-    assert(first->TypeIs(TYP_FLOAT));
-    assert(second->TypeIs(TYP_FLOAT));
-
-    return (first->TypeGet() == second->TypeGet()) &&
-           (first->GetLclOffs() + genTypeSize(first->TypeGet()) == second->GetLclOffs());
-}
-
 //-------------------------------------------------------------------------------
 // Check whether two array element nodes are located contiguously or not.
 // Arguments:
@@ -2196,10 +2176,6 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
     else if (op1->OperGet() == GT_FIELD && op2->OperGet() == GT_FIELD)
     {
         return areFieldsContiguous(op1, op2);
-    }
-    else if (op1->OperIs(GT_LCL_FLD) && op2->OperIs(GT_LCL_FLD))
-    {
-        return areLocalFieldsContiguous(op1->AsLclFld(), op2->AsLclFld());
     }
     return false;
 }

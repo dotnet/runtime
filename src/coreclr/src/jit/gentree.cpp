@@ -18009,7 +18009,7 @@ bool FieldSeqNode::IsConstantIndexFieldSeq()
     return m_fieldHnd == FieldSeqStore::ConstantIndexPseudoField;
 }
 
-bool FieldSeqNode::IsPseudoField() const
+bool FieldSeqNode::IsPseudoField()
 {
     return m_fieldHnd == FieldSeqStore::FirstElemPseudoField || m_fieldHnd == FieldSeqStore::ConstantIndexPseudoField;
 }

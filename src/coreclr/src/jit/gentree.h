@@ -235,23 +235,7 @@ struct FieldSeqNode
     bool IsConstantIndexFieldSeq();
 
     // returns true when this is the the pseudo #FirstElem field sequence or the pseudo #ConstantIndex field sequence
-    bool IsPseudoField() const;
-
-    CORINFO_FIELD_HANDLE GetFieldHandle() const
-    {
-        assert(!IsPseudoField() && (m_fieldHnd != nullptr));
-        return m_fieldHnd;
-    }
-
-    FieldSeqNode* GetTail()
-    {
-        FieldSeqNode* tail = this;
-        while (tail->m_next != nullptr)
-        {
-            tail = tail->m_next;
-        }
-        return tail;
-    }
+    bool IsPseudoField();
 
     // Make sure this provides methods that allow it to be used as a KeyFuncs type in SimplerHash.
     static int GetHashCode(FieldSeqNode fsn)
@@ -3260,13 +3244,6 @@ struct GenTreeField : public GenTree
         gtFieldLookup.addr = nullptr;
 #endif
     }
-
-    // True if this field is a volatile memory operation.
-    bool IsVolatile() const
-    {
-        return (gtFlags & GTF_FLD_VOLATILE) != 0;
-    }
-
 #if DEBUGGABLE_GENTREE
     GenTreeField() : GenTree()
     {
@@ -5061,18 +5038,6 @@ struct GenTreeIndir : public GenTreeOp
     {
     }
 
-    // True if this indirection is a volatile memory operation.
-    bool IsVolatile() const
-    {
-        return (gtFlags & GTF_IND_VOLATILE) != 0;
-    }
-
-    // True if this indirection is an unaligned memory operation.
-    bool IsUnaligned() const
-    {
-        return (gtFlags & GTF_IND_UNALIGNED) != 0;
-    }
-
 #if DEBUGGABLE_GENTREE
 protected:
     friend GenTree;
@@ -5122,6 +5087,18 @@ public:
     {
         assert((m_layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         return (m_layout != nullptr) ? m_layout->GetSize() : 0;
+    }
+
+    // True if this BlkOpNode is a volatile memory operation.
+    bool IsVolatile() const
+    {
+        return (gtFlags & GTF_BLK_VOLATILE) != 0;
+    }
+
+    // True if this BlkOpNode is an unaligned memory operation.
+    bool IsUnaligned() const
+    {
+        return (gtFlags & GTF_BLK_UNALIGNED) != 0;
     }
 
     // Instruction selection: during codegen time, what code sequence we will be using

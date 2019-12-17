@@ -121,6 +121,19 @@ namespace SslStress
                 {
                     await stream.FlushAsync(token);
                 }
+
+                // randomized delay
+                if (random.NextBoolean(probability: 0.05))
+                {
+                    if (random.NextBoolean(probability: 0.7))
+                    {
+                        await Task.Delay(random.Next(60));
+                    }
+                    else
+                    {
+                        Thread.SpinWait(random.Next(1000));
+                    }
+                }
             }
         }
 

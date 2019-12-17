@@ -166,7 +166,7 @@ namespace System.Collections.Immutable
         /// to the last element, if found; otherwise, -1.
         /// </returns>
         [Pure]
-        public static int IndexOf<T>(this IImmutableList<T> list, T item, IEqualityComparer<T> equalityComparer)
+        public static int IndexOf<T>(this IImmutableList<T> list, T item, IEqualityComparer<T>? equalityComparer)
         {
             Requires.NotNull(list, nameof(list));
             return list.IndexOf(item, 0, list.Count, equalityComparer);
@@ -269,7 +269,7 @@ namespace System.Collections.Immutable
         /// <see cref="IImmutableList{T}"/>, if found; otherwise, -1.
         /// </returns>
         [Pure]
-        public static int LastIndexOf<T>(this IImmutableList<T> list, T item, IEqualityComparer<T> equalityComparer)
+        public static int LastIndexOf<T>(this IImmutableList<T> list, T item, IEqualityComparer<T>? equalityComparer)
         {
             Requires.NotNull(list, nameof(list));
 
