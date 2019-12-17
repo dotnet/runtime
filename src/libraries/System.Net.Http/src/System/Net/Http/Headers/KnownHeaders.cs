@@ -11,12 +11,12 @@ namespace System.Net.Http.Headers
     {
         // If you add a new entry here, you need to add it to TryGetKnownHeader below as well.
 
-        public static readonly KnownHeader Accept = new KnownHeader("Accept", HttpHeaderType.Request | HttpHeaderType.NonTrailing, MediaTypeHeaderParser.MultipleValuesParser, null, StaticTable.Accept);
-        public static readonly KnownHeader AcceptCharset = new KnownHeader("Accept-Charset", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueStringWithQualityParser, null, StaticTable.AcceptCharset);
-        public static readonly KnownHeader AcceptEncoding = new KnownHeader("Accept-Encoding", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueStringWithQualityParser, null, StaticTable.AcceptEncoding);
-        public static readonly KnownHeader AcceptLanguage = new KnownHeader("Accept-Language", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueStringWithQualityParser, null, StaticTable.AcceptLanguage);
-        public static readonly KnownHeader AcceptPatch = new KnownHeader("Accept-Patch", HttpHeaderType.Custom | HttpHeaderType.NonTrailing, null, null);
-        public static readonly KnownHeader AcceptRanges = new KnownHeader("Accept-Ranges", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser, null, StaticTable.AcceptRanges);
+        public static readonly KnownHeader Accept = new KnownHeader("Accept", HttpHeaderType.Request, MediaTypeHeaderParser.MultipleValuesParser, null, StaticTable.Accept);
+        public static readonly KnownHeader AcceptCharset = new KnownHeader("Accept-Charset", HttpHeaderType.Request, GenericHeaderParser.MultipleValueStringWithQualityParser, null, StaticTable.AcceptCharset);
+        public static readonly KnownHeader AcceptEncoding = new KnownHeader("Accept-Encoding", HttpHeaderType.Request, GenericHeaderParser.MultipleValueStringWithQualityParser, null, StaticTable.AcceptEncoding);
+        public static readonly KnownHeader AcceptLanguage = new KnownHeader("Accept-Language", HttpHeaderType.Request, GenericHeaderParser.MultipleValueStringWithQualityParser, null, StaticTable.AcceptLanguage);
+        public static readonly KnownHeader AcceptPatch = new KnownHeader("Accept-Patch");
+        public static readonly KnownHeader AcceptRanges = new KnownHeader("Accept-Ranges", HttpHeaderType.Response, GenericHeaderParser.TokenListParser, null, StaticTable.AcceptRanges);
         public static readonly KnownHeader AccessControlAllowCredentials = new KnownHeader("Access-Control-Allow-Credentials");
         public static readonly KnownHeader AccessControlAllowHeaders = new KnownHeader("Access-Control-Allow-Headers");
         public static readonly KnownHeader AccessControlAllowMethods = new KnownHeader("Access-Control-Allow-Methods");
@@ -44,7 +44,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader ETag = new KnownHeader("ETag", HttpHeaderType.Response, GenericHeaderParser.SingleValueEntityTagParser, null, StaticTable.ETag);
         public static readonly KnownHeader Expect = new KnownHeader("Expect", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueNameValueWithParametersParser, new string[] { "100-continue" }, StaticTable.Expect);
         public static readonly KnownHeader Expires = new KnownHeader("Expires", HttpHeaderType.Content | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, StaticTable.Expires);
-        public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MailAddressParser, null, StaticTable.From);
+        public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request, GenericHeaderParser.MailAddressParser, null, StaticTable.From);
         public static readonly KnownHeader Host = new KnownHeader("Host", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.HostParser, null, StaticTable.Host);
         public static readonly KnownHeader IfMatch = new KnownHeader("If-Match", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueEntityTagParser, null, StaticTable.IfMatch);
         public static readonly KnownHeader IfModifiedSince = new KnownHeader("If-Modified-Since", HttpHeaderType.Request | HttpHeaderType.NonTrailing, DateHeaderParser.Parser, null, StaticTable.IfModifiedSince);
