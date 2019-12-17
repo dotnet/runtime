@@ -8,7 +8,6 @@ WORKDIR /repo
 COPY . .
 
 ARG CONFIGURATION=Release
-ARG BUILD_SCRIPT_NAME=libraries
 RUN ./src/coreclr/build.sh -release -skiptests -clang9 && \
     ./libraries.sh -c $CONFIGURATION /p:CoreCLRConfiguration=Release
 
