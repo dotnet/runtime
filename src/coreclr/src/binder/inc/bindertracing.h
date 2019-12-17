@@ -90,16 +90,6 @@ namespace BinderTracing
             NotYetStarted = 0xffff, // Used as flag to not fire event; not present in value map
         };
 
-        struct AttemptInfo
-        {
-            BINDER_SPACE::AssemblyName *AssemblyNameObject;
-            UINT_PTR BinderID;
-            INT_PTR ManagedAssemblyLoadContext;
-
-            PathString AssemblyName;
-            SString AssemblyLoadContext;
-        };
-
     public: // static
         static void TraceAppDomainAssemblyResolve(AssemblySpec *spec, PEAssembly *resultAssembly, Exception *exception = nullptr);
 
@@ -119,6 +109,9 @@ namespace BinderTracing
             assert(m_stage != stage);
             assert(stage != Stage::NotYetStarted);
 
+            if (!m_tracingEnabled)
+                return;
+
             // Going to a different stage should only happen if the current
             // stage failed (or if the binding process wasn't yet started).
             // Firing the event at this point not only helps timing each binding
@@ -131,16 +124,19 @@ namespace BinderTracing
 
         void SetException(Exception *ex)
         {
+            if (!m_tracingEnabled)
+                return;
+
             ex->GetMessage(m_exceptionMessage);
         }
 
 #ifdef FEATURE_EVENT_TRACE
         ~ResolutionAttemptedOperation()
         {
-            if (BinderTracing::IsEnabled())
-            {
-                TraceStage(m_stage, m_hr, m_pFoundAssembly);
-            }
+            if (!m_tracingEnabled)
+                return;
+
+            TraceStage(m_stage, m_hr, m_pFoundAssembly);
         }
 #endif // FEATURE_EVENT_TRACE
 
@@ -166,8 +162,11 @@ namespace BinderTracing
 
         Stage m_stage;
 
-        AttemptInfo m_attemptInfo;
-        bool m_populatedAttemptInfo;
+        bool m_tracingEnabled;
+
+        BINDER_SPACE::AssemblyName *m_assemblyNameObject;
+        PathString m_assemblyName;
+        SString m_assemblyLoadContextName;
 
         SString m_exceptionMessage;
         BINDER_SPACE::Assembly *m_pFoundAssembly;

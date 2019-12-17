@@ -188,21 +188,6 @@ namespace
     }
 
     const WCHAR *s_assemblyNotFoundMessage = W("Could not locate assembly");
-    void PopulateAttemptInfo(/*inout*/ BinderTracing::ResolutionAttemptedOperation::AttemptInfo &info)
-    {
-        _ASSERTE(info.AssemblyNameObject != nullptr);
-
-        info.AssemblyNameObject->GetDisplayName(info.AssemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
-
-        if (info.ManagedAssemblyLoadContext != 0)
-        {
-            GetAssemblyLoadContextNameFromManagedALC(info.ManagedAssemblyLoadContext, info.AssemblyLoadContext);
-        }
-        else
-        {
-            GetAssemblyLoadContextNameFromBinderID(info.BinderID, GetAppDomain(), info.AssemblyLoadContext);
-        }
-    }
 }
 
 bool BinderTracing::IsEnabled()
@@ -285,23 +270,31 @@ namespace BinderTracing
     ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, UINT_PTR binderID, INT_PTR managedALC, const HRESULT& hr)
         : m_hr { hr }
         , m_stage { Stage::NotYetStarted }
-        , m_attemptInfo { assemblyName, binderID, managedALC }
+        , m_tracingEnabled { BinderTracing::IsEnabled() }
+        , m_assemblyNameObject { assemblyName }
         , m_pFoundAssembly { nullptr }
     {
         _ASSERTE(assemblyName != nullptr);
 
-        if (!BinderTracing::IsEnabled())
+        if (!m_tracingEnabled)
             return;
 
-        PopulateAttemptInfo(m_attemptInfo);
-        m_populatedAttemptInfo = true;
+        m_assemblyNameObject->GetDisplayName(m_assemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+        if (managedALC != 0)
+        {
+            GetAssemblyLoadContextNameFromManagedALC(managedALC, m_assemblyLoadContextName);
+        }
+        else
+        {
+            GetAssemblyLoadContextNameFromBinderID(binderID, GetAppDomain(), m_assemblyLoadContextName);
+        }
     }
 
     // This function simply traces out the two stages represented by the bind result.
     // It does not change the stage/assembly of the ResolutionAttemptedOperation class instance.
     void ResolutionAttemptedOperation::TraceBindResult(const BindResult &bindResult)
     {
-        if (!BinderTracing::IsEnabled())
+        if (!m_tracingEnabled)
             return;
 
         const BindResult::AttemptResult *attempt = bindResult.GetAttempt(true /*foundInContext*/);
@@ -315,11 +308,8 @@ namespace BinderTracing
 
     void ResolutionAttemptedOperation::TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly)
     {
-        if (!BinderTracing::IsEnabled() || stage == Stage::NotYetStarted)
+        if (!m_tracingEnabled || stage == Stage::NotYetStarted)
             return;
-
-        if (!m_populatedAttemptInfo)
-            PopulateAttemptInfo(m_attemptInfo);
 
         PathString resultAssemblyName;
         StackSString resultAssemblyPath;
@@ -353,7 +343,7 @@ namespace BinderTracing
                     result = Result::IncompatibleVersion;
 
                     {
-                        const auto &reqVersion = m_attemptInfo.AssemblyNameObject->GetVersion();
+                        const auto &reqVersion = m_assemblyNameObject->GetVersion();
                         errorMsg.Printf(W("Requested version %d.%d.%d.%d is incompatible with found version"),
                             reqVersion->GetMajor(),
                             reqVersion->GetMinor(),
@@ -373,7 +363,7 @@ namespace BinderTracing
 
                 case FUSION_E_REF_DEF_MISMATCH:
                     result = Result::MismatchedAssemblyName;
-                    errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_attemptInfo.AssemblyName.GetUnicode());
+                    errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_assemblyName.GetUnicode());
                     if (resultAssembly != nullptr)
                         errorMsg.AppendPrintf(W(" '%s'"), resultAssemblyName.GetUnicode());
 
@@ -396,9 +386,9 @@ namespace BinderTracing
 
         FireEtwResolutionAttempted(
             GetClrInstanceId(),
-            m_attemptInfo.AssemblyName,
+            m_assemblyName,
             static_cast<uint16_t>(stage),
-            m_attemptInfo.AssemblyLoadContext,
+            m_assemblyLoadContextName,
             static_cast<uint16_t>(result),
             resultAssemblyName,
             resultAssemblyPath,
@@ -408,6 +398,9 @@ namespace BinderTracing
     // static
     void ResolutionAttemptedOperation::TraceAppDomainAssemblyResolve(AssemblySpec *spec, PEAssembly *resultAssembly, Exception *exception)
     {
+        if (!BinderTracing::IsEnabled())
+            return;
+
         Result result;
         StackSString errorMessage;
         StackSString resultAssemblyName;
