@@ -93,7 +93,7 @@ namespace R2RDump
     public abstract class Dumper
     {
         protected readonly R2RReader _r2r;
-        protected readonly TextWriter _writer;
+        protected TextWriter _writer;
         protected readonly Disassembler _disassembler;
         protected readonly DumpOptions _options;
 

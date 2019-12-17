@@ -120,7 +120,11 @@ namespace R2RDump
             SkipLine();
             foreach (R2RMethod method in NormalizedMethods())
             {
+                TextWriter temp = _writer;
+                _writer = new StringWriter();
                 DumpMethod(method);
+                temp.Write(_writer.ToString());
+                _writer = temp;
             }
         }
 
