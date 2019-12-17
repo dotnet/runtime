@@ -1093,16 +1093,8 @@ namespace System.Net.Mail
                     Abort();
                 }
 
-                if (_transport != null)
-                {
-                    _transport.ReleaseConnection();
-                }
-
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                }
-
+                _transport?.ReleaseConnection();
+                _timer?.Dispose();
                 _disposed = true;
             }
         }

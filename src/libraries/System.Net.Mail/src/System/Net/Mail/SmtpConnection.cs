@@ -140,11 +140,7 @@ namespace System.Net.Mail
                         finally
                         {
                             //free cbt buffer
-                            if (_channelBindingToken != null)
-                            {
-                                _channelBindingToken.Close();
-                            }
-
+                            _channelBindingToken?.Close();
                             _networkStream?.Close();
                             _tcpClient.Dispose();
                         }
