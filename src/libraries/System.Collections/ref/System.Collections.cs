@@ -326,8 +326,8 @@ namespace System.Collections.Generic
         public void CopyTo(int index, T[] array, int arrayIndex, int count) { }
         public void CopyTo(T[] array) { }
         public void CopyTo(T[] array, int arrayIndex) { }
-        public void CopyTo(int sourceIndex, int count, Span<T> span) { }
-        public void CopyTo(Span<T> span) { }
+        public void CopyTo(int sourceIndex, int count, Span<T> destination) { }
+        public void CopyTo(Span<T> destination) { }
         public bool Exists(System.Predicate<T> match) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public T Find(System.Predicate<T> match) { throw null; }

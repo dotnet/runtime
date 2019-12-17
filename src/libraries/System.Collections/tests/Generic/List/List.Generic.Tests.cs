@@ -198,7 +198,7 @@ namespace System.Collections.Tests
                 nonDefaultValue = CreateT(1);
             }
             while (EqualityComparer<T>.Default.Equals(nonDefaultValue, default));
-            
+
             span[count] = nonDefaultValue;
 
             list.CopyTo(span);
