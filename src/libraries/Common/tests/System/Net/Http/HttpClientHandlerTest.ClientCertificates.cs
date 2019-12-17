@@ -17,16 +17,38 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     public abstract class HttpClientHandler_ClientCertificates_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
+
+        private ClientCertificateOption GetClientCertificateOption(HttpClientHandler handler)
+        {            
+#if WINHTTPHANDLER_TEST
+            return handler.ClientCertificateOption;
+#else
+            return handler.ClientCertificateOptions;
+#endif
+        }
+
+        private ClientCertificateOption SetClientCertificateOption(HttpClientHandler handler, ClientCertificateOption options)
+        {            
+#if WINHTTPHANDLER_TEST
+            return handler.ClientCertificateOption = options;
+#else
+            return handler.ClientCertificateOptions = options;
+#endif
+        }
 
         [Fact]
         public void ClientCertificateOptions_Default()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOptions);
+                Assert.Equal(ClientCertificateOption.Manual, GetClientCertificateOption(handler));
             }
         }
 
@@ -37,7 +59,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.ClientCertificateOptions = option);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetClientCertificateOption(handler, option));
             }
         }
 
@@ -48,8 +70,8 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                handler.ClientCertificateOptions = option;
-                Assert.Equal(option, handler.ClientCertificateOptions);
+                SetClientCertificateOption(handler, option);
+                Assert.Equal(option, GetClientCertificateOption(handler));
             }
         }
 
@@ -58,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                handler.ClientCertificateOptions = ClientCertificateOption.Automatic;
+                SetClientCertificateOption(handler, ClientCertificateOption.Automatic);
                 Assert.Throws<InvalidOperationException>(() => handler.ClientCertificates);
             }
         }
@@ -66,7 +88,11 @@ namespace System.Net.Http.Functional.Tests
         private HttpClient CreateHttpClientWithCert(X509Certificate2 cert)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
+#if WINHTTPHANDLER_TEST
+            handler.ServerCertificateValidationCallback = TestHelper.AllowAllCertificates;
+#else
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+#endif
             Assert.NotNull(cert);
             handler.ClientCertificates.Add(cert);
             Assert.True(handler.ClientCertificates.Contains(cert));
@@ -188,8 +214,12 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
+#if WINHTTPHANDLER_TEST
+                handler.ServerCertificateValidationCallback = TestHelper.AllowAllCertificates;
+#else
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                handler.ClientCertificateOptions = mode;
+#endif
+                SetClientCertificateOption(handler, mode);
 
                 await LoopbackServer.CreateServerAsync(async server =>
                 {

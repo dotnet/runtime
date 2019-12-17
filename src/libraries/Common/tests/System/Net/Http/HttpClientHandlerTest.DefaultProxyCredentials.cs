@@ -16,6 +16,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     public abstract class HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
@@ -61,6 +65,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, explicitProxyCreds);
                     handler.DefaultProxyCredentials = defaultSystemProxyCreds;
+#if WINHTTPHANDLER_TEST
+                    handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseCustomProxy;
+#endif
                     using (HttpResponseMessage response = await client.GetAsync("http://notatrealserver.com/")) // URL does not matter
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -76,6 +83,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+#if !WINHTTPHANDLER_TEST
         [ActiveIssue(42323)]
         [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
@@ -122,6 +130,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, options);
         }
+#endif
 
         // The purpose of this test is mainly to validate the .NET Framework OOB System.Net.Http implementation
         // since it has an underlying dependency to WebRequest. While .NET Core implementations of System.Net.Http

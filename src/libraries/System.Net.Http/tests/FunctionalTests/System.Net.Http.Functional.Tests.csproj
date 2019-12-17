@@ -109,12 +109,18 @@
     <Compile Include="HttpClientHandlerTest.Authentication.cs" />
     <Compile Include="HttpClientHandlerTest.AutoRedirect.cs" />
     <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
-    <Compile Include="HttpClientHandlerTest.ClientCertificates.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ClientCertificates.cs">
+      <Link>Common\System\Net\HttpClientHandlerTest.ClientCertificates.cs</Link>
+    </Compile>
     <Compile Include="HttpClientHandlerTest.Cookies.cs" />
-    <Compile Include="HttpClientHandlerTest.DefaultProxyCredentials.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs">
+      <Link>Common\System\Net\HttpClientHandlerTest.DefaultProxyCredentials.cs</Link>
+    </Compile>
     <Compile Include="HttpClientHandlerTest.Finalization.cs" />
     <Compile Include="HttpClientHandlerTest.Headers.cs" />
-    <Compile Include="HttpClientHandlerTest.MaxConnectionsPerServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.MaxConnectionsPerServer.cs">
+      <Link>Common\System\Net\HttpClientHandlerTest.MaxConnectionsPerServer.cs</Link>
+    </Compile>
     <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
     <Compile Include="HttpClientHandlerTest.Proxy.cs" />
     <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
