@@ -45,8 +45,6 @@ namespace System.Text.Json.Tests
             Assert.False(jsonNull1.Equals(new JsonString("null")));
             Assert.False(jsonNull1.Equals(new Exception()));
 
-            // Null comparisons behave this way because of implicit conversion from null to JsonNull:
-
             Assert.False(jsonNull1.Equals(null));
             Assert.False(jsonNull1 == null);
             Assert.True(jsonNull1 != null);

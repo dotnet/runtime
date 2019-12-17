@@ -42,7 +42,10 @@ namespace System.Text.Json
         ///   Compares other JSON null to the value of this instance.
         /// </summary>
         /// <param name="other">The JSON null to compare against.</param>
-        /// <returns><see langword="true"/></returns>
+        /// <returns>
+        ///    <see langword="true"/> if the <paramref name="other"/> is <see cref="JsonNull"/>,
+        ///    <see langword="false"/> otherwise.
+        /// </returns>
         public bool Equals(JsonNull other) => !(other is null);
 
         /// <summary>
@@ -50,7 +53,10 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="left">The JSON null to compare.</param>
         /// <param name="right">The JSON null to compare.</param>
-        /// <returns><see langword="true"/></returns>
+        /// <returns>
+        ///    <see langword="true"/> if both instances matches,
+        ///    <see langword="false"/> otherwise.
+        /// </returns>
         public static bool operator ==(JsonNull left, JsonNull right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)
@@ -69,7 +75,10 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="left">The JSON null to compare.</param>
         /// <param name="right">The JSON null to compare.</param>
-        /// <returns><see langword="false"/></returns>
+        /// <returns>
+        ///    <see langword="true"/> if both instances do not match,
+        ///    <see langword="false"/> otherwise.
+        /// </returns>
         public static bool operator !=(JsonNull left, JsonNull right) => !(left == right);
 
         /// <summary>
