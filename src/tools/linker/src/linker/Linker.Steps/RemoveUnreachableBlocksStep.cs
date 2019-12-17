@@ -80,6 +80,9 @@ namespace Mono.Linker.Steps
 					if (constExprMethods.ContainsKey (method))
 						continue;
 
+					if (!Context.IsOptimizationEnabled (CodeOptimizations.IPConstantPropagation))
+						continue;
+
 					var analyzer = new ConstantExpressionMethodAnalyzer (method);
 					if (analyzer.Analyze ()) {
 						constExprMethods [method] = analyzer.Result;
