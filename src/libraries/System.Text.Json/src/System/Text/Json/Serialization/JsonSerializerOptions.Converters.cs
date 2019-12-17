@@ -163,10 +163,10 @@ namespace System.Text.Json
 
             if (converter != null)
             {
-                Type? converterTypeToConvert = converter.TypeToConvert;
+                Type converterTypeToConvert = converter.TypeToConvert!;
 
-                if (converterTypeToConvert == null || (!converterTypeToConvert.IsAssignableFrom(typeToConvert) &&
-                    !typeToConvert.IsAssignableFrom(converterTypeToConvert)))
+                if (!converterTypeToConvert.IsAssignableFrom(typeToConvert) &&
+                    !typeToConvert.IsAssignableFrom(converterTypeToConvert))
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
                 }
