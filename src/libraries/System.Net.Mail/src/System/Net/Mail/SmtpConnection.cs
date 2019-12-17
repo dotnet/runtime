@@ -132,17 +132,22 @@ namespace System.Net.Mail
                 {
                     if (!_isClosed && _tcpClient != null)
                     {
-                        // Gracefully close the transmission channel
-                        QuitCommand.Send(this);
-
-                        //free cbt buffer
-                        if (_channelBindingToken != null)
+                        try
                         {
-                            _channelBindingToken.Close();
+                            // Gracefully close the transmission channel
+                            QuitCommand.Send(this);
                         }
+                        finally
+                        {
+                            //free cbt buffer
+                            if (_channelBindingToken != null)
+                            {
+                                _channelBindingToken.Close();
+                            }
 
-                        _networkStream?.Close();
-                        _tcpClient.Dispose();
+                            _networkStream?.Close();
+                            _tcpClient.Dispose();
+                        }
                     }
 
                     _isClosed = true;
