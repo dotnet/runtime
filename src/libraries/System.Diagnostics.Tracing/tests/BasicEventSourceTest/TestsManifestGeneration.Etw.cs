@@ -25,6 +25,12 @@ namespace BasicEventSourceTests
 {
     public partial class TestsManifestGeneration
     {
+        // Specifies whether the process is elevated or not.
+        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(AdminHelpers.IsProcessElevated);
+        private static bool IsProcessElevated => s_isElevated.Value;
+        private static bool IsProcessElevatedAndNotWindowsNanoServer =>
+            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer;
+
         /// ETW only works with elevated process
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
         public void Test_EventSource_EtwManifestGeneration()
