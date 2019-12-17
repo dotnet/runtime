@@ -30,6 +30,7 @@
   <PropertyGroup>
     <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v5.0</NetCoreAppCurrentTargetFrameworkMoniker>
     <NetCoreAppCurrent>netcoreapp5.0</NetCoreAppCurrent>
+    <NetFrameworkCurrent>net472</NetFrameworkCurrent>
   </PropertyGroup>
 
   <!--
@@ -60,6 +61,7 @@
     <RepositoryUrl>git://github.com/dotnet/runtime</RepositoryUrl>
     <ProjectUrl>https://github.com/dotnet/runtime</ProjectUrl>
     <LicenseUrl>https://github.com/dotnet/runtime/blob/master/LICENSE.TXT</LicenseUrl>
+    <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
 
     <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
@@ -89,6 +91,8 @@
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
     <!-- Used for launchSettings.json and runtime config files. -->
     <AppDesignerFolder>Properties</AppDesignerFolder>
+    <!-- Determine what architecture we are building on. -->
+    <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />

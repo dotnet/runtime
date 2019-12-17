@@ -1,10 +1,6 @@
 <Project>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
 
-  <PropertyGroup>
-    <RuntimeIdGraphDefinitionFile>$(NuGetPackageRoot)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
-  </PropertyGroup>
-
   <!--
     Get branding names for the installers.
   -->

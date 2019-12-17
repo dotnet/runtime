@@ -93,7 +93,7 @@ jobs:
 
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
-    
+
     - ${{ parameters.variables }}
 
     # TODO: update these numbers as they were determined long ago

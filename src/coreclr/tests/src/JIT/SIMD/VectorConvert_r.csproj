@@ -13,4 +13,7 @@
     <Compile Include="VectorConvert.cs" />
     <Compile Include="VectorUtil.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <TraitTags Include="BitSpecific" />
+  </ItemGroup>
 </Project>

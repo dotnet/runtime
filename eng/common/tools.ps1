@@ -232,7 +232,10 @@ function InstallDotNet([string] $dotnetRoot,
       }
       catch {
         Write-PipelineTelemetryError -Category 'InitializeToolset' -Message "Failed to install dotnet runtime '$runtime' from custom location '$runtimeSourceFeed'."
+        ExitWithExitCode 1
       }
+    } else {
+      ExitWithExitCode 1
     }
   }
 }
@@ -290,8 +293,11 @@ function InitializeVisualStudioMSBuild([bool]$install, [object]$vsRequirements =
       $vsMajorVersion = $vsMinVersion.Major
       $xcopyMSBuildVersion = "$vsMajorVersion.$($vsMinVersion.Minor).0-alpha"
     }
-
-    $vsInstallDir = InitializeXCopyMSBuild $xcopyMSBuildVersion $install
+    
+    $vsInstallDir = $null
+    if ($xcopyMSBuildVersion.Trim() -ine "none") {
+        $vsInstallDir = InitializeXCopyMSBuild $xcopyMSBuildVersion $install
+    }
     if ($vsInstallDir -eq $null) {
       throw 'Unable to find Visual Studio that has required version and components installed'
     }

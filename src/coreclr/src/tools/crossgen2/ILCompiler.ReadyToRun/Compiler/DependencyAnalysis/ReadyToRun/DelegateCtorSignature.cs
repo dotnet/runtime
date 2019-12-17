@@ -29,6 +29,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _targetMethod = targetMethod;
             _methodToken = methodToken;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableType(delegateType);
+            signatureContext.Resolver.CompilerContext.EnsureLoadableMethod(targetMethod.Method);
         }
 
         public override int ClassCode => 99885741;
