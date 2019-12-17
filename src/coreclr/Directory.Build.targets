@@ -12,4 +12,7 @@
     <InformationalVersion>$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(VersionSuffix)' != ''">$(InformationalVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
+
+    <Import Project="$(MSBuildThisFileDirectory)clr.featuredefines.props" />
+
 </Project>

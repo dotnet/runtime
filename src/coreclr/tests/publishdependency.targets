@@ -6,7 +6,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(__BuildArch)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(BuildArch)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>

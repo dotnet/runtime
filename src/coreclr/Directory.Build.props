@@ -8,29 +8,26 @@
 
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
-    <BuildArch>$(__BuildArch)</BuildArch>
-    <BuildArch Condition="'$(__BuildArch)'==''">x64</BuildArch>
-    <BuildArch Condition="'$(__BuildArch)' == 'amd64'">x64</BuildArch>
-
-    <BuildType>$(__BuildType)</BuildType>
-    <BuildType Condition="'$(__BuildType)'==''">Debug</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'debug'">Debug</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'release'">Release</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'checked'">Checked</BuildType>
-
-    <BuildOS>$(__BuildOS)</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</BuildOS>
-
-    <!-- TODO: converge on one property for BuildOS and __BuildOS (and similar), and remove these extra lines. -->
-    <__BuildOS>$(BuildOS)</__BuildOS>
-    <__BuildArch>$(BuildArch)</__BuildArch>
-
-    <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
+    <BuildArch Condition="'$(BuildArch)' == ''">$(__BuildArch)</BuildArch>
+    <BuildArch Condition="'$(BuildArch)' == ''">x64</BuildArch>
+    <BuildArch Condition="'$(BuildArch)' == 'amd64'">x64</BuildArch>
+    <!-- TODO: converge on one property and remove these extra lines. -->
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(BuildArch)</TargetArchitecture>
 
-    <OSPlatformConfig>$(BuildOS).$(BuildArch).$(BuildType)</OSPlatformConfig>
+    <BuildType Condition="'$(BuildType)' == ''">$(__BuildType)</BuildType>
+    <BuildType Condition="'$(BuildType)' == '' or '$(BuildType)' == 'debug'">Debug</BuildType>
+    <BuildType Condition="'$(BuildType)' == 'release'">Release</BuildType>
+    <BuildType Condition="'$(BuildType)' == 'checked'">Checked</BuildType>
+    <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
+
+    <OSGroup Condition="'$(OSGroup)' == ''">$(__BuildOS)</OSGroup>
+    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</OSGroup>
+    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</OSGroup>
+    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</OSGroup>
+    <OSGroup Condition="'$(OSGroup)' == ''">AnyOS</OSGroup>
+
+    <OSPlatformConfig>$(OSGroup).$(BuildArch).$(BuildType)</OSPlatformConfig>
   </PropertyGroup>
 
     <!-- Paths need to be defined before the Arcade SDK is imported. -->
@@ -43,6 +40,49 @@
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  
+  <!-- Setup properties per BuildOS -->
+  <Choose>
+    <When Condition="'$(OSGroup)' == 'AnyOS'">
+      <PropertyGroup>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)' == 'Windows_NT'">
+      <PropertyGroup>
+        <!-- Since cross compilation of test builds on Windows is possible, the
+             TargetsWindows property may already be set. Only set the property if
+             it is not already defined -->
+        <TargetsWindows Condition="'$(TargetsWindows)' == ''">true</TargetsWindows>
+        <TestNugetRuntimeId>win-$(BuildArch)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)' == 'Linux'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsLinux>true</TargetsLinux>
+        <TestNugetRuntimeId>ubuntu.14.04-$(BuildArch)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)' == 'OSX'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsOSX>true</TargetsOSX>
+        <TestNugetRuntimeId>osx.10.12-$(BuildArch)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)' == 'FreeBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsFreeBSD>true</TargetsFreeBSD>
+        <TestNugetRuntimeId>ubuntu.14.04-$(BuildArch)</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown OSGroup [$(OSGroup)] specificed in your project.</ConfigurationErrorMsg>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
 
   <!-- Common properties -->
   <PropertyGroup>
@@ -53,16 +93,11 @@
 
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(BuildOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(BuildOS)' == 'Linux'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(BuildOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
-
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
-
     <!-- We are only tracking Linux Distributions for Nuget RID mapping -->
     <DistroRid Condition="'$(TargetsLinux)' == 'true'">$(__DistroRid)</DistroRid>
+
+    <TargetRid>$(__RuntimeId)</TargetRid>
+    <TargetRid Condition="'$(TargetRid)' == ''">$(TestNugetRuntimeId)</TargetRid>
 
     <!-- Folder for cross target components -->
     <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm64'">x64</CrossTargetComponentFolder>
@@ -70,11 +105,22 @@
     <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
   </PropertyGroup>
 
+  <!--
+    The IL SDK adds a packagereference to the native ilasm package,
+    but does not detect musl or rhel, so we set the RID
+    ourselves. If we passed in a proper host RID from the build
+    scripts, we could also use that instead of relying on the IL
+    SDK RID detection.
+  -->
+  <PropertyGroup>
+    <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'linux-musl-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
+    <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'rhel.6-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- Set the kind of PDB to Portable -->
     <DebugType>Portable</DebugType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)' != 'true'">false</SignAssembly>
     <CL_MPCount>$(NumberOfCores)</CL_MPCount>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>

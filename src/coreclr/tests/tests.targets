@@ -5,13 +5,13 @@
   </ItemGroup>
 
   <PropertyGroup>
-      <TestAssemblyDir Condition="'$(TestAssemblyDir)' == ''">$(BaseOutputPathWithConfig)\tests\</TestAssemblyDir>
-      <__TestRunHtmlLog Condition="'$(__TestRunHtmlLog)' == ''">$(__LogsDir)\TestRun.html</__TestRunHtmlLog>
-      <__TestRunXmlLog Condition="'$(__TestRunXmlLog)' == ''">$(__LogsDir)\TestRun.xml</__TestRunXmlLog>
+    <TestAssemblyDir Condition="'$(TestAssemblyDir)' == ''">$(TestWorkingDir)tests\</TestAssemblyDir>
+    <__TestRunHtmlLog Condition="'$(__TestRunHtmlLog)' == ''">$(__LogsDir)\TestRun.html</__TestRunHtmlLog>
+    <__TestRunXmlLog Condition="'$(__TestRunXmlLog)' == ''">$(__LogsDir)\TestRun.xml</__TestRunXmlLog>
   </PropertyGroup>
   <Target Name="FindTestDirectories">
     <ItemGroup>
-      <AllTestAssemblies Include="$(BaseOutputPathWithConfig)\**\*.XUnitWrapper.dll" />
+      <AllTestAssemblies Include="$(TestWorkingDir)**\*.XUnitWrapper.dll" />
       <TestAssemblies Include="@(AllTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')" />
     </ItemGroup>
     
@@ -59,7 +59,7 @@
          from working directory instead of full paths (see
          https://github.com/Microsoft/msbuild/issues/2530) -->
     <ItemGroup Condition="'$(RunningOnUnix)' != 'true'">
-      <_TestAssembliesRelative Include="@(TestAssemblies -> Replace('$(BaseOutputPathWithConfig)', '.\'))" />
+      <_TestAssembliesRelative Include="@(TestAssemblies -> Replace('$(TestWorkingDir)', '.\'))" />
       <TestAssemblies Remove="@(TestAssemblies)" />
       <TestAssemblies Include="@(_TestAssembliesRelative)" />
     </ItemGroup>
@@ -69,7 +69,7 @@
     </PropertyGroup>
 
     <Exec Command="$(XunitCommandLine)"
-          WorkingDirectory="$(BaseOutputPathWithConfig)"/>
+          WorkingDirectory="$(TestWorkingDir)"/>
 
   </Target>
 

@@ -25,7 +25,7 @@ WARNING:   When setting properties based on their current state (for example:
     <PropertyGroup>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
-      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)).Replace("\","/"))</JitDisasmOut>
+      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(TestWorkingDir)dasm\$(BuildProjectRelativeDir)).Replace("\","/"))</JitDisasmOut>
       <JitDisasmBashScript>
 <![CDATA[
 # JitDisasm Script
@@ -50,7 +50,7 @@ fi
     <PropertyGroup>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
-      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)))</JitDisasmOut>
+      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(TestWorkingDir)dasm\$(BuildProjectRelativeDir)))</JitDisasmOut>
       <JitDisasmBatchScript>
 <![CDATA[
 REM JitDisasm Script

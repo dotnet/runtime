@@ -18,7 +18,9 @@
   </Target>
 
   <!-- Remove package references when referencing System.Private.CoreLib from SDK style project --> 
-  <Target Name="CleanResolvedCompileFileDefinitions"  AfterTargets="ResolvePackageAssets" Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' == 'true'" >
+  <Target Name="CleanResolvedCompileFileDefinitions"
+          Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true'"
+          AfterTargets="ResolvePackageAssets">
     <ItemGroup>
       <ResolvedCompileFileDefinitions Remove="@(ResolvedCompileFileDefinitions)" />
     </ItemGroup>

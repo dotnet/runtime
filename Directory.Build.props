@@ -82,6 +82,7 @@
 
   <!-- Language configuration -->
   <PropertyGroup>
+    <Language Condition="'$(Language)' == '' and '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
     <!-- default to allowing all language features -->
     <LangVersion>latest</LangVersion>
     <LangVersion Condition="'$(Language)' == 'C#'">preview</LangVersion>

@@ -26,7 +26,7 @@
 
   <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">
     <Message Text="Building Targeting Pack" Importance="High" />
-    <Error  Text="BuildOS has not been specified. Please do that then run build again."  Condition="'$(BuildOS)' == 'AnyOS'" />
+    <Error  Text="BuildOS has not been specified. Please do that then run build again."  Condition="'$(OSGroup)' == 'AnyOS'" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)external\external.csproj"
              Targets="Build" />
   </Target>
@@ -44,11 +44,11 @@
 
   <Target Name="RestorePackage">
     <PropertyGroup>
-      <_ConfigurationProperties>/p:__BuildOS=$(__BuildOS) /p:__BuildArch=$(__BuildArch) /p:__BuildType=$(__BuildType)</_ConfigurationProperties>
+      <_ConfigurationProperties>/p:OSGroup=$(OSGroup) /p:BuildArch=$(BuildArch) /p:BuildType=$(BuildType)</_ConfigurationProperties>
       <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
       <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">"$(DotNetTool)" restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
-    <Exec Command="$(DotnetRestoreCommand)"/>
+    <Exec Command="$(DotnetRestoreCommand)" />
   </Target>
 
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->

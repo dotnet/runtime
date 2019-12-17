@@ -15,8 +15,8 @@
       <!-- This specifies what properties are needed to be passed down as global properties to a child project. -->
 
       <_PropertiesToPass>
-        __BuildArch=$(__BuildArch);
-        __BuildOS=$(__BuildOS);
+        BuildArch=$(BuildArch);
+        OSGroup=$(OSGroup);
         __BuildType=$(__BuildType);
         Creator=$(_Creator);
         HelixAccessToken=$(_HelixAccessToken);
@@ -178,8 +178,8 @@
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
     <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
-    <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
-    <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(TestRunNamePrefix)$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(OSGroup) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(TestRunNamePrefix)$(OSGroup) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>
@@ -218,12 +218,12 @@
     <HelixPreCommand Include="export __TestEnv=$HELIX_WORKITEM_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
     <HelixPreCommand Include="export __CollectDumps=1" />
-    <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" Condition=" '$(BuildOS)' != 'OSX' " />
-    <HelixPreCommand Include="export __CrashDumpFolder=/cores" Condition=" '$(BuildOS)' == 'OSX' " /> <!-- Helix doesn't specify the dump folder for OSX 10.14, so we need to manually specify it. Tracked by dotnet/core-eng#7872 -->
+    <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" Condition=" '$(OSGroup)' != 'OSX' " />
+    <HelixPreCommand Include="export __CrashDumpFolder=/cores" Condition=" '$(OSGroup)' == 'OSX' " /> <!-- Helix doesn't specify the dump folder for OSX 10.14, so we need to manually specify it. Tracked by dotnet/core-eng#7872 -->
     <HelixPreCommand Include="cat $__TestEnv" />
 
-    <HelixPreCommand Include="sudo bash -c 'echo $HELIX_DUMP_FOLDER/core.%u.%p > /proc/sys/kernel/core_pattern'" Condition=" '$(BuildOS)' != 'OSX' " />
-    <HelixPreCommand Include="ulimit -c unlimited" Condition=" '$(BuildOS)' == 'OSX' " />
+    <HelixPreCommand Include="sudo bash -c 'echo $HELIX_DUMP_FOLDER/core.%u.%p > /proc/sys/kernel/core_pattern'" Condition=" '$(OSGroup)' != 'OSX' " />
+    <HelixPreCommand Include="ulimit -c unlimited" Condition=" '$(OSGroup)' == 'OSX' " />
   </ItemGroup>
 
   <PropertyGroup>

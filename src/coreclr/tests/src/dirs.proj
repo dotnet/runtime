@@ -45,6 +45,10 @@
       </_GroupStartsWith>
     </ItemGroup>
 
+    <PropertyGroup>
+      <__TestGroupToBuild Condition="'$(__TestGroupToBuild)' == ''">1</__TestGroupToBuild>
+    </PropertyGroup>
+
     <Error Condition=" '$(CLRTestPriorityToBuild)' == '0' And ($(__TestGroupToBuild) &lt; 1 Or $(__TestGroupToBuild) &gt; 3) " Text="__TestGroupToBuild property must be between 1 and 3 for Pri0." />
 
     <ItemGroup Condition=" '$(CLRTestPriorityToBuild)' == '1' ">
@@ -121,9 +125,4 @@
   </Target>
 
   <Import Project="..\dir.traversal.targets" />
-
-  <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
-  <Target Name="Clean">
-    <RemoveDir Directories="$(BinDir)" />
-  </Target>
 </Project>

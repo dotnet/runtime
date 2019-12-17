@@ -1,6 +1,6 @@
 <Project>
 
-  <Import Project="../Directory.Build.props" />
+  <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -13,20 +13,41 @@
     <CoreClrTestDir>$(MSBuildThisFileDirectory)</CoreClrTestDir>
     <TestSourceDir>$(CoreClrTestDir)src\</TestSourceDir>
 
+    <!-- TODO: Clean these two properties up. -->
+    <TargetingPackPath>$(ArtifactsBinDir)TargetingPack\</TargetingPackPath>
+    <BinDir>$(RuntimePath)</BinDir>
+
+    <TestWorkingDir>$([MSBuild]::NormalizeDirectory('$(BaseRootOutputPath)', '$(OSPlatformConfig)', 'tests'))</TestWorkingDir>
+    <TestWorkingIntermediateDir>$([MSBuild]::NormalizeDirectory('$(BaseRootIntermediateOutputPath)', '$(OSPlatformConfig)', 'tests'))</TestWorkingIntermediateDir>
+
     <TestRelativeBasePath Condition="'$(TestRelativeBasePath)' == ''">$(TestSourceDir)</TestRelativeBasePath>
     <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestRelativeBasePath), $(MSBuildProjectDirectory)))</BuildProjectRelativeDir>
 
-    <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(ArtifactsBinDir)TargetingPack\</TargetingPackPath>
-    <BinDir>$([MSBuild]::NormalizeDirectory('$(BaseRootOutputPath)', '$(OSPlatformConfig)'))</BinDir>
-    <TestWorkingDir>$([MSBuild]::NormalizeDirectory('$(BaseRootOutputPath)', 'tests', '$(OSPlatformConfig)'))</TestWorkingDir>
-
-    <!-- BaseIntermediateOutputPath is used by the SDK as the location
-         for the lock file, and props/targets from nuget packages. -->
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(TestWorkingDir)', '$(BuildProjectRelativeDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-
-    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(BaseRootIntermediateOutputPath)', 'tests', '$(OSPlatformConfig)', '$(BuildProjectRelativeDir)', '$(MSBuildProjectName)'))</BaseOutputPath>
+    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(TestWorkingDir)', '$(BuildProjectRelativeDir)', '$(MSBuildProjectName)'))</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
+
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(TestWorkingIntermediateDir)', '$(BuildProjectRelativeDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <!-- Setup Default symbol and optimization for Configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
+    <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
+    <DefineConstants>$(DefineConstants);TRACE;XUNIT_PERF</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Checked'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)' == 'true'">

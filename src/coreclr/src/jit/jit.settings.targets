@@ -94,7 +94,7 @@
         <CppCompile Include="..\lsrabuild.cpp" />
         <CppCompile Include="..\codegenlinear.cpp" />
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetArch)'=='i386'">
+    <ItemGroup Condition="'$(TargetArchitecture)'=='i386' or '$(TargetArchitecture)'=='x86'">
         <CppCompile Include="..\emitXArch.cpp" />
         <CppCompile Include="..\TargetX86.cpp" />
         <CppCompile Include="..\unwindx86.cpp" />
@@ -107,7 +107,7 @@
         <CppCompile Include="..\hwintrinsicxarch.cpp" />
         <CppCompile Include="..\hwintrinsiccodegenxarch.cpp" />
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetArch)'=='amd64'">
+    <ItemGroup Condition="'$(TargetArchitecture)'=='amd64'">
         <CppCompile Include="..\emitXArch.cpp" />
         <CppCompile Include="..\TargetAmd64.cpp" />
         <CppCompile Include="..\LowerXArch.cpp" />
@@ -119,7 +119,7 @@
         <CppCompile Include="..\hwintrinsicxarch.cpp" />
         <CppCompile Include="..\hwintrinsiccodegenxarch.cpp" />
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetArch)'=='arm'">
+    <ItemGroup Condition="'$(TargetArchitecture)'=='arm'">
         <CppCompile Include="..\emitarm.cpp" />
         <CppCompile Include="..\TargetArm.cpp" />
         <CppCompile Include="..\DecomposeLongs.cpp" />
@@ -130,7 +130,7 @@
         <CppCompile Include="..\CodeGenArm.cpp" />
         <CppCompile Include="..\unwindArm.cpp" />
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetArch)'=='arm64'">
+    <ItemGroup Condition="'$(TargetArchitecture)'=='arm64'">
         <CppCompile Include="..\emitarm64.cpp" />
         <CppCompile Include="..\TargetArm64.cpp" />
         <CppCompile Include="..\LowerArmArch.cpp" />

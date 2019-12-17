@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
+
   <Import Project="Directory.Build.props" />
+
   <PropertyGroup>
-    <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
-    <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
+    <XunitTestBinBase>$(TestWorkingDir)</XunitTestBinBase>
+    <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
   </PropertyGroup>
 
@@ -23,7 +24,6 @@
            Text="$(XunitTestBinBase) does not exist. Please run build-test.cmd from the repo root at least once to get the tests built." />
 
     <ItemGroup>
-
       <AllTestDirsNonCanonicalPaths Include="$([System.IO.Directory]::GetDirectories(`$(XunitTestBinBase)`))" />
       <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)" />
       <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)" >
@@ -37,7 +37,6 @@
         <Path>$([System.IO.Path]::GetFullPath(%(AllRunnableTestPaths.Identity)))</Path>
       </SecondLevelDirectories>
       <TestDirectoriesWithDup Include="@(SecondLevelDirectories -> '%(Identity)')" Condition="$([System.String]::new('%(Path)').StartsWith('%(Identity)'))" />
-
     </ItemGroup>
 
     <RemoveDuplicates Inputs="@(TestDirectoriesWithDup)">
@@ -94,8 +93,7 @@ $(_XunitEpilog)
 <Project>
 
   <PropertyGroup>
-    <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
-    <TestRelativeBasePath>$(XunitTestBinBase)\</TestRelativeBasePath>
+    <TestRelativeBasePath>$(XunitWrapperGeneratedCSDirBase)</TestRelativeBasePath>
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
     <DirectoryBuildPropsPath>$(CoreClrTestDir)Directory.Build.props</DirectoryBuildPropsPath>
     <DirectoryBuildTargetsPath>$(CoreClrTestDir)Directory.Build.targets</DirectoryBuildTargetsPath>
@@ -359,8 +357,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(BuildOS)' == 'Windows_NT'" />
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(BuildOS)' != 'Windows_NT'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetsWindows)' == 'true'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetsWindows)' != 'true'" />
     </ItemGroup>
   </Target>
 
@@ -396,6 +394,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="Clean">
-    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(MSBuildThisFileDirectory)../$(XunitWrapperGeneratedCSDirBase);" ContinueOnError="WarnAndContinue" />
+    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(XunitWrapperGeneratedCSDirBase);" ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>
