@@ -18,7 +18,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The enumerator object to use if not null.
         /// </summary>
-        private readonly IEnumerator<T> _enumeratorObject;
+        private readonly IEnumerator<T>? _enumeratorObject;
 
         /// <summary>
         /// The enumerator struct to use if <see cref="_enumeratorObject"/> is <c>null</c>.
