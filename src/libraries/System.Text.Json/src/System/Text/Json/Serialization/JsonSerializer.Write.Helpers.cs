@@ -36,14 +36,11 @@ namespace System.Text.Json
             }
         }
 
-        private static void VerifyValueAndType(object? value, Type? type)
+        private static void VerifyValueAndType(object? value, Type type)
         {
             if (type == null)
             {
-                if (value != null)
-                {
-                    throw new ArgumentNullException(nameof(type));
-                }
+                throw new ArgumentNullException(nameof(type));
             }
             else if (value != null)
             {
@@ -54,7 +51,7 @@ namespace System.Text.Json
             }
         }
 
-        private static byte[] WriteCoreBytes(object? value, Type? type, JsonSerializerOptions? options)
+        private static byte[] WriteCoreBytes(object? value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -72,7 +69,7 @@ namespace System.Text.Json
             return result;
         }
 
-        private static string WriteCoreString(object? value, Type? type, JsonSerializerOptions? options)
+        private static string WriteCoreString(object? value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -90,7 +87,7 @@ namespace System.Text.Json
             return result;
         }
 
-        private static void WriteValueCore(Utf8JsonWriter writer, object? value, Type? type, JsonSerializerOptions? options)
+        private static void WriteValueCore(Utf8JsonWriter writer, object? value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -105,7 +102,7 @@ namespace System.Text.Json
             WriteCore(writer, value, type, options);
         }
 
-        private static void WriteCore(PooledByteBufferWriter output, object? value, Type? type, JsonSerializerOptions options)
+        private static void WriteCore(PooledByteBufferWriter output, object? value, Type type, JsonSerializerOptions options)
         {
             using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
@@ -113,7 +110,7 @@ namespace System.Text.Json
             }
         }
 
-        private static void WriteCore(Utf8JsonWriter writer, object? value, Type? type, JsonSerializerOptions options)
+        private static void WriteCore(Utf8JsonWriter writer, object? value, Type type, JsonSerializerOptions options)
         {
             Debug.Assert(type != null || value == null);
             Debug.Assert(writer != null);

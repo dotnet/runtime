@@ -12,12 +12,14 @@ namespace System.Text.Json
 {
     internal static partial class ThrowHelper
     {
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException_DeserializeWrongType(Type? type, object value)
         {
             throw new ArgumentException(SR.Format(SR.DeserializeWrongType, type, value.GetType()));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static NotSupportedException GetNotSupportedException_SerializationNotSupportedCollection(Type? propertyType, Type? parentType, MemberInfo? memberInfo)
         {
@@ -29,6 +31,7 @@ namespace System.Text.Json
             return new NotSupportedException(SR.Format(SR.SerializationNotSupportedCollectionType, propertyType));
         }
 
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializerCycleDetected(int maxDepth)
         {
             throw new JsonException(SR.Format(SR.SerializerCycleDetected, maxDepth));
@@ -51,12 +54,14 @@ namespace System.Text.Json
             throw new JsonException(message, path, null, null, innerException);
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DepthTooLarge(int currentDepth, JsonSerializerOptions options)
         {
             throw new JsonException(SR.Format(SR.DepthTooLarge, currentDepth, options.EffectiveMaxDepth));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_SerializationConverterRead(JsonConverter? converter)
         {
@@ -65,6 +70,7 @@ namespace System.Text.Json
             throw ex;
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_SerializationConverterWrite(JsonConverter? converter)
         {
@@ -80,6 +86,7 @@ namespace System.Text.Json
             throw new JsonException();
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializationConverterNotCompatible(Type? converterType, Type? type)
         {
@@ -113,12 +120,14 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.SerializationConverterOnAttributeNotCompatible, location, typeToConvert));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializerOptionsImmutable()
         {
             throw new InvalidOperationException(SR.SerializerOptionsImmutable);
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializerPropertyNameConflict(JsonClassInfo jsonClassInfo, JsonPropertyInfo jsonPropertyInfo)
         {
@@ -139,6 +148,7 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.SerializerDictionaryKeyNull, policyType));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ReThrowWithPath(in ReadStack readStack, JsonReaderException ex)
         {
@@ -159,6 +169,7 @@ namespace System.Text.Json
             throw new JsonException(message, path, ex.LineNumber, ex.BytePositionInLine, ex);
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ReThrowWithPath(in ReadStack readStack, in Utf8JsonReader reader, Exception? ex)
         {
@@ -200,6 +211,7 @@ namespace System.Text.Json
             }
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ReThrowWithPath(in WriteStack writeStack, Exception? ex)
         {
@@ -241,12 +253,14 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.SerializationDuplicateAttribute, attribute, location));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type? classType, Type? attribute)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializationDuplicateTypeAttribute, classType, attribute));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(JsonClassInfo jsonClassInfo, JsonPropertyInfo jsonPropertyInfo)
         {
