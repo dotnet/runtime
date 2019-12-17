@@ -26,7 +26,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
 
         private ClientCertificateOption GetClientCertificateOption(HttpClientHandler handler)
-        {            
+        {
 #if WINHTTPHANDLER_TEST
             return handler.ClientCertificateOption;
 #else
@@ -35,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         private ClientCertificateOption SetClientCertificateOption(HttpClientHandler handler, ClientCertificateOption options)
-        {            
+        {
 #if WINHTTPHANDLER_TEST
             return handler.ClientCertificateOption = options;
 #else
@@ -88,11 +88,7 @@ namespace System.Net.Http.Functional.Tests
         private HttpClient CreateHttpClientWithCert(X509Certificate2 cert)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-#if WINHTTPHANDLER_TEST
-            handler.ServerCertificateValidationCallback = TestHelper.AllowAllCertificates;
-#else
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-#endif
+            SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
             Assert.NotNull(cert);
             handler.ClientCertificates.Add(cert);
             Assert.True(handler.ClientCertificates.Contains(cert));

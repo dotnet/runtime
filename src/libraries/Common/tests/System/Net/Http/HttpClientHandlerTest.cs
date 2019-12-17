@@ -24,6 +24,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
     public abstract class HttpClientHandlerTest : HttpClientHandlerTestBase
@@ -80,19 +84,21 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Same as .NET Framework (Desktop).
                 Assert.Equal(DecompressionMethods.None, handler.AutomaticDecompression);
-                Assert.True(handler.AllowAutoRedirect);
-                Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOptions);
+                Assert.True(GetAllowAutoRedirect(handler));
+                Assert.Equal(ClientCertificateOption.Manual, GetClientCertificateOptions(handler));
                 CookieContainer cookies = handler.CookieContainer;
                 Assert.NotNull(cookies);
                 Assert.Equal(0, cookies.Count);
-                Assert.Null(handler.Credentials);
+                Assert.Null(GetCredentials(handler));
                 Assert.Equal(50, handler.MaxAutomaticRedirections);
                 Assert.NotNull(handler.Properties);
                 Assert.Null(handler.Proxy);
+                Assert.True(GetUseCookies(handler));
+                Assert.False(GetUseDefaultCredentials(handler));
+#if !WINHTTPHANDLER_TEST
                 Assert.True(handler.SupportsAutomaticDecompression);
-                Assert.True(handler.UseCookies);
-                Assert.False(handler.UseDefaultCredentials);
                 Assert.True(handler.UseProxy);
+#endif
             }
         }
 
@@ -104,12 +110,16 @@ namespace System.Net.Http.Functional.Tests
                 // Same as .NET Framework (Desktop).
                 Assert.Equal(64, handler.MaxResponseHeadersLength);
                 Assert.False(handler.PreAuthenticate);
+#if !WINHTTPHANDLER_TEST
                 Assert.True(handler.SupportsProxy);
                 Assert.True(handler.SupportsRedirectConfiguration);
+#endif
 
                 // Changes from .NET Framework (Desktop).
                 Assert.False(handler.CheckCertificateRevocationList);
+#if !WINHTTPHANDLER_TEST
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
+#endif
                 Assert.Equal(SslProtocols.None, handler.SslProtocols);
             }
         }
@@ -121,14 +131,14 @@ namespace System.Net.Http.Functional.Tests
             {
                 var creds = new NetworkCredential("username", "password", "domain");
 
-                handler.Credentials = null;
-                Assert.Null(handler.Credentials);
+                SetCredentials(handler, null);
+                Assert.Null(GetCredentials(handler));
 
-                handler.Credentials = creds;
-                Assert.Same(creds, handler.Credentials);
+                SetCredentials(handler, creds);
+                Assert.Same(creds, GetCredentials(handler));
 
-                handler.Credentials = CredentialCache.DefaultCredentials;
-                Assert.Same(CredentialCache.DefaultCredentials, handler.Credentials);
+                SetCredentials(handler, CredentialCache.DefaultCredentials);
+                Assert.Same(CredentialCache.DefaultCredentials, GetCredentials(handler));
             }
         }
 
@@ -143,6 +153,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+#if !WINHTTPHANDLER_TEST
         [Theory]
         [InlineData(-1)]
         [InlineData((long)int.MaxValue + (long)1)]
@@ -153,6 +164,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => handler.MaxRequestContentBufferSize = value);
             }
         }
+#endif
 
         [OuterLoop("Uses external servers")]
         [Theory]
@@ -162,8 +174,12 @@ namespace System.Net.Http.Functional.Tests
         public async Task UseDefaultCredentials_SetToFalseAndServerNeedsAuth_StatusCodeUnauthorized(bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.UseProxy = useProxy;
-            handler.UseDefaultCredentials = false;
+#if WINHTTPHANDLER_TEST
+            var _ = useProxy;
+#else
+            handler.UseProxy = true;
+#endif
+            SetUseDefaultCredentials(handler, false);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 Uri uri = Configuration.Http.RemoteHttp11Server.NegotiateAuthUriForDefaultCreds;
@@ -402,7 +418,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
                     try { await client.GetAsync(addressUri); } catch { }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
@@ -430,7 +446,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var client = new HttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
                     if (addUserAgentHeader)
                     {
                         client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Mozilla", "5.0"));
@@ -487,7 +503,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (useSsl)
                     {
-                        handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                        SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
                     }
                     try { await client.GetAsync(url); } catch { }
                 }
@@ -506,7 +522,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.Credentials = CredentialCache.DefaultCredentials;
+            SetCredentials(handler, CredentialCache.DefaultCredentials);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
@@ -522,7 +538,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.Credentials = _credential;
+            SetCredentials(handler, _credential);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
@@ -555,7 +571,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.Credentials = new NetworkCredential("unused", "unused");
+                SetCredentials(handler, new NetworkCredential("unused", "unused"));
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);

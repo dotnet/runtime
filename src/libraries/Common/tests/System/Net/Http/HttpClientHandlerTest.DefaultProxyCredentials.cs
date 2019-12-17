@@ -117,7 +117,9 @@ namespace System.Net.Http.Functional.Tests
                     {
                         var creds = new NetworkCredential(ExpectedUsername, ExpectedPassword);
                         handler.DefaultProxyCredentials = creds;
+#if !WINHTTPHANDLER_TEST
                         handler.UseProxy = bool.Parse(useProxyString);
+#endif
 
                         HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer);
                         // Correctness of user and password is done in server part.

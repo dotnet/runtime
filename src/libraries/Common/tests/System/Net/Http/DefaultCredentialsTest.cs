@@ -13,6 +13,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     [PlatformSpecific(TestPlatforms.Windows)]
     public abstract class DefaultCredentialsTest : HttpClientHandlerTestBase
     {
@@ -43,7 +47,11 @@ namespace System.Net.Http.Functional.Tests
         public async Task UseDefaultCredentials_DefaultValue_Unauthorized(string uri, bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
+#if WINHTTPHANDLER_TEST
+            var _ = useProxy;
+#else
             handler.UseProxy = useProxy;
+#endif
 
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -58,8 +66,12 @@ namespace System.Net.Http.Functional.Tests
         public async Task UseDefaultCredentials_SetFalse_Unauthorized(string uri, bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
+#if WINHTTPHANDLER_TEST
+            var _ = useProxy;
+#else
             handler.UseProxy = useProxy;
-            handler.UseDefaultCredentials = false;
+#endif
+            SetUseDefaultCredentials(handler, false);
 
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -74,8 +86,12 @@ namespace System.Net.Http.Functional.Tests
         public async Task UseDefaultCredentials_SetTrue_ConnectAsCurrentIdentity(string uri, bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
+#if WINHTTPHANDLER_TEST
+            var _ = useProxy;
+#else
             handler.UseProxy = useProxy;
-            handler.UseDefaultCredentials = true;
+#endif
+            SetUseDefaultCredentials(handler, true);
 
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -95,11 +111,15 @@ namespace System.Net.Http.Functional.Tests
         public async Task Credentials_SetToWrappedDefaultCredential_ConnectAsCurrentIdentity(string uri, bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
+#if WINHTTPHANDLER_TEST
+            var _ = useProxy;
+#else
             handler.UseProxy = useProxy;
-            handler.Credentials = new CredentialWrapper
+#endif
+            SetCredentials(handler, new CredentialWrapper
             {
                 InnerCredentials = CredentialCache.DefaultCredentials
-            };
+            });
 
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -119,8 +139,12 @@ namespace System.Net.Http.Functional.Tests
         public async Task Credentials_SetToBadCredential_Unauthorized(string uri, bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
+#if WINHTTPHANDLER_TEST
+            var _ = useProxy;
+#else
             handler.UseProxy = useProxy;
-            handler.Credentials = new NetworkCredential("notarealuser", "123456");
+#endif
+            SetCredentials(handler, new NetworkCredential("notarealuser", "123456"));
 
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -137,9 +161,13 @@ namespace System.Net.Http.Functional.Tests
         public async Task Credentials_SetToSpecificCredential_ConnectAsSpecificIdentity(bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
+#if WINHTTPHANDLER_TEST
+            var _ = useProxy;
+#else
             handler.UseProxy = useProxy;
-            handler.UseDefaultCredentials = false;
-            handler.Credentials = _specificCredential;
+#endif
+            SetUseDefaultCredentials(handler, false);
+            SetCredentials(handler, _specificCredential);
 
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))

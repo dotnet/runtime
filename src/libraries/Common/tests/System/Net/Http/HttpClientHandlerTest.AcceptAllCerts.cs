@@ -54,9 +54,9 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
 #if WINHTTPHANDLER_TEST
-                handler.ServerCertificateValidationCallback = delegate { return true; };
+                SetServerCertificateCustomValidationCallback(handler, delegate { return true; });
 #else
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                SetServerCertificateCustomValidationCallback(handler, HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
 #endif
 
                 if (requestOnlyThisProtocol)

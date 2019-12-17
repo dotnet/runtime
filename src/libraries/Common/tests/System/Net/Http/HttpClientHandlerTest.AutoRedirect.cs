@@ -15,6 +15,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     public abstract class HttpClientHandlerTest_AutoRedirect : HttpClientHandlerTestBase
     {
         private const string ExpectedContent = "Test content";
@@ -69,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AllowAutoRedirect = false;
+            SetAllowAutoRedirect(handler, false);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 Uri uri = remoteServer.RedirectUriForDestinationUri(
@@ -192,7 +196,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AllowAutoRedirect = true;
+            SetAllowAutoRedirect(handler, true);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 Uri uri = remoteServer.RedirectUriForDestinationUri(
@@ -213,7 +217,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttps_StatusCodeOK()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AllowAutoRedirect = true;
+            SetAllowAutoRedirect(handler, true);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 Uri uri = Configuration.Http.RemoteHttp11Server.RedirectUriForDestinationUri(
@@ -234,7 +238,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AllowAutoRedirect = true;
+            SetAllowAutoRedirect(handler, true);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 Uri uri = Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(
@@ -255,7 +259,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithoutLocation_ReturnsOriginalResponse()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AllowAutoRedirect = true;
+            SetAllowAutoRedirect(handler, true);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -277,7 +281,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectToUriWithParams_RequestMsgUriSet(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AllowAutoRedirect = true;
+            SetAllowAutoRedirect(handler, true);
             Uri targetUri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
@@ -333,7 +337,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithRelativeLocation(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AllowAutoRedirect = true;
+            SetAllowAutoRedirect(handler, true);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 Uri uri = remoteServer.RedirectUriForDestinationUri(
@@ -358,7 +362,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_NonRedirectStatusCode_LocationHeader_NoRedirect(int statusCode)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AllowAutoRedirect = true;
+            SetAllowAutoRedirect(handler, true);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
@@ -395,7 +399,7 @@ namespace System.Net.Http.Functional.Tests
             string origFragment, string redirFragment, string expectedFragment, bool useRelativeRedirect)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AllowAutoRedirect = true;
+            SetAllowAutoRedirect(handler, true);
             using (HttpClient client = CreateHttpClient(handler))
             {
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
@@ -438,7 +442,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.Credentials = _credential;
+            SetCredentials(handler, _credential);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 Uri redirectUri = remoteServer.RedirectUriForCreds(
@@ -457,7 +461,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.Credentials = _credential;
+            SetCredentials(handler, _credential);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 Uri redirectUri = remoteServer.RedirectUriForCreds(
@@ -493,7 +497,7 @@ namespace System.Net.Http.Functional.Tests
             credentialCache.Add(uri, "Basic", _credential);
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.Credentials = credentialCache;
+            SetCredentials(handler, credentialCache);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 using (HttpResponseMessage response = await client.GetAsync(redirectUri))

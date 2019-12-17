@@ -93,70 +93,99 @@
     </Compile>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="ByteArrayContentTest.cs" />
-    <Compile Include="ChannelBindingAwareContent.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\DribbleStream.cs">
-      <Link>Common\System\Net\DribbleStream.cs</Link>
+    <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs">
+      <Link>Common\System\Net\Http\ChannelBindingAwareContent.cs</Link>
     </Compile>
-    <Compile Include="CustomContent.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\DribbleStream.cs">
+      <Link>Common\System\Net\Http\DribbleStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\CustomContent.cs">
+      <Link>Common\System\Net\Http\CustomContent.cs</Link>
+    </Compile>
     <Compile Include="DelegatingHandlerTest.cs" />
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="ByteAtATimeContent.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Asynchrony.cs">
-      <Link>Common\System\Net\HttpClientHandlerTest.Asynchrony.cs</Link>
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.Asynchrony.cs</Link>
     </Compile>
     <Compile Include="HttpClientHandlerTest.Authentication.cs" />
-    <Compile Include="HttpClientHandlerTest.AutoRedirect.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.AutoRedirect.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.AutoRedirect.cs</Link>
+    </Compile>
     <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ClientCertificates.cs">
-      <Link>Common\System\Net\HttpClientHandlerTest.ClientCertificates.cs</Link>
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.ClientCertificates.cs</Link>
     </Compile>
     <Compile Include="HttpClientHandlerTest.Cookies.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs">
-      <Link>Common\System\Net\HttpClientHandlerTest.DefaultProxyCredentials.cs</Link>
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs</Link>
     </Compile>
     <Compile Include="HttpClientHandlerTest.Finalization.cs" />
     <Compile Include="HttpClientHandlerTest.Headers.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.MaxConnectionsPerServer.cs">
-      <Link>Common\System\Net\HttpClientHandlerTest.MaxConnectionsPerServer.cs</Link>
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.MaxConnectionsPerServer.cs</Link>
     </Compile>
     <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
-    <Compile Include="HttpClientHandlerTest.Proxy.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Proxy.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.Proxy.cs</Link>
+    </Compile>
     <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
-    <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />
-    <Compile Include="HttpClientHandlerTest.SslProtocols.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.SslProtocols.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.SslProtocols.cs</Link>
+    </Compile>
     <Compile Include="HttpClientHandlerTestBase.SocketsHttpHandler.cs" />
     <Compile Include="DiagnosticsTests.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs">
-      <Link>Common\System\Net\HttpClientEKUTest.cs</Link>
+      <Link>Common\System\Net\Http\HttpClientEKUTest.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClient.SelectedSitesTest.cs">
-      <Link>Common\System\Net\HttpClient.SelectedSitesTest.cs</Link>
+      <Link>Common\System\Net\Http\HttpClient.SelectedSitesTest.cs</Link>
     </Compile>
     <Compile Include="HttpConnectionKeyTest.cs" />
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpMessageInvokerTest.cs" />
     <Compile Include="HttpMethodTest.cs" />
     <Compile Include="HttpRetryProtocolTests.cs" />
-    <Compile Include="IdnaProtocolTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\IdnaProtocolTests.cs">
+      <Link>Common\System\Net\Http\IdnaProtocolTests.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpProtocolTests.cs">
-      <Link>Common\System\Net\HttpProtocolTests.cs</Link>
+      <Link>Common\System\Net\Http\HttpProtocolTests.cs</Link>
     </Compile>
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />
-    <Compile Include="PostScenarioTest.cs" />
-    <Compile Include="RepeatedFlushContent.cs" />
-    <Compile Include="ResponseStreamTest.cs" />
-    <Compile Include="SchSendAuxRecordHttpTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\PostScenarioTest.cs">
+      <Link>Common\System\Net\Http\PostScenarioTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\RepeatedFlushContent.cs">
+      <Link>Common\System\Net\Http\RepeatedFlushContent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\ResponseStreamTest.cs">
+      <Link>Common\System\Net\Http\ResponseStreamTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\SchSendAuxRecordHttpTest.cs">
+      <Link>Common\System\Net\Http\SchSendAuxRecordHttpTest.cs</Link>
+    </Compile>
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />
-    <Compile Include="SyncBlockingContent.cs" />
-    <Compile Include="DefaultCredentialsTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs">
+      <Link>Common\System\Net\Http\SyncBlockingContent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\DefaultCredentialsTest.cs">
+      <Link>Common\System\Net\Http\DefaultCredentialsTest.cs</Link>
+    </Compile>
     <Compile Include="ThrowingContent.cs" />
     <Compile Include="Watchdog.cs" />
   </ItemGroup>

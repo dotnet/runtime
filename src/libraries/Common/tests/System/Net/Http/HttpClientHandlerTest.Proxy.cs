@@ -18,6 +18,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     public abstract class HttpClientHandler_Proxy_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
@@ -31,7 +35,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 {
+#if !WINHTTPHANDLER_TEST
                     handler.UseProxy = true;
+#endif
                     handler.Proxy = proxy;
                     using (HttpClient client = CreateHttpClient(handler))
                     {

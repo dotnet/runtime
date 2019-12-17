@@ -17,6 +17,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     public abstract partial class HttpClientHandler_SslProtocols_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }
@@ -59,7 +63,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
@@ -108,7 +112,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
 
                 if (requestOnlyThisProtocol)
                 {
@@ -212,7 +216,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = SslProtocols.Tls12 };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -244,7 +248,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.SslProtocols = allowedClientProtocols;
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedServerProtocols };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>

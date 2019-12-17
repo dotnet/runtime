@@ -146,11 +146,7 @@ namespace System.Net.Http.Functional.Tests
             }
             else
             {
-#if WINHTTPHANDLER_TEST
-                handler.ServerCertificateValidationCallback = AllowRemoteCertificateNameMismatch;
-#else
-                handler.ServerCertificateCustomValidationCallback = AllowRemoteCertificateNameMismatch;
-#endif
+                SetServerCertificateCustomValidationCallback(handler, AllowRemoteCertificateNameMismatch);
                 return "https://localhost:" + server.Port.ToString();
             }
         }

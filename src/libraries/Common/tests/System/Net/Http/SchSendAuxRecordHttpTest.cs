@@ -10,7 +10,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
-{
+{    
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     [ActiveIssue(26539)]    // Flaky test
     public abstract class SchSendAuxRecordHttpTest : HttpClientHandlerTestBase
     {
@@ -27,7 +31,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
                 server.Start();
 
                 var tasks = new Task[2];

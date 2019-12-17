@@ -4,7 +4,9 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Security;
 using System.Net.Test.Common;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
@@ -13,11 +15,128 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
         public readonly ITestOutputHelper _output;
 
         protected virtual bool UseHttp2 => false;
+
+        protected bool GetAllowAutoRedirect(HttpClientHandler handler)
+        {        
+#if WINHTTPHANDLER_TEST
+            return handler.AutomaticRedirection;
+#else
+            return handler.AllowAutoRedirect;
+#endif
+        }
+
+        protected bool SetAllowAutoRedirect(HttpClientHandler handler, bool redirect)
+        {        
+#if WINHTTPHANDLER_TEST
+            return handler.AutomaticRedirection = redirect;
+#else
+            return handler.AllowAutoRedirect = redirect;
+#endif
+        }
+
+        protected ClientCertificateOption GetClientCertificateOptions(HttpClientHandler handler)
+        {        
+#if WINHTTPHANDLER_TEST
+            return handler.ClientCertificateOption;
+#else
+            return handler.ClientCertificateOptions;
+#endif
+        }
+
+        protected ClientCertificateOption SetClientCertificateOptions(HttpClientHandler handler, ClientCertificateOption option)
+        {        
+#if WINHTTPHANDLER_TEST
+            return handler.ClientCertificateOption = option;
+#else
+            return handler.ClientCertificateOptions = option;
+#endif
+        }
+
+        protected ICredentials GetCredentials(HttpClientHandler handler)
+        {        
+#if WINHTTPHANDLER_TEST
+            return handler.ServerCredentials;
+#else
+            return handler.Credentials;
+#endif
+        }
+
+        protected ICredentials SetCredentials(HttpClientHandler handler, ICredentials credentials)
+        {        
+#if WINHTTPHANDLER_TEST
+            return handler.ServerCredentials = credentials;
+#else
+            return handler.Credentials = credentials;
+#endif
+        }
+
+        protected bool GetUseDefaultCredentials(HttpClientHandler handler)
+        {
+            return GetCredentials(handler) == CredentialCache.DefaultCredentials;
+        }
+
+        protected bool SetUseDefaultCredentials(HttpClientHandler handler, bool defaultCredentials)
+        {
+            if (defaultCredentials)
+            {
+                SetCredentials(handler, CredentialCache.DefaultCredentials);
+            }
+            else
+            {
+                if (GetCredentials(handler) == CredentialCache.DefaultCredentials)
+                {
+                    SetCredentials(handler, null);
+                }
+            }
+
+            return defaultCredentials;
+        }
+
+        protected bool GetUseCookies(HttpClientHandler handler)
+        {        
+#if WINHTTPHANDLER_TEST
+            return handler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer;
+#else
+            return handler.UseCookies;
+#endif
+        }
+
+        protected bool SetUseCookies(HttpClientHandler handler, bool useCookies)
+        {        
+#if WINHTTPHANDLER_TEST
+            handler.CookieUsePolicy = useCookies ? CookieUsePolicy.UseSpecifiedCookieContainer : CookieUsePolicy.IgnoreCookies;
+            return useCookies;
+#else
+            return handler.UseCookies = useCookies;
+#endif
+        }
+
+        protected Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> GetServerCertificateCustomValidationCallback(HttpClientHandler handler)
+        {        
+#if WINHTTPHANDLER_TEST
+            return handler.ServerCertificateValidationCallback;
+#else
+            return handler.ServerCertificateCustomValidationCallback;
+#endif
+        }
+
+        protected Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> SetServerCertificateCustomValidationCallback(HttpClientHandler handler, Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> callback)
+        {        
+#if WINHTTPHANDLER_TEST
+            return handler.ServerCertificateValidationCallback = callback;
+#else
+            return handler.ServerCertificateCustomValidationCallback = callback;
+#endif
+        }
 
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {

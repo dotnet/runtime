@@ -14,6 +14,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
     public abstract class PostScenarioTest : HttpClientHandlerTestBase
@@ -253,7 +257,7 @@ namespace System.Net.Http.Functional.Tests
 
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.PreAuthenticate = preAuthenticate;
-            handler.Credentials = credential;
+            SetCredentials(handler, credential);
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 // Send HEAD request to help bypass the 401 auth challenge for the latter POST assuming

@@ -23,7 +23,7 @@ namespace System.Net.Http.Functional.Tests
             if (useHttp2LoopbackServer)
             {
                 TestHelper.EnableUnencryptedHttp2IfNecessary(handler);
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
             }
 
             return handler;

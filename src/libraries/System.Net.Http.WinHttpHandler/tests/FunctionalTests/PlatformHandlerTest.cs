@@ -109,71 +109,51 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    /*// Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
         public PlatformHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_PostScenarioTest : PostScenarioTest
     {
         public PlatformHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_ResponseStreamTest : ResponseStreamTest
     {
         public PlatformHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test
     {
         public PlatformHandler_HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
     {
         public PlatformHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
     {
         public PlatformHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public PlatformHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
     {
         public PlatformHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public PlatformHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_IdnaProtocolTests : IdnaProtocolTests
     {
         public PlatformHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
@@ -181,7 +161,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
+    /*// Test only WinHttpHandler since the CurlHandler was removed
     [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpRetryProtocolTests : HttpRetryProtocolTests
     {
