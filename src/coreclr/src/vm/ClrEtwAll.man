@@ -480,7 +480,7 @@
                         <map value="0x8" message="$(string.RuntimePublisher.GCHandleKind.SizedRefMessage)"/>
                     </valueMap>
                     <valueMap name="KnownPathSourceMap">
-                        <map value="0x0" message="$(string.RuntimePublisher.KnownPathSource.TrustedPlatformAssembliesMessage)"/>
+                        <map value="0x0" message="$(string.RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage)"/>
                         <map value="0x1" message="$(string.RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage)"/>
                         <map value="0x2" message="$(string.RuntimePublisher.KnownPathSource.AppPathsMessage)"/>
                         <map value="0x3" message="$(string.RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage)"/>
@@ -7154,7 +7154,7 @@
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.NoneMapMessage" value="None" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
-                <string id="RuntimePublisher.KnownPathSource.TrustedPlatformAssembliesMessage" value="TrustedPlatformAssemblies" />
+                <string id="RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage" value="ApplicationAssemblies" />
                 <string id="RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage" value="AppNativeImagePaths" />
                 <string id="RuntimePublisher.KnownPathSource.AppPathsMessage" value="AppPaths" />
                 <string id="RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage" value="PlatformResourceRoots" />

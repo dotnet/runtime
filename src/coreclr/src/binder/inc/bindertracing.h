@@ -53,7 +53,7 @@ namespace BinderTracing
     // This must match the BindingPathSource value map in ClrEtwAll.man
     enum PathSource
     {
-        TrustedPlatformAssemblies,
+        ApplicationAssemblies,
         AppNativeImagePaths,
         AppPaths,
         PlatformResourceRoots,

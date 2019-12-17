@@ -905,7 +905,7 @@ namespace BINDER_SPACE
                                      TRUE,  // fIsInGAC
                                      TRUE,  // fExplicitBindToNativeImage
                                      &pTPAAssembly);
-                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::TrustedPlatformAssemblies, hr);
+                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
                 }
                 else
                 {
@@ -916,7 +916,7 @@ namespace BINDER_SPACE
                                      TRUE,  // fIsInGAC
                                      FALSE, // fExplicitBindToNativeImage
                                      &pTPAAssembly);
-                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::TrustedPlatformAssemblies, hr);
+                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
                 }
 
                 // On file not found, simply fall back to app path probing

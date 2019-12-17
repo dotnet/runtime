@@ -185,7 +185,7 @@ namespace BinderTracingTests
                     new ProbedPath()
                     {
                         FilePath = asm.Location,
-                        Source = ProbedPath.PathSource.TrustedPlatformAssemblies,
+                        Source = ProbedPath.PathSource.ApplicationAssemblies,
                         Result = S_OK
                     }
                 }

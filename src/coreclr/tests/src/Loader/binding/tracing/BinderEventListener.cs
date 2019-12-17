@@ -92,7 +92,7 @@ namespace BinderTracingTests
     {
         public enum PathSource : ushort
         {
-            TrustedPlatformAssemblies,
+            ApplicationAssemblies,
             AppNativeImagePaths,
             AppPaths,
             PlatformResourceRoots,
