@@ -882,13 +882,5 @@ namespace System.Text.RegularExpressions.Tests
 
             throw new XunitException($"Expected RegexParseException with error: ({error}) -> Actual: No exception thrown");
         }
-
-        [Fact]
-        public void TestPattern()
-        {
-            Debugger.Launch();
-            string pattern = @"[b-\-a]";
-            var regex = new Regex(pattern);
-        }
     }
 }
