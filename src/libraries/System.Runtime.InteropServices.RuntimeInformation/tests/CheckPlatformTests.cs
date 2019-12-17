@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.RuntimeInformationTests
 {
-    public partial class CheckPlatformTests
+    public class CheckPlatformTests
     {
         [Fact, PlatformSpecific(TestPlatforms.Linux)]  // Tests RuntimeInformation OS platform
         public void CheckLinux()
@@ -115,6 +115,30 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Equal(winObj.GetHashCode(), winProp.GetHashCode());
             Assert.Equal(0, defaultObj.GetHashCode());
             Assert.Equal(defaultObj.GetHashCode(), conObj.GetHashCode());
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
+        public void CheckFreeBSD()
+        {
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
+
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("DARWIN")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("LINUX")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("linux")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NetBSD")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("ubuntu")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("UNIX")));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        }
+
+        [Fact, PlatformSpecific(~TestPlatforms.FreeBSD)]
+        public void CheckFreeBSDOnOtherPlatforms()
+        {
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD));
+            Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
         }
     }
 }
