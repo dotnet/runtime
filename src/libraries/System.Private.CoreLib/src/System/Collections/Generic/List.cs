@@ -395,12 +395,27 @@ namespace System.Collections.Generic
 
         public void CopyTo(int sourceIndex, int count, Span<T> destination)
         {
+            if (sourceIndex < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceIndex, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (count < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (_size - sourceIndex < count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+
             _items.AsSpan(sourceIndex, count).CopyTo(destination);
         }
 
-       public void CopyTo(Span<T> destination)
+        public void CopyTo(Span<T> destination)
         {
-            _items.AsSpan().CopyTo(destination);
+            _items.AsSpan(0, _size).CopyTo(destination);
         }
 
         // Ensures that the capacity of this list is at least the given minimum

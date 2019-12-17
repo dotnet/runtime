@@ -181,6 +181,30 @@ namespace System.Collections.Tests
                 Assert.True(Enumerable.SequenceEqual(list.Skip(1).Take(count - 2), span.Slice(0, count - 2).ToArray()));
             }
         }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyToSpan_EnsureDoesntCopyMoreThanListCount(int count)
+        {
+            List<T> list = GenericListFactory(count);
+            list.Capacity = count + 1;
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Span<T> span = new T[count + 1]; list.CopyTo(0, count + 1, span); });
+
+            Span<T> span = new T[count + 1];
+            T nonDefaultValue;
+            do
+            {
+                nonDefaultValue = CreateT(1);
+            }
+            while (EqualityComparer<T>.Default.Equals(nonDefaultValue, default));
+            
+            span[count] = nonDefaultValue;
+
+            list.CopyTo(span);
+            Assert.Equal(span[count], nonDefaultValue);
+
+        }
         #endregion
 
         [Theory]
