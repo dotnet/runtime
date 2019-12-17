@@ -13,11 +13,21 @@ namespace System.IO
     {
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo)
         {
+            if (directoryInfo == null)
+            {
+                throw new ArgumentNullException(nameof(directoryInfo));
+            }
+
             return new DirectorySecurity(directoryInfo.FullName, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo, AccessControlSections includeSections)
         {
+            if (directoryInfo == null)
+            {
+                throw new ArgumentNullException(nameof(directoryInfo));
+            }
+
             return new DirectorySecurity(directoryInfo.FullName, includeSections);
         }
 
@@ -34,20 +44,36 @@ namespace System.IO
 
         public static FileSecurity GetAccessControl(this FileInfo fileInfo)
         {
+            if (fileInfo == null)
+            {
+                throw new ArgumentNullException(nameof(fileInfo));
+            }
+
             return GetAccessControl(fileInfo, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
         public static FileSecurity GetAccessControl(this FileInfo fileInfo, AccessControlSections includeSections)
         {
+            if (fileInfo == null)
+            {
+                throw new ArgumentNullException(nameof(fileInfo));
+            }
+
             return new FileSecurity(fileInfo.FullName, includeSections);
         }
 
         public static void SetAccessControl(this FileInfo fileInfo, FileSecurity fileSecurity)
         {
+            if (fileInfo == null)
+            {
+                throw new ArgumentNullException(nameof(fileInfo));
+            }
+
             if (fileSecurity == null)
             {
                 throw new ArgumentNullException(nameof(fileSecurity));
             }
+
             string fullPath = Path.GetFullPath(fileInfo.FullName);
             // Appropriate security check should be done for us by FileSecurity.
             fileSecurity.Persist(fullPath);
