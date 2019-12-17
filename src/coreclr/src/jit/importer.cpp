@@ -18582,9 +18582,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     inlCurArgInfo->argNode = curArgVal;
 
     GenTree* lclVarTree;
-
-    const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
-    if (isAddressInLocal && varTypeIsStruct(lclVarTree))
+    if (impIsAddressInLocal(curArgVal, &lclVarTree) && varTypeIsStruct(lclVarTree))
     {
         inlCurArgInfo->argIsByRefToStructLocal = true;
 #ifdef FEATURE_SIMD
@@ -18609,7 +18607,8 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         INDEBUG(curArgVal->AsLclVar()->gtLclILoffs = argNum;)
     }
 
-    if ((curArgVal->OperKind() & GTK_CONST) || isAddressInLocal)
+    if ((curArgVal->OperKind() & GTK_CONST) ||
+        ((curArgVal->gtOper == GT_ADDR) && (curArgVal->AsOp()->gtOp1->gtOper == GT_LCL_VAR)))
     {
         inlCurArgInfo->argIsInvariant = true;
         if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
