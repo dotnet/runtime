@@ -27,8 +27,10 @@ namespace System.Net.NetworkInformation.Tests
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
                 _log.WriteLine("Nic: " + nic.Name);
+                _log.WriteLine("- Speed:" + nic.Speed);
                 _log.WriteLine("- Supports IPv4: " + nic.Supports(NetworkInterfaceComponent.IPv4));
                 _log.WriteLine("- Supports IPv6: " + nic.Supports(NetworkInterfaceComponent.IPv6));
+                Assert.False(nic.IsReceiveOnly);
 
                 IPInterfaceProperties ipProperties = nic.GetIPProperties();
 
@@ -149,7 +151,7 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("Index: " + ipv6Properties.Index);
                 _log.WriteLine("Mtu: " + ipv6Properties.Mtu);
-                Assert.Throws<PlatformNotSupportedException>(() => ipv6Properties.GetScopeId(ScopeLevel.Link));
+                _log.WriteLine("Scope: " + ipv6Properties.GetScopeId(ScopeLevel.Link));
             }
         }
 
@@ -175,7 +177,7 @@ namespace System.Net.NetworkInformation.Tests
                 Array values = Enum.GetValues(typeof(ScopeLevel));
                 foreach (ScopeLevel level in values)
                 {
-                    Assert.Throws<PlatformNotSupportedException>(() => ipv6Properties.GetScopeId(level));
+                    _log.WriteLine("-- Level: " + level + "; " + ipv6Properties.GetScopeId(level));
                 }
             }
         }
