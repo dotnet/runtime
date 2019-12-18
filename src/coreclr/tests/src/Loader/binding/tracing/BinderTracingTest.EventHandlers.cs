@@ -232,7 +232,7 @@ namespace BinderTracingTests
         [BinderTest(isolate: true)]
         public static BindOperation AssemblyLoadFromResolveHandler_LoadDependency()
         {
-            string assemblyPath = GetAssemblyInSubdirectoryPath(SubdirectoryAssemblyName);
+            string assemblyPath = Helpers.GetAssemblyInSubdirectoryPath(SubdirectoryAssemblyName);
             Assembly asm = Assembly.LoadFrom(assemblyPath);
             Type t = asm.GetType(DependentAssemblyTypeName);
             MethodInfo method = t.GetMethod("UseDependentAssembly", BindingFlags.Public | BindingFlags.Static);
@@ -343,12 +343,6 @@ namespace BinderTracingTests
             };
         }
 
-        private static string GetAssemblyInSubdirectoryPath(string assemblyName)
-        {
-            string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            return Path.Combine(appPath, "DependentAssemblies", $"{assemblyName}.dll");
-        }
-
         private enum HandlerReturn
         {
             Null,
@@ -429,7 +423,7 @@ namespace BinderTracingTests
                     return null;
 
                 string name = handlerReturn == HandlerReturn.RequestedAssembly ? assemblyName.Name : $"{assemblyName.Name}Mismatch";
-                string assemblyPath = GetAssemblyInSubdirectoryPath(name);
+                string assemblyPath = Helpers.GetAssemblyInSubdirectoryPath(name);
 
                 if (!File.Exists(assemblyPath))
                     return null;

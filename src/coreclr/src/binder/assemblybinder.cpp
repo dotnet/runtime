@@ -17,6 +17,7 @@
 
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
+#include "bindertracing.h"
 #include "loadcontext.hpp"
 #include "bindresult.inl"
 #include "failurecache.hpp"
@@ -713,10 +714,13 @@ namespace BINDER_SPACE
 
     namespace
     {
+        typedef void (*OnPathProbed)(const WCHAR *path, HRESULT hr);
+
         HRESULT BindSatelliteResourceByProbingPaths(
             const StringArrayList   *pResourceRoots,
             AssemblyName            *pRequestedAssemblyName,
-            BindResult              *pBindResult)
+            BindResult              *pBindResult,
+            OnPathProbed            onPathProbed)
         {
             HRESULT hr = S_OK;
 
@@ -739,6 +743,7 @@ namespace BINDER_SPACE
                                                  FALSE /* fIsInGAC */,
                                                  FALSE /* fExplicitBindToNativeImage */,
                                                  &pAssembly);
+                onPathProbed(fileName, hr);
 
                 // Missing files are okay and expected when probing
                 if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -772,6 +777,7 @@ namespace BINDER_SPACE
         {
             SString &simpleName = pRequestedAssemblyName->GetSimpleName();
 
+            BinderTracing::PathSource pathSource = useNativeImages ? BinderTracing::PathSource::AppNativeImagePaths : BinderTracing::PathSource::AppPaths;
             // Loop through the binding paths looking for a matching assembly
             for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
             {
@@ -789,6 +795,7 @@ namespace BINDER_SPACE
                                                  FALSE, // fIsInGAC
                                                  useNativeImages, // fExplicitBindToNativeImage
                                                  &pAssembly);
+                BinderTracing::PathProbed(fileName, pathSource, hr);
 
                 if (FAILED(hr))
                 {
@@ -798,6 +805,7 @@ namespace BINDER_SPACE
                                                      FALSE, // fIsInGAC
                                                      useNativeImages, // fExplicitBindToNativeImage
                                                      &pAssembly);
+                    BinderTracing::PathProbed(fileName, pathSource, hr);
                 }
 
                 // Since we're probing, file not founds are ok and we should just try another
@@ -861,7 +869,8 @@ namespace BINDER_SPACE
 
             hr = BindSatelliteResourceByProbingPaths(pApplicationContext->GetPlatformResourceRoots(),
                                                      pRequestedAssemblyName,
-                                                     pBindResult);
+                                                     pBindResult,
+                                                     [](const WCHAR *path, HRESULT res) { BinderTracing::PathProbed(path, BinderTracing::PathSource::PlatformResourceRoots, res); });
 
             // We found a platform resource file with matching file name, but whose ref-def didn't match.  Fall
             // back to application resource lookup to handle case where a user creates resources with the same
@@ -875,7 +884,8 @@ namespace BINDER_SPACE
             {
                 IF_FAIL_GO(BindSatelliteResourceByProbingPaths(pApplicationContext->GetAppPaths(),
                                                                pRequestedAssemblyName,
-                                                               pBindResult));
+                                                               pBindResult,
+                                                               [](const WCHAR *path, HRESULT res) { BinderTracing::PathProbed(path, BinderTracing::PathSource::AppPaths, res); }));
             }
         }
         else
@@ -895,6 +905,7 @@ namespace BINDER_SPACE
                                      TRUE,  // fIsInGAC
                                      TRUE,  // fExplicitBindToNativeImage
                                      &pTPAAssembly);
+                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
                 }
                 else
                 {
@@ -905,6 +916,7 @@ namespace BINDER_SPACE
                                      TRUE,  // fIsInGAC
                                      FALSE, // fExplicitBindToNativeImage
                                      &pTPAAssembly);
+                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
                 }
 
                 // On file not found, simply fall back to app path probing

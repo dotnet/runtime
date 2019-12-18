@@ -1464,3 +1464,15 @@ void QCALLTYPE AssemblyNative::TraceAssemblyLoadFromResolveHandlerInvoked(LPCWST
 
     END_QCALL;
 }
+
+// static
+void QCALLTYPE AssemblyNative::TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    BinderTracing::PathProbed(filePath, BinderTracing::PathSource::SatelliteSubdirectory, hr);
+
+    END_QCALL;
+}

@@ -207,6 +207,9 @@ namespace BinderTracing
             PopulateBindRequest(m_bindRequest);
 
         FireAssemblyLoadStop(m_bindRequest, m_resultAssembly, m_cached);
+
+        if (m_resultAssembly != nullptr)
+            m_resultAssembly->Release();
     }
 
     void AssemblyBindOperation::SetResult(PEAssembly *assembly, bool cached)
@@ -230,4 +233,9 @@ namespace BinderTracing
         m_checkedIgnoreBind = true;
         return m_ignoreBind;
     }
+}
+
+void BinderTracing::PathProbed(const WCHAR *path, BinderTracing::PathSource source, HRESULT hr)
+{
+    FireEtwKnownPathProbed(GetClrInstanceId(), path, source, hr);
 }
