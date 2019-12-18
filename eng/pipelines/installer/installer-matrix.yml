@@ -13,7 +13,7 @@ jobs:
     - Windows_NT_arm64
     jobParameters:
       ${{ insert }}: ${{ parameters }}
-      skipTests: true
+      crossBuild: true
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -42,7 +42,6 @@ jobs:
     jobParameters:
       ${{ insert }}: ${{ parameters }}
       portableBuild: true
-      skipTests: true
       crossBuild: true
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -67,7 +66,6 @@ jobs:
       additionalMSBuildArgs: /p:OutputRid=linux-musl-arm64
       portableBuild: false
       crossBuild: true
-      skipTests: true
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

@@ -1,0 +1,22 @@
+parameters:
+  name: ''
+
+steps:
+- task: CopyFiles@2
+  displayName: Prepare job-specific intermediate unsigned artifacts subdirectory
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
+    Contents: |
+      Shipping/**/*
+      NonShipping/**/*
+    TargetFolder: '$(Build.StagingDirectory)/UnsignedArtifacts/${{ parameters.name }}'
+    CleanTargetFolder: true
+  condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish intermediate unsigned artifacts
+  inputs:
+    pathToPublish: '$(Build.StagingDirectory)/UnsignedArtifacts'
+    artifactName: IntermediateUnsignedArtifacts
+    artifactType: container
+  condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))

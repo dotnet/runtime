@@ -121,7 +121,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('depproj'))">
-    <DepprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="Binaries" BuildInParallel="false" />
+    <DepprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" BuildInParallel="false" />
     <ProjectToBuild Include="@(DepprojProjectToBuild)" />
   </ItemGroup>
 
