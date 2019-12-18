@@ -4,6 +4,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
+  variables: {}
   timeoutInMinutes: ''
   pool: ''
 
@@ -16,6 +17,7 @@ jobs:
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    variables: ${{ parameters.variables }}
 
     steps:
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
