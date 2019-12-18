@@ -11,8 +11,6 @@
     <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <!-- Re-enable once issue: https://github.com/dotnet/runtime/issues/273 is fixed. -->
-    <PublishWindowsPdb>false</PublishWindowsPdb>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(BinDir)IL/</OutputPath>
