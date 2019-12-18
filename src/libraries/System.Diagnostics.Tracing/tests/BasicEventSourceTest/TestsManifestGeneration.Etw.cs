@@ -78,8 +78,8 @@ namespace BasicEventSourceTests
                     }
                 }))
                 {
-                    var initialFileName = @"E:\temp\initialFile.etl";
-                    var rolloverFile = @"E:\temp\rolloverFile.etl";
+                    var initialFileName = @"initialFile.etl";
+                    var rolloverFile = @"rolloverFile.etl";
                     var tracesession = new TraceEventSession("testname", initialFileName);
 
                     tracesession.EnableProvider("SimpleEventSource");
