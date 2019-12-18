@@ -198,7 +198,9 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EMIT_BREAKPOINT
-        .inst.w 0xde01
+	.arm
+	.inst 0xe7f001f0
+        .thumb
 .endm
 
 .macro PROLOG_PUSH RegList
