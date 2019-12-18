@@ -31,7 +31,7 @@ jobs:
     platformGroup: all
     jobParameters:
       testGroup: jitstressregs
-      useLiveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -42,4 +42,4 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: jitstressregs
-      useLiveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: Release

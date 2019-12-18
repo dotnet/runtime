@@ -18,7 +18,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
     - Linux_x64
@@ -42,3 +42,4 @@ jobs:
       testGroup: outerloop
       runInUnloadableContext: true
       displayNameArgs: RunInContext
+      liveLibrariesBuildConfig: Release
