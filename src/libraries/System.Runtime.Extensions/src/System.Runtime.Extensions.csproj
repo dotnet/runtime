@@ -48,8 +48,8 @@
     <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
       <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs">
-      <Link>Interop\Windows\Interop.BOOL.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR -->
@@ -64,31 +64,31 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOLEAN.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs">
       <Link>Common\Interop\Windows\Interop.BOOLEAN.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
       <Link>Common\Interop\Windows\Interop.GetLogicalDrives.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PathHelper.Windows.cs">
@@ -100,10 +100,10 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs">
       <Link>CoreLib\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs">
       <Link>CoreLib\Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs">
       <Link>CoreLib\Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs</Link>
     </Compile>
   </ItemGroup>
@@ -116,52 +116,52 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.IOErrors.cs">
-      <Link>Interop\Unix\Interop.IOErrors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs">
+      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.ChDir.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChDir.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ChDir.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetCwd.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCwd.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetEUid.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetTimestamp.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetTimestamp.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetTimestamp.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetPwUid.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPwUid.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetUnixName.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetUnixRelease.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixRelease.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixRelease.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.MksTemps.cs">
-      <Link>Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MksTemps.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.MountPoints.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MountPoints.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.PathConf.cs">
-      <Link>Interop\Unix\System.Native\Interop.PathConf.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.PathConf.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.SysConf.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SysConf.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.SysConf.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Unix.cs">

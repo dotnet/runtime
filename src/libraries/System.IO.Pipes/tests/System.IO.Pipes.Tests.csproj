@@ -31,14 +31,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
-      <Link>Interop\Windows\Interop.CancelIoEx.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
+      <Link>Common\Interop\Windows\Interop.CancelIoEx.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
-      <Link>Interop\Windows\Interop.FreeLibrary.cs</Link>
+      <Link>Common\Interop\Windows\Interop.FreeLibrary.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
-      <Link>Interop\Windows\Interop.LoadLibraryEx.cs</Link>
+      <Link>Common\Interop\Windows\Interop.LoadLibraryEx.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
