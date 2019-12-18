@@ -106,7 +106,6 @@
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="ByteAtATimeContent.cs" />
-    <Compile Include="HttpClientHandlerTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.cs</Link>
     </Compile>
