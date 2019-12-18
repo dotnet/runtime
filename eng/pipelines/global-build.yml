@@ -1,3 +1,7 @@
+# The purpose of this pipeline is to exercise local developer workflow in the consolidated
+# runtime repo. In particular, it is supposed to run the root "build" script just like any
+# normal developer normally would and monitor regressions w.r.t. this fundamental scenario.
+
 trigger: none
 
 pr:
