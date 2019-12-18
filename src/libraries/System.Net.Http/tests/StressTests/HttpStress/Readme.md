@@ -20,7 +20,7 @@ $ dotnet run -- -help
 
 Note that the stress suite will test the sdk available in the environment,
 that is to say it will not necessarily test the implementation of the local runtime repo.
-To achieve this, you will need to point your environment to the [`testhost` build](https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/testing-with-corefx.md).
+To achieve this, you will need to point your environment to the [`testhost` build](https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/testing-with-corefx.md).
 
 ### Running using docker-compose
 

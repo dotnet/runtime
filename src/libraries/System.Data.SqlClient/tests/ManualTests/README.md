@@ -4,7 +4,7 @@ These tests require dedicated test servers, so they're designed to be run manual
 
 ## Prerequisites
 
-- CoreFX building. you need to be able to do a successful build and run the standard tests, [Unix](https://github.com/dotnet/runtime/blob/master/docs/libraries/building/cross-platform-testing.md) or [Windows](https://github.com/dotnet/runtime/blob/master/docs/libraries/building/windows-instructions.md) Use build.cmd for windows and build.sh for Linux to build CoreFX.
+- CoreFX building. you need to be able to do a successful build and run the standard tests, [Unix](https://github.com/dotnet/runtime/blob/master/docs/workflow/building/libraries/cross-platform-testing.md) or [Windows](https://github.com/dotnet/runtime/blob/master/docs/workflow/building/libraries/windows-instructions.md) Use build.cmd for windows and build.sh for Linux to build CoreFX.
 
   **N.B.** if you want to run the EFCore tests later you will need to build -allconfigurations to generate the NuGet packages, build -allconfigurations works only on windows.
 
