@@ -1265,21 +1265,11 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-
-    if ((flags == (ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN)) &&
-        !m_sTextualIdentity.IsEmpty())
-    {
-        result.Set(m_sTextualIdentity);
-    }
-    else
-    {
-        AssemblySpec spec;
-        spec.InitializeSpec(this);
-        spec.GetFileOrDisplayName(flags, result);
-    }
-
+    AssemblySpec spec;
+    spec.InitializeSpec(this);
+    spec.GetFileOrDisplayName(flags, result);
 #else
-    result.Set(m_sTextualIdentity);
+    DacNotImpl();
 #endif //DACCESS_COMPILE
 }
 

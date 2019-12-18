@@ -712,10 +712,6 @@ class PEAssembly : public PEFile
     // ------------------------------------------------------------
 
     PTR_PEFile               m_creator;
-    // Using a separate entry and not m_pHostAssembly because otherwise
-    // HasHostAssembly becomes true that trips various other code paths resulting in bad
-    // things
-    SString                  m_sTextualIdentity;
 
   public:
     PTR_PEFile GetCreator()
