@@ -58,7 +58,6 @@ namespace System.Text.RegularExpressions
         protected ILGenerator? _ilg;
 
         // tokens representing local variables
-        private LocalBuilder? _runtextstartLocal;
         private LocalBuilder? _runtextbegLocal;
         private LocalBuilder? _runtextendLocal;
         private LocalBuilder? _runtextposLocal;
@@ -730,7 +729,6 @@ namespace System.Text.RegularExpressions
             // emit variable initializers
 
             Mvfldloc(s_runtextField, _runtextLocal!);
-            Mvfldloc(s_runtextstartField, _runtextstartLocal!);
             Mvfldloc(s_runtextbegField, _runtextbegLocal!);
             Mvfldloc(s_runtextendField, _runtextendLocal!);
             Mvfldloc(s_runtextposField, _runtextposLocal!);
@@ -1397,7 +1395,6 @@ namespace System.Text.RegularExpressions
             }
             _runtextbegLocal = DeclareInt32();
             _runtextendLocal = DeclareInt32();
-            _runtextstartLocal = DeclareInt32();
 
             _cultureLocal = null;
             if (!_options.HasFlag(RegexOptions.CultureInvariant))
