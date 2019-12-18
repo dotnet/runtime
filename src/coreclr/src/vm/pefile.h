@@ -651,8 +651,6 @@ class PEAssembly : public PEFile
     //
     // fCopiedName means to get the "shadow copied" path rather than the original path, if applicable
     void GetCodeBase(SString &result, BOOL fCopiedName = FALSE);
-    // Get the fully qualified assembly name from its metadata token
-    static void GetFullyQualifiedAssemblyName(IMDInternalImport* pImport, mdAssembly mda, SString &result, DWORD flags = 0);
 
     // Display name is the fusion binding name for an assembly
     void GetDisplayName(SString &result, DWORD flags = 0);

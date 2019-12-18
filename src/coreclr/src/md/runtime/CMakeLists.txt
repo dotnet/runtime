@@ -36,6 +36,7 @@ set(MDRUNTIME_HEADERS
   metamodel.cpp
   metamodelro.cpp
   recordpool.cpp
+  strongnameinternal.cpp
 )
 
 convert_to_absolute_path(MDRUNTIME_HEADERS ${MDRUNTIME_HEADERS})

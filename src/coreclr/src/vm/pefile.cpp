@@ -10,7 +10,6 @@
 
 #include "common.h"
 #include "pefile.h"
-#include "strongname.h"
 #include "eecontract.h"
 #include "apithreadstress.h"
 #include "eeconfig.h"
