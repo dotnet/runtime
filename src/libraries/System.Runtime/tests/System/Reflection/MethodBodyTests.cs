@@ -19,17 +19,15 @@ namespace System.Reflection.Tests
             MethodBody mb = mi.GetMethodBody();
 
             Assert.True(mb.InitLocals);  // local variables are initialized
-
+#if DEBUG
             Assert.Equal(2, mb.MaxStackSize);
-            // Release expects 3, Debug 3.
-            AssertExtensions.AtLeastOneEquals(3, 5, mb.LocalVariables.Count);
+            Assert.Equal(5, mb.LocalVariables.Count);
 
             foreach (LocalVariableInfo lvi in mb.LocalVariables)
             {
                 if (lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
                 if (lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
-                // Release expects Exception, Debug bool.
-                if (lvi.LocalIndex == 2) { AssertExtensions.AtLeastOneEquals(typeof(Exception), typeof(bool), lvi.LocalType); }
+                if (lvi.LocalIndex == 2) { Assert.Equal(typeof(bool), lvi.LocalType); }
                 if (lvi.LocalIndex == 3) { Assert.Equal(typeof(bool), lvi.LocalType); }
                 if (lvi.LocalIndex == 4) { Assert.Equal(typeof(Exception), lvi.LocalType); }
             }
@@ -39,15 +37,37 @@ namespace System.Reflection.Tests
                 if (ehc.Flags != ExceptionHandlingClauseOptions.Finally && ehc.Flags != ExceptionHandlingClauseOptions.Filter)
                 {
                     Assert.Equal(typeof(Exception), ehc.CatchType);
-
-                    // First arg is for Release, second for Debug.
-                    AssertExtensions.AtLeastOneEquals(14, 19, ehc.HandlerLength);
-                    AssertExtensions.AtLeastOneEquals(58, 70, ehc.HandlerOffset);
-                    AssertExtensions.AtLeastOneEquals(50, 61, ehc.TryLength);
-                    AssertExtensions.AtLeastOneEquals(8, 9, ehc.TryOffset);
+                    Assert.Equal(19, ehc.HandlerLength);
+                    Assert.Equal(70, ehc.HandlerOffset);
+                    Assert.Equal(61, ehc.TryLength);
+                    Assert.Equal(9, ehc.TryOffset);
                     return;
                 }
             }
+#else
+            Assert.Equal(2, mb.MaxStackSize);
+            Assert.Equal(3, mb.LocalVariables.Count);
+
+            foreach (LocalVariableInfo lvi in mb.LocalVariables)
+            {
+                if (lvi.LocalIndex == 0) { Assert.Equal(typeof(int), lvi.LocalType); }
+                if (lvi.LocalIndex == 1) { Assert.Equal(typeof(string), lvi.LocalType); }
+                if (lvi.LocalIndex == 2) { Assert.Equal(typeof(Exception), lvi.LocalType); }
+            }
+
+            foreach (ExceptionHandlingClause ehc in mb.ExceptionHandlingClauses)
+            {
+                if (ehc.Flags != ExceptionHandlingClauseOptions.Finally && ehc.Flags != ExceptionHandlingClauseOptions.Filter)
+                {
+                    Assert.Equal(typeof(Exception), ehc.CatchType);
+                    Assert.Equal(14, ehc.HandlerLength);
+                    Assert.Equal(58, ehc.HandlerOffset);
+                    Assert.Equal(50, ehc.TryLength);
+                    Assert.Equal(8, ehc.TryOffset);
+                    return;
+                }
+            }
+#endif
 
             Assert.True(false, "Expected to find CatchType clause.");
         }

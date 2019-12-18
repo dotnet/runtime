@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Runtime.ExceptionServices;
@@ -77,9 +76,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// Tests if killing the connection using the InternalConnectionWrapper is working
         /// </summary>
         /// <param name="connectionString"></param>
-        [Conditional("DEBUG")]
         private static void KillConnectionTest(string connectionString)
         {
+#if DEBUG
             InternalConnectionWrapper wrapper = null;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -104,6 +103,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     DataTestUtility.AssertEqualsWithDescription(5, command.ExecuteScalar(), "Incorrect scalar result.");
                 }
             }
+#endif
         }
 
         /// <summary>

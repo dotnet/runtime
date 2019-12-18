@@ -197,7 +197,7 @@
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
         <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
-        <DefineConstants>$(DefineConstants),TRACE, DEBUG</DefineConstants>
+        <DefineConstants>$(DefineConstants),TRACE,DEBUG</DefineConstants>
       </PropertyGroup>
     </When>
     <When Condition="'$(ConfigurationGroup)' == 'Release'">

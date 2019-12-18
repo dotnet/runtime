@@ -264,6 +264,13 @@ namespace System.Diagnostics.Tests
             Task.Run(() => child1.Start()).Wait();
             Task.Run(() => child2.Start()).Wait();
 
+            // When running in a Debug runtime, the child operation Id will be constructed as follows
+            // "|parent.RootId.<child.OperationName.Replace(., -)>-childCount.".
+            // This is for debugging purposes to know which operation the child Id is comming from.
+            //
+            // In a Release runtime, it will not contain the operation name to keep it simple and it will be as
+            // "|parent.RootId.childCount.".
+
             string child1DebugString = $"|{parent.RootId}.{child1.OperationName}-1.";
             string child2DebugString = $"|{parent.RootId}.{child2.OperationName}-2.";
             string child1ReleaseString = $"|{parent.RootId}.1.";
