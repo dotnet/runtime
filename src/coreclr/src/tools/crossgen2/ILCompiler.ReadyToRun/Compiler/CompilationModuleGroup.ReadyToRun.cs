@@ -52,21 +52,5 @@ namespace ILCompiler
         /// <param name="token">Module-based token for the type</param>
         /// <returns>Returns true the type was referenced by any of the input modules in the current compliation</returns>
         public abstract bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token);
-
-        /// <summary>
-        /// Retrieve the module-based token for a method that is not part of the version bubble of the current compilation.
-        /// </summary>
-        /// <param name="method">Method to get a module token for</param>
-        /// <param name="token">Module-based memberref token for the method</param>
-        /// <returns>Returns true the method was referenced by any of the input modules in the current compliation</returns>
-        public abstract bool TryGetModuleTokenForExternalMethod(MethodDesc method, out ModuleToken token);
-
-        /// <summary>
-        /// Retrieve the module-based token for a field that is not part of the version bubble of the current compilation.
-        /// </summary>
-        /// <param name="field">Field to get a module token for</param>
-        /// <param name="token">Module-based memberref token for the field</param>
-        /// <returns>Returns true the field was referenced by any of the input modules in the current compliation</returns>
-        public abstract bool TryGetModuleTokenForExternalField(FieldDesc field, out ModuleToken token);
     }
 }

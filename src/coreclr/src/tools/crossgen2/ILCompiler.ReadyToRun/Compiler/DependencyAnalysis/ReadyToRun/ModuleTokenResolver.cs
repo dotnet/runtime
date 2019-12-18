@@ -81,18 +81,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            ModuleToken token;
-
-            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            if (_compilationModuleGroup.VersionsWithMethodBody(method) &&
+                method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
-                if (_compilationModuleGroup.VersionsWithMethodBody(method))
-                {
-                    return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-                }
-                else if (_compilationModuleGroup.TryGetModuleTokenForExternalMethod(ecmaMethod, out token))
-                {
-                    return token;
-                }
+                return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             }
 
             // Reverse lookup failed
@@ -108,18 +100,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
         {
-            ModuleToken token;
-
-            if (field is EcmaField ecmaField)
+            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field is EcmaField ecmaField)
             {
-                if (_compilationModuleGroup.VersionsWithType(field.OwningType))
-                {
-                    return new ModuleToken(ecmaField.Module, ecmaField.Handle);
-                }
-                else if (_compilationModuleGroup.TryGetModuleTokenForExternalField(field, out token))
-                {
-                    return token;
-                }
+                return new ModuleToken(ecmaField.Module, ecmaField.Handle);
             }
 
             TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -129,12 +112,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
             }
 
+            ModuleToken token;
             if (_fieldToRefTokens.TryGetValue(canonField, out token))
             {
                 return token;
             }
 
-            // Reverse lookup failed
             if (throwIfNotFound)
             {
                 throw new NotImplementedException(field.ToString());
