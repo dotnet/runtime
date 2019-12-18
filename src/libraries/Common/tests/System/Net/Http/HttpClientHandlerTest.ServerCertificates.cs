@@ -82,6 +82,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task UseCallback_HaveCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_Success()
         {
+            if (IsWinHttpHandler && PlatformDetection.IsWindows7)
+            {
+                // Issue #27612
+                return;
+            }
+
             var options = new LoopbackProxyServer.Options
                 { AuthenticationSchemes = AuthenticationSchemes.Basic,
                   ConnectionCloseAfter407 = true
@@ -90,10 +96,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
-                handler.Proxy = new WebProxy(proxyServer.Uri)
+                SetCustomProxy(handler, new WebProxy(proxyServer.Uri)
                 {
                     Credentials = new NetworkCredential("rightusername", "rightpassword")
-                };
+                });
 
                 const string content = "This is a test";
 
@@ -125,7 +131,7 @@ namespace System.Net.Http.Functional.Tests
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.Proxy = new WebProxy(proxyServer.Uri);
+                SetCustomProxy(handler, new WebProxy(proxyServer.Uri));
                 SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
                 using (HttpClient client = CreateHttpClient(handler))
                 using (HttpResponseMessage response = await client.PostAsync(

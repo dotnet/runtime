@@ -138,6 +138,17 @@ namespace System.Net.Http.Functional.Tests
 #endif
         }
 
+        protected IWebProxy SetCustomProxy(HttpClientHandler handler, IWebProxy proxy)
+        {        
+#if WINHTTPHANDLER_TEST
+            if (proxy != null)
+            {
+                handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseCustomProxy;
+            }
+#endif
+            return handler.Proxy = proxy;
+        }
+
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {
             _output = output;
@@ -180,7 +191,7 @@ namespace System.Net.Http.Functional.Tests
 
             // ActiveIssue #39293: WinHttpHandler will downgrade to 1.1 if you set Transfer-Encoding: chunked.
             // So, skip this verification if we're not using SocketsHttpHandler.
-            if (PlatformDetection.SupportsAlpn)
+            if (PlatformDetection.SupportsAlpn && !IsWinHttpHandler)
             {
                 wrappedHandler = new VersionCheckerHttpHandler(httpClientHandler, remoteServer.HttpVersion);
             }

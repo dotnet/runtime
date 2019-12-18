@@ -38,7 +38,7 @@ namespace System.Net.Http.Functional.Tests
 #if !WINHTTPHANDLER_TEST
                     handler.UseProxy = true;
 #endif
-                    handler.Proxy = proxy;
+                    SetCustomProxy(handler, proxy);
                     using (HttpClient client = CreateHttpClient(handler))
                     {
                         Assert.Equal("hello", await client.GetStringAsync(uri));
@@ -94,7 +94,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.Proxy = new WebProxy(proxyServer.Uri);
+                    SetCustomProxy(handler, new WebProxy(proxyServer.Uri));
                     handler.Proxy.Credentials = new NetworkCredential("username", "password");
                     using (HttpResponseMessage response = await client.GetAsync(serverUri))
                     {
@@ -154,7 +154,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = creds };
+                    SetCustomProxy(handler, new WebProxy(proxyServer.Uri) { Credentials = creds });
 
                     using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                     {
@@ -193,7 +193,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Proxy_BypassTrue_GetRequestDoesntGoesThroughCustomProxy(IWebProxy proxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.Proxy = proxy;
+            SetCustomProxy(handler, proxy);
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
@@ -213,7 +213,7 @@ namespace System.Net.Http.Functional.Tests
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.Proxy = new WebProxy(proxyServer.Uri);
+                SetCustomProxy(handler, new WebProxy(proxyServer.Uri));
                 using (HttpClient client = CreateHttpClient(handler))
                 using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                 {
@@ -228,9 +228,11 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.Proxy = new WebProxy("https://" + Guid.NewGuid().ToString("N"));
+                SetCustomProxy(handler, new WebProxy("https://" + Guid.NewGuid().ToString("N")));
 
-                await Assert.ThrowsAsync<NotSupportedException>(() => client.GetAsync("http://" + Guid.NewGuid().ToString("N")));
+                Type expectedType = IsWinHttpHandler ? typeof(HttpRequestException) : typeof(NotSupportedException);
+
+                await Assert.ThrowsAsync(expectedType, () => client.GetAsync("http://" + Guid.NewGuid().ToString("N")));
             }
         }
 
@@ -241,7 +243,7 @@ namespace System.Net.Http.Functional.Tests
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.Proxy = new WebProxy(proxyServer.Uri);
+                SetCustomProxy(handler, new WebProxy(proxyServer.Uri));
                 using (HttpClient client = CreateHttpClient(handler))
                 using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
                 {
@@ -266,7 +268,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.Proxy = new WebProxy(proxyUrl) { Credentials = proxyCreds };
+                    SetCustomProxy(handler, new WebProxy(proxyUrl) { Credentials = proxyCreds });
 
                     // URL does not matter. We will get response from "proxy" code below.
                     Task<HttpResponseMessage> clientTask = client.GetAsync($"http://notarealserver.com/");
@@ -294,6 +296,12 @@ namespace System.Net.Http.Functional.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task MultiProxy_PAC_Failover_Succeeds()
         {
+            if (IsWinHttpHandler)
+            {
+                // PAC-based failover is only supported on Windows/SocketsHttpHandler
+                return;
+            }
+
             // Create our failing proxy server.
             // Bind a port to reserve it, but don't start listening yet. The first Connect() should fail and cause a fail-over.
             using Socket failingProxyServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

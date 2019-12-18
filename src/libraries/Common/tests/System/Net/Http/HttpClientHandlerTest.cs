@@ -71,6 +71,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void CookieContainer_SetNull_ThrowsArgumentNullException()
         {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+            
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Throws<ArgumentNullException>(() => handler.CookieContainer = null);
@@ -177,7 +182,7 @@ namespace System.Net.Http.Functional.Tests
 #if WINHTTPHANDLER_TEST
             var _ = useProxy;
 #else
-            handler.UseProxy = true;
+            handler.UseProxy = useProxy;
 #endif
             SetUseDefaultCredentials(handler, false);
             using (HttpClient client = CreateHttpClient(handler))
@@ -328,7 +333,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.Proxy = new WebProxy(proxyUri);
+                    SetCustomProxy(handler, new WebProxy(proxyUri));
                     try { await client.GetAsync(ipv6Address); } catch { }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
@@ -356,7 +361,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.Proxy = new WebProxy(proxyUri);
+                    SetCustomProxy(handler, new WebProxy(proxyUri));
                     try { await client.GetAsync(uri); } catch { }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
@@ -390,7 +395,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.Proxy = new WebProxy(proxyUri);
+                    SetCustomProxy(handler, new WebProxy(proxyUri));
                     try { await client.GetAsync(addressUri); } catch { }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
@@ -417,7 +422,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.Proxy = new WebProxy(proxyUri);
+                    SetCustomProxy(handler, new WebProxy(proxyUri));
                     SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
                     try { await client.GetAsync(addressUri); } catch { }
                 }
@@ -437,6 +442,11 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         public async Task ProxyTunnelRequest_UserAgentHeaderAdded(bool addUserAgentHeader)
         {
+            if (IsWinHttpHandler)
+            {
+                return; // Skip test since the fix is only in SocketsHttpHandler.
+            }
+
             string addressUri = $"https://{Configuration.Http.SecureHost}/";
             bool connectionAccepted = false;
 
@@ -445,8 +455,8 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (var client = new HttpClient(handler))
                 {
-                    handler.Proxy = new WebProxy(proxyUri);
-                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+                    SetCustomProxy(handler, new WebProxy(proxyUri));
+                    SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
                     if (addUserAgentHeader)
                     {
                         client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Mozilla", "5.0"));
@@ -592,6 +602,11 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
+            if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1709OrGreater)
+            {
+                return;
+            }
+
             string name = "X-Cust-Header-NoValue";
             string value = "";
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -717,6 +732,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, true)]
         public async Task GetAsync_IncompleteData_ThrowsHttpRequestException(bool failDuringHeaders, bool getString)
         {
+            if (IsWinHttpHandler)
+            {
+                // [ActiveIssue(39136)]
+                return;
+            }
+
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1817,14 +1838,17 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-                    const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
-                    if (expectContinue == true && (version == "1.1" || version == "2.0"))
+                    if (!IsWinHttpHandler)
                     {
-                        Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
-                    }
-                    else
-                    {
-                        Assert.DoesNotContain(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
+                        const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
+                        if (expectContinue == true && (version == "1.1" || version == "2.0"))
+                        {
+                            Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
+                        }
+                        else
+                        {
+                            Assert.DoesNotContain(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
+                        }
                     }
                 }
             }
@@ -2055,6 +2079,13 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task SendAsync_101SwitchingProtocolsResponse_Success()
         {
+            // WinHttpHandler and CurlHandler will hang, waiting for additional response.
+            // Other handlers will accept 101 as a final response.
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
             if (LoopbackServerFactory.IsHttp2)
             {
                 throw new SkipTestException("Upgrade is not supported on HTTP/2");
@@ -2387,7 +2418,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Fact]
-        [ActiveIssue(339)]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
             // The default value for HttpRequestMessage.Version is Version(1,1).

@@ -39,7 +39,7 @@ namespace System.Net.Http.Functional.Tests
 #if !WINHTTPHANDLER_TEST
                 handler.UseProxy = true;
 #endif
-                handler.Proxy = new WebProxy(serverUrl.ToString());
+                SetCustomProxy(handler, new WebProxy(serverUrl.ToString()));
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
@@ -104,7 +104,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                SetAllowAutoRedirect(handler, true);
+                SetAllowAutoRedirect(handler, false);
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {

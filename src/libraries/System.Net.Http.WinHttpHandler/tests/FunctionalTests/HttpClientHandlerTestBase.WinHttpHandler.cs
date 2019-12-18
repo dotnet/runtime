@@ -19,6 +19,9 @@ namespace System.Net.Http.Functional.Tests
         protected static WinHttpHandler CreateHttpClientHandler(bool useHttp2LoopbackServer = false)
         {
             WinHttpHandler handler = new WinHttpHandler();
+            handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+            handler.CookieContainer = new CookieContainer();
+            handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
 
             if (useHttp2LoopbackServer)
             {

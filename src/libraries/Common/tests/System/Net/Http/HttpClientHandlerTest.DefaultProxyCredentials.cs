@@ -63,11 +63,8 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, explicitProxyCreds);
+                    SetCustomProxy(handler, new UseSpecifiedUriWebProxy(proxyUrl, explicitProxyCreds));
                     handler.DefaultProxyCredentials = defaultSystemProxyCreds;
-#if WINHTTPHANDLER_TEST
-                    handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseCustomProxy;
-#endif
                     using (HttpResponseMessage response = await client.GetAsync("http://notatrealserver.com/")) // URL does not matter
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -117,9 +114,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         var creds = new NetworkCredential(ExpectedUsername, ExpectedPassword);
                         handler.DefaultProxyCredentials = creds;
-#if !WINHTTPHANDLER_TEST
                         handler.UseProxy = bool.Parse(useProxyString);
-#endif
 
                         HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer);
                         // Correctness of user and password is done in server part.
