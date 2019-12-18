@@ -16,7 +16,7 @@ class Program
     {
         public NotPromoted small;
 
-        public TypeWithStruct() => small.c = 50;
+        public TypeWithStruct() => small.c = 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
