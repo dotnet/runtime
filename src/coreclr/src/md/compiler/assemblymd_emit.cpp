@@ -16,8 +16,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 
-#include <strongname.h>
-
 #ifdef _MSC_VER
 #pragma warning(disable: 4102)
 #endif

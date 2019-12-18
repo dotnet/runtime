@@ -1,128 +1,179 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-// ===========================================================================
-// File: StrongName.cpp
 //
-// Wrappers for signing and hashing functions needed to implement strong names
-// ===========================================================================
+// Strong name APIs which are not exposed publicly but are used by CLR code
+//
 
-#include "common.h"
-#include <imagehlp.h>
-
-#include <winwrap.h>
-#include <windows.h>
-#include <wincrypt.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <malloc.h>
-#include <cor.h>
-#include <corimage.h>
-#include <metadata.h>
-#include <daccess.h>
-#include <limits.h>
-#include <ecmakey.h>
-#include <sha1.h>
-
-#include "strongname.h"
-#include "ex.h"
-#include "pedecoder.h"
-#include "strongnameholders.h"
+#include "stdafx.h"
 #include "strongnameinternal.h"
-#include "common.h"
-#include "classnames.h"
+#include "thekey.h"
+#include "ecmakey.h"
+#include "sha1.h"
 
-// Debug logging.
-#if !defined(_DEBUG) || defined(DACCESS_COMPILE)
-#define SNLOG(args)
-#endif // !_DEBUG || DACCESS_COMPILE
+//---------------------------------------------------------------------------------------
+//
+// Check to see if a public key blob is the ECMA public key blob
+//
+// Arguments:
+//   pbKey - public key blob to check
+//   cbKey - size in bytes of pbKey
+//
 
-#ifndef DACCESS_COMPILE
-
-// Debug logging.
-#if defined(_DEBUG)
-#include <stdarg.h>
-
-BOOLEAN g_fLoggingInitialized = FALSE;
-DWORD g_dwLoggingFlags = FALSE;
-
-#define SNLOG(args)   Log args
-
-void Log(__in_z const WCHAR *wszFormat, ...)
+bool StrongNameIsEcmaKey(__in_ecount(cbKey) const BYTE *pbKey, DWORD cbKey)
 {
-    if (g_fLoggingInitialized && !g_dwLoggingFlags)
-        return;
-
-    DWORD       dwError = GetLastError();
-
-    if (!g_fLoggingInitialized) {
-        g_dwLoggingFlags = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MscorsnLogging);
-        g_fLoggingInitialized = TRUE;
-    }
-
-    if (!g_dwLoggingFlags) {
-        SetLastError(dwError);
-        return;
-    }
-
-    va_list     pArgs;
-    WCHAR        wszBuffer[1024];
-    static WCHAR wszPrefix[] = W("SN: ");
-
-    wcscpy_s(wszBuffer, COUNTOF(wszBuffer), wszPrefix);
-
-    va_start(pArgs, wszFormat);
-    _vsnwprintf_s(&wszBuffer[COUNTOF(wszPrefix) - 1],
-                  COUNTOF(wszBuffer) - COUNTOF(wszPrefix),
-                  _TRUNCATE,
-                  wszFormat,
-                  pArgs);
-
-    wszBuffer[COUNTOF(wszBuffer) - 1] = W('\0');
-    va_end(pArgs);
-
-    if (g_dwLoggingFlags & 1)
-        wprintf(W("%s"), wszBuffer);
-    if (g_dwLoggingFlags & 2)
-        WszOutputDebugString(wszBuffer);
-    if (g_dwLoggingFlags & 4)
+    CONTRACTL
     {
-        MAKE_UTF8PTR_FROMWIDE_NOTHROW(szMessage, wszBuffer);
-        if(szMessage != NULL)
-            LOG((LF_SECURITY, LL_INFO100, szMessage));
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    // The key should be the same size as the ECMA key
+    if (cbKey != sizeof(g_rbNeutralPublicKey))
+    {
+        return false;
     }
 
-    SetLastError(dwError);
+    const PublicKeyBlob *pKeyBlob = reinterpret_cast<const PublicKeyBlob *>(pbKey);
+    return StrongNameIsEcmaKey(*pKeyBlob);
 }
 
-#endif // _DEBUG
+//---------------------------------------------------------------------------------------
+//
+// Check to see if a public key blob is the ECMA public key blob
+//
+// Arguments:
+//   keyPublicKey - Key to check to see if it matches the ECMA key
+//
+
+bool StrongNameIsEcmaKey(const PublicKeyBlob &keyPublicKey)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    return StrongNameSizeOfPublicKey(keyPublicKey) == sizeof(g_rbNeutralPublicKey) &&
+           memcmp(reinterpret_cast<const BYTE *>(&keyPublicKey), g_rbNeutralPublicKey, sizeof(g_rbNeutralPublicKey)) == 0;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Verify that a public key blob looks like a reasonable public key
+//
+// Arguments:
+//   pbBuffer     - buffer to verify the format of
+//   cbBuffer     - size of pbBuffer
+//
+
+bool StrongNameIsValidPublicKey(__in_ecount(cbBuffer) const BYTE *pbBuffer, DWORD cbBuffer)
+{
+    CONTRACTL
+    {
+        PRECONDITION(CheckPointer(pbBuffer));
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    // The buffer must be at least as large as the public key structure
+    if (cbBuffer < sizeof(PublicKeyBlob))
+    {
+        return false;
+    }
+
+    // The buffer must be the same size as the structure header plus the trailing key data
+    const PublicKeyBlob *pkeyPublicKey = reinterpret_cast<const PublicKeyBlob *>(pbBuffer);
+    if (GET_UNALIGNED_VAL32(&pkeyPublicKey->cbPublicKey) != cbBuffer - offsetof(PublicKeyBlob, PublicKey))
+    {
+        return false;
+    }
+
+    // The buffer itself looks reasonable, but the public key structure needs to be validated as well
+    return StrongNameIsValidPublicKey(*pkeyPublicKey);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Verify that a public key blob looks like a reasonable public key.
+//
+// Arguments:
+//   keyPublicKey - key blob to verify
+//
+// Notes:
+//    This can be a very expensive operation, since it involves importing keys.
+//
+
+bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    // The ECMA key doesn't look like a valid key so it will fail the below checks. If we were passed that
+    // key, then we can skip them
+    if (StrongNameIsEcmaKey(keyPublicKey))
+    {
+        return true;
+    }
+
+    // If a hash algorithm is specified, it must be a sensible value
+    bool fHashAlgorithmValid = GET_ALG_CLASS(GET_UNALIGNED_VAL32(&keyPublicKey.HashAlgID)) == ALG_CLASS_HASH &&
+                               GET_ALG_SID(GET_UNALIGNED_VAL32(&keyPublicKey.HashAlgID)) >= ALG_SID_SHA1;
+    if (keyPublicKey.HashAlgID != 0 && !fHashAlgorithmValid)
+    {
+        return false;
+    }
+
+    // If a signature algorithm is specified, it must be a sensible value
+    bool fSignatureAlgorithmValid = GET_ALG_CLASS(GET_UNALIGNED_VAL32(&keyPublicKey.SigAlgID)) == ALG_CLASS_SIGNATURE;
+    if (keyPublicKey.SigAlgID != 0 && !fSignatureAlgorithmValid)
+    {
+        return false;
+    }
+
+    // The key blob must indicate that it is a PUBLICKEYBLOB
+    if (keyPublicKey.PublicKey[0] != PUBLICKEYBLOB)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+
+//---------------------------------------------------------------------------------------
+//
+// Determine the number of bytes that a public key blob occupies, including the key portion
+//
+// Arguments:
+//   keyPublicKey - key blob to calculate the size of
+//
+
+DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    return offsetof(PublicKeyBlob, PublicKey) +     // Size of the blob header plus
+           GET_UNALIGNED_VAL32(&keyPublicKey.cbPublicKey);  // the number of bytes in the key
+}
+
+
+
 
 // Size in bytes of strong name token.
 #define SN_SIZEOF_TOKEN     8
-
-// We cache a couple of things on a per thread basis: the last error encountered
-// and (potentially) CSP contexts. The following structure tracks these and is
-// allocated lazily as needed.
-struct SN_THREAD_CTX {
-    DWORD       m_dwLastError;
-};
-
-#endif // !DACCESS_COMPILE
-
-// Macro containing common code used at the start of most APIs.
-#define SN_COMMON_PROLOG() do {                             \
-    SetStrongNameErrorInfo(S_OK);                           \
-} while (0)
-
-// Macro to return an error from a SN entrypoint API
-#define SN_ERROR(__hr) do {                                 \
-    if (FAILED(__hr)) {                                     \
-        SetStrongNameErrorInfo(__hr);                       \
-        retVal = FALSE;                                     \
-        goto Exit;                                          \
-    }                                                       \
-} while (false)
 
 // Determine the size of a PublicKeyBlob structure given the size of the key
 // portion.
@@ -167,84 +218,20 @@ struct SN_THREAD_CTX {
 
 
 // Free buffer allocated by routines below.
-SNAPI_(VOID) StrongNameFreeBuffer(BYTE *pbMemory)            // [in] address of memory to free
+VOID StrongNameFreeBuffer(BYTE *pbMemory)            // [in] address of memory to free
 {
-    BEGIN_ENTRYPOINT_VOIDRET;
-
-    SNLOG((W("StrongNameFreeBuffer(%08X)\n"), pbMemory));
-
     if (pbMemory != (BYTE*)SN_THE_KEY() && pbMemory != g_rbNeutralPublicKey)
         delete [] pbMemory;
-    END_ENTRYPOINT_VOIDRET;
-
-}
-
-#ifndef DACCESS_COMPILE
-// Retrieve per-thread context, lazily allocating it if necessary.
-SN_THREAD_CTX *GetThreadContext()
-{
-    SN_THREAD_CTX *pThreadCtx = (SN_THREAD_CTX*)ClrFlsGetValue(TlsIdx_StrongName);
-    if (pThreadCtx == NULL) {
-        pThreadCtx = new (nothrow) SN_THREAD_CTX;
-        if (pThreadCtx == NULL)
-            return NULL;
-        pThreadCtx->m_dwLastError = S_OK;
-
-        EX_TRY {
-            ClrFlsSetValue(TlsIdx_StrongName, pThreadCtx);
-        }
-        EX_CATCH {
-            delete pThreadCtx;
-            pThreadCtx = NULL;
-        }
-        EX_END_CATCH (SwallowAllExceptions);
-    }
-    return pThreadCtx;
-}
-
-// Set the per-thread last error code.
-VOID SetStrongNameErrorInfo(DWORD dwStatus)
-{
-    SN_THREAD_CTX *pThreadCtx = GetThreadContext();
-    if (pThreadCtx == NULL)
-        // We'll return E_OUTOFMEMORY when we attempt to get the error.
-        return;
-    pThreadCtx->m_dwLastError = dwStatus;
-}
-
-#endif // !DACCESS_COMPILE
-
-// Return last error.
-SNAPI_(DWORD) StrongNameErrorInfo(VOID)
-{
-    HRESULT hr = E_FAIL;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-#ifndef DACCESS_COMPILE
-    SN_THREAD_CTX *pThreadCtx = GetThreadContext();
-    if (pThreadCtx == NULL)
-        hr = E_OUTOFMEMORY;
-    else
-        hr = pThreadCtx->m_dwLastError;
-#else
-    hr = E_FAIL;
-#endif // #ifndef DACCESS_COMPILE
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
 }
 
 
 // Create a strong name token from a public key blob.
-SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] public key blob
+HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] public key blob
                                    ULONG    cbPublicKeyBlob,
                                    BYTE   **ppbStrongNameToken,     // [out] strong name token
                                    ULONG   *pcbStrongNameToken)
 {
-    BOOLEAN         retVal = FALSE;
-
-    BEGIN_ENTRYPOINT_VOIDRET;
+    HRESULT         hr = S_OK;
 
 #ifndef DACCESS_COMPILE
 
@@ -254,27 +241,16 @@ SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] publ
     PublicKeyBlob   *pPublicKey = NULL;
     DWORD dwHashLenMinusTokenSize = 0;
 
-    SNLOG((W("StrongNameTokenFromPublicKey(%08X, %08X, %08X, %08X)\n"), pbPublicKeyBlob, cbPublicKeyBlob, ppbStrongNameToken, pcbStrongNameToken));
-
-#if STRONGNAME_IN_VM
-    FireEtwSecurityCatchCall_V1(GetClrInstanceId());
-#endif // STRONGNAME_IN_VM
-
-    SN_COMMON_PROLOG();
-
-    if (pbPublicKeyBlob == NULL)
-        SN_ERROR(E_POINTER);
     if (!StrongNameIsValidPublicKey(pbPublicKeyBlob, cbPublicKeyBlob))
-        SN_ERROR(CORSEC_E_INVALID_PUBLICKEY);
-    if (ppbStrongNameToken == NULL)
-        SN_ERROR(E_POINTER);
-    if (pcbStrongNameToken == NULL)
-        SN_ERROR(E_POINTER);
+    {
+        hr = CORSEC_E_INVALID_PUBLICKEY;
+        goto Exit;
+    }
 
     // Allocate a buffer for the output token.
     *ppbStrongNameToken = new (nothrow) BYTE[SN_SIZEOF_TOKEN];
     if (*ppbStrongNameToken == NULL) {
-        SetStrongNameErrorInfo(E_OUTOFMEMORY);
+        hr = E_OUTOFMEMORY;
         goto Exit;
     }
     *pcbStrongNameToken = SN_SIZEOF_TOKEN;
@@ -282,27 +258,23 @@ SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] publ
     // We cache a couple of common cases.
     if (SN_IS_NEUTRAL_KEY(pbPublicKeyBlob)) {
         memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, g_rbNeutralPublicKeyToken, SN_SIZEOF_TOKEN);
-        retVal = TRUE;
         goto Exit;
     }
     if (cbPublicKeyBlob == SN_SIZEOF_THE_KEY() &&
         memcmp(pbPublicKeyBlob, SN_THE_KEY(), cbPublicKeyBlob) == 0) {
         memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_KEYTOKEN(), SN_SIZEOF_TOKEN);
-        retVal = TRUE;
         goto Exit;
     }
 
     if (SN_IS_THE_SILVERLIGHT_PLATFORM_KEY(pbPublicKeyBlob))
     {
         memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_SILVERLIGHT_PLATFORM_KEYTOKEN(), SN_SIZEOF_TOKEN);
-        retVal = TRUE;
         goto Exit;
     }
 
     if (SN_IS_THE_SILVERLIGHT_KEY(pbPublicKeyBlob))
     {
         memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_SILVERLIGHT_KEYTOKEN(), SN_SIZEOF_TOKEN);
-        retVal = TRUE;
         goto Exit;
     }
 
@@ -312,7 +284,7 @@ SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] publ
     // which could make finding a public key token collision a significantly easier task
     // since an attacker wouldn't need to work hard on generating valid key pairs before hashing.
     if (cbPublicKeyBlob <= sizeof(PublicKeyBlob)) {
-        SetLastError(CORSEC_E_INVALID_PUBLICKEY);
+        hr = CORSEC_E_INVALID_PUBLICKEY;
         goto Error;
     }
 
@@ -320,17 +292,17 @@ SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] publ
     pPublicKey = (PublicKeyBlob*) pbPublicKeyBlob;
 
     if (pPublicKey->PublicKey + GET_UNALIGNED_VAL32(&pPublicKey->cbPublicKey) < pPublicKey->PublicKey) {
-        SetLastError(CORSEC_E_INVALID_PUBLICKEY);
+        hr = CORSEC_E_INVALID_PUBLICKEY;
         goto Error;
     }
 
     if (cbPublicKeyBlob < SN_SIZEOF_KEY(pPublicKey)) {
-        SetLastError(CORSEC_E_INVALID_PUBLICKEY);
+        hr = CORSEC_E_INVALID_PUBLICKEY;
         goto Error;
     }
 
     if (*(BYTE*) pPublicKey->PublicKey /* PUBLICKEYSTRUC->bType */ != PUBLICKEYBLOB) {
-        SetLastError(CORSEC_E_INVALID_PUBLICKEY);
+        hr = CORSEC_E_INVALID_PUBLICKEY;
         goto Error;
     }
 
@@ -346,12 +318,9 @@ SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] publ
     for (i = 0; i < SN_SIZEOF_TOKEN; i++)
         (*ppbStrongNameToken)[SN_SIZEOF_TOKEN - (i + 1)] = pHash[i + dwHashLenMinusTokenSize];
 
-    retVal = TRUE;
     goto Exit;
 
  Error:
-    SetStrongNameErrorInfo(HRESULT_FROM_GetLastError());
-
     if (*ppbStrongNameToken) {
         delete [] *ppbStrongNameToken;
         *ppbStrongNameToken = NULL;
@@ -360,8 +329,6 @@ Exit:
 #else
     DacNotImpl();
 #endif // #ifndef DACCESS_COMPILE
-    END_ENTRYPOINT_VOIDRET;
 
-    return retVal;
-
+    return hr;
 }

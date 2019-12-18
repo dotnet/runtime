@@ -25,8 +25,6 @@
 #include "variables.hpp"
 #include "stringarraylist.h"
 
-#include "strongname.h"
-
 #define APP_DOMAIN_LOCKED_UNLOCKED        0x02
 #define APP_DOMAIN_LOCKED_CONTEXT         0x04
 
