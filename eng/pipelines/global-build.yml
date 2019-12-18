@@ -13,8 +13,13 @@ pr:
     include:
     - '*'
     - docs/manpages/*
+    - eng/pipelines/global-build.yml
     exclude:
     - docs/*
+    - eng/pipelines/coreclr/*.*
+    - eng/pipelines/libraries/*.*
+    - eng/pipelines/installer/*.*
+    - eng/pipelines/*.*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
     - LICENSE.TXT

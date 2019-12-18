@@ -4,13 +4,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   container: ''
-  testGroup: ''
-  crossrootfsDir: ''
   timeoutInMinutes: ''
-  signBinaries: false
-  publishToBlobFeed: false
-  stagedBuild: false
-  variables: {}
   pool: ''
 
 jobs:
@@ -21,18 +15,12 @@ jobs:
     dependsOn: checkout
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
-
-    variables:
-    - name: configArg
-      value: "-c Release"
-    - ${{ if eq(parameters.buildConfig, 'debug') }}:
-      - name: configArg
-        value: "-c Debug"
-    - ${{ parameters.variables }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     steps:
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: |
+          $(setScriptToEchoAndFailOnNonZero) 
           brew install pkgconfig icu4c openssl
           brew link --force icu4c
           ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
@@ -43,5 +31,7 @@ jobs:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) $(configArg)
+    - script: |
+        $(setScriptToEchoAndFailOnNonZero)
+        $(Build.SourcesDirectory)$(dir)build$(scriptExt) -c ${{ parameters.buildConfig }}
       displayName: Build product
