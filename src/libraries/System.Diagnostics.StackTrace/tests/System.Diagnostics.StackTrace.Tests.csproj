@@ -12,7 +12,7 @@
     <Compile Include="StackFrameTests.cs" />
     <Compile Include="StackFrameExtensionsTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="StackTraceSymbolsTests.cs" />
   </ItemGroup>
 </Project>

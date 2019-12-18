@@ -11,4 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="AssemblyToLoadDependency.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resource.fr-FR.resx" />
+  </ItemGroup>
 </Project>

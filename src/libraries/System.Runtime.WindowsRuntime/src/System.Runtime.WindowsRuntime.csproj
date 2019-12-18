@@ -32,7 +32,7 @@
     <ReferenceFromRuntime Include="System.Runtime.InteropServices.WindowsRuntime" />
     <ReferenceFromRuntime Include="System.ObjectModel" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">

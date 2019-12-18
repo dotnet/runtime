@@ -56,7 +56,7 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.ComponentModel.Primitives" />
   </ItemGroup>
 </Project>

@@ -18,7 +18,7 @@
     <Compile Include="SecurityElementTests.cs" />
     <Compile Include="TrustManagerContextTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == '$(NetCoreAppCurrent)' And '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="XamlLoadPermissionTests.cs"/>
   </ItemGroup>
 </Project>

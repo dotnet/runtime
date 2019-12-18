@@ -4,8 +4,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.cs" />
+    <Compile Include="BinderTracingTest.DefaultProbing.cs" />
     <Compile Include="BinderTracingTest.EventHandlers.cs" />
     <Compile Include="BinderEventListener.cs" />
+    <Compile Include="Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
@@ -19,6 +21,7 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Targets>Build;SatelliteDllsProjectOutputGroup</Targets>
     </ProjectReference>
     <ProjectReference Include="AssemblyToLoad.csproj">
       <Properties>AssemblyNameSuffix=SubdirectoryMismatch</Properties>
@@ -29,10 +32,15 @@
   </ItemGroup>
 
   <Target Name="MoveDependentAssembliesToSubdirectory" AfterTargets="CopyFilesToOutputDirectory">
+    <PropertyGroup>
+      <AssemblyToLoadResourceCulture>fr-FR</AssemblyToLoadResourceCulture>
+    </PropertyGroup>
     <ItemGroup>
-      <AssembliesToMove Include="$(OutDir)/AssemblyToLoad_*.*" />
+      <SatelliteAssembliesToMove Include="$(OutDir)/AssemblyToLoad_*.resources.*" />
+      <AssembliesToMove Include="$(OutDir)/AssemblyToLoad_*.*" Exclude="@(SatelliteAssembliesToMove)" />
       <AssembliesToMove Include="$(OutDir)/AssemblyToLoadDependency.*" />
     </ItemGroup>
     <Move SourceFiles="@(AssembliesToMove)" DestinationFolder="$(OutDir)/DependentAssemblies" />
+    <Move SourceFiles="@(SatelliteAssembliesToMove)" DestinationFolder="$(OutDir)/DependentAssemblies/$(AssemblyToLoadResourceCulture)" />
   </Target>
 </Project>

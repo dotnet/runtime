@@ -293,6 +293,7 @@ endif()
 add_subdirectory(System.Native)
 
 if (NOT CLR_CMAKE_PLATFORM_WASM)
+    add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()

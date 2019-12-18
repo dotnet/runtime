@@ -23,7 +23,6 @@
 #include "field.h"
 #include "assemblyname.hpp"
 #include "eeconfig.h"
-#include "strongname.h"
 #include "interoputil.h"
 #include "frames.h"
 #include "typeparse.h"
@@ -1461,6 +1460,18 @@ void QCALLTYPE AssemblyNative::TraceAssemblyLoadFromResolveHandlerInvoked(LPCWST
     BEGIN_QCALL;
 
     FireEtwAssemblyLoadFromResolveHandlerInvoked(GetClrInstanceId(), assemblyName, isTrackedAssembly, requestingAssemblyPath, requestedAssemblyPath);
+
+    END_QCALL;
+}
+
+// static
+void QCALLTYPE AssemblyNative::TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    BinderTracing::PathProbed(filePath, BinderTracing::PathSource::SatelliteSubdirectory, hr);
 
     END_QCALL;
 }

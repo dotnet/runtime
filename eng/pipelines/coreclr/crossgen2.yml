@@ -36,7 +36,7 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       testGroup: innerloop
-      useLiveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -52,4 +52,4 @@ jobs:
       readyToRun: true
       crossgen2: true
       displayNameArgs: R2R_CG2
-      useLiveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: Release
