@@ -1021,6 +1021,12 @@ REM === Helper routines
 REM ===
 REM =========================================================================================
 
+
+REM =========================================================================================
+REM === These two routines are intended for the exit code to propagate to the parent process
+REM === Like MSBuild or Powershell. If we directly exit /b 1 from within a if statement in
+REM === any of the routines, the exit code is not propagated.
+REM =========================================================================================
 :ExitWithError
 exit /b 1
 
