@@ -22,7 +22,7 @@ pr: none
 
 variables:
 - template: /eng/pipelines/common/variables.yml
-# TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup.
+# TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
 - name: TeamName
   value: dotnet-core-acquisition
 # Set the target blob feed for package publish during official and validation builds.

@@ -35,7 +35,7 @@ stages:
     symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
     # Enable SDL validation, passing through values from the 'core-setup-sdl-validation' group.
     SDLValidationParameters:
-      enable: false # TODO: (Consolidation) Decide who owns SDL validation errors and enable.
+      enable: false # TODO: (Consolidation) Decide who owns SDL validation errors and enable. https://github.com/dotnet/runtime/issues/1027
       artifactNames:
       - PackageArtifacts
       - BlobArtifacts
