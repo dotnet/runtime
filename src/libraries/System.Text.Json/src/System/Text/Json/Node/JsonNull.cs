@@ -54,7 +54,7 @@ namespace System.Text.Json
         /// <param name="left">The JSON null to compare.</param>
         /// <param name="right">The JSON null to compare.</param>
         /// <returns>
-        ///    <see langword="true"/> if both instances matches,
+        ///    <see langword="true"/> if both instances match,
         ///    <see langword="false"/> otherwise.
         /// </returns>
         public static bool operator ==(JsonNull left, JsonNull right)
