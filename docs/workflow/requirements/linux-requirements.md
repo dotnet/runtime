@@ -36,7 +36,7 @@ If you are attempting to cross build the CoreCLR runtime for arm/arm64 then use 
 docker run --rm -v /home/dotnet-bot/runtime/src/coreclr:/coreclr -w /coreclr -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921 ./build.sh arm64 cross
 ```
 
-Note that instructions on building the crossrootfs location can be found at https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/cross-building.md. These instructions are suggested only if there are plans to change the rootfs, or the Docker images for arm/arm64 are insufficient for your build.
+Note that instructions on building the crossrootfs location can be found at https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/cross-building.md. These instructions are suggested only if there are plans to change the rootfs, or the Docker images for arm/arm64 are insufficient for your build.
 
 Docker Images
 =============
