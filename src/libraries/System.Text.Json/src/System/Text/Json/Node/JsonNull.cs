@@ -43,7 +43,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="other">The JSON null to compare against.</param>
         /// <returns>
-        ///    <see langword="true"/> if the <paramref name="other"/> is <see cref="JsonNull"/>,
+        ///    <see langword="true"/> if <paramref name="other"/> is not null,
         ///    <see langword="false"/> otherwise.
         /// </returns>
         public bool Equals(JsonNull other) => !(other is null);
