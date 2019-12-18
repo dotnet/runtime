@@ -33,3 +33,15 @@ jobs:
         $(MsbuildSigningArguments)
       displayName: Build
 
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
+      - task: NuGetCommand@2
+        displayName: Push Visual Studio NuPkgs
+        inputs:
+          command: push
+          packagesToPush: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/*/VS.Redist.Common.*.nupkg'
+          nuGetFeedType: external
+          publishFeedCredentials: 'DevDiv - VS package feed'
+        condition: and(
+          succeeded(),
+          eq(variables['_BuildConfig'], 'Release'),
+          ne(variables['DisableVSPublish'], 'true'))
