@@ -67,7 +67,7 @@ namespace BinderTracingTests
         {
             FindInLoadContext,
             AssemblyLoadContextLoad,
-            PlatformAssemblies,
+            ApplicationAssemblies,
             DefaultAssemblyLoadContextFallback,
             ResolveSatelliteAssembly,
             AssemblyLoadContextResolvingEvent,

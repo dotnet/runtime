@@ -299,7 +299,7 @@ namespace BinderTracing
 
         attempt = bindResult.GetAttempt(false /*foundInContext*/);
         if (attempt != nullptr)
-            TraceStage(Stage::PlatformAssemblies, attempt->HResult, attempt->Assembly);
+            TraceStage(Stage::ApplicationAssemblies, attempt->HResult, attempt->Assembly);
     }
 
     void ResolutionAttemptedOperation::TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly)

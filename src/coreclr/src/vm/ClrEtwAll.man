@@ -490,7 +490,7 @@
                     <valueMap name="ResolutionAttemptedStageMap">
                       <map value="0x0" message="$(string.RuntimePublisher.ResolutionAttempted.FindInLoadContext)"/>
                       <map value="0x1" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextLoad)"/>
-                      <map value="0x2" message="$(string.RuntimePublisher.ResolutionAttempted.PlatformAssemblies)"/>
+                      <map value="0x2" message="$(string.RuntimePublisher.ResolutionAttempted.ApplicationAssemblies)"/>
                       <map value="0x3" message="$(string.RuntimePublisher.ResolutionAttempted.DefaultAssemblyLoadContextFallback)"/>
                       <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.ResolveSatelliteAssembly)"/>
                       <map value="0x5" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent)"/>
@@ -7208,7 +7208,7 @@
                 <string id="RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage" value="SatelliteSubdirectory" />
                 <string id="RuntimePublisher.ResolutionAttempted.FindInLoadContext" value="FindInLoadContext" />
                 <string id="RuntimePublisher.ResolutionAttempted.AssemblyLoadContextLoad" value="AssemblyLoadContextLoad"/>
-                <string id="RuntimePublisher.ResolutionAttempted.PlatformAssemblies" value="PlatformAssemblies" />
+                <string id="RuntimePublisher.ResolutionAttempted.ApplicationAssemblies" value="ApplicationAssemblies" />
                 <string id="RuntimePublisher.ResolutionAttempted.DefaultAssemblyLoadContextFallback" value="DefaultAssemblyLoadContextFallback" />
                 <string id="RuntimePublisher.ResolutionAttempted.ResolveSatelliteAssembly" value="ResolveSatelliteAssembly" />
                 <string id="RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent" value="AssemblyLoadContextResolvingEvent" />

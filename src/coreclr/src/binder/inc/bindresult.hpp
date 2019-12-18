@@ -74,7 +74,7 @@ namespace BINDER_SPACE
         ReleaseHolder<IUnknown> m_pIUnknownAssembly;
 
         AttemptResult m_inContextAttempt;
-        AttemptResult m_defaultAssembliesAttempt;
+        AttemptResult m_applicationAssembliesAttempt;
     };
 };
 

@@ -70,7 +70,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [IncompatibleVersion]
         //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [AssemblyNotFound]
@@ -91,7 +91,7 @@ namespace BinderTracingTests
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alcInstance, ResolutionResult.IncompatibleVersion, loadedAssembly),
                     GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alcInstance, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                    GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alcInstance, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alcInstance, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, alcInstance, ResolutionResult.AssemblyNotFound)
@@ -99,11 +99,11 @@ namespace BinderTracingTests
             };
         }
 
-        // Successful load through platform assemblies search:
-        //   ResolutionAttempted : FindInLoadContext    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies   (DefaultALC)    [Success]
+        // Successful load through application assemblies search:
+        //   ResolutionAttempted : FindInLoadContext        (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies    (DefaultALC)    [Success]
         [BinderTest(isolate: true)]
-        public static BindOperation PlatformAssemblies()
+        public static BindOperation ApplicationAssemblies()
         {
             var assemblyName = new AssemblyName(DependentAssemblyName);
             Assembly asm = AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
@@ -119,18 +119,18 @@ namespace BinderTracingTests
                 ResolutionAttempts = new List<ResolutionAttempt>()
                 {
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                    GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.Success, asm)
+                    GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.Success, asm)
                 }
             };
         }
 
         // Mismatched assembly name from platform assemblies:
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [MismatchedAssemblyName]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [MismatchedAssemblyName]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (DefaultALC)    [AssemblyNotFound]
         [BinderTest(isolate: true)]
-        public static BindOperation PlatformAssemblies_MismatchedAssemblyName()
+        public static BindOperation ApplicationAssemblies_MismatchedAssemblyName()
         {
             string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string assemblyPath = Path.Combine(appPath, $"{DependentAssemblyName}_Copy.dll");
@@ -154,7 +154,7 @@ namespace BinderTracingTests
                 ResolutionAttempts = new List<ResolutionAttempt>()
                 {
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                    GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.MismatchedAssemblyName, UseDependentAssembly().GetName(), assemblyPath),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.MismatchedAssemblyName, UseDependentAssembly().GetName(), assemblyPath),
                     GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound)
                 }
@@ -220,7 +220,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [Success]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [Success]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [Success]
         [BinderTest(isolate: true)]
         public static BindOperation DefaultAssemblyLoadContextFallback()
@@ -242,7 +242,7 @@ namespace BinderTracingTests
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                    GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.Success, asm),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.Success, asm),
                     GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alc, ResolutionResult.Success, asm)
                 }
             };
@@ -252,7 +252,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [Success]
         [BinderTest(isolate: true)]
@@ -277,7 +277,7 @@ namespace BinderTracingTests
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alc, ResolutionResult.Success, asm)
                     },
@@ -288,7 +288,7 @@ namespace BinderTracingTests
 
         // Successful load through AssemblyLoadContext.Resolving event (default ALC):
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [Success]
         [BinderTest(isolate: true)]
         public static BindOperation AssemblyLoadContextResolvingEvent_DefaultALC()
@@ -309,7 +309,7 @@ namespace BinderTracingTests
                     ResolutionAttempts = new List<ResolutionAttempt>()
                     {
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, ResolutionResult.Success, asm)
                     },
                     AssemblyLoadContextResolvingHandlers = handlers.Invocations
@@ -321,7 +321,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [Exception]
         [BinderTest(isolate: true)]
@@ -344,7 +344,7 @@ namespace BinderTracingTests
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alc, "Exception in handler for AssemblyLoadContext.Resolving")
                     },
@@ -355,7 +355,7 @@ namespace BinderTracingTests
 
         // Exception in AssemblyLoadContext.Resolving event handler (default ALC):
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [Exception]
         [BinderTest(isolate: true)]
         public static BindOperation AssemblyLoadContextResolvingEvent_DefaultALC_Exception()
@@ -374,7 +374,7 @@ namespace BinderTracingTests
                     ResolutionAttempts = new List<ResolutionAttempt>()
                     {
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, "Exception in handler for AssemblyLoadContext.Resolving")
                     },
                     AssemblyLoadContextResolvingHandlers = handlers.Invocations
@@ -386,7 +386,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [Success]
@@ -412,7 +412,7 @@ namespace BinderTracingTests
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, alc, ResolutionResult.Success, asm)
@@ -424,7 +424,7 @@ namespace BinderTracingTests
 
         // Successful load through AppDomain.AssemblyResolve event (default ALC):
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (DefaultALC)    [Success]
         [BinderTest(isolate: true)]
@@ -446,7 +446,7 @@ namespace BinderTracingTests
                     ResolutionAttempts = new List<ResolutionAttempt>()
                     {
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, AssemblyLoadContext.Default, ResolutionResult.Success, asm)
                     },
@@ -459,7 +459,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [Exception]
@@ -483,7 +483,7 @@ namespace BinderTracingTests
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                        GetResolutionAttempt(assemblyName, ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                        GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alc, ResolutionResult.AssemblyNotFound),
                         GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, alc, "Exception in handler for AppDomain.AssemblyResolve")
@@ -494,8 +494,8 @@ namespace BinderTracingTests
         }
 
         // Assembly is found in app path when attempted to load through full path:
-        //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
-        //   ResolutionAttempted : PlatformAssemblies                   (DefaultALC)    [Success]
+        //   ResolutionAttempted : FindInLoadContext        (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies    (DefaultALC)    [Success]
         [BinderTest(isolate: true)]
         public static BindOperation LoadFromAssemblyPath_FoundInAppPath()
         {
@@ -519,7 +519,7 @@ namespace BinderTracingTests
                 ResolutionAttempts = new List<ResolutionAttempt>()
                 {
                     GetResolutionAttempt(asm.GetName(), ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
-                    GetResolutionAttempt(asm.GetName(), ResolutionStage.PlatformAssemblies, AssemblyLoadContext.Default, ResolutionResult.Success, asm),
+                    GetResolutionAttempt(asm.GetName(), ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.Success, asm),
                 }
             };
         }

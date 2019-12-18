@@ -149,7 +149,7 @@ void BindResult::SetResult(BindResult *pBindResult)
 
     attempt = pBindResult->GetAttempt(false /*foundInContext*/);
     if (attempt != nullptr)
-        m_defaultAssembliesAttempt.Set(attempt);
+        m_applicationAssembliesAttempt.Set(attempt);
 }
 
 void BindResult::SetNoResult()
@@ -168,7 +168,7 @@ void BindResult::Reset()
     m_pIUnknownAssembly = NULL;
     m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
     m_inContextAttempt.Reset();
-    m_defaultAssembliesAttempt.Reset();
+    m_applicationAssembliesAttempt.Reset();
 }
 
 void BindResult::SetAttemptResult(HRESULT hr, ContextEntry *pContextEntry)
@@ -187,14 +187,14 @@ void BindResult::SetAttemptResult(HRESULT hr, Assembly *pAssembly)
     if (pAssembly != nullptr)
         pAssembly->AddRef();
 
-    m_defaultAssembliesAttempt.Assembly = pAssembly;
-    m_defaultAssembliesAttempt.HResult = hr;
-    m_defaultAssembliesAttempt.Attempted = true;
+    m_applicationAssembliesAttempt.Assembly = pAssembly;
+    m_applicationAssembliesAttempt.HResult = hr;
+    m_applicationAssembliesAttempt.Attempted = true;
 }
 
 const BindResult::AttemptResult* BindResult::GetAttempt(bool foundInContext) const
 {
-    const BindResult::AttemptResult &result = foundInContext ? m_inContextAttempt : m_defaultAssembliesAttempt;
+    const BindResult::AttemptResult &result = foundInContext ? m_inContextAttempt : m_applicationAssembliesAttempt;
     return result.Attempted ? &result : nullptr;
 }
 

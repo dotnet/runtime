@@ -82,7 +82,7 @@ namespace BinderTracing
         {
             FindInLoadContext = 0,
             AssemblyLoadContextLoad = 1,
-            PlatformAssemblies = 2,
+            ApplicationAssemblies = 2,
             DefaultAssemblyLoadContextFallback = 3,
             ResolveSatelliteAssembly = 4,
             AssemblyLoadContextResolvingEvent = 5,
