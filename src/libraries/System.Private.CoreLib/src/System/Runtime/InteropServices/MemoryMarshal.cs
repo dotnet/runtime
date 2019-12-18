@@ -77,6 +77,19 @@ namespace System.Runtime.InteropServices
             Unsafe.As<ReadOnlyMemory<T>, Memory<T>>(ref memory);
 
         /// <summary>
+        /// Returns a reference to the 0th element of <paramref name="array"/>. If the array is empty, returns a reference to where the 0th element
+        /// would have been stored. Such a reference may be used for pinning but must never be dereferenced.
+        /// </summary>
+        /// <exception cref="NullReferenceException">If <paramref name="array"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// This method does not perform array variance checks. The caller must manually perform any array variance checks
+        /// if the caller wishes to write to the returned reference.
+        /// </remarks>
+        [Intrinsic]
+        public static ref T GetRawArrayData<T>(T[] array) =>
+            ref Unsafe.As<byte, T>(ref Unsafe.As<RawArrayData>(array).Data);
+
+        /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
         /// </summary>
