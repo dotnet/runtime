@@ -15,7 +15,7 @@
 //
 
 NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
-
+    .arm
     // push arg to the stack so our personality routine can find it
     // push lr to get good stacktrace in debugger
     push {r0,lr}
