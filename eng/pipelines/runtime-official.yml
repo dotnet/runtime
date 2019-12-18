@@ -4,6 +4,19 @@ trigger:
     include:
     - master
     - release/*
+  paths:
+    include:
+    - '*'
+    - docs/manpages/*
+    exclude:
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
 
 pr: none
 
