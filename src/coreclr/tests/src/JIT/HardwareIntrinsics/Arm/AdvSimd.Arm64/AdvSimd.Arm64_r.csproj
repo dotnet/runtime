@@ -14,6 +14,16 @@
     <Compile Include="ReverseElementBits.Vector128.SByte.cs" />
     <Compile Include="ReverseElementBits.Vector64.Byte.cs" />
     <Compile Include="ReverseElementBits.Vector64.SByte.cs" />
+    <Compile Include="AddAcross.Vector64.Byte.cs" />
+    <Compile Include="AddAcross.Vector64.SByte.cs" />
+    <Compile Include="AddAcross.Vector64.UInt16.cs" />
+    <Compile Include="AddAcross.Vector64.Int16.cs" />
+    <Compile Include="AddAcross.Vector128.Byte.cs" />
+    <Compile Include="AddAcross.Vector128.SByte.cs" />
+    <Compile Include="AddAcross.Vector128.UInt16.cs" />
+    <Compile Include="AddAcross.Vector128.Int16.cs" />
+    <Compile Include="AddAcross.Vector128.UInt32.cs" />
+    <Compile Include="AddAcross.Vector128.Int32.cs" />
     <Compile Include="Program.AdvSimd.Arm64.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

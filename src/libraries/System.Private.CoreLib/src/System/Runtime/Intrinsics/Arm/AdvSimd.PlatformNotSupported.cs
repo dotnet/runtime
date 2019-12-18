@@ -50,61 +50,61 @@ namespace System.Runtime.Intrinsics.Arm
             /// uint8_t vaddv_u8(uint8x8_t a)
             ///   A64: ADDV Bd, Vn.8B
             /// </summary>
-            public static byte AddAcross(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<byte> AddAcross(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int16_t vaddv_s16(int16x4_t a)
             ///   A64: ADDV Hd, Vn.4H
             /// </summary>
-            public static short AddAcross(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<short> AddAcross(Vector64<short> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int8_t vaddv_s8(int8x8_t a)
             ///   A64: ADDV Bd, Vn.8B
             /// </summary>
-            public static sbyte AddAcross(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<sbyte> AddAcross(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint16_t vaddv_u16(uint16x4_t a)
             ///   A64: ADDV Hd, Vn.4H
             /// </summary>
-            public static ushort AddAcross(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<ushort> AddAcross(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint8_t vaddvq_u8(uint8x16_t a)
             ///   A64: ADDV Bd, Vn.16B
             /// </summary>
-            public static byte AddAcross(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+            public static Vector128<byte> AddAcross(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int16_t vaddvq_s16(int16x8_t a)
             ///   A64: ADDV Hd, Vn.8H
             /// </summary>
-            public static short AddAcross(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+            public static Vector128<short> AddAcross(Vector128<short> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int32_t vaddvq_s32(int32x4_t a)
             ///   A64: ADDV Sd, Vn.4S
             /// </summary>
-            public static int AddAcross(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+            public static Vector128<int> AddAcross(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// int8_t vaddvq_s8(int8x16_t a)
             ///   A64: ADDV Bd, Vn.16B
             /// </summary>
-            public static sbyte AddAcross(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+            public static Vector128<sbyte> AddAcross(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint16_t vaddvq_u16(uint16x8_t a)
             ///   A64: ADDV Hd, Vn.8H
             /// </summary>
-            public static ushort AddAcross(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+            public static Vector128<ushort> AddAcross(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint32_t vaddvq_u32(uint32x4_t a)
             ///   A64: ADDV Sd, Vn.4S
             /// </summary>
-            public static uint AddAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+            public static Vector128<uint> AddAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)

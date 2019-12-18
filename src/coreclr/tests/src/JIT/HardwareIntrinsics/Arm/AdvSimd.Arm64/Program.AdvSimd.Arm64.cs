@@ -18,6 +18,16 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["ReverseElementBits.Vector128.SByte"] = ReverseElementBits_Vector128_SByte,
                 ["ReverseElementBits.Vector64.Byte"] = ReverseElementBits_Vector64_Byte,
                 ["ReverseElementBits.Vector64.SByte"] = ReverseElementBits_Vector64_SByte,
+                ["AddAcross.Vector64.Byte"] = AddAcross_Vector64_Byte,
+                ["AddAcross.Vector64.SByte"] = AddAcross_Vector64_SByte,
+                ["AddAcross.Vector64.UInt16"] = AddAcross_Vector64_UInt16,
+                ["AddAcross.Vector64.Int16"] = AddAcross_Vector64_Int16,
+                ["AddAcross.Vector128.Byte"] = AddAcross_Vector128_Byte,
+                ["AddAcross.Vector128.SByte"] = AddAcross_Vector128_SByte,
+                ["AddAcross.Vector128.UInt16"] = AddAcross_Vector128_UInt16,
+                ["AddAcross.Vector128.Int16"] = AddAcross_Vector128_Int16,
+                ["AddAcross.Vector128.UInt32"] = AddAcross_Vector128_UInt32,
+                ["AddAcross.Vector128.Int32"] = AddAcross_Vector128_Int32,
             };
         }
     }
