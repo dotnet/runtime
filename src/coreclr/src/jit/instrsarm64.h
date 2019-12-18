@@ -1150,6 +1150,9 @@ INST1(uxth,    "uxth",   0, 0, IF_DR_2H,  0x53003C00)
 INST1(nop,     "nop",    0, 0, IF_SN_0A,  0xD503201F)
                                    //  nop                          SN_0A  1101010100000011 0010000000011111   D503 201F
 
+INST1(bkpt,    "bkpt",   0, 0, IF_SN_0A,  0xD43E0000)
+                                   //  brpt                         SN_0A  1101010000111110 0000000000000000   D43E 0000   0xF000
+
 INST1(brk,     "brk",    0, 0, IF_SI_0A,  0xD4200000)
                                    //  brk     imm16                SI_0A  11010100001iiiii iiiiiiiiiii00000   D420 0000   imm16
 
