@@ -65,7 +65,7 @@ jobs:
         - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
           displayName: Restore
 
-        # TODO (Consolidation): Fix internal tool restore and re-enable.
+        # TODO (Consolidation): Fix internal tool restore and re-enable. https://github.com/dotnet/runtime/issues/1024
         # - ${{ if eq(parameters.isOfficialBuild, true) }}:
         #   - task: DotNetCoreCLI@2
         #     displayName: Restore internal tools
