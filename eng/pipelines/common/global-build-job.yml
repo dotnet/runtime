@@ -20,6 +20,7 @@ jobs:
     displayName: ${{ format('Runtime Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     dependsOn: checkout
     pool: ${{ parameters.pool }}
+    container: ${{ parameters.container }}
 
     variables:
     - name: configArg
@@ -32,7 +33,8 @@ jobs:
     steps:
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: |
-          brew install pkgconfig openssl
+          brew install pkgconfig icu4c openssl
+          brew link --force icu4c
           ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
           ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
           ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
