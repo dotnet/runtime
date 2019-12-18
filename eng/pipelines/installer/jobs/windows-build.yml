@@ -43,5 +43,4 @@ jobs:
           publishFeedCredentials: 'DevDiv - VS package feed'
         condition: and(
           succeeded(),
-          eq(variables['_BuildConfig'], 'Release'),
           ne(variables['DisableVSPublish'], 'true'))
