@@ -54,10 +54,12 @@ jobs:
   - name: OfficialBuildArg
     value: ''
 
-  # Produce test-signed build for PR and Public builds
-  - ${{ if eq(parameters.isOfficialBuild, false) }}:
-    - name: SignType
-      value: test
+  # TODO (Consolidation): Enable test signing during PR validation.
+  #
+  # CoreCLR only produces the UCRT redist file in Release config. When the redist file isn't
+  # present, signing fails. For now, only sign in official builds which only run Release mode.
+  - name: SignType
+    value: ''
 
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
