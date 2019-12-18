@@ -200,7 +200,7 @@ namespace System
             if (double.IsNaN(value))
                 throw new ArgumentException(SR.Arg_CannotBeNaN);
             double ticks = value * scale;
-            if ((ticks > long.MaxValue) || (ticks < long.MinValue))
+            if ((ticks >= long.MaxValue) || (ticks <= long.MinValue))
                 throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             return new TimeSpan((long)ticks);
         }

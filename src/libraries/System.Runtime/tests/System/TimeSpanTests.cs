@@ -142,6 +142,13 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.MinValue + new TimeSpan(-1)); // Result < TimeSpan.MinValue
         }
 
+        [Fact]
+        public static void FromMaxValue_Invalid()
+        {
+            Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(TimeSpan.MaxValue.TotalMinutes));
+            Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(TimeSpan.MinValue.TotalMinutes));
+        }
+
         public static IEnumerable<object[]> CompareTo_TestData()
         {
             yield return new object[] { new TimeSpan(10000), new TimeSpan(10000), 0 };
