@@ -54,6 +54,3 @@ inline static bool add_s(size_t a, size_t b, size_t* result)
     return true;
 #endif
 }
-
-//typedef int errno_t;
-
