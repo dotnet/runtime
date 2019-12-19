@@ -397,6 +397,7 @@
                             <opcode name="AssemblyLoadContextResolvingHandlerInvoked" message="$(string.RuntimePublisher.AssemblyLoadContextResolvingHandlerInvokedOpcodeMessage)" symbol="CLR_ALC_RESOLVING_HANDLER_INVOKED_OPCODE" value="12"/>
                             <opcode name="AppDomainAssemblyResolveHandlerInvoked" message="$(string.RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedOpcodeMessage)" symbol="CLR_APPDOMAIN_ASSEMBLY_RESOLVE_HANDLER_INVOKED_OPCODE" value="13"/>
                             <opcode name="AssemblyLoadFromResolveHandlerInvoked" message="$(string.RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedOpcodeMessage)" symbol="CLR_ASSEMBLY_LOAD_FROM_RESOLVE_HANDLER_INVOKED_OPCODE" value="14"/>
+                            <opcode name="KnownPathProbed" message="$(string.RuntimePublisher.KnownPathProbedOpcodeMessage)" symbol="CLR_BINDING_PATH_PROBED_OPCODE" value="15"/>
                         </opcodes>
                     </task>
                 <!--Next available ID is 33-->
@@ -468,15 +469,22 @@
                         <map value="5" message="$(string.RuntimePublisher.GCRootKind.Overflow)"/>
                     </valueMap>
                     <valueMap name="GCHandleKindMap">
-                      <map value="0x0" message="$(string.RuntimePublisher.GCHandleKind.WeakShortMessage)"/>
-                      <map value="0x1" message="$(string.RuntimePublisher.GCHandleKind.WeakLongMessage)"/>
-                      <map value="0x2" message="$(string.RuntimePublisher.GCHandleKind.StrongMessage)"/>
-                      <map value="0x3" message="$(string.RuntimePublisher.GCHandleKind.PinnedMessage)"/>
-                      <map value="0x4" message="$(string.RuntimePublisher.GCHandleKind.VariableMessage)"/>
-                      <map value="0x5" message="$(string.RuntimePublisher.GCHandleKind.RefCountedMessage)"/>
-                      <map value="0x6" message="$(string.RuntimePublisher.GCHandleKind.DependentMessage)"/>
-                      <map value="0x7" message="$(string.RuntimePublisher.GCHandleKind.AsyncPinnedMessage)"/>
-                      <map value="0x8" message="$(string.RuntimePublisher.GCHandleKind.SizedRefMessage)"/>
+                        <map value="0x0" message="$(string.RuntimePublisher.GCHandleKind.WeakShortMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.GCHandleKind.WeakLongMessage)"/>
+                        <map value="0x2" message="$(string.RuntimePublisher.GCHandleKind.StrongMessage)"/>
+                        <map value="0x3" message="$(string.RuntimePublisher.GCHandleKind.PinnedMessage)"/>
+                        <map value="0x4" message="$(string.RuntimePublisher.GCHandleKind.VariableMessage)"/>
+                        <map value="0x5" message="$(string.RuntimePublisher.GCHandleKind.RefCountedMessage)"/>
+                        <map value="0x6" message="$(string.RuntimePublisher.GCHandleKind.DependentMessage)"/>
+                        <map value="0x7" message="$(string.RuntimePublisher.GCHandleKind.AsyncPinnedMessage)"/>
+                        <map value="0x8" message="$(string.RuntimePublisher.GCHandleKind.SizedRefMessage)"/>
+                    </valueMap>
+                    <valueMap name="KnownPathSourceMap">
+                        <map value="0x0" message="$(string.RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage)"/>
+                        <map value="0x2" message="$(string.RuntimePublisher.KnownPathSource.AppPathsMessage)"/>
+                        <map value="0x3" message="$(string.RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage)"/>
+                        <map value="0x4" message="$(string.RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage)"/>
                     </valueMap>
 
                     <!-- BitMaps -->
@@ -1690,24 +1698,6 @@
                         </UserData>
                     </template>
 
-                    <template tid="MethodDetails">
-                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
-                        <data name="TypeID" inType="win:UInt64" outType="win:HexInt64" />
-                        <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
-                        <data name="TypeParameterCount" inType="win:UInt32" />
-                        <data name="LoaderModuleID" inType="win:UInt64" outType="win:HexInt64" />
-                        <data name="TypeParameters" count="TypeParameterCount"  inType="win:UInt64" outType="win:HexInt64" />
-                        <UserData>
-                            <MethodDetails xmlns="myNs">
-                                <MethodID> %1 </MethodID>
-                                <TypeID> %2 </TypeID>
-                                <MethodToken> %3 </MethodToken>
-                                <TypeParameterCount> %4 </TypeParameterCount>
-                                <LoaderModuleID> %5 </LoaderModuleID>
-                            </MethodDetails>
-                        </UserData>
-                    </template>
-
                     <template tid="AssemblyLoadContextResolvingHandlerInvoked">
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="AssemblyName" inType="win:UnicodeString" />
@@ -1758,6 +1748,39 @@
                                 <RequestingAssemblyPath> %4 </RequestingAssemblyPath>
                                 <ComputedRequestedAssemblyPath> %5 </ComputedRequestedAssemblyPath>
                             </AssemblyLoadFromResolveHandlerInvoked>
+                        </UserData>
+                    </template>
+
+                    <template tid="KnownPathProbed">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="FilePath" inType="win:UnicodeString" />
+                        <data name="Source" inType="win:UInt16" map="KnownPathSourceMap" />
+                        <data name="Result" inType="win:Int32" />
+                        <UserData>
+                            <KnownPathProbed xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <FilePath> %2 </FilePath>
+                                <Source> %3 </Source>
+                                <Result> %4 </Result>
+                            </KnownPathProbed>
+                        </UserData>
+                    </template>
+
+                    <template tid="MethodDetails">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TypeID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
+                        <data name="TypeParameterCount" inType="win:UInt32" />
+                        <data name="LoaderModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="TypeParameters" count="TypeParameterCount"  inType="win:UInt64" outType="win:HexInt64" />
+                        <UserData>
+                            <MethodDetails xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <TypeID> %2 </TypeID>
+                                <MethodToken> %3 </MethodToken>
+                                <TypeParameterCount> %4 </TypeParameterCount>
+                                <LoaderModuleID> %5 </LoaderModuleID>
+                            </MethodDetails>
                         </UserData>
                     </template>
 
@@ -3572,6 +3595,11 @@
                            keywords ="AssemblyLoaderKeyword" opcode="AssemblyLoadFromResolveHandlerInvoked"
                            task="AssemblyLoader"
                            symbol="AssemblyLoadFromResolveHandlerInvoked" message="$(string.RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedEventMessage)"/>
+
+                    <event value="296" version="0" level="win:Informational"  template="KnownPathProbed"
+                           keywords ="AssemblyLoaderKeyword" opcode="KnownPathProbed"
+                           task="AssemblyLoader"
+                           symbol="KnownPathProbed" message="$(string.RuntimePublisher.KnownPathProbedEventMessage)"/>
 
                 </events>
             </provider>
@@ -6773,6 +6801,7 @@
                 <string id="RuntimePublisher.AssemblyLoadContextResolvingHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nHandlerName=%3;%nAssemblyLoadContext=%4;%nResultAssemblyName=%5;%nResultAssemblyPath=%6" />
                 <string id="RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nHandlerName=%3;%nResultAssemblyName=%4;%nResultAssemblyPath=%5" />
                 <string id="RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nIsTrackedLoad=%3;%nRequestingAssemblyPath=%4;%nComputedRequestedAssemblyPath=%5" />
+                <string id="RuntimePublisher.KnownPathProbedEventMessage" value="ClrInstanceID=%1;%nFilePath=%2;%nSource=%3;%nResult=%4" />
                 <string id="RuntimePublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedEventMessage" value="AppDomainID=%1;%nAllocated=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.AppDomainMemSurvivedEventMessage" value="AppDomainID=%1;%nSurvived=%2;%nProcessSurvived=%3;%nClrInstanceID=%4" />
@@ -7125,6 +7154,11 @@
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.NoneMapMessage" value="None" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
+                <string id="RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage" value="ApplicationAssemblies" />
+                <string id="RuntimePublisher.KnownPathSource.AppNativeImagePathsMessage" value="AppNativeImagePaths" />
+                <string id="RuntimePublisher.KnownPathSource.AppPathsMessage" value="AppPaths" />
+                <string id="RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage" value="PlatformResourceRoots" />
+                <string id="RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage" value="SatelliteSubdirectory" />
 
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />
@@ -7404,6 +7438,7 @@
                 <string id="RuntimePublisher.AssemblyLoadContextResolvingHandlerInvokedOpcodeMessage" value="AssemblyLoadContextResolvingHandlerInvoked" />
                 <string id="RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedOpcodeMessage" value="AppDomainAssemblyResolveHandlerInvoked" />
                 <string id="RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedOpcodeMessage" value="AssemblyLoadFromResolveHandlerInvoked" />
+                <string id="RuntimePublisher.KnownPathProbedOpcodeMessage" value="KnownPathProbed" />
 
                 <string id="RundownPublisher.MethodDCStartOpcodeMessage" value="DCStart" />
                 <string id="RundownPublisher.MethodDCEndOpcodeMessage" value="DCStop" />

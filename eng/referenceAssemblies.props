@@ -3,13 +3,13 @@
     <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly>
 
     <!-- Create a common root output directory for all reference assemblies -->
-    <ReferenceAssemblyOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</ReferenceAssemblyOutputPath>
+    <ReferenceAssemblyOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(MSBuildProjectName)'))</ReferenceAssemblyOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
-    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(ReferenceAssemblyOutputPath)', '$(MSBuildProjectName)'))</BaseOutputPath>
+    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(ReferenceAssemblyOutputPath)', 'ref'))</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)$(Configuration)</OutputPath>
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'ref', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'ref'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)</IntermediateOutputPath>
 
     <!-- disable warnings about unused fields -->

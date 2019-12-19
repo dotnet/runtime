@@ -310,22 +310,6 @@ public:
 #endif
     }
 
-    ~UMEntryThunk()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        if (GetObjectHandle())
-        {
-            DestroyLongWeakHandle(GetObjectHandle());
-        }
-    }
-
     void Terminate();
 
     VOID RunTimeInit()

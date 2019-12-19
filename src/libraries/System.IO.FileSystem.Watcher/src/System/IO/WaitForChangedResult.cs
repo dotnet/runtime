@@ -6,7 +6,7 @@ namespace System.IO
 {
     public struct WaitForChangedResult
     {
-        internal WaitForChangedResult(WatcherChangeTypes changeType, string name, string oldName, bool timedOut)
+        internal WaitForChangedResult(WatcherChangeTypes changeType, string? name, string? oldName, bool timedOut)
         {
             ChangeType = changeType;
             Name = name;
@@ -18,8 +18,8 @@ namespace System.IO
             new WaitForChangedResult(changeType: 0, name: null, oldName: null, timedOut: true);
 
         public WatcherChangeTypes ChangeType { get; set; }
-        public string Name { get; set; }
-        public string OldName { get; set; }
+        public string? Name { get; set; }
+        public string? OldName { get; set; }
         public bool TimedOut { get; set; }
     }
 }

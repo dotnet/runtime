@@ -65,7 +65,6 @@ namespace System.Linq.Parallel
         }
 
         // IEnumerator<T> methods.
-        [MaybeNull]
         public T Current { get { return default!; } }
         object? IEnumerator.Current { get { return null; } }
         public bool MoveNext() { return false; }

@@ -98,6 +98,15 @@ bool InitLargePagesPrivilege()
 
 #endif // FEATURE_PAL
 
+static void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    pMSEX->dwLength = sizeof(MEMORYSTATUSEX);
+    BOOL fRet = GlobalMemoryStatusEx(pMSEX);
+    _ASSERTE(fRet);
+}
+
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
@@ -620,7 +629,7 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
     LIMITED_METHOD_CONTRACT;
 
     MEMORYSTATUSEX memStatus;
-    ::GetProcessMemoryLoad(&memStatus);
+    GetProcessMemoryLoad(&memStatus);
 
     return (size_t)memStatus.ullTotalVirtual;
 }
@@ -711,7 +720,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
                 job_physical_memory_limit = min (job_physical_memory_limit, job_workingset_limit);
 
                 MEMORYSTATUSEX ms;
-                ::GetProcessMemoryLoad(&ms);
+                GetProcessMemoryLoad(&ms);
                 total_virtual = ms.ullTotalVirtual;
                 total_physical = ms.ullAvailPhys;
 
@@ -738,7 +747,7 @@ exit:
     if (total_virtual == 0)
     {
         MEMORYSTATUSEX ms;
-        ::GetProcessMemoryLoad(&ms);
+        GetProcessMemoryLoad(&ms);
 
         total_virtual = ms.ullTotalVirtual;
         total_physical = ms.ullTotalPhys;
@@ -783,7 +792,6 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 }
 #endif // FEATURE_PAL
 
-
 // Get the physical memory that this process can use.
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
@@ -811,7 +819,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     }
 
     MEMORYSTATUSEX memStatus;
-    ::GetProcessMemoryLoad(&memStatus);
+    GetProcessMemoryLoad(&memStatus);
 
     return memStatus.ullTotalPhys;
 }
@@ -865,7 +873,7 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
     }
 
     MEMORYSTATUSEX ms;
-    ::GetProcessMemoryLoad(&ms);
+    GetProcessMemoryLoad(&ms);
 
 #ifndef FEATURE_PAL
     if (g_UseRestrictedVirtualMemory)

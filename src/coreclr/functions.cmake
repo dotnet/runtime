@@ -380,36 +380,6 @@ function(_install)
     endif()
 endfunction()
 
-function(verify_dependencies targetName errorMessage)
-    set(SANITIZER_BUILD OFF)
-
-    if (CLR_CMAKE_PLATFORM_UNIX)
-        if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
-            string(FIND "$ENV{DEBUG_SANITIZERS}" "asan" __ASAN_POS)
-            string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
-            if ((${__ASAN_POS} GREATER -1) OR (${__UBSAN_POS} GREATER -1))
-                set(SANITIZER_BUILD ON)
-            endif()
-        endif()
-    endif()
-
-    # We don't need to verify dependencies on OSX, since missing dependencies
-    # result in link error over there.
-    # Also don't verify dependencies for Asan build because in this case shared
-    # libraries can contain undefined symbols
-    if (NOT CLR_CMAKE_PLATFORM_DARWIN AND NOT CLR_CMAKE_PLATFORM_ANDROID AND NOT SANITIZER_BUILD)
-        add_custom_command(
-            TARGET ${targetName}
-            POST_BUILD
-            VERBATIM
-            COMMAND ${CMAKE_SOURCE_DIR}/verify-so.sh
-                $<TARGET_FILE:${targetName}>
-                ${errorMessage}
-            COMMENT "Verifying ${targetName} dependencies"
-        )
-    endif()
-endfunction()
-
 function(add_library_clr)
     _add_library(${ARGV})
 endfunction()

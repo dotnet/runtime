@@ -1953,9 +1953,8 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 
 //**************************************************************************
 
-LoaderCodeHeap::LoaderCodeHeap(size_t * pPrivatePCLBytes)
-    : m_LoaderHeap(pPrivatePCLBytes,
-                   0,                       // RangeList *pRangeList
+LoaderCodeHeap::LoaderCodeHeap()
+    : m_LoaderHeap(NULL,                    // RangeList *pRangeList
                    TRUE),                   // BOOL fMakeExecutable
     m_cbMinNextPad(0)
 {
@@ -2133,7 +2132,6 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
         POSTCONDITION((RETVAL != NULL) || !pInfo->getThrowOnOutOfMemoryWithinRange());
     } CONTRACT_END;
 
-    size_t * pPrivatePCLBytes   = NULL;
     size_t   reserveSize        = pInfo->getReserveSize();
     size_t   initialRequestSize = pInfo->getRequestSize();
     const BYTE *   loAddr       = pInfo->m_loAddr;
@@ -2146,16 +2144,12 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
-#ifdef ENABLE_PERF_COUNTERS
-    pPrivatePCLBytes   = &(GetPerfCounters().m_Loading.cbLoaderHeapSize);
-#endif
-
     LOG((LF_JIT, LL_INFO100,
          "Request new LoaderCodeHeap::CreateCodeHeap(%08x, %08x, for loader allocator" FMT_ADDR "in" FMT_ADDR ".." FMT_ADDR ")\n",
          (DWORD) reserveSize, (DWORD) initialRequestSize, DBG_ADDR(pInfo->m_pAllocator), DBG_ADDR(loAddr), DBG_ADDR(hiAddr)
                                 ));
 
-    NewHolder<LoaderCodeHeap> pCodeHeap(new LoaderCodeHeap(pPrivatePCLBytes));
+    NewHolder<LoaderCodeHeap> pCodeHeap(new LoaderCodeHeap());
 
     BYTE * pBaseAddr = NULL;
     DWORD dwSizeAcquiredFromInitialBlock = 0;

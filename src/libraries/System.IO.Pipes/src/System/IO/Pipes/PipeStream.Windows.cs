@@ -399,25 +399,18 @@ namespace System.IO.Pipes
 
         internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
-            if ((inheritability & HandleInheritability.Inheritable) != 0)
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
             {
-                secAttrs = default;
-                secAttrs.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
-                secAttrs.bInheritHandle = Interop.BOOL.TRUE;
-            }
+                nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
+                bInheritHandle = ((inheritability & HandleInheritability.Inheritable) != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE
+            };
+
             return secAttrs;
         }
 
         internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability, PipeSecurity pipeSecurity, ref GCHandle pinningHandle)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
-            secAttrs.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
-
-            if ((inheritability & HandleInheritability.Inheritable) != 0)
-            {
-                secAttrs.bInheritHandle = Interop.BOOL.TRUE;
-            }
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
             if (pipeSecurity != null)
             {

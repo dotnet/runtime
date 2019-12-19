@@ -43,8 +43,8 @@ Below table shows the combined area owners on this repository:
 | area-System.Composition | @maryamariyan @ViktorHofer | |
 | area-System.Configuration | @maryamariyan @safern | |
 | area-System.Console | @wtgodbe | |
-| area-System.Data | @ajcvickers @cheenamalhotra @david-engel @Gary-Zh | <ul><li>Odbc, OleDb - [@saurabh500](https://github.com/saurabh500)</li></ul> |
-| area-System.Data.SqlClient | @cheenamalhotra @Gary-Zh @david-engel | Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/) |
+| area-System.Data | @ajcvickers @cheenamalhotra @david-engel | <ul><li>Odbc, OleDb - [@saurabh500](https://github.com/saurabh500)</li></ul> |
+| area-System.Data.SqlClient | @cheenamalhotra @david-engel @karinazhou @JRahnama | Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/) |
 | area-System.Diagnostics | @tommcdon @wtgodbe @krwq | <ul><li>System.Diagnostics.EventLog - [@Anipik](https://github.com/Anipik)</li></ul> |
 | area-System.Diagnostics.Process | @wtgodbe @krwq | |
 | area-System.Diagnostics.Tracing | @noahfalk @tommcdon @Anipik | Packages:<ul><li>System.Diagnostics.DiagnosticSource</li><li>System.Diagnostics.PerformanceCounter - [@Anipik](https://github.com/Anipik)</li><li>System.Diagnostics.Tracing</li><li>System.Diagnostics.TraceSource - [@Anipik](https://github.com/Anipik)</li></ul><br/> |

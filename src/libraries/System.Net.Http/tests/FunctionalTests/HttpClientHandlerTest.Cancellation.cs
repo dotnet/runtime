@@ -29,12 +29,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, CancellationMode.Token)]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
         {
-            if (!UseSocketsHttpHandler)
-            {
-                // Issue #27063: hangs / doesn't cancel
-                return;
-            }
-
             if (LoopbackServerFactory.IsHttp2 && chunkedTransfer)
             {
                 // There is no chunked encoding in HTTP/2

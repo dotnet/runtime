@@ -16,12 +16,14 @@ Getting Started
 
 Software requirements
 ===============
+
 - [Windows Requirements](workflow/windows-requirements.md)
 - [Linux Requirements](workflow/linux-requirements.md)
 - [MacOS Requirements](workflow/macos-requirements.md)
 
 Workflow (Building, testing, etc.)
 ===============
+
 - [Workflow Instructions](workflow/README.md)
 
 Design Docs
@@ -76,5 +78,5 @@ Other Information
 - [Porting to .NET Core](project/support-dotnet-core-instructions.md)
 - [.NET Standards (Ecma)](project/dotnet-standards.md)
 - [CLR Configuration Knobs](../src/coreclr/src/inc/clrconfigvalues.h)
-- [MSDN Entry for the CLR](http://msdn.microsoft.com/library/8bs2ecf4.aspx)
-- [Wikipedia Entry for the CLR](http://en.wikipedia.org/wiki/Common_Language_Runtime)
+- [CLR overview](https://docs.microsoft.com/dotnet/standard/clr)
+- [Wikipedia Entry for the CLR](https://en.wikipedia.org/wiki/Common_Language_Runtime)

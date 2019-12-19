@@ -39,6 +39,9 @@ namespace ILCompiler.PEWriter
                 case Internal.TypeSystem.TargetArchitecture.X86:
                     return Machine.I386;
 
+                case Internal.TypeSystem.TargetArchitecture.ARM64:
+                    return Machine.Arm64;
+
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());
             }

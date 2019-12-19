@@ -45,17 +45,15 @@ namespace System.Text.Json.Tests
             Assert.False(jsonNull1.Equals(new JsonString("null")));
             Assert.False(jsonNull1.Equals(new Exception()));
 
-            // Null comparisons behave this way because of implicit conversion from null to JsonNull:
-           
-            Assert.True(jsonNull1.Equals(null));
-            Assert.True(jsonNull1 == null);
-            Assert.False(jsonNull1 != null);
+            Assert.False(jsonNull1.Equals(null));
+            Assert.False(jsonNull1 == null);
+            Assert.True(jsonNull1 != null);
 
             JsonNull jsonNullNull = null;
 
-            Assert.True(jsonNull1.Equals(jsonNullNull));
-            Assert.True(jsonNull1 == jsonNullNull);
-            Assert.False(jsonNull1 != jsonNullNull);
+            Assert.False(jsonNull1.Equals(jsonNullNull));
+            Assert.False(jsonNull1 == jsonNullNull);
+            Assert.True(jsonNull1 != jsonNullNull);
 
             JsonNull otherJsonNullNull = null;
             Assert.True(jsonNullNull == otherJsonNullNull);
@@ -64,7 +62,7 @@ namespace System.Text.Json.Tests
 
             JsonNode jsonNodeNull = null;
             Assert.False(jsonNull1.Equals(jsonNodeNull));
-          
+
             JsonArray jsonArrayNull = null;
             Assert.False(jsonNull1.Equals(jsonArrayNull));
         }
@@ -75,10 +73,10 @@ namespace System.Text.Json.Tests
             var jsonNull = new JsonNull();
 
             Assert.Equal(jsonNull.GetHashCode(), new JsonNull().GetHashCode());
-            
+
             JsonNode jsonNodeNull = new JsonNull();
             Assert.Equal(jsonNull.GetHashCode(), jsonNodeNull.GetHashCode());
-            
+
             IEquatable<JsonNull> jsonNullIEquatable = new JsonNull();
             Assert.Equal(jsonNull.GetHashCode(), jsonNullIEquatable.GetHashCode());
 

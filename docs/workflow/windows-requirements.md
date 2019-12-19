@@ -10,7 +10,7 @@ You must install several components to build the dotnet/runtime repository. Thes
 
 ## Enable Long Paths
 
-The runtime repository requires long paths to be enabled. Follow the instructions provided here to modify the registry to opt into that feature: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#enable-long-paths-in-windows-10-version-1607-and-later. 
+The runtime repository requires long paths to be enabled. Follow the instructions provided here to modify the registry to opt into that feature: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#enable-long-paths-in-windows-10-version-1607-and-later.
 
 If using msysgit (aka Git for Windows) you might need to also configure long paths there. Using an admin terminal simply type:
 ```powershell
@@ -68,7 +68,7 @@ The dotnet/runtime repository requires at least Git 2.22.0.
 ## DotNet Core SDK
 
 While not strictly needed to build or test the .NET Core repository, having the .NET Core SDK installed lets you use the dotnet.exe command to run .NET Core applications in the 'normal' way.   We use this in the
-[Using Your Build](../workflow/UsingYourBuild.md) instructions.  Visual Studio should have
+[Using Your Build](./testing/UsingYourBuild.md) instructions.  Visual Studio should have
 installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .NET Core SDK](https://dotnet.microsoft.com/download) page.
 
 ## Adding to the default PATH variable

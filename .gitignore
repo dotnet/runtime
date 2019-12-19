@@ -59,7 +59,6 @@ dlldata.c
 
 *_i.c
 *_p.c
-*_i.h
 *.ilk
 *.meta
 *.obj
@@ -276,6 +275,7 @@ Session.vim
 
 # Visual Studio Code
 .vscode/
+.devcontainer/
 
 # Private test configuration and binaries.
 config.ps1

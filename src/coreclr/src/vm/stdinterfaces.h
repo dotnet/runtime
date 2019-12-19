@@ -56,11 +56,6 @@ typedef HRESULT (__stdcall* PCOMFN)(void);
 #define S_USEIUNKNOWN   (HRESULT)2
 #define S_USEIDISPATCH  (HRESULT)3
 
-// For free-threaded marshaling, we must not be spoofed by out-of-process or cross-runtime marshal data.
-// Only unmarshal data that comes from our own runtime.
-extern BYTE         g_UnmarshalSecret[sizeof(GUID)];
-extern bool         g_fInitedUnmarshalSecret;
-
 // make sure to keep the following enum and the g_stdVtables array in sync
 enum Enum_StdInterfaces
 {

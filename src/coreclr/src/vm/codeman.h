@@ -511,7 +511,7 @@ private:
     ExplicitControlLoaderHeap m_LoaderHeap;
     SSIZE_T m_cbMinNextPad;
 
-    LoaderCodeHeap(size_t * pPrivatePCLBytes);
+    LoaderCodeHeap();
 
 public:
     static HeapList* CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap *pJitMetaHeap);

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>

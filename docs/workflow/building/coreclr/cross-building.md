@@ -97,6 +97,31 @@ Cross compiling CoreCLR
 
 As usual, the resulting binaries will be found in `artifacts/bin/coreclr/BuildOS.BuildArch.BuildType/`
 
+Cross compiling CoreCLR for Other VFP configurations
+----------------------------------------------------------
+The default arm compilation configuration for CoreCLR is armv7-a with thumb-2 instruction set and
+VFPv3 floating point with 32 64-bit FPU registers.
+
+CoreCLR JIT requires 16 64-bit or 32 32-bit FPU registers.
+
+A set of FPU configuration options have been provided via build.sh to accommodate different CPU types.
+These FPU configuration options are: CLR_ARM_FPU_CAPABILITY and CLR_ARM_FPU_TYPE.
+
+CLR_ARM_FPU_TYPE translates to a value given to -mfpu compiler option. Please refer to
+your compiler documentation for possible options.
+
+CLR_ARM_FPU_CAPABILITY is used by the PAL code to decide which FPU registers should be saved and
+restored during context switches.
+
+Bit 0 unused always set to 1.
+Bit 1 corresponds to 16 64-bit FPU registers.
+Bit 2 corresponds to 32 64-bit FPU registers.
+
+Supported options are 0x3 and 0x7.
+
+If you wanted to support armv7 CPU with VFPv3-d16, you'd use the following compile options:
+
+./build.sh -cross -arm -cmakeargs -DCLR_ARM_FPU_CAPABILITY=0x3 -cmakeargs -DCLR_ARM_FPU_TYPE=vfpv3-d16
 
 Build System.Private.CoreLib on Ubuntu
 --------------------------------------
