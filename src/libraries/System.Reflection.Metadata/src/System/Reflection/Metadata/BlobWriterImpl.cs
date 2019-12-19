@@ -218,7 +218,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static void WriteConstant(BlobBuilder writer, object value)
+        internal static void WriteConstant(BlobBuilder writer, object? value)
         {
             if (value == null)
             {

@@ -48,7 +48,7 @@ namespace System.Reflection.Metadata
                    Hash.Combine(EndLine, EndColumn)))));
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is SequencePoint && Equals((SequencePoint)obj);
         }

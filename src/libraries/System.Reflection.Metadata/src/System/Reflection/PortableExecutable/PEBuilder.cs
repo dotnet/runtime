@@ -31,7 +31,7 @@ namespace System.Reflection.PortableExecutable
                     Throw.ArgumentNull(nameof(name));
                 }
 
-                Name = name;
+                Name = name!;
                 Characteristics = characteristics;
             }
         }
@@ -59,7 +59,7 @@ namespace System.Reflection.PortableExecutable
             public int VirtualSize => Builder.Count;
         }
 
-        protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider)
+        protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider)
         {
             if (header == null)
             {
@@ -68,7 +68,7 @@ namespace System.Reflection.PortableExecutable
 
             IdProvider = deterministicIdProvider ?? BlobContentId.GetTimeBasedProvider();
             IsDeterministic = deterministicIdProvider != null;
-            Header = header;
+            Header = header!;
             _lazySections = new Lazy<ImmutableArray<Section>>(CreateSections);
         }
 

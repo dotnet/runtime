@@ -24,12 +24,12 @@ namespace System.Reflection.PortableExecutable
         private readonly PEDirectoriesBuilder _peDirectoriesBuilder;
         private readonly MetadataRootBuilder _metadataRootBuilder;
         private readonly BlobBuilder _ilStream;
-        private readonly BlobBuilder _mappedFieldDataOpt;
-        private readonly BlobBuilder _managedResourcesOpt;
-        private readonly ResourceSectionBuilder _nativeResourcesOpt;
+        private readonly BlobBuilder? _mappedFieldDataOpt;
+        private readonly BlobBuilder? _managedResourcesOpt;
+        private readonly ResourceSectionBuilder? _nativeResourcesOpt;
         private readonly int _strongNameSignatureSize;
         private readonly MethodDefinitionHandle _entryPointOpt;
-        private readonly DebugDirectoryBuilder _debugDirectoryBuilderOpt;
+        private readonly DebugDirectoryBuilder? _debugDirectoryBuilderOpt;
         private readonly CorFlags _corFlags;
 
         private int _lazyEntryPointAddress;
@@ -39,14 +39,14 @@ namespace System.Reflection.PortableExecutable
             PEHeaderBuilder header,
             MetadataRootBuilder metadataRootBuilder,
             BlobBuilder ilStream,
-            BlobBuilder mappedFieldData = null,
-            BlobBuilder managedResources = null,
-            ResourceSectionBuilder nativeResources = null,
-            DebugDirectoryBuilder debugDirectoryBuilder = null,
+            BlobBuilder? mappedFieldData = null,
+            BlobBuilder? managedResources = null,
+            ResourceSectionBuilder? nativeResources = null,
+            DebugDirectoryBuilder? debugDirectoryBuilder = null,
             int strongNameSignatureSize = DefaultStrongNameSignatureSize,
             MethodDefinitionHandle entryPoint = default(MethodDefinitionHandle),
             CorFlags flags = CorFlags.ILOnly,
-            Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider = null)
+            Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = null)
             : base(header, deterministicIdProvider)
         {
             if (header == null)
@@ -82,7 +82,7 @@ namespace System.Reflection.PortableExecutable
             _peDirectoriesBuilder = new PEDirectoriesBuilder();
         }
 
-        private DebugDirectoryBuilder CreateDefaultDebugDirectoryBuilder()
+        private DebugDirectoryBuilder? CreateDefaultDebugDirectoryBuilder()
         {
             if (IsDeterministic)
             {
@@ -143,7 +143,7 @@ namespace System.Reflection.PortableExecutable
             _metadataRootBuilder.Serialize(metadataBuilder, methodBodyStreamRva, mappedFieldDataStreamRva);
 
             DirectoryEntry debugDirectoryEntry;
-            BlobBuilder debugTableBuilderOpt;
+            BlobBuilder? debugTableBuilderOpt;
             if (_debugDirectoryBuilderOpt != null)
             {
                 int debugDirectoryOffset = textSection.ComputeOffsetToDebugDirectory();
@@ -240,7 +240,7 @@ namespace System.Reflection.PortableExecutable
                 Throw.ArgumentNull(nameof(signatureProvider));
             }
 
-            Sign(peImage, _lazyStrongNameSignature, signatureProvider);
+            Sign(peImage!, _lazyStrongNameSignature, signatureProvider!);
         }
     }
 }

@@ -760,7 +760,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal readonly MemoryBlock Block;
 
         // row ids in the CustomAttribute table sorted by parents
-        internal readonly int[] PtrTable;
+        internal readonly int[]? PtrTable;
 
         internal CustomAttributeTableReader(
             int numberOfRows,

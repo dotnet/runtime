@@ -102,7 +102,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the buffer content.</exception>
         public ImmutableArray<byte> ToImmutableArray(int start, int byteCount)
         {
-            var array = ToArray(start, byteCount);
+            byte[]? array = ToArray(start, byteCount);
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
         }
 
@@ -170,7 +170,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(source));
             }
 
-            source.WriteContentTo(ref this);
+            source!.WriteContentTo(ref this);
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>

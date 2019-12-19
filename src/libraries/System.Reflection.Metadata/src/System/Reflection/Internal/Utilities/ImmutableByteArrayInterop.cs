@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Internal
@@ -55,9 +56,9 @@ namespace System.Reflection.Internal
         /// whose underlying backing field is modified.
         /// </remarks>
         /// <returns>An immutable array.</returns>
-        internal static ImmutableArray<byte> DangerousCreateFromUnderlyingArray(ref byte[] array)
+        internal static ImmutableArray<byte> DangerousCreateFromUnderlyingArray(ref byte[]? array)
         {
-            byte[] givenArray = array;
+            byte[] givenArray = array!;
             array = null;
 
             ByteArrayUnion union = default;
@@ -84,7 +85,7 @@ namespace System.Reflection.Internal
         {
             ByteArrayUnion union = default;
             union.ImmutableArray = array;
-            return union.UnderlyingArray;
+            return union.UnderlyingArray!;
         }
 
         [StructLayout(LayoutKind.Explicit)]

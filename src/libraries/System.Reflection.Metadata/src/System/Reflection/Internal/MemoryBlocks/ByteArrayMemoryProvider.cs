@@ -12,7 +12,7 @@ namespace System.Reflection.Internal
     internal sealed class ByteArrayMemoryProvider : MemoryBlockProvider
     {
         private readonly ImmutableArray<byte> _array;
-        private PinnedObject _pinned;
+        private PinnedObject? _pinned;
 
         public ByteArrayMemoryProvider(ImmutableArray<byte> array)
         {

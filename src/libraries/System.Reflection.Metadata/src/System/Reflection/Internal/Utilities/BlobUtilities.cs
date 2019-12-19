@@ -27,7 +27,7 @@ namespace System.Reflection
 
         public static ImmutableArray<byte> ReadImmutableBytes(byte* buffer, int byteCount)
         {
-            byte[] bytes = ReadBytes(buffer, byteCount);
+            byte[]? bytes = ReadBytes(buffer, byteCount);
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
         }
 
