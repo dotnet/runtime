@@ -167,6 +167,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			VerifyLoggedMessages(original, linkResult.Logger);
+			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
 		}
 
 		protected virtual void InitialChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
@@ -610,6 +611,48 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 						}
 					}
 				}
+			}
+		}
+
+		void VerifyRecordedDependencies (AssemblyDefinition original, TestDependencyRecorder dependencyRecorder)
+		{
+			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
+				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes) {
+					if (attr.AttributeType.Resolve ().Name == nameof (DependencyRecordedAttribute)) {
+						var expectedSource = (string)attr.ConstructorArguments [0].Value;
+						var expectedTarget = (string)attr.ConstructorArguments [1].Value;
+						var expectedMarked = (string)attr.ConstructorArguments [2].Value;
+
+						if (!dependencyRecorder.Dependencies.Any (dependency => {
+								if (dependency.Source != expectedSource)
+									return false;
+
+								if (dependency.Target != expectedTarget)
+									return false;
+
+								return expectedMarked == null || dependency.Marked.ToString () == expectedMarked;
+							})) {
+
+							string targetCandidates = string.Join(Environment.NewLine, dependencyRecorder.Dependencies
+								.Where (d => d.Target.ToLowerInvariant().Contains (expectedTarget.ToLowerInvariant()))
+								.Select (d => "\t" + DependencyToString (d)));
+							string sourceCandidates = string.Join (Environment.NewLine, dependencyRecorder.Dependencies
+								.Where (d => d.Source.ToLowerInvariant().Contains (expectedSource.ToLowerInvariant()))
+								.Select (d => "\t" + DependencyToString (d)));
+
+							Assert.Fail (
+								$"Expected to find recorded dependency '{expectedSource} -> {expectedTarget} {expectedMarked ?? string.Empty}'{Environment.NewLine}" +
+								$"Potential dependencies matching the target: {Environment.NewLine}{targetCandidates}{Environment.NewLine}" +
+								$"Potential dependencies matching the source: {Environment.NewLine}{sourceCandidates}{Environment.NewLine}" +
+								$"If there's no matches, try to specify just a part of the source/target name and rerun the test.");
+						}
+					}
+				}
+			}
+
+			string DependencyToString(TestDependencyRecorder.Dependency dependency)
+			{
+				return $"{dependency.Source} -> {dependency.Target} Marked: {dependency.Marked}";
 			}
 		}
 

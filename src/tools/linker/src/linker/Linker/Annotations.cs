@@ -72,14 +72,13 @@ namespace Mono.Linker {
 		[Obsolete ("Use Tracer in LinkContext directly")]
 		public void PrepareDependenciesDump ()
 		{
-			Tracer.Start ();
+			Tracer.AddRecorder (new XmlDependencyRecorder (context));
 		}
 
 		[Obsolete ("Use Tracer in LinkContext directly")]
 		public void PrepareDependenciesDump (string filename)
 		{
-			Tracer.DependenciesFileName = filename;
-			Tracer.Start ();
+			Tracer.AddRecorder (new XmlDependencyRecorder (context, filename));
 		}
 
 		public ICollection<AssemblyDefinition> GetAssemblies ()

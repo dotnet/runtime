@@ -11,8 +11,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public readonly TestCaseMetadaProvider MetadataProvider;
 		public readonly ManagedCompilationResult CompilationResult;
 		public readonly LinkerTestLogger Logger;
+		public readonly LinkerCustomizations Customizations;
 
-		public LinkedTestCaseResult (TestCase testCase, NPath inputAssemblyPath, NPath outputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadaProvider metadaProvider, ManagedCompilationResult compilationResult, LinkerTestLogger logger)
+		public LinkedTestCaseResult (TestCase testCase, NPath inputAssemblyPath, NPath outputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadaProvider metadaProvider, ManagedCompilationResult compilationResult, LinkerTestLogger logger, LinkerCustomizations customizations)
 		{
 			TestCase = testCase;
 			InputAssemblyPath = inputAssemblyPath;
@@ -22,6 +23,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			MetadataProvider = metadaProvider;
 			CompilationResult = compilationResult;
 			Logger = logger;
+			Customizations = customizations;
 		}
 	}
 }

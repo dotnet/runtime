@@ -92,14 +92,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		private LinkedTestCaseResult Link (TestCase testCase, TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TestCaseMetadaProvider metadataProvider)
 		{
 			var linker = _factory.CreateLinker ();
+			var linkerCustomizations = CustomizeLinker (linker, metadataProvider);
+
 			var builder = _factory.CreateLinkerArgumentBuilder (metadataProvider);
 
 			AddLinkOptions (sandbox, compilationResult, builder, metadataProvider);
 
 			LinkerTestLogger logger = new LinkerTestLogger();
-			linker.Link (builder.ToArgs (), logger);
+			linker.Link (builder.ToArgs (), linkerCustomizations, logger);
 
-			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, logger);
+			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, logger, linkerCustomizations);
 		}
 
 		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, LinkerArgumentBuilder builder, TestCaseMetadaProvider metadataProvider)
@@ -120,6 +122,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			builder.ProcessOptions (caseDefinedOptions);
 
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
+		}
+
+		protected virtual LinkerCustomizations CustomizeLinker(LinkerDriver linker, TestCaseMetadaProvider metadataProvider)
+		{
+			LinkerCustomizations customizations = new LinkerCustomizations ();
+
+			metadataProvider.CustomizeLinker (linker, customizations);
+
+			return customizations;
 		}
 
 		private T GetResultOfTaskThatMakesNUnitAssertions<T> (Task<T> task)
