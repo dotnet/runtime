@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Compiler
             if (TypeUtils.AreEquivalent(type, node.Type))
             {
                 // emit "this", if any
-                Type objectType = null;
+                Type? objectType = null;
                 if (node.Expression != null)
                 {
                     EmitInstance(node.Expression, out objectType);
@@ -129,10 +129,9 @@ namespace System.Linq.Expressions.Compiler
         }
 
         // assumes the instance is already on the stack
-        private void EmitMemberAddress(MemberInfo member, Type objectType)
+        private void EmitMemberAddress(MemberInfo member, Type? objectType)
         {
-            FieldInfo field = member as FieldInfo;
-            if ((object)field != null)
+            if (member is FieldInfo field)
             {
                 // Verifiable code may not take the address of an init-only field.
                 // If we are asked to do so then get the value out of the field, stuff it
@@ -157,6 +156,7 @@ namespace System.Linq.Expressions.Compiler
                 }
             }
 
+            Debug.Assert(objectType != null);
             EmitMemberGet(member, objectType);
             LocalBuilder temp = GetLocal(GetMemberType(member));
             _ilg.Emit(OpCodes.Stloc, temp);
@@ -175,7 +175,8 @@ namespace System.Linq.Expressions.Compiler
                 node.Object.Type.IsArray &&
                 node.Method == node.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance))
             {
-                MethodInfo mi = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance);
+                MethodInfo? mi = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance);
+                Debug.Assert(mi != null);
 
                 EmitMethodCall(node.Object, mi, node);
             }
@@ -193,6 +194,7 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
+            Debug.Assert(node.Object != null);
             if (node.ArgumentCount == 1)
             {
                 EmitExpression(node.Object);
@@ -201,7 +203,9 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                MethodInfo address = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance);
+                MethodInfo? address = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance);
+                Debug.Assert(address != null);
+
                 EmitMethodCall(node.Object, address, node);
             }
         }
@@ -231,11 +235,11 @@ namespace System.Linq.Expressions.Compiler
         //
         // For properties, we want to write back into the property if it's
         // passed byref.
-        private WriteBack EmitAddressWriteBack(Expression node, Type type)
+        private WriteBack? EmitAddressWriteBack(Expression node, Type type)
         {
             CompilationFlags startEmitted = EmitExpressionStart(node);
 
-            WriteBack result = null;
+            WriteBack? result = null;
             if (TypeUtils.AreEquivalent(type, node.Type))
             {
                 switch (node.NodeType)
@@ -258,10 +262,10 @@ namespace System.Linq.Expressions.Compiler
             return result;
         }
 
-        private WriteBack AddressOfWriteBack(MemberExpression node)
+        private WriteBack? AddressOfWriteBack(MemberExpression node)
         {
             var property = node.Member as PropertyInfo;
-            if ((object)property == null || !property.CanWrite)
+            if (property == null || !property.CanWrite)
             {
                 return null;
             }
@@ -272,8 +276,8 @@ namespace System.Linq.Expressions.Compiler
         private WriteBack AddressOfWriteBackCore(MemberExpression node)
         {
             // emit instance, if any
-            LocalBuilder instanceLocal = null;
-            Type instanceType = null;
+            LocalBuilder? instanceLocal = null;
+            Type? instanceType = null;
             if (node.Expression != null)
             {
                 EmitInstance(node.Expression, out instanceType);
@@ -286,7 +290,7 @@ namespace System.Linq.Expressions.Compiler
             PropertyInfo pi = (PropertyInfo)node.Member;
 
             // emit the get
-            EmitCall(instanceType, pi.GetGetMethod(nonPublic: true));
+            EmitCall(instanceType, pi.GetGetMethod(nonPublic: true)!);
 
             // emit the address of the value
             LocalBuilder valueLocal = GetLocal(node.Type);
@@ -304,11 +308,11 @@ namespace System.Linq.Expressions.Compiler
                 }
                 @this._ilg.Emit(OpCodes.Ldloc, valueLocal);
                 @this.FreeLocal(valueLocal);
-                @this.EmitCall(instanceLocal?.LocalType, pi.GetSetMethod(nonPublic: true));
+                @this.EmitCall(instanceLocal?.LocalType, pi.GetSetMethod(nonPublic: true)!);
             };
         }
 
-        private WriteBack AddressOfWriteBack(IndexExpression node)
+        private WriteBack? AddressOfWriteBack(IndexExpression node)
         {
             if (node.Indexer == null || !node.Indexer.CanWrite)
             {
@@ -321,8 +325,8 @@ namespace System.Linq.Expressions.Compiler
         private WriteBack AddressOfWriteBackCore(IndexExpression node)
         {
             // emit instance, if any
-            LocalBuilder instanceLocal = null;
-            Type instanceType = null;
+            LocalBuilder? instanceLocal = null;
+            Type? instanceType = null;
             if (node.Object != null)
             {
                 EmitInstance(node.Object, out instanceType);

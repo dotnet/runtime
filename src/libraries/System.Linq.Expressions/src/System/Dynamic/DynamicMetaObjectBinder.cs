@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -118,10 +119,11 @@ namespace System.Dynamic
             // if the target is IDO, standard binders ask it to bind the rule so we may have a target-specific binding.
             // it makes sense to restrict on the target's type in such cases.
             // ideally IDO metaobjects should do this, but they often miss that type of "this" is significant.
-            if (IsStandardBinder && args[0] as IDynamicMetaObjectProvider != null)
+            if (IsStandardBinder && args[0] is IDynamicMetaObjectProvider)
             {
                 if (restrictions == BindingRestrictions.Empty)
                 {
+                    Debug.Assert(target.Value! != null);
                     throw System.Linq.Expressions.Error.DynamicBindingNeedsRestrictions(target.Value.GetType(), this);
                 }
             }

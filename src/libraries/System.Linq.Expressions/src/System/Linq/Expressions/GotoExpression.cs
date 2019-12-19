@@ -36,7 +36,7 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(GotoExpressionProxy))]
     public sealed class GotoExpression : Expression
     {
-        internal GotoExpression(GotoExpressionKind kind, LabelTarget target, Expression value, Type type)
+        internal GotoExpression(GotoExpressionKind kind, LabelTarget target, Expression? value, Type type)
         {
             Kind = kind;
             Value = value;
@@ -60,7 +60,7 @@ namespace System.Linq.Expressions
         /// The value passed to the target, or null if the target is of type
         /// System.Void.
         /// </summary>
-        public Expression Value { get; }
+        public Expression? Value { get; }
 
         /// <summary>
         /// The target label where this node jumps to.
@@ -88,7 +88,7 @@ namespace System.Linq.Expressions
         /// <param name="target">The <see cref="Target"/> property of the result.</param>
         /// <param name="value">The <see cref="Value"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public GotoExpression Update(LabelTarget target, Expression value)
+        public GotoExpression Update(LabelTarget target, Expression? value)
         {
             if (target == Target && value == Value)
             {
@@ -331,13 +331,13 @@ namespace System.Linq.Expressions
         /// the <see cref="Type"/> property set to <paramref name="type"/>,
         /// and <paramref name="value"/> to be passed to the target label upon jumping.
         /// </returns>
-        public static GotoExpression MakeGoto(GotoExpressionKind kind, LabelTarget target, Expression value, Type type)
+        public static GotoExpression MakeGoto(GotoExpressionKind kind, LabelTarget target, Expression? value, Type type)
         {
             ValidateGoto(target, ref value, nameof(target), nameof(value), type);
             return new GotoExpression(kind, target, value, type);
         }
 
-        private static void ValidateGoto(LabelTarget target, ref Expression value, string targetParameter, string valueParameter, Type type)
+        private static void ValidateGoto(LabelTarget target, ref Expression? value, string targetParameter, string valueParameter, Type? type)
         {
             ContractUtils.RequiresNotNull(target, targetParameter);
             if (value == null)

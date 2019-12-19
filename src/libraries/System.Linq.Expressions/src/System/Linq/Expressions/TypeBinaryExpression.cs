@@ -138,7 +138,8 @@ namespace System.Linq.Expressions
 
         private Expression ReduceConstantTypeEqual()
         {
-            ConstantExpression ce = Expression as ConstantExpression;
+            ConstantExpression? ce = Expression as ConstantExpression;
+            Debug.Assert(ce != null);
             //TypeEqual(null, T) always returns false.
             if (ce.Value == null)
             {

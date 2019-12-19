@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
@@ -49,17 +50,17 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Cache of CallSite constructors for a given delegate type.
         /// </summary>
-        private static volatile CacheDict<Type, Func<CallSiteBinder, CallSite>> s_siteCtors;
+        private static volatile CacheDict<Type, Func<CallSiteBinder, CallSite>>? s_siteCtors;
 
         /// <summary>
         /// The Binder responsible for binding operations at this call site.
         /// This binder is invoked by the UpdateAndExecute below if all Level 0,
         /// Level 1 and Level 2 caches experience cache miss.
         /// </summary>
-        internal readonly CallSiteBinder _binder;
+        internal readonly CallSiteBinder? _binder;
 
         // only CallSite<T> derives from this
-        internal CallSite(CallSiteBinder binder)
+        internal CallSite(CallSiteBinder? binder)
         {
             _binder = binder;
         }
@@ -72,7 +73,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Class responsible for binding dynamic operations on the dynamic site.
         /// </summary>
-        public CallSiteBinder Binder => _binder;
+        public CallSiteBinder? Binder => _binder;
 
         /// <summary>
         /// Creates a CallSite with the given delegate type and binder.
@@ -86,21 +87,22 @@ namespace System.Runtime.CompilerServices
             ContractUtils.RequiresNotNull(binder, nameof(binder));
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
 
-            CacheDict<Type, Func<CallSiteBinder, CallSite>> ctors = s_siteCtors;
+            CacheDict<Type, Func<CallSiteBinder, CallSite>>? ctors = s_siteCtors;
             if (ctors == null)
             {
                 // It's okay to just set this, worst case we're just throwing away some data
                 s_siteCtors = ctors = new CacheDict<Type, Func<CallSiteBinder, CallSite>>(100);
             }
 
-            if (!ctors.TryGetValue(delegateType, out Func<CallSiteBinder, CallSite> ctor))
+            if (!ctors.TryGetValue(delegateType, out Func<CallSiteBinder, CallSite>? ctor))
             {
-                MethodInfo method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create));
+                MethodInfo? method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create));
 
+                Debug.Assert(method != null);
                 if (delegateType.IsCollectible)
                 {
                     // slow path
-                    return (CallSite)method.Invoke(null, new object[] { binder });
+                    return (CallSite)method.Invoke(null, new object[] { binder })!;
                 }
 
                 ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
@@ -143,23 +145,23 @@ namespace System.Runtime.CompilerServices
         /// The Level 0 cache - a delegate specialized based on the site history.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
-        public T Target;
+        public T Target = default!;
 
         /// <summary>
         /// The Level 1 cache - a history of the dynamic site.
         /// </summary>
-        internal T[] Rules;
+        internal T[]? Rules;
 
         /// <summary>
         /// an instance of matchmaker site to opportunistically reuse when site is polymorphic
         /// </summary>
-        internal CallSite _cachedMatchmaker;
+        internal CallSite? _cachedMatchmaker;
 
         // Cached update delegate for all sites with a given T
-        private static T s_cachedUpdate;
+        [MaybeNull] private static T s_cachedUpdate = default!;
 
         // Cached noMatch delegate for all sites with a given T
-        private static volatile T s_cachedNoMatch;
+        [MaybeNull] private static volatile T s_cachedNoMatch = default!;
 
         private CallSite(CallSiteBinder binder)
             : base(binder)
@@ -221,7 +223,7 @@ namespace System.Runtime.CompilerServices
             // This is intentionally non-static to speed up creation - in particular MakeUpdateDelegate
             // as static generic methods are more expensive than instance methods.  We call a ref helper
             // so we only access the generic static field once.
-            return GetUpdateDelegate(ref s_cachedUpdate);
+            return GetUpdateDelegate(ref s_cachedUpdate!);
         }
 
         private T GetUpdateDelegate(ref T addr)
@@ -241,7 +243,7 @@ namespace System.Runtime.CompilerServices
 
         internal void AddRule(T newRule)
         {
-            T[] rules = Rules;
+            T[]? rules = Rules;
             if (rules == null)
             {
                 Rules = new[] { newRule };
@@ -268,7 +270,8 @@ namespace System.Runtime.CompilerServices
         {
             if (i > 1)
             {
-                T[] rules = Rules;
+                T[]? rules = Rules;
+                Debug.Assert(rules != null);
                 T rule = rules[i];
 
                 rules[i] = rules[i - 1];
@@ -335,8 +338,8 @@ namespace System.Runtime.CompilerServices
 
             if (target.IsGenericType && IsSimpleSignature(invoke, out args))
             {
-                MethodInfo method = null;
-                MethodInfo noMatchMethod = null;
+                MethodInfo? method = null;
+                MethodInfo? noMatchMethod = null;
 
                 if (invoke.ReturnType == typeof(void))
                 {
@@ -356,7 +359,7 @@ namespace System.Runtime.CompilerServices
                 }
                 if (method != null)
                 {
-                    s_cachedNoMatch = (T)(object)noMatchMethod.MakeGenericMethod(args).CreateDelegate(target);
+                    s_cachedNoMatch = (T)(object)noMatchMethod!.MakeGenericMethod(args).CreateDelegate(target);
                     return (T)(object)method.MakeGenericMethod(args).CreateDelegate(target);
                 }
             }
@@ -425,7 +428,7 @@ namespace System.Runtime.CompilerServices
             Expression target = Expression.Field(@this, nameof(Target));
             body.UncheckedAdd(Expression.Assign(originalRule, target));
 
-            ParameterExpression result = null;
+            ParameterExpression? result = null;
             if (!isVoid)
             {
                 vars.UncheckedAdd(result = Expression.Variable(@return.Type, "result"));
@@ -473,10 +476,10 @@ namespace System.Runtime.CompilerServices
             else
             {
                 processRule = Expression.Block(
-                    Expression.Assign(result, invokeRule),
+                    Expression.Assign(result!, invokeRule),
                     Expression.IfThen(
                         getMatch,
-                        Expression.Block(onMatch, Expression.Return(@return, result))
+                        Expression.Block(onMatch, Expression.Return(@return, result!))
                     )
                 );
             }
@@ -573,10 +576,10 @@ namespace System.Runtime.CompilerServices
             else
             {
                 processRule = Expression.Block(
-                    Expression.Assign(result, invokeRule),
+                    Expression.Assign(result!, invokeRule),
                     Expression.IfThen(
                         getMatch,
-                        Expression.Return(@return, result)
+                        Expression.Return(@return, result!)
                     )
                 );
             }
@@ -693,7 +696,7 @@ namespace System.Runtime.CompilerServices
             return Expression.Lambda<T>(
                 Expression.Block(
                     Expression.Call(
-                        typeof(CallSiteOps).GetMethod(nameof(CallSiteOps.SetNotMatched)),
+                        typeof(CallSiteOps).GetMethod(nameof(CallSiteOps.SetNotMatched))!,
                         @params[0]
                     ),
                     Expression.Default(invoke.GetReturnType())

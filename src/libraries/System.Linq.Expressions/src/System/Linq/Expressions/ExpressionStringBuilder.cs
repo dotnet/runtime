@@ -19,7 +19,7 @@ namespace System.Linq.Expressions
 
         // Associate every unique label or anonymous parameter in the tree with an integer.
         // Labels are displayed as UnnamedLabel_#; parameters are displayed as Param_#.
-        private Dictionary<object, int> _ids;
+        private Dictionary<object, int>? _ids;
 
         private ExpressionStringBuilder()
         {
@@ -53,7 +53,7 @@ namespace System.Linq.Expressions
 
         #region The printing code
 
-        private void Out(string s)
+        private void Out(string? s)
         {
             _out.Append(s);
         }
@@ -285,7 +285,7 @@ namespace System.Linq.Expressions
             {
                 Out("ref ");
             }
-            string name = node.Name;
+            string? name = node.Name;
             if (string.IsNullOrEmpty(name))
             {
                 Out("Param_" + GetParamId(node));
@@ -356,7 +356,7 @@ namespace System.Linq.Expressions
         {
             if (node.Value != null)
             {
-                string sValue = node.Value.ToString();
+                string? sValue = node.Value.ToString();
                 if (node.Value is string)
                 {
                     Out('\"');
@@ -403,7 +403,7 @@ namespace System.Linq.Expressions
         }
 
         // Prints ".instanceField" or "declaringType.staticField"
-        private void OutMember(Expression instance, MemberInfo member)
+        private void OutMember(Expression? instance, MemberInfo member)
         {
             if (instance != null)
             {
@@ -411,6 +411,7 @@ namespace System.Linq.Expressions
             }
             else
             {
+                Debug.Assert(member.DeclaringType != null);
                 // For static members, include the type name
                 Out(member.DeclaringType.Name);
             }
@@ -574,7 +575,7 @@ namespace System.Linq.Expressions
             Out("new ");
             Out(node.Type.Name);
             Out('(');
-            ReadOnlyCollection<MemberInfo> members = node.Members;
+            ReadOnlyCollection<MemberInfo>? members = node.Members;
             for (int i = 0; i < node.ArgumentCount; i++)
             {
                 if (i > 0)
@@ -769,7 +770,7 @@ namespace System.Linq.Expressions
             }
             else
             {
-                Debug.Assert(node.Indexer != null);
+                Debug.Assert(node.Indexer != null && node.Indexer.DeclaringType != null);
                 Out(node.Indexer.DeclaringType.Name);
             }
             if (node.Indexer != null)
@@ -793,7 +794,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitExtension(Expression node)
         {
             // Prefer an overridden ToString, if available.
-            MethodInfo toString = node.GetType().GetMethod("ToString", Type.EmptyTypes);
+            MethodInfo toString = node.GetType().GetMethod("ToString", Type.EmptyTypes)!;
             if (toString.DeclaringType != typeof(Expression) && !toString.IsStatic)
             {
                 Out(node.ToString());

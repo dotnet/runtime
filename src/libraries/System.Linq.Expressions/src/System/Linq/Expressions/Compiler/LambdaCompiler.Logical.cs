@@ -276,12 +276,12 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitMethodAndAlso(BinaryExpression b, CompilationFlags flags)
         {
-            Debug.Assert(b.Method.IsStatic);
+            Debug.Assert(b.Method != null && b.Method.IsStatic);
 
             Label labEnd = _ilg.DefineLabel();
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
-            MethodInfo opFalse = TypeUtils.GetBooleanOperator(b.Method.DeclaringType, "op_False");
+            MethodInfo? opFalse = TypeUtils.GetBooleanOperator(b.Method.DeclaringType!, "op_False");
             Debug.Assert(opFalse != null, "factory should check that the method exists");
             _ilg.Emit(OpCodes.Call, opFalse);
             _ilg.Emit(OpCodes.Brtrue, labEnd);
@@ -382,12 +382,12 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitMethodOrElse(BinaryExpression b, CompilationFlags flags)
         {
-            Debug.Assert(b.Method.IsStatic);
+            Debug.Assert(b.Method != null && b.Method.IsStatic);
 
             Label labEnd = _ilg.DefineLabel();
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
-            MethodInfo opTrue = TypeUtils.GetBooleanOperator(b.Method.DeclaringType, "op_True");
+            MethodInfo? opTrue = TypeUtils.GetBooleanOperator(b.Method.DeclaringType!, "op_True");
             Debug.Assert(opTrue != null, "factory should check that the method exists");
 
             _ilg.Emit(OpCodes.Call, opTrue);

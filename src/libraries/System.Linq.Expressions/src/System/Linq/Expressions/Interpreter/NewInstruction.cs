@@ -27,7 +27,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             int first = frame.StackIndex - _argumentCount;
 
-            object[] args = GetArgs(frame, first);
+            object?[] args = GetArgs(frame, first);
 
             object ret;
             try
@@ -46,11 +46,11 @@ namespace System.Linq.Expressions.Interpreter
             return 1;
         }
 
-        protected object[] GetArgs(InterpretedFrame frame, int first)
+        protected object?[] GetArgs(InterpretedFrame frame, int first)
         {
             if (_argumentCount > 0)
             {
-                var args = new object[_argumentCount];
+                var args = new object?[_argumentCount];
 
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        public override string ToString() => "New " + _constructor.DeclaringType.Name + "(" + _constructor + ")";
+        public override string ToString() => "New " + _constructor.DeclaringType!.Name + "(" + _constructor + ")";
     }
 
     internal class ByRefNewInstruction : NewInstruction
@@ -84,8 +84,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             int first = frame.StackIndex - _argumentCount;
 
-            object[] args = GetArgs(frame, first);
-            Debug.Assert(args != null);
+            object?[] args = GetArgs(frame, first);
 
             try
             {

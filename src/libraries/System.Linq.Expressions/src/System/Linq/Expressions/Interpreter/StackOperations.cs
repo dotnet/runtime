@@ -3,15 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Linq.Expressions.Interpreter
 {
     internal sealed class LoadObjectInstruction : Instruction
     {
-        private readonly object _value;
+        private readonly object? _value;
 
-        internal LoadObjectInstruction(object value)
+        internal LoadObjectInstruction(object? value)
         {
             _value = value;
         }
@@ -42,12 +43,14 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
+            Debug.Assert(frame.Interpreter._objects != null);
             frame.Data[frame.StackIndex++] = frame.Interpreter._objects[_index];
             return 1;
         }
 
-        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IReadOnlyList<object> objects)
+        public override string ToDebugString(int instructionIndex, object? cookie, Func<int, int> labelIndexer, IReadOnlyList<object>? objects)
         {
+            Debug.Assert(objects != null); // TODO objects can be null here, maybe null check instead assert
             return string.Format(CultureInfo.InvariantCulture, "LoadCached({0}: {1})", _index, objects[(int)_index]);
         }
 

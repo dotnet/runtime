@@ -13,8 +13,7 @@ namespace System.Linq.Expressions.Compiler
     {
         private LabelInfo EnsureLabel(LabelTarget node)
         {
-            LabelInfo result;
-            if (!_labelInfo.TryGetValue(node, out result))
+            if (!_labelInfo.TryGetValue(node, out LabelInfo? result))
             {
                 _labelInfo.Add(node, result = new LabelInfo(_ilg, node, false));
             }
@@ -28,7 +27,7 @@ namespace System.Linq.Expressions.Compiler
             return result;
         }
 
-        private LabelInfo DefineLabel(LabelTarget node)
+        private LabelInfo DefineLabel(LabelTarget? node)
         {
             if (node == null)
             {
@@ -47,7 +46,7 @@ namespace System.Linq.Expressions.Compiler
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
         private void PopLabelBlock(LabelScopeKind kind)
         {
-            Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
+            Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind && _labelBlock.Parent != null);
             _labelBlock = _labelBlock.Parent;
         }
 
@@ -59,11 +58,12 @@ namespace System.Linq.Expressions.Compiler
             // If we're an immediate child of a block, our label will already
             // be defined. If not, we need to define our own block so this
             // label isn't exposed except to its own child expression.
-            LabelInfo label = null;
+            LabelInfo? label = null;
 
             if (_labelBlock.Kind == LabelScopeKind.Block)
             {
                 _labelBlock.TryGetLabelInfo(node.Target, out label);
+                Debug.Assert(_labelBlock.Parent != null);
 
                 // We're in a block but didn't find our label, try switch
                 if (label == null && _labelBlock.Parent.Kind == LabelScopeKind.Switch)
@@ -170,6 +170,7 @@ namespace System.Linq.Expressions.Compiler
                         {
                             return false;
                         }
+                        Debug.Assert(_labelBlock.Parent != null);
                         if (_labelBlock.Parent.Kind == LabelScopeKind.Switch &&
                             _labelBlock.Parent.ContainsTarget(label))
                         {
@@ -186,6 +187,7 @@ namespace System.Linq.Expressions.Compiler
                     }
 
                     PushLabelBlock(LabelScopeKind.Block);
+                    Debug.Assert(_labelBlock.Parent != null);
                     // Labels defined immediately in the block are valid for
                     // the whole block.
                     if (_labelBlock.Parent.Kind != LabelScopeKind.Switch)
@@ -224,7 +226,7 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private void DefineBlockLabels(Expression node)
+        private void DefineBlockLabels(Expression? node)
         {
             var block = node as BlockExpression;
             if (block == null || block is SpilledExpressionBlock)

@@ -95,7 +95,7 @@ namespace System.Linq.Expressions.Compiler
                     EmitBinaryOperator(ExpressionType.SubtractChecked, nnType, nnType, nnType, liftedToNull: false);
 
                     // construct result
-                    _ilg.Emit(OpCodes.Newobj, type.GetConstructor(new Type[] { nnType }));
+                    _ilg.Emit(OpCodes.Newobj, type.GetConstructor(new Type[] { nnType })!);
                     _ilg.Emit(OpCodes.Br_S, end);
 
                     // if null then push back on stack
@@ -166,7 +166,7 @@ namespace System.Linq.Expressions.Compiler
                         EmitUnaryOperator(op, nnOperandType, nnOperandType);
 
                         // construct result
-                        ConstructorInfo ci = resultType.GetConstructor(new Type[] { nnOperandType });
+                        ConstructorInfo ci = resultType.GetConstructor(new Type[] { nnOperandType })!;
                         _ilg.Emit(OpCodes.Newobj, ci);
                         _ilg.Emit(OpCodes.Br_S, labEnd);
 
@@ -312,7 +312,7 @@ namespace System.Linq.Expressions.Compiler
                     Type paramType = pis[0].ParameterType;
                     if (paramType.IsByRef)
                     {
-                        paramType = paramType.GetElementType();
+                        paramType = paramType.GetElementType()!;
                     }
 
                     UnaryExpression operand = Expression.Convert(node.Operand, paramType);
@@ -351,6 +351,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitUnaryMethod(UnaryExpression node, CompilationFlags flags)
         {
+            Debug.Assert(node.Method != null);
             if (node.IsLifted)
             {
                 ParameterExpression v = Expression.Variable(node.Operand.Type.GetNonNullableType(), name: null);

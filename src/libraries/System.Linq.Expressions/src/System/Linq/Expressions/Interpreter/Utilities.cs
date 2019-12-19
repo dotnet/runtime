@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -96,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
                 _ => i,
             };
 
-        internal static object GetPrimitiveDefaultValue(Type type)
+        internal static object? GetPrimitiveDefaultValue(Type type)
         {
             object result;
 
@@ -162,6 +163,7 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         public static void UnwrapAndRethrow(TargetInvocationException exception)
         {
+            Debug.Assert(exception.InnerException != null);
             ExceptionDispatchInfo.Throw(exception.InnerException);
         }
     }
@@ -171,11 +173,11 @@ namespace System.Linq.Expressions.Interpreter
     /// </summary>
     internal class HybridReferenceDictionary<TKey, TValue> where TKey : class
     {
-        private KeyValuePair<TKey, TValue>[] _keysAndValues;
-        private Dictionary<TKey, TValue> _dict;
+        private KeyValuePair<TKey, TValue>[]? _keysAndValues;
+        private Dictionary<TKey, TValue>? _dict;
         private const int ArraySize = 10;
 
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             Debug.Assert(key != null);
 
@@ -194,7 +196,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
             }
-            value = default(TValue);
+            value = default(TValue)!;
             return false;
         }
 
@@ -228,7 +230,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _dict.ContainsKey(key);
             }
 
-            KeyValuePair<TKey, TValue>[] keysAndValues = _keysAndValues;
+            KeyValuePair<TKey, TValue>[]? keysAndValues = _keysAndValues;
             if (keysAndValues != null)
             {
                 for (int i = 0; i < keysAndValues.Length; i++)

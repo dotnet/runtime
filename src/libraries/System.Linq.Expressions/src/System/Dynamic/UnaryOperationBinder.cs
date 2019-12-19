@@ -61,7 +61,7 @@ namespace System.Dynamic
         /// <param name="target">The target of the dynamic unary operation.</param>
         /// <param name="errorSuggestion">The binding result in case the binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public abstract DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject? errorSuggestion);
 
         /// <summary>
         /// Performs the binding of the dynamic unary operation.
