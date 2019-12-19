@@ -16,7 +16,7 @@ set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
-set "__RootBinDir=%__ProjectDir%\..\artifacts"
+set "__RootBinDir=%~dp0..\..\..\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set __ToolsDir=%__ProjectDir%\..\Tools
@@ -185,8 +185,7 @@ if defined RunInUnloadableContext (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
-REM __ProjectDir is poorly named, it is actually <projectDir>/tests
-set NEXTCMD=python "%__ProjectDir%\runtest.py" %__RuntestPyArgs%
+set NEXTCMD=python "%~dp0runtest.py" %__RuntestPyArgs%
 echo !NEXTCMD!
 !NEXTCMD!
 
