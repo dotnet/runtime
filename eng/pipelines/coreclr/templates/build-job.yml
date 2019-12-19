@@ -3,6 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  platform: ''
   container: ''
   testGroup: ''
   crossrootfsDir: ''
@@ -12,12 +13,14 @@ parameters:
   stagedBuild: false
   variables: {}
   pool: ''
+  isOfficialBuild: false
 
 ### Product build
 jobs:
 - template: xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
+    _BuildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
@@ -186,8 +189,14 @@ jobs:
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Build packages
-    - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) -ci
+    - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) -ci --configuration $(_BuildConfig)
       displayName: Build packages
+
+    # Save packages using the prepare-signed-artifacts format.
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
+      - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+        parameters:
+          name: ${{ parameters.platform }}
 
     # Publish official build
     - ${{ if eq(parameters.publishToBlobFeed, 'true') }}:
