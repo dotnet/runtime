@@ -6,7 +6,6 @@
 // only internal implementation of UriParser type
 
 using System.Collections;
-using System.Diagnostics;
 
 namespace System
 {
@@ -276,7 +275,7 @@ namespace System
         internal UriParser InternalOnNewUri()
         {
             UriParser effectiveParser = OnNewUri();
-            if ((object)this != (object)effectiveParser)
+            if (!ReferenceEquals(this, effectiveParser))
             {
                 effectiveParser._scheme = _scheme;
                 effectiveParser._port = _port;

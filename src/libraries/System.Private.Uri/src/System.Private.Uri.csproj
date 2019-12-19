@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />
+    <Compile Include="System\CharHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\DomainNameHelper.cs" />

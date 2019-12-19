@@ -23,15 +23,14 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
             }
 
-            _string = uri == null ? string.Empty : uri;
+            _string = uri ?? string.Empty;
 
             if (dontEscape)
                 _flags |= Flags.UserEscaped;
 
             ParsingError err = ParseScheme(_string, ref _flags, ref _syntax!);
-            UriFormatException? e;
 
-            InitializeUri(err, uriKind, out e);
+            InitializeUri(err, uriKind, out UriFormatException? e);
             if (e != null)
                 throw e;
         }
@@ -265,20 +264,19 @@ namespace System
         //
         public static bool TryCreate(string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
-            if ((object?)uriString == null)
+            if (uriString is null)
             {
                 result = null;
                 return false;
             }
             UriFormatException? e = null;
             result = CreateHelper(uriString, false, uriKind, ref e);
-            return (object?)e == null && result != null;
+            return e is null && result != null;
         }
 
         public static bool TryCreate(Uri? baseUri, string? relativeUri, [NotNullWhen(true)] out Uri? result)
         {
-            Uri? relativeLink;
-            if (TryCreate(relativeUri, UriKind.RelativeOrAbsolute, out relativeLink))
+            if (TryCreate(relativeUri, UriKind.RelativeOrAbsolute, out Uri? relativeLink))
             {
                 if (!relativeLink.IsAbsoluteUri)
                     return TryCreate(baseUri, relativeLink, out result);
@@ -294,7 +292,7 @@ namespace System
         {
             result = null;
 
-            if ((object?)baseUri == null || (object?)relativeUri == null)
+            if (baseUri is null || relativeUri is null)
                 return false;
 
             if (baseUri.IsNotAbsoluteUri)
@@ -318,10 +316,10 @@ namespace System
             if (e != null)
                 return false;
 
-            if ((object?)result == null)
+            if (result is null)
                 result = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
 
-            return (object?)e == null && result != null && result.IsAbsoluteUri;
+            return e is null && result != null && result.IsAbsoluteUri;
         }
 
         public string GetComponents(UriComponents components, UriFormat format)
@@ -351,16 +349,15 @@ namespace System
         //
         // Note that Uri.Equals will get an optimized path but is limited to true/false result only
         //
-        public static int Compare(Uri? uri1, Uri? uri2, UriComponents partsToCompare, UriFormat compareFormat,
-            StringComparison comparisonType)
+        public static int Compare(Uri? uri1, Uri? uri2, UriComponents partsToCompare, UriFormat compareFormat, StringComparison comparisonType)
         {
-            if ((object?)uri1 == null)
+            if (uri1 is null)
             {
-                if (uri2 == null)
+                if (uri2 is null)
                     return 0; // Equal
                 return -1;    // null < non-null
             }
-            if ((object?)uri2 == null)
+            if (uri2 is null)
                 return 1;     // non-null > null
 
             // a relative uri is always less than an absolute one
@@ -385,12 +382,8 @@ namespace System
 
         public static bool IsWellFormedUriString(string? uriString, UriKind uriKind)
         {
-            Uri? result;
-
-            if (!Uri.TryCreate(uriString, uriKind, out result))
-                return false;
-
-            return result.IsWellFormedOriginalString();
+            return Uri.TryCreate(uriString, uriKind, out Uri? result)
+                && result.IsWellFormedOriginalString();
         }
 
         //
@@ -442,22 +435,22 @@ namespace System
                 {
                     if ((nonCanonical & (Flags.E_UserNotCanonical | Flags.UserIriCanonical)) == (Flags.E_UserNotCanonical | Flags.UserIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_UserNotCanonical | Flags.UserIriCanonical);
+                        nonCanonical &= ~(Flags.E_UserNotCanonical | Flags.UserIriCanonical);
                     }
 
                     if ((nonCanonical & (Flags.E_PathNotCanonical | Flags.PathIriCanonical)) == (Flags.E_PathNotCanonical | Flags.PathIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_PathNotCanonical | Flags.PathIriCanonical);
+                        nonCanonical &= ~(Flags.E_PathNotCanonical | Flags.PathIriCanonical);
                     }
 
                     if ((nonCanonical & (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical)) == (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_QueryNotCanonical | Flags.QueryIriCanonical);
+                        nonCanonical &= ~(Flags.E_QueryNotCanonical | Flags.QueryIriCanonical);
                     }
 
                     if ((nonCanonical & (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical)) == (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical);
+                        nonCanonical &= ~(Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical);
                     }
                 }
 
@@ -540,7 +533,7 @@ namespace System
 
         public static string UnescapeDataString(string stringToUnescape)
         {
-            if ((object)stringToUnescape == null)
+            if (stringToUnescape is null)
                 throw new ArgumentNullException(nameof(stringToUnescape));
 
             if (stringToUnescape.Length == 0)
@@ -651,15 +644,18 @@ namespace System
         // to  return combined URI strings from both Uris
         // otherwise if e != null on output the operation has failed
         //
-        internal static Uri? ResolveHelper(Uri baseUri, Uri? relativeUri, ref string? newUriString, ref bool userEscaped,
-            out UriFormatException? e)
+        internal static Uri? ResolveHelper(Uri baseUri, Uri? relativeUri, ref string? newUriString, ref bool userEscaped, out UriFormatException? e)
         {
             Debug.Assert(!baseUri.IsNotAbsoluteUri && !baseUri.UserDrivenParsing, "Uri::ResolveHelper()|baseUri is not Absolute or is controlled by User Parser.");
 
             e = null;
-            string relativeStr = string.Empty;
+            string relativeStr;
 
-            if ((object?)relativeUri != null)
+            if (relativeUri is null)
+            {
+                relativeStr = string.Empty;
+            }
+            else
             {
                 if (relativeUri.IsAbsoluteUri)
                     return relativeUri;
@@ -667,8 +663,6 @@ namespace System
                 relativeStr = relativeUri.OriginalString;
                 userEscaped = relativeUri.UserEscaped;
             }
-            else
-                relativeStr = string.Empty;
 
             // Here we can assert that passed "relativeUri" is indeed a relative one
 
@@ -701,7 +695,7 @@ namespace System
             // Check on the DOS path in the relative Uri (a special case)
             if (relativeStr.Length >= 3
                 && (relativeStr[1] == ':' || relativeStr[1] == '|')
-                && UriHelper.IsAsciiLetter(relativeStr[0])
+                && CharHelper.IsAsciiLetter(relativeStr[0])
                 && (relativeStr[2] == '\\' || relativeStr[2] == '/'))
             {
                 if (baseUri.IsImplicitFile)
@@ -734,7 +728,7 @@ namespace System
                 return null;
             }
 
-            if ((object?)newUriString == (object)baseUri._string)
+            if (ReferenceEquals(newUriString, baseUri._string))
                 return baseUri;
 
             return null;
@@ -835,7 +829,7 @@ namespace System
 
         public bool IsBaseOf(Uri uri)
         {
-            if ((object)uri == null)
+            if (uri is null)
                 throw new ArgumentNullException(nameof(uri));
 
             if (!IsAbsoluteUri)
@@ -857,14 +851,13 @@ namespace System
             {
                 //a relative uri could have quite tricky form, it's better to fix it now.
                 string? newUriString = null;
-                UriFormatException? e;
                 bool dontEscape = false;
 
-                uriLink = ResolveHelper(this, uriLink, ref newUriString, ref dontEscape, out e)!;
+                uriLink = ResolveHelper(this, uriLink, ref newUriString, ref dontEscape, out UriFormatException? e)!;
                 if (e != null)
                     return false;
 
-                if ((object?)uriLink == null)
+                if (uriLink is null)
                     uriLink = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e)!;
 
                 if (e != null)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -23,12 +22,13 @@ namespace System
 
             for (int i = end - 1; i >= start; --i)
             {
-                if (str[i] >= 'A' && str[i] <= 'Z')
+                char c = str[i];
+                if (CharHelper.IsAsciiUppercaseLetter(c))
                 {
                     res = str.Substring(start, end - start).ToLowerInvariant();
                     break;
                 }
-                if (str[i] == ':')
+                if (c == ':')
                     end = i;
             }
 
@@ -37,7 +37,7 @@ namespace System
                 res = str.Substring(start, end - start);
             }
 
-            if (res == Localhost || res == Loopback)
+            if (res.Equals(Localhost, StringComparison.Ordinal) || res.Equals(Loopback, StringComparison.Ordinal))
             {
                 loopback = true;
                 return Localhost;
@@ -349,24 +349,18 @@ namespace System
 
         private static unsafe bool IsIdnAce(string input, int index)
         {
-            if ((input[index] == 'x') &&
+            return (input[index] == 'x') &&
                 (input[index + 1] == 'n') &&
                 (input[index + 2] == '-') &&
-                (input[index + 3] == '-'))
-                return true;
-            else
-                return false;
+                (input[index + 3] == '-');
         }
 
         private static unsafe bool IsIdnAce(char* input, int index)
         {
-            if ((input[index] == 'x') &&
+            return (input[index] == 'x') &&
                 (input[index + 1] == 'n') &&
                 (input[index + 2] == '-') &&
-                (input[index + 3] == '-'))
-                return true;
-            else
-                return false;
+                (input[index + 3] == '-');
         }
 
         //
@@ -508,12 +502,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsASCIILetterOrDigit(char character, ref bool notCanonical)
         {
-            if ((uint)(character - 'a') <= 'z' - 'a' || (uint)(character - '0') <= '9' - '0')
+            if (CharHelper.IsAsciiLowercaseLetter(character) || CharHelper.IsAsciiDigit(character))
             {
                 return true;
             }
 
-            if ((uint)(character - 'A') <= 'Z' - 'A')
+            if (CharHelper.IsAsciiUppercaseLetter(character))
             {
                 notCanonical = true;
                 return true;
@@ -529,12 +523,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsValidDomainLabelCharacter(char character, ref bool notCanonical)
         {
-            if ((uint)(character - 'a') <= 'z' - 'a' || (uint)(character - '0') <= '9' - '0' || character == '-' || character == '_')
+            if (CharHelper.IsAsciiLowercaseLetter(character) || CharHelper.IsAsciiDigit(character) || character == '-' || character == '_')
             {
                 return true;
             }
 
-            if ((uint)(character - 'A') <= 'Z' - 'A')
+            if (CharHelper.IsAsciiUppercaseLetter(character))
             {
                 notCanonical = true;
                 return true;

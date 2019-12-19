@@ -276,10 +276,10 @@ namespace System
                     if (tmpEnumerator.MoveNext())
                     {
                         Rune r1 = tmpEnumerator.Current;
-                        if (r1.IsAscii && IsHexDigit((char)r1.Value) && tmpEnumerator.MoveNext())
+                        if (r1.IsAscii && CharHelper.IsHexDigit((char)r1.Value) && tmpEnumerator.MoveNext())
                         {
                             Rune r2 = tmpEnumerator.Current;
-                            if (r2.IsAscii && IsHexDigit((char)r2.Value))
+                            if (r2.IsAscii && CharHelper.IsHexDigit((char)r2.Value))
                             {
                                 vsb.Append('%');
                                 vsb.Append((char)r1.Value);
@@ -678,32 +678,24 @@ namespace System
 
         internal static char EscapedAscii(char digit, char next)
         {
-            if (!(((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f'))))
+            if (!CharHelper.IsHexDigit(digit) || !CharHelper.IsHexDigit(next))
             {
                 return Uri.c_DummyChar;
             }
 
             int res = (digit <= '9')
-                ? ((int)digit - (int)'0')
+                ? (digit - '0')
                 : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-                   + 10);
+                    ? (digit - 'A')
+                    : (digit - 'a'))
+                       + 10);
 
-            if (!(((next >= '0') && (next <= '9'))
-                || ((next >= 'A') && (next <= 'F'))
-                || ((next >= 'a') && (next <= 'f'))))
-            {
-                return Uri.c_DummyChar;
-            }
-
-            return (char)((res << 4) + ((next <= '9')
-                    ? ((int)next - (int)'0')
+            return (char)((res << 4) +
+                ((next <= '9')
+                    ? (next - '0')
                     : (((next <= 'F')
-                        ? ((int)next - (int)'A')
-                        : ((int)next - (int)'a'))
+                        ? (next - 'A')
+                        : (next - 'a'))
                        + 10)));
         }
 
@@ -787,17 +779,6 @@ namespace System
         {
             return (ch <= ' ') && (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
         }
-
-        internal static bool IsAsciiLetter(char character) =>
-            (((uint)character - 'A') & ~0x20) < 26;
-
-        internal static bool IsAsciiLetterOrDigit(char character) =>
-            ((((uint)character - 'A') & ~0x20) < 26) ||
-            (((uint)character - '0') < 10);
-
-        internal static bool IsHexDigit(char character) =>
-            ((((uint)character - 'A') & ~0x20) < 6) ||
-            (((uint)character - '0') < 10);
 
         //
         // Is this a Bidirectional control char.. These get stripped
