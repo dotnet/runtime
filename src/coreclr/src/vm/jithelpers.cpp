@@ -2399,63 +2399,6 @@ HCIMPL2(Object *, JIT_IsInstanceOfArray, CORINFO_CLASS_HANDLE type, Object *pObj
 }
 HCIMPLEND
 
-/*********************************************************************/
-// IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
-// Unlike the IsInstanceOfInterface, IsInstanceOfClass, and IsIsntanceofArray functions,
-// this test must deal with all kinds of type tests
-HCIMPL2(Object *, JIT_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    if (NULL == obj)
-    {
-        return NULL;
-    }
-
-    TypeHandle th = TypeHandle(type);
-    switch (ObjIsInstanceOfCached(obj, th)) {
-    case TypeHandle::CanCast:
-        return obj;
-    case TypeHandle::CannotCast:
-        return NULL;
-    default:
-        // fall through to the slow helper
-        break;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny_NoCacheLookup, type, obj);
-}
-HCIMPLEND
-
-// ChkCast test used for unusual cases (naked type parameters, variant generic types)
-// Unlike the ChkCastInterface, ChkCastClass, and ChkCastArray functions,
-// this test must deal with all kinds of type tests
-HCIMPL2(Object *, JIT_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *pObject)
-{
-    FCALL_CONTRACT;
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    TypeHandle th = TypeHandle(type);
-    TypeHandle::CastResult result = ObjIsInstanceOfCached(pObject, th);
-    if (result == TypeHandle::CanCast)
-    {
-        return pObject;
-    }
-
-    ENDFORBIDGC();
-    Object* pRet = HCCALL2(JITutil_ChkCastAny_NoCacheLookup, type, pObject);
-    // Make sure that the fast helper have not lied
-    _ASSERTE(result != TypeHandle::CannotCast);
-    return pRet;
-}
-HCIMPLEND
-
-
 NOINLINE HCIMPL2(Object *, JITutil_IsInstanceOfInterface, MethodTable *pInterfaceMT, Object* obj)
 {
     FCALL_CONTRACT;

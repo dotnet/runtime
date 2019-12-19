@@ -123,7 +123,15 @@ void CastCache::Initialize()
     }
     CONTRACTL_END;
 
-    FieldDesc* pTableField = MscorlibBinder::GetField(FIELD__CASTCACHE__TABLE);
+    MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_ISINSTANCEOFANY));
+    PCODE pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTANY));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
+
+    FieldDesc* pTableField = MscorlibBinder::GetField(FIELD__CASTHELPERS__TABLE);
 
     GCX_COOP();
     s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();

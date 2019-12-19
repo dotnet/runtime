@@ -1452,8 +1452,10 @@ DEFINE_FIELD_U(_deletedCount,              GCHeapHashObject,                _del
 
 DEFINE_CLASS(GCHEAPHASH, CompilerServices, GCHeapHash)
 
-DEFINE_CLASS(CASTCACHE, CompilerServices, CastCache)
-DEFINE_FIELD(CASTCACHE, TABLE, s_table)
+DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
+DEFINE_FIELD(CASTHELPERS, TABLE, s_table)
+DEFINE_METHOD(CASTHELPERS, JIT_ISINSTANCEOFANY,  JIT_IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, JIT_CHKCASTANY,       JIT_ChkCastAny,                  SM_PtrVoid_Obj_RetObj)
 
 DEFINE_CLASS_U(CompilerServices,           LAHashDependentHashTracker,      LAHashDependentHashTrackerObject)
 DEFINE_FIELD_U(_dependentHandle,           LAHashDependentHashTrackerObject,_dependentHandle)

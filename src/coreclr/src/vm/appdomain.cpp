@@ -1990,7 +1990,9 @@ void SystemDomain::LoadBaseSystemClasses()
 
     // further loading of nonprimitive types may need casting support.
     // initialize cast cache here.
+#ifndef CROSSGEN_COMPILE
     CastCache::Initialize();
+#endif // CROSSGEN_COMPILE
 
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot
