@@ -3358,6 +3358,97 @@ wrong:
 		ret
 	}
 
+	.class nested private auto ansi beforefieldinit R1_class
+	{
+		.field  public  int32 test_field
+
+		.method public hidebysig  specialname  rtspecialname instance default void '.ctor' ()  cil managed
+		{
+			ret
+		}
+	}
+
+	.method public hidebysig static int32  test_3_ldstloc_opt () cil managed
+	{
+		.locals init (
+			class Tests/R1_class v_0,
+			int32 v_1,
+			class Tests/R1_class v_2
+		)
+
+		/* allocate first object */
+		newobj instance void class Tests/R1_class::.ctor ()
+		stloc.0
+		ldloc.0
+		stloc.2
+
+		br L3
+		/* dead code for interp opt barrier */
+		ldc.i4.1
+		ldc.i4.1
+		add
+		pop
+L3:
+		/* load first object on the stack */
+		ldloc.0
+
+		ldc.i4.3
+		stloc.1
+		ldloc.1
+
+		/* allocate second object */
+		newobj instance void class Tests/R1_class::.ctor ()
+		/* overwrite first object at loc0 with second object */
+		stloc.0
+
+		/* should store '3' into first object.
+		 * in the buggy case it stores '3' into the second object because it delays the load from loc.0 */
+		stfld int32 Tests/R1_class::test_field
+
+		/* load first object on the stack */
+		ldloc.2
+		/* should read '3' */
+		ldfld int32 Tests/R1_class::test_field
+		ret
+	}
+
+	.method public hidebysig static void ldstarg_opt_helper (Tests/R1_class a) cil managed
+	{
+		ldarg.0
+
+		/* allocate second object */
+		newobj instance void class Tests/R1_class::.ctor ()
+		dup
+		ldc.i4.1
+		/* stores '1' in the field */
+		stfld int32 Tests/R1_class::test_field
+		/* overwrite first argument */
+		starg 0
+
+		ldc.i4.3
+		/* stores '3' in the field */
+		stfld int32 Tests/R1_class::test_field  /* might get fused with ldarg.0 at start of method */
+		ret
+	}
+
+	.method public hidebysig static int32  test_3_ldstarg_opt () cil managed
+	{
+		/* allocate first object */
+		newobj instance void class Tests/R1_class::.ctor ()
+		dup
+		ldc.i4.s 0x1337
+		/* stores '0x1337' in the field */
+		stfld int32 Tests/R1_class::test_field
+
+		dup
+		/* passing first object */
+		call void class Tests::ldstarg_opt_helper (Tests/R1_class)
+		/* should read '3' from first object */
+		ldfld int32 Tests/R1_class::test_field
+		ret
+	}
+
+
   .method public hidebysig static int32  test_10_rconv_to_u8_ovf_un() cil managed
   {
     // Code size       20 (0x14)
