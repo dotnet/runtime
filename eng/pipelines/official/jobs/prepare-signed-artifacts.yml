@@ -1,6 +1,7 @@
 parameters:
   dependsOn: []
-  PublishRidAgnosticPackagesFromJobName: ''
+  PublishRidAgnosticPackagesFromPlatform: ''
+  isOfficialBuild: false
 
 jobs:
 - job: PrepareSignedArtifacts
@@ -14,9 +15,14 @@ jobs:
   workspace:
     clean: all
 
-  steps:
+  variables:
+  - name: SignType
+    value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
-  - ${{ if eq(variables.isOfficialBuild, true) }}:
+  steps:
+  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+  - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - task: NuGetAuthenticate@0
 
   - task: MicroBuildSigningPlugin@2
@@ -36,9 +42,10 @@ jobs:
 
   - script: >-
       build.cmd -ci
-      -projects $(Build.SourcesDirectory)\src\publish\prepare-artifacts.proj
-      /p:Configuration=Release
-      /p:PublishRidAgnosticPackagesFromJobName=${{ parameters.PublishRidAgnosticPackagesFromJobName }}
+      -configuration Release
+      -projects $(Build.SourcesDirectory)\src\installer\publish\prepare-artifacts.proj
+      /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
+      /p:OfficialBuildId=$(Build.BuildNumber)
       /p:SignType=$(SignType)
       /p:DotNetSignType=$(SignType)
       /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
