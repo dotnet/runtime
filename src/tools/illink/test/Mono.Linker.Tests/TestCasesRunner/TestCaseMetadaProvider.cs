@@ -66,6 +66,17 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return tclo;
 		}
 
+		public virtual void CustomizeLinker (LinkerDriver linker, LinkerCustomizations customizations)
+		{
+			if (_testCaseTypeDefinition.CustomAttributes.Any (attr =>
+				attr.AttributeType.Name == nameof (DependencyRecordedAttribute))) {
+				customizations.DependencyRecorder = new TestDependencyRecorder ();
+				customizations.CustomizeContext += context => {
+					context.Tracer.AddRecorder (customizations.DependencyRecorder);
+				};
+			}
+		}
+
 #if NETCOREAPP
 		public static IEnumerable<string> GetTrustedPlatformAssemblies ()
 		{

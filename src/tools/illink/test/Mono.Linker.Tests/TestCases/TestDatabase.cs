@@ -151,6 +151,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("Substitutions");
 		}
 
+		public static IEnumerable<TestCaseData> TracingTests ()
+		{
+			return NUnitCasesBySuiteName ("Tracing");
+		}
+
 		public static TestCaseCollector CreateCollector ()
 		{
 			string rootSourceDirectory;

@@ -1,8 +1,25 @@
 ﻿﻿namespace Mono.Linker.Tests.TestCasesRunner {
 	public class LinkerDriver {
-		public virtual void Link (string [] args, ILogger logger)
+		protected class TestDriver : Driver
 		{
-			new Driver (args).Run (logger);
+			LinkerCustomizations _customization;
+
+			public TestDriver(string[] args, LinkerCustomizations customizations) : base(args)
+			{
+				_customization = customizations;
+			}
+
+			protected override LinkContext GetDefaultContext (Pipeline pipeline)
+			{
+				LinkContext context = base.GetDefaultContext (pipeline);
+				_customization.CustomizeLinkContext (context);
+				return context;
+			}
+		}
+
+		public virtual void Link (string [] args, LinkerCustomizations customizations, ILogger logger)
+		{
+			new TestDriver (args, customizations).Run (logger);
 		}
 	}
 }

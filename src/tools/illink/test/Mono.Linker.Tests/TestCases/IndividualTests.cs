@@ -1,12 +1,10 @@
 ﻿using System;
-using System.IO;
 using System.Xml;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.CommandLine.Mvid;
 using Mono.Linker.Tests.Cases.References.Individual;
 using Mono.Linker.Tests.Cases.Tracing.Individual;
 using Mono.Linker.Tests.Extensions;
-using Mono.Linker.Tests.TestCases;
 using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;
 
@@ -34,7 +32,7 @@ namespace Mono.Linker.Tests.TestCases
 			var testcase = CreateIndividualCase (typeof (CanEnableDependenciesDump));
 			var result = Run (testcase);
 
-			var outputPath = result.OutputAssemblyPath.Parent.Combine (Tracer.DefaultDependenciesFileName);
+			var outputPath = result.OutputAssemblyPath.Parent.Combine (XmlDependencyRecorder.DefaultDependenciesFileName);
 			if (!outputPath.Exists ())
 				Assert.Fail ($"The dependency dump file is missing.  Expected it to exist at {outputPath}");
 		}
