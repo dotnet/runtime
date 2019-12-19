@@ -21,7 +21,7 @@ namespace System.Linq.Expressions
             }
 
             public bool CanReduce => _node.CanReduce;
-            public LambdaExpression Conversion => _node.Conversion;
+            public LambdaExpression? Conversion => _node.Conversion;
             public string DebugView => _node.DebugView;
             public bool IsLifted => _node.IsLifted;
             public bool IsLiftedToNull => _node.IsLiftedToNull;

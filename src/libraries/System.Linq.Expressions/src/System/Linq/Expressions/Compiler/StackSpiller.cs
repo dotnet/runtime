@@ -800,9 +800,8 @@ namespace System.Linq.Expressions.Compiler
 
             if (action != RewriteAction.None)
             {
-                Debug.Assert(clone != null);
                 // Okay to wrap since we know no one can mutate the clone array.
-                expr = node.Rewrite(null, clone);
+                expr = node.Rewrite(null, clone!);
             }
 
             return new Result(action, expr);

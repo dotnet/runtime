@@ -296,8 +296,7 @@ namespace System.Dynamic
 
             public override int GetHashCode()
             {
-                Debug.Assert(_instance != null);
-                return InstanceRestrictionHash ^ RuntimeHelpers.GetHashCode(_instance) ^ _expression.GetHashCode();
+                return InstanceRestrictionHash ^ RuntimeHelpers.GetHashCode(_instance!) ^ _expression.GetHashCode();
             }
             internal override Expression GetExpression()
             {

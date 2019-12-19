@@ -187,7 +187,7 @@ namespace System.Linq.Expressions.Compiler
 
             // if not null, call conversion
             _ilg.MarkLabel(labNotNull);
-            Debug.Assert(b.Conversion.ParameterCount == 1);
+            Debug.Assert(b.Conversion != null && b.Conversion.ParameterCount == 1);
 
             // emit the delegate instance
             EmitLambdaExpression(b.Conversion);

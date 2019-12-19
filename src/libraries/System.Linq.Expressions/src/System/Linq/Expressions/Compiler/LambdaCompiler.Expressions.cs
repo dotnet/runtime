@@ -381,31 +381,29 @@ namespace System.Linq.Expressions.Compiler
             // stack by emitting a tail call
             if (obj != null && obj.Type.IsValueType)
             {
-                Debug.Assert(objectType != null);
                 EmitMethodCall(method, methodCallExpr, objectType);
             }
             else
             {
-                Debug.Assert(objectType != null);
                 EmitMethodCall(method, methodCallExpr, objectType, flags);
             }
         }
 
         // assumes 'object' of non-static call is already on stack
-        private void EmitMethodCall(MethodInfo mi, IArgumentProvider args, Type objectType)
+        private void EmitMethodCall(MethodInfo mi, IArgumentProvider args, Type? objectType)
         {
             EmitMethodCall(mi, args, objectType, CompilationFlags.EmitAsNoTail);
         }
 
         // assumes 'object' of non-static call is already on stack
-        private void EmitMethodCall(MethodInfo mi, IArgumentProvider args, Type objectType, CompilationFlags flags)
+        private void EmitMethodCall(MethodInfo mi, IArgumentProvider args, Type? objectType, CompilationFlags flags)
         {
             // Emit arguments
             List<WriteBack>? wb = EmitArguments(mi, args);
 
             // Emit the actual call
             OpCode callOp = UseVirtual(mi) ? OpCodes.Callvirt : OpCodes.Call;
-            if (callOp == OpCodes.Callvirt && objectType.IsValueType)
+            if (callOp == OpCodes.Callvirt && objectType!.IsValueType)
             {
                 // This automatically boxes value types if necessary.
                 _ilg.Emit(OpCodes.Constrained, objectType);

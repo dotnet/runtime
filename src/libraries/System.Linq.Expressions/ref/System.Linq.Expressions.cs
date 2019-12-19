@@ -258,7 +258,7 @@ namespace System.Linq.Expressions
     {
         internal BinaryExpression() { }
         public override bool CanReduce { get { throw null; } }
-        public System.Linq.Expressions.LambdaExpression Conversion { get { throw null; } }
+        public System.Linq.Expressions.LambdaExpression? Conversion { get { throw null; } }
         public bool IsLifted { get { throw null; } }
         public bool IsLiftedToNull { get { throw null; } }
         public System.Linq.Expressions.Expression Left { get { throw null; } }
@@ -266,7 +266,7 @@ namespace System.Linq.Expressions
         public System.Linq.Expressions.Expression Right { get { throw null; } }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
         public override System.Linq.Expressions.Expression Reduce() { throw null; }
-        public System.Linq.Expressions.BinaryExpression Update(System.Linq.Expressions.Expression left, System.Linq.Expressions.LambdaExpression conversion, System.Linq.Expressions.Expression right) { throw null; }
+        public System.Linq.Expressions.BinaryExpression Update(System.Linq.Expressions.Expression left, System.Linq.Expressions.LambdaExpression? conversion, System.Linq.Expressions.Expression right) { throw null; }
     }
     public partial class BlockExpression : System.Linq.Expressions.Expression
     {

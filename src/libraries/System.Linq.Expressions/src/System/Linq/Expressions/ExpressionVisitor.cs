@@ -198,7 +198,7 @@ namespace System.Linq.Expressions
                 node,
                 node.Update(
                     Visit(node.Left),
-                    VisitAndConvert(node.Conversion, nameof(VisitBinary)),
+                    VisitAndConvert(node.Conversion!, nameof(VisitBinary)),
                     Visit(node.Right)
                 )
             );
@@ -220,8 +220,7 @@ namespace System.Linq.Expressions
                 return node;
             }
 
-            Debug.Assert(nodes != null);
-            return node.Rewrite(v, nodes);
+            return node.Rewrite(v, nodes!);
         }
 
         /// <summary>

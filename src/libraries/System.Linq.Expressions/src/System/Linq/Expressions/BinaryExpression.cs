@@ -89,7 +89,7 @@ namespace System.Linq.Expressions
         /// <param name="conversion">The <see cref="Conversion"/> property of the result.</param>
         /// <param name="right">The <see cref="Right"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public BinaryExpression Update(Expression left, LambdaExpression conversion, Expression right)
+        public BinaryExpression Update(Expression left, LambdaExpression? conversion, Expression right)
         {
             if (left == Left && right == Right && conversion == Conversion)
             {
@@ -162,7 +162,7 @@ namespace System.Linq.Expressions
             // v = v (op) r
             ExpressionType op = GetBinaryOpFromAssignmentOp(NodeType);
             Expression r = Expression.MakeBinary(op, Left, Right, false, Method);
-            LambdaExpression conversion = GetConversion();
+            LambdaExpression? conversion = GetConversion();
             if (conversion != null)
             {
                 r = Expression.Invoke(conversion, r);
@@ -195,7 +195,7 @@ namespace System.Linq.Expressions
                 // 2. temp2 = temp1.b (op) r
                 ExpressionType op = GetBinaryOpFromAssignmentOp(NodeType);
                 Expression e2 = Expression.MakeBinary(op, Expression.MakeMemberAccess(temp1, member.Member), Right, false, Method);
-                LambdaExpression conversion = GetConversion();
+                LambdaExpression? conversion = GetConversion();
                 if (conversion != null)
                 {
                     e2 = Expression.Invoke(conversion, e2);
@@ -255,7 +255,7 @@ namespace System.Linq.Expressions
             // tempValue = tempObj[tempArg0, ... tempArgN] (op) r
             ExpressionType binaryOp = GetBinaryOpFromAssignmentOp(NodeType);
             Expression op = Expression.MakeBinary(binaryOp, tempIndex, Right, false, Method);
-            LambdaExpression conversion = GetConversion();
+            LambdaExpression? conversion = GetConversion();
             if (conversion != null)
             {
                 op = Expression.Invoke(conversion, op);
@@ -273,9 +273,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the type conversion function that is used by a coalescing or compound assignment operation.
         /// </summary>
-        public LambdaExpression Conversion => GetConversion();
+        public LambdaExpression? Conversion => GetConversion();
 
-        internal virtual LambdaExpression GetConversion() => null!;
+        internal virtual LambdaExpression? GetConversion() => null;
 
         /// <summary>
         /// Gets a value that indicates whether the expression tree node represents a lifted call to an operator.
@@ -669,8 +669,7 @@ namespace System.Linq.Expressions
             BinaryExpression? b = GetUserDefinedBinaryOperator(binaryType, name, left, right, liftToNull);
             if (b != null)
             {
-                Debug.Assert(b.Method != null);
-                ParameterInfo[] pis = b.Method.GetParametersCached();
+                ParameterInfo[] pis = b.Method!.GetParametersCached();
                 ValidateParamswithOperandsOrThrow(pis[0].ParameterType, left.Type, binaryType, name);
                 ValidateParamswithOperandsOrThrow(pis[1].ParameterType, right.Type, binaryType, name);
                 return b;
@@ -681,20 +680,19 @@ namespace System.Linq.Expressions
         private static BinaryExpression GetUserDefinedAssignOperatorOrThrow(ExpressionType binaryType, string name, Expression left, Expression right, LambdaExpression? conversion, bool liftToNull)
         {
             BinaryExpression b = GetUserDefinedBinaryOperatorOrThrow(binaryType, name, left, right, liftToNull);
-            Debug.Assert(b.Method != null);
             if (conversion == null)
             {
                 // return type must be assignable back to the left type
                 if (!TypeUtils.AreReferenceAssignable(left.Type, b.Type))
                 {
-                    throw Error.UserDefinedOpMustHaveValidReturnType(binaryType, b.Method.Name);
+                    throw Error.UserDefinedOpMustHaveValidReturnType(binaryType, b.Method!.Name);
                 }
             }
             else
             {
                 // add the conversion to the result
-                ValidateOpAssignConversionLambda(conversion, b.Left, b.Method, b.NodeType);
-                b = new OpAssignMethodConversionBinaryExpression(b.NodeType, b.Left, b.Right, b.Left.Type, b.Method, conversion);
+                ValidateOpAssignConversionLambda(conversion, b.Left, b.Method!, b.NodeType);
+                b = new OpAssignMethodConversionBinaryExpression(b.NodeType, b.Left, b.Right, b.Left.Type, b.Method!, conversion);
             }
             return b;
         }

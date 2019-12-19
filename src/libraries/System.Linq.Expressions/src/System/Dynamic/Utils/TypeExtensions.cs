@@ -20,7 +20,6 @@ namespace System.Dynamic.Utils
         {
             Debug.Assert(types != null);
             MethodInfo? method = type.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly, null, types, null);
-            Debug.Assert(method != null);
             return method.MatchesArgumentTypes(types) ? method : null;
         }
 
