@@ -46,6 +46,7 @@ internal static partial class Interop
         internal const int ERROR_TIMEOUT = 0x000005B4;
     }
 
+#if !FEATURE_PAL
     internal enum Error
     {
        SUCCESS  = 0,
@@ -89,4 +90,5 @@ internal static partial class Interop
             return new ErrorInfo(Marshal.GetLastWin32Error());
         }
     }
+#endif
 }
