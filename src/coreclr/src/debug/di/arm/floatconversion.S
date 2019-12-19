@@ -9,6 +9,7 @@
 //     output: the double corresponding to the ULONGLONG input value
 
 LEAF_ENTRY FPFillR8, .TEXT
+        CLR_ARM_ASM_COMPILATION_MODE
         vldr  D0, [R0]
         bx   lr
 LEAF_END FPFillR8, .TEXT
