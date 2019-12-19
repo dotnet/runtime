@@ -106,7 +106,7 @@ namespace System.Dynamic
         public virtual System.Type ReturnType { get { throw null; } }
         public abstract System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args);
         public sealed override System.Linq.Expressions.Expression Bind(object[] args, System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.ParameterExpression> parameters, System.Linq.Expressions.LabelTarget returnLabel) { throw null; }
-        public System.Dynamic.DynamicMetaObject Defer(System.Dynamic.DynamicMetaObject target, params System.Dynamic.DynamicMetaObject[] args) { throw null; }
+        public System.Dynamic.DynamicMetaObject Defer(System.Dynamic.DynamicMetaObject target, params System.Dynamic.DynamicMetaObject[]? args) { throw null; }
         public System.Dynamic.DynamicMetaObject Defer(params System.Dynamic.DynamicMetaObject[] args) { throw null; }
         public System.Linq.Expressions.Expression GetUpdateExpression(System.Type type) { throw null; }
     }
@@ -115,13 +115,13 @@ namespace System.Dynamic
         protected DynamicObject() { }
         public virtual System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() { throw null; }
         public virtual System.Dynamic.DynamicMetaObject GetMetaObject(System.Linq.Expressions.Expression parameter) { throw null; }
-        public virtual bool TryBinaryOperation(System.Dynamic.BinaryOperationBinder binder, object arg, out object? result) { throw null; }
+        public virtual bool TryBinaryOperation(System.Dynamic.BinaryOperationBinder binder, object arg, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)]  out object? result) { throw null; }
         public virtual bool TryConvert(System.Dynamic.ConvertBinder binder, out object? result) { throw null; }
         public virtual bool TryCreateInstance(System.Dynamic.CreateInstanceBinder binder, object[]? args, out object? result) { throw null; }
         public virtual bool TryDeleteIndex(System.Dynamic.DeleteIndexBinder binder, object[] indexes) { throw null; }
         public virtual bool TryDeleteMember(System.Dynamic.DeleteMemberBinder binder) { throw null; }
         public virtual bool TryGetIndex(System.Dynamic.GetIndexBinder binder, object[] indexes, out object? result) { throw null; }
-        public virtual bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object? result) { throw null; }
+        public virtual bool TryGetMember(System.Dynamic.GetMemberBinder binder, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public virtual bool TryInvoke(System.Dynamic.InvokeBinder binder, object?[]? args, out object? result) { throw null; }
         public virtual bool TryInvokeMember(System.Dynamic.InvokeMemberBinder binder, object?[]? args, out object? result) { throw null; }
         public virtual bool TrySetIndex(System.Dynamic.SetIndexBinder binder, object[] indexes, object? value) { throw null; }
@@ -165,7 +165,7 @@ namespace System.Dynamic
         public bool IgnoreCase { get { throw null; } }
         public string Name { get { throw null; } }
         public sealed override System.Type ReturnType { get { throw null; } }
-        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
+        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[]? args) { throw null; }
         public System.Dynamic.DynamicMetaObject FallbackGetMember(System.Dynamic.DynamicMetaObject target) { throw null; }
         public abstract System.Dynamic.DynamicMetaObject FallbackGetMember(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject? errorSuggestion);
     }
@@ -194,7 +194,7 @@ namespace System.Dynamic
         public string Name { get { throw null; } }
         public sealed override System.Type ReturnType { get { throw null; } }
         public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
-        public abstract System.Dynamic.DynamicMetaObject FallbackInvoke(System.Dynamic.DynamicMetaObject? target, System.Dynamic.DynamicMetaObject[] args, System.Dynamic.DynamicMetaObject? errorSuggestion);
+        public abstract System.Dynamic.DynamicMetaObject FallbackInvoke(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args, System.Dynamic.DynamicMetaObject? errorSuggestion);
         public System.Dynamic.DynamicMetaObject FallbackInvokeMember(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
         public abstract System.Dynamic.DynamicMetaObject FallbackInvokeMember(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args, System.Dynamic.DynamicMetaObject? errorSuggestion);
     }
@@ -222,7 +222,7 @@ namespace System.Dynamic
         protected UnaryOperationBinder(System.Linq.Expressions.ExpressionType operation) { }
         public System.Linq.Expressions.ExpressionType Operation { get { throw null; } }
         public sealed override System.Type ReturnType { get { throw null; } }
-        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
+        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[]? args) { throw null; }
         public System.Dynamic.DynamicMetaObject FallbackUnaryOperation(System.Dynamic.DynamicMetaObject target) { throw null; }
         public abstract System.Dynamic.DynamicMetaObject FallbackUnaryOperation(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject? errorSuggestion);
     }

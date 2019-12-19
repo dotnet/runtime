@@ -98,6 +98,6 @@ namespace System.Dynamic
         /// as a sequence of get member, and invoke, to let the <see cref="DynamicMetaObject"/>
         /// request the binding of the invoke operation only.
         /// </remarks>
-        public abstract DynamicMetaObject FallbackInvoke(DynamicMetaObject? target, DynamicMetaObject[] args, DynamicMetaObject? errorSuggestion);
+        public abstract DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject? errorSuggestion);
     }
 }

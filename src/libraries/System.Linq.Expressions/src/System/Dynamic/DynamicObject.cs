@@ -48,7 +48,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the get operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryGetMember(GetMemberBinder binder, out object? result)
+        public virtual bool TryGetMember(GetMemberBinder binder, [NotNullWhen(true)] out object? result)
         {
             result = null;
             return false;
@@ -146,7 +146,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object? result)
+        public virtual bool TryBinaryOperation(BinaryOperationBinder binder, object arg, [NotNullWhen(true)] out object? result)
         {
             result = null;
             return false;
@@ -314,7 +314,7 @@ namespace System.Dynamic
                         new GetBinderAdapter(binder),
                         s_noArgs,
                         binder.FallbackInvokeMember(this, args, null),
-                        (MetaDynamic @this, GetMemberBinder ignored, DynamicMetaObject? e) => binder.FallbackInvoke(e, args, null)
+                        (MetaDynamic @this, GetMemberBinder ignored, DynamicMetaObject? e) => binder.FallbackInvoke(e!, args, null)
                     ),
                     null
                 );

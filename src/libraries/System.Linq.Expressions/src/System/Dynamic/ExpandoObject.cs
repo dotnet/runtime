@@ -1162,7 +1162,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">The out parameter containing the value of the member.</param>
         /// <returns>True if the member exists in the expando object, otherwise false.</returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool ExpandoTryGetValue(ExpandoObject expando, object indexClass, int index, string name, bool ignoreCase, out object? value)
+        public static bool ExpandoTryGetValue(ExpandoObject expando, object indexClass, int index, string name, bool ignoreCase, [NotNullWhen(true)] out object? value)
         {
             return expando.TryGetValue(indexClass, index, name, ignoreCase, out value);
         }
@@ -1180,7 +1180,7 @@ namespace System.Runtime.CompilerServices
         /// Returns the index for the set member.
         /// </returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static object ExpandoTrySetValue(ExpandoObject expando, object indexClass, int index, object value, string name, bool ignoreCase)
+        public static object? ExpandoTrySetValue(ExpandoObject expando, object? indexClass, int index, object? value, string name, bool ignoreCase)
         {
             expando.TrySetValue(indexClass, index, value, name, ignoreCase, false);
             return value;
@@ -1196,7 +1196,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="ignoreCase">true if the name should be matched ignoring case; false otherwise.</param>
         /// <returns>true if the item was successfully removed; otherwise, false.</returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool ExpandoTryDeleteValue(ExpandoObject expando, object indexClass, int index, string name, bool ignoreCase)
+        public static bool ExpandoTryDeleteValue(ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase)
         {
             return expando.TryDeleteValue(indexClass, index, name, ignoreCase, ExpandoObject.Uninitialized);
         }
@@ -1208,7 +1208,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="version">The version to check.</param>
         /// <returns>true if the version is equal; otherwise, false.</returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool ExpandoCheckVersion(ExpandoObject expando, object version)
+        public static bool ExpandoCheckVersion(ExpandoObject expando, object? version)
         {
             return expando.Class == version;
         }

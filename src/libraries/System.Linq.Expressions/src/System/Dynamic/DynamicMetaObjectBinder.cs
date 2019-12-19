@@ -189,7 +189,7 @@ namespace System.Dynamic
         /// <param name="target">The target of the dynamic operation.</param>
         /// <param name="args">An array of arguments of the dynamic operation.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public DynamicMetaObject Defer(DynamicMetaObject target, params DynamicMetaObject[] args)
+        public DynamicMetaObject Defer(DynamicMetaObject target, params DynamicMetaObject[]? args)
         {
             ContractUtils.RequiresNotNull(target, nameof(target));
 
