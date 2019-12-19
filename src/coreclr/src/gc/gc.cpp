@@ -3193,7 +3193,7 @@ void gc_heap::fire_pevents()
     settings.record (&gc_data_global);
     gc_data_global.print();
 
-    FIRE_EVENT(GCGlobalHeapHistory_V2,
+    FIRE_EVENT(GCGlobalHeapHistory_V3,
                gc_data_global.final_youngest_desired,
                gc_data_global.num_heaps,
                gc_data_global.condemned_generation,
@@ -3201,7 +3201,9 @@ void gc_heap::fire_pevents()
                gc_data_global.reason,
                gc_data_global.global_mechanisms_p,
                gc_data_global.pause_mode,
-               gc_data_global.mem_pressure);
+               gc_data_global.mem_pressure,
+               gc_data_global.gen_to_condemn_reasons.get_reasons0(),
+               gc_data_global.gen_to_condemn_reasons.get_reasons1());
 
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
@@ -15513,6 +15515,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                                            BOOL* blocking_collection_p
                                            STRESS_HEAP_ARG(int n_original))
 {
+    gc_heap::gc_data_global.gen_to_condemn_reasons.init();
 #ifdef BGC_SERVO_TUNING
     if (settings.entry_memory_load == 0)
     {
@@ -15562,6 +15565,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             else
             {
                 n = max_generation - 1;
+                gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j1);
                 settings.elevation_reduced = TRUE;
             }
         }
@@ -15596,6 +15600,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
         {
             dprintf (GTC_LOG, ("reducing gen in PM: %d->%d->%d", initial_gen, n, (max_generation - 1)));
+            gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j2);
             n = max_generation - 1;
         }
     }
@@ -15641,6 +15646,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 
         if (full_compact_gc_p)
         {
+            gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j3);
             n = max_generation;
             *blocking_collection_p = TRUE;
             settings.loh_compaction = TRUE;
@@ -15658,12 +15664,14 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     if ((n < max_generation) && !recursive_gc_sync::background_running_p() &&
         bgc_tuning::stepping_trigger (settings.entry_memory_load, get_current_gc_index (max_generation)))
     {
+        gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j4);
         n = max_generation;
         saved_bgc_tuning_reason = reason_bgc_stepping;
     }
 
     if ((n < max_generation) && bgc_tuning::should_trigger_bgc())
     {
+        gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j5);
         n = max_generation;
     }
 
@@ -15671,6 +15679,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     {
         if (bgc_tuning::should_delay_alloc (max_generation))
         {
+            gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j6);
             n -= 1;
         }
     }
@@ -15710,6 +15719,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             // in gc stress, only escalate every 10th non-gen2 collection to a gen2...
             if ((current_gc_count % 10) == 0)
             {
+                gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j7);
                 n = max_generation;
             }
         }
@@ -15724,11 +15734,15 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
 #endif // !FEATURE_REDHAWK
         {
+            gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j8);
             n = max_generation;
         }
     }
 #endif //BACKGROUND_GC
 #endif //STRESS_HEAP
+
+    // TODO: Fix the 1st parameter
+    gc_heap::gc_data_global.gen_to_condemn_reasons.set_gen(gen_alloc_budget, n);
 
     return n;
 }

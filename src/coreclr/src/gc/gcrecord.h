@@ -61,12 +61,21 @@ enum gc_condemn_reason_condition
     gen_induced_noforce_p = 14,
     gen_before_bgc = 15,
     gen_almost_max_alloc = 16,
-    gcrc_max = 17
+    // TODO: These needs descriptive names
+    j1 = 17,
+    j2 = 18,
+    j3 = 19,
+    j4 = 20,
+    j5 = 21,
+    j6 = 22,
+    j7 = 23,
+    j8 = 24,
+    gcrc_max = 15
 };
 
 #ifdef DT_LOG
 static char* record_condemn_reasons_gen_header = "[cg]i|f|a|t|";
-static char* record_condemn_reasons_condition_header = "[cc]i|e|h|v|l|l|e|m|m|m|m|g|o|s|n|b|a|";
+static char* record_condemn_reasons_condition_header = "[cc]i|e|h|v|l|l|e|m|m|m|m|g|o|s|n|b|a|1|2|3|4|5|6|7|8|";
 static char char_gen_number[4] = {'0', '1', '2', '3'};
 #endif //DT_LOG
 
@@ -410,6 +419,7 @@ struct gc_history_global
     int pause_mode;
     uint32_t mem_pressure;
     uint32_t global_mechanisms_p;
+    gen_to_condemn_tuning gen_to_condemn_reasons;
 
     void set_mechanism_p (gc_global_mechanism_p mechanism)
     {
