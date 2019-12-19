@@ -10163,7 +10163,7 @@ MethodTableBuilder::SetupMethodTable2(
     EEClass *pClass = GetHalfBakedClass();
 
     DWORD cbDict = bmtGenerics->HasInstantiation()
-                   ?  DictionaryLayout::GetFirstDictionaryBucketSize(
+                   ?  DictionaryLayout::GetDictionarySizeFromLayout(
                           bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout())
                    : 0;
 
@@ -10460,6 +10460,13 @@ MethodTableBuilder::SetupMethodTable2(
         for (DWORD j = 0; j < bmtGenerics->GetNumGenericArgs(); j++)
         {
             pInstDest[j] = inst[j];
+        }
+
+        if (pClass->GetDictionaryLayout() != NULL && pClass->GetDictionaryLayout()->GetMaxSlots() > 0)
+        {
+            ULONG_PTR* pDictionarySlots = (ULONG_PTR*)pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
+            ULONG_PTR* pSizeSlot = pDictionarySlots + bmtGenerics->GetNumGenericArgs();
+            *pSizeSlot = cbDict;
         }
     }
 

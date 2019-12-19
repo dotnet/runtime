@@ -3444,13 +3444,15 @@ NoSpecialCase:
 
     DictionaryEntrySignatureSource signatureSource = (IsCompilationProcess() ? FromZapImage : FromJIT);
 
+    WORD dummySlot;
+
     // It's a method dictionary lookup
     if (pResultLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
     {
         _ASSERTE(pContextMD != NULL);
         _ASSERTE(pContextMD->HasMethodInstantiation());
 
-        if (DictionaryLayout::FindToken(pContextMD->GetLoaderAllocator(), pContextMD->GetNumGenericMethodArgs(), pContextMD->GetDictionaryLayout(), pResult, &sigBuilder, 1, signatureSource))
+        if (DictionaryLayout::FindToken(pContextMD, pContextMD->GetLoaderAllocator(), 1, &sigBuilder, NULL, signatureSource, pResult, &dummySlot))
         {
             pResult->testForNull = 1;
             pResult->testForFixup = 0;
@@ -3468,7 +3470,7 @@ NoSpecialCase:
     // It's a class dictionary lookup (CORINFO_LOOKUP_CLASSPARAM or CORINFO_LOOKUP_THISOBJ)
     else
     {
-        if (DictionaryLayout::FindToken(pContextMT->GetLoaderAllocator(), pContextMT->GetNumGenericArgs(), pContextMT->GetClass()->GetDictionaryLayout(), pResult, &sigBuilder, 2, signatureSource))
+        if (DictionaryLayout::FindToken(pContextMT, pContextMT->GetLoaderAllocator(), 2, &sigBuilder, NULL, signatureSource, pResult, &dummySlot))
         {
             pResult->testForNull = 1;
             pResult->testForFixup = 0;

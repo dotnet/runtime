@@ -2936,6 +2936,9 @@ public:
         pInfo->m_wNumDicts  = numDicts;
         pInfo->m_wNumTyPars = numTyPars;
     }
+
+    DWORD GetDictionarySlotsSize();
+
 #endif // !DACCESS_COMPILE
     PTR_GenericsDictInfo GetGenericsDictInfo()
     {
