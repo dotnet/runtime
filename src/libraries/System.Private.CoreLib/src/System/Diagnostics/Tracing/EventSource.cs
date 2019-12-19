@@ -2773,14 +2773,12 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
-#if !FEATURE_PERFTRACING
                     if (commandArgs.Command == EventCommand.SendManifest)
                     {
                         // TODO: should we generate the manifest here if we hadn't already?
                         if (m_rawManifest != null)
                             SendManifest(m_rawManifest);
                     }
-#endif
 
                     // These are not used for non-update commands and thus should always be 'default' values
                     // Debug.Assert(enable == true);

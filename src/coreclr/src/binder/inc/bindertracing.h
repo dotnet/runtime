@@ -46,9 +46,21 @@ namespace BinderTracing
         bool m_checkedIgnoreBind;
         bool m_ignoreBind;
 
-        ReleaseHolder<PEAssembly> m_resultAssembly;
+        PEAssembly *m_resultAssembly;
         bool m_cached;
     };
+
+    // This must match the BindingPathSource value map in ClrEtwAll.man
+    enum PathSource
+    {
+        ApplicationAssemblies,
+        AppNativeImagePaths,
+        AppPaths,
+        PlatformResourceRoots,
+        SatelliteSubdirectory
+    };
+
+    void PathProbed(const WCHAR *path, PathSource source, HRESULT hr);
 };
 
 #endif // __BINDER_TRACING_H__

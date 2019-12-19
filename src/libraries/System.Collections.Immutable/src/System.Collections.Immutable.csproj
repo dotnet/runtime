@@ -5,6 +5,7 @@
     <FileAlignment>512</FileAlignment>
     <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />

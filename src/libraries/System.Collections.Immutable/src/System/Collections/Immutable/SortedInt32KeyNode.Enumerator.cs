@@ -48,12 +48,12 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The stack to use for enumerating the binary tree.
             /// </summary>
-            private SecurePooledObject<Stack<RefAsValueType<SortedInt32KeyNode<TValue>>>> _stack;
+            private SecurePooledObject<Stack<RefAsValueType<SortedInt32KeyNode<TValue>>>>? _stack;
 
             /// <summary>
             /// The node currently selected.
             /// </summary>
-            private SortedInt32KeyNode<TValue> _current;
+            private SortedInt32KeyNode<TValue>? _current;
 
             /// <summary>
             /// Initializes an <see cref="Enumerator"/> structure.
@@ -114,13 +114,12 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Dispose()
             {
-                _root = null;
+                _root = null!;
                 _current = null;
-                Stack<RefAsValueType<SortedInt32KeyNode<TValue>>> stack;
-                if (_stack != null && _stack.TryUse(ref this, out stack))
+                if (_stack != null && _stack.TryUse(ref this, out Stack<RefAsValueType<SortedInt32KeyNode<TValue>>>? stack))
                 {
                     stack.ClearFastWhenEmpty();
-                    s_enumeratingStacks.TryAdd(this, _stack);
+                    s_enumeratingStacks.TryAdd(this, _stack!);
                 }
 
                 _stack = null;
@@ -141,7 +140,7 @@ namespace System.Collections.Immutable
                     {
                         SortedInt32KeyNode<TValue> n = stack.Pop().Value;
                         _current = n;
-                        this.PushLeft(n.Right);
+                        this.PushLeft(n.Right!);
                         return true;
                     }
                 }
@@ -190,11 +189,11 @@ namespace System.Collections.Immutable
             private void PushLeft(SortedInt32KeyNode<TValue> node)
             {
                 Requires.NotNull(node, nameof(node));
-                var stack = _stack.Use(ref this);
+                var stack = _stack!.Use(ref this);
                 while (!node.IsEmpty)
                 {
                     stack.Push(new RefAsValueType<SortedInt32KeyNode<TValue>>(node));
-                    node = node.Left;
+                    node = node.Left!;
                 }
             }
         }

@@ -920,23 +920,18 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task AuthenticateAsClientAsync_Sockets_CanceledAfterStart_ThrowsOperationCanceledException()
         {
-            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(1);
+            (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
 
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await listener.AcceptAsync())
-                using (var clientSslStream = new SslStream(new NetworkStream(client), false, AllowAnyServerCertificate))
-                using (var serverSslStream = new SslStream(new NetworkStream(server)))
-                using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
-                {
-                    var cts = new CancellationTokenSource();
-                    Task t = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions() { TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false) }, cts.Token);
-                    cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
-                }
+            using (client)
+            using (server)
+            using (var clientSslStream = new SslStream(client, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(server))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                var cts = new CancellationTokenSource();
+                Task t = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions() { TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false) }, cts.Token);
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }
 
@@ -958,23 +953,18 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task AuthenticateAsServerAsync_Sockets_CanceledAfterStart_ThrowsOperationCanceledException()
         {
-            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(1);
+            (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
 
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await listener.AcceptAsync())
-                using (var clientSslStream = new SslStream(new NetworkStream(client), false, AllowAnyServerCertificate))
-                using (var serverSslStream = new SslStream(new NetworkStream(server)))
-                using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
-                {
-                    var cts = new CancellationTokenSource();
-                    Task t = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions() { ServerCertificate = certificate }, cts.Token);
-                    cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
-                }
+            using (client)
+            using (server)
+            using (var clientSslStream = new SslStream(client, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(server))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                var cts = new CancellationTokenSource();
+                Task t = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions() { ServerCertificate = certificate }, cts.Token);
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }
     }

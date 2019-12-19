@@ -4138,6 +4138,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             BlockRange().InsertBefore(call, std::move(range));
 
             LIR::Range range2 = LIR::SeqTree(comp, lclvNodeStore2);
+            ContainCheckIndir(tmpTree->AsIndir());
             JITDUMP("result of obtaining pointer to virtual table 2nd level indirection:\n");
             DISPRANGE(range2);
             BlockRange().InsertAfter(lclvNodeStore, std::move(range2));

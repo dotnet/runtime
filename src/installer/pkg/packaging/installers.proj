@@ -22,7 +22,7 @@
 
   <Target Name="BuildInstallers"
           DependsOnTargets="
-            EnsureSignedBinaries;
+            EnsureSignedR2RBinaries;
             $(PackageTargets)"
           Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
 
@@ -50,8 +50,8 @@
       Targets="Build" />
   </Target>
 
-  <Target Name="EnsureSignedBinaries" Condition="'$(OSGroup)' == 'Windows_NT'" >
-    <MSBuild Projects="$(SigningToolsDir)\SignBinaries.proj" Targets="Build" />
+  <Target Name="EnsureSignedR2RBinaries" Condition="'$(OSGroup)' == 'Windows_NT'" >
+    <MSBuild Projects="$(SigningToolsDir)\SignR2RBinaries.proj" Targets="Build" />
   </Target>
 
   <Target Name="EnsureSignedMsiFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >

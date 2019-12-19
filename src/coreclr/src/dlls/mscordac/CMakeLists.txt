@@ -130,7 +130,6 @@ set(COREDAC_LIBRARIES
     mdhotdata_dac
     mdruntime_dac
     mdruntimerw_dac
-    strongname_dac
     utilcode_dac
     unwinder_dac
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references

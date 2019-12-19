@@ -11,13 +11,6 @@
 
   <Import Project="$(RepositoryEngineeringDir)DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
 
-  <!-- Define properties based on live-live information for locating packages. -->
-  <PropertyGroup>
-    <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
-    <LibrariesShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'Shipping'))</LibrariesShippingPackagesDir>
-    <LibrariesNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'NonShipping'))</LibrariesNonShippingPackagesDir>
-  </PropertyGroup>
-
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
   <Target Name="Pack" />
 

@@ -642,44 +642,6 @@ CORINFO_ASSEMBLY_HANDLE
     return (CORINFO_ASSEMBLY_HANDLE) GetModule(module)->GetAssembly();
 }
 
-
-#ifdef CROSSGEN_COMPILE
-//
-// Small wrapper to avoid having too many crossgen ifdefs
-//
-class AssemblyForLoadHint
-{
-    IMDInternalImport * m_pMDImport;
-public:
-    AssemblyForLoadHint(IMDInternalImport * pMDImport)
-        : m_pMDImport(pMDImport)
-    {
-    }
-
-    IMDInternalImport * GetManifestImport()
-    {
-        return m_pMDImport;
-    }
-
-    LPCSTR GetSimpleName()
-    {
-        LPCSTR name = "";
-        IfFailThrow(m_pMDImport->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, &name, NULL, NULL));
-        return name;
-    }
-
-    void GetDisplayName(SString &result, DWORD flags = 0)
-    {
-        PEAssembly::GetFullyQualifiedAssemblyName(m_pMDImport, TokenFromRid(1, mdtAssembly), result, flags);
-    }
-
-    BOOL IsSystem()
-    {
-        return FALSE;
-    }
-};
-#endif
-
 //-----------------------------------------------------------------------------
 // For an assembly with a full name of "Foo, Version=2.0.0.0, Culture=neutral",
 // we want any of these attributes specifications to match:

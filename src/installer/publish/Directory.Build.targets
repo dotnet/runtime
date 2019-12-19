@@ -41,8 +41,14 @@
           $(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
+      <!--
+        Packages that aren't matched above as RID-specific are considered RID-agnostic. Also include
+        the AllConfigurations packages from the Libraries build.
+      -->
       <RidAgnosticNupkgToPublishFile
-        Include="$(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromJobName)\**\*.nupkg"
+        Include="
+          $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
+          $(DownloadDirectory)*\Libraries_AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
 
       <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile)" />

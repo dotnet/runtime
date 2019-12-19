@@ -53,4 +53,9 @@
     <RestoreSources Condition="Exists('$(LibrariesShippingPackagesDir)')">$(RestoreSources);$(LibrariesShippingPackagesDir)</RestoreSources>
     <RestoreSources Condition="Exists('$(LibrariesNonShippingPackagesDir)')">$(RestoreSources);$(LibrariesNonShippingPackagesDir)</RestoreSources>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(LibrariesPackagesDir)' != '$(LibrariesAllConfigPackagesDir)'">
+    <RestoreSources Condition="Exists('$(LibrariesAllConfigShippingPackagesDir)')">$(RestoreSources);$(LibrariesAllConfigShippingPackagesDir)</RestoreSources>
+    <RestoreSources Condition="Exists('$(LibrariesAllConfigNonShippingPackagesDir)')">$(RestoreSources);$(LibrariesAllConfigNonShippingPackagesDir)</RestoreSources>
+  </PropertyGroup>
 </Project>

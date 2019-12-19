@@ -39,6 +39,9 @@ namespace BinderTracingTests
         private const string DependentAssemblyTypeName = "AssemblyToLoad.Program";
         private const string SubdirectoryAssemblyName = "AssemblyToLoad_Subdirectory";
 
+        private const int S_OK = unchecked((int)0);
+        private const int COR_E_FILENOTFOUND = unchecked((int)0x80070002);
+
         private static readonly AssemblyName CoreLibName = typeof(object).Assembly.GetName();
 
         [BinderTest]
@@ -176,7 +179,16 @@ namespace BinderTracingTests
                 Success = true,
                 ResultAssemblyName = asm.GetName(),
                 ResultAssemblyPath = asm.Location,
-                Cached = false
+                Cached = false,
+                ProbedPaths = new List<ProbedPath>()
+                {
+                    new ProbedPath()
+                    {
+                        FilePath = asm.Location,
+                        Source = ProbedPath.PathSource.ApplicationAssemblies,
+                        Result = S_OK
+                    }
+                }
             };
         }
 
@@ -185,28 +197,8 @@ namespace BinderTracingTests
         {
             BindOperation bind = PlatformAssembly();
             bind.Cached = true;
+            bind.ProbedPaths.Clear();
             return bind;
-        }
-
-        [BinderTest]
-        public static BindOperation NonExistentAssembly()
-        {
-            string assemblyName = "DoesNotExist";
-            try
-            {
-                Assembly.Load(assemblyName);
-            }
-            catch { }
-
-            return new BindOperation()
-            {
-                AssemblyName = new AssemblyName(assemblyName),
-                AssemblyLoadContext = DefaultALC,
-                RequestingAssembly = Assembly.GetExecutingAssembly().GetName(),
-                RequestingAssemblyLoadContext = DefaultALC,
-                Success = false,
-                Cached = false
-            };
         }
 
         [BinderTest(isolate: true)]
@@ -471,96 +463,7 @@ namespace BinderTracingTests
             Assert.IsTrue(binds.Length == 1, $"Bind event count for {assemblyName} - expected: 1, actual: {binds.Length}");
             BindOperation actual = binds[0];
 
-            ValidateBindOperation(expected, actual);
-        }
-
-        private static void ValidateBindOperation(BindOperation expected, BindOperation actual)
-        {
-            ValidateAssemblyName(expected.AssemblyName, actual.AssemblyName, nameof(BindOperation.AssemblyName));
-            Assert.AreEqual(expected.AssemblyPath ?? string.Empty, actual.AssemblyPath, $"Unexpected value for {nameof(BindOperation.AssemblyPath)} on event");
-            Assert.AreEqual(expected.AssemblyLoadContext, actual.AssemblyLoadContext, $"Unexpected value for {nameof(BindOperation.AssemblyLoadContext)} on event");
-            Assert.AreEqual(expected.RequestingAssemblyLoadContext ?? string.Empty, actual.RequestingAssemblyLoadContext, $"Unexpected value for {nameof(BindOperation.RequestingAssemblyLoadContext)} on event");
-            ValidateAssemblyName(expected.RequestingAssembly, actual.RequestingAssembly, nameof(BindOperation.RequestingAssembly));
-
-            Assert.AreEqual(expected.Success, actual.Success, $"Unexpected value for {nameof(BindOperation.Success)} on event");
-            Assert.AreEqual(expected.ResultAssemblyPath ?? string.Empty, actual.ResultAssemblyPath, $"Unexpected value for {nameof(BindOperation.ResultAssemblyPath)} on event");
-            Assert.AreEqual(expected.Cached, actual.Cached, $"Unexpected value for {nameof(BindOperation.Cached)} on event");
-            ValidateAssemblyName(expected.ResultAssemblyName, actual.ResultAssemblyName, nameof(BindOperation.ResultAssemblyName));
-
-            ValidateHandlerInvocations(expected.AssemblyLoadContextResolvingHandlers, actual.AssemblyLoadContextResolvingHandlers, "AssemblyLoadContextResolving");
-            ValidateHandlerInvocations(expected.AppDomainAssemblyResolveHandlers, actual.AppDomainAssemblyResolveHandlers, "AppDomainAssemblyResolve");
-            ValidateLoadFromHandlerInvocation(expected.AssemblyLoadFromHandler, actual.AssemblyLoadFromHandler);
-
-            ValidateNestedBinds(expected.NestedBinds, actual.NestedBinds);
-        }
-
-        private static bool AssemblyNamesMatch(AssemblyName name1, AssemblyName name2)
-        {
-            if (name1 == null || name2 == null)
-                return name1 == null && name2 == null;
-
-            return name1.Name == name2.Name
-                && ((name1.Version == null && name2.Version == null) || name1.Version == name2.Version)
-                && ((string.IsNullOrEmpty(name1.CultureName) && string.IsNullOrEmpty(name1.CultureName)) || name1.CultureName == name2.CultureName);
-        }
-
-        private static void ValidateAssemblyName(AssemblyName expected, AssemblyName actual, string propertyName)
-        {
-            Assert.IsTrue(AssemblyNamesMatch(expected, actual), $"Unexpected value for {propertyName} on event - expected: {expected}, actual: {actual}");
-        }
-
-        private static void ValidateHandlerInvocations(List<HandlerInvocation> expected, List<HandlerInvocation> actual, string eventName)
-        {
-            Assert.AreEqual(expected.Count, actual.Count, $"Unexpected handler invocation count for {eventName}");
-
-            foreach (var match in expected)
-            {
-                Predicate<HandlerInvocation> pred = h =>
-                    AssemblyNamesMatch(h.AssemblyName, match.AssemblyName)
-                        && h.HandlerName == match.HandlerName
-                        && h.AssemblyLoadContext == match.AssemblyLoadContext
-                        && AssemblyNamesMatch(h.ResultAssemblyName, match.ResultAssemblyName)
-                        && h.ResultAssemblyPath == match.ResultAssemblyPath;
-                Assert.IsTrue(actual.Exists(pred), $"Handler invocation not found: {match.ToString()}");
-            }
-        }
-
-        private static void ValidateLoadFromHandlerInvocation(LoadFromHandlerInvocation expected, LoadFromHandlerInvocation actual)
-        {
-            if (expected == null || actual == null)
-            {
-                Assert.IsNull(expected);
-                Assert.IsNull(actual);
-                return;
-            }
-
-            ValidateAssemblyName(expected.AssemblyName, actual.AssemblyName, nameof(LoadFromHandlerInvocation.AssemblyName));
-            Assert.AreEqual(expected.IsTrackedLoad, actual.IsTrackedLoad, $"Unexpected value for {nameof(LoadFromHandlerInvocation.IsTrackedLoad)} on event");
-            Assert.AreEqual(expected.RequestingAssemblyPath, actual.RequestingAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.RequestingAssemblyPath)} on event");
-            Assert.AreEqual(expected.ComputedRequestedAssemblyPath, actual.ComputedRequestedAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.ComputedRequestedAssemblyPath)} on event");
-        }
-
-        private static bool BindOperationsMatch(BindOperation bind1, BindOperation bind2)
-        {
-            try
-            {
-                ValidateBindOperation(bind1, bind2);
-            }
-            catch (AssertTestException e)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private static void ValidateNestedBinds(List<BindOperation> expected, List<BindOperation> actual)
-        {
-            foreach (var match in expected)
-            {
-                Predicate<BindOperation> pred = b => BindOperationsMatch(match, b);
-                Assert.IsTrue(actual.Exists(pred), $"Nested bind operation not found: {match.ToString()}");
-            }
+            Helpers.ValidateBindOperation(expected, actual);
         }
     }
 }
