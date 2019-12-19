@@ -1,6 +1,6 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
-  [switch][Alias('h', '?')]$help,
+  [switch][Alias('h')]$help,
   [switch][Alias('b')]$build,
   [switch][Alias('t')]$test,
   [switch]$buildtests,

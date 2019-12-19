@@ -1,7 +1,8 @@
 @echo off
+setlocal
 
-powershell -ExecutionPolicy ByPass -NoProfile -File "%~dp0eng\build.ps1" %*
-goto end
+set _args="%*"
+if "%~1"=="-?" set _args="-help"
 
-:end
+powershell -ExecutionPolicy ByPass -NoProfile -File "%~dp0eng\build.ps1" %_args%
 exit /b %ERRORLEVEL%
