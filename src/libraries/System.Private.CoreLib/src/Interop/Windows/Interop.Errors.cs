@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 internal static partial class Interop
 {
     // As defined in winerror.h and https://msdn.microsoft.com/en-us/library/windows/desktop/ms681382.aspx
@@ -42,5 +44,49 @@ internal static partial class Interop
         internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
         internal const int ERROR_NO_SYSTEM_RESOURCES = 0x5AA;
         internal const int ERROR_TIMEOUT = 0x000005B4;
+    }
+
+    internal enum Error
+    {
+       SUCCESS  = 0,
+    }
+
+    // Represents a platform-agnostic Error and underlying platform-specific errno
+    internal struct ErrorInfo
+    {
+        private int _error;
+
+        internal ErrorInfo(int errno)
+        {
+            _error = errno;
+        }
+
+        internal Error Error
+        {
+            get { return (Error)_error; }
+        }
+
+        internal int RawErrno
+        {
+            get { return (int)_error; }
+        }
+
+        internal string GetErrorMessage()
+        {
+            return Interop.Kernel32.GetMessage(_error);
+        }
+    }
+
+    internal static partial class Sys
+    {
+        internal static int GetLastError()
+        {
+            return Marshal.GetLastWin32Error();
+        }
+
+        internal static ErrorInfo GetLastErrorInfo()
+        {
+            return new ErrorInfo(Marshal.GetLastWin32Error());
+        }
     }
 }
