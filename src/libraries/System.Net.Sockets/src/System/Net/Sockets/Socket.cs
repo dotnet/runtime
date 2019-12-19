@@ -4122,6 +4122,7 @@ namespace System.Net.Sockets
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
 
+            EndPoint oldEndPoint = _rightEndPoint;
             if (_rightEndPoint == null)
             {
                 _rightEndPoint = endPointSnapshot;
@@ -4134,9 +4135,15 @@ namespace System.Net.Sockets
             }
             catch
             {
+                _rightEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
                 throw;
+            }
+
+            if (!CheckErrorAndUpdateStatus(socketError))
+            {
+                _rightEndPoint = oldEndPoint;
             }
 
             bool retval = (socketError == SocketError.IOPending);
