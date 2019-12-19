@@ -33,6 +33,8 @@ stages:
     # Allow symbol publish to emit expected warnings without failing the build. Include single
     # quotes inside the string so that it passes through to MSBuild without script interference.
     symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
+    # Publish to blob storage.
+    publishInstallersAndChecksums: true
     # Enable SDL validation, passing through values from the 'core-setup-sdl-validation' group.
     SDLValidationParameters:
       enable: false # TODO: (Consolidation) Decide who owns SDL validation errors and enable. https://github.com/dotnet/runtime/issues/1027
