@@ -2689,7 +2689,8 @@ INT32 GetArm64Rel21(UINT32 * pCode)
     // Merge them
     INT32 imm21 = (immhi << 2) | immlo;
 
-    return imm21;
+    // Sign-extend and return
+    return (imm21 << 11) >> 11;
 }
 
 //*****************************************************************************

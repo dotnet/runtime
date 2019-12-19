@@ -182,7 +182,8 @@ namespace ILCompiler.DependencyAnalysis
             // Merge them
             int imm21 = (immhi << 2) | immlo;
 
-            return imm21;
+            // Sign-extend and return
+            return (imm21 << 11) >> 11;
         }
 
         //*****************************************************************************
@@ -190,7 +191,7 @@ namespace ILCompiler.DependencyAnalysis
         //*****************************************************************************
         private static bool FitsInRel21(int val32)
         {
-            return (val32 >= 0) && (val32 <= 0x001FFFFF);
+            return ((val32 << 11) >> 11) == val32;
         }
 
         //*****************************************************************************
@@ -233,7 +234,8 @@ namespace ILCompiler.DependencyAnalysis
         //*****************************************************************************
         private static bool FitsInRel12(int val32)
         {
-            return (val32 >= 0) && (val32 <= 0x00000FFF);
+            // The immediate value is zero-extended
+            return (val32 >> 12) == 0;
         }
 
         //*****************************************************************************
