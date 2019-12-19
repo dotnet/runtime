@@ -11,7 +11,7 @@
 #include "unixasmmacros.inc"
 
 .syntax unified
-.thumb
+CLR_ARM_ASM_COMPILATION_MODE
 
 // ------------------------------------------------------------------
 // Macro to generate PInvoke Stubs.

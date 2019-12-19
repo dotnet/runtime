@@ -6,7 +6,7 @@
 
 #if defined(_ARM_)
 .syntax unified
-.thumb
+CLR_ARM_ASM_COMPILATION_MODE
 #endif
 
 #include "palredefines.inc"

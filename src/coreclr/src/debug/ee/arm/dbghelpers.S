@@ -5,7 +5,7 @@
 #include "unixasmmacros.inc"
 
 .syntax unified
-.thumb
+CLR_ARM_ASM_COMPILATION_MODE
 
 //
 // hijacking stub used to perform a func-eval, see Debugger::FuncEvalSetup() for use.
@@ -15,7 +15,6 @@
 //
 
 NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
-    .arm
     // push arg to the stack so our personality routine can find it
     // push lr to get good stacktrace in debugger
     push {r0,lr}

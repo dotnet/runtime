@@ -6,7 +6,7 @@
 #include "asmconstants.h"
 
 .syntax unified
-.thumb
+CLR_ARM_ASM_COMPILATION_MODE
 
 .macro CALL_SIGNAL_HANDLER_WRAPPER Alignment
 
@@ -18,7 +18,6 @@ C_FUNC(SignalHandlerWorkerReturnOffset\Alignment):
 // address set to SignalHandlerWorkerReturn during SIGSEGV handling.
 // It enables the unwinder to unwind stack from the handling code to the actual failure site.
 NESTED_ENTRY CallSignalHandlerWrapper\Alignment, _TEXT, NoHandler
-    .arm
 #ifndef __linux__
 __StackAllocationSize = (8 + 4 + \Alignment) // red zone + alignment
     alloc_stack __StackAllocationSize

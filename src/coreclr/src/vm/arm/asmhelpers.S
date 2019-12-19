@@ -11,7 +11,7 @@
 #include "asmconstants.h"
 
 .syntax unified
-.thumb
+CLR_ARM_ASM_COMPILATION_MODE
 
 // LPVOID __stdcall GetCurrentIP(void)//
     LEAF_ENTRY GetCurrentIP, _TEXT
