@@ -278,6 +278,11 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     DWORD cbPerInst = sizeof(GenericsDictInfo) + pOldMT->GetPerInstInfoSize();
 
     // Finally we need space for the instantiation/dictionary for this type
+    // Note that this is an unsafe operation because it uses the dictionary layout to compute the size needed,
+    // and the dictionary layout can be updated by other threads during a dictionary size expansion. To account for 
+    // this rare race condition, right before registering this type for dictionary expansions, we will check that its
+    // dictionary has enough slots to match its dictionary layout if it got updated.
+    // See: Module::RecordTypeForDictionaryExpansion_Locked.
     DWORD cbInstAndDict = pOldMT->GetInstAndDictSize();
 
     // Allocate from the high frequence heap of the correct domain
@@ -486,6 +491,13 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     for (DWORD iArg = 0; iArg < ntypars; iArg++)
     {
         pInstDest[iArg] = inst[iArg];
+    }
+
+    if (cbInstAndDict != 0 && pOldMT->GetClass()->GetDictionaryLayout() != NULL && pOldMT->GetClass()->GetDictionaryLayout()->GetMaxSlots() > 0)
+    {
+        ULONG_PTR* pDictionarySlots = (ULONG_PTR*)pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1].GetValue();
+        ULONG_PTR* pSizeSlot = pDictionarySlots + ntypars;
+        *pSizeSlot = cbInstAndDict;
     }
 
     // Copy interface map across

@@ -3234,6 +3234,33 @@ public:
 
     void SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssembly);
 #endif // !defined(DACCESS_COMPILE)
+
+    // For protecting dictionary layout slot additions, and additions to the m_dynamicSlotsHashFor{Types/Methods} below
+    CrstExplicitInit        m_DictionaryCrst;
+
+#ifndef CROSSGEN_COMPILE
+private:
+    class DynamicDictSlotsForTypesTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodTable*, MethodTable*> { };
+    typedef CrossLoaderAllocatorHash<DynamicDictSlotsForTypesTrackerHashTraits> DynamicDictSlotsForTypesTrackerHash;
+
+    class DynamicDictSlotsForMethodsTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodDesc*, MethodDesc*> { };
+    typedef CrossLoaderAllocatorHash<DynamicDictSlotsForMethodsTrackerHashTraits> DynamicDictSlotsForMethodsTrackerHash;
+
+    DynamicDictSlotsForTypesTrackerHash m_dynamicSlotsHashForTypes;
+    DynamicDictSlotsForMethodsTrackerHash m_dynamicSlotsHashForMethods;
+
+public:
+    void RecordTypeForDictionaryExpansion_Locked(MethodTable* pGenericParentMT, MethodTable* pDependencyMT);
+    void RecordMethodForDictionaryExpansion_Locked(MethodDesc* pDependencyMD);
+
+    void ExpandTypeDictionaries_Locked(MethodTable* pMT, DictionaryLayout* pOldLayout, DictionaryLayout* pNewLayout);
+    void ExpandMethodDictionaries_Locked(MethodDesc* pMD, DictionaryLayout* pOldLayout, DictionaryLayout* pNewLayout);
+
+#ifdef _DEBUG
+    void EnsureTypeRecorded(MethodTable* pMT);
+    void EnsureMethodRecorded(MethodDesc* pMD);
+#endif
+#endif //!CROSSGEN_COMPILE
 };
 
 //

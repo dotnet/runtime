@@ -475,6 +475,25 @@ void MethodTable::SetModule(Module * pModule)
 
     _ASSERTE(GetModule() == pModule);
 }
+
+DWORD MethodTable::GetDictionarySlotsSize()
+{
+    CONTRACTL
+    {
+        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+    }
+    CONTRACTL_END
+
+    if (!HasPerInstInfo() || GetGenericsDictInfo()->m_wNumTyPars == 0 || GetClass()->GetDictionaryLayout() == NULL)
+        return 0;
+
+    if (GetClass()->GetDictionaryLayout()->GetMaxSlots() == 0)
+        return 0;
+
+    ULONG_PTR* pDictionarySlots = (ULONG_PTR*)GetPerInstInfo()[GetGenericsDictInfo()->m_wNumDicts - 1].GetValue();
+    ULONG_PTR* pSizeSlot = pDictionarySlots + GetGenericsDictInfo()->m_wNumTyPars;
+    return (DWORD)(*pSizeSlot);
+}
 #endif // DACCESS_COMPILE
 
 //==========================================================================================
