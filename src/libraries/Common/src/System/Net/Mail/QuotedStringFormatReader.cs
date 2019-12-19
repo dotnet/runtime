@@ -28,16 +28,18 @@ namespace System.Net.Mail
         // Return value: The next index past the terminating-quote (data[index + 1] == Quote).
         //   e.g. In (bob "user name"@domain), starting at index=14 (") returns index=3 (space).
         //
-        // A FormatException will be thrown if:
+        // A FormatException will be thrown or false is returned if:
         // - A non-escaped character is encountered that is not valid in a quoted string.
         // - A Unicode character is encountered and Unicode has not been allowed.
         // - The final double quote is not found.
         //
-        internal static int ReadReverseQuoted(string data, int index, bool permitUnicode)
+        internal static bool TryReadReverseQuoted(string data, int index, bool permitUnicode, out int outIndex, bool throwExceptionIfFail)
         {
             Debug.Assert(0 <= index && index < data.Length, "Index out of range: " + index + ", " + data.Length);
             // Check for the first bounding quote
             Debug.Assert(data[index] == MailBnfHelper.Quote, "Initial char at index " + index + " was not a quote.");
+
+            outIndex = default;
 
             // Skip the bounding quote
             index--;
@@ -45,29 +47,47 @@ namespace System.Net.Mail
             do
             {
                 // Check for valid whitespace
-                index = WhitespaceReader.ReadFwsReverse(data, index);
+                if (!WhitespaceReader.TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
+                {
+                    Debug.Assert(!throwExceptionIfFail);
+                    return false;
+                }
+
                 if (index < 0)
                 {
                     break;
                 }
 
                 // Check for escaped characters
-                int quotedCharCount = QuotedPairReader.CountQuotedChars(data, index, permitUnicode);
+                if (!QuotedPairReader.TryCountQuotedChars(data, index, permitUnicode, out int quotedCharCount, throwExceptionIfFail))
+                {
+                    Debug.Assert(!throwExceptionIfFail);
+                    return false;
+                }
+
                 if (quotedCharCount > 0)
                 {
                     // Skip quoted pairs
-                    index = index - quotedCharCount;
+                    index -= quotedCharCount;
                 }
                 // Check for the terminating quote
                 else if (data[index] == MailBnfHelper.Quote)
                 {
                     // Skip the final bounding quote
-                    return index - 1;
+                    outIndex = index - 1;
+                    return true;
                 }
                 // Check invalid characters
                 else if (!IsValidQtext(permitUnicode, data[index]))
                 {
-                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 // Valid char
                 else
@@ -77,8 +97,15 @@ namespace System.Net.Mail
             }
             while (index >= 0);
 
-            // We started with a quote, but did not end with one
-            throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, MailBnfHelper.Quote));
+            if (throwExceptionIfFail)
+            {
+                // We started with a quote, but did not end with one
+                throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, MailBnfHelper.Quote));
+            }
+            else
+            {
+                return false;
+            }
         }
 
         //
@@ -93,27 +120,39 @@ namespace System.Net.Mail
         // - -1 if the terminating character was not found.
         //   e.g. In (my name username@domain), starting at index=5 (e) returns index=-1.
         //
-        // A FormatException will be thrown if:
+        // A FormatException will be thrown or false is returned if:
         // - A non-escaped character is encountered that is not valid in a quoted string.  This includes double quotes.
         // - A Unicode character is encountered and Unicode has not been allowed.
         //
-        internal static int ReadReverseUnQuoted(string data, int index, bool permitUnicode, bool expectCommaDelimiter)
+        internal static bool TryReadReverseUnQuoted(string data, int index, bool permitUnicode, bool expectCommaDelimiter, out int outIndex, bool throwExceptionIfFail)
         {
             Debug.Assert(0 <= index && index < data.Length, "Index out of range: " + index + ", " + data.Length);
+
+            outIndex = default;
 
             do
             {
                 // Check for valid whitespace
-                index = WhitespaceReader.ReadFwsReverse(data, index);
+                if (!WhitespaceReader.TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
+                {
+                    Debug.Assert(!throwExceptionIfFail);
+                    return false;
+                }
+
                 if (index < 0)
                 {
                     break;
                 }
                 // Check for escaped characters
-                int quotedCharCount = QuotedPairReader.CountQuotedChars(data, index, permitUnicode);
+                if (!QuotedPairReader.TryCountQuotedChars(data, index, permitUnicode, out int quotedCharCount, throwExceptionIfFail))
+                {
+                    Debug.Assert(!throwExceptionIfFail);
+                    return false;
+                }
+
                 if (quotedCharCount > 0)
                 {
-                    index = index - quotedCharCount;
+                    index -= quotedCharCount;
                 }
                 // Check for the terminating char
                 else if (expectCommaDelimiter && data[index] == MailBnfHelper.Comma)
@@ -123,7 +162,14 @@ namespace System.Net.Mail
                 // Check invalid characters
                 else if (!IsValidQtext(permitUnicode, data[index]))
                 {
-                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 // Valid char
                 else
@@ -133,7 +179,8 @@ namespace System.Net.Mail
             }
             while (index >= 0);
 
-            return index;
+            outIndex = index;
+            return true;
         }
 
         // Checks for Unicode characters and characters not allowed in quoted-strings. A quoted string may contain

@@ -29,17 +29,19 @@ namespace System.Net.Mail
         // - -1 if the dot-atom section terminated at the start of the data string.
         //   e.g. "user.name@domain.com", starting at index 8 (e) returns -1.
         //
-        // A FormatException will be thrown if:
+        // A FormatException will be thrown or false is returned if:
         // - The initial character at data[index] is invalid in a dot-atom.
         //   e.g. "a@b.com", starting at index 1 (@).
         // - The leading character is a dot.
         //   e.g. "a@.b.com", starting at index 7 (m), throws because the leading char (index 2) is a dot.
         //
-        internal static int ReadReverse(string data, int index)
+        internal static bool TryReadReverse(string data, int index, out int outIndex, bool throwExceptionIfFail)
         {
             Debug.Assert(0 <= index && index < data.Length, "index was outside the bounds of the string: " + index);
 
+            outIndex = default;
             int startIndex = index;
+
             // Scan for the first invalid chars (including whitespace)
             for (; 0 <= index; index--)
             {
@@ -53,14 +55,30 @@ namespace System.Net.Mail
             // Check for empty/invalid dot-atom
             if (startIndex == index)
             {
-                throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                if (throwExceptionIfFail)
+                {
+                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                }
+                else
+                {
+                    return false;
+                }
             }
             // Check for leading dot
             else if (data[index + 1] == MailBnfHelper.Dot)
             {
-                throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, MailBnfHelper.Dot));
+                if (throwExceptionIfFail)
+                {
+                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, MailBnfHelper.Dot));
+                }
+                else
+                {
+                    return false;
+                }
             }
-            return index;
+
+            outIndex = index;
+            return true;
         }
     }
 }
