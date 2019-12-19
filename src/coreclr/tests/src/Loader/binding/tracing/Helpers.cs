@@ -29,6 +29,8 @@ namespace BinderTracingTests
             Assert.AreEqual(expected.Cached, actual.Cached, $"Unexpected value for {nameof(BindOperation.Cached)} on event");
             ValidateAssemblyName(expected.ResultAssemblyName, actual.ResultAssemblyName, nameof(BindOperation.ResultAssemblyName));
 
+            ValidateResolutionAttempts(expected.ResolutionAttempts, actual.ResolutionAttempts);
+
             ValidateHandlerInvocations(expected.AssemblyLoadContextResolvingHandlers, actual.AssemblyLoadContextResolvingHandlers, "AssemblyLoadContextResolving");
             ValidateHandlerInvocations(expected.AppDomainAssemblyResolveHandlers, actual.AppDomainAssemblyResolveHandlers, "AppDomainAssemblyResolve");
             ValidateLoadFromHandlerInvocation(expected.AssemblyLoadFromHandler, actual.AssemblyLoadFromHandler);
@@ -78,7 +80,7 @@ namespace BinderTracingTests
             }
         }
 
-        private static bool AssemblyNamesMatch(AssemblyName name1, AssemblyName name2)
+        public static bool AssemblyNamesMatch(AssemblyName name1, AssemblyName name2)
         {
             if (name1 == null || name2 == null)
                 return name1 == null && name2 == null;
@@ -91,6 +93,28 @@ namespace BinderTracingTests
         private static void ValidateAssemblyName(AssemblyName expected, AssemblyName actual, string propertyName)
         {
             Assert.IsTrue(AssemblyNamesMatch(expected, actual), $"Unexpected value for {propertyName} on event - expected: {expected}, actual: {actual}");
+        }
+
+        private static void ValidateResolutionAttempts(List<ResolutionAttempt> expected, List<ResolutionAttempt> actual)
+        {
+            if (expected.Count > 0)
+                Assert.AreEqual(expected.Count, actual.Count,
+                    $"Unexpected resolution attempt count. Actual events:{Environment.NewLine}{string.Join(Environment.NewLine, actual.Select(a => a.ToString()))}");
+
+            for (var i = 0; i < expected.Count; i++)
+            {
+                var a = actual[i];
+                var e = expected[i];
+
+                string expectedActualMessage = $"{Environment.NewLine}Expected resolution attempt:{Environment.NewLine}{e.ToString()}{Environment.NewLine}Actual resolution attempt:{Environment.NewLine}{a.ToString()}";
+                ValidateAssemblyName(e.AssemblyName, a.AssemblyName, nameof(ResolutionAttempt.AssemblyName));
+                Assert.AreEqual(e.Stage, a.Stage, $"Unexpected value for {nameof(ResolutionAttempt.Stage)} {expectedActualMessage}");
+                Assert.AreEqual(e.AssemblyLoadContext, a.AssemblyLoadContext, $"Unexpected value for {nameof(ResolutionAttempt.AssemblyLoadContext)} {expectedActualMessage}");
+                Assert.AreEqual(e.Result, a.Result, $"Unexpected value for {nameof(ResolutionAttempt.Result)} {expectedActualMessage}");
+                ValidateAssemblyName(e.ResultAssemblyName, a.ResultAssemblyName, nameof(ResolutionAttempt.ResultAssemblyName));
+                Assert.AreEqual(e.ResultAssemblyPath ?? string.Empty, a.ResultAssemblyPath, $"Unexpected value for {nameof(ResolutionAttempt.ResultAssemblyPath)} {expectedActualMessage}");
+                Assert.AreEqual(e.ErrorMessage ?? string.Empty, a.ErrorMessage, $"Unexpected value for {nameof(ResolutionAttempt.ErrorMessage)} {expectedActualMessage}");
+            }
         }
 
         private static void ValidateHandlerInvocations(List<HandlerInvocation> expected, List<HandlerInvocation> actual, string eventName)

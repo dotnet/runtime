@@ -302,6 +302,9 @@ namespace BINDER_SPACE
         LONG kContextVersion = 0;
         BindResult bindResult;
 
+        // Tracing happens outside the binder lock to avoid calling into managed code within the lock
+        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+
 #ifndef CROSSGEN_COMPILE
     Retry:
         {
@@ -348,9 +351,10 @@ namespace BINDER_SPACE
 #endif
 
     Exit:
+        tracer.TraceBindResult(bindResult);
+
         if (bindResult.HaveResult())
         {
-
 #ifndef CROSSGEN_COMPILE
             BindResult hostBindResult;
 
@@ -611,7 +615,13 @@ namespace BINDER_SPACE
 
 #ifndef CROSSGEN_COMPILE
         ContextEntry *pContextEntry = NULL;
-        IF_FAIL_GO(FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry));
+        hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
+
+        // Add the attempt to the bind result on failure / not found. On success, it will be added after the version check.
+        if (FAILED(hr) || pContextEntry == NULL)
+            pBindResult->SetAttemptResult(hr, pContextEntry);
+
+        IF_FAIL_GO(hr);
         if (pContextEntry != NULL)
         {
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
@@ -623,8 +633,11 @@ namespace BINDER_SPACE
             else
             {
                 // Can't give higher version than already bound
-                IF_FAIL_GO(IsValidAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName(), pApplicationContext));
+                hr = IsValidAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName(), pApplicationContext);
             }
+
+            pBindResult->SetAttemptResult(hr, pContextEntry);
+            IF_FAIL_GO(hr);
 
             pBindResult->SetResult(pContextEntry);
         }
@@ -632,18 +645,22 @@ namespace BINDER_SPACE
 #endif // !CROSSGEN_COMPILE
         if (pApplicationContext->IsTpaListProvided())
         {
-            IF_FAIL_GO(BindByTpaList(pApplicationContext,
+            // BindByTpaList handles setting attempt results on the bind result
+            hr = BindByTpaList(pApplicationContext,
                                      pAssemblyName,
                                      excludeAppPaths,
-                                     pBindResult));
-            if (pBindResult->HaveResult())
+                                     pBindResult);
+            if (SUCCEEDED(hr) && pBindResult->HaveResult())
             {
                 hr = IsValidAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName(), pApplicationContext);
-                if (FAILED(hr))
-                {
-                    pBindResult->SetNoResult();
-                }
+                pBindResult->SetAttemptResult(hr, pBindResult->GetAsAssembly());
             }
+
+            if (FAILED(hr))
+            {
+                pBindResult->SetNoResult();
+            }
+            IF_FAIL_GO(hr);
         }
     Exit:
         return hr;
@@ -664,20 +681,20 @@ namespace BINDER_SPACE
         ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
         ContextEntry *pContextEntry = pExecutionContext->Lookup(pAssemblyName);
 
+        // Set any found context entry. It is up to the caller to check the returned HRESULT
+        // for errors due to validation
+        *ppContextEntry = pContextEntry;
         if (pContextEntry != NULL)
         {
             AssemblyName *pContextName = pContextEntry->GetAssemblyName();
             if (pAssemblyName->GetIsDefinition() &&
                 (pContextName->GetArchitecture() != pAssemblyName->GetArchitecture()))
             {
-                IF_FAIL_GO(FUSION_E_APP_DOMAIN_LOCKED);
+                return FUSION_E_APP_DOMAIN_LOCKED;
             }
         }
 
-        *ppContextEntry = pContextEntry;
-
-    Exit:
-        return hr;
+        return pContextEntry != NULL ? S_OK : S_FALSE;
     }
 
 #endif //CROSSGEN_COMPILE
@@ -749,22 +766,27 @@ namespace BINDER_SPACE
                     continue;
                 }
 
-                IF_FAIL_GO(hr);
+                pBindResult->SetAttemptResult(hr, pAssembly);
+                if (FAILED(hr))
+                    return hr;
 
                 AssemblyName *pBoundAssemblyName = pAssembly->GetAssemblyName();
                 if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pBoundAssemblyName, false /*tpaListAssembly*/))
                 {
                     pBindResult->SetResult(pAssembly);
-                    GO_WITH_HRESULT(S_OK);
+                    hr = S_OK;
+                }
+                else
+                {
+                    hr = FUSION_E_REF_DEF_MISMATCH;
                 }
 
-                IF_FAIL_GO(FUSION_E_REF_DEF_MISMATCH);
+                pBindResult->SetAttemptResult(hr, pAssembly);
+                return hr;
             }
 
             // Up-stack expects S_OK when we don't find any candidate assemblies and no fatal error occurred (ie, no S_FALSE)
-            hr = S_OK;
-        Exit:
-            return hr;
+            return  S_OK;
         }
 
         HRESULT BindAssemblyByProbingPaths(
@@ -813,6 +835,8 @@ namespace BINDER_SPACE
                     continue;
                 }
 
+                // Set any found assembly. It is up to the caller to check the returned HRESULT for errors due to validation
+                *ppAssembly = pAssembly.Extract();
                 if (FAILED(hr))
                     return hr;
 
@@ -825,7 +849,6 @@ namespace BINDER_SPACE
                 if (!TestCandidateRefMatchesDef(pRequestedAssemblyName, pAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
                     return FUSION_E_REF_DEF_MISMATCH;
 
-                *ppAssembly = pAssembly.Extract();
                 return S_OK;
             }
 
@@ -917,6 +940,8 @@ namespace BINDER_SPACE
                     BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
                 }
 
+                pBindResult->SetAttemptResult(hr, pTPAAssembly);
+
                 // On file not found, simply fall back to app path probing
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
                 {
@@ -927,12 +952,14 @@ namespace BINDER_SPACE
                     {
                         // We have found the requested assembly match on TPA with validation of the full-qualified name. Bind to it.
                         pBindResult->SetResult(pTPAAssembly);
+                        pBindResult->SetAttemptResult(S_OK, pTPAAssembly);
                         GO_WITH_HRESULT(S_OK);
                     }
                     else
                     {
                         // We found the assembly on TPA but it didn't match the RequestedAssembly assembly-name. In this case, lets proceed to see if we find the requested
                         // assembly in the App paths.
+                        pBindResult->SetAttemptResult(FUSION_E_REF_DEF_MISMATCH, pTPAAssembly);
                         fPartialMatchOnTpa = true;
                     }
                 }
@@ -956,6 +983,7 @@ namespace BINDER_SPACE
                                                     &pAssembly);
                 }
 
+                pBindResult->SetAttemptResult(hr, pAssembly);
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
                 {
                     IF_FAIL_GO(hr);
@@ -970,6 +998,7 @@ namespace BINDER_SPACE
                         {
                             // Fullname (SimpleName+Culture+PKT) matched for TPA and app assembly - so bind to TPA instance.
                             pBindResult->SetResult(pTPAAssembly);
+                            pBindResult->SetAttemptResult(hr, pTPAAssembly);
                             GO_WITH_HRESULT(S_OK);
                         }
                         else
@@ -990,11 +1019,9 @@ namespace BINDER_SPACE
         }
 
         // Couldn't find a matching assembly in any of the probing paths
-        // Return S_OK here.  BindByName will interpret a lack of BindResult
-        // as a failure to find a matching assembly.  Other callers of this
-        // function, such as BindLockedOrService will interpret as deciding
-        // not to override an explicit bind with a probed assembly
-        hr = S_OK;
+        // Return S_FALSE here. BindByName will interpret a successful HRESULT
+        // and lack of BindResult as a failure to find a matching assembly.
+        hr = S_FALSE;
 
     Exit:
         return hr;
@@ -1127,7 +1154,7 @@ namespace BINDER_SPACE
         // This method is invoked under a lock (by its caller), so we are thread safe.
         ContextEntry *pContextEntry = NULL;
         hr = FindInExecutionContext(pApplicationContext, pBindResult->GetAssemblyName(), &pContextEntry);
-        if (hr == S_OK)
+        if (SUCCEEDED(hr))
         {
             if (pContextEntry == NULL)
             {
@@ -1213,7 +1240,7 @@ namespace BINDER_SPACE
 
             hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
 
-            if ((hr == S_OK) && (pContextEntry == NULL))
+            if (SUCCEEDED(hr) && (pContextEntry == NULL))
             {
                 // We can accept this bind in the domain
                 GO_WITH_HRESULT(S_OK);
@@ -1272,6 +1299,9 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
     // Prepare binding data
     *ppAssembly = NULL;
 
+    // Tracing happens outside the binder lock to avoid calling into managed code within the lock
+    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+
     // Attempt the actual bind (eventually more than once)
 Retry:
     {
@@ -1288,6 +1318,7 @@ Retry:
                         false, // excludeAppPaths
                         &bindResult);
 
+        tracer.TraceBindResult(bindResult);
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
         {
             IF_FAIL_GO(CreateImageAssembly(pIMetaDataAssemblyImport,
