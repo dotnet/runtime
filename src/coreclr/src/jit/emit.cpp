@@ -4615,6 +4615,15 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
+#ifdef _TARGET_XARCH_
+    // For x64/x86, align Tier1 methods to 32 byte boundaries
+    //
+    if (emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1))
+    {
+        allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
+    }
+#endif
+
     if (emitConsDsc.align16)
     {
         allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);

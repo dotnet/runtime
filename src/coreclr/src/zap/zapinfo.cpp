@@ -1085,7 +1085,11 @@ void ZapInfo::allocMem(
 
     UINT align = DEFAULT_CODE_ALIGN;
 
-    if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) && !IsReadyToRunCompilation()) align = max(align, 16);
+    if (!IsReadyToRunCompilation())
+    {
+        if (flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) align = max(align, 32);
+        else if (flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) align = max(align, 16);
+    }
 
     m_pCode = ZapCodeBlob::NewAlignedBlob(m_pImage, NULL, hotCodeSize, align);
     *hotCodeBlock = m_pCode->GetData();
@@ -1104,7 +1108,11 @@ void ZapInfo::allocMem(
 
     if (roDataSize > 0)
     {
-        if (flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)
+        if (flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)
+        {
+            align = 32;
+        }
+        else if (flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)
         {
             align = 16;
         }
