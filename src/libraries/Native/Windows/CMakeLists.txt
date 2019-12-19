@@ -127,3 +127,14 @@ else ()
 endif ()
 
 add_subdirectory(clrcompression)
+
+if(DEFINED ENV{OPENSSLDIR} AND NOT $ENV{OPENSSLDIR} STREQUAL "")
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)
+
+    include_directories(${CMAKE_CURRENT_BINARY_DIR}/Common)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Common)
+
+    add_subdirectory(System.Security.Cryptography.Native)
+endif()

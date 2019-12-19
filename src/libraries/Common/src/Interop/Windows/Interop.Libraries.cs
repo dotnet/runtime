@@ -38,5 +38,7 @@ internal static partial class Interop
         internal const string Wtsapi32 = "wtsapi32.dll";
         internal const string CompressionNative = "clrcompression.dll";
         internal const string CoreWinRT = "api-ms-win-core-winrt-l1-1-0.dll";
+        internal const string CryptoNative = "security.cryptography.native.openssl.dll";
+        internal const string SystemNative = "system.native.dll";
     }
 }

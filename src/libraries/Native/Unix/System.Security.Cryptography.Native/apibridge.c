@@ -5,8 +5,7 @@
 #include "opensslshim.h"
 #include "pal_crypto_types.h"
 #include "pal_types.h"
-
-#include "../Common/pal_safecrt.h"
+#include "pal_safecrt.h"
 #include <assert.h>
 
 #ifdef NEED_OPENSSL_1_0

@@ -12,10 +12,12 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
-#include <unistd.h>
 #include <limits.h>
-#include <dirent.h>
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+
 
 #ifdef DEBUG
 #define assert_err(cond, msg, err) do \
@@ -77,7 +79,7 @@ inline static int ToFileDescriptorUnchecked(intptr_t fd)
 */
 inline static int ToFileDescriptor(intptr_t fd)
 {
-    assert(0 <= fd && fd < sysconf(_SC_OPEN_MAX));
+    assert(0 <= fd);
 
     return ToFileDescriptorUnchecked(fd);
 }
@@ -109,4 +111,50 @@ inline static int32_t SizeTToInt32(size_t value)
 {
     assert(value <= INT_MAX);
     return (int32_t)value;
+}
+
+// missing POSIX functions
+static inline DIR * opendir(const char *filename)
+{
+    WIN32_FIND_DATA fdata;
+    HANDLE handle = INVALID_HANDLE_VALUE;
+   
+    handle = FindFirstFile(filename, &fdata);
+    if (handle == INVALID_HANDLE_VALUE)
+    {
+        return NULL;
+    }
+       
+    DIR * dirp = malloc(sizeof(DIR));
+    if (dirp != NULL)
+    {
+       dirp->handle = handle;
+       memcpy(&dirp->FindFileData, (void*)&fdata, sizeof(fdata));
+       dirp->next = (struct dirent*)&dirp->FindFileData.cFileName;
+    }
+
+    return dirp;
+}
+
+static inline struct dirent * readdir(DIR *dirp)
+{
+    struct dirent * entry = dirp->next;
+    if (FindNextFile(dirp->handle, &dirp->FindFileData) ==  0)
+    {
+	    dirp->next = NULL;
+    }
+    else
+    {
+	dirp->next = (struct dirent*)&dirp->FindFileData.cFileName;
+    }
+
+    return entry;
+}
+
+static inline int closedir(DIR *dirp)
+{
+  FindClose(dirp->handle);
+  free(dirp);
+
+  return 0;
 }

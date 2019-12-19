@@ -3,15 +3,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.1.0.0</AssemblyVersion>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netcoreapp3.0-Unix-Debug;netcoreapp3.0-Unix-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <NoWarn>$(NoWarn);BCL0015</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
+  <PropertyGroup Condition="'$(TargetsUnix)' != 'true' and '$(OPENSSLDIR)' == ''">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyOpenSSL</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly
          without a RID so that it applies in desktop packages.config projects as well -->
     <PackageTargetRuntime />
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition=" '$(TargetsUnix)' == 'true' " />
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition=" '$(TargetsUnix)' == 'true' or '$(OPENSSLDIR)' != '' " />
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(OPENSSLDIR)' != ''">
     <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
@@ -22,8 +23,11 @@
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs">
       <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Condition="'$(TargetsUnix)' == 'true'">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Condition="'$(TargetsUnix)' != 'true'">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>

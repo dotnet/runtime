@@ -9,11 +9,9 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 // See X509NameType.SimpleName
 #define NAME_TYPE_SIMPLE 0
@@ -1118,6 +1116,7 @@ int64_t CryptoNative_OpenSslVersionNumber()
 }
 
 #ifdef NEED_OPENSSL_1_0
+#include <pthread.h>
 // Lock used to make sure EnsureopenSslInitialized itself is thread safe
 static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
 

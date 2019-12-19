@@ -3,13 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_x509.h"
+#include "pal_safecrt.h"
+#include "pal_utilities.h"
 
-#include "../Common/pal_safecrt.h"
 #include <assert.h>
-#include <dirent.h>
 #include <stdbool.h>
 #include <string.h>
-#include <unistd.h>
 
 c_static_assert(PAL_X509_V_OK == X509_V_OK);
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT);

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <NoWarn>CS1573;CS3016;CA5350;CA5351;CA5379;CA5384;CA5385;$(NoWarn)</NoWarn>
+    <NoWarn>CS1573;CS3016;CA5350;CA5351;CA5379;CA5384;CA5385;BCL0015;$(NoWarn)</NoWarn>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets"/>
@@ -274,6 +274,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(OPENSSLDIR)' == ''">
     <Compile Include="System\Security\Cryptography\AesGcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesAEAD.Windows.cs" />
@@ -297,9 +302,6 @@
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipherBCrypt.cs">
       <Link>Internal\Cryptography\BasicSymmetricCipherBCrypt.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\AesBCryptModes.cs">
       <Link>Common\Interop\Windows\BCrypt\AesBCryptModes.cs</Link>
@@ -476,7 +478,7 @@
       <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
+  <ItemGroup Condition=" ('$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true') or ('$(TargetsWindows)' == 'true' and '$(OPENSSLDIR)' != '') ">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
@@ -678,6 +680,11 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.SecurityTransforms.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(OPENSSLDIR)' != '' ">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs</Link>
     </Compile>
@@ -686,9 +693,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs">
       <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs</Link>
