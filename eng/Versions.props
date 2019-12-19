@@ -15,7 +15,8 @@
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- Opt-in/out repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
-    <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
+    <!-- TODO: (Consolidation) Fix internal tool restore and re-enable. https://github.com/dotnet/runtime/issues/1024 -->
+    <!-- <UsingToolIbcOptimization>true</UsingToolIbcOptimization> -->
     <UsingToolXliff>false</UsingToolXliff>
     <!-- Paths used during restore -->
     <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(ConfigurationGroup)' == 'Release'">true</EnableNgenOptimization>

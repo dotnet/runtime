@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   framework: ''
   isOfficialBuild: false
+  isOfficialAllConfigurations: false
   liveCoreClrBuildConfig: ''
   timeoutInMinutes: 150
   condition: true
@@ -43,6 +44,9 @@ jobs:
         - _warnAsErrorArg: ''
         - _testScopeArg: ''
 
+        - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
 
@@ -58,14 +62,15 @@ jobs:
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
-        - ${{ if eq(parameters.framework, 'allConfigurations' ) }}:
+        - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
+
+        - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
+          - _skipTestHostCopy: true
+          - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
-
-        - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
         - _coreClrArtifactName: ''
         - _coreClrDownloadPath: ''

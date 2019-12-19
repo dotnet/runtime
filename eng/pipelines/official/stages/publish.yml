@@ -1,28 +1,31 @@
 parameters:
-  dependsOnPublishStages: []
-  pipelinesPath: ''
+  PublishRidAgnosticPackagesFromPlatform: Windows_NT_x64
 
 stages:
 
-# Create extra stage per BAR channel that needs extra publish steps.
-- ${{ each dependency in parameters.dependsOnPublishStages }}:
-  - stage: PublishBlob_${{ dependency.dependsOn }}
-    displayName: '${{ dependency.channel.name }} Blob Publish'
-    dependsOn: PrepareForPublish
-    variables:
-    - template: /eng/common/templates/post-build/common-variables.yml
-    jobs:
-    - template: /eng/pipelines/jobs/run-publish-project.yml
-      parameters:
-        projectName: publish-blobs
-        dependency: ${{ dependency }}
+- stage: PrepareForPublish
+  displayName: Prepare for Publish
+  jobs:
+
+  # Prep artifacts: sign them and upload pipeline artifacts expected by stages-based publishing.
+  - template: /eng/pipelines/official/jobs/prepare-signed-artifacts.yml
+    parameters:
+      PublishRidAgnosticPackagesFromPlatform: ${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
+
+  # Publish to Build Asset Registry in order to generate the ReleaseConfigs artifact.
+  - template: /eng/common/templates/job/publish-build-assets.yml
+    parameters:
+      publishUsingPipelines: true
+      dependsOn: PrepareSignedArtifacts
+      pool:
+        name: NetCoreInternal-Pool
+        queue: buildpool.windows.10.amd64.vs2017
 
 # Stages-based publishing entry point
 - template: /eng/common/templates/post-build/post-build.yml
   parameters:
     validateDependsOn:
-    - ${{ each dependency in parameters.dependsOnPublishStages }}:
-      - PublishBlob_${{ dependency.dependsOn }}
+    - PrepareForPublish
     # Symbol validation is not ready yet. https://github.com/dotnet/arcade/issues/2871
     enableSymbolValidation: false
     # SourceLink validation doesn't work in dev builds: tries to pull from GitHub. https://github.com/dotnet/arcade/issues/3604
@@ -32,7 +35,7 @@ stages:
     symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
     # Enable SDL validation, passing through values from the 'core-setup-sdl-validation' group.
     SDLValidationParameters:
-      enable: true
+      enable: false # TODO: (Consolidation) Decide who owns SDL validation errors and enable. https://github.com/dotnet/runtime/issues/1027
       artifactNames:
       - PackageArtifacts
       - BlobArtifacts
@@ -47,18 +50,3 @@ stages:
         -TsaRepositoryName "$(TsaRepositoryName)"
         -TsaCodebaseName "$(TsaCodebaseName)"
         -TsaPublish $True
-
-# Create extra stage per BAR channel that needs extra publish steps. These run after the Arcade
-# stages because they depend on Arcade's NuGet package publish being complete.
-- ${{ each dependency in parameters.dependsOnPublishStages }}:
-  - stage: PublishFinal_${{ dependency.dependsOn }}
-    displayName: '${{ dependency.channel.name }} Finalize'
-    dependsOn:
-    - ${{ dependency.dependsOn }}
-    variables:
-    - template: /eng/common/templates/post-build/common-variables.yml
-    jobs:
-    - template: ${{ parameters.pipelinesPath }}/jobs/run-publish-project.yml
-      parameters:
-        projectName: publish-final
-        dependency: ${{ dependency }}

@@ -8,18 +8,20 @@ jobs:
   parameters:
     ${{ insert }}: ${{ parameters }}
 
+    skipTests: ${{ parameters.isOfficialBuild }}
+
     buildVariables:
       CommonMSBuildArgs: >-
-        /p:Configuration=$(_BuildConfig)
         /p:PortableBuild=true
+        /p:SkipTests=$(SkipTests)
 
     buildSteps:
 
     - script: >-
         $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        -configuration $(_BuildConfig)
         /p:StripSymbols=true
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
       displayName: Build
-      condition: succeeded()

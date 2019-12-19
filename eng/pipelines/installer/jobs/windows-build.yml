@@ -1,7 +1,7 @@
 parameters:
   additionalMSBuildArguments: ''
+  crossBuild: false
   publishRidAgnosticPackages: false
-  skipTests: false
   archType: null
   timeoutInMinutes: 120
   platform: ''
@@ -14,10 +14,9 @@ jobs:
 
     buildVariables:
       CommonMSBuildArgs: >-
-        /p:Configuration=$(_BuildConfig)
         /p:TargetArchitecture=${{ parameters.archType }}
         /p:PortableBuild=true
-        /p:SkipTests=${{ parameters.skipTests }}
+        /p:SkipTests=$(SkipTests)
         $(OfficialBuildArg)
       MsbuildSigningArguments: >-
         /p:CertificateId=400
@@ -28,12 +27,13 @@ jobs:
 
     - script: >-
         installer.cmd -restore -build -ci -test
+        -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
       displayName: Build
 
-    - ${{ if eq(variables.isOfficialBuild, true) }}:
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - task: NuGetCommand@2
         displayName: Push Visual Studio NuPkgs
         inputs:
@@ -43,5 +43,4 @@ jobs:
           publishFeedCredentials: 'DevDiv - VS package feed'
         condition: and(
           succeeded(),
-          eq(variables['_BuildConfig'], 'Release'),
           ne(variables['DisableVSPublish'], 'true'))

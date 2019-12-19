@@ -5,12 +5,29 @@
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
     <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(OSGroup)</LibrariesOSGroup>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
+
+    <CoreCLRArtifactsPath Condition="'$(CoreCLROverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)'))</CoreCLRArtifactsPath>
     <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(CoreCLROSGroup).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
-    <LibrariesSharedFrameworkRefArtifactsPath Condition="'$(LibrariesSharedFrameworkRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'ref', 'microsoft.netcore.app', '$(LibrariesConfiguration)'))</LibrariesSharedFrameworkRefArtifactsPath>
-    <LibrariesAllRefArtifactsPath Condition="'$(LibrariesAllRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'ref', '$(NetCoreAppCurrent)'))</LibrariesAllRefArtifactsPath>
-    <LibrariesSharedFrameworkBinArtifactsPath Condition="'$(LibrariesSharedFrameworkBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'pkg', '$(NetCoreAppCurrent)', 'runtime', '$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesSharedFrameworkBinArtifactsPath>
-    <LibrariesAllBinArtifactsPath Condition="'$(LibrariesAllBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'runtime', '$(NetCoreAppCurrent)-$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesAllBinArtifactsPath>
-    <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'native', '$(NetCoreAppCurrent)-$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesNativeArtifactsPath>
+
+    <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
+
+    <LibrariesArtifactsPath Condition="'$(LibrariesArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesArtifactsPath>
+
+    <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
+    <LibrariesShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'Shipping'))</LibrariesShippingPackagesDir>
+    <LibrariesNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'NonShipping'))</LibrariesNonShippingPackagesDir>
+
+    <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesAllConfigurationsArtifactsPath>
+
+    <LibrariesAllConfigPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigurationsArtifactsPath)', 'packages', '$(LibrariesConfiguration)'))</LibrariesAllConfigPackagesDir>
+    <LibrariesAllConfigShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigPackagesDir)', 'Shipping'))</LibrariesAllConfigShippingPackagesDir>
+    <LibrariesAllConfigNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigPackagesDir)', 'NonShipping'))</LibrariesAllConfigNonShippingPackagesDir>
+
+    <LibrariesSharedFrameworkRefArtifactsPath Condition="'$(LibrariesSharedFrameworkRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'ref', 'microsoft.netcore.app', '$(LibrariesConfiguration)'))</LibrariesSharedFrameworkRefArtifactsPath>
+    <LibrariesAllRefArtifactsPath Condition="'$(LibrariesAllRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'ref', '$(NetCoreAppCurrent)'))</LibrariesAllRefArtifactsPath>
+    <LibrariesSharedFrameworkBinArtifactsPath Condition="'$(LibrariesSharedFrameworkBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'pkg', '$(NetCoreAppCurrent)', 'runtime', '$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesSharedFrameworkBinArtifactsPath>
+    <LibrariesAllBinArtifactsPath Condition="'$(LibrariesAllBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'runtime', '$(NetCoreAppCurrent)-$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesAllBinArtifactsPath>
+    <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'native', '$(NetCoreAppCurrent)-$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)'))</LibrariesNativeArtifactsPath>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
@@ -21,6 +38,10 @@
 
     <PropertyGroup>
       <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
+      <!--
+        Even though CoreCLRSharedFrameworkDir is statically initialized, set it again in case the
+        value is different after CoreCLRArtifactsPath is normalized.
+      -->
       <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
       <CoreCLRCrossTargetComponentDir
         Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
@@ -51,6 +72,10 @@
           $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
           $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
           $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
+
+      <CoreCLRCrossTargetFiles>
+        <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+      </CoreCLRCrossTargetFiles>
     </ItemGroup>
 
     <Error Condition="'@(CoreCLRFiles)' == ''" Text="The CoreCLR subset category must be built before building this project." />
