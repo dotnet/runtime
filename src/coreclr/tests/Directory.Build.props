@@ -21,6 +21,7 @@
   <!-- Common properties -->
   <PropertyGroup>
     <RootBinDir>$(MSBuildThisFileDirectory)..\..\..\artifacts\</RootBinDir>
+    <RootBinDir>$([MSBuild]::NormalizePath('$(RootBinDir)'))</RootBinDir>
     <BinDir>$(RootBinDir)bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
 
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>

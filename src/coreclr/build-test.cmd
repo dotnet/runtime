@@ -33,6 +33,9 @@ set "__ProjectDir=%~dp0"
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
 
+:: normalize the path
+for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
+
 set "__TestDir=%__ProjectDir%\tests"
 set "__ProjectFilesDir=%__TestDir%"
 set "__SourceDir=%__ProjectDir%\src"
