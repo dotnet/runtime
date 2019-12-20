@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -124,6 +125,20 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
         }
 
+        public EcmaMetadataReader(IAssemblyResolver assemblyResolver, MetadataReader metadata, PEReader peReader, string filename, List<string> manifestReferenceAssemblies)
+        {
+            _assemblyResolver = assemblyResolver;
+            _assemblyCache = new Dictionary<string, EcmaMetadataReader>();
+            MetadataReader = metadata;
+            PEReader = peReader;
+            ImmutableArray<byte> content = peReader.GetEntireImage().GetContent();
+            // TODO: Avoid copying
+            Image = new byte[content.Length];
+            content.CopyTo(Image);
+            Filename = filename;
+            ManifestReferenceAssemblies = manifestReferenceAssemblies;
+        }
+
         /// <summary>
         /// Open an MSIL binary and locate the metadata blob.
         /// </summary>
@@ -228,42 +243,42 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The ReadyToRun header
         /// </summary>
-        public R2RHeader R2RHeader { get; }
+        public R2RHeader R2RHeader { get; private set; }
 
         /// <summary>
         /// The runtime functions and method signatures of each method
         /// </summary>
-        public IList<R2RMethod> R2RMethods { get; }
+        public IList<R2RMethod> R2RMethods { get; private set; }
 
         /// <summary>
         /// Parsed instance entrypoint table entries.
         /// </summary>
-        public IList<InstanceMethod> InstanceMethods { get; }
+        public IList<InstanceMethod> InstanceMethods { get; private set; }
 
         /// <summary>
         /// The available types from READYTORUN_SECTION_AVAILABLE_TYPES
         /// </summary>
-        public IList<string> AvailableTypes { get; }
+        public IList<string> AvailableTypes { get; private set; }
 
         /// <summary>
         /// The compiler identifier string from READYTORUN_SECTION_COMPILER_IDENTIFIER
         /// </summary>
-        public string CompilerIdentifier { get; }
+        public string CompilerIdentifier { get; private set; }
 
         /// <summary>
         /// Exception lookup table is used to map runtime function addresses to EH clauses.
         /// </summary>
-        public EHLookupTable EHLookupTable { get; }
+        public EHLookupTable EHLookupTable { get; private set; }
 
         /// <summary>
         /// List of import sections present in the R2R executable.
         /// </summary>
-        public IList<R2RImportSection> ImportSections { get; }
+        public IList<R2RImportSection> ImportSections { get; private set; }
 
         /// <summary>
         /// Map from import cell addresses to their symbolic names.
         /// </summary>
-        public Dictionary<int, string> ImportCellNames { get; }
+        public Dictionary<int, string> ImportCellNames { get; private set; }
 
         private Dictionary<int, DebugInfo> _runtimeFunctionToDebugInfo = new Dictionary<int, DebugInfo>();
 
@@ -274,8 +289,24 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         /// <param name="filename">PE image</param>
         /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
-        public unsafe R2RReader(IAssemblyResolver assemblyResolver, string filename)
+        public R2RReader(IAssemblyResolver assemblyResolver, MetadataReader metadata, PEReader peReader, string filename)
+            : base(assemblyResolver, metadata, peReader, filename, new List<string>())
+        {
+            Initialize();
+        }
+
+        /// <summary>
+        /// Initializes the fields of the R2RHeader and R2RMethods
+        /// </summary>
+        /// <param name="filename">PE image</param>
+        /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
+        public R2RReader(IAssemblyResolver assemblyResolver, string filename)
             : base(assemblyResolver, filename, new List<string>())
+        {
+            Initialize();
+        }
+
+        private unsafe void Initialize()
         {
             IsR2R = ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) != 0);
             if (!IsR2R)
