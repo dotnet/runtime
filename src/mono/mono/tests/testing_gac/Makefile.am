@@ -62,6 +62,7 @@ BASE_MONO_PATH=$(CLASS)
 V1_SRC= v1/gactestlib.cs
 V2_SRC= v2/gactestlib.cs
 APP_V1_SRC = v1/app.cs v1/app-refl-load.cs
+APP_BOTH_SRC = app-both.cs
 
 APP_SIGNED_V1_EXE = app-v1.exe app-refl-load-v1.exe
 
@@ -97,7 +98,7 @@ SIGN= -delaysign -keyfile:$(SIGNING_KEY)
 
 ### autotools stuff
 
-EXTRA_DIST= README $(SIGNING_KEY) $(GACTESTLIB_SRCS) 
+EXTRA_DIST= README $(SIGNING_KEY) $(GACTESTLIB_SRCS) $(APP_V1_SRC) $(APP_BOTH_SRC)
 
 ### Test cases
 

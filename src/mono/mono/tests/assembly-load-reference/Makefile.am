@@ -81,6 +81,11 @@ TESTS_CS = \
 	mainanddep/LoadFromMain.cs \
 	mainanddep/LoadFileMain.cs
 
+LIBRARIES_CS = src/Dep.cs \
+	src/Mid.cs
+
+EXTRA_DIST += $(TESTS_CS) $(LIBRARIES_CS)
+
 TESTS_EXE = $(TESTS_CS:.cs=.exe)
 
 TESTS_EXE_AOT = $(TESTS_EXE:.exe=.exe$(PLATFORM_AOT_SUFFIX))
