@@ -377,7 +377,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
                     stack = new (curSsaName->GetAllocator()) GenTreePtrStack(curSsaName->GetAllocator());
                 }
                 stack->Push(tree);
-                curSsaName->Set(lclNum, stack, LclNumToGenTreePtrStack::Overwrite);
+                curSsaName->Set(lclNum, stack DEBUGARG(LclNumToGenTreePtrStack::SetKind::Overwrite));
             }
             // If we encounter first use of a param or this pointer add it as a live definition.
             // Since they are always live, do it only once.
