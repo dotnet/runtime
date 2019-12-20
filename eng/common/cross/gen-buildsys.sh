@@ -30,10 +30,44 @@ then
   exit 1
 fi
 
-__CoreClrDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../../.."
-__RepoRootDir=${__CoreClrDir}/../..
+tryrun_dir="$2"
+build_arch="$4"
+compiler="$5"
+majorVersion="$6"
+minorVersion="$7"
 
-build_arch="$3"
+# Set up the environment to be used for building with the desired compiler.
+if command -v "$compiler-$majorVersion.$minorVersion" > /dev/null; then
+    desired_version="-$majorVersion.$minorVersion"
+elif command -v "$compiler$majorVersion$minorVersion" > /dev/null; then
+    desired_version="$majorVersion$minorVersion"
+elif command -v "$compiler-$majorVersion$minorVersion" > /dev/null; then
+    desired_version="-$majorVersion$minorVersion"
+elif command -v "$compiler" > /dev/null; then
+    desired_version=
+fi
+
+if [ -z "$CLR_CC" ]; then
+    export CC="$(command -v "$compiler$desired_version")"
+else
+    export CC="$CLR_CC"
+fi
+
+if [ -z "$CLR_CXX" ]; then
+    export CXX="$(command -v "$compiler++$desired_version")"
+else
+    export CXX="$CLR_CXX"
+fi
+
+if [ -z "$CC" ]; then
+    echo "Unable to find $compiler"
+    exit 1
+fi
+
+export CCC_CC="$CC"
+export CCC_CXX="$CXX"
+export SCAN_BUILD_COMMAND=$(command -v "scan-build$desired_version")
+
 buildtype=DEBUG
 code_coverage=OFF
 build_tests=OFF
@@ -41,7 +75,7 @@ scan_build=OFF
 generator="Unix Makefiles"
 __UnprocessedCMakeArgs=""
 
-for i in "${@:4}"; do
+for i in "${@:8}"; do
     upperI="$(echo $i | awk '{print toupper($0)}')"
     case $upperI in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO.
@@ -69,8 +103,8 @@ if [ "$CROSSCOMPILE" == "1" ]; then
         exit 1
     fi
     export TARGET_BUILD_ARCH=$build_arch
-    cmake_extra_defines="$cmake_extra_defines -C ${__CoreClrDir}/tryrun.cmake"
-    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=${__RepoRootDir}/eng/common/cross/toolchain.cmake"
+    cmake_extra_defines="$cmake_extra_defines -C $tryrun_dir/tryrun.cmake"
+    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/toolchain.cmake"
 fi
 
 cmake_command=$(command -v cmake)
@@ -87,4 +121,4 @@ $cmake_command \
   $cmake_extra_defines \
   $__UnprocessedCMakeArgs \
   -S "$1" \
-  -B "$2"
+  -B "$3"

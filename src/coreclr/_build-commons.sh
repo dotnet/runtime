@@ -204,58 +204,58 @@ while :; do
             ;;
 
         clang3.5|-clang3.5)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=5
+            __CompilerMajorVersion=3
+            __CompilerMinorVersion=5
             ;;
 
         clang3.6|-clang3.6)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=6
+            __CompilerMajorVersion=3
+            __CompilerMinorVersion=6
             ;;
 
         clang3.7|-clang3.7)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=7
+            __CompilerMajorVersion=3
+            __CompilerMinorVersion=7
             ;;
 
         clang3.8|-clang3.8)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=8
+            __CompilerMajorVersion=3
+            __CompilerMinorVersion=8
             ;;
 
         clang3.9|-clang3.9)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=9
+            __CompilerMajorVersion=3
+            __CompilerMinorVersion=9
             ;;
 
         clang4.0|-clang4.0)
-            __ClangMajorVersion=4
-            __ClangMinorVersion=0
+            __CompilerMajorVersion=4
+            __CompilerMinorVersion=0
             ;;
 
         clang5.0|-clang5.0)
-            __ClangMajorVersion=5
-            __ClangMinorVersion=0
+            __CompilerMajorVersion=5
+            __CompilerMinorVersion=0
             ;;
 
         clang6.0|-clang6.0)
-            __ClangMajorVersion=6
-            __ClangMinorVersion=0
+            __CompilerMajorVersion=6
+            __CompilerMinorVersion=0
             ;;
 
         clang7|-clang7)
-            __ClangMajorVersion=7
-            __ClangMinorVersion=
+            __CompilerMajorVersion=7
+            __CompilerMinorVersion=
             ;;
 
         clang8|-clang8)
-            __ClangMajorVersion=8
-            __ClangMinorVersion=
+            __CompilerMajorVersion=8
+            __CompilerMinorVersion=
             ;;
 
         clang9|-clang9)
-            __ClangMajorVersion=9
-            __ClangMinorVersion=
+            __CompilerMajorVersion=9
+            __CompilerMinorVersion=
             ;;
 
         cmakeargs|-cmakeargs)
@@ -287,39 +287,39 @@ while :; do
             ;;
 
         gcc5|-gcc5)
-            __GccMajorVersion=5
-            __GccMinorVersion=
-            __GccBuild=1
+            __CompilerMajorVersion=5
+            __CompilerMinorVersion=
+            __Compiler=gcc
             ;;
 
         gcc6|-gcc6)
-            __GccMajorVersion=6
-            __GccMinorVersion=
-            __GccBuild=1
+            __CompilerMajorVersion=6
+            __CompilerMinorVersion=
+            __Compiler=gcc
             ;;
 
         gcc7|-gcc7)
-            __GccMajorVersion=7
-            __GccMinorVersion=
-            __GccBuild=1
+            __CompilerMajorVersion=7
+            __CompilerMinorVersion=
+            __Compiler=gcc
             ;;
 
         gcc8|-gcc8)
-            __GccMajorVersion=8
-            __GccMinorVersion=
-            __GccBuild=1
+            __CompilerMajorVersion=8
+            __CompilerMinorVersion=
+            __Compiler=gcc
             ;;
 
         gcc9|-gcc9)
-            __GccMajorVersion=9
-            __GccMinorVersion=
-            __GccBuild=1
+            __CompilerMajorVersion=9
+            __CompilerMinorVersion=
+            __Compiler=gcc
             ;;
 
         gcc|-gcc)
-            __GccMajorVersion=
-            __GccMinorVersion=
-            __GccBuild=1
+            __CompilerMajorVersion=
+            __CompilerMinorVersion=
+            __Compiler=gcc
             ;;
 
         msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
@@ -414,12 +414,12 @@ if [ "$__VerboseBuild" = 1 ]; then
 fi
 
 # Set default clang version
-if [ "$__ClangMajorVersion" = 0 ] && [ "$__ClangMinorVersion" = 0 ]; then
+if [ "$__CompilerMajorVersion" = 0 ] && [ "$__CompilerMinorVersion" = 0 ]; then
     if [ "$__BuildArch" = "arm" ] || [ "$__BuildArch" = "armel" ]; then
-        __ClangMajorVersion=5
-        __ClangMinorVersion=0
+        __CompilerMajorVersion=5
+        __CompilerMinorVersion=0
     else
-        __ClangMajorVersion=3
-        __ClangMinorVersion=9
+        __CompilerMajorVersion=3
+        __CompilerMinorVersion=9
     fi
 fi

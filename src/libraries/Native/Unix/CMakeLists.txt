@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.14)
+cmake_policy(SET CMP0042 NEW)
+
 project(CoreFX C)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
@@ -279,6 +281,7 @@ function(install_library_and_symbols targetName)
 endfunction()
 
 include(configure.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../../../eng/common/cross/configuretools.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
