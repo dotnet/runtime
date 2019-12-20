@@ -15,7 +15,8 @@ class Program
 
     static void Work()
     {
-        for (uint i = 0; i < 1000000; i++) {
+        for (uint i = 0; i < 1000000; i++)
+        {
             var a = s[i++ % s.Length];
 
             ref byte p = ref a[0];
@@ -37,12 +38,12 @@ class Program
         List<Task> tasks = new List<Task>();
         for(int i = 0; i < 5; i++)
         {
-            // new Thread(Work).Start();
             tasks.Add(Task.Run(Work));
         }
 
         Random r = new Random();
-        for (uint i = 0; i < 10000; i++) {
+        for (uint i = 0; i < 10000; i++)
+        {
             s[r.Next(s.Length)] = new byte[3 + r.Next(100)];
         }
         Task t = Task.WhenAll(tasks);
