@@ -117,7 +117,7 @@ namespace Mono.Linker.Steps
 
 		void RewriteBody (MethodDefinition method)
 		{
-			var reducer = new BodyReducer (method.Body);
+			var reducer = new BodyReducer (method.Body, Context);
 
 			//
 			// Temporary inlines any calls which return contant expression
@@ -215,6 +215,7 @@ namespace Mono.Linker.Steps
 
 		struct BodyReducer
 		{
+			readonly LinkContext context;
 			Dictionary<Instruction, int> mapping;
 
 			//
@@ -223,9 +224,11 @@ namespace Mono.Linker.Steps
 			// 
 			List<int> conditionInstrsToRemove;
 
-			public BodyReducer (MethodBody body)
+			public BodyReducer (MethodBody body, LinkContext context)
 			{
 				Body = body;
+				this.context = context;
+
 				FoldedInstructions = null;
 				mapping = null;
 				conditionInstrsToRemove = null;
@@ -280,17 +283,27 @@ namespace Mono.Linker.Steps
 
 				bool changed = false;
 				ILProcessor ilprocessor = null;
+				List<VariableDefinition> removedVariablesReferences = null;
 
 				var instrs = Body.Instructions;
 				for (int i = 0; i < instrs.Count; ++i) {
 					if (reachableMap [i])
 						continue;
 
-					if (instrs [i].OpCode.Code == Code.Nop)
+					var instr = instrs [i];
+					if (instr.OpCode.Code == Code.Nop)
 						continue;
 
 					if (ilprocessor == null)
 						ilprocessor = Body.GetILProcessor ();
+
+					VariableDefinition variable = GetVariableReference (instr);
+					if (variable != null) {
+						if (removedVariablesReferences == null)
+							removedVariablesReferences = new List<VariableDefinition> ();
+						if (!removedVariablesReferences.Contains (variable))
+							removedVariablesReferences.Add (variable);
+					}
 
 					ilprocessor.Replace (i, Instruction.Create (OpCodes.Nop));
 
@@ -351,7 +364,48 @@ namespace Mono.Linker.Steps
 					changed = true;
 				}
 
+				if (removedVariablesReferences != null) {
+					CleanRemovedVariables (removedVariablesReferences);
+				}
+
 				return changed;
+			}
+
+			void CleanRemovedVariables (List<VariableDefinition> variables)
+			{
+				foreach (var instr in Body.Instructions) {
+					VariableDefinition variable = GetVariableReference (instr);
+					if (variable == null)
+						continue;
+
+					if (!variables.Remove (variable))
+						continue;
+
+					if (variables.Count == 0)
+						return;
+				}
+
+				variables.Sort ((a, b) => b.Index.CompareTo (a.Index));
+				var body_variables = Body.Variables;
+
+				foreach (var variable in variables) {
+					var index = body_variables.IndexOf (variable);
+
+					//
+					// Remove variable only if it's the last one. Instead of
+					// re-indexing all variables we mark change it to object,
+					// which is enough to drop the dependency
+					//
+					if (index == body_variables.Count - 1) {
+						body_variables.RemoveAt (index);
+					} else {
+						var objectType = BCL.FindPredefinedType ("System", "Object", context);
+						if (objectType == null)
+							throw new NotSupportedException ("Missing predefined 'System.Object' type");
+
+						body_variables [index].VariableType = objectType;
+					}
+				}
 			}
 
 			bool RemoveConditions ()
@@ -576,6 +630,29 @@ namespace Mono.Linker.Steps
 
 				return GetConstantValue (FoldedInstructions [index - 2], out left) &&
 					GetConstantValue (FoldedInstructions [index - 1], out right);
+			}
+
+			VariableDefinition GetVariableReference (Instruction instruction)
+			{
+				switch (instruction.OpCode.Code) {
+				case Code.Stloc_0:
+				case Code.Ldloc_0:
+					return Body.Variables [0];
+				case Code.Stloc_1:
+				case Code.Ldloc_1:
+					return Body.Variables [1];
+				case Code.Stloc_2:
+				case Code.Ldloc_2:
+					return Body.Variables [2];
+				case Code.Stloc_3:
+				case Code.Ldloc_3:
+					return Body.Variables [3];
+				}
+
+				if (instruction.Operand is VariableReference vr)
+					return vr.Resolve ();
+
+				return null;
 			}
 
 			static bool GetConstantValue (Instruction instruction, out object value)
