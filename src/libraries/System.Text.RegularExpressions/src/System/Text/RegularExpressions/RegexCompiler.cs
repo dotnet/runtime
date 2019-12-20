@@ -54,6 +54,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
+#if DEBUG
+        private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) })!;
+#endif
 
         protected ILGenerator? _ilg;
 
@@ -72,6 +75,7 @@ namespace System.Text.RegularExpressions
         private LocalBuilder? _cultureLocal;  // current culture is cached in local variable to prevent many thread local storage accesses for CultureInfo.CurrentCulture
         private LocalBuilder? _loopTimeoutCounterLocal; // timeout counter for setrep and setloop
 
+        protected RegexOptions _options;      // options
         protected RegexCode? _code;           // the RegexCode object (used for debugging only)
         protected int[]? _codes;              // the RegexCodes being translated
         protected string[]? _strings;         // the stringtable associated with the RegexCodes
@@ -84,15 +88,11 @@ namespace System.Text.RegularExpressions
         private BacktrackNote[]? _notes;      // a list of the backtracking states to be generated
         private int _notecount;               // true count of _notes (allocation grows exponentially)
         protected int _trackcount;            // count of backtracking states (used to reduce allocations)
-
         private Label _backtrack;             // label for backtracking
-
 
         private int _regexopcode;             // the current opcode being processed
         private int _codepos;                 // the current code being translated
         private int _backpos;                 // the current backtrack-note being translated
-
-        protected RegexOptions _options;      // options
 
         // special code fragments
         private int[]? _uniquenote;           // _notes indices for code that should be emitted <= once
@@ -711,20 +711,18 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void GenerateForwardSection()
         {
+            _uniquenote = new int[Uniquecount];
             _labels = new Label[_codes!.Length];
             _goto = new int[_codes.Length];
 
             // initialize
 
-            int codepos;
-            for (codepos = 0; codepos < _codes.Length; codepos += RegexCode.OpcodeSize(_codes[codepos]))
+            Array.Fill(_uniquenote, -1);
+            for (int codepos = 0; codepos < _codes.Length; codepos += RegexCode.OpcodeSize(_codes[codepos]))
             {
                 _goto[codepos] = -1;
                 _labels[codepos] = DefineLabel();
             }
-
-            _uniquenote = new int[Uniquecount];
-            Array.Fill(_uniquenote, -1);
 
             // emit variable initializers
 
@@ -739,7 +737,7 @@ namespace System.Text.RegularExpressions
 
             _backpos = -1;
 
-            for (codepos = 0; codepos < _codes.Length; codepos += RegexCode.OpcodeSize(_codes[codepos]))
+            for (int codepos = 0; codepos < _codes.Length; codepos += RegexCode.OpcodeSize(_codes[codepos]))
             {
                 MarkLabel(_labels[codepos]);
                 _codepos = codepos;
@@ -1442,9 +1440,6 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        /// <summary>Debug.WriteLine</summary>
-        private static readonly MethodInfo? s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) });
-
         /// <summary>Debug only: emit code to print out a message.</summary>
         private void Message(string str)
         {
@@ -2351,10 +2346,7 @@ namespace System.Text.RegularExpressions
                     //:     if (Str[i] != Rightcharnext())
                     //:         break Backward;
                     {
-                        int i;
-                        string str;
-
-                        str = _strings![Operand(0)];
+                        string str = _strings![Operand(0)];
 
                         Ldc(str.Length);
                         Ldloc(_runtextendLocal!);
@@ -2363,7 +2355,7 @@ namespace System.Text.RegularExpressions
                         BgtFar(_backtrack);
 
                         // unroll the string
-                        for (i = 0; i < str.Length; i++)
+                        for (int i = 0; i < str.Length; i++)
                         {
                             Ldloc(_runtextLocal!);
                             Ldloc(_runtextposLocal!);
@@ -2399,10 +2391,7 @@ namespace System.Text.RegularExpressions
                     //:     if (Str[--c] != Leftcharnext())
                     //:         break Backward;
                     {
-                        int i;
-                        string str;
-
-                        str = _strings![Operand(0)];
+                        string str = _strings![Operand(0)];
 
                         Ldc(str.Length);
                         Ldloc(_runtextposLocal!);
@@ -2411,7 +2400,7 @@ namespace System.Text.RegularExpressions
                         BgtFar(_backtrack);
 
                         // unroll the string
-                        for (i = str.Length; i > 0;)
+                        for (int i = str.Length; i > 0;)
                         {
                             i--;
                             Ldloc(_runtextLocal!);
