@@ -83,7 +83,6 @@ if ($vs) {
       $targetFramework = $framework.ToLowerInvariant()
     }
   }
-  Write-Host "TargetFramework: $targetFramework"
 
   # This tells .NET Core to use the same dotnet.exe that build scripts use
   $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\$targetFramework-Windows_NT-$configuration-$archTestHost";
