@@ -109,7 +109,6 @@ namespace BasicEventSourceTests
         }
         public abstract IList<string> PayloadNames { get; }
 
-#if DEBUG
         /// <summary>
         /// This is a convenience function for the debugger.   It is not used typically
         /// </summary>
@@ -123,7 +122,6 @@ namespace BasicEventSourceTests
                 return ret;
             }
         }
-#endif
 
         public override string ToString()
         {

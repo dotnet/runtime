@@ -27,10 +27,10 @@
       https://github.com/Microsoft/msbuild/blob/3a9d1d2ae23e41b32a612ea6b0dce531fcf86be7/src/Build/Evaluation/IntrinsicFunctions.cs#L431
     -->
     <DefaultOSGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' and $([MSBuild]::IsOSUnixLike())">Linux</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)'==''">$(OS)</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == ''">$(OS)</DefaultOSGroup>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -72,7 +72,7 @@
     <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
 
     <IsTestSupportProject>false</IsTestSupportProject>
-    <IsTestSupportProject Condition="($(MSBuildProjectFullPath.Contains('\tests\')) OR $(MSBuildProjectFullPath.Contains('/tests/'))) AND '$(IsTestProject)' != 'true'">true</IsTestSupportProject>
+    <IsTestSupportProject Condition="($(MSBuildProjectFullPath.Contains('\tests\')) or $(MSBuildProjectFullPath.Contains('/tests/'))) and '$(IsTestProject)' != 'true'">true</IsTestSupportProject>
     <IsTestProject Condition="'$(IsTestSupportProject)' == 'true'">true</IsTestProject>
 
     <!-- Treat test assemblies as non-shipping (do not publish or sign them). -->
@@ -153,8 +153,8 @@
 
   <!-- set properties for each vertical -->
   <PropertyGroup>
-    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)'=='$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
-    <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)'=='$(NetFrameworkCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
+    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)' == '$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
+    <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)' == '$(NetFrameworkCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
     <BinPlaceNETCoreAppPackage Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceNETCoreAppPackage>
   </PropertyGroup>
 
@@ -192,12 +192,12 @@
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
-    <When Condition="'$(ConfigurationGroup)'=='Debug'">
+    <When Condition="'$(ConfigurationGroup)' == 'Debug'">
       <PropertyGroup>
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
         <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
-        <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
+        <DefineConstants>$(DefineConstants),TRACE,DEBUG</DefineConstants>
       </PropertyGroup>
     </When>
     <When Condition="'$(ConfigurationGroup)' == 'Release'">
@@ -216,6 +216,7 @@
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
     <!-- Don't reference implicit framework packages, all projects in this repo must be explicit -->
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <!-- We can't generate an apphost without restoring the targeting pack. -->
@@ -288,7 +289,6 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
     <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
     <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
