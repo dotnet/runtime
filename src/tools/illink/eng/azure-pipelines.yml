@@ -74,56 +74,57 @@ stages:
           ${{ if eq(variables.officialBuild, 'true') }}:
             displayName: Build and publish illink.sln $(_BuildConfig)
 
-      - job: Linux
-        pool:
-          name: Hosted Ubuntu 1604
-        steps:
-        - checkout: self
-          submodules: true
-        - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
-                  --configuration $(_BuildConfig) $(_BuildArgs)
-                  --warnAsError false
-                  --nodeReuse false # https://github.com/Microsoft/vstest/issues/1503
-          env:
-            # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
-            MSBUILDENSURESTDOUTFORTASKPROCESSES: 1
-          displayName: Build illink.sln $(_BuildConfig)
+      - ${{ if eq(variables.officialBuild, 'false') }}:
+        - job: Linux
+          condition: eq(variables.officialBuild, 'false')
+          pool:
+            name: Hosted Ubuntu 1604
+          steps:
+          - checkout: self
+            submodules: true
+          - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
+                    --configuration $(_BuildConfig) $(_BuildArgs)
+                    --warnAsError false
+                    --nodeReuse false # https://github.com/Microsoft/vstest/issues/1503
+            env:
+              # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
+              MSBUILDENSURESTDOUTFORTASKPROCESSES: 1
+            displayName: Build illink.sln $(_BuildConfig)
 
-      - job: Linux_Mono
-        pool:
-          name: Hosted Ubuntu 1604
-        steps:
-        - checkout: self
-          submodules: true
-        - script: |
-            mkdir -p artifacts/log/$(_BuildConfig)
-            mono --version | tee artifacts/log/$(_BuildConfig)/mono-version.txt
-            make -C monobuild CONFIGURATION=$(_BuildConfig)
-          displayName: Build and test
-        - task: PublishTestResults@2
-          inputs:
-            testResultsFormat: 'NUnit'
-            testResultsFiles: 'test/Mono.Linker.Tests/TestResults.xml'
+      - ${{ if eq(variables.officialBuild, 'false') }}:
+        - job: Linux_Mono
+          pool:
+            name: Hosted Ubuntu 1604
+          steps:
+          - checkout: self
+            submodules: true
+          - script: |
+              mkdir -p artifacts/log/$(_BuildConfig)
+              mono --version | tee artifacts/log/$(_BuildConfig)/mono-version.txt
+              make -C monobuild CONFIGURATION=$(_BuildConfig)
+            displayName: Build and test
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFormat: 'NUnit'
+              testResultsFiles: 'test/Mono.Linker.Tests/TestResults.xml'
 
-      - job: macOS
-        pool:
-          ${{ if eq(variables.officialBuild, 'false') }}:
-            name: Hosted MacOS
-          ${{ if eq(variables.officialBuild, 'true') }}:
-            name: Hosted Mac Internal
-        steps:
-        - checkout: self
-          submodules: true
-        - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
-                  --configuration $(_BuildConfig) $(_BuildArgs)
-                  --warnAsError false
-                  --nodeReuse false # https://github.com/Microsoft/vstest/issues/1503
-          env:
-            # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
-            MSBUILDENSURESTDOUTFORTASKPROCESSES: 1
-          displayName: Build illink.sln $(_BuildConfig)
+      - ${{ if eq(variables.officialBuild, 'false') }}:
+        - job: macOS
+          pool:
+              name: Hosted MacOS
+          steps:
+          - checkout: self
+            submodules: true
+          - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
+                    --configuration $(_BuildConfig) $(_BuildArgs)
+                    --warnAsError false
+                    --nodeReuse false # https://github.com/Microsoft/vstest/issues/1503
+            env:
+              # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
+              MSBUILDENSURESTDOUTFORTASKPROCESSES: 1
+            displayName: Build illink.sln $(_BuildConfig)
 
 # Post-Build Arcade logic
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+- ${{ if eq(variables.officialBuild, 'true') }}:
   - template: /eng/common/templates/post-build/post-build.yml
 
