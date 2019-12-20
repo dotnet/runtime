@@ -9,7 +9,6 @@
     <IsPackable>true</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>MSBuild tasks for running the IL Linker</Description>
-    <Authors>$(AssemblyName)</Authors>
     <!-- Don't include the build output. Instead, we want to include
          the TargetFramework-specific publish output. -->
     <IncludeBuildOutput>false</IncludeBuildOutput>
