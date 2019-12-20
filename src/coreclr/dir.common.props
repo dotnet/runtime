@@ -38,6 +38,7 @@
   <!-- Common properties -->
   <PropertyGroup>
     <RootRepoDir>$(MSBuildThisFileDirectory)..\..\</RootRepoDir>
+    <RootRepoDir>$([MSBuild]::NormalizePath('$(RootRepoDir)'))</RootRepoDir>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
 
     <BaseIntermediateOutputPath>$(RootRepoDir)artifacts\obj\coreclr\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
