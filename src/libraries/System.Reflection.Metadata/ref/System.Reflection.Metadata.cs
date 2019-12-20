@@ -3456,7 +3456,7 @@ namespace System.Reflection.PortableExecutable
         public System.Collections.Immutable.ImmutableArray<System.Reflection.PortableExecutable.DebugDirectoryEntry> ReadDebugDirectory() { throw null; }
         public System.Reflection.Metadata.MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(System.Reflection.PortableExecutable.DebugDirectoryEntry entry) { throw null; }
         public System.Reflection.PortableExecutable.PdbChecksumDebugDirectoryData ReadPdbChecksumDebugDirectoryData(System.Reflection.PortableExecutable.DebugDirectoryEntry entry) { throw null; }
-        public bool TryOpenAssociatedPortablePdb(string peImagePath, System.Func<string, System.IO.Stream> pdbFileStreamProvider, out System.Reflection.Metadata.MetadataReaderProvider? pdbReaderProvider, out string? pdbPath) { throw null; }
+        public bool TryOpenAssociatedPortablePdb(string peImagePath, System.Func<string, System.IO.Stream?> pdbFileStreamProvider, out System.Reflection.Metadata.MetadataReaderProvider? pdbReaderProvider, out string? pdbPath) { throw null; }
     }
     [System.FlagsAttribute]
     public enum PEStreamOptions

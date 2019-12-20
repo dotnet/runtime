@@ -698,7 +698,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="InvalidOperationException">The stream returned from <paramref name="pdbFileStreamProvider"/> doesn't support read and seek operations.</exception>
         /// <exception cref="BadImageFormatException">No matching PDB file is found due to an error: The PE image or the PDB is invalid.</exception>
         /// <exception cref="IOException">No matching PDB file is found due to an error: An IO error occurred while reading the PE image or the PDB.</exception>
-        public bool TryOpenAssociatedPortablePdb(string peImagePath, Func<string, Stream> pdbFileStreamProvider, out MetadataReaderProvider? pdbReaderProvider, out string? pdbPath)
+        public bool TryOpenAssociatedPortablePdb(string peImagePath, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? pdbReaderProvider, out string? pdbPath)
         {
             if (peImagePath == null)
             {
@@ -757,7 +757,7 @@ namespace System.Reflection.PortableExecutable
             return false;
         }
 
-        private bool TryOpenCodeViewPortablePdb(DebugDirectoryEntry codeViewEntry, string peImageDirectory, Func<string, Stream> pdbFileStreamProvider, out MetadataReaderProvider? provider, out string? pdbPath, ref Exception? errorToReport)
+        private bool TryOpenCodeViewPortablePdb(DebugDirectoryEntry codeViewEntry, string peImageDirectory, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? provider, out string? pdbPath, ref Exception? errorToReport)
         {
             pdbPath = null;
             provider = null;
@@ -792,7 +792,7 @@ namespace System.Reflection.PortableExecutable
             return false;
         }
 
-        private bool TryOpenPortablePdbFile(string path, BlobContentId id, Func<string, Stream> pdbFileStreamProvider, out MetadataReaderProvider? provider, ref Exception? errorToReport)
+        private bool TryOpenPortablePdbFile(string path, BlobContentId id, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? provider, ref Exception? errorToReport)
         {
             provider = null;
             MetadataReaderProvider? candidate = null;
