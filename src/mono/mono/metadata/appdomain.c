@@ -154,6 +154,7 @@ static MonoLoadFunc load_function = NULL;
 
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (assembly, "System.Reflection", "Assembly");
+static GENERATE_GET_CLASS_WITH_CACHE (app_context, "System", "AppContext");
 
 GENERATE_GET_CLASS_WITH_CACHE (appdomain, MONO_APPDOMAIN_CLASS_NAME_SPACE, MONO_APPDOMAIN_CLASS_NAME);
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_setup, MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE, MONO_APPDOMAIN_SETUP_CLASS_NAME);
@@ -2188,7 +2189,9 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	char *shadow_dir;
 	gint32 copy_error;
 
+#ifndef ENABLE_NETCORE
 	set_domain_search_path (domain);
+#endif
 
 	if (!mono_is_shadow_copy_enabled (domain, dir_name)) {
 		g_free (dir_name);
@@ -2408,6 +2411,27 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	return result;
 }
 
+static char *
+get_app_context_base_directory (MonoError *error)
+{
+	MONO_STATIC_POINTER_INIT (MonoMethod, get_basedir)
+
+		ERROR_DECL (local_error);
+		MonoClass *app_context = mono_class_get_app_context_class ();
+		g_assert (app_context);
+		get_basedir = mono_class_get_method_from_name_checked (app_context, "get_BaseDirectory", -1, 0, local_error);
+		mono_error_assert_ok (local_error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, get_basedir)
+
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoStringHandle result = MONO_HANDLE_CAST (MonoString, mono_runtime_try_invoke_handle (get_basedir, NULL_HANDLE, NULL, error));
+	char *base_dir = mono_string_handle_to_utf8 (result, error);
+
+	HANDLE_FUNCTION_RETURN_VAL (base_dir);
+}
+
 /*
  * Try loading the assembly from ApplicationBase and PrivateBinPath 
  * and then from assemblies_path if any.
@@ -2429,7 +2453,9 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 	g_assert (domain == mono_domain_get ());
 #endif
 
+#ifndef ENABLE_NETCORE
 	set_domain_search_path (domain);
+#endif
 
 	MonoAssemblyCandidatePredicate predicate = NULL;
 	void* predicate_ud = NULL;
@@ -2444,6 +2470,20 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 	req.request.predicate = predicate;
 	req.request.predicate_ud = predicate_ud;
 
+#ifdef ENABLE_NETCORE
+	if (!mono_runtime_get_no_exec ()) {
+		char *search_path [2];
+		search_path [1] = NULL;
+
+		char *base_dir = get_app_context_base_directory (error);
+		search_path [0] = base_dir;
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain %s (%p) ApplicationBase is %s\n", domain->friendly_name, domain, base_dir);
+
+		result = real_load (search_path, aname->culture, aname->name, &req);
+
+		g_free (base_dir);
+	}
+#else
 	if (domain->search_path && domain->search_path [0] != NULL) {
 		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY)) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain %s search path is:", domain->friendly_name);
@@ -2455,6 +2495,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 		}
 		result = real_load (domain->search_path, aname->culture, aname->name, &req);
 	}
+#endif
 
 	if (result == NULL && assemblies_path && assemblies_path [0] != NULL) {
 		result = real_load (assemblies_path, aname->culture, aname->name, &req);

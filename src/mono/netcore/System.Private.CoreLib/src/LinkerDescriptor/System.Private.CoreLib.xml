@@ -724,9 +724,11 @@
 		<type fullname="Mono.ValueTuple`5" preserve="fields"/>
 
 		<type fullname="System.AppContext">
-		  <!-- appdomain.c: mono_runtime_install_appctx_properties -->
-		  <method name="Setup"/>
-		  <method name="OnProcessExit"/>
+			<!-- appdomain.c: mono_runtime_install_appctx_properties -->
+			<method name="Setup"/>
+			<method name="OnProcessExit"/>
+			<!-- appdomain.c: get_app_context_base_directory -->
+			<method name="get_BaseDirectory"/>
 		</type>
 
 		<typename fullname="Mono.NullByRefReturnException">
