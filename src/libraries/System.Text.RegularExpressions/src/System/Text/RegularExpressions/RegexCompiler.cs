@@ -444,11 +444,11 @@ namespace System.Text.RegularExpressions
         {
             Ldloc(_runtextLocal!);
             Ldloc(_runtextposLocal!);
-            Dup();
+            Callvirt(s_stringGetCharsMethod);
+            Ldloc(_runtextposLocal!);
             Ldc(1);
             Add();
             Stloc(_runtextposLocal!);
-            Callvirt(s_stringGetCharsMethod);
         }
 
         /// <summary>Loads the char to the left of the current position.</summary>
@@ -539,11 +539,11 @@ namespace System.Text.RegularExpressions
         {
             Ldloc(_runtrackLocal!);
             Ldloc(_runtrackposLocal!);
-            Dup();
+            LdelemI4();
+            Ldloc(_runtrackposLocal!);
             Ldc(1);
             Add();
             Stloc(_runtrackposLocal!);
-            LdelemI4();
         }
 
         /// <summary>Retrieves the top entry on the tracking stack without popping.</summary>
@@ -598,11 +598,11 @@ namespace System.Text.RegularExpressions
         {
             Ldloc(_runstackLocal!);
             Ldloc(_runstackposLocal!);
-            Dup();
+            LdelemI4();
+            Ldloc(_runstackposLocal!);
             Ldc(1);
             Add();
             Stloc(_runstackposLocal!);
-            LdelemI4();
         }
 
         /// <summary>Pops 1 element off the grouping stack and discards it.</summary>
