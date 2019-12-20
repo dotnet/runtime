@@ -43,9 +43,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             dotnet.Exec(appDll)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
-                .Should().Pass()
+                .Should()
+                .Pass()
                 .And
-                .HaveStdErrContaining($"Property RESOLVED_FRAMEWORKS = Framework:Microsoft.NETCore.App,Requested:{MNAversion},Resolved:{MNAversion}\r\n");
+                .HaveStdErrContaining($"Property RESOLVED_FRAMEWORKS = Framework:Microsoft.NETCore.App,Requested:{"2.1.0"},Resolved:{MNAversion}\r\n");
         }
 
         public class SharedTestState : IDisposable
@@ -55,15 +56,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public TestProjectFixture StandaloneApp { get; }
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
+                RepoDirectories = new RepoDirectoriesProvider(microsoftNETCoreAppVersion: "2.1.0");
                 var rid = RepoDirectories.TargetRID;
                 StandaloneApp = new TestProjectFixture("StandaloneApp", RepoDirectories)
-                    .EnsureRestoredForRid(rid, RepoDirectories.CorehostPackages)
-                    .BuildProject(runtime: rid);
+                    .BuildProject(runtime: rid, restore: true);
 
-                PortableApp = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
-                    .BuildProject();
+                PortableApp = new TestProjectFixture("PortableApp21", RepoDirectories, framework: "netcoreapp2.1", assemblyName: "PortableApp")
+                    .BuildProject(restore: true);
             }
 
             public void Dispose()

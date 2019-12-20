@@ -5,6 +5,6 @@
     <UseMicrosoftNETCoreAppInternalWorkaround>false</UseMicrosoftNETCoreAppInternalWorkaround>
   </PropertyGroup>
 
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
 </Project>

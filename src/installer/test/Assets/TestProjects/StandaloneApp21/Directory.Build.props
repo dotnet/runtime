@@ -1,6 +1,6 @@
 <Project>
 
-  <!-- This project isn't 3.0, don't use workaround. -->
+  <!-- This project targets a released verison of .net core, don't use workaround. -->
   <PropertyGroup>
     <UseMicrosoftNETCoreAppInternalWorkaround>false</UseMicrosoftNETCoreAppInternalWorkaround>
   </PropertyGroup>

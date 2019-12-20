@@ -116,29 +116,36 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
     pal::string_t resolved_frameworks;
     pal::string_t app_context_deps_str;
-    fx_definition_vector_t::iterator fx_curr = fx_begin;
-    while (fx_curr != fx_end)
+    bool is_app = host_mode != host_mode_t::libhost;
+
+    for (const auto& fx : fx_definitions)
     {
-        if (fx_curr != fx_begin)
+        if (!app_context_deps_str.empty())
         {
             app_context_deps_str += _X(';');
-
-            if (!resolved_frameworks.empty())
-            {
-                resolved_frameworks += _X(';');
-            }
-
-            // The first framework entry is skipped, because it corresponds to the app itself.
-            resolved_frameworks += _X("Framework:");
-            resolved_frameworks += (*fx_curr)->get_name();
-            resolved_frameworks += _X(",Requested:");
-            resolved_frameworks += (*fx_curr)->get_requested_version();
-            resolved_frameworks += _X(",Resolved:");
-            resolved_frameworks += (*fx_curr)->get_found_version();
         }
 
-        app_context_deps_str += (*fx_curr)->get_deps_file();
-        ++fx_curr;
+        app_context_deps_str += fx->get_deps_file();
+
+        if (!resolved_frameworks.empty())
+        {
+            resolved_frameworks += _X(';');
+        }
+
+        if (is_app)
+        {
+            // The first framework entry is skipped, because it corresponds to the app itself.
+            is_app = false;
+        }
+        else
+        {
+            resolved_frameworks += _X("Framework:");
+            resolved_frameworks += fx->get_name();
+            resolved_frameworks += _X(",Requested:");
+            resolved_frameworks += fx->get_requested_version();
+            resolved_frameworks += _X(",Resolved:");
+            resolved_frameworks += fx->get_found_version();
+        }
     }
 
     pal::string_t clr_library_version;
