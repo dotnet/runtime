@@ -16,7 +16,7 @@ variables:
   value: .NETCore
 - ${{ if eq(variables.officialBuild, 'true') }}:
   - name: _BuildArgs
-    value: ${{ format('{0} /p:OfficialBuildId=$(Build.BuildNumber)', variables['_BuildArgs']) }}
+    value: ${{ format('{0} /p:OfficialBuildId=$(Build.BuildNumber) /p:Test=false', variables['_BuildArgs']) }}
   # Provide HelixApiAccessToken for telemetry
   - group: DotNet-HelixApi-Access
 
