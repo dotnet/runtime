@@ -76,7 +76,7 @@ if ($vs) {
   $archTestHost = if ($arch) { $arch } else { "x64" }
 
   # This tells .NET Core to use the same dotnet.exe that build scripts use
-  $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp-Windows_NT-$configuration-$archTestHost";
+  $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-$configuration-$archTestHost";
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
   $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=InitializeDotNetCli -install:$false
