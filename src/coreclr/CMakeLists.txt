@@ -112,7 +112,7 @@ endif(WIN32)
 # Configure compiler settings for environment
 #----------------------------------------------------
 include(configurecompiler.cmake)
-include(../../eng/common/cross/configuretools.cmake)
+include(${CLR_COMMON_CROSS_DIR}/configuretools.cmake)
 
 #----------------------------------------------------
 # Cross target Component build specific configuration

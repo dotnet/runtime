@@ -10,7 +10,7 @@ endif()
 
 # Include global configure settings
 include(${CMAKE_CURRENT_SOURCE_DIR}/../configurecompiler.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../../eng/common/cross/configuretools.cmake)
+include(${CLR_COMMON_CROSS_DIR}/configuretools.cmake)
 # Compile options
 
 if (WIN32)

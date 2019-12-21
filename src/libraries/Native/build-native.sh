@@ -92,35 +92,6 @@ check_native_prereqs()
 
     # Check presence of CMake on the path
     hash cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
-
-    if [ -n "$CLR_CC" ]; then
-        if [ -f "$CLR_CC" ]; then return 0; fi
-        echo "CLR_CC is set but path '$CLR_CC' does not exist"
-        exit 1
-    fi
-
-    if [ "$__Compiler" = "clang" ]; then
-        # Minimum required version of clang is version 3.9 for arm/armel cross build
-        if [ "$__CrossBuild" = 1 ] && { [ "$__BuildArch" = "arm" ] || [ "$__BuildArch" = "armel" ]; }; then
-            if [ "$__CompilerMajorVersion" -lt 3 ] || { [ "$__CompilerMajorVersion" -eq 3 ] && [ "$__CompilerMinorVersion" -lt 9 ]; }; then
-                echo "Please install clang3.9 or latest for arm/armel cross build"; exit 1;
-            fi
-        fi
-    else
-        # Minimum required version of gcc is version 5.0 for arm/armel cross build
-        if [ "$__CrossBuild" = 1 ] && { [ "$__BuildArch" = "arm" ] || [ "$__BuildArch" = "armel" ]; }; then
-            if [ "$__CompilerMajorVersion" -lt 5 ]; then
-                echo "Please install gcc version 5 or latest for arm/armel cross build"; exit 1;
-            fi
-        fi
-    fi
-
-    __CombinedDottedVersion="$__CompilerMajorVersion"
-    if [ -n "$__CompilerMinorVersion" ]; then
-        __CombinedDottedVersion="$__CombinedDottedVersion.$__CompilerMinorVersion"
-    fi
-
-    hash "$__Compiler-$__CombinedDottedVersion" 2>/dev/null ||  hash "$__Compiler$__CompilerMajorVersion$__CompilerMinorVersion" 2>/dev/null || hash "$__Compiler" 2>/dev/null || { echo >&2 "Please install $__Compiler-$__CompilerMajorVersion.$__CompilerMinorVersion before running this script"; exit 1; }
 }
 
 prepare_native_build()
@@ -157,7 +128,10 @@ build_native()
         source $EMSDK_PATH/emsdk_env.sh
     fi
 
-    nextCommand="\"$__rootRepo/eng/common/cross/gen-buildsys.sh\" \"$__nativeroot\" \"$__nativeroot\" \"$__IntermediatesDir\" $__BuildArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\"  $__BuildType $__CMakeArgs $__CMakeExtraArgs"
+    # Regenerate the CMake solution
+    commonCrossDir="$__rootRepo/eng/common/cross"
+    __CMakeExtraArgs="$__CMakeExtraArgs -DCLR_COMMON_CROSS_DIR=\"$commonCrossDir\""
+    nextCommand="\"$commonCrossDir/gen-buildsys.sh\" \"$__nativeroot\" \"$__nativeroot\" \"$__IntermediatesDir\" $__BuildArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\"  $__BuildType $__CMakeArgs $__CMakeExtraArgs"
     echo "Invoking $nextCommand"
     eval "$nextCommand"
 
@@ -197,8 +171,8 @@ __CrossBuild=0
 __ServerGC=0
 __VerboseBuild=false
 __Compiler=clang
-__CompilerMajorVersion=0
-__CompilerMinorVersion=0
+__CompilerMajorVersion=
+__CompilerMinorVersion=
 __StaticLibLink=0
 __PortableBuild=0
 
@@ -302,7 +276,7 @@ while :; do
         stripsymbols|-stripsymbols)
             __CMakeExtraArgs="$__CMakeExtraArgs -DSTRIP_SYMBOLS=true"
             ;;
-        --numproc|-numproc|numproc)
+        numproc|-numproc|--numproc)
             shift
             __NumProc=$1
             ;;
@@ -312,71 +286,30 @@ while :; do
         staticliblink|-staticliblink)
             __StaticLibLink=1
             ;;
-        -portable|-portable)
+        portable|-portable)
             # Portable native components are only supported on Linux
             if [ "$__HostOS" == "Linux" ]; then
                 __PortableBuild=1
             fi
             ;;
-        --clang*)
+        clang*|-clang*)
+                __Compiler=clang
                 # clangx.y or clang-x.y
-                v=`echo $lowerI | tr -d '[:alpha:]-='`
-                __CompilerMajorVersion=`echo $v | cut -d '.' -f1`
-                __CompilerMinorVersion=`echo $v | cut -d '.' -f2`
+                version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"
+                parts=(${version//./ })
+                __CompilerMajorVersion="${parts[0]}"
+                __CompilerMinorVersion="${parts[1]}"
+                if [ -z "$__CompilerMinorVersion" ] && [ "$__CompilerMajorVersion" -le 6 ]; then
+                    __CompilerMinorVersion=0;
+                fi
             ;;
-        clang3.5|-clang3.5)
-            __CompilerMajorVersion=3
-            __CompilerMinorVersion=5
-            ;;
-        clang3.6|-clang3.6)
-            __CompilerMajorVersion=3
-            __CompilerMinorVersion=6
-            ;;
-        clang3.7|-clang3.7)
-            __CompilerMajorVersion=3
-            __CompilerMinorVersion=7
-            ;;
-        clang3.8|-clang3.8)
-            __CompilerMajorVersion=3
-            __CompilerMinorVersion=8
-            ;;
-        clang3.9|-clang3.9)
-            __CompilerMajorVersion=3
-            __CompilerMinorVersion=9
-            ;;
-        clang4.0|-clang4.0)
-            __CompilerMajorVersion=4
-            __CompilerMinorVersion=0
-            ;;
-        gcc5|-gcc5)
-            __CompilerMajorVersion=5
-            __CompilerMinorVersion=
-            __Compiler=gcc
-            ;;
-        gcc6|-gcc6)
-            __CompilerMajorVersion=6
-            __CompilerMinorVersion=
-            __Compiler=gcc
-            ;;
-        gcc7|-gcc7)
-            __CompilerMajorVersion=7
-            __CompilerMinorVersion=
-            __Compiler=gcc
-            ;;
-        gcc8|-gcc8)
-            __CompilerMajorVersion=8
-            __CompilerMinorVersion=
-            __Compiler=gcc
-            ;;
-        gcc9|-gcc9)
-            __CompilerMajorVersion=9
-            __CompilerMinorVersion=
-            __Compiler=gcc
-            ;;
-        gcc|-gcc)
-            __CompilerMajorVersion=
-            __CompilerMinorVersion=
-            __Compiler=gcc
+        gcc*|-gcc*)
+                __Compiler=gcc
+                # gccx.y or gcc-x.y
+                version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"
+                parts=(${version//./ })
+                __CompilerMajorVersion="${parts[0]}"
+                __CompilerMinorVersion="${parts[1]}"
             ;;
         cross|-cross)
             __CrossBuild=1
@@ -433,12 +366,6 @@ fi
 # set default OSX deployment target
 if [[ $__BuildOS == OSX ]]; then
     __CMakeExtraArgs="$__CMakeExtraArgs -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
-fi
-
-# Set the default clang version if not already set
-if [[ $__CompilerMajorVersion == 0 && $__CompilerMinorVersion == 0 ]]; then
-    __CompilerMajorVersion=9
-    __CompilerMinorVersion=
 fi
 
 # Set the remaining variables based upon the determined build configuration

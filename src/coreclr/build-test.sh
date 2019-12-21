@@ -497,7 +497,9 @@ build_native_projects()
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
 
-        nextCommand="\"$__RepoRootDir/eng/common/cross/gen-buildsys.sh\" \"$__TestDir\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType $generator $extraCmakeArguments $__cmakeargs"
+        commonCrossDir="$__RepoRootDir/eng/common/cross"
+        __cmakeargs="$__cmakeargs -DCLR_COMMON_CROSS_DIR=\"$commonCrossDir\""
+        nextCommand="\"$commonCrossDir/gen-buildsys.sh\" \"$__TestDir\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType $generator $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -606,8 +608,8 @@ export __ProjectDir="$__ProjectRoot"
 __BuildTestWrappers=1
 __BuildTestWrappersOnly=
 __Compiler=clang
-__CompilerMajorVersion=0
-__CompilerMinorVersion=0
+__CompilerMajorVersion=
+__CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
