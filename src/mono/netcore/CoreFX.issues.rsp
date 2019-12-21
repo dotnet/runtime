@@ -477,8 +477,6 @@
 # Object reference not set to an instance of an object error
 # https://github.com/mono/mono/issues/15115
 -nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateAgainstBlobs
--nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.RoundtripManyObjectsInOneStream
--nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateBasicObjectsRoundtrip
 
 ####################################################################
 ##  System.Runtime.Tests
