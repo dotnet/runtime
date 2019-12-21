@@ -1,6 +1,5 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
-  [switch][Alias('h')]$help,
   [switch][Alias('b')]$build,
   [switch][Alias('t')]$test,
   [switch]$buildtests,
@@ -55,11 +54,6 @@ function Get-Help() {
 
 # Exit if script has been dot-sourced
 if ($MyInvocation.InvocationName -eq ".") {
-  exit 0
-}
-
-if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $properties.Contains('/?')))) {
-  Get-Help
   exit 0
 }
 
