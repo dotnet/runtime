@@ -919,10 +919,6 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
 
     _ASSERTE(ThreadAdjustmentLock.IsHeld());
 
-    DWORD currentTicks = GetTickCount();
-    LONG totalNumCompletions = (LONG)Thread::GetTotalWorkerThreadPoolCompletionCount();
-    LONG numCompletions = totalNumCompletions - VolatileLoad(&PriorCompletedWorkRequests);
-
     LARGE_INTEGER startTime = CurrentSampleStartTime;
     LARGE_INTEGER endTime;
     QueryPerformanceCounter(&endTime);
@@ -941,6 +937,9 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
     //
     if (elapsed*1000.0 >= (ThreadAdjustmentInterval/2))
     {
+        DWORD currentTicks = GetTickCount();
+        LONG totalNumCompletions = (LONG)Thread::GetTotalWorkerThreadPoolCompletionCount();
+        LONG numCompletions = totalNumCompletions - VolatileLoad(&PriorCompletedWorkRequests);
         ThreadCounter::Counts currentCounts = WorkerCounter.GetCleanCounts();
 
         int newMax = HillClimbingInstance.Update(
