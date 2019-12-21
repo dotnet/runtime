@@ -409,7 +409,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Throws a null reference exception if the array field is null.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ThrowNullRefIfNotInitialized()
         {
             // Force NullReferenceException if array is null by touching its Length.
