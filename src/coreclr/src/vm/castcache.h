@@ -262,20 +262,20 @@ private:
         // then we use fibonacci hashing to reduce the value to desired size.
 
 #if BIT64
-        TADDR hash = (((ULONGLONG)source << 32) | ((ULONGLONG)source >> 32)) ^ target;
+        UINT64 hash = (((UINT64)source << 32) | ((UINT64)source >> 32)) ^ (UINT64)target;
         return (DWORD)((hash * 11400714819323198485llu) >> HashShift(table));
 #else
-        TADDR hash = _rotl(source, 16) ^ target;
+        UINT32 hash = (((UINT32)source << 16) | ((UINT32)source >> 16)) ^ (UINT32)target;
         return (DWORD)((hash * 2654435769ul) >> HashShift(table));
 #endif
     }
 
-    FORCEINLINE static byte* AuxData(BASEARRAYREF table)
+    FORCEINLINE static DWORD* AuxData(BASEARRAYREF table)
     {
         LIMITED_METHOD_CONTRACT;
 
         // element 0 is used for embedded aux data
-        return (byte*)OBJECTREFToObject(table) + ARRAYBASE_SIZE;
+        return (DWORD*)((BYTE*)OBJECTREFToObject(table) + ARRAYBASE_SIZE);
     }
 
     FORCEINLINE static CastCacheEntry* Elements(BASEARRAYREF table)
@@ -290,19 +290,19 @@ private:
     FORCEINLINE static DWORD& TableMask(BASEARRAYREF table)
     {
         LIMITED_METHOD_CONTRACT;
-        return *(DWORD*)AuxData(table);
+        return *AuxData(table);
     }
 
-    FORCEINLINE static BYTE& HashShift(BASEARRAYREF table)
+    FORCEINLINE static DWORD& HashShift(BASEARRAYREF table)
     {
         LIMITED_METHOD_CONTRACT;
-        return *((BYTE*)AuxData(table) + sizeof(DWORD));
+        return *(AuxData(table) + 1);
     }
 
-    FORCEINLINE static BYTE& VictimCounter(BASEARRAYREF table)
+    FORCEINLINE static DWORD& VictimCounter(BASEARRAYREF table)
     {
         LIMITED_METHOD_CONTRACT;
-        return *((BYTE*)AuxData(table) + sizeof(DWORD) + 1);
+        return *(AuxData(table) + 2);
     }
 
     FORCEINLINE static DWORD CacheElementCount(BASEARRAYREF table)
