@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.Collections.Immutable
@@ -283,6 +284,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <returns>An enumerator.</returns>
         [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator()
         {
             var self = this;
@@ -407,6 +409,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Throws a null reference exception if the array field is null.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ThrowNullRefIfNotInitialized()
         {
             // Force NullReferenceException if array is null by touching its Length.
