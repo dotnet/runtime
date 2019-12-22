@@ -33,8 +33,6 @@
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="ProcessStartInfoTests.netcoreapp.cs" />
-    <Compile Include="ProcessStreamReadTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="ProcessTests.Windows.cs" />
