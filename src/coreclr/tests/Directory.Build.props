@@ -14,17 +14,20 @@
 
   <!-- Common repo directories -->
   <PropertyGroup>
-    <TestProjectDir>$(MSBuildThisFileDirectory)</TestProjectDir>
-    <TestSourceDir>$(MSBuildThisFileDirectory)src\</TestSourceDir>
+    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
   </PropertyGroup>
 
   <!-- Common properties -->
   <PropertyGroup>
-    <RootBinDir>$(MSBuildThisFileDirectory)..\..\..\artifacts\</RootBinDir>
-    <BinDir>$(RootBinDir)bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
+    <RootBinDir>$(__RootBinDir)\</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)..\..\..\artifacts\</RootBinDir>
+
+    <BinDir>$(__BinDir)\</BinDir>
+    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
 
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
-    <TestWorkingDir>$(RootBinDir)tests\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
+    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
 
     <AltJitArch>$(__AltJitArch)</AltJitArch>
   </PropertyGroup>
