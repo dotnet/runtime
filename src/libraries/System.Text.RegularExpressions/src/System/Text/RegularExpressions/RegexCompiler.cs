@@ -26,7 +26,8 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
         private static readonly FieldInfo s_runtrackcountField = RegexRunnerField("runtrackcount");
 
-        private static readonly MethodInfo s_ensureStorageMethod = RegexRunnerMethod("EnsureStorage");
+        private static readonly MethodInfo s_doubleStackMethod = RegexRunnerMethod("DoubleStack");
+        private static readonly MethodInfo s_doubleTrackMethod = RegexRunnerMethod("DoubleTrack");
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
         private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
         private static readonly MethodInfo s_uncaptureMethod = RegexRunnerMethod("Uncapture");
@@ -290,6 +291,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Sub) or _ilg.Emit(OpCodes.Add).</summary>
         private void Sub(bool negate) => _ilg!.Emit(negate ? OpCodes.Add : OpCodes.Sub);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Mul).</summary>
+        private void Mul() => _ilg!.Emit(OpCodes.Mul);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.And).</summary>
         private void And() => _ilg!.Emit(OpCodes.And);
@@ -754,27 +758,64 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void GenerateMiddleSection()
         {
-            // Backtrack switch
+            LocalBuilder limitLocal = _temp1Local!;
+            Label afterDoubleStack = DefineLabel();
+            Label afterDoubleTrack = DefineLabel();
+
+            // Backtrack:
             MarkLabel(_backtrack);
 
-            // first call EnsureStorage
-            Mvlocfld(_runtrackposLocal!, s_runtrackposField);
+            // (Equivalent of EnsureStorage, but written to avoid unnecessary local spilling.)
+
+            // int limitLocal = runtrackcount * 4;
+            Ldthisfld(s_runtrackcountField);
+            Ldc(4);
+            Mul();
+            Stloc(limitLocal);
+
+            // if (runstackpos < limit)
+            // {
+            //     this.runstackpos = runstackpos;
+            //     DoubleStack(); // might change runstackpos and runstack
+            //     runstackpos = this.runstackpos;
+            //     runstack = this.runstack;
+            // }
+            Ldloc(_runstackposLocal!);
+            Ldloc(limitLocal);
+            Bge(afterDoubleStack);
             Mvlocfld(_runstackposLocal!, s_runstackposField);
             Ldthis();
-            Callvirt(s_ensureStorageMethod);
-            Mvfldloc(s_runtrackposField, _runtrackposLocal!);
+            Callvirt(s_doubleStackMethod);
             Mvfldloc(s_runstackposField, _runstackposLocal!);
-            Mvfldloc(s_runtrackField, _runtrackLocal!);
             Mvfldloc(s_runstackField, _runstackLocal!);
+            MarkLabel(afterDoubleStack);
 
+            // if (runtrackpos < limit)
+            // {
+            //     this.runtrackpos = runtrackpos;
+            //     DoubleTrack(); // might change runtrackpos and runtrack
+            //     runtrackpos = this.runtrackpos;
+            //     runtrack = this.runtrack;
+            // }
+            Ldloc(_runtrackposLocal!);
+            Ldloc(limitLocal);
+            Bge(afterDoubleTrack);
+            Mvlocfld(_runtrackposLocal!, s_runtrackposField);
+            Ldthis();
+            Callvirt(s_doubleTrackMethod);
+            Mvfldloc(s_runtrackposField, _runtrackposLocal!);
+            Mvfldloc(s_runtrackField, _runtrackLocal!);
+            MarkLabel(afterDoubleTrack);
+
+            // runtrack[runtrackpos++]
             PopTrack();
 
+            // Backtracking jump table
             var table = new Label[_notecount];
             for (int i = 0; i < _notecount; i++)
             {
                 table[i] = _notes![i]._label;
             }
-
             Switch(table);
         }
 
@@ -1446,7 +1487,6 @@ namespace System.Text.RegularExpressions
             Ldstr(str);
             Call(s_debugWriteLine!);
         }
-
 #endif
 
         /// <summary>
