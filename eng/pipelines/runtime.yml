@@ -122,7 +122,7 @@ jobs:
         liveCoreClrBuildConfig: ${{ variables.coreClrBuildConfig }}
         liveLibrariesBuildConfig: ${{ variables.librariesBuildConfig }}
 
-    - ${{ if eq(variables.isOfficialBuild, true) }}:
+    - ${{ if eq(variables.isOfficialBuild, false) }}:
       #
       # Test builds using live libraries build
       #
