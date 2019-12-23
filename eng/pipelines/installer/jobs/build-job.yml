@@ -36,7 +36,7 @@ parameters:
 
 jobs:
 - job: ${{ format('installer_{0}_{1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
-  displayName: ${{ format('Installer Build and Test {0} {1}', coalesce(parameters.name, parameters.platform, parameters.buildConfig)) }}
+  displayName: ${{ format('Installer Build and Test {0} {1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
   condition: and(succeeded(), ${{ parameters.condition }})
   pool: ${{ parameters.pool }}
