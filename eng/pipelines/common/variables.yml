@@ -1,3 +1,19 @@
 variables:
 - name: isOfficialBuild
-  value: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+  value: false
+
+# Default CI configurations.
+- name: coreClrBuildConfig
+  value: checked
+- name: librariesBuildConfig
+  value: Release
+- name: installerBuildConfig
+  value: Release
+
+# Official build overrides.
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
+  - name: isOfficialBuild
+    value: true
+
+  - name: coreClrBuildConfig
+    value: release

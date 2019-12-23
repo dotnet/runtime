@@ -19,6 +19,19 @@ pr:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
+variables:
+- template: /eng/pipelines/common/variables.yml
+
+# TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
+- name: TeamName
+  value: dotnet-core-acquisition
+
+# Set the target blob feed for package publish during official and validation builds.
+- name: _DotNetArtifactsCategory
+  value: .NETCore
+- name: _DotNetValidationArtifactsCategory
+  value: .NETCoreValidation
+
 jobs:
 #
 # Checkout repository
@@ -70,6 +83,10 @@ jobs:
     - OSX_x64
     - Linux_x64
     - Linux_arm
+    - ${{ if eq(variables.isOfficialBuild, true) }}:
+      - Linux_arm64
+      - Linux_musl_x64
+      - Linux_musl_arm64
     - Windows_NT_x86
     - Windows_NT_x64
     - Windows_NT_arm
@@ -80,70 +97,78 @@ jobs:
     # Build CoreCLR
     #
     - jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-      buildConfig: checked
+      buildConfig: ${{ variables.coreClrBuildConfig }}
       jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
         testGroup: innerloop
 
     #
     # Build libraries using live CoreLib from CoreCLR
     #
     - jobTemplate: /eng/pipelines/libraries/build-job.yml
-      buildConfig: Release
+      buildConfig: ${{ variables.librariesBuildConfig }}
       jobParameters:
-        isOfficialBuild: false
-        liveCoreClrBuildConfig: checked
-
-    #
-    # Test builds using live libraries build
-    #
-    - jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
-      buildConfig: checked
-      jobParameters:
-        testGroup: innerloop
-        liveLibrariesBuildConfig: Release
-
-    #
-    # CoreCLR Test executions
-    #
-    - jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
-      buildConfig: checked
-      helixQueueGroup: pr
-      helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-      jobParameters:
-        testGroup: innerloop
-        liveLibrariesBuildConfig: Release
-        condition: false
-
-    #
-    # Libraries Test Build
-    #
-    - jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-      buildConfig: Release
-      jobParameters:
-        isOfficialBuild: false
-        testScope: innerloop
-        liveCoreClrBuildConfig: checked
-
-    #
-    # Libraries Test Execution
-    #
-    - jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-      buildConfig: Release
-      helixQueueGroup: pr
-      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-      jobParameters:
-        isOfficialBuild: false
-        isFullMatrix: false
-        framework: netcoreapp
-        testScope: innerloop
-        liveCoreClrBuildConfig: checked
-        dependsOnBuildConfiguration: Release
-        condition: false
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        liveCoreClrBuildConfig: ${{ variables.coreClrBuildConfig }}
 
     #
     # Installer Build and Test
     #
     - jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+      buildConfig: ${{ variables.installerBuildConfig }}
       jobParameters:
-        liveCoreClrBuildConfig: checked
-        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: ${{ variables.isOfficialBuild }}
+        liveCoreClrBuildConfig: ${{ variables.coreClrBuildConfig }}
+        liveLibrariesBuildConfig: ${{ variables.librariesBuildConfig }}
+
+    - ${{ if eq(variables.isOfficialBuild, true) }}:
+      #
+      # Test builds using live libraries build
+      #
+      - jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+        buildConfig: ${{ variables.coreClrBuildConfig }}
+        jobParameters:
+          testGroup: innerloop
+          liveLibrariesBuildConfig: ${{ variables.librariesBuildConfig }}
+
+      #
+      # CoreCLR Test executions
+      #
+      - jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+        buildConfig: ${{ variables.coreClrBuildConfig }}
+        helixQueueGroup: pr
+        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+        jobParameters:
+          testGroup: innerloop
+          liveLibrariesBuildConfig: ${{ variables.librariesBuildConfig }}
+          condition: false
+
+      #
+      # Libraries Test Build
+      #
+      - jobTemplate: /eng/pipelines/libraries/build-test-job.yml
+        buildConfig: ${{ variables.librariesBuildConfig }}
+        jobParameters:
+          isOfficialBuild: false
+          testScope: innerloop
+          liveCoreClrBuildConfig: ${{ variables.coreClrBuildConfig }}
+
+      #
+      # Libraries Test Execution
+      #
+      - jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+        buildConfig: ${{ variables.librariesBuildConfig }}
+        helixQueueGroup: pr
+        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+        jobParameters:
+          isOfficialBuild: false
+          isFullMatrix: false
+          framework: netcoreapp
+          testScope: innerloop
+          liveCoreClrBuildConfig: ${{ variables.coreClrBuildConfig }}
+          dependsOnBuildConfiguration: ${{ variables.librariesBuildConfig }}
+          condition: false
+
+- ${{ if eq(variables.isOfficialBuild, true) }}:
+  - template: /eng/pipelines/official/stages/publish.yml
