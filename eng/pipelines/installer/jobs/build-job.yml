@@ -11,7 +11,6 @@ parameters:
   buildSteps: []
   dependsOn: []
   variables: []
-  buildVariables: {}
   name: ''
   displayName: ''
   pool: ''
@@ -51,6 +50,8 @@ jobs:
       clean: all
 
   variables:
+  - ${{ each variable in parameters.variables }}:
+    - ${{ variable }}
 
   - name: OfficialBuildArg
     value: ''
