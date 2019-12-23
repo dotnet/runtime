@@ -33,7 +33,5 @@ jobs:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     # Build
-    - script: |
-        $(setScriptToEchoAndFailOnNonZero)
-        $(Build.SourcesDirectory)$(dir)build$(scriptExt) -c ${{ parameters.buildConfig }}
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -c ${{ parameters.buildConfig }} -arch ${{ parameters.archType }}
       displayName: Build product
