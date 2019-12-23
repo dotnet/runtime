@@ -603,8 +603,20 @@
 #define SET_UNALIGNED_VALPTR(p,x) SET_UNALIGNED_VAL32(p,x)
 #endif
 
+// Target platform-specific library naming
+//
+#ifndef TARGET_UNIX
 #define MAKEDLLNAME_W(name) name W(".dll")
 #define MAKEDLLNAME_A(name) name  ".dll"
+#else
+#ifdef __APPLE__
+#define MAKEDLLNAME_W(name) W("lib") name W(".dylib")
+#define MAKEDLLNAME_A(name)  "lib" name  ".dylib"
+#else
+#define MAKEDLLNAME_W(name) W("lib") name W(".so")
+#define MAKEDLLNAME_A(name)  "lib" name  ".so"
+#endif
+#endif // TARGET_UNIX
 
 #ifdef UNICODE
 #define MAKEDLLNAME(x) MAKEDLLNAME_W(x)
