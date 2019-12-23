@@ -247,11 +247,11 @@ typedef guint32 gunichar;
 #define ABS(a)         ((a) > 0 ? (a) : -(a))
 #endif
 
-#define ALIGN_TO(val,align) ((((gssize)val) + ((align) - 1)) & ~((align) - 1))
+#define ALIGN_TO(val,align) ((((gssize)val) + (gssize)((align) - 1)) & (~((gssize)(align - 1))))
 
-#define ALIGN_DOWN_TO(val,align) (((gssize)val) & ~((align) - 1))
+#define ALIGN_DOWN_TO(val,align) (((gssize)val) & (~((gssize)(align - 1))))
 
-#define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
+#define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (gssize)(align - 1)) & (~((gssize)(align - 1))))
 
 #define G_STRUCT_OFFSET(p_type,field) offsetof(p_type,field)
 
