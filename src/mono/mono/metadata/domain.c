@@ -590,20 +590,27 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		mono_fixup_exe_image (exe_image);
 #endif
 	} else if (runtime_version != NULL) {
-		runtimes = g_slist_prepend (runtimes, (gpointer)get_runtime_by_version (runtime_version));
+		const MonoRuntimeInfo* rt = get_runtime_by_version (runtime_version);
+		if (rt != NULL)
+			runtimes = g_slist_prepend (runtimes, (gpointer)rt);
 	}
 
 	if (runtimes == NULL) {
 		const MonoRuntimeInfo *default_runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+		g_assert (default_runtime);
 		runtimes = g_slist_prepend (runtimes, (gpointer)default_runtime);
-		g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
+		if (runtime_version != NULL)
+			g_print ("WARNING: The requested runtime version \"%s\" is unavailable.\n", runtime_version);
+		else
+			g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
 		g_print ("Using default runtime: %s\n", default_runtime->runtime_version); 
 	}
 
 	/* The selected runtime will be the first one for which there is a mscrolib.dll */
 	GSList *tmp = runtimes;
 	while (tmp != NULL) {
-		current_runtime = (MonoRuntimeInfo*)runtimes->data;
+		current_runtime = (MonoRuntimeInfo*)tmp->data;
+		g_assert (current_runtime);
 		ass = mono_assembly_load_corlib (current_runtime, &status);
 		if (status != MONO_IMAGE_OK && status != MONO_IMAGE_ERROR_ERRNO)
 			break;
