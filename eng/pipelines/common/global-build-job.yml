@@ -18,6 +18,8 @@ jobs:
     container: ${{ parameters.container }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     variables: ${{ parameters.variables }}
+    workspace:
+      clean: all
 
     steps:
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
