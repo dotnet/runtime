@@ -36,7 +36,7 @@ parameters:
   liveLibrariesBuildConfig: ''
 
 jobs:
-- job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
+- job: ${{ format('installer_{0}_{1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
   displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
 
   condition: and(succeeded(), ${{ parameters.condition }})
