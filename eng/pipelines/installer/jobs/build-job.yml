@@ -175,7 +175,7 @@ jobs:
 
     - ${{ if eq(parameters.osSubgroup, '_musl') }}:
       - name: OutputRidArg
-        value: /p:OutputRid=${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}
+        value: /p:OutputRid=${{ parameters.osGroup }}-musl-${{ parameters.archType }}
 
     - name: BuildArguments
       value: >-
