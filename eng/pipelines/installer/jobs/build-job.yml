@@ -170,7 +170,7 @@ jobs:
         $(OfficialBuildArg)
 
     - name: _PortableBuild
-      value: ${{ and(eq(parameters.archType, 'x64'), eq(parameters.osSubgroup, '')) }}
+      value: ${{ eq(parameters.osSubgroup, '') }}
 
     - name: _DisableCrossgen
       value: false
