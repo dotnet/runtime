@@ -8940,6 +8940,30 @@ calli_end:
 				}
 			}
 
+			// Optimize
+			// 
+			//   box 
+			//   call object::GetType()
+			//
+			guint32 gettype_token;
+			if ((ip = il_read_call(next_ip, end, &gettype_token)) && ip_in_bb (cfg, cfg->cbb, ip)) {
+				MonoMethod* gettype_method = mini_get_method (cfg, method, gettype_token, NULL, generic_context);
+				if (!strcmp (gettype_method->name, "GetType") && gettype_method->klass == mono_defaults.object_class) {
+					mono_class_init_internal(klass);
+					MonoType *klass_type = m_class_get_byval_arg (klass);
+					if (!mono_class_is_open_constructed_type (klass_type) && !cfg->compile_aot) { // FIXME: implement for AOT
+						// Emit `typeof(T)`
+						MonoReflectionType* reflection_type = mono_type_get_object_checked (cfg->domain, klass_type, cfg->error);
+						EMIT_NEW_PCONST (cfg, ins, reflection_type);
+						ins->type = STACK_OBJ;
+						ins->klass = mono_defaults.systemtype_class;
+						*sp++ = ins;					
+						next_ip = ip;
+						break;
+					}
+				}
+			}
+
 #ifdef ENABLE_NETCORE
 			// Optimize
 			// 
