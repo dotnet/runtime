@@ -2483,6 +2483,150 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         break;
 
         case SIMDIntrinsicInit:
+        {
+            // SIMDIntrinsicInit:
+            //    op2 - the initializer value
+            //    op1 - byref of vector
+            //
+            // SIMDIntrinsicInitN
+            //    op2 - list of initializer values stitched into a list
+            //    op1 - byref of vector
+            bool initFromFirstArgIndir = false;
+            if (simdIntrinsicID == SIMDIntrinsicInit)
+            {
+                op2 = impSIMDPopStack(baseType);
+            }
+            else
+            {
+                assert(simdIntrinsicID == SIMDIntrinsicInitN);
+                assert(baseType == TYP_FLOAT);
+
+                unsigned initCount    = argCount - 1;
+                unsigned elementCount = getSIMDVectorLength(size, baseType);
+                noway_assert(initCount == elementCount);
+
+                // Build a GT_LIST with the N values.
+                // We must maintain left-to-right order of the args, but we will pop
+                // them off in reverse order (the Nth arg was pushed onto the stack last).
+
+                GenTree* list              = nullptr;
+                GenTree* firstArg          = nullptr;
+                GenTree* prevArg           = nullptr;
+                bool     areArgsContiguous = true;
+                for (unsigned i = 0; i < initCount; i++)
+                {
+                    GenTree* nextArg = impSIMDPopStack(baseType);
+                    if (areArgsContiguous)
+                    {
+                        GenTree* curArg = nextArg;
+                        firstArg        = curArg;
+
+                        if (prevArg != nullptr)
+                        {
+                            // Recall that we are popping the args off the stack in reverse order.
+                            areArgsContiguous = areArgumentsContiguous(curArg, prevArg);
+                        }
+                        prevArg = curArg;
+                    }
+
+                    list = new (this, GT_LIST) GenTreeOp(GT_LIST, baseType, nextArg, list);
+                }
+
+                if (areArgsContiguous && baseType == TYP_FLOAT)
+                {
+                    // Since Vector2, Vector3 and Vector4's arguments type are only float,
+                    // we intialize the vector from first argument address, only when
+                    // the baseType is TYP_FLOAT and the arguments are located contiguously in memory
+                    initFromFirstArgIndir = true;
+                    GenTree*  op2Address  = createAddressNodeForSIMDInit(firstArg, size);
+                    var_types simdType    = getSIMDTypeForSize(size);
+                    op2                   = gtNewOperNode(GT_IND, simdType, op2Address);
+                }
+                else
+                {
+                    op2 = list;
+                }
+            }
+
+            op1 = getOp1ForConstructor(opcode, newobjThis, clsHnd);
+
+            assert(op1->TypeGet() == TYP_BYREF);
+            assert(genActualType(op2->TypeGet()) == genActualType(baseType) || initFromFirstArgIndir);
+
+            // For integral base types of size less than TYP_INT, expand the initializer
+            // to fill size of TYP_INT bytes.
+            if (varTypeIsSmallInt(baseType))
+            {
+                // This case should occur only for Init intrinsic.
+                assert(simdIntrinsicID == SIMDIntrinsicInit);
+
+                unsigned baseSize = genTypeSize(baseType);
+                int      multiplier;
+                if (baseSize == 1)
+                {
+                    multiplier = 0x01010101;
+                }
+                else
+                {
+                    assert(baseSize == 2);
+                    multiplier = 0x00010001;
+                }
+
+                GenTree* t1 = nullptr;
+                if (baseType == TYP_BYTE)
+                {
+                    // What we have is a signed byte initializer,
+                    // which when loaded to a reg will get sign extended to TYP_INT.
+                    // But what we need is the initializer without sign extended or
+                    // rather zero extended to 32-bits.
+                    t1 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(0xff, TYP_INT));
+                }
+                else if (baseType == TYP_SHORT)
+                {
+                    // What we have is a signed short initializer,
+                    // which when loaded to a reg will get sign extended to TYP_INT.
+                    // But what we need is the initializer without sign extended or
+                    // rather zero extended to 32-bits.
+                    t1 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(0xffff, TYP_INT));
+                }
+                else
+                {
+                    assert(baseType == TYP_UBYTE || baseType == TYP_USHORT);
+                    t1 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
+                }
+
+                assert(t1 != nullptr);
+                GenTree* t2 = gtNewIconNode(multiplier, TYP_INT);
+                op2         = gtNewOperNode(GT_MUL, TYP_INT, t1, t2);
+
+                // Construct a vector of TYP_INT with the new initializer and cast it back to vector of baseType
+                simdTree = gtNewSIMDNode(simdType, simdIntrinsicID, TYP_INT, size, op2);
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicCast, baseType, size, simdTree);
+            }
+            else
+            {
+
+                if (initFromFirstArgIndir)
+                {
+                    simdTree = op2;
+                    if (op1->AsOp()->gtOp1->OperIsLocal())
+                    {
+                        // label the dst struct's lclvar is used for SIMD intrinsic,
+                        // so that this dst struct won't be promoted.
+                        setLclRelatedToSIMDIntrinsic(op1->AsOp()->gtOp1);
+                    }
+                }
+                else
+                {
+                    simdTree = gtNewSIMDNode(simdType, simdIntrinsicID, baseType, size, op2);
+                }
+            }
+
+            copyBlkDst = op1;
+            doCopyBlk  = true;
+        }
+        break;
+
         case SIMDIntrinsicInitN:
         {
             // SIMDIntrinsicInit:
