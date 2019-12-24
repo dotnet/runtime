@@ -2,6 +2,7 @@ parameters:
   name: ''
   platform: ''
   pool: ''
+  isOfficialBuild: false
 
 jobs:
 - template: base-job.yml

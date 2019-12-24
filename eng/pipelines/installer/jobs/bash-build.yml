@@ -11,6 +11,7 @@ parameters:
   timeoutInMinutes: 120
   pool: ''
   crossrootfsDir: ''
+  isOfficialBuild: false
 
 jobs:
 - template: base-job.yml

@@ -24,6 +24,8 @@ parameters:
 
   buildCommandSourcesDirectory: '$(Build.SourcesDirectory)/'
 
+  skipTests: false
+  crossBuild: false
   isOfficialBuild: false
   useOfficialAllConfigurations: false
 
@@ -49,7 +51,7 @@ jobs:
       value: ${{ variable.value }}
 
   - name: SkipTests
-    value: ${{ or(parameters.isOfficialBuild, parameters.crossBuild) }}
+    value: ${{ parameters.skipTests }}
 
   - name: OfficialBuildArg
     value: ''

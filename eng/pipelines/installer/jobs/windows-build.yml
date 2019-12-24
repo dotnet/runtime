@@ -6,11 +6,14 @@ parameters:
   timeoutInMinutes: 120
   platform: ''
   pool: ''
+  isOfficialBuild: false
 
 jobs:
 - template: base-job.yml
   parameters:
     ${{ insert }}: ${{ parameters }}
+
+    skipTests: ${{ or(parameters.isOfficialBuild, parameters.crossBuild) }}
 
     buildVariables:
       CommonMSBuildArgs: >-
