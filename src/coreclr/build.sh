@@ -377,7 +377,7 @@ build_CoreLib()
         exit $exit_code
     fi
 
-    "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+    "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj \
                                            /p:PortableBuild=true /maxcpucount \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
