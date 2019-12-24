@@ -370,7 +370,7 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     %__RepoRootDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
     /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
@@ -389,7 +389,7 @@ REM ============================================================================
 set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
         %OptDataProjectFilePath% /t:Restore^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
@@ -403,7 +403,7 @@ set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
 set IbcDataPackagePathOutputFile="%__IntermediatesDir%\ibcoptdatapath.txt"
 
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
@@ -418,7 +418,7 @@ if not exist "!PgoDataPackagePathOutputFile!" (
 
 set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     "%OptDataProjectFilePath%" /t:DumpIbcDataPackagePath /nologo %__CommonMSBuildArgs% /p:IbcDataPackagePathOutputFile="!IbcDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
@@ -637,7 +637,7 @@ if %__BuildCoreLib% EQU 1 (
         set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
         set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj /t:Restore^
             /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true^
             !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
@@ -650,7 +650,7 @@ if %__BuildCoreLib% EQU 1 (
             goto ExitWithCode
         )
 
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj /nodeReuse:false /p:PortableBuild=true /maxcpucount^
             '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
@@ -664,8 +664,8 @@ if %__BuildCoreLib% EQU 1 (
 
         if "%__BuildManagedTools%" == "1" (
             echo %__MsgPrefix%Publishing crossgen2...
-            call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /p:BuildArch=%__BuildArch%
-            
+            call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /nologo /p:BuildArch=%__BuildArch%
+
             if not !errorlevel! == 0 (
                 echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to build crossgen2.
                 echo     !__BuildLog!
@@ -675,15 +675,15 @@ if %__BuildCoreLib% EQU 1 (
                 goto ExitWithCode
             )
 
-            copy /Y "%__BinDir%\clrjit.dll" "%__BinDir%\crossgen2\clrjitilc.dll"
-            copy /Y "%__BinDir%\jitinterface.dll" "%__BinDir%\crossgen2\jitinterface.dll"
+            copy /Y "%__BinDir%\clrjit.dll" "%__BinDir%\crossgen2\clrjitilc.dll"  | find /i /v "file(s) copied"
+            copy /Y "%__BinDir%\jitinterface.dll" "%__BinDir%\crossgen2\jitinterface.dll" | find /i /v "file(s) copied"
         )
     )
     if %__IbcOptimize% EQU 1 (
         echo %__MsgPrefix%Commencing IBCMerge of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
         set IbcMergeProjectFilePath=%__ProjectDir%\src\.nuget\optdata\ibcmerge.csproj
         set IbcMergePackagePathOutputFile="%__IntermediatesDir%\ibcmergepath.txt"
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackagePath /nologo %__CommonMSBuildArgs% /p:IbcMergePackagePathOutputFile="!IbcMergePackagePathOutputFile!"
 
         if not !errorlevel! == 0 (
@@ -840,7 +840,7 @@ if %__BuildNativeCoreLib% EQU 1 (
         set COMPlus_ContinueOnAssert=0
     )
 
-    set NEXTCMD="%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%\IL" /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
+    set NEXTCMD="%__CrossgenExe%" /nologo %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%\IL" /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
     echo %__MsgPrefix%!NEXTCMD!
     echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
     !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
@@ -851,7 +851,7 @@ if %__BuildNativeCoreLib% EQU 1 (
         goto ExitWithError
     )
 
-    set NEXTCMD="%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
+    set NEXTCMD="%__CrossgenExe%" /nologo /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
     echo %__MsgPrefix%!NEXTCMD!
     echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
     !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
