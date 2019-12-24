@@ -2588,28 +2588,17 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 list = new (this, GT_LIST) GenTreeOp(GT_LIST, baseType, nextArg, list);
             }
 
+            op1 = getOp1ForConstructor(opcode, newobjThis, clsHnd);
+            assert(op1->TypeGet() == TYP_BYREF);
+
             if (areArgsContiguous)
             {
                 // Since Vector2, Vector3 and Vector4's arguments type are only float,
                 // we intialize the vector from first argument address, only when
                 // the baseType is TYP_FLOAT and the arguments are located contiguously in memory
-                GenTree*  op2Address = createAddressNodeForSIMDInit(firstArg, size);
-                var_types simdType   = getSIMDTypeForSize(size);
-                op2                  = gtNewOperNode(GT_IND, simdType, op2Address);
-            }
-            else
-            {
-                op2 = list;
-            }
+                GenTree* op2Address = createAddressNodeForSIMDInit(firstArg, size);
+                simdTree            = gtNewOperNode(GT_IND, simdType, op2Address);
 
-            op1 = getOp1ForConstructor(opcode, newobjThis, clsHnd);
-
-            assert(op1->TypeGet() == TYP_BYREF);
-            assert(genActualType(op2->TypeGet()) == genActualType(baseType) || areArgsContiguous);
-
-            if (areArgsContiguous)
-            {
-                simdTree = op2;
                 if (op1->AsOp()->gtOp1->OperIsLocal())
                 {
                     // label the dst struct's lclvar is used for SIMD intrinsic,
@@ -2619,7 +2608,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             }
             else
             {
-                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicInitN, baseType, size, op2);
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicInitN, baseType, size, list);
             }
 
             copyBlkDst = op1;
