@@ -270,3 +270,12 @@ C_FUNC(\Name\()_End):
 0:
 #endif
 .endm
+
+#ifdef __ARM_ARCH_6__
+.macro cbz_impl Reg, Location
+        cmp \Reg, #0
+        beq \Location
+.endm
+
+#define cbz cbz_impl
+#endif

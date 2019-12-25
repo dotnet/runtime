@@ -33,8 +33,7 @@ CLR_ARM_ASM_COMPILATION_MODE
         ldr                 \VASigCookieReg, [\VASigCookieReg,#VASigCookie__pNDirectILStub]
 
         // if null goto stub generation
-        cmp                 \VASigCookieReg, #0x0
-        beq                 \__PInvokeStubFuncName\()Label
+        cbz                 \VASigCookieReg, \__PInvokeStubFuncName\()Label
 
         EPILOG_STACK_FREE   4
         EPILOG_BRANCH_REG   \VASigCookieReg

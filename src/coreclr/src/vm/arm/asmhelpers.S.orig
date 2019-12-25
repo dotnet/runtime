@@ -1190,12 +1190,8 @@ LOCAL_LABEL(DoWrite):
     .macro LOAD_GC_GLOBAL name, regName, globalName
 \name\()__\globalName\()_offset:
     __\name\()__\globalName\()_offset = (\name\()__\globalName\()_offset - \name)
-#ifdef __thumb__
         movw \regName, #0
         movt \regName, #0
-#else
-        mov \regName, #0
-#endif
     .endm
 
     .macro UPDATE_GC_SHADOW name, ptrReg, valReg
