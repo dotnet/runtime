@@ -37,8 +37,7 @@ CLR_ARM_ASM_COMPILATION_MODE
         mov     r5,r0 // save pCallDescrData in r5
 
         ldr     r1, [r5,#CallDescrData__numStackSlots]
-        cmp     r1, #0
-        beq     LOCAL_LABEL(Ldonestack)
+        cbz     r1, LOCAL_LABEL(Ldonestack)
 
         // Add frame padding to ensure frame size is a multiple of 8 (a requirement of the OS ABI).
         // We push four registers (above) and numStackSlots arguments (below). If this comes to an odd number
@@ -62,8 +61,7 @@ LOCAL_LABEL(Ldonestack):
         // If FP arguments are supplied in registers (r3 != NULL) then initialize all of them from the pointer
         // given in r3. Do not use "it" since it faults in floating point even when the instruction is not executed.
         ldr     r3, [r5,#CallDescrData__pFloatArgumentRegisters]
-        cmp     r3, #0
-        beq     LOCAL_LABEL(LNoFloatingPoint)
+        cbz     r3, LOCAL_LABEL(LNoFloatingPoint)
         vldm    r3, {s0-s15}
 LOCAL_LABEL(LNoFloatingPoint):
 
@@ -83,8 +81,7 @@ LOCAL_LABEL(LNoFloatingPoint):
         ldr     r3, [r5,#CallDescrData__fpReturnSize]
 
         // Save FP return value if appropriate
-        cmp     r3, #0
-        beq     LOCAL_LABEL(LFloatingPointReturnDone)
+        cbz     r3, LOCAL_LABEL(LFloatingPointReturnDone)
         // Float return case
         // Do not use "it" since it faults in floating point even when the instruction is not executed.
         cmp     r3, #4
@@ -328,8 +325,7 @@ UMThunkStub_StackArgsSize = 10*4
         CHECK_STACK_ALIGNMENT
 
         bl                  C_FUNC(GetThread)
-        cmp                 r0, #0
-        beq                 LOCAL_LABEL(UMThunkStub_DoThreadSetup)
+        cbz                 r0, LOCAL_LABEL(UMThunkStub_DoThreadSetup)
 
 LOCAL_LABEL(UMThunkStub_HaveThread):
         mov                 r5, r0                  // r5 = Thread *
@@ -340,15 +336,13 @@ LOCAL_LABEL(UMThunkStub_HaveThread):
         str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
 
         ldr                 r3, [r2]
-        cmp                 r3, #0
-        bne                 LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads)
+        cbnz                r3, LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads)
 
 LOCAL_LABEL(UMThunkStub_InCooperativeMode):
         ldr                 r12, [r7, #UMThunkStub_HiddenArgOffset]
         ldr                 r3, [r12, #UMEntryThunk__m_pUMThunkMarshInfo]
         ldr                 r2, [r3, #UMThunkMarshInfo__m_cbActualArgSize]
-        cmp                 r2, #0
-        beq                 LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
+        cbz                 r2, LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
 
         add                 r0, r7, #UMThunkStub_StackArgsOffset // Source pointer
         add                 r0, r0, r2
@@ -1083,8 +1077,7 @@ LOCAL_LABEL(CallCppHelper3):
     // We retain arguments as they were passed and use r0 == array// r1 == idx// r2 == val
 
     // check for null array
-    cmp     r0, #0
-    beq     LOCAL_LABEL(ThrowNullReferenceException)
+    cbz     r0, LOCAL_LABEL(ThrowNullReferenceException)
 
     // idx bounds check
     ldr     r3,[r0,#ArrayBase__m_NumComponents]
@@ -1092,8 +1085,7 @@ LOCAL_LABEL(CallCppHelper3):
     bls     LOCAL_LABEL(ThrowIndexOutOfRangeException)
 
     // fast path to null assignment (doesn't need any write-barriers)
-    cmp     r2, #0
-    beq     LOCAL_LABEL(AssigningNull)
+    cbz     r2, LOCAL_LABEL(AssigningNull)
 
     // Verify the array-type and val-type matches before writing
     ldr     r12, [r0] // r12 = array MT

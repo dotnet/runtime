@@ -278,4 +278,12 @@ C_FUNC(\Name\()_End):
 .endm
 
 #define cbz cbz_impl
+
+.macro cbnz_impl Reg, Location
+        cmp \Reg, #0
+        bne \Location
+.endm
+
+#define cbnz cbnz_impl
+
 #endif

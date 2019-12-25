@@ -148,8 +148,7 @@ CLR_ARM_ASM_COMPILATION_MODE
         // Check return trap
         ldr     r2, =g_TrapReturningThreads
         ldr     r2, [r2]
-        cmp     r2, #0x0
-        bne     LOCAL_LABEL(RarePath)
+        cbnz    r2, LOCAL_LABEL(RarePath)
 
         // pThread->m_pFrame = pFrame->m_Next
         ldr     r2, [r0, #Frame__m_Next]
