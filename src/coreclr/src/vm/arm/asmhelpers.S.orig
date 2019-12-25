@@ -1434,9 +1434,7 @@ DelayLoad_Helper\suffix:
 
         bl          C_FUNC(DynamicHelperWorker)
 
-        cmp         r0, 0
-        bne         0f
-
+        cbnz        r0, 0f
         ldr         r0, [sp,#(__PWTB_TransitionBlock+9*4)]  // The result is stored in the argument area of the transition block
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
