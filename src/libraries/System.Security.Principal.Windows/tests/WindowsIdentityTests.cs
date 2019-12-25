@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using System.Threading.Tests;
 using Xunit;
 
-public class WindowsIdentityTests : IClassFixture<WindowsIdentityFixture>
+public partial class WindowsIdentityTests : IClassFixture<WindowsIdentityFixture>
 {
     private const string authenticationType = "WindowsAuthentication";
     private readonly WindowsIdentityFixture _fixture;
@@ -157,48 +157,6 @@ public class WindowsIdentityTests : IClassFixture<WindowsIdentityFixture>
             {
                 handle?.SetHandleAsInvalid();
             }
-        }
-    }
-
-    [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Api not present on netfx")]
-    public async Task RunImpersonatedAsync_TaskAndTaskOfT()
-    {
-        WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
-
-        await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
-        {
-            Asserts(currentWindowsIdentity);
-
-            await Task.Delay(100);
-
-            Asserts(currentWindowsIdentity);
-        });
-
-        Assert.Equal(WindowsIdentity.GetCurrent().Name, currentWindowsIdentity.Name);
-
-        int result = await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
-        {
-            Asserts(currentWindowsIdentity);
-
-            await Task.Delay(100);
-
-            Asserts(currentWindowsIdentity);
-
-            return 42;
-        });
-
-        Assert.Equal(42, result);
-
-        Assert.Equal(WindowsIdentity.GetCurrent().Name, currentWindowsIdentity.Name);
-
-        return;
-
-        // Assertions
-        void Asserts(WindowsIdentity currentWindowsIdentity)
-        {
-            Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
-            Assert.NotEqual(currentWindowsIdentity.Name, WindowsIdentity.GetCurrent().Name);
         }
     }
 
