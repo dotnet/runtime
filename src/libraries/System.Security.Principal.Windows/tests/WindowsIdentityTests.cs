@@ -161,6 +161,7 @@ public class WindowsIdentityTests : IClassFixture<WindowsIdentityFixture>
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Api not present on netfx")]
     public async Task RunImpersonatedAsync_TaskAndTaskOfT()
     {
         WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
