@@ -21,6 +21,7 @@ using QUOTA_LIMITS = Interop.SspiCli.QUOTA_LIMITS;
 using SECURITY_LOGON_TYPE = Interop.SspiCli.SECURITY_LOGON_TYPE;
 using TOKEN_SOURCE = Interop.SspiCli.TOKEN_SOURCE;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 
 namespace System.Security.Principal
 {
@@ -677,6 +678,9 @@ namespace System.Security.Principal
             return result;
         }
 
+        public static Task RunImpersonatedAsync(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task> func) => RunImpersonated(safeAccessTokenHandle, func);
+
+        public static Task<T> RunImpersonatedAsync<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task<T>> func) => RunImpersonated(safeAccessTokenHandle, func);
 
         protected virtual void Dispose(bool disposing)
         {

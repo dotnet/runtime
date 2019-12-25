@@ -4,18 +4,30 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tests;
 using Xunit;
 
-public class WindowsIdentityTests
+public class WindowsIdentityTests : IClassFixture<WindowsIdentityFixture>
 {
     private const string authenticationType = "WindowsAuthentication";
+    private readonly WindowsIdentityFixture _fixture;
+
+    public WindowsIdentityTests(WindowsIdentityFixture windowsIdentityFixture)
+    {
+        _fixture = windowsIdentityFixture;
+
+        Assert.False(_fixture.TestAccount.AccountTokenHandle.IsInvalid);
+        Assert.False(string.IsNullOrEmpty(_fixture.TestAccount.AccountName));
+    }
 
     [Fact]
     public static void GetAnonymousUserTest()
@@ -149,6 +161,47 @@ public class WindowsIdentityTests
     }
 
     [Fact]
+    public async Task RunImpersonatedAsync_TaskAndTaskOfT()
+    {
+        WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
+
+        await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
+        {
+            Asserts(currentWindowsIdentity);
+
+            await Task.Delay(100);
+
+            Asserts(currentWindowsIdentity);
+        });
+
+        Assert.Equal(WindowsIdentity.GetCurrent().Name, currentWindowsIdentity.Name);
+
+        int result = await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
+        {
+            Asserts(currentWindowsIdentity);
+
+            await Task.Delay(100);
+
+            Asserts(currentWindowsIdentity);
+
+            return 42;
+        });
+
+        Assert.Equal(42, result);
+
+        Assert.Equal(WindowsIdentity.GetCurrent().Name, currentWindowsIdentity.Name);
+
+        return;
+
+        // Assertions
+        void Asserts(WindowsIdentity currentWindowsIdentity)
+        {
+            Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
+            Assert.NotEqual(currentWindowsIdentity.Name, WindowsIdentity.GetCurrent().Name);
+        }
+    }
+
+    [Fact]
     public static void RunImpersonatedAsyncTest()
     {
         var testData = new RunImpersonatedAsyncTestInfo();
@@ -230,6 +283,126 @@ public class WindowsIdentityTests
         {
             if (gotRef)
                 token.DangerousRelease();
+        }
+    }
+}
+
+public class WindowsIdentityFixture : IDisposable
+{
+    public WindowsTestAccount TestAccount { get; private set; }
+
+    public WindowsIdentityFixture()
+    {
+        TestAccount = new WindowsTestAccount("CorFxTstWiIde01kiu");
+        TestAccount.Create();
+    }
+
+    public void Dispose()
+    {
+        TestAccount.Dispose();
+    }
+}
+
+public sealed class WindowsTestAccount : IDisposable
+{
+    private readonly string _userName;
+    private SafeAccessTokenHandle _accountTokenHandle;
+    public SafeAccessTokenHandle AccountTokenHandle => _accountTokenHandle;
+    public string AccountName
+    {
+        get
+        {
+            // We should not use System.Security.Principal.Windows classes that we'are testing.
+            // To avoid too much pinvoke plumbing to get userName from OS for now we concat machine name.
+            return Environment.MachineName + "\\" + _userName;
+        }
+    }
+    public WindowsTestAccount(string userName) => _userName = userName;
+
+    public void Create()
+    {
+        string testAccountPassword;
+        using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+        {
+            byte[] randomBytes = new byte[33];
+            rng.GetBytes(randomBytes);
+
+            // Add special chars to ensure it satisfies password requirements.
+            testAccountPassword = Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
+
+            USER_INFO_1 userInfo = new USER_INFO_1
+            {
+                usri1_name = _userName,
+                usri1_password = testAccountPassword,
+                usri1_priv = 1
+            };
+
+            // Create user and remove/create if already exists
+            uint result = NetUserAdd(null, 1, ref userInfo, out uint param_err);
+
+            // error codes https://docs.microsoft.com/en-us/windows/desktop/netmgmt/network-management-error-codes
+            // 0 == NERR_Success
+            if (result == 2224) // NERR_UserExists
+            {
+                result = NetUserDel(null, userInfo.usri1_name);
+                if (result != 0)
+                {
+                    throw new Win32Exception((int)result);
+                }
+                result = NetUserAdd(null, 1, ref userInfo, out param_err);
+                if (result != 0)
+                {
+                    throw new Win32Exception((int)result);
+                }
+            }
+
+            const int LOGON32_PROVIDER_DEFAULT = 0;
+            const int LOGON32_LOGON_INTERACTIVE = 2;
+
+            if (!LogonUser(_userName, ".", testAccountPassword, LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT, out _accountTokenHandle))
+            {
+                _accountTokenHandle = null;
+                throw new Exception($"Failed to get SafeAccessTokenHandle for test account {_userName}", new Win32Exception());
+            }
+        }
+    }
+
+    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool LogonUser(string userName, string domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle safeAccessTokenHandle);
+
+    [DllImport("netapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern uint NetUserAdd([MarshalAs(UnmanagedType.LPWStr)]string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
+
+    [DllImport("netapi32.dll")]
+    internal static extern uint NetUserDel([MarshalAs(UnmanagedType.LPWStr)]string servername, [MarshalAs(UnmanagedType.LPWStr)]string username);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct USER_INFO_1
+    {
+        public string usri1_name;
+        public string usri1_password;
+        public uint usri1_password_age;
+        public uint usri1_priv;
+        public string usri1_home_dir;
+        public string usri1_comment;
+        public uint usri1_flags;
+        public string usri1_script_path;
+    }
+
+    public void Dispose()
+    {
+        if (_accountTokenHandle is null)
+        {
+            return;
+        }
+
+        _accountTokenHandle.Dispose();
+        _accountTokenHandle = null;
+
+        uint result = NetUserDel(null, _userName);
+        if (result != 0)
+        {
+            throw new Win32Exception((int)result);
         }
     }
 }
