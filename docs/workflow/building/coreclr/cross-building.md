@@ -36,6 +36,10 @@ and conversely for arm64:
 
     ~/runtime/ $ sudo apt-get install binutils-aarch64-linux-gnu
 
+and for armel (ARM softfp):
+
+    ~/runtime/ $ sudo apt-get install binutils-arm-linux-gnueabi
+
 
 Requirements for targetting ARM or ARM64 Alpine Linux
 -----------------------------------------------------
