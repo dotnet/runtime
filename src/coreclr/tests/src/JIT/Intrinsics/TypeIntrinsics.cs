@@ -9,6 +9,9 @@ public class Program
 
     public static int Main(string[] args)
     {
+        IsTrue (typeof(byte).IsPrimitive);
+        IsTrue (typeof(byte).IsValueType);
+        IsFalse(typeof(byte).IsClass);
         IsTrue (typeof(int).IsPrimitive);
         IsTrue (typeof(int).IsValueType);
         IsFalse(typeof(int).IsClass);
@@ -39,6 +42,15 @@ public class Program
         IsFalse(typeof(object).IsPrimitive);
         IsFalse(typeof(object).IsValueType);
         IsTrue (typeof(object).IsClass);
+        IsFalse(typeof(object[]).IsPrimitive);
+        IsFalse(typeof(object[]).IsValueType);
+        IsTrue (typeof(object[]).IsClass);
+        IsFalse(typeof(int[]).IsPrimitive);
+        IsFalse(typeof(int[]).IsValueType);
+        IsTrue (typeof(int[]).IsClass);
+        IsFalse(typeof(int[,,]).IsPrimitive);
+        IsFalse(typeof(int[,,]).IsValueType);
+        IsTrue (typeof(int[,,]).IsClass);
         IsFalse(typeof(IEnumerable<int>).IsPrimitive);
         IsFalse(typeof(IEnumerable<int>).IsValueType);
         IsFalse(typeof(IEnumerable<int>).IsClass);
@@ -67,10 +79,10 @@ public class Program
         IsFalse(typeof(IDictionary<,>).IsValueType);
         IsFalse(typeof(IDictionary<,>).IsClass);
         IsFalse(typeof(Vector128<>).IsPrimitive);
-        IsTrue(typeof(Vector128<>).IsValueType);
+        IsTrue (typeof(Vector128<>).IsValueType);
         IsFalse(typeof(Vector128<>).IsClass);
         IsFalse(typeof(Vector128<byte>).IsPrimitive);
-        IsTrue(typeof(Vector128<byte>).IsValueType);
+        IsTrue (typeof(Vector128<byte>).IsValueType);
         IsFalse(typeof(Vector128<byte>).IsClass);
 
 
@@ -116,14 +128,14 @@ public class Program
 
         IsTrue (IsPrimitiveObj(42));
         IsTrue (IsPrimitiveObj(new Nullable<int>(42)));
-        IsTrue (IsPrimitiveObj(new decimal(42)));
+        IsFalse(IsPrimitiveObj(new decimal(42)));
         IsFalse(IsPrimitiveObj("42"));
         IsFalse(IsPrimitiveObj(new object()));
         IsFalse(IsPrimitiveObj(new int[10]));
         IsFalse(IsPrimitiveObj((Action<int>)(_ => { })));
-        IsTrue (IsPrimitiveObj(new GenericStruct<int>()));
-        IsTrue (IsPrimitiveObj(new GenericStruct<string>()));
-        IsTrue (IsPrimitiveObj(SimpleEnum.B));
+        IsFalse(IsPrimitiveObj(new GenericStruct<int>()));
+        IsFalse(IsPrimitiveObj(new GenericStruct<string>()));
+        IsFalse(IsPrimitiveObj(SimpleEnum.B));
         IsTrue (IsPrimitiveObj(CreateDynamic1()));
         IsFalse(IsPrimitiveObj(CreateDynamic2()));
 
@@ -140,18 +152,18 @@ public class Program
         IsTrue (IsValueTypeObj(CreateDynamic1()));
         IsFalse(IsValueTypeObj(CreateDynamic2()));
 
-        IsTrue (IsClassObj(42));
-        IsTrue (IsClassObj(new Nullable<int>(42)));
-        IsTrue (IsClassObj(42M));
-        IsFalse(IsClassObj("42"));
-        IsFalse(IsClassObj(new object()));
-        IsFalse(IsClassObj(new int[10]));
-        IsFalse(IsClassObj((Action<int>)(_ => { })));
-        IsTrue (IsClassObj(new GenericStruct<int>()));
-        IsTrue (IsClassObj(new GenericStruct<string>()));
-        IsTrue (IsClassObj(SimpleEnum.B));
-        IsTrue (IsClassObj(CreateDynamic1()));
-        IsFalse(IsClassObj(CreateDynamic2()));
+        IsFalse(IsClassObj(42));
+        IsFalse(IsClassObj(new Nullable<int>(42)));
+        IsFalse(IsClassObj(42M));
+        IsTrue (IsClassObj("42"));
+        IsTrue (IsClassObj(new object()));
+        IsTrue (IsClassObj(new int[10]));
+        IsTrue (IsClassObj((Action<int>)(_ => { })));
+        IsFalse(IsClassObj(new GenericStruct<int>()));
+        IsFalse(IsClassObj(new GenericStruct<string>()));
+        IsFalse(IsClassObj(SimpleEnum.B));
+        IsFalse(IsClassObj(CreateDynamic1()));
+        IsTrue(IsClassObj(CreateDynamic2()));
 
 
         IsTrue (IsPrimitiveRef(ref _varInt));
@@ -234,13 +246,13 @@ public class Program
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool IsPrimitiveObj(object val) => val.GetType().IsValueType;
+    private static bool IsPrimitiveObj(object val) => val.GetType().IsPrimitive;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool IsValueTypeObj(object val) => val.GetType().IsValueType;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool IsClassObj(object val) => val.GetType().IsValueType;
+    private static bool IsClassObj(object val) => val.GetType().IsClass;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
