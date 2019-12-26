@@ -4015,6 +4015,43 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_get_IsClass:
+            case NI_System_Type_get_IsPrimitive:
+            case NI_System_Type_get_IsValueType:
+            {
+                if (impStackTop().val->IsCall())
+                {
+                    GenTreeCall* call = impStackTop().val->AsCall();
+                    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+                    {
+                        GenTreeIntCon* typeHandle = call->Args().begin()->GetNode()->AsIntCon();
+                        auto hClass = reinterpret_cast<CORINFO_CLASS_HANDLE>(typeHandle->IconValue());
+                        BOOL isValueType = info.compCompHnd->isValueClass(hClass);
+                        if (ni == NI_System_Type_get_IsPrimitive)
+                        {
+                            if (isValueType)
+                            {
+                                retNode = gtNewIconNode(verMakeTypeInfo(hClass).IsPrimitiveType() ? 1 : 0);
+                            }
+                            else
+                            {
+                                retNode = gtNewIconNode(0);
+                            }
+                        }
+                        else if (ni == NI_System_Type_get_IsClass)
+                        {
+                            retNode = gtNewIconNode(isValueType ? 0 : 1);
+                        }
+                        else
+                        {
+                            retNode = gtNewIconNode(isValueType ? 1 : 0);
+                        }
+                        impPopStack();
+                    }
+                }
+                break;
+            }
+
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
             case NI_System_MathF_FusedMultiplyAdd:
@@ -4304,6 +4341,21 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "KeepAlive") == 0)
             {
                 result = NI_System_GC_KeepAlive;
+            }
+        }
+        else if (strcmp(className, "Type") == 0)
+        {
+            if (strcmp(methodName, "get_IsValueType") == 0)
+            {
+                result = NI_System_Type_get_IsValueType;
+            }
+            else if (strcmp(methodName, "get_IsClass") == 0)
+            {
+                result = NI_System_Type_get_IsClass;
+            }
+            else if (strcmp(methodName, "get_IsPrimitive") == 0)
+            {
+                result = NI_System_Type_get_IsPrimitive;
             }
         }
     }

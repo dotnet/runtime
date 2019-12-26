@@ -6,6 +6,7 @@ using System.Threading;
 using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -78,7 +79,7 @@ namespace System
         public bool IsSealed => (GetAttributeFlagsImpl() & TypeAttributes.Sealed) != 0;
         public bool IsSpecialName => (GetAttributeFlagsImpl() & TypeAttributes.SpecialName) != 0;
 
-        public bool IsClass => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Class && !IsValueType;
+        public bool IsClass { [Intrinsic] get => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Class && !IsValueType; }
 
         public bool IsNestedAssembly => (GetAttributeFlagsImpl() & TypeAttributes.VisibilityMask) == TypeAttributes.NestedAssembly;
         public bool IsNestedFamANDAssem => (GetAttributeFlagsImpl() & TypeAttributes.VisibilityMask) == TypeAttributes.NestedFamANDAssem;
@@ -105,9 +106,9 @@ namespace System
         public virtual bool IsEnum => IsSubclassOf(typeof(Enum));
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => false;
-        public bool IsPrimitive => IsPrimitiveImpl();
+        public bool IsPrimitive { [Intrinsic] get => IsPrimitiveImpl(); }
         protected abstract bool IsPrimitiveImpl();
-        public bool IsValueType => IsValueTypeImpl();
+        public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         public virtual bool IsSignatureType => false;
