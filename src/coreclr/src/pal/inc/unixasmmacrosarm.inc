@@ -271,8 +271,6 @@ C_FUNC(\Name\()_End):
 #endif
 .endm
 
-
-
 #ifndef __thumb__
 .macro cbz_impl Reg, Location
         cmp \Reg, #0
