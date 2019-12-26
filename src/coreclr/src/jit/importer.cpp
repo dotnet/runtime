@@ -4052,8 +4052,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             if (isValueType)
                             {
-                                // it seems it's the only way to check if a type is Enum
-                                bool isEnum = info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) == CORINFO_TYPE_UNDEF;
+                                bool isEnum = info.compCompHnd->getBuiltinClass(CLASSID_ENUM) == info.compCompHnd->getParentType(hClass);
                                 retNode = gtNewIconNode((cit >= CORINFO_TYPE_BOOL) && (cit <= CORINFO_TYPE_DOUBLE) && !isEnum ? 1 : 0);
                             }
                             else
@@ -4067,9 +4066,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             retNode          = gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
                             // typeof(int*).IsClass has to be true (CORINFO_TYPE_PTR)
                         }
-                        else
+                        else if (ni == NI_System_Type_get_IsValueType)
                         {
                             retNode = gtNewIconNode((isValueType && cit != CORINFO_TYPE_PTR) ? 1 : 0);
+                        }
+                        else
+                        {
+                            assert(false);
                         }
                         // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                         impPopStack();
