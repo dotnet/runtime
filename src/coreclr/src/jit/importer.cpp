@@ -4052,8 +4052,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             if (isValueType)
                             {
-                                bool isEnum = info.compCompHnd->getBuiltinClass(CLASSID_ENUM) == info.compCompHnd->getParentType(hClass);
-                                retNode = gtNewIconNode((cit >= CORINFO_TYPE_BOOL) && (cit <= CORINFO_TYPE_DOUBLE) && !isEnum ? 1 : 0);
+                                bool isEnum = info.compCompHnd->getBuiltinClass(CLASSID_ENUM) ==
+                                              info.compCompHnd->getParentType(hClass);
+                                retNode = gtNewIconNode(
+                                    (cit >= CORINFO_TYPE_BOOL) && (cit <= CORINFO_TYPE_DOUBLE) && !isEnum ? 1 : 0);
                             }
                             else
                             {
@@ -4063,8 +4065,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         else if (ni == NI_System_Type_get_IsClass)
                         {
                             BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
-                            retNode          = gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
-                            // typeof(int*).IsClass has to be true (CORINFO_TYPE_PTR)
+                            retNode = // typeof(int*).IsClass has to be true (CORINFO_TYPE_PTR)
+                                gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
+                            
                         }
                         else if (ni == NI_System_Type_get_IsValueType)
                         {
