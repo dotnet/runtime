@@ -4024,14 +4024,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTreeCall* call = impStackTop().val->AsCall();
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
                     {
-                        GenTreeIntCon* typeHandle = call->Args().begin()->GetNode()->AsIntCon();
-                        auto hClass = reinterpret_cast<CORINFO_CLASS_HANDLE>(typeHandle->IconValue());
-                        BOOL isValueType = info.compCompHnd->isValueClass(hClass);
+                        GenTreeIntCon* handle = call->Args().begin()->GetNode()->AsIntCon();
+                        auto hClass           = reinterpret_cast<CORINFO_CLASS_HANDLE>(handle->IconValue());
+                        typeInfo tinfo        = verMakeTypeInfo(hClass);
+                        BOOL isValueType      = tinfo.IsValueClass();
                         if (ni == NI_System_Type_get_IsPrimitive)
                         {
                             if (isValueType)
                             {
-                                retNode = gtNewIconNode(verMakeTypeInfo(hClass).IsPrimitiveType() ? 1 : 0);
+                                retNode = gtNewIconNode(tinfo.IsPrimitiveType() ? 1 : 0);
                             }
                             else
                             {
@@ -4040,7 +4041,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                         else if (ni == NI_System_Type_get_IsClass)
                         {
-                            retNode = gtNewIconNode(isValueType ? 0 : 1);
+                            BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
+                            retNode          = gtNewIconNode(!isValueType && !isInterface ? 1 : 0);
                         }
                         else
                         {
