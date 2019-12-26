@@ -4019,8 +4019,21 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsValueType:
             {
+                // Optimize things like
+                //
+                //   ldtoken [Type]
+                //   call Type.GetTypeFromHandle (which is replaced with CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE)
+                //   call Type.IsValueType (also IsClass and IsPrimitive)
+                //
+                // to `true` or `false`
+                // e.g. `typeof(int).IsValueType` => `true`
                 if (impStackTop().val->IsCall())
                 {
+                    if (!strcmp(info.compMethodName, "Main"))
+                    {
+                        printf("!");
+                    }
+
                     GenTreeCall* call = impStackTop().val->AsCall();
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
                     {
@@ -4040,11 +4053,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                         typeInfo tinfo       = verMakeTypeInfo(hClass);
                         BOOL     isValueType = tinfo.IsValueClass();
+                        BOOL aa = eeIsValueClass(hClass);
                         if (ni == NI_System_Type_get_IsPrimitive)
                         {
-                            if (isValueType)
+                            if (isValueType && tinfo.IsPrimitiveType())
                             {
-                                retNode = gtNewIconNode(tinfo.IsPrimitiveType() ? 1 : 0);
+                                // make sure it's not Enum (CORINFO_TYPE_UNDEF)
+                                CorInfoType cit = info.compCompHnd->getTypeForPrimitiveNumericClass(hClass);
+                                retNode = gtNewIconNode(cit != CORINFO_TYPE_UNDEF);
                             }
                             else
                             {

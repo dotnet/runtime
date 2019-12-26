@@ -8,165 +8,183 @@ public class Program
 
     public static int Main(string[] args)
     {
-        IsTrue (typeof(int).IsPrimitive, "Case1");
-        IsTrue (typeof(int).IsValueType, "Case2");
-        IsFalse(typeof(int).IsClass, "Case3");
-        IsFalse(typeof(int?).IsPrimitive, "Case4");
-        IsTrue (typeof(int?).IsValueType, "Case5");
-        IsFalse(typeof(int?).IsClass, "Case6");
-        IsFalse(typeof(int*).IsPrimitive, "Case7");
-        IsFalse(typeof(int*).IsValueType, "Case8");
-        IsTrue (typeof(int*).IsClass, "Case9");
-        IsFalse(typeof(void*).IsPrimitive, "Case10");
-        IsFalse(typeof(void*).IsValueType, "Case11");
-        IsTrue (typeof(void*).IsClass, "Case12");
-        IsFalse(typeof(decimal).IsPrimitive, "Case13");
-        IsTrue (typeof(decimal).IsValueType, "Case14");
-        IsFalse(typeof(decimal).IsClass, "Case15");
-        IsFalse(typeof(string).IsPrimitive, "Case16");
-        IsFalse(typeof(string).IsValueType, "Case17");
-        IsTrue (typeof(string).IsClass, "Case18");
-        IsFalse(typeof(object).IsPrimitive, "Case19");
-        IsFalse(typeof(object).IsValueType, "Case20");
-        IsTrue (typeof(object).IsClass, "Case21");
-        IsFalse(typeof(IEnumerable<int>).IsPrimitive, "Case22");
-        IsFalse(typeof(IEnumerable<int>).IsValueType, "Case23"); 
-        IsFalse(typeof(IEnumerable<int>).IsClass, "Case24");
-        IsFalse(typeof(Action<int>).IsPrimitive, "Case25");
-        IsFalse(typeof(Action<int>).IsValueType, "Case26");
-        IsTrue (typeof(Action<int>).IsClass, "Case27");
-        IsFalse(typeof(GenericStruct<int>).IsPrimitive, "Case28");
-        IsTrue (typeof(GenericStruct<int>).IsValueType, "Case29");
-        IsFalse(typeof(GenericStruct<int>).IsClass, "Case30");
-        IsFalse(typeof(GenericStruct<string>).IsPrimitive, "Case31");
-        IsTrue (typeof(GenericStruct<string>).IsValueType, "Case32");
-        IsFalse(typeof(GenericStruct<string>).IsClass, "Case33");
-        IsFalse(typeof(SimpleEnum).IsPrimitive, "Case33_1");
-        IsTrue (typeof(SimpleEnum).IsValueType, "Case33_2");
-        IsFalse(typeof(SimpleEnum).IsClass, "Case33_3");
-        
-        
-        IsTrue (IsPrimitive<int>(42), "Case34");
-        IsTrue (IsPrimitive<int?>(new Nullable<int>(42)), "Case35");
-        IsFalse(IsPrimitive<decimal>(42M), "Case36");
-        IsFalse(IsPrimitive<string>("42"), "Case37");
-        IsFalse(IsPrimitive<object>(new object()), "Case38");
-        IsFalse(IsPrimitive<IEnumerable<int>>(new int[10]), "Case39");
-        IsFalse(IsPrimitive<Action<int>>(_ => { }), "Case40");
-        IsFalse(IsPrimitive<GenericStruct<int>>(default), "Case41");
-        IsFalse(IsPrimitive<GenericStruct<string>>(default), "Case42");
-        IsFalse(IsPrimitive(SimpleEnum.B), "Case42_1");
-        IsTrue (IsPrimitive(CreateDynamic1()), "Case43");
-        IsFalse(IsPrimitive(CreateDynamic2()), "Case44");
+        IsTrue (typeof(int).IsPrimitive);
+        IsTrue (typeof(int).IsValueType);
+        IsFalse(typeof(int).IsClass);
+        IsFalse(typeof(int?).IsPrimitive);
+        IsTrue (typeof(int?).IsValueType);
+        IsFalse(typeof(int?).IsClass);
+        IsFalse(typeof(int*).IsPrimitive);
+        IsFalse(typeof(int*).IsValueType);
+        IsTrue (typeof(int*).IsClass);
+        IsFalse(typeof(void*).IsPrimitive);
+        IsFalse(typeof(void*).IsValueType);
+        IsTrue (typeof(void*).IsClass);
+        IsTrue (typeof(IntPtr).IsPrimitive);
+        IsTrue (typeof(IntPtr).IsValueType);
+        IsFalse(typeof(IntPtr).IsClass);
+        IsFalse(typeof(decimal).IsPrimitive);
+        IsTrue (typeof(decimal).IsValueType);
+        IsFalse(typeof(decimal).IsClass);
+        IsTrue (typeof(double).IsPrimitive);
+        IsTrue (typeof(double).IsValueType);
+        IsFalse(typeof(double).IsClass);
+        IsFalse(typeof(string).IsPrimitive);
+        IsFalse(typeof(string).IsValueType);
+        IsTrue (typeof(string).IsClass);
+        IsFalse(typeof(object).IsPrimitive);
+        IsFalse(typeof(object).IsValueType);
+        IsTrue (typeof(object).IsClass);
+        IsFalse(typeof(IEnumerable<int>).IsPrimitive);
+        IsFalse(typeof(IEnumerable<int>).IsValueType);
+        IsFalse(typeof(IEnumerable<int>).IsClass);
+        IsFalse(typeof(Action<int>).IsPrimitive);
+        IsFalse(typeof(Action<int>).IsValueType);
+        IsTrue (typeof(Action<int>).IsClass);
+        IsFalse(typeof(GenericStruct<int>).IsPrimitive);
+        IsTrue (typeof(GenericStruct<int>).IsValueType);
+        IsFalse(typeof(GenericStruct<int>).IsClass);
+        IsFalse(typeof(GenericStruct<string>).IsPrimitive);
+        IsTrue (typeof(GenericStruct<string>).IsValueType);
+        IsFalse(typeof(GenericStruct<string>).IsClass);
+        IsFalse(typeof(SimpleEnum).IsPrimitive);
+        IsTrue (typeof(SimpleEnum).IsValueType);
+        IsFalse(typeof(SimpleEnum).IsClass);
+        IsFalse(typeof(void).IsPrimitive);
+        IsTrue (typeof(void).IsValueType);
+        IsFalse(typeof(void).IsClass);
+        IsFalse(typeof(ValueType).IsPrimitive);
+        IsFalse(typeof(ValueType).IsValueType);
+        IsTrue (typeof(ValueType).IsClass);
+        IsFalse(typeof(List<>).IsPrimitive);
+        IsFalse(typeof(List<>).IsValueType);
+        IsTrue (typeof(List<>).IsClass);
+        IsFalse(typeof(IDictionary<,>).IsPrimitive);
+        IsFalse(typeof(IDictionary<,>).IsValueType);
+        IsFalse(typeof(IDictionary<,>).IsClass);
 
-        IsTrue (IsValueType<int>(42), "Case45");
-        IsTrue (IsValueType<int?>(new Nullable<int>(42)), "Case46");
-        IsTrue (IsValueType<decimal>(42M), "Case47");
-        IsFalse(IsValueType<string>("42"), "Case48");
-        IsFalse(IsValueType<object>(new object()), "Case49");
-        IsFalse(IsValueType<IEnumerable<int>>(new int[10]), "Case50");
-        IsFalse(IsValueType<Action<int>>(_ => { }), "Case51");
-        IsTrue (IsValueType<GenericStruct<int>>(default), "Case52");
-        IsTrue (IsValueType<GenericStruct<string>>(default), "Case53");
-        IsTrue (IsValueType(SimpleEnum.B), "Case53_1");
-        IsTrue (IsValueType(CreateDynamic1()), "Case54");
-        IsFalse(IsValueType(CreateDynamic2()), "Case55");
+        IsTrue (IsPrimitive<int>(42));
+        IsTrue (IsPrimitive<int?>(new Nullable<int>(42)));
+        IsFalse(IsPrimitive<decimal>(42M));
+        IsFalse(IsPrimitive<string>("42"));
+        IsFalse(IsPrimitive<object>(new object()));
+        IsFalse(IsPrimitive<IEnumerable<int>>(new int[10]));
+        IsFalse(IsPrimitive<Action<int>>(_ => { }));
+        IsFalse(IsPrimitive<GenericStruct<int>>(default));
+        IsFalse(IsPrimitive<GenericStruct<string>>(default));
+        IsFalse(IsPrimitive(SimpleEnum.B));
+        IsTrue (IsPrimitive(CreateDynamic1()));
+        IsFalse(IsPrimitive(CreateDynamic2()));
 
-        IsFalse(IsClass<int>(42), "Case56");
-        IsFalse(IsClass<int?>(new Nullable<int>(42)), "Case57");
-        IsFalse(IsClass<decimal>(42M), "Case58");
-        IsTrue (IsClass<string>("42"), "Case59");
-        IsTrue (IsClass<object>(new object()), "Case60");
-        IsTrue (IsClass<IEnumerable<int>>(new int[10]), "Case61");
-        IsTrue (IsClass<Action<int>>(_ => { }), "Case62");
-        IsFalse(IsClass<GenericStruct<int>>(default), "Case63");
-        IsFalse(IsClass<GenericStruct<string>>(default), "Case64");
-        IsFalse(IsClass(SimpleEnum.B), "Case64_1");
-        IsFalse(IsClass(CreateDynamic1()), "Case65");
-        IsTrue (IsClass(CreateDynamic2()), "Case66");
+        IsTrue (IsValueType<int>(42));
+        IsTrue (IsValueType<int?>(new Nullable<int>(42)));
+        IsTrue (IsValueType<decimal>(42M));
+        IsFalse(IsValueType<string>("42"));
+        IsFalse(IsValueType<object>(new object()));
+        IsFalse(IsValueType<IEnumerable<int>>(new int[10]));
+        IsFalse(IsValueType<Action<int>>(_ => { }));
+        IsTrue (IsValueType<GenericStruct<int>>(default));
+        IsTrue (IsValueType<GenericStruct<string>>(default));
+        IsTrue (IsValueType(SimpleEnum.B));
+        IsTrue (IsValueType(CreateDynamic1()));
+        IsFalse(IsValueType(CreateDynamic2()));
 
-
-        IsTrue (IsPrimitiveObj(42), "Case67");
-        IsTrue (IsPrimitiveObj(new Nullable<int>(42)), "Case68");
-        IsTrue (IsPrimitiveObj(new decimal(42)), "Case69");
-        IsFalse(IsPrimitiveObj("42"), "Case70");
-        IsFalse(IsPrimitiveObj(new object()), "Case71");
-        IsFalse(IsPrimitiveObj(new int[10]), "Case72");
-        IsFalse(IsPrimitiveObj((Action<int>)(_ => { })), "Case73");
-        IsTrue (IsPrimitiveObj(new GenericStruct<int>()), "Case74");
-        IsTrue (IsPrimitiveObj(new GenericStruct<string>()), "Case75");
-        IsTrue (IsPrimitiveObj(SimpleEnum.B), "Case75_1");
-        IsTrue (IsPrimitiveObj(CreateDynamic1()), "Case76");
-        IsFalse(IsPrimitiveObj(CreateDynamic2()), "Case77");
-
-        IsTrue (IsValueTypeObj(42), "Case78");
-        IsTrue (IsValueTypeObj(new Nullable<int>(42)), "Case79");
-        IsTrue (IsValueTypeObj(42M), "Case80");
-        IsFalse(IsValueTypeObj("42"), "Case81");
-        IsFalse(IsValueTypeObj(new object()), "Case82");
-        IsFalse(IsValueTypeObj(new int[10]), "Case83");
-        IsFalse(IsValueTypeObj((Action<int>)(_ => { })), "Case84");
-        IsTrue (IsValueTypeObj(new GenericStruct<int>()), "Case85");
-        IsTrue (IsValueTypeObj(new GenericStruct<string>()), "Case86");
-        IsTrue (IsValueTypeObj(SimpleEnum.B), "Case86_1");
-        IsTrue (IsValueTypeObj(CreateDynamic1()), "Case87");
-        IsFalse(IsValueTypeObj(CreateDynamic2()), "Case88");
-
-        IsTrue (IsClassObj(42), "Case89");
-        IsTrue (IsClassObj(new Nullable<int>(42)), "Case90");
-        IsTrue (IsClassObj(42M), "Case91");
-        IsFalse(IsClassObj("42"), "Case92");
-        IsFalse(IsClassObj(new object()), "Case93");
-        IsFalse(IsClassObj(new int[10]), "Case94");
-        IsFalse(IsClassObj((Action<int>)(_ => { })), "Case95");
-        IsTrue (IsClassObj(new GenericStruct<int>()), "Case96");
-        IsTrue (IsClassObj(new GenericStruct<string>()), "Case97");
-        IsTrue (IsClassObj(SimpleEnum.B), "Case97_1");
-        IsTrue (IsClassObj(CreateDynamic1()), "Case98");
-        IsFalse(IsClassObj(CreateDynamic2()), "Case99");
+        IsFalse(IsClass<int>(42));
+        IsFalse(IsClass<int?>(new Nullable<int>(42)));
+        IsFalse(IsClass<decimal>(42M));
+        IsTrue (IsClass<string>("42"));
+        IsTrue (IsClass<object>(new object()));
+        IsTrue (IsClass<IEnumerable<int>>(new int[10]));
+        IsTrue (IsClass<Action<int>>(_ => { }));
+        IsFalse(IsClass<GenericStruct<int>>(default));
+        IsFalse(IsClass<GenericStruct<string>>(default));
+        IsFalse(IsClass(SimpleEnum.B));
+        IsFalse(IsClass(CreateDynamic1()));
+        IsTrue (IsClass(CreateDynamic2()));
 
 
-        IsTrue (IsPrimitiveRef(ref _varInt), "Case100");
-        IsTrue (IsPrimitiveRef(ref _varNullableInt), "Case101");
-        IsFalse(IsPrimitiveRef(ref _varDecimal), "Case102");
-        IsFalse(IsPrimitiveRef(ref _varString), "Case103");
-        IsFalse(IsPrimitiveRef(ref _varObject), "Case104");
-        IsFalse(IsPrimitiveRef(ref _varArrayOfInt), "Case105");
-        IsFalse(IsPrimitiveRef(ref _varAction), "Case106");
-        IsFalse(IsPrimitiveRef(ref _varGenericStructInt), "Case107");
-        IsFalse(IsPrimitiveRef(ref _varGenericStructStr), "Case108");
-        IsFalse(IsPrimitiveRef(ref _varEnum), "Case108_1");
+        IsTrue (IsPrimitiveObj(42));
+        IsTrue (IsPrimitiveObj(new Nullable<int>(42)));
+        IsTrue (IsPrimitiveObj(new decimal(42)));
+        IsFalse(IsPrimitiveObj("42"));
+        IsFalse(IsPrimitiveObj(new object()));
+        IsFalse(IsPrimitiveObj(new int[10]));
+        IsFalse(IsPrimitiveObj((Action<int>)(_ => { })));
+        IsTrue (IsPrimitiveObj(new GenericStruct<int>()));
+        IsTrue (IsPrimitiveObj(new GenericStruct<string>()));
+        IsTrue (IsPrimitiveObj(SimpleEnum.B));
+        IsTrue (IsPrimitiveObj(CreateDynamic1()));
+        IsFalse(IsPrimitiveObj(CreateDynamic2()));
 
-        IsTrue (IsValueTypeRef(ref _varInt), "Case109");
-        IsTrue (IsValueTypeRef(ref _varNullableInt), "Case110");
-        IsTrue (IsValueTypeRef(ref _varDecimal), "Case111");
-        IsFalse(IsValueTypeRef(ref _varString), "Case112");
-        IsFalse(IsValueTypeRef(ref _varObject), "Case113");
-        IsFalse(IsValueTypeRef(ref _varArrayOfInt), "Case114");
-        IsFalse(IsValueTypeRef(ref _varAction), "Case115");
-        IsTrue (IsValueTypeRef(ref _varGenericStructInt), "Case116");
-        IsTrue (IsValueTypeRef(ref _varGenericStructStr), "Case117");
-        IsTrue (IsValueTypeRef(ref _varEnum), "Case117_1");
+        IsTrue (IsValueTypeObj(42));
+        IsTrue (IsValueTypeObj(new Nullable<int>(42)));
+        IsTrue (IsValueTypeObj(42M));
+        IsFalse(IsValueTypeObj("42"));
+        IsFalse(IsValueTypeObj(new object()));
+        IsFalse(IsValueTypeObj(new int[10]));
+        IsFalse(IsValueTypeObj((Action<int>)(_ => { })));
+        IsTrue (IsValueTypeObj(new GenericStruct<int>()));
+        IsTrue (IsValueTypeObj(new GenericStruct<string>()));
+        IsTrue (IsValueTypeObj(SimpleEnum.B));
+        IsTrue (IsValueTypeObj(CreateDynamic1()));
+        IsFalse(IsValueTypeObj(CreateDynamic2()));
 
-        IsFalse(IsClassRef(ref _varInt), "Case118");
-        IsFalse(IsClassRef(ref _varNullableInt), "Case119");
-        IsFalse(IsClassRef(ref _varDecimal), "Case120");
-        IsTrue (IsClassRef(ref _varString), "Case121");
-        IsTrue (IsClassRef(ref _varObject), "Case122");
-        IsTrue (IsClassRef(ref _varArrayOfInt), "Case123");
-        IsTrue (IsClassRef(ref _varAction), "Case124");
-        IsFalse(IsClassRef(ref _varGenericStructInt), "Case125");
-        IsFalse(IsClassRef(ref _varGenericStructStr), "Case126");
-        IsFalse(IsClassRef(ref _varEnum), "Case127");
+        IsTrue (IsClassObj(42));
+        IsTrue (IsClassObj(new Nullable<int>(42)));
+        IsTrue (IsClassObj(42M));
+        IsFalse(IsClassObj("42"));
+        IsFalse(IsClassObj(new object()));
+        IsFalse(IsClassObj(new int[10]));
+        IsFalse(IsClassObj((Action<int>)(_ => { })));
+        IsTrue (IsClassObj(new GenericStruct<int>()));
+        IsTrue (IsClassObj(new GenericStruct<string>()));
+        IsTrue (IsClassObj(SimpleEnum.B));
+        IsTrue (IsClassObj(CreateDynamic1()));
+        IsFalse(IsClassObj(CreateDynamic2()));
+
+
+        IsTrue (IsPrimitiveRef(ref _varInt));
+        IsTrue (IsPrimitiveRef(ref _varNullableInt));
+        IsFalse(IsPrimitiveRef(ref _varDecimal));
+        IsFalse(IsPrimitiveRef(ref _varString));
+        IsFalse(IsPrimitiveRef(ref _varObject));
+        IsFalse(IsPrimitiveRef(ref _varArrayOfInt));
+        IsFalse(IsPrimitiveRef(ref _varAction));
+        IsFalse(IsPrimitiveRef(ref _varGenericStructInt));
+        IsFalse(IsPrimitiveRef(ref _varGenericStructStr));
+        IsFalse(IsPrimitiveRef(ref _varEnum));
+
+        IsTrue (IsValueTypeRef(ref _varInt));
+        IsTrue (IsValueTypeRef(ref _varNullableInt));
+        IsTrue (IsValueTypeRef(ref _varDecimal));
+        IsFalse(IsValueTypeRef(ref _varString));
+        IsFalse(IsValueTypeRef(ref _varObject));
+        IsFalse(IsValueTypeRef(ref _varArrayOfInt));
+        IsFalse(IsValueTypeRef(ref _varAction));
+        IsTrue (IsValueTypeRef(ref _varGenericStructInt));
+        IsTrue (IsValueTypeRef(ref _varGenericStructStr));
+        IsTrue (IsValueTypeRef(ref _varEnum));
+
+        IsFalse(IsClassRef(ref _varInt));
+        IsFalse(IsClassRef(ref _varNullableInt));
+        IsFalse(IsClassRef(ref _varDecimal));
+        IsTrue (IsClassRef(ref _varString));
+        IsTrue (IsClassRef(ref _varObject));
+        IsTrue (IsClassRef(ref _varArrayOfInt));
+        IsTrue (IsClassRef(ref _varAction));
+        IsFalse(IsClassRef(ref _varGenericStructInt));
+        IsFalse(IsClassRef(ref _varGenericStructStr));
+        IsFalse(IsClassRef(ref _varEnum));
 
 
         // make sure optimization won't hide NRE check
         // e.g. `_varStringNull.GetType().IsPrimitive` => optimize to just `false`
-        ThrowsNRE(() => { IsPrimitive(_varNullableIntNull); }, "Case127");
-        ThrowsNRE(() => { IsPrimitive(_varStringNull); }, "Case128");
-        ThrowsNRE(() => { IsClassRef(ref _varNullableIntNull); }, "Case129");
-        ThrowsNRE(() => { IsClassRef(ref _varStringNull); }, "Case130");
+        ThrowsNRE(() => { IsPrimitive(_varNullableIntNull); });
+        ThrowsNRE(() => { IsPrimitive(_varStringNull); });
+        ThrowsNRE(() => { IsClassRef(ref _varNullableIntNull); });
+        ThrowsNRE(() => { IsClassRef(ref _varStringNull); });
 
+        Console.WriteLine(_errors);
         return 100 + _errors;
     }
 
@@ -222,25 +240,25 @@ public class Program
     private static dynamic CreateDynamic2() => new { Name = "Test" };
 
 
-    static void IsTrue (bool expression, string caseName)
+    static void IsTrue(bool expression, [CallerLineNumber] int line = 0)
     {
         if (!expression)
         {
-            Console.WriteLine($"{caseName} failed.");
+            Console.WriteLine($"Line {line}: test failed (expected: true).");
             _errors++;
         }
     }
 
-    static void IsFalse(bool expression, string caseName)
+    static void IsFalse(bool expression, [CallerLineNumber] int line = 0)
     {
         if (expression)
         {
-            Console.WriteLine($"{caseName} failed.");
+            Console.WriteLine($"Line {line}: test failed (expected: false).");
             _errors++;
         }
     }
 
-    static void ThrowsNRE(Action action, string caseName)
+    static void ThrowsNRE(Action action, [CallerLineNumber] int line = 0)
     {
         try
         {
@@ -252,9 +270,9 @@ public class Program
         }
         catch (Exception exc)
         {
-            Console.WriteLine($"{caseName}: {exc}");
+            Console.WriteLine($"Line {line}: {exc}");
         }
-        Console.WriteLine($"{caseName} didn't throw NRE.");
+        Console.WriteLine($"Line {line}: test failed (expected: NullReferenceException)");
     }
 }
 
