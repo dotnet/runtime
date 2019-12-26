@@ -21,6 +21,9 @@ set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/dlls/mscordac/palredefines.S)
 
+# Avoid logging when skipping up-to-date copies
+set(CMAKE_INSTALL_MESSAGE LAZY)
+
 set(CORECLR_SET_RPATH ON)
 if(CORECLR_SET_RPATH)
     # Enable @rpath support for shared libraries.
