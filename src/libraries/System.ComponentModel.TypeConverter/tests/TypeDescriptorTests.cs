@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public partial class TypeDescriptorTests
+    public class TypeDescriptorTests
     {
         [Fact]
         public void AddProvider_InvokeObject_GetProviderReturnsExpected()
@@ -1139,6 +1139,12 @@ namespace System.ComponentModel.Tests
             var descriptionAttribute = (DescriptionAttribute)property.Attributes[typeof(DescriptionAttribute)];
             Assert.Equal("Derived", descriptionAttribute.Description);
         }
+
+        [Theory]
+        [InlineData(typeof(Version), typeof(VersionConverter))]
+        [InlineData(typeof(IComponent), typeof(ComponentConverter))]
+        public static void GetConverter_NetCoreApp(Type targetType, Type resultConverterType) =>
+            GetConverter(targetType, resultConverterType);
 
         class FooBarBase
         {
