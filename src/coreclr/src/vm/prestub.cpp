@@ -2877,7 +2877,8 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
 
     pResult->indirectFirstOffset = 0;
     pResult->indirectSecondOffset = 0;
-
+    // Dictionary size checks skipped by default, unless we decide otherwise
+    pResult->sizeOffset = CORINFO_SKIPSIZECHECK;
     pResult->indirections = CORINFO_USEHELPER;
 
     DWORD numGenericArgs = 0;
@@ -2974,6 +2975,12 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
         if (DictionaryLayout::FindToken(pContextMD, pModule->GetLoaderAllocator(), 1, NULL, (BYTE*)pBlobStart, FromReadyToRunImage, pResult, &dictionarySlot))
         {
             pResult->testForNull = 1;
+            int minDictSize = pContextMD->GetNumGenericMethodArgs() + 1 + pContextMD->GetDictionaryLayout()->GetNumInitialSlots();
+            if (dictionarySlot >= minDictSize)
+            {
+                // Dictionaries are guaranteed to have at least the number of slots allocated initially, so skip size check for smaller indexes
+                pResult->sizeOffset = (WORD)pContextMD->GetNumGenericMethodArgs() * sizeof(DictionaryEntry);
+            }
 
             // Indirect through dictionary table pointer in InstantiatedMethodDesc
             pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
@@ -2993,6 +3000,12 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
         if (DictionaryLayout::FindToken(pContextMT, pModule->GetLoaderAllocator(), 2, NULL, (BYTE*)pBlobStart, FromReadyToRunImage, pResult, &dictionarySlot))
         {
             pResult->testForNull = 1;
+            int minDictSize = pContextMT->GetNumGenericArgs() + 1 + pContextMT->GetClass()->GetDictionaryLayout()->GetNumInitialSlots();
+            if (dictionarySlot >= minDictSize)
+            {
+                // Dictionaries are guaranteed to have at least the number of slots allocated initially, so skip size check for smaller indexes
+                pResult->sizeOffset = (WORD)pContextMT->GetNumGenericArgs() * sizeof(DictionaryEntry);
+            }
 
             // Indirect through dictionary table pointer in vtable
             pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();

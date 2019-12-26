@@ -37,11 +37,9 @@
 //---------------------------------------------------------------------------------------
 //
 //static
-DictionaryLayout *
-DictionaryLayout::Allocate(
-    WORD              numSlots,
-    LoaderAllocator * pAllocator,
-    AllocMemTracker * pamTracker)
+DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
+                                             LoaderAllocator * pAllocator,
+                                             AllocMemTracker * pamTracker)
 {
     CONTRACT(DictionaryLayout*)
     {
@@ -65,9 +63,10 @@ DictionaryLayout::Allocate(
 
     // This is the number of slots excluding the type parameters
     pD->m_numSlots = numSlots;
+    pD->m_numInitialSlots = numSlots;
 
     RETURN pD;
-} // DictionaryLayout::Allocate
+}
 
 #endif //!DACCESS_COMPILE
 
@@ -279,6 +278,8 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
     DictionaryLayout* pNewDictionaryLayout = Allocate(pCurrentDictLayout->m_numSlots * 2, pAllocator, NULL);
 #endif
 
+    pNewDictionaryLayout->m_numInitialSlots = pCurrentDictLayout->m_numInitialSlots;
+
     for (DWORD iSlot = 0; iSlot < pCurrentDictLayout->m_numSlots; iSlot++)
         pNewDictionaryLayout->m_slots[iSlot] = pCurrentDictLayout->m_slots[iSlot];
 
@@ -318,7 +319,7 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
         PRECONDITION(CheckPointer(pResult));
         PRECONDITION(pMT->HasInstantiation());
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
     DWORD cbSig = -1;
     pSig = pSigBuilder != NULL ? (BYTE*)pSigBuilder->GetSignature(&cbSig) : pSig;
@@ -330,7 +331,6 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
         if (FindTokenWorker(pMT->GetLoaderAllocator(), pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
             return TRUE;
-        
 
 #ifndef CROSSGEN_COMPILE
         DictionaryLayout* pOldLayout = pMT->GetClass()->GetDictionaryLayout();
@@ -341,12 +341,8 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
             return FALSE;
         }
 
-        // First, expand the PerInstInfo dictionaries on types that were using the dictionary layout that just got expanded, and expand their slots
-        pMT->GetModule()->ExpandTypeDictionaries_Locked(pMT, pOldLayout, pNewLayout);
-
-        // Finally, update the dictionary layout pointer after all dictionaries of instantiated types have expanded, so that subsequent calls to 
-        // DictionaryLayout::FindToken can use this. It is important to update the dictionary layout at the very last step, otherwise some other threads
-        // can start using newly added dictionary layout slots on types where the PerInstInfo hasn't expanded yet, and cause runtime failures.
+        // Update the dictionary layout pointer. Note that the expansion of the dictionaries of all instantiated types using this layout
+        // is done lazily, whenever we attempt to access a slot that is beyond the size of the existing dictionary on that type.
         pMT->GetClass()->SetDictionaryLayout(pNewLayout);
 
         return TRUE;
@@ -375,7 +371,7 @@ BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
         PRECONDITION(CheckPointer(pResult));
         PRECONDITION(pMD->HasMethodInstantiation());
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
     DWORD cbSig = -1;
     pSig = pSigBuilder != NULL ? (BYTE*)pSigBuilder->GetSignature(&cbSig) : pSig;
@@ -397,12 +393,8 @@ BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
             return FALSE;
         }
 
-        // First, expand the PerInstInfo dictionaries on methods that were using the dictionary layout that just got expanded, and expand their slots
-        pMD->GetModule()->ExpandMethodDictionaries_Locked(pMD, pOldLayout, pNewLayout);
-
-        // Finally, update the dictionary layout pointer after all dictionaries of instantiated methods have expanded, so that subsequent calls to 
-        // DictionaryLayout::FindToken can use this. It is important to update the dictionary layout at the very last step, otherwise some other threads
-        // can start using newly added dictionary layout slots on methods where the PerInstInfo hasn't expanded yet, and cause runtime failures.
+        // Update the dictionary layout pointer. Note that the expansion of the dictionaries of all instantiated methods using this layout
+        // is done lazily, whenever we attempt to access a slot that is beyond the size of the existing dictionary on that method.
         pMD->AsInstantiatedMethodDesc()->IMD_SetDictionaryLayout(pNewLayout);
 
         return TRUE;
@@ -441,11 +433,16 @@ PVOID DictionaryLayout::CreateSignatureWithSlotData(SigBuilder* pSigBuilder, Loa
 
 //---------------------------------------------------------------------------------------
 //
-DWORD
-DictionaryLayout::GetMaxSlots()
+DWORD DictionaryLayout::GetMaxSlots()
 {
     LIMITED_METHOD_CONTRACT;
     return m_numSlots;
+}
+
+DWORD DictionaryLayout::GetNumInitialSlots()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_numInitialSlots;
 }
 
 //---------------------------------------------------------------------------------------
@@ -770,6 +767,105 @@ Dictionary::Restore(
     // long comment at the start of this file as to why
 }
 #endif // FEATURE_PREJIT
+
+Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD)
+{
+    CONTRACT(Dictionary*)
+    {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    Dictionary* pDictionary = pMD->GetMethodDictionary();
+
+#if !defined(CROSSGEN_COMPILE)
+    DictionaryLayout* pDictLayout = pMD->GetDictionaryLayout();
+    InstantiatedMethodDesc* pIMD = pMD->AsInstantiatedMethodDesc();
+    _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
+
+    DWORD sizeFromDictLayout = DictionaryLayout::GetDictionarySizeFromLayout(pMD->GetNumGenericMethodArgs(), pDictLayout);
+    if (pIMD->GetDictionarySlotsSize() != sizeFromDictLayout)
+    {
+        _ASSERT(pIMD->GetDictionarySlotsSize() < sizeFromDictLayout);
+
+        pDictionary = (Dictionary*)(void*)pIMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeFromDictLayout + sizeof(void*)));
+        ZeroMemory(pDictionary, sizeFromDictLayout + sizeof(void*));
+
+        // Slot[-1] points at previous dictionary to help with diagnostics when investigating crashes
+        *(byte**)pDictionary = (byte*)pIMD->m_pPerInstInfo.GetValue() + 1;
+        pDictionary++;
+
+        // Copy old dictionary entry contents
+        memcpy(pDictionary, (const void*)pIMD->m_pPerInstInfo.GetValue(), pIMD->GetDictionarySlotsSize());
+
+        ULONG_PTR* pSizeSlot = ((ULONG_PTR*)pDictionary) + pIMD->GetNumGenericMethodArgs();
+        *pSizeSlot = sizeFromDictLayout;
+
+        // Flush any write buffers before publishing the new dictionary contents
+        FlushProcessWriteBuffers();
+
+        // Publish the new dictionary slots to the type.
+        FastInterlockExchangePointer((TypeHandle**)pIMD->m_pPerInstInfo.GetValuePtr(), (TypeHandle*)pDictionary);
+    }
+#endif
+
+    RETURN pDictionary;
+}
+
+Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT)
+{
+    CONTRACT(Dictionary*)
+    {
+       THROWS;
+       GC_TRIGGERS;
+       PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+       POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    Dictionary* pDictionary = pMT->GetDictionary();
+
+#if !defined(CROSSGEN_COMPILE)
+    DictionaryLayout* pDictLayout = pMT->GetClass()->GetDictionaryLayout();
+    _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
+
+    DWORD sizeFromDictLayout = DictionaryLayout::GetDictionarySizeFromLayout(pMT->GetNumGenericArgs(), pDictLayout);
+    if (pMT->GetDictionarySlotsSize() != sizeFromDictLayout)
+    {
+        _ASSERTE(pMT->GetDictionarySlotsSize() < sizeFromDictLayout);
+
+        // Expand type dictionary
+        pDictionary = (Dictionary*)(void*)pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeFromDictLayout + sizeof(void*)));
+        ZeroMemory(pDictionary, sizeFromDictLayout + sizeof(void*));
+
+        // Slot[-1] points at previous dictionary to help with diagnostics when investigating crashes
+        *(byte**)pDictionary = (byte*)pMT->GetPerInstInfo()[pMT->GetNumDicts() - 1].GetValue() + 1;
+        pDictionary++;
+
+        // Copy old dictionary entry contents
+        memcpy(pDictionary, (const void*)pMT->GetPerInstInfo()[pMT->GetNumDicts() - 1].GetValue(), pMT->GetDictionarySlotsSize());
+
+        ULONG_PTR* pSizeSlot = ((ULONG_PTR*)pDictionary) + pMT->GetNumGenericArgs();
+        *pSizeSlot = sizeFromDictLayout;
+
+        // Flush any write buffers before publishing the new dictionary contents
+        FlushProcessWriteBuffers();
+
+        // Publish the new dictionary slots to the type.
+        ULONG dictionaryIndex = pMT->GetNumDicts() - 1;
+        TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
+        FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDictionary);
+
+        // Update dictionary pointer on derived types
+        pMT->GetLoaderModule()->UpdateDictionaryOnSharedGenericTypeDependencies(pMT, pDictionary, dictionaryIndex);
+    }
+#endif
+
+    RETURN pDictionary;
+}
 
 //---------------------------------------------------------------------------------------
 //
@@ -1379,14 +1475,9 @@ Dictionary::PopulateEntry(
             // Lock is needed because dictionary pointers can get updated during dictionary size expansion
             CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
 
-#if !defined(CROSSGEN_COMPILE) && defined(_DEBUG)
-            if (pMT != NULL)
-                pMT->GetModule()->EnsureTypeRecorded(pMT);
-            else
-                pMD->GetModule()->EnsureMethodRecorded(pMD);
-#endif
-
-            Dictionary* pDictionary = pMT != NULL ? pMT->GetDictionary() : pMD->GetMethodDictionary();
+            Dictionary* pDictionary = (pMT != NULL) ?
+                GetTypeDictionaryWithSizeCheck(pMT) :
+                GetMethodDictionaryWithSizeCheck(pMD);
 
             *(pDictionary->GetSlotAddr(0, slotIndex)) = result;
             *ppSlot = pDictionary->GetSlotAddr(0, slotIndex);
