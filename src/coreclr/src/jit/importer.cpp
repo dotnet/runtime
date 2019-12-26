@@ -4024,7 +4024,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTreeCall* call = impStackTop().val->AsCall();
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
                     {
-                        GenTreeIntCon* handle = call->Args().begin()->GetNode()->AsIntCon();
+                        GenTree* arg = call->Args().begin()->GetNode();
+                        if (!arg->IsIntegralConst())
+                        {
+                            // e.g. GT_RUNTIMELOOKUP
+                            break;
+                        }
+                        GenTreeIntCon* handle = arg->AsIntCon();
                         auto hClass           = reinterpret_cast<CORINFO_CLASS_HANDLE>(handle->IconValue());
                         typeInfo tinfo        = verMakeTypeInfo(hClass);
                         BOOL isValueType      = tinfo.IsValueClass();
