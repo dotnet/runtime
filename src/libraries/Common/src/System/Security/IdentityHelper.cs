@@ -80,7 +80,7 @@ namespace System.Security
             }
         }
 
-        // This is from the NetFX Path class. The implementation in CoreFx was optimized for internal Path usage so
+        // This is from the NetFX Path class. The implementation in the runtime libraries was optimized for internal Path usage so
         // we can't share the implementation.
         internal static string ToBase32StringSuitableForDirName(byte[] buff)
         {
