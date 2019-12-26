@@ -77,6 +77,9 @@ namespace System.Text.RegularExpressions
         public const int EndZ = RegexCode.EndZ;                       //          \Z
         public const int End = RegexCode.End;                         //          \z
 
+        public const int Oneloopgreedy = RegexCode.Oneloopgreedy;     // c,n      (?> a*)
+        public const int Setloopgreedy = RegexCode.Setloopgreedy;     // set,n    (?> \d*)
+
         // Interior nodes do not correspond to primitive operations, but
         // control structures compositing other operations
 
@@ -190,6 +193,10 @@ namespace System.Text.RegularExpressions
                     n = ReduceRep();
                     break;
 
+                case Greedy:
+                    n = ReduceGreedy();
+                    break;
+
                 case Group:
                     n = ReduceGroup();
                     break;
@@ -226,53 +233,116 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private RegexNode ReduceGroup()
         {
-            RegexNode u;
+            RegexNode u = this;
 
-            for (u = this; u.Type() == Group;)
+            while (u.Type() == Group)
+            {
+                Debug.Assert(u.ChildCount() == 1);
                 u = u.Child(0);
+            }
 
             return u;
         }
 
         /// <summary>
-        /// Nested repeaters just get multiplied with each other if they're not
-        /// too lumpy
+        /// Simple optimization. If a greedy subexpression contains only a set loop
+        /// or a one loop, change them to be a greedy set loop or greedy one loop,
+        /// and remove the greedy node.
+        /// </summary>
+        private RegexNode ReduceGreedy()
+        {
+            Debug.Assert(NType == Greedy);
+            if (Children != null && Children.Count == 1)
+            {
+                RegexNode child = Children[0];
+                switch (child.NType)
+                {
+                    case Oneloop:
+                        child.NType = Oneloopgreedy;
+                        return child;
+
+                    case Setloop:
+                        child.NType = Setloopgreedy;
+                        return child;
+
+                    case Oneloopgreedy:
+                    case Setloopgreedy:
+                        return child;
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Nested repeaters just get multiplied with each other if they're not too lumpy
         /// </summary>
         private RegexNode ReduceRep()
         {
             RegexNode u = this;
-            RegexNode child;
             int type = Type();
+            Debug.Assert(type == Loop || type == Lazyloop);
+
             int min = M;
             int max = N;
 
-            while (true)
+            while (u.ChildCount() > 0)
             {
-                if (u.ChildCount() == 0)
-                    break;
-
-                child = u.Child(0);
+                RegexNode child = u.Child(0);
 
                 // multiply reps of the same type only
                 if (child.Type() != type)
                 {
-                    int childType = child.Type();
+                    bool valid = false;
+                    if (type == Loop)
+                    {
+                        switch (child.Type())
+                        {
+                            case Oneloop:
+                            case Oneloopgreedy:
+                            case Notoneloop:
+                            case Setloop:
+                            case Setloopgreedy:
+                                valid = true;
+                                break;
+                        }
+                    }
+                    else // type == Lazyloop
+                    {
+                        switch (child.Type())
+                        {
+                            case Onelazy:
+                            case Notonelazy:
+                            case Setlazy:
+                                valid = true;
+                                break;
+                        }
+                    }
 
-                    if (!(childType >= Oneloop && childType <= Setloop && type == Loop ||
-                          childType >= Onelazy && childType <= Setlazy && type == Lazyloop))
+                    if (!valid)
+                    {
                         break;
+                    }
                 }
 
                 // child can be too lumpy to blur, e.g., (a {100,105}) {3} or (a {2,})?
                 // [but things like (a {2,})+ are not too lumpy...]
                 if (u.M == 0 && child.M > 1 || child.N < child.M * 2)
+                {
                     break;
+                }
 
                 u = child;
+
                 if (u.M > 0)
+                {
                     u.M = min = ((int.MaxValue - 1) / u.M < min) ? int.MaxValue : u.M * min;
+                }
+
                 if (u.N > 0)
+                {
                     u.N = max = ((int.MaxValue - 1) / u.N < max) ? int.MaxValue : u.N * max;
+                }
             }
 
             return min == int.MaxValue ? new RegexNode(Nothing, Options) : u;
@@ -429,38 +499,38 @@ namespace System.Text.RegularExpressions
         private RegexNode ReduceConcatenation()
         {
             if (Children == null)
+            {
                 return new RegexNode(Empty, Options);
+            }
 
             bool wasLastString = false;
             RegexOptions optionsLast = 0;
-            RegexOptions optionsAt;
-            int i;
-            int j;
+            int i, j;
 
             for (i = 0, j = 0; i < Children.Count; i++, j++)
             {
-                RegexNode at;
-                RegexNode prev;
-
-                at = Children[i];
+                RegexNode at = Children[i];
 
                 if (j < i)
+                {
                     Children[j] = at;
+                }
 
                 if (at.NType == Concatenate &&
                     ((at.Options & RegexOptions.RightToLeft) == (Options & RegexOptions.RightToLeft)))
                 {
                     for (int k = 0; k < at.Children!.Count; k++)
+                    {
                         at.Children[k].Next = this;
+                    }
 
                     Children.InsertRange(i + 1, at.Children);
                     j--;
                 }
-                else if (at.NType == Multi ||
-                         at.NType == One)
+                else if (at.NType == Multi || at.NType == One)
                 {
                     // Cannot merge strings if L or I options differ
-                    optionsAt = at.Options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase);
+                    RegexOptions optionsAt = at.Options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase);
 
                     if (!wasLastString || optionsLast != optionsAt)
                     {
@@ -469,7 +539,7 @@ namespace System.Text.RegularExpressions
                         continue;
                     }
 
-                    prev = Children[--j];
+                    RegexNode prev = Children[--j];
 
                     if (prev.NType == One)
                     {
@@ -479,17 +549,11 @@ namespace System.Text.RegularExpressions
 
                     if ((optionsAt & RegexOptions.RightToLeft) == 0)
                     {
-                        if (at.NType == One)
-                            prev.Str += at.Ch.ToString();
-                        else
-                            prev.Str += at.Str;
+                        prev.Str += (at.NType == One) ? at.Ch.ToString() : at.Str;
                     }
                     else
                     {
-                        if (at.NType == One)
-                            prev.Str = at.Ch.ToString() + prev.Str;
-                        else
-                            prev.Str = at.Str + prev.Str;
+                        prev.Str = (at.NType == One) ? at.Ch.ToString() + prev.Str : at.Str + prev.Str;
                     }
                 }
                 else if (at.NType == Empty)
@@ -503,9 +567,116 @@ namespace System.Text.RegularExpressions
             }
 
             if (j < i)
+            {
                 Children.RemoveRange(j, i - j);
+            }
 
+            // Now try to convert as many loops as possible to be greedy to avoid unnecessary backtracking.
+            if ((Options & RegexOptions.RightToLeft) == 0)
+            {
+                ReduceConcatenateWithAutoGreedy();
+            }
+
+            // If the concatenation is now empty, return an empty node, or if it's got a single child, return that child.
+            // Otherwise, return this.
             return StripEnation(Empty);
+        }
+
+        /// <summary>
+        /// Finds oneloop and setloop nodes in the concatenation that can be automatically upgraded
+        /// to oneloopgreedy and setloopgreedy nodes.  Such changes avoid potential useless backtracking.
+        /// This looks for cases like A*B, where A and B are known to not overlap: in such cases,
+        /// we can effectively convert this to (?>A*)B.
+        /// </summary>
+        private void ReduceConcatenateWithAutoGreedy()
+        {
+            Debug.Assert(NType == Concatenate);
+            Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
+
+            for (int i = 0; i < Children!.Count - 1; i++)
+            {
+                RegexNode node = Children[i], subsequent = Children[i + 1];
+
+                // Skip down the node past irrelevant capturing and non-capturing groups.
+                while (node.NType == Capture || node.NType == Group)
+                {
+                    Debug.Assert(node.Children!.Count == 1);
+                    node = node.Children[0];
+                }
+
+                // Skip the successor down to the guaranteed next node.
+                while (subsequent.Children != null && subsequent.Children.Count > 0)
+                {
+                    switch (subsequent.NType)
+                    {
+                        case Capture:
+                        case Group:
+                        case Greedy:
+                        case Require:
+                        case Concatenate:
+                        case Loop when subsequent.M > 0:
+                        case Lazyloop when subsequent.M > 0:
+                            subsequent = subsequent.Children[0];
+                            continue;
+                    }
+
+                    break;
+                }
+
+                // If the two nodes don't agree on case-insensitivity, don't try to optimize.
+                // If they're both case sensitive or both case insensitive, then their tokens
+                // will be comparable.
+                if ((node.Options & RegexOptions.IgnoreCase) != (subsequent.Options & RegexOptions.IgnoreCase))
+                {
+                    continue;
+                }
+
+                // If this node is a oneloop or a setloop, see if it overlaps with its successor in the concatenation.
+                // If it doesn't, then we can upgrade it to being a oneloopgreedy or setloopgreedy, respectively.
+                // Doing so avoids unnecessary backtracking.
+                switch (node.NType)
+                {
+                    case Oneloop:
+                        switch (subsequent.NType)
+                        {
+                            case One when node.Ch != subsequent.Ch:
+                            case Onelazy when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                            case Oneloop when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                            case Oneloopgreedy when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                            case Notone when node.Ch == subsequent.Ch:
+                            case Notonelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                            case Notoneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                            case Multi when !string.IsNullOrEmpty(subsequent.Str) && node.Ch != subsequent.Str[0]:
+                            case Set when subsequent.Str != null && !RegexCharClass.CharInClass(node.Ch, subsequent.Str):
+                            case Setlazy when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.CharInClass(node.Ch, subsequent.Str):
+                            case Setloop when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.CharInClass(node.Ch, subsequent.Str):
+                            case Setloopgreedy when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.CharInClass(node.Ch, subsequent.Str):
+                                node.NType = Oneloopgreedy;
+                                break;
+                        }
+                        break;
+
+                    case Setloop when node.Str != null:
+                        switch (subsequent.NType)
+                        {
+                            case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str):
+                            case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str):
+                            case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str):
+                            case Oneloopgreedy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str):
+                            case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str):
+                            case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str):
+                            case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str):
+                            case Multi when !string.IsNullOrEmpty(subsequent.Str) && !RegexCharClass.CharInClass(subsequent.Str[0], node.Str):
+                            case Set when subsequent.Str != null && !RegexCharClass.MayOverlap(node.Str, subsequent.Str):
+                            case Setlazy when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.MayOverlap(node.Str, subsequent.Str):
+                            case Setloop when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.MayOverlap(node.Str, subsequent.Str):
+                            case Setloopgreedy when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.MayOverlap(node.Str, subsequent.Str):
+                                node.NType = Setloopgreedy;
+                                break;
+                        }
+                        break;
+                }
+            }
         }
 
         public RegexNode MakeQuantifier(bool lazy, int min, int max)
@@ -533,8 +704,7 @@ namespace System.Text.RegularExpressions
 
         public void AddChild(RegexNode newChild)
         {
-            if (Children == null)
-                Children = new List<RegexNode>(4);
+            Children ??= new List<RegexNode>();
 
             RegexNode reducedChild = newChild.Reduce();
             Children.Add(reducedChild);
@@ -565,13 +735,16 @@ namespace System.Text.RegularExpressions
             "One", "Notone", "Set",
             "Multi", "Ref",
             "Bol", "Eol", "Boundary", "Nonboundary",
-            "ECMABoundary", "NonECMABoundary",
             "Beginning", "Start", "EndZ", "End",
             "Nothing", "Empty",
             "Alternate", "Concatenate",
             "Loop", "Lazyloop",
             "Capture", "Group", "Require", "Prevent", "Greedy",
-            "Testref", "Testgroup"};
+            "Testref", "Testgroup",
+            "", "", "", "", "", "",
+            "ECMABoundary", "NonECMABoundary",
+            "Oneloopgreedy", "Setloopgreedy",
+        };
 
         private string Description()
         {
@@ -597,6 +770,7 @@ namespace System.Text.RegularExpressions
             switch (NType)
             {
                 case Oneloop:
+                case Oneloopgreedy:
                 case Notoneloop:
                 case Onelazy:
                 case Notonelazy:
@@ -616,6 +790,7 @@ namespace System.Text.RegularExpressions
                     break;
                 case Set:
                 case Setloop:
+                case Setloopgreedy:
                 case Setlazy:
                     ArgSb.Append("(Set = " + RegexCharClass.SetDescription(Str!) + ")");
                     break;
@@ -624,10 +799,12 @@ namespace System.Text.RegularExpressions
             switch (NType)
             {
                 case Oneloop:
+                case Oneloopgreedy:
                 case Notoneloop:
                 case Onelazy:
                 case Notonelazy:
                 case Setloop:
+                case Setloopgreedy:
                 case Setlazy:
                 case Loop:
                 case Lazyloop:

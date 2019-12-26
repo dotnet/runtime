@@ -239,13 +239,13 @@ namespace System.Text.RegularExpressions
         private void EmitFragment(int nodetype, RegexNode node, int curIndex)
         {
             int bits = 0;
-
-            if (nodetype <= RegexNode.Ref)
+            if (node.UseOptionR())
             {
-                if (node.UseOptionR())
-                    bits |= RegexCode.Rtl;
-                if ((node.Options & RegexOptions.IgnoreCase) != 0)
-                    bits |= RegexCode.Ci;
+                bits |= RegexCode.Rtl;
+            }
+            if ((node.Options & RegexOptions.IgnoreCase) != 0)
+            {
+                bits |= RegexCode.Ci;
             }
 
             switch (nodetype)
@@ -444,9 +444,10 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Notoneloop:
                 case RegexNode.Notonelazy:
                 case RegexNode.Oneloop:
+                case RegexNode.Oneloopgreedy:
                 case RegexNode.Onelazy:
                     if (node.M > 0)
-                        Emit(((node.NType == RegexNode.Oneloop || node.NType == RegexNode.Onelazy) ?
+                        Emit(((node.NType == RegexNode.Oneloop || node.NType == RegexNode.Oneloopgreedy || node.NType == RegexNode.Onelazy) ?
                               RegexCode.Onerep : RegexCode.Notonerep) | bits, node.Ch, node.M);
                     if (node.N > node.M)
                         Emit(node.NType | bits, node.Ch, node.N == int.MaxValue ?
@@ -454,6 +455,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Setloop:
+                case RegexNode.Setloopgreedy:
                 case RegexNode.Setlazy:
                     if (node.M > 0)
                         Emit(RegexCode.Setrep | bits, StringCode(node.Str), node.M);

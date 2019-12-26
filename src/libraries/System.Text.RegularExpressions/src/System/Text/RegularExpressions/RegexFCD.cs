@@ -101,6 +101,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexNode.Oneloop:
+                    case RegexNode.Oneloopgreedy:
                     case RegexNode.Onelazy:
 
                         // In release, cutoff at a length to which we can still reasonably construct a string
@@ -353,16 +354,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void CalculateFC(int NodeType, RegexNode node, int CurIndex)
         {
-            bool ci = false;
-            bool rtl = false;
-
-            if (NodeType <= RegexNode.Ref)
-            {
-                if ((node.Options & RegexOptions.IgnoreCase) != 0)
-                    ci = true;
-                if ((node.Options & RegexOptions.RightToLeft) != 0)
-                    rtl = true;
-            }
+            bool ci = (node.Options & RegexOptions.IgnoreCase) != 0;
+            bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
 
             switch (NodeType)
             {
@@ -446,6 +439,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Oneloop:
+                case RegexNode.Oneloopgreedy:
                 case RegexNode.Onelazy:
                     PushFC(new RegexFC(node.Ch, false, node.M == 0, ci));
                     break;
@@ -469,6 +463,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Setloop:
+                case RegexNode.Setloopgreedy:
                 case RegexNode.Setlazy:
                     PushFC(new RegexFC(node.Str!, node.M == 0, ci));
                     break;

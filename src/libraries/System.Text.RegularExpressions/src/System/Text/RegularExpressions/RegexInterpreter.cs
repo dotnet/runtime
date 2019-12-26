@@ -1133,6 +1133,7 @@ namespace System.Text.RegularExpressions
                         }
 
                     case RegexCode.Oneloop:
+                    case RegexCode.Oneloopgreedy:
                         {
                             int c = Operand(1);
 
@@ -1152,8 +1153,10 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (c > i)
+                            if (c > i && Operator() == RegexCode.Oneloop)
+                            {
                                 TrackPush(c - i - 1, Textpos() - Bump());
+                            }
 
                             advance = 2;
                             continue;
@@ -1187,6 +1190,7 @@ namespace System.Text.RegularExpressions
                         }
 
                     case RegexCode.Setloop:
+                    case RegexCode.Setloopgreedy:
                         {
                             int c = Operand(1);
 
@@ -1216,8 +1220,10 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (c > i)
+                            if (c > i && Operator() == RegexCode.Setloop)
+                            {
                                 TrackPush(c - i - 1, Textpos() - Bump());
+                            }
 
                             advance = 2;
                             continue;

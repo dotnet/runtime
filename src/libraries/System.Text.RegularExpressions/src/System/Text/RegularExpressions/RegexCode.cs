@@ -81,6 +81,12 @@ namespace System.Text.RegularExpressions
         public const int ECMABoundary = 41;       //                          \b
         public const int NonECMABoundary = 42;    //                          \B
 
+        // Manufactured primitive operations, derived from the tree that comes from the parser.
+        // These exist to reduce backtracking (both actually performing it and spitting code for it).
+
+        public const int Oneloopgreedy = 43;      // lef,back char,min,max    (?> a {,n} )
+        public const int Setloopgreedy = 44;      // lef,back set,min,max     (?> [\d]{,n} )
+
         // Modifiers for alternate modes
         public const int Mask = 63;   // Mask to get unmodified ordinary operator
         public const int Rtl = 64;    // bit to indicate that we're reverse scanning.
@@ -200,12 +206,14 @@ namespace System.Text.RegularExpressions
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
+                case Oneloopgreedy:
                 case Notoneloop:
                 case Onelazy:
                 case Notonelazy:
                 case Setlazy:
                 case Setrep:
                 case Setloop:
+                case Setloopgreedy:
                     return 3;
 
                 default:
@@ -228,9 +236,8 @@ namespace System.Text.RegularExpressions
             "Nullmark", "Setmark", "Capturemark", "Getmark",
             "Setjump", "Backjump", "Forejump", "Testref", "Goto",
             "Prune", "Stop",
-#if ECMA
             "ECMABoundary", "NonECMABoundary",
-#endif
+            "Oneloopgreedy", "Setloopgreedy"
         };
 
         private static string OperatorDescription(int Opcode)
@@ -240,8 +247,12 @@ namespace System.Text.RegularExpressions
             bool isBack = ((Opcode & Back) != 0);
             bool isBack2 = ((Opcode & Back2) != 0);
 
-            return s_codeStr[Opcode & Mask] +
-            (isCi ? "-Ci" : "") + (isRtl ? "-Rtl" : "") + (isBack ? "-Back" : "") + (isBack2 ? "-Back2" : "");
+            return
+                s_codeStr[Opcode & Mask] +
+                (isCi ? "-Ci" : "") +
+                (isRtl ? "-Rtl" : "") +
+                (isBack ? "-Back" : "") +
+                (isBack2 ? "-Back2" : "");
         }
 
         public string OpcodeDescription(int offset)
@@ -263,6 +274,7 @@ namespace System.Text.RegularExpressions
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
+                case Oneloopgreedy:
                 case Notoneloop:
                 case Onelazy:
                 case Notonelazy:
@@ -273,6 +285,7 @@ namespace System.Text.RegularExpressions
                 case Set:
                 case Setrep:
                 case Setloop:
+                case Setloopgreedy:
                 case Setlazy:
                     sb.Append("Set = ");
                     sb.Append(RegexCharClass.SetDescription(Strings[Codes[offset + 1]]));
@@ -321,11 +334,13 @@ namespace System.Text.RegularExpressions
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
+                case Oneloopgreedy:
                 case Notoneloop:
                 case Onelazy:
                 case Notonelazy:
                 case Setrep:
                 case Setloop:
+                case Setloopgreedy:
                 case Setlazy:
                     sb.Append(", Rep = ");
                     if (Codes[offset + 2] == int.MaxValue)

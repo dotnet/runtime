@@ -781,22 +781,17 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
-            int setLength = set[SetLengthIndex];
-            if (setLength == 0 ||
-                setLength % 2 != 0 ||
-                set[CategoryLengthIndex] != 0 ||
-                IsNegated(set) ||
-                IsSubtraction(set))
+            if (!CanEasilyEnumerateSetContents(set))
             {
                 return 0;
             }
 
+            int setLength = set[SetLengthIndex];
             int count = 0;
             for (int i = SetStartIndex; i < SetStartIndex + setLength; i += 2)
             {
-                int curSetStart = set[i];
                 int curSetEnd = set[i + 1];
-                for (int c = curSetStart; c < curSetEnd; c++)
+                for (int c = set[i]; c < curSetEnd; c++)
                 {
                     if (count >= chars.Length)
                     {
@@ -809,6 +804,75 @@ namespace System.Text.RegularExpressions
 
             return count;
         }
+
+        /// <summary>
+        /// Determines whether two sets may overlap.
+        /// </summary>
+        /// <returns>false if the two sets do not overlap; true if they may.</returns>
+        /// <remarks>
+        /// If the method returns false, the caller can be sure the sets do not overlap.
+        /// If the method returns true, it's still possible the sets don't overlap.
+        /// </remarks>
+        public static bool MayOverlap(string set1, string set2)
+        {
+            // If the sets are identical other than one being the negation of the other, they don't overlap.
+            if (IsNegated(set1) != IsNegated(set2) && set1.AsSpan(1).SequenceEqual(set2.AsSpan(1)))
+            {
+                return false;
+            }
+
+            // Special-case some known, common classes that don't overlap.
+            if (KnownDistinctSets(set1, set2) ||
+                KnownDistinctSets(set2, set1))
+            {
+                return false;
+            }
+
+            // If set2 can be easily enumerated (e.g. no unicode categories), then enumerate it and
+            // check if any of its members are in set1.  Otherwise, the same for set1.
+            if (CanEasilyEnumerateSetContents(set2))
+            {
+                return MayOverlapByEnumeration(set1, set2);
+            }
+            else if (CanEasilyEnumerateSetContents(set1))
+            {
+                return MayOverlapByEnumeration(set2, set1);
+            }
+
+            // Assume that everything else might overlap.  In the future if it proved impactful, we could be more accurate here,
+            // at the exense of more computation time.
+            return true;
+
+            static bool KnownDistinctSets(string set1, string set2) =>
+                (set1 == SpaceClass || set1 == ECMASpaceClass) &&
+                (set2 == DigitClass || set2 == WordClass || set2 == ECMADigitClass || set2 == ECMAWordClass);
+
+            static bool MayOverlapByEnumeration(string set1, string set2)
+            {
+                for (int i = SetStartIndex; i < SetStartIndex + set2[SetLengthIndex]; i += 2)
+                {
+                    int curSetEnd = set2[i + 1];
+                    for (int c = set2[i]; c < curSetEnd; c++)
+                    {
+                        if (CharInClass((char)c, set1))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
+        internal static bool CanEasilyEnumerateSetContents(string set) =>
+            set.Length > SetStartIndex &&
+            set[SetLengthIndex] > 0 &&
+            set[SetLengthIndex] % 2 == 0 &&
+            set[CategoryLengthIndex] == 0 &&
+            !IsNegated(set) &&
+            !IsSubtraction(set);
 
         internal static bool IsSubtraction(string charClass) =>
             charClass.Length > SetStartIndex +

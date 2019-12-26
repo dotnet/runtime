@@ -2697,6 +2697,14 @@ namespace System.Text.RegularExpressions
                 case RegexCode.Oneloop | RegexCode.Ci | RegexCode.Rtl:
                 case RegexCode.Notoneloop | RegexCode.Ci | RegexCode.Rtl:
                 case RegexCode.Setloop | RegexCode.Ci | RegexCode.Rtl:
+                case RegexCode.Oneloopgreedy:
+                case RegexCode.Setloopgreedy:
+                case RegexCode.Oneloopgreedy | RegexCode.Rtl:
+                case RegexCode.Setloopgreedy | RegexCode.Rtl:
+                case RegexCode.Oneloopgreedy | RegexCode.Ci:
+                case RegexCode.Setloopgreedy | RegexCode.Ci:
+                case RegexCode.Oneloopgreedy | RegexCode.Ci | RegexCode.Rtl:
+                case RegexCode.Setloopgreedy | RegexCode.Ci | RegexCode.Rtl:
                     //: int c = Operand(1);
                     //: if (c > Rightchars())
                     //:     c = Rightchars();
@@ -2759,7 +2767,7 @@ namespace System.Text.RegularExpressions
                         Dup();
                         Stloc(cLocal);
                         Ldc(0);
-                        if (Code() == RegexCode.Setloop)
+                        if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopgreedy)
                         {
                             BleFar(l2);
                         }
@@ -2777,7 +2785,7 @@ namespace System.Text.RegularExpressions
                             Rightcharnext();
                         }
 
-                        if (Code() == RegexCode.Setloop)
+                        if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopgreedy)
                         {
                             if (_hasTimeout)
                             {
@@ -2794,7 +2802,7 @@ namespace System.Text.RegularExpressions
                             }
 
                             Ldc(Operand(0));
-                            if (Code() == RegexCode.Oneloop)
+                            if (Code() == RegexCode.Oneloop || Code() == RegexCode.Oneloopgreedy)
                             {
                                 Beq(l1);
                             }
@@ -2810,25 +2818,29 @@ namespace System.Text.RegularExpressions
                         Stloc(_runtextposLocal!);
 
                         MarkLabel(l2);
-                        Ldloc(lenLocal);
-                        Ldloc(cLocal);
-                        Ble(AdvanceLabel());
 
-                        ReadyPushTrack();
-                        Ldloc(lenLocal);
-                        Ldloc(cLocal);
-                        Sub();
-                        Ldc(1);
-                        Sub();
-                        DoPush();
+                        if (Code() != RegexCode.Oneloopgreedy && Code() != RegexCode.Setloopgreedy)
+                        {
+                            Ldloc(lenLocal);
+                            Ldloc(cLocal);
+                            Ble(AdvanceLabel());
 
-                        ReadyPushTrack();
-                        Ldloc(_runtextposLocal!);
-                        Ldc(1);
-                        Sub(IsRightToLeft());
-                        DoPush();
+                            ReadyPushTrack();
+                            Ldloc(lenLocal);
+                            Ldloc(cLocal);
+                            Sub();
+                            Ldc(1);
+                            Sub();
+                            DoPush();
 
-                        Track();
+                            ReadyPushTrack();
+                            Ldloc(_runtextposLocal!);
+                            Ldc(1);
+                            Sub(IsRightToLeft());
+                            DoPush();
+
+                            Track();
+                        }
                         break;
                     }
 
@@ -3136,12 +3148,7 @@ namespace System.Text.RegularExpressions
             // 3. Evaluate CharInClass on all ~65K inputs.  This is relatively expensive, impacting startup costs.
             // We currently go with (2).  We may sometimes generate a fallback when we don't need one, but the cost of
             // doing so once in a while is minimal.
-            bool asciiOnly =
-                charClass.Length > RegexCharClass.SetStartIndex &&
-                charClass[RegexCharClass.CategoryLengthIndex] == 0 && // if there are any categories, assume there's unicode
-                charClass[RegexCharClass.SetLengthIndex] % 2 == 0 && // range limits must come in pairs
-                !RegexCharClass.IsNegated(charClass) && // if there's negation, assume there's unicode
-                !RegexCharClass.IsSubtraction(charClass); // if it's subtraction, assume there's unicode
+            bool asciiOnly = RegexCharClass.CanEasilyEnumerateSetContents(charClass);
             if (asciiOnly)
             {
                 for (int i = RegexCharClass.SetStartIndex; i < charClass.Length; i++)
