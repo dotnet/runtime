@@ -34,7 +34,7 @@ to do most editing.
 Notice that the CoreCLR solution is under the 'bin' directory.  This is because it is created as part of the build.
 Thus you can only launch this solution after you have built at least once.
 
-* See [Debugging](debugging/debugging-instructions.md)
+* See [Debugging CoreCLR](debugging/coreclr/debugging.md)
 
 # See Also
 

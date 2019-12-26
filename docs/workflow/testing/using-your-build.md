@@ -20,7 +20,7 @@ assume use of a dogfood build of the .NET SDK.
 - [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-osx-x64.tar.gz)
 - [Others](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries)
 
-To setup the SDK download the zip and extract it somewhere and add the root folder to your [path](../building/windows-instructions.md#adding-to-the-default-path-variable)
+To setup the SDK download the zip and extract it somewhere and add the root folder to your [path](../requirements/windows-requirements.md#adding-to-the-default-path-variable)
 or always fully qualify the path to dotnet in the root of this folder for all the instructions in this document.
 
 After setting up dotnet you can verify you are using the newer version by:
@@ -156,7 +156,7 @@ Assert failure(PID 13452 [0x0000348c], Thread: 10784 [0x2a20]): Consistency chec
 
 ## Using DotNetCli to run your .NET Core Application
 
-If you don't like the idea of copying files manually you can follow [these instructions](../UsingDotNetCli.md) to use dotnet cli to do this for you.
+If you don't like the idea of copying files manually you can follow [these instructions](../using-dotnet-cli.md) to use dotnet cli to do this for you.
 However the steps described here are the simplest and most commonly used by CoreCLR developers for ad-hoc testing.
 
 ## Using CoreRun to run your .NET Core Application
@@ -165,4 +165,4 @@ Generally using dotnet.exe tool to run your .NET Core application is the preferr
 However there is a simpler 'host' for .NET Core applications called 'CoreRun' that can also be used.   The value
 of this host is that it is simpler (in particular it knows nothing about NuGet), but precisely because of this
 it can be harder to use (since you are responsible for insuring all the dependencies you need are gather together)
-See [Using CoreRun To Run .NET Core Application](UsingCoreRun.md) for more.
+See [Using CoreRun To Run .NET Core Application](using-corerun.md) for more.

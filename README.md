@@ -22,7 +22,8 @@ Official Starting Page: https://dotnet.microsoft.com/
 
 We welcome contributions! Many people all over the world have helped make this project better.
 
-For further information see [Contributing](CONTRIBUTING.md).
+* [Contributing](CONTRIBUTING.md) explains what kinds of changes we welcome
+- [Workflow Instructions](docs/workflow/README.md) explains how to build and test
 
 ## Reporting security issues and security bugs
 

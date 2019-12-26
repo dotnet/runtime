@@ -1,7 +1,7 @@
 
 # Using corerun To Run .NET Core Application
 
-In page [Using your .NET Core Runtime Build with dotnet cli](../UsingDotNetCli.md) gives detailed instructions on using the standard
+In page [Using your .NET Core Runtime Build with dotnet cli](../using-dotnet-cli.md) gives detailed instructions on using the standard
 command line host and SDK, dotnet.exe to run a .NET application with the modified build of the
 .NET Core runtime built here.   This is the preferred mechanism for you to officially deploy
 your changes to other people since dotnet.exe and Nuget insure that you end up with a consistent

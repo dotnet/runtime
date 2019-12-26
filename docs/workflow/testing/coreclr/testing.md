@@ -1,13 +1,13 @@
 # Running .NET Core Tests
 
-Details on test metadata can be found in [test-configuration.md](building/test-configuration.md).
+Details on test metadata can be found in [test-configuration.md](test-configuration.md).
 
 ## Build All Tests
 
 1) Build the CoreCLR product
-    * [Unix](https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/linux-instructions.md)
-    * [OSX](https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/osx-instructions.md)
-    * [Windows](https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/windows-instructions.md)
+    * [Unix](../../building/coreclr/linux-instructions.md)
+    * [OSX](../../building/coreclr/osx-instructions.md)
+    * [Windows](../../building/coreclr/README.md)
 1) From the root directory run the following command:
     * Non-Windows - `./build-test.sh`
     * Windows - `build-test.cmd`
@@ -36,5 +36,5 @@ Note:  CoreCLR must be built prior to building an individual test. See first ste
 
 ## Additional Documents
 
-* [Windows](https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/windows-test-instructions.md)
-* [Non-Windows](https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/unix-test-instructions.md)
+* [Windows](../../testing/coreclr/windows-test-instructions.md)
+* [Non-Windows](../../testing/coreclr/unix-test-instructions.md)
