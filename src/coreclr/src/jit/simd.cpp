@@ -2561,31 +2561,21 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             unsigned elementCount = getSIMDVectorLength(size, baseType);
             noway_assert(initCount == elementCount);
 
-            // Build a GT_LIST with the N values.
             // We must maintain left-to-right order of the args, but we will pop
             // them off in reverse order (the Nth arg was pushed onto the stack last).
 
-            GenTree* list              = nullptr;
-            GenTree* firstArg          = nullptr;
-            GenTree* prevArg           = nullptr;
-            bool     areArgsContiguous = true;
+            GenTree* args[SIMD_INTRINSIC_MAX_PARAM_COUNT - 1];
+
+            bool areArgsContiguous = true;
             for (unsigned i = 0; i < initCount; i++)
             {
-                GenTree* nextArg = impSIMDPopStack(baseType);
-                if (areArgsContiguous)
+                args[initCount - 1 - i] = impSIMDPopStack(baseType);
+
+                if (areArgsContiguous && (i > 0))
                 {
-                    GenTree* curArg = nextArg;
-                    firstArg        = curArg;
-
-                    if (prevArg != nullptr)
-                    {
-                        // Recall that we are popping the args off the stack in reverse order.
-                        areArgsContiguous = areArgumentsContiguous(curArg, prevArg);
-                    }
-                    prevArg = curArg;
+                    // Recall that we are popping the args off the stack in reverse order.
+                    areArgsContiguous = areArgumentsContiguous(args[initCount - 1 - i], args[initCount - 1 - i + 1]);
                 }
-
-                list = new (this, GT_LIST) GenTreeOp(GT_LIST, baseType, nextArg, list);
             }
 
             op1 = getOp1ForConstructor(opcode, newobjThis, clsHnd);
@@ -2596,7 +2586,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 // Since Vector2, Vector3 and Vector4's arguments type are only float,
                 // we intialize the vector from first argument address, only when
                 // the baseType is TYP_FLOAT and the arguments are located contiguously in memory
-                GenTree* op2Address = createAddressNodeForSIMDInit(firstArg, size);
+                GenTree* op2Address = createAddressNodeForSIMDInit(args[0], size);
                 simdTree            = gtNewOperNode(GT_IND, simdType, op2Address);
 
                 if (op1->AsOp()->gtOp1->OperIsLocal())
@@ -2608,7 +2598,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             }
             else
             {
-                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicInitN, baseType, size, list);
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicInitN, baseType, size, initCount, args);
             }
 
             copyBlkDst = op1;

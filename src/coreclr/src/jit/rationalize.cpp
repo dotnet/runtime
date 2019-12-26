@@ -776,9 +776,20 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             {
                 // Rewrite this as an explicit load.
                 JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
-                unsigned int baseTypeSize = genTypeSize(simdNode->gtSIMDBaseType);
-                GenTree*     address = new (comp, GT_LEA) GenTreeAddrMode(TYP_BYREF, simdNode->gtOp1, simdNode->gtOp2,
-                                                                      baseTypeSize, OFFSETOF__CORINFO_Array__data);
+
+                GenTree* address;
+                if (simdNode->IsBinary())
+                {
+                    address = new (comp, GT_LEA)
+                        GenTreeAddrMode(TYP_BYREF, simdNode->GetOp(0), simdNode->GetOp(1),
+                                        genTypeSize(simdNode->gtSIMDBaseType), OFFSETOF__CORINFO_Array__data);
+                }
+                else
+                {
+                    assert(simdNode->IsUnary());
+                    address = new (comp, GT_LEA)
+                        GenTreeAddrMode(TYP_BYREF, simdNode->GetOp(0), nullptr, 0, OFFSETOF__CORINFO_Array__data);
+                }
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
 
                 BlockRange().InsertBefore(simdNode, address, ind);
@@ -794,16 +805,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 // of a different width.  If that assumption changes, we will EITHER have to make these type
                 // transformations during importation, and plumb the types all the way through the JIT,
                 // OR add a lot of special handling here.
-                GenTree* op1 = simdNode->gtGetOp1();
-                if (op1 != nullptr && op1->gtType == TYP_STRUCT)
+                for (GenTreeSIMD::Use& use : simdNode->Uses())
                 {
-                    op1->gtType = simdType;
-                }
-
-                GenTree* op2 = simdNode->gtGetOp2IfPresent();
-                if (op2 != nullptr && op2->gtType == TYP_STRUCT)
-                {
-                    op2->gtType = simdType;
+                    if (use.GetNode()->TypeGet() == TYP_STRUCT)
+                    {
+                        use.GetNode()->gtType = simdType;
+                    }
                 }
             }
         }

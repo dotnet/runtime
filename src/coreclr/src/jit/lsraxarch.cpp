@@ -904,6 +904,121 @@ int LinearScan::BuildRMWUses(GenTreeOp* node, regMaskTP candidates)
     return srcCount;
 }
 
+#ifdef FEATURE_SIMD
+int LinearScan::BuildRMWUsesSIMDUnary(GenTreeSIMD* node)
+{
+    assert(node->IsUnary());
+
+    GenTree* op1 = node->GetOp(0);
+
+    if (op1->isContained())
+    {
+        return BuildOperandUses(op1);
+    }
+
+    regMaskTP op1Candidates = RBM_NONE;
+#ifdef _TARGET_X86_
+    if (varTypeIsByte(node->TypeGet()))
+    {
+        op1Candidates = allByteRegs();
+    }
+#endif
+    tgtPrefUse = BuildUse(op1, op1Candidates);
+    return 1;
+}
+
+int LinearScan::BuildRMWUsesSIMDBinary(GenTreeSIMD* node)
+{
+    assert(node->IsBinary());
+
+    GenTree*  op1           = node->GetOp(0);
+    GenTree*  op2           = node->GetOp(1);
+    regMaskTP op1Candidates = RBM_NONE;
+    regMaskTP op2Candidates = RBM_NONE;
+
+#ifdef _TARGET_X86_
+    if (varTypeIsByte(node->TypeGet()))
+    {
+        if (!op1->isContained())
+        {
+            op1Candidates = allByteRegs();
+        }
+
+        if (node->OperIsCommutative() && !op2->isContained())
+        {
+            op2Candidates = allByteRegs();
+        }
+    }
+#endif // _TARGET_X86_
+
+    // Determine which operand, if any, should be delayRegFree. Normally, this would be op2,
+    // but if we have a commutative operator and op1 is a contained memory op, it would be op1.
+    // We need to make the delayRegFree operand remain live until the op is complete, by marking
+    // the source(s) associated with op2 as "delayFree".
+    // Note that if op2 of a binary RMW operator is a memory op, even if the operator
+    // is commutative, codegen cannot reverse them.
+    // TODO-XArch-CQ: This is not actually the case for all RMW binary operators, but there's
+    // more work to be done to correctly reverse the operands if they involve memory
+    // operands.  Also, we may need to handle more cases than GT_IND, especially once
+    // we've modified the register allocator to not require all nodes to be assigned
+    // a register (e.g. a spilled lclVar can often be referenced directly from memory).
+    // Note that we may have a null op2, even with 2 sources, if op1 is a base/index memory op.
+    GenTree* delayUseOperand = op2;
+
+    if (node->isCommutativeSIMDIntrinsic())
+    {
+        if (op1->isContained())
+        {
+            delayUseOperand = op1;
+        }
+        else if (!op2->isContained() || op2->IsCnsIntOrI())
+        {
+            // If we have a commutative operator and op2 is not a memory op, we don't need
+            // to set delayRegFree on either operand because codegen can swap them.
+            delayUseOperand = nullptr;
+        }
+    }
+    else if (op1->isContained())
+    {
+        delayUseOperand = nullptr;
+    }
+
+    int srcCount = 0;
+
+    // Build first use
+    if (!op1->isContained())
+    {
+        tgtPrefUse = BuildUse(op1, op1Candidates);
+        srcCount++;
+    }
+    else if (delayUseOperand == op1)
+    {
+        srcCount += BuildDelayFreeUses(op1, op1Candidates);
+    }
+    else
+    {
+        srcCount += BuildOperandUses(op1, op1Candidates);
+    }
+
+    // Build second use
+    if (node->isCommutativeSIMDIntrinsic() && !op2->isContained())
+    {
+        tgtPrefUse2 = BuildUse(op2, op2Candidates);
+        srcCount++;
+    }
+    else if (delayUseOperand == op2)
+    {
+        srcCount += BuildDelayFreeUses(op2, op2Candidates);
+    }
+    else
+    {
+        srcCount += BuildOperandUses(op2, op2Candidates);
+    }
+
+    return srcCount;
+}
+#endif // FEATURE_SIMD
+
 //------------------------------------------------------------------------
 // BuildShiftRotate: Set the NodeInfo for a shift or rotate.
 //
@@ -1864,9 +1979,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
                (simdTree->gtSIMDIntrinsicID == SIMDIntrinsicOpInEquality));
     }
     SetContainsAVXFlags(simdTree->gtSIMDSize);
-    GenTree* op1      = simdTree->gtGetOp1();
-    GenTree* op2      = simdTree->gtGetOp2();
-    int      srcCount = 0;
+
+    int srcCount = 0;
 
     switch (simdTree->gtSIMDIntrinsicID)
     {
@@ -1881,7 +1995,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(_TARGET_64BIT_)
-            if (op1->OperGet() == GT_LONG)
+            GenTree* op1 = simdTree->GetOp(0);
+            if (op1->OperIs(GT_LONG))
             {
                 assert(op1->isContained());
                 GenTree* op1lo = op1->gtGetOp1();
@@ -1913,25 +2028,18 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         break;
 
         case SIMDIntrinsicInitN:
-        {
-            var_types baseType = simdTree->gtSIMDBaseType;
-            srcCount           = (short)(simdTree->gtSIMDSize / genTypeSize(baseType));
+            srcCount = static_cast<int>(simdTree->GetNumOps());
+            assert(srcCount == static_cast<int>(simdTree->gtSIMDSize / genTypeSize(simdTree->gtSIMDBaseType)));
             // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
             buildInternalFloatRegisterDefForNode(simdTree);
-            int initCount = 0;
-            for (GenTree* list = op1; list != nullptr; list = list->gtGetOp2())
+            for (GenTreeSIMD::Use& use : simdTree->Uses())
             {
-                assert(list->OperGet() == GT_LIST);
-                GenTree* listItem = list->gtGetOp1();
-                assert(listItem->TypeGet() == baseType);
-                assert(!listItem->isContained());
-                BuildUse(listItem);
-                initCount++;
+                assert(use.GetNode()->TypeGet() == simdTree->gtSIMDBaseType);
+                assert(!use.GetNode()->isContained());
+                BuildUse(use.GetNode());
             }
-            assert(initCount == srcCount);
             buildUses = false;
-        }
-        break;
+            break;
 
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
@@ -1994,7 +2102,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicOpEquality:
         case SIMDIntrinsicOpInEquality:
-            if (simdTree->gtGetOp2()->isContained())
+            if (simdTree->GetOp(1)->isContained())
             {
                 // If the second operand is contained then ContainCheckSIMD has determined
                 // that PTEST can be used. We only need a single source register and no
@@ -2029,7 +2137,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             if (varTypeIsFloating(simdTree->gtSIMDBaseType))
             {
                 if ((compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported) ||
-                    (simdTree->gtGetOp1()->TypeGet() == TYP_SIMD32))
+                    (simdTree->GetOp(0)->TypeGet() == TYP_SIMD32))
                 {
                     buildInternalFloatRegisterDefForNode(simdTree);
                     setInternalRegsDelayFree = true;
@@ -2059,8 +2167,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // The result is baseType of SIMD struct.
             // op1 may be a contained memory op, but if so we will consume its address.
             // op2 may be a contained constant.
-            op1 = simdTree->gtGetOp1();
-            op2 = simdTree->gtGetOp2();
+            GenTree* op1 = simdTree->GetOp(0);
+            GenTree* op2 = simdTree->GetOp(1);
 
             if (!op1->isContained())
             {
@@ -2213,7 +2321,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicShuffleSSE2:
             // Second operand is an integer constant and marked as contained.
-            assert(simdTree->gtGetOp2()->isContainedIntOrIImmed());
+            assert(simdTree->GetOp(1)->isContainedIntOrIImmed());
             break;
 
         case SIMDIntrinsicGetX:
@@ -2233,11 +2341,18 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     }
     if (buildUses)
     {
-        assert(!op1->OperIs(GT_LIST));
         assert(srcCount == 0);
-        // This is overly conservative, but is here for zero diffs.
-        srcCount = BuildRMWUses(simdTree);
+
+        if (simdTree->IsUnary())
+        {
+            srcCount = BuildRMWUsesSIMDUnary(simdTree);
+        }
+        else
+        {
+            srcCount = BuildRMWUsesSIMDBinary(simdTree);
+        }
     }
+
     buildInternalRegisterUses();
     if (dstCount == 1)
     {

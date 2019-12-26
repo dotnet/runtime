@@ -4080,13 +4080,13 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 {
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInit);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->GetOp(0);
     var_types baseType  = simdNode->gtSIMDBaseType;
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
 
-    genConsumeOperands(simdNode);
+    genConsumeRegs(op1);
     regNumber op1Reg = op1->IsIntegralConst(0) ? REG_ZR : op1->GetRegNum();
 
     // TODO-ARM64-CQ Add LD1R to allow SIMDIntrinsicInit from contained memory
@@ -4149,14 +4149,11 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
     // and record the registers.
     regNumber operandRegs[FP_REGSIZE_BYTES];
     unsigned  initCount = 0;
-    for (GenTree* list = simdNode->gtGetOp1(); list != nullptr; list = list->gtGetOp2())
+    for (GenTreeSIMD::Use& use : simdNode->Uses())
     {
-        assert(list->OperGet() == GT_LIST);
-        GenTree* listItem = list->gtGetOp1();
-        assert(listItem->TypeGet() == baseType);
-        assert(!listItem->isContained());
-        regNumber operandReg   = genConsumeReg(listItem);
-        operandRegs[initCount] = operandReg;
+        assert(use.GetNode()->TypeGet() == baseType);
+        assert(!use.GetNode()->isContained());
+        operandRegs[initCount] = genConsumeReg(use.GetNode());
         initCount++;
     }
 
@@ -4209,13 +4206,13 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToDouble ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt64);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->GetOp(0);
     var_types baseType  = simdNode->gtSIMDBaseType;
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
 
-    genConsumeOperands(simdNode);
+    genConsumeRegs(op1);
     regNumber op1Reg = op1->GetRegNum();
 
     assert(genIsValidFloatReg(op1Reg));
@@ -4244,13 +4241,13 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
     assert((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenLo) ||
            (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi));
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->GetOp(0);
     var_types baseType  = simdNode->gtSIMDBaseType;
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types simdType = simdNode->TypeGet();
 
-    genConsumeOperands(simdNode);
+    genConsumeRegs(op1);
     regNumber op1Reg   = op1->GetRegNum();
     regNumber srcReg   = op1Reg;
     emitAttr  emitSize = emitActualTypeSize(simdType);
@@ -4286,15 +4283,16 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
 {
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicNarrow);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
-    GenTree*  op2       = simdNode->gtGetOp2();
+    GenTree*  op1       = simdNode->GetOp(0);
+    GenTree*  op2       = simdNode->GetOp(1);
     var_types baseType  = simdNode->gtSIMDBaseType;
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types simdType = simdNode->TypeGet();
     emitAttr  emitSize = emitTypeSize(simdType);
 
-    genConsumeOperands(simdNode);
+    genConsumeRegs(op1);
+    genConsumeRegs(op2);
     regNumber op1Reg = op1->GetRegNum();
     regNumber op2Reg = op2->GetRegNum();
 
@@ -4372,14 +4370,15 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicLessThanOrEqual ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGreaterThanOrEqual);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
-    GenTree*  op2       = simdNode->gtGetOp2();
+    GenTree*  op1       = simdNode->GetOp(0);
+    GenTree*  op2       = simdNode->GetOp(1);
     var_types baseType  = simdNode->gtSIMDBaseType;
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
 
-    genConsumeOperands(simdNode);
+    genConsumeRegs(op1);
+    genConsumeRegs(op2);
     regNumber op1Reg = op1->GetRegNum();
     regNumber op2Reg = op2->GetRegNum();
 
@@ -4413,13 +4412,14 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpInEquality);
 
-    GenTree*  op1        = simdNode->gtGetOp1();
-    GenTree*  op2        = simdNode->gtGetOp2();
+    GenTree*  op1        = simdNode->GetOp(0);
+    GenTree*  op2        = simdNode->GetOp(1);
     var_types baseType   = simdNode->gtSIMDBaseType;
     regNumber targetReg  = simdNode->GetRegNum();
     var_types targetType = simdNode->TypeGet();
 
-    genConsumeOperands(simdNode);
+    genConsumeRegs(op1);
+    genConsumeRegs(op2);
     regNumber op1Reg   = op1->GetRegNum();
     regNumber op2Reg   = op2->GetRegNum();
     regNumber otherReg = op2Reg;
@@ -4470,8 +4470,8 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
 {
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicDotProduct);
 
-    GenTree*  op1      = simdNode->gtGetOp1();
-    GenTree*  op2      = simdNode->gtGetOp2();
+    GenTree*  op1      = simdNode->GetOp(0);
+    GenTree*  op2      = simdNode->GetOp(1);
     var_types baseType = simdNode->gtSIMDBaseType;
     var_types simdType = op1->TypeGet();
 
@@ -4481,7 +4481,8 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
     var_types targetType = simdNode->TypeGet();
     assert(targetType == baseType);
 
-    genConsumeOperands(simdNode);
+    genConsumeRegs(op1);
+    genConsumeRegs(op2);
     regNumber op1Reg = op1->GetRegNum();
     regNumber op2Reg = op2->GetRegNum();
     regNumber tmpReg = targetReg;
@@ -4554,8 +4555,8 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
 {
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGetItem);
 
-    GenTree*  op1      = simdNode->gtGetOp1();
-    GenTree*  op2      = simdNode->gtGetOp2();
+    GenTree*  op1      = simdNode->GetOp(0);
+    GenTree*  op2      = simdNode->GetOp(1);
     var_types simdType = op1->TypeGet();
     assert(varTypeIsSIMD(simdType));
 
@@ -4574,7 +4575,8 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     // GetItem has 2 operands:
     // - the source of SIMD type (op1)
     // - the index of the value to be returned.
-    genConsumeOperands(simdNode);
+    genConsumeRegs(op1);
+    genConsumeRegs(op2);
 
     emitAttr baseTypeSize  = emitTypeSize(baseType);
     unsigned baseTypeScale = genLog2(EA_SIZE_IN_BYTES(baseTypeSize));
@@ -4739,8 +4741,8 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
 
     // op1 is the SIMD vector
     // op2 is the value to be set
-    GenTree* op1 = simdNode->gtGetOp1();
-    GenTree* op2 = simdNode->gtGetOp2();
+    GenTree* op1 = simdNode->GetOp(0);
+    GenTree* op2 = simdNode->GetOp(1);
 
     var_types baseType  = simdNode->gtSIMDBaseType;
     regNumber targetReg = simdNode->GetRegNum();
@@ -4751,7 +4753,8 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
     assert(op2->TypeGet() == baseType);
     assert(simdNode->gtSIMDSize >= ((index + 1) * genTypeSize(baseType)));
 
-    genConsumeOperands(simdNode);
+    genConsumeRegs(op1);
+    genConsumeRegs(op2);
     regNumber op1Reg = op1->GetRegNum();
     regNumber op2Reg = op2->GetRegNum();
 
@@ -4799,7 +4802,7 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 {
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperSave);
 
-    GenTree* op1 = simdNode->gtGetOp1();
+    GenTree* op1 = simdNode->GetOp(0);
     assert(op1->IsLocal());
     assert(emitTypeSize(op1->TypeGet()) == 16);
     regNumber targetReg = simdNode->GetRegNum();
@@ -4848,7 +4851,7 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 {
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperRestore);
 
-    GenTree* op1 = simdNode->gtGetOp1();
+    GenTree* op1 = simdNode->GetOp(0);
     assert(op1->IsLocal());
     assert(emitTypeSize(op1->TypeGet()) == 16);
     regNumber srcReg    = simdNode->GetRegNum();

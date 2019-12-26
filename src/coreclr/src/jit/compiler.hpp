@@ -4280,20 +4280,6 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
 
 // Variadic nodes
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            if (this->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
-            {
-                assert(this->AsSIMD()->gtOp1 != nullptr);
-                this->AsSIMD()->gtOp1->VisitListOperands(visitor);
-            }
-            else
-            {
-                VisitBinOpOperands<TVisitor>(visitor);
-            }
-            return;
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             if ((this->AsHWIntrinsic()->gtOp1 != nullptr) && this->AsHWIntrinsic()->gtOp1->OperIsList())
@@ -4327,6 +4313,18 @@ void GenTree::VisitOperands(TVisitor visitor)
                 }
             }
             return;
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            for (GenTreeSIMD::Use& use : AsSIMD()->Uses())
+            {
+                if (visitor(use.GetNode()) == VisitResult::Abort)
+                {
+                    break;
+                }
+            }
+            return;
+#endif // FEATURE_SIMD
 
         case GT_CMPXCHG:
         {

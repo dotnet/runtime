@@ -5919,7 +5919,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         GenTree* newTree = fgMorphFieldToSIMDIntrinsicGet(tree);
         if (newTree != tree)
         {
-            newTree = fgMorphSmpOp(newTree);
             return newTree;
         }
     }
@@ -10744,9 +10743,7 @@ GenTree* Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTree* tree)
         assert(simdSize >= ((index + 1) * genTypeSize(baseType)));
         GenTree* op2 = gtNewIconNode(index);
         tree         = gtNewSIMDNode(baseType, SIMDIntrinsicGetItem, baseType, simdSize, simdStructNode, op2);
-#ifdef DEBUG
-        tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
+        tree         = fgMorphTree(tree);
     }
     return tree;
 }
@@ -14610,6 +14607,17 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
                 tree->gtFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
             }
             break;
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            tree->gtFlags &= ~GTF_ALL_EFFECT;
+            for (GenTreeSIMD::Use& use : tree->AsSIMD()->Uses())
+            {
+                use.SetNode(fgMorphTree(use.GetNode()));
+                tree->gtFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
+            }
+            break;
+#endif // FEATURE_SIMD
 
         case GT_CMPXCHG:
             tree->AsCmpXchg()->gtOpLocation  = fgMorphTree(tree->AsCmpXchg()->gtOpLocation);
