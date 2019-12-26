@@ -53,7 +53,7 @@ There are several steps to follow to port the JIT (some of which can be be done 
   * `FEATURE_SIMD`
 * Build the new JIT as an altjit. In this mode, a "base" JIT is invoked to compile all functions except
   the one(s) specified by the `COMPlus_AltJit` variable. For example, setting `COMPlus_AltJit=Add` and running
-  a test will use the "base" JIT (say, the Windows x64 targetting JIT) to compile all functions *except*
+  a test will use the "base" JIT (say, the Windows x64 targeting JIT) to compile all functions *except*
   `Add`, which will be first compiled by the new altjit, and if it fails, fall back to the "base" JIT. In this
   way, only very limited JIT functionality need to work, as the "base" JIT takes care of most functions.
 * Implement the basic instruction encodings. Test them using a method like `CodeGen::genArm64EmitterUnitTests()`.

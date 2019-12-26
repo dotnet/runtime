@@ -16,7 +16,7 @@ Debugging CoreFX build issues
 
 I found the following process to help when investigating some of the build issues caused by incorrect packaging. 
 
-To quickly validate if a given project compiles on all supported configurations use `dotnet msbuild /t:RebuildAll`. This applies for running tests as well. For more information, see [Building individual libraries](../project-docs/developer-guide.md#building-individual-libraries) 
+To quickly validate if a given project compiles on all supported configurations use `dotnet msbuild /t:RebuildAll`. This applies for running tests as well. For more information, see [Building individual libraries](../../building/libraries/README.md#building-individual-libraries) 
 
 Assuming the current directory is `\src\contractname\`:
 

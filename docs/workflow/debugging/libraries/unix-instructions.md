@@ -6,7 +6,7 @@ CoreFX can be debugged on unix using both lldb and visual studio code
 ## Using lldb and SOS
 
 - Run the test using msbuild at least once with `/t:BuildAndTest`.
-- [Install version 3.9 of lldb](../../coreclr/building/debugging-instructions.md#debugging-core-dumps-with-lldb) and launch lldb with dotnet as the process and arguments matching the arguments used when running the test through msbuild.
+- [Install version 3.9 of lldb](../coreclr/debugging.md#debugging-core-dumps-with-lldb) and launch lldb with dotnet as the process and arguments matching the arguments used when running the test through msbuild.
 - Load the sos plugin using `plugin load libsosplugin.so`.
 - Type `soshelp` to get help. You can now use all sos commands like `bpmd`.
 
@@ -29,7 +29,7 @@ It is also possible to debug .NET Core crash dumps using lldb and SOS. In order 
 2017-10-10 21:17:48,020: INFO: proc(54): run_and_log_output: Output: <b>https://dumpling.azurewebsites.net/api/dumplings/archived/eefcb1cc36977ccf86f457ee28a33a7b4cc24e13</b>
 </pre>
 - The crash dump file. We have a service called "Dumpling" which collects, uploads, and archives crash dump files during all of our CI jobs and official builds.
-- On Linux, there is an utility called `createdump` (see [doc](../../coreclr/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
+- On Linux, there is an utility called `createdump` (see [doc](../../../design/coreclr/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
 - Matching coreclr/corefx runtime bits from the crash. To get these, you should either:
   - Download the matching Jenkins archive onto your repro machine.
   - Check out the coreclr and corefx repositories at the appropriate commit and re-build the necessary portions.
@@ -53,6 +53,8 @@ lldb-3.9 -O "settings set target.exec-search-paths <runtime-path>" -o "plugin lo
 - `<path-to-libsosplugin.so>`: The path to libsosplugin.so, should be in the `<runtime-path>` folder.
 
 lldb should start debugging successfully at this point. You should see stacktraces with resolved symbols for libcoreclr.so. At this point, you can run `plugin load <libsosplugin.so-path>`, and begin using SOS commands, as above.
+
+Also see this [link](https://github.com/dotnet/diagnostics/blob/master/documentation/debugging-coredump.md) in the diagnostics repo.
 
 ##### Example
 

@@ -21,7 +21,7 @@ Cross Compilation for ARM, ARM64 or x86 on Linux
 
 Through cross compilation, on Linux it is possible to build CoreCLR for arm or arm64. Note that this documentation exists to explain using `runtime/eng/common/build-rootfs.sh`. This will build a rootfs and then use it to cross build. Newer documentation [linux-instructions.md](linux-instructions.md) exists which leverages docker to use a prebuilt environment to cross build.
 
-Requirements for targetting Debian based distros
+Requirements for targeting Debian based distros
 ------------------------------------------------
 
 You need a Debian based host and the following packages need to be installed:
@@ -41,7 +41,7 @@ and for armel (ARM softfp):
     ~/runtime/ $ sudo apt-get install binutils-arm-linux-gnueabi
 
 
-Requirements for targetting ARM or ARM64 Alpine Linux
+Requirements for targeting ARM or ARM64 Alpine Linux
 -----------------------------------------------------
 
 You can use any Linux distro as a host. The qemu, qemu-user-static and binfmt-support packages need to be installed (the names may be different for some distros).
