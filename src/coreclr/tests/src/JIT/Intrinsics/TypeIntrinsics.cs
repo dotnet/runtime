@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -94,7 +95,32 @@ public class Program
         IsTrue (typeof(Vector128<byte>).IsValueType);
         IsFalse(typeof(Vector128<byte>).IsClass);
 
+        // Test __Canon
+        IsFalse(IsPrimitive<IEnumerable<int>>());
+        IsFalse(IsPrimitive<IEnumerable<string>>());
+        IsFalse(IsPrimitive<IEnumerable<IDisposable>>());
+        IsFalse(IsPrimitive<IDictionary<int, string>>());
+        IsFalse(IsPrimitive<IDictionary<IConvertible, IComparer<int>>>());
+        IsFalse(IsPrimitive<Dictionary<int, int>>());
+        IsFalse(IsPrimitive<Dictionary<string, IEnumerable>>());
 
+        IsFalse(IsValueType<IEnumerable<int>>());
+        IsFalse(IsValueType<IEnumerable<string>>());
+        IsFalse(IsValueType<IEnumerable<IDisposable>>());
+        IsFalse(IsValueType<IDictionary<int, string>>());
+        IsFalse(IsValueType<IDictionary<IConvertible, IComparer<int>>>());
+        IsFalse(IsValueType<Dictionary<int, int>>());
+        IsFalse(IsValueType<Dictionary<string, IEnumerable>>());
+
+        IsFalse(IsClass<IEnumerable<int>>());
+        IsFalse(IsClass<IEnumerable<string>>());
+        IsFalse(IsClass<IEnumerable<IDisposable>>());
+        IsFalse(IsClass<IDictionary<int, string>>());
+        IsFalse(IsClass<IDictionary<IConvertible, IComparer<int>>>());
+        IsTrue (IsClass<Dictionary<int, int>>());
+        IsTrue (IsClass<Dictionary<string, IEnumerable>>());
+
+        // Test `x.GetType().IsX`
         IsTrue (IsPrimitive<int>(42));
         IsTrue (IsPrimitive<int?>(new Nullable<int>(42)));
         IsFalse(IsPrimitive<decimal>(42M));
@@ -134,7 +160,7 @@ public class Program
         IsFalse(IsClass(CreateDynamic1()));
         IsTrue (IsClass(CreateDynamic2()));
 
-
+        // boxing
         IsTrue (IsPrimitiveObj(42));
         IsTrue (IsPrimitiveObj(new Nullable<int>(42)));
         IsFalse(IsPrimitiveObj(new decimal(42)));
@@ -174,7 +200,7 @@ public class Program
         IsFalse(IsClassObj(CreateDynamic1()));
         IsTrue (IsClassObj(CreateDynamic2()));
 
-
+        // ByRef
         IsTrue (IsPrimitiveRef(ref _varInt));
         IsTrue (IsPrimitiveRef(ref _varNullableInt));
         IsFalse(IsPrimitiveRef(ref _varDecimal));
@@ -216,6 +242,8 @@ public class Program
         ThrowsNRE(() => { IsClassRef(ref _varNullableIntNull); });
         ThrowsNRE(() => { IsClassRef(ref _varStringNull); });
 
+        Console.WriteLine(_errors);
+        Console.ReadKey();
         return 100 + _errors;
     }
 
@@ -232,6 +260,16 @@ public class Program
 
     private static int? _varNullableIntNull = null;
     private static string _varStringNull = null;
+
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsPrimitive<T>() => typeof(T).IsPrimitive;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsValueType<T>() => typeof(T).IsValueType;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsClass<T>() => typeof(T).IsClass;
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

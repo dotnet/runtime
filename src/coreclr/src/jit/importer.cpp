@@ -4057,6 +4057,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                         else if (ni == NI_System_Type_get_IsClass)
                         {
+                            if (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_SHAREDINST)
+                            {
+                                break;
+                            }
+                            
                             BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
                             retNode          = // typeof(int*).IsClass has to be true (CORINFO_TYPE_PTR)
                                 gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
