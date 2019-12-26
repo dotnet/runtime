@@ -4029,10 +4029,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // e.g. `typeof(int).IsValueType` => `true`
                 if (impStackTop().val->IsCall())
                 {
-                    if (!strcmp(info.compMethodName, "Main"))
-                    {
-                        printf("!");
-                    }
 
                     GenTreeCall* call = impStackTop().val->AsCall();
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
@@ -4051,16 +4047,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             // we have shared type instance
                             break;
                         }
-                        typeInfo tinfo       = verMakeTypeInfo(hClass);
-                        BOOL     isValueType = tinfo.IsValueClass();
-                        BOOL aa = eeIsValueClass(hClass);
+                        BOOL        isValueType = eeIsValueClass(hClass);
+                        CorInfoType cit         = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
+
                         if (ni == NI_System_Type_get_IsPrimitive)
                         {
-                            if (isValueType && tinfo.IsPrimitiveType())
+                            if (isValueType)
                             {
-                                // make sure it's not Enum (CORINFO_TYPE_UNDEF)
-                                CorInfoType cit = info.compCompHnd->getTypeForPrimitiveNumericClass(hClass);
-                                retNode = gtNewIconNode(cit != CORINFO_TYPE_UNDEF);
+                                // TODO: check if it's enum
+                                retNode = gtNewIconNode(cit >= CORINFO_TYPE_BOOL && cit <= CORINFO_TYPE_DOUBLE);
                             }
                             else
                             {
@@ -4070,11 +4065,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         else if (ni == NI_System_Type_get_IsClass)
                         {
                             BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
-                            retNode          = gtNewIconNode(!isValueType && !isInterface ? 1 : 0);
+                            retNode          = gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
                         }
                         else
                         {
-                            retNode = gtNewIconNode(isValueType ? 1 : 0);
+                            retNode = gtNewIconNode((isValueType && cit != CORINFO_TYPE_PTR) ? 1 : 0);
                         }
                         // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                         impPopStack();

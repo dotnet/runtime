@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 public class Program
 {
@@ -20,6 +21,9 @@ public class Program
         IsFalse(typeof(void*).IsPrimitive);
         IsFalse(typeof(void*).IsValueType);
         IsTrue (typeof(void*).IsClass);
+        IsFalse(typeof(GenericStruct<int>*).IsPrimitive);
+        IsFalse(typeof(GenericStruct<int>*).IsValueType);
+        IsTrue (typeof(GenericStruct<int>*).IsClass);
         IsTrue (typeof(IntPtr).IsPrimitive);
         IsTrue (typeof(IntPtr).IsValueType);
         IsFalse(typeof(IntPtr).IsClass);
@@ -62,6 +66,13 @@ public class Program
         IsFalse(typeof(IDictionary<,>).IsPrimitive);
         IsFalse(typeof(IDictionary<,>).IsValueType);
         IsFalse(typeof(IDictionary<,>).IsClass);
+        IsFalse(typeof(Vector128<>).IsPrimitive);
+        IsTrue(typeof(Vector128<>).IsValueType);
+        IsFalse(typeof(Vector128<>).IsClass);
+        IsFalse(typeof(Vector128<byte>).IsPrimitive);
+        IsTrue(typeof(Vector128<byte>).IsValueType);
+        IsFalse(typeof(Vector128<byte>).IsClass);
+
 
         IsTrue (IsPrimitive<int>(42));
         IsTrue (IsPrimitive<int?>(new Nullable<int>(42)));
@@ -184,7 +195,6 @@ public class Program
         ThrowsNRE(() => { IsClassRef(ref _varNullableIntNull); });
         ThrowsNRE(() => { IsClassRef(ref _varStringNull); });
 
-        Console.WriteLine(_errors);
         return 100 + _errors;
     }
 
