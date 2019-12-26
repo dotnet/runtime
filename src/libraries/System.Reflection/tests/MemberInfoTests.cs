@@ -553,58 +553,6 @@ namespace System.Reflection.Tests
             Assert.True(c1.HasSameMetadataDefinitionAs(c2));
         }
 
-
-        private static bool HasSameMarkAs(this MemberInfo m1, MemberInfo m2)
-        {
-            MarkerAttribute marker1 = m1.GetCustomAttribute<MarkerAttribute>();
-            Assert.NotNull(marker1);
-
-            MarkerAttribute marker2 = m2.GetCustomAttribute<MarkerAttribute>();
-            Assert.NotNull(marker2);
-
-            return marker1.Mark == marker2.Mark;
-        }
-
-        private static MethodInfo GetConfirmedMethod(this Type t, string name, params Type[] parameterTypes)
-        {
-            BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.ExactBinding;
-            MethodInfo method = t.GetMethod(name, bf, null, parameterTypes, null);
-            Assert.NotNull(method);
-            return method;
-        }
-
-        private static ConstructorInfo GetConfirmedConstructor(this Type t, params Type[] parameterTypes)
-        {
-            BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding;
-            ConstructorInfo ctor = t.GetConstructor(bf, null, parameterTypes, null);
-            Assert.NotNull(ctor);
-            return ctor;
-        }
-
-        private static IEnumerable<MemberInfo> GenerateTestMemberList(this Type t)
-        {
-            if (t.IsGenericTypeDefinition)
-            {
-                foreach (Type gp in t.GetTypeInfo().GenericTypeParameters)
-                {
-                    yield return gp;
-                }
-            }
-            foreach (MemberInfo m in t.GetTypeInfo().DeclaredMembers)
-            {
-                yield return m;
-                MethodInfo method = m as MethodInfo;
-                if (method != null && method.IsGenericMethodDefinition)
-                {
-                    foreach (Type mgp in method.GetGenericArguments())
-                    {
-                        yield return mgp;
-                    }
-                    yield return method.MakeGenericMethod(method.GetGenericArguments().Select(ga => typeof(object)).ToArray());
-                }
-            }
-        }
-
         private class TestClassWithGenericMethod<T>
         {
             public void Moo(T t) { }
@@ -725,7 +673,6 @@ namespace System.Reflection.Tests
         }
 
 #pragma warning disable 0067, 0169
-#pragma warning disable 0067, 0169
         [ComVisible(false)]
         public class SampleClass
         {
@@ -745,5 +692,59 @@ namespace System.Reflection.Tests
             private event EventHandler PrivateEvent;
         }
 #pragma warning restore 0067, 0169
+    }
+
+    internal static class Extensions
+    {
+        internal static bool HasSameMarkAs(this MemberInfo m1, MemberInfo m2)
+        {
+            MarkerAttribute marker1 = m1.GetCustomAttribute<MarkerAttribute>();
+            Assert.NotNull(marker1);
+
+            MarkerAttribute marker2 = m2.GetCustomAttribute<MarkerAttribute>();
+            Assert.NotNull(marker2);
+
+            return marker1.Mark == marker2.Mark;
+        }
+
+        internal static MethodInfo GetConfirmedMethod(this Type t, string name, params Type[] parameterTypes)
+        {
+            BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.ExactBinding;
+            MethodInfo method = t.GetMethod(name, bf, null, parameterTypes, null);
+            Assert.NotNull(method);
+            return method;
+        }
+
+        internal static ConstructorInfo GetConfirmedConstructor(this Type t, params Type[] parameterTypes)
+        {
+            BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.ExactBinding;
+            ConstructorInfo ctor = t.GetConstructor(bf, null, parameterTypes, null);
+            Assert.NotNull(ctor);
+            return ctor;
+        }
+
+        internal static IEnumerable<MemberInfo> GenerateTestMemberList(this Type t)
+        {
+            if (t.IsGenericTypeDefinition)
+            {
+                foreach (Type gp in t.GetTypeInfo().GenericTypeParameters)
+                {
+                    yield return gp;
+                }
+            }
+            foreach (MemberInfo m in t.GetTypeInfo().DeclaredMembers)
+            {
+                yield return m;
+                MethodInfo method = m as MethodInfo;
+                if (method != null && method.IsGenericMethodDefinition)
+                {
+                    foreach (Type mgp in method.GetGenericArguments())
+                    {
+                        yield return mgp;
+                    }
+                    yield return method.MakeGenericMethod(method.GetGenericArguments().Select(ga => typeof(object)).ToArray());
+                }
+            }
+        }
     }
 }
