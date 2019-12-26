@@ -4029,7 +4029,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // e.g. `typeof(int).IsValueType` => `true`
                 if (impStackTop().val->IsCall())
                 {
-
                     GenTreeCall* call = impStackTop().val->AsCall();
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
                     {
@@ -4049,13 +4048,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                         BOOL        isValueType = eeIsValueClass(hClass);
                         CorInfoType cit         = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
-
                         if (ni == NI_System_Type_get_IsPrimitive)
                         {
                             if (isValueType)
                             {
-                                // TODO: check if it's enum
-                                retNode = gtNewIconNode(cit >= CORINFO_TYPE_BOOL && cit <= CORINFO_TYPE_DOUBLE);
+                                // it seems it's the only way to check if a type is Enum
+                                bool isEnum = info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) == CORINFO_TYPE_UNDEF;
+                                retNode = gtNewIconNode((cit >= CORINFO_TYPE_BOOL) && (cit <= CORINFO_TYPE_DOUBLE) && !isEnum ? 1 : 0);
                             }
                             else
                             {
@@ -4066,6 +4065,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
                             retNode          = gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
+                            // typeof(int*).IsClass has to be true (CORINFO_TYPE_PTR)
                         }
                         else
                         {
