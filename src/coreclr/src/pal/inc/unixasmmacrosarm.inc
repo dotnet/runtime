@@ -199,9 +199,9 @@ C_FUNC(\Name\()_End):
 
 .macro EMIT_BREAKPOINT
 #ifdef __thumb__
-	.inst.w 0xde01
+        .inst.w 0xde01
 #else
-	.inst 0xe7f001f0
+        .inst 0xe7f001f0
 #endif
 .endm
 
