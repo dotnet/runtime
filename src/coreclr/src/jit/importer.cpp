@@ -4032,20 +4032,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTreeCall* call = impStackTop().val->AsCall();
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
                     {
-                        GenTree* arg = call->Args().begin()->GetNode();
-                        if (!arg->IsIntegralConst())
+                        CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtCallArgs->GetNode());
+                        if (hClass == NO_CLASS_HANDLE)
                         {
-                            // e.g. GT_RUNTIMELOOKUP
+                            // If we couldn't find the class handle, give up.
                             break;
                         }
-                        GenTreeIntCon* handle    = arg->AsIntCon();
-                        auto           hClass    = reinterpret_cast<CORINFO_CLASS_HANDLE>(handle->IconValue());
-                        DWORD          classAttr = info.compCompHnd->getClassAttribs(hClass);
-                        if (classAttr & CORINFO_FLG_SHAREDINST)
-                        {
-                            // we have shared type instance
-                            break;
-                        }
+
                         BOOL        isValueType = eeIsValueClass(hClass);
                         CorInfoType cit         = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
                         if (ni == NI_System_Type_get_IsPrimitive)

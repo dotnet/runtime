@@ -63,6 +63,15 @@ public class Program
         IsFalse(typeof(GenericStruct<string>).IsPrimitive);
         IsTrue (typeof(GenericStruct<string>).IsValueType);
         IsFalse(typeof(GenericStruct<string>).IsClass);
+        IsFalse(typeof(GenericStruct<string>).IsPrimitive);
+        IsTrue (typeof(GenericStruct<string>).IsValueType);
+        IsFalse(typeof(GenericStruct<string>).IsClass);
+        IsFalse(typeof(KeyValuePair<int, string>).IsPrimitive);
+        IsTrue (typeof(KeyValuePair<int, string>).IsValueType);
+        IsFalse(typeof(KeyValuePair<int, string>).IsClass);
+        IsFalse(typeof(KeyValuePair<Program, string>).IsPrimitive);
+        IsTrue (typeof(KeyValuePair<Program, string>).IsValueType);
+        IsFalse(typeof(KeyValuePair<Program, string>).IsClass);
         IsFalse(typeof(SimpleEnum).IsPrimitive);
         IsTrue (typeof(SimpleEnum).IsValueType);
         IsFalse(typeof(SimpleEnum).IsClass);
@@ -163,7 +172,7 @@ public class Program
         IsFalse(IsClassObj(new GenericStruct<string>()));
         IsFalse(IsClassObj(SimpleEnum.B));
         IsFalse(IsClassObj(CreateDynamic1()));
-        IsTrue(IsClassObj(CreateDynamic2()));
+        IsTrue (IsClassObj(CreateDynamic2()));
 
 
         IsTrue (IsPrimitiveRef(ref _varInt));
