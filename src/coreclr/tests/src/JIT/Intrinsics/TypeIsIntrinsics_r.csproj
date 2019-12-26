@@ -8,6 +8,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="MathFloorSingle.cs" />
+    <Compile Include="TypeIsIntrinsics.cs" />
   </ItemGroup>
 </Project>
