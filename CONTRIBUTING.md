@@ -68,6 +68,14 @@ Note: It is OK to create your PR as "[WIP]" on the upstream repo before the impl
 
 The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/runtime/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
 
+Some issues have not yet been migrated here from our "old" repos. You can find those here:
+
+[CoreFX up for grabs](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs)
+
+[CoreCLR up for grabs](https://github.com/dotnet/coreclr/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs)
+
+Even for these issues, the pull request should go to this repo.
+
 ## Commit Messages
 
 Please format commit messages as follows (based on [A Note About Git Commit Messages](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)):
