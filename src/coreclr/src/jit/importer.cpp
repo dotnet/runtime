@@ -4065,7 +4065,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         else if (ni == NI_System_Type_get_IsClass)
                         {
                             BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
-                            retNode = // typeof(int*).IsClass has to be true (CORINFO_TYPE_PTR)
+                            retNode          = // typeof(int*).IsClass has to be true (CORINFO_TYPE_PTR)
                                 gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
                             
                         }
@@ -4375,7 +4375,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_GC_KeepAlive;
             }
         }
-        else if (strcmp(className, "Type") == 0)
+        else if (strcmp(className, "notType") == 0) // CI test
         {
             if (strcmp(methodName, "get_IsValueType") == 0)
             {
