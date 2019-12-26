@@ -2877,6 +2877,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
 
     pResult->indirectFirstOffset = 0;
     pResult->indirectSecondOffset = 0;
+    pResult->sizeOffset = -1;
 
     pResult->indirections = CORINFO_USEHELPER;
 

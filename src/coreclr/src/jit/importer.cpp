@@ -2059,7 +2059,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                    nullptr DEBUGARG("impRuntimeLookup slot"));
     }
 
-    GenTree* indOffTree = nullptr;
+    GenTree* indOffTree    = nullptr;
+    GenTree* lastIndOfTree = nullptr;
 
     // Applied repeated indirections
     for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
@@ -2084,6 +2085,13 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (pRuntimeLookup->offsets[i] != 0)
         {
+            // The last indirection could be subject to a size check (dynamic dictionary expansion feature)
+            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != 0xFFFF)
+            {
+                lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                             nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
+            }
+
             slotPtrTree =
                 gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree, gtNewIconNode(pRuntimeLookup->offsets[i], TYP_I_IMPL));
         }
@@ -2141,8 +2149,20 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTree* handle = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
     handle->gtFlags |= GTF_IND_NONFAULTING;
 
-    GenTree* handleCopy = impCloneExpr(handle, &handle, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("impRuntimeLookup typehandle"));
+    GenTree* sizeCheck = nullptr;
+    if (pRuntimeLookup->sizeOffset != 0xFFFF)
+    {
+        assert(lastIndOfTree != nullptr && pRuntimeLookup->indirections > 0);
+
+        // sizeValue = dictionary[pRuntimeLookup->sizeOffset]
+        GenTree* sizeValueOffset =
+            gtNewOperNode(GT_ADD, TYP_I_IMPL, lastIndOfTree, gtNewIconNode(pRuntimeLookup->sizeOffset, TYP_I_IMPL));
+        GenTree* sizeValue = gtNewOperNode(GT_IND, TYP_I_IMPL, sizeValueOffset);
+
+        // sizeCheck = sizeValue < pRuntimeLookup->offsets[i]
+        sizeCheck = gtNewOperNode(GT_GT, TYP_INT, sizeValue,
+                                  gtNewIconNode(pRuntimeLookup->offsets[pRuntimeLookup->indirections - 1], TYP_I_IMPL));
+    }
 
     // Call to helper
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
@@ -2151,23 +2171,25 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTree*          helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
 
     // Check for null and possibly call helper
-    GenTree* relop = gtNewOperNode(GT_NE, TYP_INT, handle, gtNewIconNode(0, TYP_I_IMPL));
+    GenTree* nullCheck = gtNewOperNode(GT_NE, TYP_INT, handle, gtNewIconNode(0, TYP_I_IMPL));
+    GenTree* colonNullCheck = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL,
+                                                                gtCloneExpr(handle), // do nothing if nonnull
+                                                                helperCall);
 
-    GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL,
-                                                       gtNewNothingNode(), // do nothing if nonnull
-                                                       helperCall);
+    GenTree* qmark = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
 
-    GenTree* qmark = gtNewQmarkNode(TYP_I_IMPL, relop, colon);
-
-    unsigned tmp;
-    if (handleCopy->IsLocal())
+    if (sizeCheck != nullptr)
     {
-        tmp = handleCopy->AsLclVarCommon()->GetLclNum();
+        GenTree* qmarkNullCheck = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
+
+        GenTree* colonSizeCheck = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL,
+                                                                    qmarkNullCheck, // if size check ok, do null check
+                                                                    gtCloneExpr(helperCall));
+
+        qmark = gtNewQmarkNode(TYP_I_IMPL, sizeCheck, colonSizeCheck);
     }
-    else
-    {
-        tmp = lvaGrabTemp(true DEBUGARG("spilling QMark1"));
-    }
+
+    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark1"));
 
     impAssignTempGen(tmp, qmark, (unsigned)CHECK_SPILL_NONE);
     return gtNewLclvNode(tmp, TYP_I_IMPL);

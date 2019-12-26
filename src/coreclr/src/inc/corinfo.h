@@ -1359,6 +1359,7 @@ struct CORINFO_RUNTIME_LOOKUP
     bool                    testForFixup;
 
     SIZE_T                  offsets[CORINFO_MAXINDIRECTIONS];
+    WORD                    sizeOffset;
 
     // If set, first offset is indirect.
     // 0 means that value stored at first offset (offsets[0]) from pointer is next pointer, to which the next offset

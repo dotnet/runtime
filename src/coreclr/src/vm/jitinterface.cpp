@@ -3058,6 +3058,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 
     pResult->indirectFirstOffset = 0;
     pResult->indirectSecondOffset = 0;
+    pResult->sizeOffset = -1;
 
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
@@ -3500,6 +3501,8 @@ NoSpecialCase:
         {
             pResult->testForNull = 1;
             pResult->testForFixup = 0;
+            if (strcmp(pContextMD->GetModule()->GetSimpleName(), "DictionaryExpansion") == 0)
+                pResult->sizeOffset = (WORD)pContextMD->GetNumGenericMethodArgs();
 
             // Indirect through dictionary table pointer in InstantiatedMethodDesc
             pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
@@ -3518,6 +3521,8 @@ NoSpecialCase:
         {
             pResult->testForNull = 1;
             pResult->testForFixup = 0;
+            if (strcmp(pContextMT->GetModule()->GetSimpleName(), "DictionaryExpansion") == 0)
+                pResult->sizeOffset = pContextMT->GetGenericsDictInfo()->m_wNumTyPars;
 
             // Indirect through dictionary table pointer in vtable
             pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
