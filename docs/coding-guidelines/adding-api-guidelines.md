@@ -4,15 +4,12 @@ Recommended reading to better understand this document:
 | [Package-Projects](package-projects.md)
 
 # Add APIs
-- [Determining versions and targets](#determining-versions-and-targets)
-- [Making the changes in repo](#making-the-changes-in-repo)
-- [FAQ](#faq)
-
-## Determining versions and targets
-
-1. [Determine what library](#determine-what-library) the API goes into.
-2. [Determine the target framework](#determine-target-framework) for the library that will contain the API.
-3. [Determine the version](#determine-library-version) for the library that will contain the API.
+- [Add APIs](#add-apis)
+    - [Determine what library](#determine-what-library)
+    - [Determine target framework](#determine-target-framework)
+    - [Determine library version](#determine-library-version)
+  - [Making the changes in repo](#making-the-changes-in-repo)
+  - [FAQ](#faq)
 
 ### Determine what library
 - Propose a library for exposing it as part of the [API review process](http://aka.ms/apireview).
@@ -25,7 +22,7 @@ the implementation without compat concerns in future releases.
 ### Determine target framework
 `netstandard` or `netcoreapp` is the target framework version currently under development.
 
-- If the library is [part of netstandard](#isnetstandard)
+- If the library is [part of netstandard](#faq)
   - Your target framework should be `netstandard`
   - If it is a new API only available on .NET Core then it will be added to `netcoreapp`
 - If the library is not part of netstandard
