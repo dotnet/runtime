@@ -11,15 +11,15 @@ Table of Contents
 
 [Debug Code vs Optimized Code](#debug-code-vs-optimized-code)
 
-[siScope / psiScope Structures](#siscope-psiscope-structure)
+[siScope / psiScope Structures](#siscope--psiscope-structures)
 
-[Generating siScope / psiScope info](#siscope-psiscope)
+[Generating siScope / psiScope info](#Generating-siscope--psiscope-info)
 
-[Variable Live Range Structure](#variable-live-range-structure)
+[Variable Live Range Structure](#variableliverange)
 
-[Generating Variable Live Range](#variable-live-range)
+[Generating Variable Live Range](#Generating-Variable-Live-Range)
 
-[Turning On Debug Info](#debug-indo-flags)
+[Turning On Debug Info](#turning-on-debug-info)
 
 [Dumps and Debugging Support](#dumps-and-debugging-support)
 

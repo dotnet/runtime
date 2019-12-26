@@ -20,7 +20,7 @@ Another technique to run IL that CoreCLR employs is Ahead of time compilation ("
 
 The code generator used for ahead of time compilation is typically the same one that would be used as a JIT, although it could be a different one if it follows the same ABI.
 
-The format of ahead of time compiled binaries is called [Ready To Run](../botr/readytorun-overview.md) ("R2R"). The format amends the IL with pregenerated native code for a specific operating system and CPU architecture. It preserves the version resiliance of the original IL assemblies.
+The format of ahead of time compiled binaries is called [Ready To Run](../coreclr/botr/readytorun-overview.md) ("R2R"). The format amends the IL with pregenerated native code for a specific operating system and CPU architecture. It preserves the version resiliance of the original IL assemblies.
 
 Ahead of time compilation gives the code generator more time to perform optimizations.
 

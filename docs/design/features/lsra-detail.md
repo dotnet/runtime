@@ -17,7 +17,7 @@ Table of Contents
 
 [LSRA Stress Modes](#lsra-stress-modes)
 
-[Assertions & Validation](#assertions-validation)
+[Assertions & Validation](#assertions--validation)
 
 [Future Extensions and Enhancements](#future-extensions-and-enhancements)
 

@@ -227,7 +227,7 @@ Major entry points are BuildMethodTable, LoadTypeHandleThrowing, CanCastTo\*, Ge
 Related Reading
 ===============
 
-- [ECMA CLI Specification](../project-docs/dotnet-standards.md)
+- [ECMA CLI Specification](../../../project/dotnet-standards.md)
 - [Type Loader](type-loader.md) Book of the Runtime Chapter
 - [Virtual Stub Dispatch](virtual-stub-dispatch.md) Book of the Runtime Chapter
 - [MethodDesc](method-descriptor.md) Book of the Runtime Chapter
