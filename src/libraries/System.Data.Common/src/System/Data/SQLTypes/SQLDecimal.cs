@@ -1690,7 +1690,7 @@ namespace System.Data.SqlTypes
             Span<uint> rgulR = stackalloc uint[s_cNumeMax + 1];
             Span<uint> rgulQ = stackalloc uint[s_cNumeMax];
             rgulR.Clear();
-            rgulR.Clear();
+            rgulQ.Clear();
             // # of ULONGs in result
             int culQ, culR;
 
