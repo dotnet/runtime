@@ -2,9 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <DebugType>None</DebugType>
-    <Optimize />
+    <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TypeIsIntrinsics.cs" />
+    <Compile Include="TypeIntrinsics.cs" />
   </ItemGroup>
 </Project>

@@ -4032,8 +4032,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                         GenTreeIntCon* handle = arg->AsIntCon();
                         auto hClass           = reinterpret_cast<CORINFO_CLASS_HANDLE>(handle->IconValue());
-                        typeInfo tinfo        = verMakeTypeInfo(hClass);
-                        BOOL isValueType      = tinfo.IsValueClass();
+                        DWORD classAttr       = info.compCompHnd->getClassAttribs(hClass);
+                        if (classAttr & CORINFO_FLG_SHAREDINST)
+                        {
+                            // we have shared type instance
+                            break;
+                        }
+                        typeInfo tinfo   = verMakeTypeInfo(hClass);
+                        BOOL isValueType = tinfo.IsValueClass();
                         if (ni == NI_System_Type_get_IsPrimitive)
                         {
                             if (isValueType)
@@ -4054,6 +4060,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             retNode = gtNewIconNode(isValueType ? 1 : 0);
                         }
+                        // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                         impPopStack();
                     }
                 }
