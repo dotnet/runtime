@@ -347,7 +347,7 @@ if %__BuildNative%==0 if %__BuildNativeCoreLib%==0 if %__BuildTests%==0 set __CM
 if %__CMakeNeeded%==1 (
     REM Eval the output from set-cmake-path.ps1
     for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
-    REM echo Using CMake from %CMakePath%
+    echo %__MsgPrefix%Using CMake from !CMakePath!
 )
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
@@ -511,7 +511,7 @@ if %__BuildCrossArchNative% EQU 1 (
     set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed.
@@ -594,7 +594,7 @@ if %__BuildNative% EQU 1 (
     set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: native component build failed.
@@ -884,7 +884,7 @@ if %__BuildPackages% EQU 1 (
     REM Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\build.ps1"^
         -r -b -projects %__SourceDir%\.nuget\packages.builds^
-        -verbosity minimal /nodeReuse:false /bl:!__BuildLog!^
+        -verbosity minimal /clp:nosummary /nodeReuse:false /bl:!__BuildLog!^
         /p:PortableBuild=true^
         /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
