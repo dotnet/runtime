@@ -4,6 +4,7 @@ Recommended reading to better understand this document:
 | [Package-Projects](package-projects.md)
 
 # Add APIs
+
 - [Add APIs](#add-apis)
     - [Determine what library](#determine-what-library)
     - [Determine target framework](#determine-target-framework)
@@ -12,6 +13,7 @@ Recommended reading to better understand this document:
   - [FAQ](#faq)
 
 ### Determine what library
+
 - Propose a library for exposing it as part of the [API review process](http://aka.ms/apireview).
 - Keep in mind the API might be exposed in a reference assembly that
 doesn't match the identity of the implementation. There are many reasons for this but
@@ -20,6 +22,7 @@ different platforms while sharing a common API surface and allowing us to refact
 the implementation without compat concerns in future releases.
 
 ### Determine target framework
+
 `netstandard` or `netcoreapp` is the target framework version currently under development.
 
 - If the library is [part of netstandard](#faq)
