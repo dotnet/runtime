@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -330,6 +331,7 @@ namespace System
             return false;
         }
 
+        [Intrinsic]
         public virtual bool IsAssignableFrom(Type? c)
         {
             if (c == null)

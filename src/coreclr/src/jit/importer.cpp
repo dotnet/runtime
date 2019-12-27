@@ -3425,7 +3425,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 CORINFO_CLASS_HANDLE    clsHnd,
                                 CORINFO_METHOD_HANDLE   method,
                                 CORINFO_SIG_INFO*       sig,
-                                unsigned                methodFlags,
+                                unsigned&               methodFlags,
                                 int                     memberRef,
                                 bool                    readonlyCall,
                                 bool                    tailCall,
@@ -4015,6 +4015,46 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_IsAssignableFrom:
+            {
+                // Optimize `typeof(TTo).IsAssignableFrom(TTFrom)` to true/false
+                GenTree* typeTo   = impStackTop(1).val;
+                GenTree* typeFrom = impStackTop(0).val;
+
+                if (typeTo->IsCall() && typeFrom->IsCall())
+                {
+                    // make sure both arguments are `typeof()`
+                    CORINFO_METHOD_HANDLE hTypeof = eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
+                    if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) &&
+                        (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
+                    {
+                        CORINFO_CLASS_HANDLE hClassTo =
+                            gtGetHelperArgClassHandle(typeTo->AsCall()->gtCallArgs->GetNode());
+                        CORINFO_CLASS_HANDLE hClassFrom =
+                            gtGetHelperArgClassHandle(typeFrom->AsCall()->gtCallArgs->GetNode());
+
+                        if (hClassTo == NO_CLASS_HANDLE || hClassFrom == NO_CLASS_HANDLE)
+                        {
+                            break;
+                        }
+
+                        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
+                        if (castResult == TypeCompareState::May)
+                        {
+                            // requires runtime check
+                            // e.g. __Canon, COMObjects, Nullable
+                            break;
+                        }
+
+                        methodFlags &= ~CORINFO_FLG_VIRTUAL;
+                        retNode = gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0);
+                        impPopStack(); // drop both CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE calls
+                        impPopStack();
+                    }
+                }
+                break;
+            }
+
             case NI_System_Type_get_IsValueType:
             {
                 // Optimize
@@ -4341,6 +4381,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "get_IsValueType") == 0)
             {
                 result = NI_System_Type_get_IsValueType;
+            }
+            else if (strcmp(methodName, "IsAssignableFrom") == 0)
+            {
+                result = NI_System_Type_IsAssignableFrom;
             }
         }
     }

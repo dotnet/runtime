@@ -3614,7 +3614,7 @@ protected:
                           CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
                           CORINFO_SIG_INFO*       sig,
-                          unsigned                methodFlags,
+                          unsigned&               methodFlags,
                           int                     memberRef,
                           bool                    readonlyCall,
                           bool                    tailCall,
