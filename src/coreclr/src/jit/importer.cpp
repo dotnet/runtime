@@ -4033,13 +4033,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
                     {
                         CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtCallArgs->GetNode());
-                        if (hClass == NO_CLASS_HANDLE)
-                        {
-                            // If we couldn't find the class handle, give up.
-                            break;
-                        }
-
-                        if (hClass == info.compCompHnd->getBuiltinClass(CLASSID___CANON))
+                        if (hClass == NO_CLASS_HANDLE ||
+                            hClass == info.compCompHnd->getBuiltinClass(CLASSID___CANON))
                         {
                             // Ignore System.__Canon
                             break;
@@ -4049,13 +4044,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         CorInfoType cit         = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
                         if (ni == NI_System_Type_get_IsPrimitive)
                         {
-                            if (isValueType)
+                            if (isValueType && (cit >= CORINFO_TYPE_BOOL) && (cit <= CORINFO_TYPE_DOUBLE))
                             {
                                 // Enums are not primitive types
-                                bool isEnum = info.compCompHnd->getBuiltinClass(CLASSID_ENUM) ==
+                                BOOL isEnum = info.compCompHnd->getBuiltinClass(CLASSID_ENUM) ==
                                               info.compCompHnd->getParentType(hClass);
-                                retNode = gtNewIconNode(
-                                    (cit >= CORINFO_TYPE_BOOL) && (cit <= CORINFO_TYPE_DOUBLE) && !isEnum ? 1 : 0);
+                                retNode = gtNewIconNode(!isEnum ? 1 : 0);
                             }
                             else
                             {
@@ -4064,14 +4058,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                         else if (ni == NI_System_Type_get_IsClass)
                         {
-                            // Interfaces aren't classes but pointers are (e.g. typeof(int*).IsClass)
-                            BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
-                            retNode =
-                                gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
+                            // Pointers are also classes (e.g. typeof(int*).IsClass is true)
+                            if (isValueType && (cit != CORINFO_TYPE_PTR))
+                            {
+                                retNode = gtNewIconNode(0);
+                            }
+                            else
+                            {
+                                BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
+                                retNode = gtNewIconNode(isInterface ? 0 : 1);
+                            }
                         }
                         else if (ni == NI_System_Type_get_IsValueType)
                         {
-                            retNode = gtNewIconNode((isValueType && cit != CORINFO_TYPE_PTR) ? 1 : 0);
+                            retNode = gtNewIconNode((isValueType && (cit != CORINFO_TYPE_PTR)) ? 1 : 0);
                         }
                         else
                         {
