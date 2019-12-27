@@ -269,7 +269,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void SecurityRuleSet()
+        public void SecurityRuleSetTest()
         {
             Assert.Equal(SecurityRuleSet.None, typeof(AssemblyTests).Assembly.SecurityRuleSet);
         }
