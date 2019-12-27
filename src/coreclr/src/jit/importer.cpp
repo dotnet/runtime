@@ -4045,6 +4045,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             if (isValueType)
                             {
+                                // Enums are not primitive types
                                 bool isEnum = info.compCompHnd->getBuiltinClass(CLASSID_ENUM) ==
                                               info.compCompHnd->getParentType(hClass);
                                 retNode = gtNewIconNode(
@@ -4057,13 +4058,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                         else if (ni == NI_System_Type_get_IsClass)
                         {
-                            if (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_SHAREDINST)
+                            // Type.IsClass is true for:
+                            //   isn't __Canon
+                            //   isn't Interface
+                            //   isn't ValueType
+                            //   Pointers, e.g. typeof(int*)
+
+                            if (!info.compCompHnd->canInlineTypeCheckWithObjectVTable(hClass))
                             {
+                                // Type is __Canon
                                 break;
                             }
                             
                             BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
-                            retNode          = // typeof(int*).IsClass has to be true (CORINFO_TYPE_PTR)
+                            retNode          =
                                 gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
                         }
                         else if (ni == NI_System_Type_get_IsValueType)
