@@ -4033,8 +4033,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
                     {
                         CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtCallArgs->GetNode());
-                        if (hClass == NO_CLASS_HANDLE ||
-                            hClass == info.compCompHnd->getBuiltinClass(CLASSID___CANON))
+                        if (hClass == NO_CLASS_HANDLE || hClass == info.compCompHnd->getBuiltinClass(CLASSID___CANON))
                         {
                             // Ignore System.__Canon
                             break;
@@ -4049,7 +4048,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 // Enums are not primitive types
                                 BOOL isEnum = info.compCompHnd->getBuiltinClass(CLASSID_ENUM) ==
                                               info.compCompHnd->getParentType(hClass);
-                                retNode     = gtNewIconNode(!isEnum ? 1 : 0);
+                                retNode = gtNewIconNode(!isEnum ? 1 : 0);
                             }
                             else
                             {
