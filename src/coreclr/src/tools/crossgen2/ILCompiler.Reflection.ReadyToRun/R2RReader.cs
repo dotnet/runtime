@@ -11,7 +11,6 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Xml.Serialization;
 
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
@@ -26,7 +25,6 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public struct FixupCell
     {
-        [XmlAttribute("Index")]
         public int Index { get; set; }
 
         /// <summary>

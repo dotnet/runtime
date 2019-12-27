@@ -10,7 +10,6 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
@@ -21,7 +20,6 @@ namespace ILCompiler.Reflection.ReadyToRun
 
     public abstract class BaseGcTransition
     {
-        [XmlAttribute("Index")]
         public int CodeOffset { get; set; }
 
         public BaseGcTransition() { }
@@ -41,7 +39,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         public int Size { get; set; }
         public int Offset { get; set; }
         public int CodeLength { get; set; }
-        [XmlIgnore]
         public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; }
         public List<List<BaseGcSlot>> LiveSlotsAtSafepoints { get; set; }
     }
@@ -54,7 +51,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The index of the runtime function
         /// </summary>
-        [XmlAttribute("Index")]
         public int Id { get; set; }
 
         /// <summary>
@@ -155,7 +151,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// An unique index for the method
         /// </summary>
-        [XmlAttribute("Index")]
         public int Index { get; set; }
 
         /// <summary>
@@ -195,7 +190,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public int EntryPointRuntimeFunctionId { get; set; }
 
-        [XmlIgnore]
         public BaseGcInfo GcInfo { get; set; }
 
         public FixupCell[] Fixups { get; set; }

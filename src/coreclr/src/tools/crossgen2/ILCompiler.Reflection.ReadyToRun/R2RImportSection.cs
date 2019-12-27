@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
-using System.Xml.Serialization;
-
 using Internal.CorConstants;
 
 namespace ILCompiler.Reflection.ReadyToRun
@@ -19,7 +17,6 @@ namespace ILCompiler.Reflection.ReadyToRun
     {
         public class ImportSectionEntry
         {
-            [XmlAttribute("Index")]
             public int Index { get; set; }
             public int StartOffset { get; set; }
             public int StartRVA { get; set; }
@@ -43,7 +40,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        [XmlAttribute("Index")]
         public int Index { get; set; }
 
         /// <summary>
