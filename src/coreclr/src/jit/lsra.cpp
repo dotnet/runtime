@@ -2240,10 +2240,10 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
 
     if (block->bbPreds == nullptr)
     {
-        // We may have throw blocks with no predecessors, or unreachable blocks.
-        // We don't want to set the predecessor as null in this case, since that may make it appear that
-        // the live-in vars are living on the stack, resulting in inconsistencies (since these unreachable
-        // blocks can have reachable successors).
+        // We may have unreachable blocks, due to optimization.
+        // We don't want to set the predecessor as null in this case, since that will result in
+        // unnecessary DummyDefs, and possibly result in inconsistencies requiring resolution
+        // (since these unreachable blocks can have reachable successors).
         assert((block != compiler->fgFirstBB) || (prevBlock != nullptr));
         JITDUMP("\n\nNo predecessor; ");
         return prevBlock;
