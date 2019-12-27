@@ -755,7 +755,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void AssemblyGetForwardedTypes()
         {
-            Assembly a = typeof(AssemblyNetCoreAppTests).Assembly;
+            Assembly a = typeof(AssemblyTests).Assembly;
             Type[] forwardedTypes = a.GetForwardedTypes();
 
             forwardedTypes = forwardedTypes.OrderBy(t => t.FullName).ToArray();

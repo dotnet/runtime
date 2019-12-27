@@ -406,7 +406,7 @@ namespace System.Reflection.Tests
             // Make sure that identical tokens in different assemblies don't confuse the api.
             foreach (Type t1 in typeof(object).Assembly.DefinedTypes)
             {
-                foreach (Type t2 in typeof(MemberInfoNetCoreAppTests).Assembly.DefinedTypes)
+                foreach (Type t2 in typeof(MemberInfoTests).Assembly.DefinedTypes)
                 {
                     Assert.False(t1.HasSameMetadataDefinitionAs(t2));
                 }
@@ -622,17 +622,6 @@ namespace System.Reflection.Tests
 
         private class DerivedFromGenericTestClass<T> : GenericTestClass<T> { }
 
-        [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = false)]
-        public class MarkerAttribute : Attribute
-        {
-            public MarkerAttribute(int mark)
-            {
-                Mark = mark;
-            }
-
-            public readonly int Mark;
-        }
-
         private MemberInfo[] GetMembers(Type type)
         {
             return type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -692,6 +681,17 @@ namespace System.Reflection.Tests
             private event EventHandler PrivateEvent;
         }
 #pragma warning restore 0067, 0169
+    }
+
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = false)]
+    public class MarkerAttribute : Attribute
+    {
+        public MarkerAttribute(int mark)
+        {
+            Mark = mark;
+        }
+
+        public readonly int Mark;
     }
 
     internal static class Extensions
