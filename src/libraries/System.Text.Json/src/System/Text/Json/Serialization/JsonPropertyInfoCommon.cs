@@ -19,8 +19,6 @@ namespace System.Text.Json
         public Func<object?, TDeclaredProperty>? Get { get; private set; }
         public Action<object?, TDeclaredProperty>? Set { get; private set; }
 
-        public Action<TDeclaredProperty>? AddItemToEnumerable { get; private set; }
-
         public JsonConverter<TConverter>? Converter { get; internal set; }
 
         public override void Initialize(
@@ -139,7 +137,7 @@ namespace System.Text.Json
 
         public override void AddObjectToEnumerableWithReflection(object addMethodDelegate, object? value)
         {
-            Debug.Assert((_elementPropertyInfo ?? ElementClassInfo?.PolicyProperty) != null);
+            Debug.Assert((_elementPropertyInfo ?? ElementClassInfo!.PolicyProperty) != null);
             (_elementPropertyInfo ?? ElementClassInfo!.PolicyProperty!).AddObjectToParentEnumerable(addMethodDelegate, value);
         }
 

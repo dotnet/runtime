@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -26,6 +27,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
+        [return: MaybeNull]
         public static TValue Deserialize<TValue>(string json, JsonSerializerOptions? options = null)
         {
             return (TValue)Deserialize(json, typeof(TValue), options)!;
