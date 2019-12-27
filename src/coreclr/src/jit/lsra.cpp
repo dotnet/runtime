@@ -847,8 +847,11 @@ void LinearScan::setBlockSequence()
                     assert(!"Switch with single successor");
                 }
             }
-            if (predBlock->hasEHBoundaryOut())
+            if (((predBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0) || (hasUniquePred && predBlock->hasEHBoundaryOut()))
             {
+                // Treat this as having incoming EH flow, since we can't insert resolution moves into
+                // the ALWAYS block of a BBCallAlwaysPair, and a unique pred with an EH out edge won't
+                // allow us to keep any variables enregistered.
                 blockInfo[block->bbNum].hasEHBoundaryIn = true;
             }
         }
