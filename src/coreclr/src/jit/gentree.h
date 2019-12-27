@@ -4502,6 +4502,9 @@ public:
         assert(node != nullptr);
     }
 
+    GenTreeUse(const GenTreeUse&) = delete;
+    GenTreeUse& operator=(const GenTreeUse&) = delete;
+
     GenTree*& NodeRef()
     {
         return m_node;
