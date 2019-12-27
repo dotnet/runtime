@@ -825,7 +825,7 @@ void CodeGen::genSpillVar(GenTree* tree)
 
         instruction storeIns = ins_Store(lclTyp, compiler->isSIMDTypeLocalAligned(varNum));
         assert(varDsc->GetRegNum() == tree->GetRegNum());
-        inst_TT_RV(storeIns, tree, tree->GetRegNum(), size);
+        inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
 
         genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(tree));
         gcInfo.gcMarkRegSetNpt(varDsc->lvRegMask());
@@ -1853,8 +1853,8 @@ void CodeGen::genProduceReg(GenTree* tree)
             unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
             assert(!compiler->lvaTable[varNum].lvNormalizeOnStore() ||
                    (tree->TypeGet() == genActualType(compiler->lvaTable[varNum].TypeGet())));
-            inst_TT_RV(ins_Store(tree->gtType, compiler->isSIMDTypeLocalAligned(varNum)), tree, tree->GetRegNum(),
-                       emitTypeSize(tree->TypeGet()));
+            inst_TT_RV(ins_Store(tree->gtType, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(tree->TypeGet()),
+                       tree, tree->GetRegNum());
         }
         else
         {

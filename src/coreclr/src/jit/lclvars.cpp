@@ -2377,9 +2377,7 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum)
 //
 void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
 {
-    noway_assert(varNum < lvaCount);
-
-    LclVarDsc* varDsc = &lvaTable[varNum];
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
 
     INDEBUG(varDsc->lvLiveInOutOfHndlr = 1);
 

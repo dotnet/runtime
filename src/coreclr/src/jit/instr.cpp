@@ -653,12 +653,13 @@ AGAIN:
 //
 // Arguments:
 //    ins  - the instruction to generate
+//    size - the size attributes for the store
 //    tree - the lclVar node
 //    reg  - the register currently holding the value of the local
-//    size - the size attributes for the store
 //
-void CodeGen::inst_TT_RV(instruction ins, GenTree* tree, regNumber reg, emitAttr size)
+void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg)
 {
+#ifdef DEBUG
     // The tree must have a valid register value.
     assert(reg != REG_STK);
     bool isValidInReg = ((tree->gtFlags & GTF_SPILLED) == 0);
@@ -672,9 +673,10 @@ void CodeGen::inst_TT_RV(instruction ins, GenTree* tree, regNumber reg, emitAttr
         }
     }
     assert(isValidInReg);
-
     assert(size != EA_UNKNOWN);
     assert(tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+#endif // DEBUG
+
     unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
     assert(varNum < compiler->lvaCount);
 #if CPU_LOAD_STORE_ARCH
