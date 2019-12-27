@@ -4058,20 +4058,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                         else if (ni == NI_System_Type_get_IsClass)
                         {
-                            // Type.IsClass is true for:
-                            //   isn't __Canon
-                            //   isn't Interface
-                            //   isn't ValueType
-                            //   Pointers, e.g. typeof(int*)
-
                             if (!info.compCompHnd->canInlineTypeCheckWithObjectVTable(hClass))
                             {
                                 // Type is __Canon
                                 break;
                             }
-                            
+
+                            // Pointers (e.g.typeof(int*)) are also classes
                             BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
-                            retNode          =
+                            retNode =
                                 gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);
                         }
                         else if (ni == NI_System_Type_get_IsValueType)
