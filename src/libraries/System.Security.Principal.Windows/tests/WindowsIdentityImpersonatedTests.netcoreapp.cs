@@ -33,9 +33,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
         await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
         {
             Asserts(currentWindowsIdentity);
-
             await Task.Delay(100);
-
             Asserts(currentWindowsIdentity);
         });
 
@@ -44,19 +42,13 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
         int result = await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
         {
             Asserts(currentWindowsIdentity);
-
             await Task.Delay(100);
-
             Asserts(currentWindowsIdentity);
-
             return 42;
         });
 
         Assert.Equal(42, result);
-
         Assert.Equal(WindowsIdentity.GetCurrent().Name, currentWindowsIdentity.Name);
-
-        return;
 
         // Assertions
         void Asserts(WindowsIdentity currentWindowsIdentity)
@@ -171,16 +163,12 @@ public sealed class WindowsTestAccount : IDisposable
 
     public void Dispose()
     {
-        if (_accountTokenHandle is null)
-        {
-            return;
-        }
-
-        _accountTokenHandle.Dispose();
-        _accountTokenHandle = null;
+        _accountTokenHandle?.Dispose();
 
         uint result = NetUserDel(null, _userName);
-        if (result != 0)
+
+        // 2221= NERR_UserNotFound
+        if (result != 0 && result != 2221)
         {
             throw new Win32Exception((int)result);
         }
