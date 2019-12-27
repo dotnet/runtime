@@ -4035,9 +4035,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             retNode = gtNewIconNode(
                                 (eeIsValueClass(hClass) &&
                                  // pointers are not value types (e.g. typeof(int*).IsValueType is false)
-                                 info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_PTR)
-                                    ? 1
-                                    : 0);
+                                 info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR) ? 1 : 0);
                             impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                         }
                     }
