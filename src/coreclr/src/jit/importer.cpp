@@ -4049,7 +4049,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 // Enums are not primitive types
                                 BOOL isEnum = info.compCompHnd->getBuiltinClass(CLASSID_ENUM) ==
                                               info.compCompHnd->getParentType(hClass);
-                                retNode = gtNewIconNode(!isEnum ? 1 : 0);
+                                retNode     = gtNewIconNode(!isEnum ? 1 : 0);
                             }
                             else
                             {
@@ -4066,7 +4066,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             else
                             {
                                 BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
-                                retNode = gtNewIconNode(isInterface ? 0 : 1);
+                                retNode          = gtNewIconNode(isInterface ? 0 : 1);
                             }
                         }
                         else if (ni == NI_System_Type_get_IsValueType)
