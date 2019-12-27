@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
@@ -35,7 +34,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The ReadyToRun section type
         /// </summary>
-        [XmlAttribute("Index")]
         public SectionType Type { get; set; }
 
         /// <summary>

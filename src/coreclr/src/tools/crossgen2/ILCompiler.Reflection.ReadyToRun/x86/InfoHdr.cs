@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun.x86
 {
@@ -49,7 +48,6 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
         public bool HasArgTabOffset { get; set; }
         public uint ArgTabOffset { get; set; }
-        [XmlIgnore]
         public List<int> Epilogs { get; set; }
 
         public InfoHdrSmall(uint prologSize, uint epilogSize, byte epilogCount, byte epilogAtEnd, byte ediSaved, byte esiSaved, byte ebxSaved, byte ebpSaved, byte ebpFrame,

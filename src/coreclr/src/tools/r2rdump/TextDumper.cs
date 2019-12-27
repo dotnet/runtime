@@ -78,7 +78,7 @@ namespace R2RDump
 
                 foreach (R2RSection section in NormalizedSections())
                 {
-                    DumpSection(section, parentNode: null);
+                    DumpSection(section);
                 }
             }
             SkipLine();
@@ -87,7 +87,7 @@ namespace R2RDump
         /// <summary>
         /// Dumps one R2RSection
         /// </summary>
-        internal override void DumpSection(R2RSection section, XmlNode parentNode = null)
+        internal override void DumpSection(R2RSection section)
         {
             WriteSubDivider();
             section.WriteTo(_writer, _options);
@@ -99,7 +99,7 @@ namespace R2RDump
             }
             if (_options.SectionContents)
             {
-                DumpSectionContents(section, parentNode);
+                DumpSectionContents(section);
                 SkipLine();
             }
         }
@@ -131,7 +131,7 @@ namespace R2RDump
         /// <summary>
         /// Dumps one R2RMethod.
         /// </summary>
-        internal override void DumpMethod(R2RMethod method, XmlNode parentNode = null)
+        internal override void DumpMethod(R2RMethod method)
         {
             WriteSubDivider();
             method.WriteTo(_writer, _options);
@@ -143,7 +143,7 @@ namespace R2RDump
 
                 if (_options.Raw)
                 {
-                    DumpBytes(method.GcInfo.Offset, (uint)method.GcInfo.Size, null, "", false);
+                    DumpBytes(method.GcInfo.Offset, (uint)method.GcInfo.Size, "", false);
                 }
             }
             SkipLine();
@@ -157,7 +157,7 @@ namespace R2RDump
         /// <summary>
         /// Dumps one runtime function.
         /// </summary>
-        internal override void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null)
+        internal override void DumpRuntimeFunction(RuntimeFunction rtf)
         {
             _writer.WriteLine(rtf.Method.SignatureString);
             rtf.WriteTo(_writer, _options);
@@ -187,7 +187,7 @@ namespace R2RDump
         /// <summary>
         /// Dumps disassembly and register liveness
         /// </summary>
-        internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset, XmlNode parentNode = null)
+        internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
         {
             int indent = (_options.Naked ? 11 : 32);
             string indentString = new string(' ', indent);
@@ -234,7 +234,7 @@ namespace R2RDump
         /// <summary>
         /// Prints a formatted string containing a block of bytes from the relative virtual address and size
         /// </summary>
-        internal override void DumpBytes(int rva, uint size, XmlNode parentNode = null, string name = "Raw", bool convertToOffset = true)
+        internal override void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true)
         {
             int start = rva;
             if (convertToOffset)
@@ -267,7 +267,7 @@ namespace R2RDump
             SkipLine();
         }
 
-        internal override void DumpSectionContents(R2RSection section, XmlNode parentNode = null)
+        internal override void DumpSectionContents(R2RSection section)
         {
             switch (section.Type)
             {
@@ -408,11 +408,10 @@ namespace R2RDump
             }
         }
 
-        internal override XmlNode DumpQueryCount(string q, string title, int count)
+        internal override void DumpQueryCount(string q, string title, int count)
         {
             _writer.WriteLine(count + " result(s) for \"" + q + "\"");
             SkipLine();
-            return null;
         }
     }
 }
