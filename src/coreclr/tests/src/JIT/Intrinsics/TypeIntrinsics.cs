@@ -242,8 +242,6 @@ public class Program
         ThrowsNRE(() => { IsClassRef(ref _varNullableIntNull); });
         ThrowsNRE(() => { IsClassRef(ref _varStringNull); });
 
-        Console.WriteLine(_errors);
-        Console.ReadKey();
         return 100 + _errors;
     }
 

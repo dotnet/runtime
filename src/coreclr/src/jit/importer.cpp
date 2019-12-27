@@ -4039,6 +4039,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             break;
                         }
 
+                        if (hClass == info.compCompHnd->getBuiltinClass(CLASSID___CANON))
+                        {
+                            // Ignore System.__Canon
+                            break;
+                        }
+
                         BOOL        isValueType = eeIsValueClass(hClass);
                         CorInfoType cit         = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
                         if (ni == NI_System_Type_get_IsPrimitive)
@@ -4058,13 +4064,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         }
                         else if (ni == NI_System_Type_get_IsClass)
                         {
-                            if (!info.compCompHnd->canInlineTypeCheckWithObjectVTable(hClass))
-                            {
-                                // Type is __Canon
-                                break;
-                            }
-
-                            // Pointers (e.g.typeof(int*)) are also classes
+                            // Interfaces aren't classes but pointers are (e.g. typeof(int*).IsClass)
                             BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
                             retNode =
                                 gtNewIconNode((cit == CORINFO_TYPE_PTR) || (!isValueType && !isInterface) ? 1 : 0);

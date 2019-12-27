@@ -4313,6 +4313,9 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
     case CLASSID_ENUM:
         result = CORINFO_CLASS_HANDLE(g_pEnumClass);
         break;
+    case CLASSID___CANON:
+        result = CORINFO_CLASS_HANDLE(g_pCanonMethodTableClass);
+        break;
     default:
         _ASSERTE(!"NYI: unknown classId");
         break;

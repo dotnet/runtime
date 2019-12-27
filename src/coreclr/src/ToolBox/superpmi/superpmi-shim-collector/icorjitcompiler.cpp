@@ -48,6 +48,7 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*             
     our_ICorJitInfo.getBuiltinClass(CLASSID_ARGUMENT_HANDLE);
     our_ICorJitInfo.getBuiltinClass(CLASSID_RUNTIME_TYPE);
     our_ICorJitInfo.getBuiltinClass(CLASSID_ENUM);
+    our_ICorJitInfo.getBuiltinClass(CLASSID___CANON);
 
 #ifdef fatMC
     // to build up a fat mc

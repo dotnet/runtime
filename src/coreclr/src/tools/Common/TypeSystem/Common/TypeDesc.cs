@@ -120,6 +120,8 @@ namespace Internal.TypeSystem
                     flags = TypeFlags.ValueType;
                     break;
 
+                // Should WellKnownType.__Canon be handled here?
+
                 default:
                     throw new ArgumentException();
             }
