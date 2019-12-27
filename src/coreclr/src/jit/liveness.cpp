@@ -2486,22 +2486,11 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
             if (isFinallyVar)
             {
-                lvaSetVarLiveInOutOfHandler(varNum);
-
-                /* Don't set lvMustInit unless we have a non-arg, GC pointer */
-
-                if (varDsc->lvIsParam)
+                // Set lvMustInit only if we have a non-arg, GC pointer.
+                if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()))
                 {
-                    continue;
+                    varDsc->lvMustInit = true;
                 }
-
-                if (!varTypeIsGC(varDsc->TypeGet()))
-                {
-                    continue;
-                }
-
-                /* Mark it */
-                varDsc->lvMustInit = true;
             }
         }
     }
