@@ -29,7 +29,7 @@
 #endif
 
 #ifndef DAC_TABLE_RVA
-size_t dacTableRva = 0x0000000001236cf0;
+size_t dacTableRva = 0x0000000001235cf0;
 #define DAC_TABLE_RVA dacTableRva
 #endif
 
