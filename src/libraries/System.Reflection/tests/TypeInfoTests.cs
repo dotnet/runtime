@@ -1500,12 +1500,12 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(int).MakeArrayType(1), false };
             yield return new object[] { typeof(int).MakeArrayType().MakeArrayType(), true };
             yield return new object[] { typeof(int).MakeArrayType(2), false };
-            yield return new object[] { typeof(OutsideTypeInfoNetcoreTests<int>.InsideTypeInfoNetcoreTests<string>), false };
-            yield return new object[] { typeof(OutsideTypeInfoNetcoreTests<int>.InsideTypeInfoNetcoreTests<string>[]), true };
-            yield return new object[] { typeof(OutsideTypeInfoNetcoreTests<int>.InsideTypeInfoNetcoreTests<string>[,]), false };
+            yield return new object[] { typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>), false };
+            yield return new object[] { typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>[]), true };
+            yield return new object[] { typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>[,]), false };
             if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
-                yield return new object[] { Array.CreateInstance(typeof(OutsideTypeInfoNetcoreTests<int>.InsideTypeInfoNetcoreTests<string>), new[] { 2 }, new[] { -1 }).GetType(), false };
+                yield return new object[] { Array.CreateInstance(typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>), new[] { 2 }, new[] { -1 }).GetType(), false };
             }
         }
 
@@ -1767,13 +1767,13 @@ namespace System.Reflection.Tests
     }
 #pragma warning restore 0067, 0169
 
-    public class OutsideTypeInfoNetcoreTests
+    public class OutsideTypeInfoTests
     {
-        public class InsideTypeInfoNetcoreTests { }
+        public class InsideTypeInfoTests { }
     }
 
-    public class OutsideTypeInfoNetcoreTests<T>
+    public class OutsideTypeInfoTests<T>
     {
-        public class InsideTypeInfoNetcoreTests<U> { }
+        public class InsideTypeInfoTests<U> { }
     }
 }
