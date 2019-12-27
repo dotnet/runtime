@@ -5128,8 +5128,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
 //----------------------------------------------------------------------------
 
 ThreadStore::ThreadStore()
-           : m_Crst(CrstThreadStore, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD)),
-             m_ThreadCount(0),
+           : m_ThreadCount(0),
              m_MaxThreadCount(0),
              m_UnstartedThreadCount(0),
              m_BackgroundThreadCount(0),
@@ -5138,7 +5137,8 @@ ThreadStore::ThreadStore()
              m_DeadThreadCountForGCTrigger(0),
              m_TriggerGCForDeadThreads(false),
              m_GuidCreated(FALSE),
-             m_HoldingThread(0)
+             m_HoldingThread(0),
+             m_Crst(CrstThreadStore, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD))
 {
     CONTRACTL {
         THROWS;

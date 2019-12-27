@@ -4882,9 +4882,6 @@ private:
     void Enter();
     void Leave();
 
-    // Critical section for adding and removing threads to the store
-    Crst        m_Crst;
-
     // List of all the threads known to the ThreadStore (started & unstarted).
     ThreadList  m_ThreadList;
 
@@ -5033,6 +5030,11 @@ public:
     void OnMaxGenerationGCStarted();
     bool ShouldTriggerGCForDeadThreads();
     void TriggerGCForDeadThreadsIfNecessary();
+
+private:
+    // Place Crst member at end of class for cross OS DAC. Size of this member varies between OS
+    // Critical section for adding and removing threads to the store
+    Crst        m_Crst;
 };
 
 struct TSSuspendHelper {
