@@ -4015,15 +4015,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-            case NI_System_Type_get_IsClass:
-            case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsValueType:
             {
-                // Optimize things like
+                // Optimize
                 //
-                //   ldtoken [Type]
                 //   call Type.GetTypeFromHandle (which is replaced with CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE)
-                //   call Type.IsValueType (also IsClass and IsPrimitive)
+                //   call Type.IsValueType
                 //
                 // to `true` or `false`
                 // e.g. `typeof(int).IsValueType` => `true`
@@ -4033,51 +4030,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
                     {
                         CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtCallArgs->GetNode());
-                        if (hClass == NO_CLASS_HANDLE || hClass == info.compCompHnd->getBuiltinClass(CLASSID___CANON))
+                        if (hClass != NO_CLASS_HANDLE)
                         {
-                            // Ignore System.__Canon
-                            break;
+                            retNode = gtNewIconNode((eeIsValueClass(hClass) &&
+                                // pointers are not value types (e.g. typeof(int*).IsValueType is false)
+                                info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_PTR) ? 1 : 0);
+                            impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                         }
-
-                        BOOL        isValueType = eeIsValueClass(hClass);
-                        CorInfoType cit         = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
-                        if (ni == NI_System_Type_get_IsPrimitive)
-                        {
-                            if (isValueType && (cit >= CORINFO_TYPE_BOOL) && (cit <= CORINFO_TYPE_DOUBLE))
-                            {
-                                // Enums are not primitive types
-                                BOOL isEnum = info.compCompHnd->getBuiltinClass(CLASSID_ENUM) ==
-                                              info.compCompHnd->getParentType(hClass);
-                                retNode = gtNewIconNode(!isEnum ? 1 : 0);
-                            }
-                            else
-                            {
-                                retNode = gtNewIconNode(0);
-                            }
-                        }
-                        else if (ni == NI_System_Type_get_IsClass)
-                        {
-                            // Pointers are also classes (e.g. typeof(int*).IsClass is true)
-                            if (isValueType && (cit != CORINFO_TYPE_PTR))
-                            {
-                                retNode = gtNewIconNode(0);
-                            }
-                            else
-                            {
-                                BOOL isInterface = info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_INTERFACE;
-                                retNode          = gtNewIconNode(isInterface ? 0 : 1);
-                            }
-                        }
-                        else if (ni == NI_System_Type_get_IsValueType)
-                        {
-                            retNode = gtNewIconNode((isValueType && (cit != CORINFO_TYPE_PTR)) ? 1 : 0);
-                        }
-                        else
-                        {
-                            assert(false);
-                        }
-                        // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
-                        impPopStack();
                     }
                 }
                 break;
@@ -4379,14 +4338,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "get_IsValueType") == 0)
             {
                 result = NI_System_Type_get_IsValueType;
-            }
-            else if (strcmp(methodName, "get_IsClass") == 0)
-            {
-                result = NI_System_Type_get_IsClass;
-            }
-            else if (strcmp(methodName, "get_IsPrimitive") == 0)
-            {
-                result = NI_System_Type_get_IsPrimitive;
             }
         }
     }

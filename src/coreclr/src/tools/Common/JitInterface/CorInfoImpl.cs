@@ -1689,12 +1689,6 @@ namespace Internal.JitInterface
                     TypeDesc typeOfRuntimeType = _compilation.GetTypeOfRuntimeType();
                     return typeOfRuntimeType != null ? ObjectToHandle(typeOfRuntimeType) : null;
 
-                case CorInfoClassId.CLASSID_ENUM:
-                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Enum));
-
-                case CorInfoClassId.CLASSID___CANON:
-                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.__Canon));
-
                 default:
                     throw new NotImplementedException();
             }

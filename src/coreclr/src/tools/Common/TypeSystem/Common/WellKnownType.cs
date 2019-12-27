@@ -48,6 +48,5 @@ namespace Internal.TypeSystem
 
         TypedReference,
         ByReferenceOfT,
-        __Canon,
     }
 }

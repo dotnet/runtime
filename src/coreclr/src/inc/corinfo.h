@@ -1012,8 +1012,6 @@ enum CorInfoClassId
     CLASSID_STRING,
     CLASSID_ARGUMENT_HANDLE,
     CLASSID_RUNTIME_TYPE,
-    CLASSID_ENUM,
-    CLASSID___CANON,
 };
 
 enum CorInfoInline

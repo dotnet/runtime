@@ -79,7 +79,7 @@ namespace System
         public bool IsSealed => (GetAttributeFlagsImpl() & TypeAttributes.Sealed) != 0;
         public bool IsSpecialName => (GetAttributeFlagsImpl() & TypeAttributes.SpecialName) != 0;
 
-        public bool IsClass { [Intrinsic] get => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Class && !IsValueType; }
+        public bool IsClass => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Class && !IsValueType;
 
         public bool IsNestedAssembly => (GetAttributeFlagsImpl() & TypeAttributes.VisibilityMask) == TypeAttributes.NestedAssembly;
         public bool IsNestedFamANDAssem => (GetAttributeFlagsImpl() & TypeAttributes.VisibilityMask) == TypeAttributes.NestedFamANDAssem;
@@ -106,7 +106,7 @@ namespace System
         public virtual bool IsEnum => IsSubclassOf(typeof(Enum));
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => false;
-        public bool IsPrimitive { [Intrinsic] get => IsPrimitiveImpl(); }
+        public bool IsPrimitive => IsPrimitiveImpl();
         protected abstract bool IsPrimitiveImpl();
         public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));

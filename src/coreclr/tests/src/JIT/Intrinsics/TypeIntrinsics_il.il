@@ -16,65 +16,26 @@
   {
     .entrypoint
     .maxstack  1
-    ldtoken    [System.Runtime]System.String&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsPrimitive()
-    brtrue     FAILED
-
+    // it's not currently possible to produce `ldtoken string&` in C#
     ldtoken    [System.Runtime]System.String&
     call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       instance bool [System.Runtime]System.Type::get_IsValueType()
     brtrue     FAILED
-
-    ldtoken    [System.Runtime]System.String&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsClass()
-    brfalse    FAILED
-
-    ldtoken    [System.Runtime]System.Byte&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsPrimitive()
-    brfalse    FAILED
 
     ldtoken    [System.Runtime]System.Int16&
     call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       instance bool [System.Runtime]System.Type::get_IsValueType()
     brfalse.s  FAILED
 
-    ldtoken    [System.Runtime]System.UInt32&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsClass()
-    brtrue.s   FAILED
-
-    ldtoken    [System.Runtime]System.Object&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsPrimitive()
-    brtrue.s   FAILED
-
     ldtoken    [System.Runtime]System.Object&
     call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       instance bool [System.Runtime]System.Type::get_IsValueType()
-    brtrue.s   FAILED
-
-    ldtoken    [System.Runtime]System.Object&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsClass()
-    brfalse.s  FAILED
-
-    ldtoken    [System.Runtime]System.Decimal&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsPrimitive()
     brtrue.s   FAILED
 
     ldtoken    [System.Runtime]System.Decimal&
     call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       instance bool [System.Runtime]System.Type::get_IsValueType()
     brfalse.s  FAILED
-
-    ldtoken    [System.Runtime]System.Decimal&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsClass()
-    brtrue.s   FAILED
 
     ldc.i4.s   100
     ret
