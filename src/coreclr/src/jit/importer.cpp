@@ -3448,8 +3448,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
     {
-        // The recursive calls to Jit intrinsics are must-expand by convention.
-        mustExpand = mustExpand || gtIsRecursiveCall(method);
+        // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
+        mustExpand = mustExpand || (gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL));
 
         if (intrinsicID == CORINFO_INTRINSIC_Illegal)
         {
@@ -4017,7 +4017,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_IsAssignableFrom:
             {
-                // Optimize `typeof(TTo).IsAssignableFrom(TTFrom)` to true/false
+                // Optimize patterns like:
+                //
+                //   typeof(TTo).IsAssignableFrom(typeof(TTFrom))
+                //   valueTypeVar.GetType().IsAssignableFrom(typeof(TTFrom))
+                //
+                // to true/false
                 GenTree* typeTo   = impStackTop(1).val;
                 GenTree* typeFrom = impStackTop(0).val;
 
