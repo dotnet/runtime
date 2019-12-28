@@ -45,7 +45,7 @@ namespace System.Text.Json
         /// <remarks>
         /// Note that the <paramref name="bytePositionInLine"/> counts the number of bytes (i.e. UTF-8 code units) and not characters or scalars.
         /// </remarks>
-        public JsonException(string? message, string path, long? lineNumber, long? bytePositionInLine) : base(message)
+        public JsonException(string? message, string? path, long? lineNumber, long? bytePositionInLine) : base(message)
         {
             _message = message;
             LineNumber = lineNumber;
@@ -89,7 +89,7 @@ namespace System.Text.Json
         {
             LineNumber = (long?)info.GetValue("LineNumber", typeof(long?));
             BytePositionInLine = (long?)info.GetValue("BytePositionInLine", typeof(long?));
-            Path = info.GetString("Path") ?? string.Empty;
+            Path = info.GetString("Path");
             SetMessage(info.GetString("ActualMessage"));
         }
 
@@ -125,7 +125,7 @@ namespace System.Text.Json
         /// <summary>
         /// The path within the JSON where the exception was encountered.
         /// </summary>
-        public string Path { get; internal set; } = string.Empty;
+        public string? Path { get; internal set; }
 
         /// <summary>
         /// Gets a message that describes the current exception.

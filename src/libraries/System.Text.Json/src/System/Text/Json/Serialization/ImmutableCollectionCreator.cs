@@ -28,14 +28,14 @@ namespace System.Text.Json
             _creatorDelegate = (Func<IEnumerable<TElement>, TCollection>)creator.CreateDelegate(typeof(Func<IEnumerable<TElement>, TCollection>));
         }
 
-        public override bool CreateImmutableEnumerable(IList items, out IEnumerable collection)
+        public override bool CreateImmutableEnumerable(IList items, [NotNullWhen(true)] out IEnumerable collection)
         {
             Debug.Assert(_creatorDelegate != null);
             collection = _creatorDelegate(CreateGenericTElementIEnumerable(items));
             return true;
         }
 
-        public override bool CreateImmutableDictionary(IDictionary items, out IDictionary? collection)
+        public override bool CreateImmutableDictionary(IDictionary items, [NotNullWhen(true)] out IDictionary? collection)
         {
             // Shouldn't be calling this method for immutable dictionaries.
             collection = default;
@@ -63,14 +63,14 @@ namespace System.Text.Json
                 typeof(Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>));
         }
 
-        public override bool CreateImmutableEnumerable(IList items, out IEnumerable? collection)
+        public override bool CreateImmutableEnumerable(IList items, [NotNullWhen(true)] out IEnumerable? collection)
         {
             // Shouldn't be calling this method for immutable non-dictionaries.
             collection = default;
             return false;
         }
 
-        public override bool CreateImmutableDictionary(IDictionary items, out IDictionary collection)
+        public override bool CreateImmutableDictionary(IDictionary items, [NotNullWhen(true)] out IDictionary collection)
         {
             Debug.Assert(_creatorDelegate != null);
             collection = (IDictionary)_creatorDelegate(CreateGenericTElementIDictionary(items));
@@ -79,11 +79,12 @@ namespace System.Text.Json
 
         private IEnumerable<KeyValuePair<string, TElement>> CreateGenericTElementIDictionary(IDictionary sourceDictionary)
         {
-#pragma warning disable 8605
-            foreach (DictionaryEntry item in sourceDictionary)
-#pragma warning restore 8605
+            foreach (DictionaryEntry? item in sourceDictionary)
             {
-                yield return new KeyValuePair<string, TElement>((string)item.Key, (TElement)item.Value!);
+                if (item.HasValue)
+                {
+                    yield return new KeyValuePair<string, TElement>((string)item.Value.Key, (TElement)item.Value.Value!);
+                }
             }
         }
     }

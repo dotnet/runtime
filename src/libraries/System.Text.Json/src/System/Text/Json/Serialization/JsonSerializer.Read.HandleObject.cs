@@ -22,7 +22,7 @@ namespace System.Text.Json
                 if (!state.Current.CollectionPropertyInitialized)
                 {
                     // We have bad JSON: enumerable element appeared without preceding StartArray token.
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo?.DeclaredPropertyType);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo!.DeclaredPropertyType);
                 }
 
                 Type objType = state.Current.GetElementType();

@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +28,7 @@ namespace System.Text.Json
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
+        [return: MaybeNull]
         public static ValueTask<TValue> DeserializeAsync<TValue>(
             Stream utf8Json,
             JsonSerializerOptions? options = null,

@@ -62,14 +62,9 @@ namespace System.Text.Json
         }
 
         [PreserveDependency(".ctor()", "System.Text.Json.ImmutableEnumerableCreator`2")]
-        public override ImmutableCollectionCreator? ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType)
+        public override ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType)
         {
-            MethodInfo? createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
-
-            if (createRange == null)
-            {
-                return null;
-            }
+            MethodInfo createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
 
             Type creatorType = typeof(ImmutableEnumerableCreator<,>).MakeGenericType(elementType, collectionType);
 
@@ -103,7 +98,7 @@ namespace System.Text.Json
         }
 
         [PreserveDependency(".ctor()", "System.Text.Json.ImmutableDictionaryCreator`2")]
-        public override ImmutableCollectionCreator? ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType)
+        public override ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType)
         {
             Debug.Assert(collectionType.IsGenericType);
 
@@ -113,12 +108,7 @@ namespace System.Text.Json
                 throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(collectionType, parentType: null, memberInfo: null);
             }
 
-            MethodInfo? createRange = ImmutableDictionaryCreateRangeMethod(constructingType, elementType);
-
-            if (createRange == null)
-            {
-                return null;
-            }
+            MethodInfo createRange = ImmutableDictionaryCreateRangeMethod(constructingType, elementType);
 
             Type creatorType = typeof(ImmutableDictionaryCreator<,>).MakeGenericType(elementType, collectionType);
 

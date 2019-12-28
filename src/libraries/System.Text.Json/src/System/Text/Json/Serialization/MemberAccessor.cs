@@ -13,35 +13,25 @@ namespace System.Text.Json
 
         public abstract Action<TProperty> CreateAddDelegate<TProperty>(MethodInfo addMethod, object target);
 
-        public abstract ImmutableCollectionCreator? ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType);
+        public abstract ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType);
 
-        public abstract ImmutableCollectionCreator? ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType);
+        public abstract ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType);
 
-        protected MethodInfo? ImmutableCollectionCreateRangeMethod(Type constructingType, Type elementType)
+        protected MethodInfo ImmutableCollectionCreateRangeMethod(Type constructingType, Type elementType)
         {
-            MethodInfo? createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
-
-            if (createRangeMethod == null)
-            {
-                return null;
-            }
+            MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
 
             return createRangeMethod.MakeGenericMethod(elementType);
         }
 
-        protected MethodInfo? ImmutableDictionaryCreateRangeMethod(Type constructingType, Type elementType)
+        protected MethodInfo ImmutableDictionaryCreateRangeMethod(Type constructingType, Type elementType)
         {
-            MethodInfo? createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
-
-            if (createRangeMethod == null)
-            {
-                return null;
-            }
+            MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
 
             return createRangeMethod.MakeGenericMethod(typeof(string), elementType);
         }
 
-        private MethodInfo? FindImmutableCreateRangeMethod(Type constructingType)
+        private MethodInfo FindImmutableCreateRangeMethod(Type constructingType)
         {
             MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
 
@@ -57,7 +47,7 @@ namespace System.Text.Json
             // a CreateRange method. `null` being returned here will cause a JsonException to be
             // thrown when the desired CreateRange delegate is about to be invoked.
             Debug.Fail("Could not create the appropriate CreateRange method.");
-            return null;
+            return null!;
         }
 
         public abstract Func<object?, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo);

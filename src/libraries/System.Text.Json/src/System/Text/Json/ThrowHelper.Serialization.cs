@@ -39,7 +39,7 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type? propertyType)
+        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
         {
             var ex = new JsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType));
             ex.AppendPathInformation = true;

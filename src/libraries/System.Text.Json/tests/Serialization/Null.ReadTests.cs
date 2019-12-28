@@ -184,9 +184,12 @@ namespace System.Text.Json.Serialization.Tests
 
         [ActiveIssue(1037)]
         [Fact]
-        public static async Task AsyncParseNullStringShouldThrowJsonException()
+        public static async Task ParseNullStringShouldThrowJsonExceptionAsync()
         {
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleStruct>(new MemoryStream(Encoding.UTF8.GetBytes("null"))));
+            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            { 
+                await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleStruct>(stream));
+            }
         }
     }
 }
