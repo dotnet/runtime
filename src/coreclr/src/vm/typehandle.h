@@ -431,8 +431,8 @@ public:
     // So for Foo[] instead of returning Array returns Foo.
     inline MethodTable* GetMethodTableOfElementType() const;
 
-    // Returns the MethodTable for the SZARRAY or ARRAY type
-    inline MethodTable * GetPossiblySharedArrayMethodTable() const;
+    // Returns rank for the SZARRAY or ARRAY type
+    inline unsigned int GetRank() const;
 
     // As above but returns a TypeHandle (so it will return a non-null result
     // for generic type variables, for instance).

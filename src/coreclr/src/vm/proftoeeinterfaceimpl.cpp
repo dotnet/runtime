@@ -1746,7 +1746,7 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
             // Fill in the type if they want it
             if (pBaseElemType != NULL)
             {
-                *pBaseElemType = pArr->GetArrayElementTypeHandle().GetVerifierCorElementType();
+                *pBaseElemType = th.GetElementType().GetVerifierCorElementType();
             }
 
             // If this is an array of classes and they wish to have the base type
@@ -1762,7 +1762,7 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
             // If they want the number of dimensions of the array
             if (pcRank != NULL)
             {
-                *pcRank = (ULONG) pArr->GetRank();
+                *pcRank = (ULONG) th.GetRank();
             }
 
             // S_OK indicates that this was indeed an array

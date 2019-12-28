@@ -217,7 +217,7 @@ void TypeDesc::GetName(SString &ssBuf)
         th = TypeHandle(this);
 
     if (kind == ELEMENT_TYPE_ARRAY)
-        rank = dac_cast<PTR_ArrayTypeDesc>(this)->GetRank();
+        rank = this->GetMethodTable()->GetRank();
     else if (CorTypeInfo::IsGenericVariable(kind))
         rank = dac_cast<PTR_TypeVarTypeDesc>(this)->GetIndex();
     else
@@ -359,7 +359,7 @@ BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
 
     if (IsArray())
     {
-        MethodTable* pMT = dac_cast<PTR_ArrayTypeDesc>(this)->GetMethodTable();
+        MethodTable* pMT = this->GetMethodTable();
 
         if (toTypeHnd.IsArray())
         {

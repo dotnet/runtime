@@ -344,7 +344,7 @@ class ArrayTypeDesc;
 #define EXTERN extern
 
 // For [<I1, etc. up to and including [Object
-GARY_DECL(PTR_ArrayTypeDesc, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
+GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<LONG>   g_TrapReturningThreads;
 

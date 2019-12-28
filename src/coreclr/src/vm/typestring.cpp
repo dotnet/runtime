@@ -899,7 +899,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             TypeHandle elemType;
             if (ty.HasTypeParam())
             {
-                rank = ty.IsArray() ? ty.AsArray()->GetRank() : 0;
+                rank = ty.IsArray() ? ty.GetRank() : 0;
                 elemType = ty.GetTypeParam();
             }
             else

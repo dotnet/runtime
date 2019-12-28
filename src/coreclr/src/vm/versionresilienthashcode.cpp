@@ -107,8 +107,7 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
     else
     if (type.IsArray())
     {
-        ArrayTypeDesc *pArray = type.AsArray();
-        return ComputeArrayTypeHashCode(GetVersionResilientTypeHashCode(pArray->GetArrayElementTypeHandle()), pArray->GetRank());
+        return ComputeArrayTypeHashCode(GetVersionResilientTypeHashCode(type.GetElementType()), type.GetRank());
     }
     else
     if (type.IsPointer())

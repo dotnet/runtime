@@ -53,18 +53,6 @@ inline MethodTable* TypeHandle::GetMethodTableOfElementType() const
     }
 }
 
-inline MethodTable * TypeHandle::GetPossiblySharedArrayMethodTable() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(IsArrayType());
-
-    if (IsArray())
-        return AsArray()->GetTemplateMethodTable();
-    else
-        return AsMethodTable();
-}
-
 inline TypeHandle TypeHandle::GetElementType() const
 {
     LIMITED_METHOD_CONTRACT;
@@ -80,6 +68,15 @@ inline TypeHandle TypeHandle::GetElementType() const
     {
         return *this;
     }
+}
+
+inline unsigned int TypeHandle::GetRank() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(IsArrayType());
+
+    return AsArray()->GetRank();
 }
 
 inline BOOL TypeHandle::IsZapped() const

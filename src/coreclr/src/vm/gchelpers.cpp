@@ -415,8 +415,7 @@ OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS 
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-    ArrayTypeDesc* arrayDesc = arrayType.AsArray();
-    MethodTable* pArrayMT = arrayDesc->GetMethodTable();
+    MethodTable* pArrayMT = arrayType.GetMethodTable();
 
     return AllocateSzArray(pArrayMT, cElements, flags, bAllocateInLargeHeap);
 }
@@ -615,8 +614,7 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, G
         WRAPPER_NO_CONTRACT;
     } CONTRACTL_END;
 
-    ArrayTypeDesc* arrayDesc = arrayType.AsArray();
-    MethodTable* pArrayMT = arrayDesc->GetMethodTable();
+    MethodTable* pArrayMT = arrayType.GetMethodTable();
 
     return AllocateArrayEx(pArrayMT, pArgs, dwNumArgs, flags, bAllocateInLargeHeap);
 }
@@ -897,9 +895,9 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
     {
         TypeHandle elemType = TypeHandle(MscorlibBinder::GetElementType(type));
         TypeHandle typHnd = ClassLoader::LoadArrayTypeThrowing(elemType, ELEMENT_TYPE_SZARRAY, 0);
-        g_pPredefinedArrayTypes[type] = typHnd.AsArray();
+        g_pPredefinedArrayTypes[type] = typHnd;
     }
-    return AllocateSzArray(g_pPredefinedArrayTypes[type]->GetMethodTable(), cElements);
+    return AllocateSzArray(g_pPredefinedArrayTypes[type].GetMethodTable(), cElements);
 }
 
 //
@@ -957,7 +955,7 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(elementType);
 
 #ifdef _DEBUG
-    _ASSERTE(arrayType.AsArray()->GetRank() == 1);
+    _ASSERTE(arrayType.GetRank() == 1);
     _ASSERTE(arrayType.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 #endif //_DEBUG
 

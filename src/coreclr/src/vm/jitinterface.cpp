@@ -4997,7 +4997,7 @@ unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
         // Lots of code used to think that System.Array's methodtable returns TRUE for IsArray(). It doesn't.
         _ASSERTE(th != TypeHandle(g_pArrayClass));
 
-        result = th.GetPossiblySharedArrayMethodTable()->GetRank();
+        result = th.GetRank();
     }
 
     EE_TO_JIT_TRANSITION();

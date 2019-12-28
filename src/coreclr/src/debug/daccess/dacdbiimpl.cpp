@@ -2433,8 +2433,8 @@ void DacDbiInterfaceImpl::GetArrayTypeInfo(TypeHandle                      typeH
                                            AppDomain *                     pAppDomain)
 {
     _ASSERTE(typeHandle.IsArray());
-    pTypeInfo->ArrayTypeData.arrayRank = typeHandle.AsArray()->GetRank();
-    TypeHandleToBasicTypeInfo(typeHandle.AsArray()->GetArrayElementTypeHandle(),
+    pTypeInfo->ArrayTypeData.arrayRank = typeHandle.GetRank();
+    TypeHandleToBasicTypeInfo(typeHandle.GetElementType(),
                               &(pTypeInfo->ArrayTypeData.arrayTypeArg),
                               pAppDomain);
 } // DacDbiInterfaceImpl::GetArrayTypeInfo

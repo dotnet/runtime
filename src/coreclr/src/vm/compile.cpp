@@ -1094,11 +1094,11 @@ BOOL CEEPreloader::CanEmbedClassHandle(CORINFO_CLASS_HANDLE    typeHandle)
     {
         embedStats.array++;
 
-        CorElementType arrType = hnd.AsArray()->GetInternalCorElementType();
+        CorElementType arrType = hnd.GetInternalCorElementType();
         if (arrType == ELEMENT_TYPE_SZARRAY)
             embedStats.szarray++;
 
-        CorElementType elemType = hnd.AsArray()->GetArrayElementTypeHandle().GetInternalCorElementType();
+        CorElementType elemType = hnd.GetElementType().GetInternalCorElementType();
         if (elemType <= ELEMENT_TYPE_R8)
             embedStats.primitives++;
     }

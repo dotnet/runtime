@@ -951,11 +951,11 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
         return tb;
 
     // Get the rank and kind of the first array
-    DWORD rank = ta.AsArray()->GetRank();
+    DWORD rank = ta.GetRank();
     CorElementType mergeKind = taKind;
 
     // if no match on the rank the common ancestor is System.Array
-    if (rank != tb.AsArray()->GetRank())
+    if (rank != tb.GetRank())
         return TypeHandle(g_pArrayClass);
 
     if (tbKind != taKind)
@@ -969,22 +969,22 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
 
     // If both are arrays of reference types, return an array of the common
     // ancestor.
-    taElem = ta.AsArray()->GetArrayElementTypeHandle();
-    if (taElem.IsEquivalentTo(tb.AsArray()->GetArrayElementTypeHandle()))
+    taElem = ta.GetElementType();
+    if (taElem.IsEquivalentTo(tb.GetElementType()))
     {
         // The element types match/are equivalent, so we are good to go.
         tMergeElem = taElem;
     }
-    else if (taElem.IsArray() && tb.AsArray()->GetArrayElementTypeHandle().IsArray())
+    else if (taElem.IsArray() && tb.GetElementType().IsArray())
     {
         // Arrays - Find the common ancestor of the element types.
-        tMergeElem = MergeArrayTypeHandlesToCommonParent(taElem, tb.AsArray()->GetArrayElementTypeHandle());
+        tMergeElem = MergeArrayTypeHandlesToCommonParent(taElem, tb.GetElementType());
     }
     else if (CorTypeInfo::IsObjRef(taElem.GetSignatureCorElementType()) &&
-            CorTypeInfo::IsObjRef(tb.AsArray()->GetArrayElementTypeHandle().GetSignatureCorElementType()))
+            CorTypeInfo::IsObjRef(tb.GetElementType().GetSignatureCorElementType()))
     {
         // Find the common ancestor of the element types.
-        tMergeElem = MergeTypeHandlesToCommonParent(taElem, tb.AsArray()->GetArrayElementTypeHandle());
+        tMergeElem = MergeTypeHandlesToCommonParent(taElem, tb.GetElementType());
     }
     else
     {

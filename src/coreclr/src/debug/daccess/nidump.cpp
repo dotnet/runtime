@@ -6140,7 +6140,7 @@ void NativeImageDumper::TypeDescToString( PTR_TypeDesc td, SString& buf )
             {
                 _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(mt)) );
                 MethodTableToString( mt, buf );
-                rank = PTR_ArrayTypeDesc(PTR_TO_TADDR(ptd))->GetRank();
+                rank = mt->GetRank();
             }
         }
         else

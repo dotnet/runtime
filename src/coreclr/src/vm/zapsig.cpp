@@ -51,9 +51,9 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
 
         if (elemType == ELEMENT_TYPE_ARRAY)
         {
-            ArrayTypeDesc *pArrayDesc = dac_cast<PTR_ArrayTypeDesc>(desc);
-            _ASSERTE(pArrayDesc->GetRank() != 0);
-            pSigBuilder->AppendData(pArrayDesc->GetRank());
+            MethodTable *mt = desc->GetMethodTable();
+            _ASSERTE(mt->GetRank() != 0);
+            pSigBuilder->AppendData(mt->GetRank());
             pSigBuilder->AppendData(0);
             pSigBuilder->AppendData(0);
         }
@@ -555,7 +555,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
             if (FAILED(sp.GetData(&rank)))
                 RETURN(FALSE);
 
-            if (rank != handle.AsArray()->GetRank())
+            if (rank != handle.GetRank())
                 RETURN(FALSE);
 
             break;

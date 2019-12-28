@@ -603,7 +603,7 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClas
     TypeHandle typeReturn;
 
     if (typeHandle.IsArray())
-        typeReturn = typeHandle.AsArray()->GetArrayElementTypeHandle();
+        typeReturn = typeHandle.GetElementType();
     else
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
 
@@ -621,7 +621,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetArrayRank, ReflectClassBaseObject *pTypeUNS
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
 
-    return (INT32)refType->GetType().AsArray()->GetRank();
+    return (INT32)refType->GetType().GetRank();
 }
 FCIMPLEND
 
