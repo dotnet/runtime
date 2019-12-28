@@ -639,10 +639,10 @@ inline bool CORDebuggerAttached()
 //
 EXTERN HINSTANCE g_hInstShim;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);
 GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 
 #ifndef MAXULONG

@@ -5729,12 +5729,12 @@ ClrDataAccess::GetJitHelperName(
     };
     static_assert_no_msg(COUNTOF(s_rgHelperNames) == CORINFO_HELP_COUNT);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if (!dynamicHelpersOnly)
 #else
     if (!dynamicHelpersOnly && g_runtimeLoadedBaseAddress <= address &&
             address < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     {
         // Read the whole table from the target in one shot for better performance
         VMHELPDEF * pTable = static_cast<VMHELPDEF *>(

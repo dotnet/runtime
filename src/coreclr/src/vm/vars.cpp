@@ -197,10 +197,10 @@ GVAL_IMPL(bool, g_fProcessDetach);
 
 GVAL_IMPL_INIT(DWORD, g_fEEShutDown, 0);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 GVAL_IMPL(SIZE_T, g_runtimeLoadedBaseAddress);
 GVAL_IMPL(SIZE_T, g_runtimeVirtualSize);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
 
