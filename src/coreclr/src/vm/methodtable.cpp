@@ -5391,6 +5391,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
 
 #ifndef DACCESS_COMPILE
+
     if (Generics::RecursionGraph::HasSeenType(pVisited, TypeHandle(this)))
     {
         *pfBailed = TRUE;

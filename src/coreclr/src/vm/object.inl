@@ -220,10 +220,6 @@ inline void ArrayBase::SetArrayMethodTable(MethodTable *pArrayMT)
 
     SetMethodTable(pArrayMT
                    DEBUG_ARG(TRUE));
-
-#ifdef _DEBUG
-    AssertArrayTypeDescLoaded();
-#endif // _DEBUG
 }
 
 inline void ArrayBase::SetArrayMethodTableForLargeObject(MethodTable *pArrayMT)
@@ -232,10 +228,6 @@ inline void ArrayBase::SetArrayMethodTableForLargeObject(MethodTable *pArrayMT)
 
     SetMethodTableForLargeObject(pArrayMT
                                  DEBUG_ARG(TRUE));
-
-#ifdef _DEBUG
-    AssertArrayTypeDescLoaded();
-#endif // _DEBUG
 }
 #endif // !DACCESS_COMPILE
 

@@ -668,13 +668,6 @@ public:
 
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
-
-private:
-#ifndef DACCESS_COMPILE
-#ifdef _DEBUG
-    void AssertArrayTypeDescLoaded();
-#endif // _DEBUG
-#endif // !DACCESS_COMPILE
 };
 
 //
