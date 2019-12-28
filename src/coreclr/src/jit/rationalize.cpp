@@ -776,20 +776,17 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             {
                 // Rewrite this as an explicit load.
                 JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
+                assert(simdNode->IsUnary() || simdNode->IsBinary());
 
-                GenTree* address;
+                GenTreeAddrMode* address = new (comp, GT_LEA)
+                    GenTreeAddrMode(TYP_BYREF, simdNode->GetOp(0), nullptr, 0, OFFSETOF__CORINFO_Array__data);
+
                 if (simdNode->IsBinary())
                 {
-                    address = new (comp, GT_LEA)
-                        GenTreeAddrMode(TYP_BYREF, simdNode->GetOp(0), simdNode->GetOp(1),
-                                        genTypeSize(simdNode->gtSIMDBaseType), OFFSETOF__CORINFO_Array__data);
+                    address->SetIndex(simdNode->GetOp(1));
+                    address->SetScale(genTypeSize(simdNode->gtSIMDBaseType));
                 }
-                else
-                {
-                    assert(simdNode->IsUnary());
-                    address = new (comp, GT_LEA)
-                        GenTreeAddrMode(TYP_BYREF, simdNode->GetOp(0), nullptr, 0, OFFSETOF__CORINFO_Array__data);
-                }
+
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
 
                 BlockRange().InsertBefore(simdNode, address, ind);
