@@ -9140,9 +9140,10 @@ void GenTreeUseEdgeIterator::AdvanceSIMD()
 
 void GenTreeUseEdgeIterator::AdvanceSIMDReverseOp()
 {
-    assert(m_edge == &m_node->AsSIMD()->GetUse(0).NodeRef());
+    assert(m_state == 0);
+    assert(m_edge == &m_node->AsSIMD()->GetUse(1).NodeRef());
 
-    m_edge    = &m_node->AsSIMD()->GetUse(1).NodeRef();
+    m_edge    = &m_node->AsSIMD()->GetUse(0).NodeRef();
     m_advance = &GenTreeUseEdgeIterator::Terminate;
 }
 #endif // FEATURE_SIMD
