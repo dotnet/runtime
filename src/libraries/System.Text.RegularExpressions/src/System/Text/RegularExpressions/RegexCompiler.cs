@@ -3089,13 +3089,13 @@ namespace System.Text.RegularExpressions
             // endianness perspective because the compilation happens on the same machine
             // that runs the compiled code.  If that were to ever change, this would need
             // to be revisited. String length is 8 chars == 16 bytes == 128 bits.
-            string bitVectorString = string.Create(8, charClass, (dest, charClass) =>
+            string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) =>
             {
                 for (int i = 0; i < 128; i++)
                 {
                     char c = (char)i;
-                    if (RegexCharClass.CharInClass(c, charClass) ||
-                        (invariant && char.IsUpper(c) && RegexCharClass.CharInClass(char.ToLowerInvariant(c), charClass)))
+                    if (RegexCharClass.CharInClass(c, state.charClass) ||
+                        (state.invariant && char.IsUpper(c) && RegexCharClass.CharInClass(char.ToLowerInvariant(c), state.charClass)))
                     {
                         dest[i >> 4] |= (char)(1 << (i & 0xF));
                     }
