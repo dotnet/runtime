@@ -125,16 +125,15 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameNull, parentType, jsonPropertyInfo.PropertyInfo.Name));
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializerPropertyNamingPolicyReturnNull(Type policyType)
+        public static void ThrowInvalidOperationException_SerializerPropertyNamingPolicyReturnNull(JsonNamingPolicy namingPolicy)
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNamingPolicyReturnNull, policyType));
+            throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNamingPolicyReturnNull, namingPolicy.GetType()));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializerDictionaryKeyNull(Type policyType)
+        public static void ThrowInvalidOperationException_SerializerDictionaryKeyNull(JsonNamingPolicy namingPolicy)
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializerDictionaryKeyNull, policyType));
+            throw new InvalidOperationException(SR.Format(SR.SerializerDictionaryKeyNull, namingPolicy.GetType()));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

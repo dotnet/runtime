@@ -439,8 +439,8 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             };
 
-            const string jsonWithoutPolicy = @"{""Key"":,""Value"":""MyValue""}";
-            const string jsonWithPolicy = @"{""key"":,""value"":""MyValue""}";
+            const string jsonWithoutPolicy = @"{""Key"":""MyKey"",""Value"":""MyValue""}";
+            const string jsonWithPolicy = @"{""key"":""MyKey"",""value"":""MyValue""}";
 
             // Baseline: Without policy.
             string serialized = JsonSerializer.Serialize(new KeyValuePair<string, string>("MyKey", "MyValue"));
@@ -473,11 +473,11 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             };
 
-            const string jsonWithoutPolicy = @"[{""Key"":,""Value"":""MyValue""}]";
-            const string jsonWithPolicy = @"[{""key"":,""value"":""MyValue""}]";
+            const string jsonWithoutPolicy = @"[{""Key"":""MyKey"",""Value"":""MyValue""}]";
+            const string jsonWithPolicy = @"[{""key"":""MyKey"",""value"":""MyValue""}]";
 
             // Baseline: Without policy.
-            string serialized = JsonSerializer.Serialize(new KeyValuePair[] { new KeyValuePair<string, string>("MyKey", "MyValue") });
+            string serialized = JsonSerializer.Serialize(new KeyValuePair<string, string>[] { new KeyValuePair<string, string>("MyKey", "MyValue") });
             Assert.Equal(jsonWithoutPolicy, serialized);
 
             KeyValuePair<string, string>[] arr = JsonSerializer.Deserialize<KeyValuePair<string, string>[]>(serialized);
@@ -488,10 +488,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>[]>(jsonWithPolicy));
 
             // With policy.
-            serialized = JsonSerializer.Serialize(new KeyValuePair[] { new KeyValuePair<string, string>("MyKey", "MyValue") }, options);
+            serialized = JsonSerializer.Serialize(new KeyValuePair<string, string>[] { new KeyValuePair<string, string>("MyKey", "MyValue") }, options);
             Assert.Equal(jsonWithPolicy, serialized);
 
-            arr = JsonSerializer.Deserialize<KeyValuePair<string, string>>(serialized, options);
+            arr = JsonSerializer.Deserialize<KeyValuePair<string, string>[]>(serialized, options);
             Assert.Equal("MyKey", arr[0].Key);
             Assert.Equal("MyValue", arr[0].Value);
 
@@ -507,19 +507,21 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             };
 
-            const string jsonWithoutPolicy = @"{""Kvp"":{""Key"":,""Value"":""MyValue""}}";
-            const string jsonWithPolicy = @"{""kvp"":{""key"":,""value"":""MyValue""}}";
+            const string jsonWithoutPolicy = @"{""Kvp"":{""Key"":""MyKey"",""Value"":""MyValue""}}";
+            const string jsonWithPolicy = @"{""kvp"":{""key"":""MyKey"",""value"":""MyValue""}}";
 
             // Baseline: Without policy.
             string serialized = JsonSerializer.Serialize(new ClassWithKVP { Kvp = new KeyValuePair<string, string>("MyKey", "MyValue") });
             Assert.Equal(jsonWithoutPolicy, serialized);
 
-            ClassWithKVP obj = JsonSerializer.Deserialize<KeyValuePair<string, string>[]>(serialized);
+            ClassWithKVP obj = JsonSerializer.Deserialize<ClassWithKVP>(serialized);
             Assert.Equal("MyKey", obj.Kvp.Key);
             Assert.Equal("MyValue", obj.Kvp.Value);
 
             // No property name match.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithKVP>(jsonWithPolicy));
+            obj = JsonSerializer.Deserialize<ClassWithKVP>(jsonWithPolicy);
+            Assert.Null(obj.Kvp.Key);
+            Assert.Null(obj.Kvp.Value);
 
             // With policy.
             serialized = JsonSerializer.Serialize(new ClassWithKVP { Kvp = new KeyValuePair<string, string>("MyKey", "MyValue") }, options);
@@ -531,7 +533,8 @@ namespace System.Text.Json.Serialization.Tests
 
             // No property name match.
             obj = JsonSerializer.Deserialize<ClassWithKVP>(jsonWithoutPolicy, options);
-            Assert.Null(obj.Kvp);
+            Assert.Null(obj.Kvp.Key);
+            Assert.Null(obj.Kvp.Value);
         }
     }
 

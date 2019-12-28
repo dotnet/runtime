@@ -42,12 +42,12 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            if (reader.ValueTextEquals(_valueName))
+            if (reader.ValueTextEquals(_keyName))
             {
                 k = ReadProperty<TKey>(ref reader, typeToConvert, options);
                 keySet = true;
             }
-            else if (reader.ValueTextEquals(_keyName))
+            else if (reader.ValueTextEquals(_valueName))
             {
                 v = ReadProperty<TValue>(ref reader, typeToConvert, options);
                 valueSet = true;

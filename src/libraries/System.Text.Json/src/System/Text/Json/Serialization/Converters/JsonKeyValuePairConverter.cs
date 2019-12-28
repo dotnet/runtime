@@ -29,14 +29,14 @@ namespace System.Text.Json.Serialization.Converters
                 string propertyName = namingPolicy.ConvertName("Key");
                 if (propertyName == null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNamingPolicyReturnNull(namingPolicy.GetType());
+                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNamingPolicyReturnNull(namingPolicy);
                 }
                 _keyName = JsonReaderHelper.s_utf8Encoding.GetBytes(propertyName);
 
-                propertyName = options.PropertyNamingPolicy.ConvertName("Value");
+                propertyName = namingPolicy.ConvertName("Value");
                 if (propertyName == null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNamingPolicyReturnNull(namingPolicy.GetType());
+                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNamingPolicyReturnNull(namingPolicy);
                 }
                 _valueName = JsonReaderHelper.s_utf8Encoding.GetBytes(propertyName);
             }

@@ -161,7 +161,7 @@ namespace System.Text.Json
 
                 if (key == null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
+                    ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy);
                 }
             }
 

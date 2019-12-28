@@ -120,7 +120,7 @@ namespace System.Text.Json
 
                 if (key == null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(Options.DictionaryKeyPolicy.GetType());
+                    ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(Options.DictionaryKeyPolicy);
                 }
             }
 
