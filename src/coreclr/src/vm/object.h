@@ -574,8 +574,8 @@ private:
 public:
     // Gets the unique type handle for this array object.
     // This will call the loader in don't-load mode - the allocator
-    // always makes sure that the particular ArrayTypeDesc for this array
-    // type is available before allocating any instances of this array type.
+    // always makes sure that the particular array type for this array
+    // type is available before allocating any instances.
     inline TypeHandle GetTypeHandle() const;
 
     inline static TypeHandle GetTypeHandle(MethodTable * pMT);

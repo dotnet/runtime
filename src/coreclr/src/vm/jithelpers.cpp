@@ -3064,8 +3064,7 @@ HCIMPL2(Object*, JIT_NewArr1_R2R, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR si
     FCALL_CONTRACT;
 
     TypeHandle arrayTypeHandle(arrayTypeHnd_);
-    ArrayTypeDesc *pArrayTypeDesc = arrayTypeHandle.AsArray();
-    MethodTable *pArrayMT = pArrayTypeDesc->GetTemplateMethodTable();
+    MethodTable *pArrayMT = arrayTypeHandle.GetMethodTable();
 
     ENDFORBIDGC();
     return HCCALL2(JIT_NewArr1, (CORINFO_CLASS_HANDLE)pArrayMT, size);

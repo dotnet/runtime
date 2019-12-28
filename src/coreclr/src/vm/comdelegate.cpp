@@ -2778,10 +2778,6 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     if (!pTargetMethod->IsStatic() && Nullable::IsNullableType(pTargetMethod->GetMethodTable()))
         return FALSE;
 
-    // Have to be careful with automatically generated array methods (Get, Set, etc.). The TypeHandle here may actually be one
-    // of the "special case" MethodTables (such as Object[]) instead of an ArrayTypeDesc and our TypeHandle CanCastTo code can't
-    // cope with all the different possible combinations. In general we want to normalize the TypeHandle into an ArrayTypeDesc
-    // for these cases.
     if (thExactMethodType.IsArrayType() && !thExactMethodType.IsArray())
     {
         TypeHandle thElement = thExactMethodType.AsMethodTable()->GetArrayElementTypeHandle();

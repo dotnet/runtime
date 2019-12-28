@@ -422,13 +422,6 @@ public:
     void Fixup(DataImage *image);
 #endif
 
-    PTR_MethodTable GetTemplateMethodTable() {
-        WRAPPER_NO_CONTRACT;
-        PTR_MethodTable ptrTemplateMT = GetTemplateMethodTableInternal();
-        _ASSERTE(ptrTemplateMT->IsArray());
-        return ptrTemplateMT;
-    }
-
     TADDR GetTemplateMethodTableMaybeTagged() {
         WRAPPER_NO_CONTRACT;
         return m_TemplateMT.GetValueMaybeTagged(dac_cast<TADDR>(this) + offsetof(ArrayTypeDesc, m_TemplateMT));

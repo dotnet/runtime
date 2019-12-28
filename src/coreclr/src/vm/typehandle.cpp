@@ -55,7 +55,7 @@ BOOL TypeHandle::Verify()
     else
     {
         if (IsArray())
-            AsArray()->Verify();
+            GetElementType().Verify();
     }
     return(TRUE);
 }
@@ -475,12 +475,12 @@ BOOL TypeHandle::IsBlittable() const
         return AsMethodTable()->IsBlittable();
     }
 
-    if (AsTypeDesc()->IsArray())
+    if (IsArray())
     {
         // Single dimentional array's of blittable types are also blittable.
-        if (AsArray()->GetRank() == 1)
+        if (GetRank() == 1)
         {
-            if (AsArray()->GetArrayElementTypeHandle().IsBlittable())
+            if (GetElementType().IsBlittable())
                 return TRUE;
         }
     }
@@ -562,10 +562,6 @@ ComCallWrapperTemplate *TypeHandle::GetComCallWrapperTemplate() const
     LIMITED_METHOD_CONTRACT;
     PRECONDITION(IsArray() || !IsTypeDesc());
 
-    if (IsTypeDesc())
-    {
-        return AsArray()->GetComCallWrapperTemplate();
-    }
     return AsMethodTable()->GetComCallWrapperTemplate();
 }
 
@@ -581,10 +577,6 @@ BOOL TypeHandle::SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemplate)
 
     PRECONDITION(IsArray() || !IsTypeDesc());
 
-    if (IsTypeDesc())
-    {
-        return AsArray()->SetComCallWrapperTemplate(pTemplate);
-    }
     return AsMethodTable()->SetComCallWrapperTemplate(pTemplate);
 }
 
@@ -1392,11 +1384,7 @@ TypeHandle::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
     (
-        if (IsArray())
-        {
-            AsArray()->EnumMemoryRegions(flags);
-        }
-        else if (IsGenericVariable())
+        if (IsGenericVariable())
         {
             AsGenericVariable()->EnumMemoryRegions(flags);
         }

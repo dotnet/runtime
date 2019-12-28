@@ -183,7 +183,7 @@ inline /* static */ TypeHandle ArrayBase::GetTypeHandle(MethodTable * pMT)
     CorElementType kind = pMT->GetInternalCorElementType();
     unsigned rank = pMT->GetRank();
     // Note that this load should always succeed because there is an invariant that
-    // if we have allocated an array object of type T then the ArrayTypeDesc
+    // if we have allocated an array object of type T then the array type
     // for T[] is available and restored
 
     // == FailIfNotLoadedOrNotRestored

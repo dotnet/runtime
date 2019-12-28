@@ -76,7 +76,7 @@ inline unsigned int TypeHandle::GetRank() const
 
     _ASSERTE(IsArrayType());
 
-    return AsArray()->GetRank();
+    return GetMethodTable()->GetRank();
 }
 
 inline BOOL TypeHandle::IsZapped() const
@@ -88,17 +88,6 @@ inline BOOL TypeHandle::IsZapped() const
 #else
     return FALSE;
 #endif
-}
-
-inline PTR_ArrayTypeDesc TypeHandle::AsArray() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(IsArray());
-
-    PTR_ArrayTypeDesc result = PTR_ArrayTypeDesc(m_asTAddr - 2);
-    PREFIX_ASSUME(result != NULL);
-    return result;
 }
 
 // Methods to allow you get get a the two possible representations

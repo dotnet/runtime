@@ -42,7 +42,6 @@ struct CORINFO_CLASS_STRUCT_;
 typedef DPTR(class TypeVarTypeDesc) PTR_TypeVarTypeDesc;
 typedef SPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
 typedef DPTR(class ParamTypeDesc) PTR_ParamTypeDesc;
-typedef DPTR(class ArrayTypeDesc) PTR_ArrayTypeDesc;
 typedef DPTR(class TypeDesc) PTR_TypeDesc;
 typedef DPTR(class TypeHandle) PTR_TypeHandle;
 
@@ -534,9 +533,6 @@ public:
     // Does this type participate in type equivalence?
     inline BOOL HasTypeEquivalence() const;
 
-    // Not clear we should have this.
-    inline PTR_ArrayTypeDesc AsArray() const;
-
     FnPtrTypeDesc* AsFnPtrType() const;
 
     TypeVarTypeDesc* AsGenericVariable() const;
@@ -590,7 +586,6 @@ private:
         void *              m_asPtr;
         PTR_MethodTable     m_asMT;
         PTR_TypeDesc        m_asTypeDesc;
-        PTR_ArrayTypeDesc   m_asArrayTypeDesc;
         PTR_ParamTypeDesc   m_asParamTypeDesc;
         PTR_TypeVarTypeDesc m_asTypeVarTypeDesc;
         PTR_FnPtrTypeDesc   m_asFnPtrTypeDesc;

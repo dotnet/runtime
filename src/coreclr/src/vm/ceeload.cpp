@@ -3253,7 +3253,7 @@ void Module::FreeClassTables()
                 }
                 else if (th.IsArray())
                 {
-                    ComCallWrapperTemplate *pTemplate = th.AsArray()->GetComCallWrapperTemplate();
+                    ComCallWrapperTemplate *pTemplate = th.GetMethodTable()->GetComCallWrapperTemplate();
                     if (pTemplate != NULL)
                     {
                         pTemplate->Release();

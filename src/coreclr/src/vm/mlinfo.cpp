@@ -2924,11 +2924,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 fCalculatingFieldMetadata ? TRUE : FALSE);
             _ASSERTE(!arrayTypeHnd.IsNull());
 
-            ArrayTypeDesc* asArray = arrayTypeHnd.AsArray();
-            if (asArray == NULL)
-                IfFailGoto(E_FAIL, lFail);
-
-            TypeHandle thElement = asArray->GetTypeParam();
+            TypeHandle thElement = arrayTypeHnd.GetElementType();
 
 #ifdef FEATURE_COMINTEROP
             if (m_ms != MARSHAL_SCENARIO_WINRT)
@@ -2944,7 +2940,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             m_args.na.m_pArrayMT = arrayTypeHnd.GetMethodTable();
 
             // Handle retrieving the information for the array type.
-            IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, asArray->GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
+            IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, arrayTypeHnd.GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
             break;
         }
 

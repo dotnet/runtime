@@ -392,15 +392,15 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
                 }
                 else
                 {
-                    ArrayTypeDesc *pATD = pSearch->GetTypeHandle().AsArray();
+                    TypeHandle th = pSearch->GetTypeHandle();
 #ifdef FEATURE_PREJIT
                     // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
                     ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
 
-                    TADDR fixup = pATD->GetTemplateMethodTableMaybeTagged();
+                    TADDR fixup = dac_cast<TADDR>(th.GetMethodTable());
                     if (!CORCOMPILE_IS_POINTER_TAGGED(fixup))
                     {
-                        TADDR canonFixup = pATD->GetTemplateMethodTable()->GetCanonicalMethodTableFixup();
+                        TADDR canonFixup = th.GetMethodTable()->GetCanonicalMethodTableFixup();
                         if (CORCOMPILE_IS_POINTER_TAGGED(canonFixup))
                             fixup = canonFixup;
                     }
@@ -430,7 +430,7 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
                     else
 #endif //FEATURE_PREJIT
                     {
-                        if (pATD->GetRank() != pKey->GetRank())
+                        if (th.GetRank() != pKey->GetRank())
                             continue;
                     }
                 }

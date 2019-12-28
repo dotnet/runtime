@@ -1740,9 +1740,6 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
 
         case ARRAY_KIND_TYPEDESC:
         {
-            // This is actually an array, so cast it up
-            ArrayTypeDesc *pArr = th.AsArray();
-
             // Fill in the type if they want it
             if (pBaseElemType != NULL)
             {
@@ -1756,7 +1753,7 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
             // Note that for generic code we always return uninstantiated ClassIDs and FunctionIDs
             if (pBaseClassId != NULL)
             {
-                *pBaseClassId = TypeHandleToClassID(pArr->GetTypeParam());
+                *pBaseClassId = TypeHandleToClassID(th.GetElementType());
             }
 
             // If they want the number of dimensions of the array

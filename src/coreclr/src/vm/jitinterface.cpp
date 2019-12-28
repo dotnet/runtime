@@ -2627,7 +2627,7 @@ void CEEInfo::embedGenericHandle(
 
         if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
         {
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsArray()->GetTemplateMethodTable();
+            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.GetMethodTable();
         }
         else
         if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken && th.IsArray()
@@ -2636,7 +2636,7 @@ void CEEInfo::embedGenericHandle(
             // Workaround for https://github.com/dotnet/coreclr/issues/10258
             // Allow cheaper type checks to be generated in selected performance critical CoreLib methods until this issue
             // is fixed properly.
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsArray()->GetTemplateMethodTable();
+            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.GetMethodTable();
         }
         else
         {
@@ -6146,8 +6146,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
 {
     STANDARD_VM_CONTRACT;
 
-    ArrayTypeDesc* arrayTypeDesc = clsHnd.AsArray();
-    _ASSERTE(arrayTypeDesc->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
+    _ASSERTE(clsHnd.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 
     if (GCStress<cfg_alloc>::IsEnabled())
     {
@@ -6156,7 +6155,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
 
     CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
 
-    TypeHandle thElemType = arrayTypeDesc->GetTypeParam();
+    TypeHandle thElemType = clsHnd.GetElementType();
     CorElementType elemType = thElemType.GetInternalCorElementType();
 
     // This is if we're asked for newarr !0 when verifying generic code
@@ -6274,7 +6273,7 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     else
     if (clsHnd.IsArray())
     {
-        if (clsHnd.AsArray()->GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
+        if (clsHnd.GetElementType().GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
         {
             // Casting to multidimensional array type requires restored pointer to EEClass to fetch rank
             *pfClassMustBeRestored = true;

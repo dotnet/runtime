@@ -58,7 +58,7 @@ BOOL ArrayTypeDesc::Verify() {
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // m_TemplateMT == 0 may be null when building types involving TypeVarTypeDesc's
-    BAD_FORMAT_NOTHROW_ASSERT(m_TemplateMT.IsNull() || GetTemplateMethodTable()->IsArray());
+    BAD_FORMAT_NOTHROW_ASSERT(m_TemplateMT.IsNull() || GetMethodTable()->IsArray());
     BAD_FORMAT_NOTHROW_ASSERT(CorTypeInfo::IsArray_NoThrow(GetInternalCorElementType()));
     ParamTypeDesc::Verify();
     return(true);
