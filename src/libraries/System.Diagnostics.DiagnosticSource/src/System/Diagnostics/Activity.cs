@@ -714,8 +714,8 @@ namespace System.Diagnostics
             //  = 55 chars (see https://w3c.github.io/trace-context)
             // The version (00-fe) is used to indicate that this is a WC3 ID.
             return id.Length == 55 &&
-                   (('0' <= id[0] && id[0] <= '9') || ('a' <= id[0] && id[0] <= 'f') &&
-                    ('0' <= id[1] && id[1] <= '9') || ('a' <= id[1] && id[1] <= 'e'));
+                   ('0' <= id[0] && id[0] <= '9' || 'a' <= id[0] && id[0] <= 'f') &&
+                   ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
         }
 
         /// <summary>

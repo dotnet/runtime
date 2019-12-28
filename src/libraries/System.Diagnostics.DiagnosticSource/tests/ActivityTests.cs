@@ -730,11 +730,7 @@ namespace System.Diagnostics.Tests
             activity.SetParentId("0.-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
             activity.Start();
 
-            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
-            Assert.True(IdIsW3CFormat(activity.Id));
-
-            Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
-            Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
+            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
         }
 
         [Fact]
