@@ -2042,35 +2042,15 @@ public:
     hashBvGlobalData hbvGlobalData; // Used by the hashBv bitvector package.
 
 #ifdef DEBUG
-    bool    verbose;
-    bool    dumpIR;
-    bool    dumpIRNodes;
-    bool    dumpIRTypes;
-    bool    dumpIRKinds;
-    bool    dumpIRLocals;
-    bool    dumpIRRegs;
-    bool    dumpIRSsa;
-    bool    dumpIRValnums;
-    bool    dumpIRCosts;
-    bool    dumpIRFlags;
-    bool    dumpIRNoLists;
-    bool    dumpIRNoLeafs;
-    bool    dumpIRNoStmts;
-    bool    dumpIRTrees;
-    bool    dumpIRLinear;
-    bool    dumpIRDataflow;
-    bool    dumpIRBlockHeaders;
-    bool    dumpIRExit;
-    LPCWSTR dumpIRPhase;
-    LPCWSTR dumpIRFormat;
-    bool    verboseTrees;
-    bool    shouldUseVerboseTrees();
-    bool    asciiTrees; // If true, dump trees using only ASCII characters
-    bool    shouldDumpASCIITrees();
-    bool    verboseSsa; // If true, produce especially verbose dump output in SSA construction.
-    bool    shouldUseVerboseSsa();
-    bool    treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
-    int     morphNum; // This counts the the trees that have been morphed, allowing us to label each uniquely.
+    bool verbose;
+    bool verboseTrees;
+    bool shouldUseVerboseTrees();
+    bool asciiTrees; // If true, dump trees using only ASCII characters
+    bool shouldDumpASCIITrees();
+    bool verboseSsa; // If true, produce especially verbose dump output in SSA construction.
+    bool shouldUseVerboseSsa();
+    bool treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
+    int  morphNum;              // This counts the the trees that have been morphed, allowing us to label each uniquely.
 
     const char* VarNameToStr(VarName name)
     {
@@ -10640,100 +10620,7 @@ extern BasicBlock dummyBB;
 /*****************************************************************************/
 
 #ifdef DEBUG
-
 void dumpConvertedVarSet(Compiler* comp, VARSET_VALARG_TP vars);
-
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                          Debugging helpers                                XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-/*****************************************************************************/
-/* The following functions are intended to be called from the debugger, to dump
- * various data structures. The can be used in the debugger Watch or Quick Watch
- * windows. They are designed to be short to type and take as few arguments as
- * possible. The 'c' versions take a Compiler*, whereas the 'd' versions use the TlsCompiler.
- * See the function definition comment for more details.
- */
-
-void cBlock(Compiler* comp, BasicBlock* block);
-void cBlocks(Compiler* comp);
-void cBlocksV(Compiler* comp);
-void cStmt(Compiler* comp, Statement* statement);
-void cTree(Compiler* comp, GenTree* tree);
-void cTrees(Compiler* comp);
-void cEH(Compiler* comp);
-void cVar(Compiler* comp, unsigned lclNum);
-void cVarDsc(Compiler* comp, LclVarDsc* varDsc);
-void cVars(Compiler* comp);
-void cVarsFinal(Compiler* comp);
-void cBlockPreds(Compiler* comp, BasicBlock* block);
-void cReach(Compiler* comp);
-void cDoms(Compiler* comp);
-void cLiveness(Compiler* comp);
-void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars);
-
-void cFuncIR(Compiler* comp);
-void cBlockIR(Compiler* comp, BasicBlock* block);
-void cLoopIR(Compiler* comp, Compiler::LoopDsc* loop);
-void cStmtIR(Compiler* comp, Statement* stmt);
-void cTreeIR(Compiler* comp, GenTree* tree);
-int cTreeTypeIR(Compiler* comp, GenTree* tree);
-int cTreeKindsIR(Compiler* comp, GenTree* tree);
-int cTreeFlagsIR(Compiler* comp, GenTree* tree);
-int cOperandIR(Compiler* comp, GenTree* operand);
-int cLeafIR(Compiler* comp, GenTree* tree);
-int cIndirIR(Compiler* comp, GenTree* tree);
-int cListIR(Compiler* comp, GenTree* list);
-int cSsaNumIR(Compiler* comp, GenTree* tree);
-int cValNumIR(Compiler* comp, GenTree* tree);
-int cDependsIR(Compiler* comp, GenTree* comma, bool* first);
-
-void dBlock(BasicBlock* block);
-void dBlocks();
-void dBlocksV();
-void dTree(GenTree* tree);
-void dTrees();
-void dEH();
-void dVar(unsigned lclNum);
-void dVarDsc(LclVarDsc* varDsc);
-void dVars();
-void dVarsFinal();
-void dBlockPreds(BasicBlock* block);
-void dReach();
-void dDoms();
-void dLiveness();
-void dCVarSet(VARSET_VALARG_TP vars);
-
-void dRegMask(regMaskTP mask);
-
-void dFuncIR();
-void dBlockIR(BasicBlock* block);
-void dTreeIR(GenTree* tree);
-void dLoopIR(Compiler::LoopDsc* loop);
-void dLoopNumIR(unsigned loopNum);
-int dTabStopIR(int curr, int tabstop);
-int dTreeTypeIR(GenTree* tree);
-int dTreeKindsIR(GenTree* tree);
-int dTreeFlagsIR(GenTree* tree);
-int dOperandIR(GenTree* operand);
-int dLeafIR(GenTree* tree);
-int dIndirIR(GenTree* tree);
-int dListIR(GenTree* list);
-int dSsaNumIR(GenTree* tree);
-int dValNumIR(GenTree* tree);
-int dDependsIR(GenTree* comma);
-void dFormatIR();
-
-GenTree* dFindTree(GenTree* tree, unsigned id);
-GenTree* dFindTree(unsigned id);
-Statement* dFindStmt(unsigned id);
-BasicBlock* dFindBlock(unsigned bbNum);
-
 #endif // DEBUG
 
 #include "compiler.hpp" // All the shared inline functions
