@@ -345,6 +345,9 @@
   <data name="SerializerPropertyNameNull" xml:space="preserve">
     <value>The JSON property name for '{0}.{1}' cannot be null.</value>
   </data>
+  <data name="SerializerPropertyNamingPolicyReturnNull" xml:space="preserve">
+    <value>The property naming policy '{0}' cannot return a null property name.</value>
+  </data>
   <data name="DeserializeDuplicateKey" xml:space="preserve">
     <value>An item with the same property name '{0}' has already been added.</value>
   </data>

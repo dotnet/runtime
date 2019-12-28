@@ -16,11 +16,11 @@ namespace System.Text.Json
     /// </summary>
     public sealed partial class JsonSerializerOptions
     {
+        // The global list of built-in converters that override CanConvert().
+        private readonly List<JsonConverter> _defaultFactoryConverters = GetDefaultConverters();
+
         // The global list of built-in simple converters.
         private static readonly Dictionary<Type, JsonConverter> s_defaultSimpleConverters = GetDefaultSimpleConverters();
-
-        // The global list of built-in converters that override CanConvert().
-        private static readonly List<JsonConverter> s_defaultFactoryConverters = GetDefaultConverters();
 
         // The cached converters (custom or built-in).
         private readonly ConcurrentDictionary<Type, JsonConverter> _converters = new ConcurrentDictionary<Type, JsonConverter>();
@@ -40,7 +40,7 @@ namespace System.Text.Json
             return converters;
         }
 
-        private static List<JsonConverter> GetDefaultConverters()
+        private List<JsonConverter> GetDefaultConverters()
         {
             const int NumberOfConverters = 2;
 
@@ -48,7 +48,7 @@ namespace System.Text.Json
 
             // Use a list for converters that implement CanConvert().
             converters.Add(new JsonConverterEnum());
-            converters.Add(new JsonKeyValuePairConverter());
+            converters.Add(new JsonKeyValuePairConverter(this));
 
             // We will likely add collection converters here in the future.
 
@@ -140,7 +140,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    foreach (JsonConverter item in s_defaultFactoryConverters)
+                    foreach (JsonConverter item in _defaultFactoryConverters)
                     {
                         if (item.CanConvert(typeToConvert))
                         {

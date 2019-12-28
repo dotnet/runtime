@@ -8,14 +8,19 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class JsonKeyValuePairConverter<TKey, TValue> : JsonConverter<KeyValuePair<TKey, TValue>>
     {
-        private const string KeyName = "Key";
-        private const string ValueName = "Value";
+        private readonly byte[] _keyName;
+        private readonly byte[] _valueName;
 
-        // "encoder: null" is used since the literal values of "Key" and "Value" should not normally be escaped
-        // unless a custom encoder is used that escapes these ASCII characters (rare).
-        // Also by not specifying an encoder allows the values to be cached statically here.
-        private static readonly JsonEncodedText _keyName = JsonEncodedText.Encode(KeyName, encoder: null);
-        private static readonly JsonEncodedText _valueName = JsonEncodedText.Encode(ValueName, encoder: null);
+        private readonly JsonEncodedText _encodedKeyName;
+        private readonly JsonEncodedText _encodedValueName;
+
+        public JsonKeyValuePairConverter(byte[] keyName, byte[] valueName, JsonEncodedText encodedKeyName, JsonEncodedText encodedValueName)
+        {
+            _keyName = keyName;
+            _valueName = valueName;
+            _encodedKeyName = encodedKeyName;
+            _encodedValueName = encodedValueName;
+        }
 
         public override KeyValuePair<TKey, TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -37,13 +42,12 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            string propertyName = reader.GetString();
-            if (propertyName == KeyName)
+            if (reader.ValueTextEquals(_valueName))
             {
                 k = ReadProperty<TKey>(ref reader, typeToConvert, options);
                 keySet = true;
             }
-            else if (propertyName == ValueName)
+            else if (reader.ValueTextEquals(_keyName))
             {
                 v = ReadProperty<TValue>(ref reader, typeToConvert, options);
                 valueSet = true;
@@ -60,13 +64,12 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            propertyName = reader.GetString();
-            if (propertyName == ValueName)
+            if (reader.ValueTextEquals(_valueName))
             {
                 v = ReadProperty<TValue>(ref reader, typeToConvert, options);
                 valueSet = true;
             }
-            else if (propertyName == KeyName)
+            else if (reader.ValueTextEquals(_keyName))
             {
                 k = ReadProperty<TKey>(ref reader, typeToConvert, options);
                 keySet = true;
@@ -131,8 +134,8 @@ namespace System.Text.Json.Serialization.Converters
         public override void Write(Utf8JsonWriter writer, KeyValuePair<TKey, TValue> value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
-            WriteProperty(writer, value.Key, _keyName, options);
-            WriteProperty(writer, value.Value, _valueName, options);
+            WriteProperty(writer, value.Key, _encodedKeyName, options);
+            WriteProperty(writer, value.Value, _encodedValueName, options);
             writer.WriteEndObject();
         }
     }

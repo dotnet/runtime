@@ -430,6 +430,109 @@ namespace System.Text.Json.Serialization.Tests
             string jsonRoundTripped = JsonSerializer.Serialize(obj, options);
             Assert.Equal(json, jsonRoundTripped);
         }
+
+        [Fact]
+        public static void RootKeyValuePairSerialize()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            };
+
+            const string jsonWithoutPolicy = @"{""Key"":,""Value"":""MyValue""}";
+            const string jsonWithPolicy = @"{""key"":,""value"":""MyValue""}";
+
+            // Baseline: Without policy.
+            string serialized = JsonSerializer.Serialize(new KeyValuePair<string, string>("MyKey", "MyValue"));
+            Assert.Equal(jsonWithoutPolicy, serialized);
+
+            KeyValuePair<string, string> kvp = JsonSerializer.Deserialize<KeyValuePair<string, string>>(serialized);
+            Assert.Equal("MyKey", kvp.Key);
+            Assert.Equal("MyValue", kvp.Value);
+
+            // No property name match.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>>(jsonWithPolicy));
+
+            // With policy.
+            serialized = JsonSerializer.Serialize(new KeyValuePair<string, string>("MyKey", "MyValue"), options);
+            Assert.Equal(jsonWithPolicy, serialized);
+
+            kvp = JsonSerializer.Deserialize<KeyValuePair<string, string>>(serialized, options);
+            Assert.Equal("MyKey", kvp.Key);
+            Assert.Equal("MyValue", kvp.Value);
+
+            // No property name match.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>>(jsonWithoutPolicy, options));
+        }
+
+        [Fact]
+        public static void KeyValuePairAsCollectionElementSerialize()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            };
+
+            const string jsonWithoutPolicy = @"[{""Key"":,""Value"":""MyValue""}]";
+            const string jsonWithPolicy = @"[{""key"":,""value"":""MyValue""}]";
+
+            // Baseline: Without policy.
+            string serialized = JsonSerializer.Serialize(new KeyValuePair[] { new KeyValuePair<string, string>("MyKey", "MyValue") });
+            Assert.Equal(jsonWithoutPolicy, serialized);
+
+            KeyValuePair<string, string>[] arr = JsonSerializer.Deserialize<KeyValuePair<string, string>[]>(serialized);
+            Assert.Equal("MyKey", arr[0].Key);
+            Assert.Equal("MyValue", arr[0].Value);
+
+            // No property name match.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>[]>(jsonWithPolicy));
+
+            // With policy.
+            serialized = JsonSerializer.Serialize(new KeyValuePair[] { new KeyValuePair<string, string>("MyKey", "MyValue") }, options);
+            Assert.Equal(jsonWithPolicy, serialized);
+
+            arr = JsonSerializer.Deserialize<KeyValuePair<string, string>>(serialized, options);
+            Assert.Equal("MyKey", arr[0].Key);
+            Assert.Equal("MyValue", arr[0].Value);
+
+            // No property name match.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>[]>(jsonWithoutPolicy, options));
+        }
+
+        [Fact]
+        public static void KeyValuePairAsClassPropertyElementSerialize()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            };
+
+            const string jsonWithoutPolicy = @"{""Kvp"":{""Key"":,""Value"":""MyValue""}}";
+            const string jsonWithPolicy = @"{""kvp"":{""key"":,""value"":""MyValue""}}";
+
+            // Baseline: Without policy.
+            string serialized = JsonSerializer.Serialize(new ClassWithKVP { Kvp = new KeyValuePair<string, string>("MyKey", "MyValue") });
+            Assert.Equal(jsonWithoutPolicy, serialized);
+
+            ClassWithKVP obj = JsonSerializer.Deserialize<KeyValuePair<string, string>[]>(serialized);
+            Assert.Equal("MyKey", obj.Kvp.Key);
+            Assert.Equal("MyValue", obj.Kvp.Value);
+
+            // No property name match.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithKVP>(jsonWithPolicy));
+
+            // With policy.
+            serialized = JsonSerializer.Serialize(new ClassWithKVP { Kvp = new KeyValuePair<string, string>("MyKey", "MyValue") }, options);
+            Assert.Equal(jsonWithPolicy, serialized);
+
+            obj = JsonSerializer.Deserialize<ClassWithKVP>(serialized, options);
+            Assert.Equal("MyKey", obj.Kvp.Key);
+            Assert.Equal("MyValue", obj.Kvp.Value);
+
+            // No property name match.
+            obj = JsonSerializer.Deserialize<ClassWithKVP>(jsonWithoutPolicy, options);
+            Assert.Null(obj.Kvp);
+        }
     }
 
     public class OverridePropertyNameDesignTime_TestClass
@@ -494,5 +597,10 @@ namespace System.Text.Json.Serialization.Tests
     {
         [JsonExtensionData]
         public IDictionary<string, JsonElement> MyOverflow { get; set; }
+    }
+
+    public class ClassWithKVP
+    {
+        public KeyValuePair<string, string> Kvp { get; set; }
     }
 }

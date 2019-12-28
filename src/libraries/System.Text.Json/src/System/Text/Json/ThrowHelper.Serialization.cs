@@ -126,6 +126,12 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_SerializerPropertyNamingPolicyReturnNull(Type policyType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNamingPolicyReturnNull, policyType));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializerDictionaryKeyNull(Type policyType)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerDictionaryKeyNull, policyType));
