@@ -734,6 +734,20 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void Version_W3CNonHexCharsNotSupportedAndDoesNotThrow_ForceW3C()
+        {
+            Activity activity = new Activity("activity");
+            activity.SetIdFormat(ActivityIdFormat.W3C);
+            activity.SetParentId("0.-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity.Start();
+
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.NotEqual("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+            Assert.Equal(default, activity.ParentSpanId);
+            Assert.True(IdIsW3CFormat(activity.Id));
+        }
+
+        [Fact]
         public void Options_W3CNonHexCharsNotSupportedAndDoesNotThrow()
         {
             Activity activity = new Activity("activity");
