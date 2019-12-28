@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 using Internal.Runtime.CompilerServices;
 
@@ -13,7 +14,7 @@ namespace System
         public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -52,7 +53,7 @@ namespace System
         public static unsafe bool Contains<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(length >= 0);
 
@@ -125,7 +126,7 @@ namespace System
         public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(length >= 0);
 
@@ -215,7 +216,7 @@ namespace System
         public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(length >= 0);
 
@@ -322,7 +323,7 @@ namespace System
         public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(length >= 0);
 
@@ -428,7 +429,7 @@ namespace System
         public static int IndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -490,7 +491,7 @@ namespace System
         public static int LastIndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(length >= 0);
 
@@ -574,7 +575,7 @@ namespace System
         public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(length >= 0);
 
@@ -680,7 +681,7 @@ namespace System
         public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(length >= 0);
 
@@ -786,7 +787,7 @@ namespace System
         public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
@@ -807,7 +808,7 @@ namespace System
         public static bool SequenceEqual<T>(ref T first, ref T second, int length) where T : IEquatable<T>
         {
             // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
 
             Debug.Assert(length >= 0);
 
