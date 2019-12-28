@@ -22,7 +22,6 @@
 class TypeDesc;
 class TypeHandle;
 class Instantiation;
-class ArrayTypeDesc;
 class FnPtrTypeDesc;
 class ParamTypeDesc;
 class TypeVarTypeDesc;
@@ -474,24 +473,8 @@ public:
 
     // Shortcuts
 
-    // ARRAY or SZARRAY TypeDesc (arrays with a shared MethodTable)
-    // If this is TRUE, it is OK to call AsArray()
-    // Also see IsArrayType()
-    BOOL IsArray() const;
-
     // ARRAY or SZARRAY
-    // Note that this does not imply that it is OK to call AsArray(). See IsArray()
-    //
-    // All arrays, even those with a unique unshared MethodTable, have an ArrayTypeDesc
-    // which is used for type identity. However, over time, people have started
-    // wrapping the MethodTables directly in a TypeHandle. Note that such
-    // TypeHandles cannot be used for type identity. However, IsArrayType() lets
-    // you check even for such cases where IsArray() returns FALSE, but the type
-    // still is an array type.
-    //
-    // @TODO: Change all the constructors of TypeHandle which take a MethodTable
-    // to call TypeHandle::Verify() that can then enforce that IsArray() is fully correct.
-    BOOL IsArrayType() const;
+    BOOL IsArray() const;
 
     // VAR or MVAR
     BOOL IsGenericVariable() const;

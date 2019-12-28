@@ -2778,18 +2778,6 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     if (!pTargetMethod->IsStatic() && Nullable::IsNullableType(pTargetMethod->GetMethodTable()))
         return FALSE;
 
-    if (thExactMethodType.IsArrayType() && !thExactMethodType.IsArray())
-    {
-        TypeHandle thElement = thExactMethodType.AsMethodTable()->GetArrayElementTypeHandle();
-        CorElementType etElement = thExactMethodType.AsMethodTable()->GetInternalCorElementType();
-        unsigned uRank = thExactMethodType.AsMethodTable()->GetRank();
-
-        thExactMethodType = ClassLoader::LoadArrayTypeThrowing(thElement,
-                                                               etElement,
-                                                               uRank,
-                                                               ClassLoader::DontLoadTypes);
-    }
-
     // Get signatures for the delegate invoke and target methods.
     MetaSig sigInvoke(pInvokeMethod, thDelegate);
     MetaSig sigTarget(pTargetMethod, thExactMethodType);

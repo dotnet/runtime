@@ -74,7 +74,7 @@ inline unsigned int TypeHandle::GetRank() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(IsArrayType());
+    _ASSERTE(IsArray());
 
     return GetMethodTable()->GetRank();
 }

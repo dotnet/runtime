@@ -334,8 +334,6 @@ protected:
 
 
 /*************************************************************************/
-/* An ArrayTypeDesc represents a Array of some pointer type. */
-
 class ArrayTypeDesc : public ParamTypeDesc
 {
 #ifdef DACCESS_COMPILE
@@ -421,11 +419,6 @@ public:
 #ifdef FEATURE_PREJIT
     void Fixup(DataImage *image);
 #endif
-
-    TADDR GetTemplateMethodTableMaybeTagged() {
-        WRAPPER_NO_CONTRACT;
-        return m_TemplateMT.GetValueMaybeTagged(dac_cast<TADDR>(this) + offsetof(ArrayTypeDesc, m_TemplateMT));
-    }
 
 #ifdef FEATURE_COMINTEROP
     ComCallWrapperTemplate *m_pCCWTemplate;

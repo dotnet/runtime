@@ -4961,7 +4961,7 @@ BOOL CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
 
     _ASSERTE(!th.IsNull());
 
-    if (th.IsArrayType())
+    if (th.IsArray())
     {
         // Lots of code used to think that System.Array's methodtable returns TRUE for IsArray(). It doesn't.
         _ASSERTE(th != TypeHandle(g_pArrayClass));
@@ -4992,7 +4992,7 @@ unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
 
     _ASSERTE(!th.IsNull());
 
-    if (th.IsArrayType())
+    if (th.IsArray())
     {
         // Lots of code used to think that System.Array's methodtable returns TRUE for IsArray(). It doesn't.
         _ASSERTE(th != TypeHandle(g_pArrayClass));

@@ -5519,9 +5519,9 @@ void CEEPreloader::TriageTypeForZap(TypeHandle th, BOOL fAcceptIfNotSure, BOOL f
     }
 
 #ifdef FEATURE_FULL_NGEN
-    // Only save arrays and other param types in their preferred zap modules,
+    // Only save param types in their preferred zap modules,
     // i.e. never duplicate them.
-    if (th.IsTypeDesc() || th.IsArrayType())
+    if (th.IsTypeDesc())
     {
         triage = Rejected;
         rejectReason = "type is a TypeDesc";

@@ -98,20 +98,9 @@ Assembly* TypeHandle::GetAssembly() const {
 BOOL TypeHandle::IsArray() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return(IsTypeDesc() && AsTypeDesc()->IsArray());
-}
-
-BOOL TypeHandle::IsArrayType() const {
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsTypeDesc())
-    {
-        return AsTypeDesc()->IsArray();
-    }
-    else
-    {
-        return AsMethodTable()->IsArray();
-    }
+    // TODO: WIP   GetMethodTable  should be AsMethodTable eventually
+    MethodTable* mt = GetMethodTable();
+    return mt != NULL && mt->IsArray();
 }
 
 BOOL TypeHandle::IsGenericVariable() const {
@@ -235,7 +224,7 @@ Instantiation TypeHandle::GetClassOrArrayInstantiation() const
     {
         return AsTypeDesc()->GetClassOrArrayInstantiation();
     }
-    else if (IsArrayType())
+    else if (IsArray())
     {
         return AsMethodTable()->GetArrayInstantiation();
     }

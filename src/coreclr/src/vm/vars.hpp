@@ -339,7 +339,6 @@ class REF : public OBJECTREF
 class EEConfig;
 class ClassLoaderList;
 class Module;
-class ArrayTypeDesc;
 
 #define EXTERN extern
 

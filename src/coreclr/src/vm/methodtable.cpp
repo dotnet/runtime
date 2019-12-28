@@ -5391,7 +5391,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
 
 #ifndef DACCESS_COMPILE
-
     if (Generics::RecursionGraph::HasSeenType(pVisited, TypeHandle(this)))
     {
         *pfBailed = TRUE;
@@ -6442,7 +6441,7 @@ BOOL MethodTable::IsLegalNonArrayWinRTType()
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 // arrays are not allowed as generic arguments
-                if (inst[i].IsArrayType())
+                if (inst[i].IsArray())
                     return FALSE;
 
                 if (inst[i].IsTypeDesc())
