@@ -704,17 +704,18 @@ namespace System.Diagnostics
         private static bool IsW3CId(string id)
         {
             // A W3CId is
-            //  * 2 chars Version
+            //  * 2 hex chars Version (ff is invalid)
             //  * 1 char - char
-            //  * 32 chars traceId
+            //  * 32 hex chars traceId
             //  * 1 char - char
-            //  * 16 chars spanId
+            //  * 16 hex chars spanId
             //  * 1 char - char
-            //  * 2 chars flags
+            //  * 2 hex chars flags
             //  = 55 chars (see https://w3c.github.io/trace-context)
-            // We require that all non-WC3IDs NOT start with a digit.
-            // The digit is used to indicate that this is a WC3 ID.
-            return id.Length == 55 && '0' <= id[0] && id[0] <= '9';
+            // The version (00-fe) is used to indicate that this is a WC3 ID.
+            return id.Length == 55 &&
+                   (('0' <= id[0] && id[0] <= '9') || ('a' <= id[0] && id[0] <= 'f') &&
+                    ('0' <= id[1] && id[1] <= '9') || ('a' <= id[1] && id[1] <= 'e'));
         }
 
         /// <summary>
@@ -900,7 +901,14 @@ namespace System.Diagnostics
                 }
                 else if (_parentId != null && IsW3CId(_parentId))
                 {
-                    _w3CIdFlags = (byte)(ActivityTraceId.HexByteFromChars(_parentId[53], _parentId[54]) | ActivityTraceFlagsIsSet);
+                    if (ActivityTraceId.IsHexadecimalLowercaseChar(_parentId[53]) && ActivityTraceId.IsHexadecimalLowercaseChar(_parentId[54]))
+                    {
+                        _w3CIdFlags = (byte)(ActivityTraceId.HexByteFromChars(_parentId[53], _parentId[54]) | ActivityTraceFlagsIsSet);
+                    }
+                    else
+                    {
+                        _w3CIdFlags = ActivityTraceFlagsIsSet;
+                    }
                 }
             }
         }
@@ -1192,7 +1200,7 @@ namespace System.Diagnostics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsHexadecimalLowercaseChar(char c)
+        internal static bool IsHexadecimalLowercaseChar(char c)
         {
             // Between 0 - 9 or lowercased between a - f
             return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
