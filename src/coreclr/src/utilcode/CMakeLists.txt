@@ -62,7 +62,7 @@ set(UTILCODE_COMMON_SOURCES
 # These source file do not yet compile on Linux.
 # They should be moved out from here into the declaration
 # of UTILCODE_SOURCES above after fixing compiler errors.
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND UTILCODE_COMMON_SOURCES
     appxutil.cpp
     dacutil.cpp
@@ -72,7 +72,7 @@ if(WIN32)
     securityutil.cpp
     stacktrace.cpp
   )
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}

@@ -7603,7 +7603,7 @@ typedef struct _WER_RUNTIME_EXCEPTION_INFORMATION
 #endif // !defined(WER_RUNTIME_EXCEPTION_INFORMATION)
 
 
-#ifndef FEATURE_PAL
+#ifdef TARGET_WINDOWS
 
 //----------------------------------------------------------------------------
 //
@@ -7890,7 +7890,7 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
     return S_OK;
 }
 
-#endif // FEATURE_PAL
+#endif // TARGET_WINDOWS
 
 //----------------------------------------------------------------------------
 //

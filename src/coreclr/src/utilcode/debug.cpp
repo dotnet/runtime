@@ -684,7 +684,7 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
     else
     {
         char *szExprToDisplay = (char*)szExpr;
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         BOOL fGotStackTrace = TRUE;
 #else
         BOOL fGotStackTrace = FALSE;
@@ -703,7 +703,7 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
         }
         EX_END_CATCH(SwallowAllExceptions);
 #endif  // DACCESS_COMPILE
-#endif  // FEATURE_PAL
+#endif  // TARGET_UNIX
 
         if (_DbgBreakCheckNoThrow(szFile, iLine, szExprToDisplay, !fGotStackTrace))
         {
@@ -731,7 +731,7 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
 
     FAULT_NOT_FATAL();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     EX_TRY
     {
         const int cTotal = cfrMaxAssertStackLevels - 1;
@@ -750,7 +750,7 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
         // Nothing to do here.
     }
     EX_END_CATCH(SwallowAllExceptions);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     return fSuccess;
 } // GetStackTraceAtContext

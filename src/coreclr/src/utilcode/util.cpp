@@ -237,7 +237,7 @@ namespace
         StackSString ssDllName;
         if ((wszDllPath == nullptr) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
         {
-#ifndef FEATURE_PAL
+#ifdef TARGET_WINDOWS
             IfFailRet(Clr::Util::Com::FindInprocServer32UsingCLSID(rclsid, ssDllName));
 
             EX_TRY
@@ -256,9 +256,9 @@ namespace
             IfFailRet(hr);
 
             wszDllPath = ssDllName.GetUnicode();
-#else // !FEATURE_PAL
+#else // TARGET_WINDOWS
             return E_FAIL;
-#endif // !FEATURE_PAL
+#endif // TARGET_WINDOWS
         }
         _ASSERTE(wszDllPath != nullptr);
 
