@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void BitwiseSelect_Vector128_Double()
+        private static void CompareGreaterThanOrEqual_Vector128_Double()
         {
-            var test = new SimpleTernaryOpTest__BitwiseSelect_Vector128_Double();
+            var test = new SimpleBinaryOpTest__CompareGreaterThanOrEqual_Vector128_Double();
 
             if (test.IsSupported)
             {
@@ -110,60 +110,52 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class SimpleTernaryOpTest__BitwiseSelect_Vector128_Double
+    public sealed unsafe class SimpleBinaryOpTest__CompareGreaterThanOrEqual_Vector128_Double
     {
         private struct DataTable
         {
             private byte[] inArray1;
             private byte[] inArray2;
-            private byte[] inArray3;
             private byte[] outArray;
 
             private GCHandle inHandle1;
             private GCHandle inHandle2;
-            private GCHandle inHandle3;
             private GCHandle outHandle;
 
             private ulong alignment;
 
-            public DataTable(Double[] inArray1, Double[] inArray2, Double[] inArray3, Double[] outArray, int alignment)
+            public DataTable(Double[] inArray1, Double[] inArray2, Double[] outArray, int alignment)
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Double>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<Double>();
-                int sizeOfinArray3 = inArray3.Length * Unsafe.SizeOf<Double>();
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<Double>();
-                if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfinArray3 || (alignment * 2) < sizeOfoutArray)
+                if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
 
                 this.inArray1 = new byte[alignment * 2];
                 this.inArray2 = new byte[alignment * 2];
-                this.inArray3 = new byte[alignment * 2];
                 this.outArray = new byte[alignment * 2];
 
                 this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
                 this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
-                this.inHandle3 = GCHandle.Alloc(this.inArray3, GCHandleType.Pinned);
                 this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
                 this.alignment = (ulong)alignment;
 
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<Double, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<Double, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray3Ptr), ref Unsafe.As<Double, byte>(ref inArray3[0]), (uint)sizeOfinArray3);
             }
 
             public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
             public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
-            public void* inArray3Ptr => Align((byte*)(inHandle3.AddrOfPinnedObject().ToPointer()), alignment);
             public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
 
             public void Dispose()
             {
                 inHandle1.Free();
                 inHandle2.Free();
-                inHandle3.Free();
                 outHandle.Free();
             }
 
@@ -177,7 +169,6 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             public Vector128<Double> _fld1;
             public Vector128<Double> _fld2;
-            public Vector128<Double> _fld3;
 
             public static TestStruct Create()
             {
@@ -187,34 +178,30 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref testStruct._fld1), ref Unsafe.As<Double, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
                 for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetDouble(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref testStruct._fld2), ref Unsafe.As<Double, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
-                for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = TestLibrary.Generator.GetDouble(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref testStruct._fld3), ref Unsafe.As<Double, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
 
                 return testStruct;
             }
 
-            public void RunStructFldScenario(SimpleTernaryOpTest__BitwiseSelect_Vector128_Double testClass)
+            public void RunStructFldScenario(SimpleBinaryOpTest__CompareGreaterThanOrEqual_Vector128_Double testClass)
             {
-                var result = AdvSimd.BitwiseSelect(_fld1, _fld2, _fld3);
+                var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(_fld1, _fld2);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(_fld1, _fld2, _fld3, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
             }
 
-            public void RunStructFldScenario_Load(SimpleTernaryOpTest__BitwiseSelect_Vector128_Double testClass)
+            public void RunStructFldScenario_Load(SimpleBinaryOpTest__CompareGreaterThanOrEqual_Vector128_Double testClass)
             {
                 fixed (Vector128<Double>* pFld1 = &_fld1)
                 fixed (Vector128<Double>* pFld2 = &_fld2)
-                fixed (Vector128<Double>* pFld3 = &_fld3)
                 {
-                    var result = AdvSimd.BitwiseSelect(
+                    var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(
                         AdvSimd.LoadVector128((Double*)(pFld1)),
-                        AdvSimd.LoadVector128((Double*)(pFld2)),
-                        AdvSimd.LoadVector128((Double*)(pFld3))
+                        AdvSimd.LoadVector128((Double*)(pFld2))
                     );
 
                     Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                    testClass.ValidateResult(_fld1, _fld2, _fld3, testClass._dataTable.outArrayPtr);
+                    testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
                 }
             }
         }
@@ -223,34 +210,28 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Double>>() / sizeof(Double);
         private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector128<Double>>() / sizeof(Double);
-        private static readonly int Op3ElementCount = Unsafe.SizeOf<Vector128<Double>>() / sizeof(Double);
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Double>>() / sizeof(Double);
 
         private static Double[] _data1 = new Double[Op1ElementCount];
         private static Double[] _data2 = new Double[Op2ElementCount];
-        private static Double[] _data3 = new Double[Op3ElementCount];
 
         private static Vector128<Double> _clsVar1;
         private static Vector128<Double> _clsVar2;
-        private static Vector128<Double> _clsVar3;
 
         private Vector128<Double> _fld1;
         private Vector128<Double> _fld2;
-        private Vector128<Double> _fld3;
 
         private DataTable _dataTable;
 
-        static SimpleTernaryOpTest__BitwiseSelect_Vector128_Double()
+        static SimpleBinaryOpTest__CompareGreaterThanOrEqual_Vector128_Double()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetDouble(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _clsVar1), ref Unsafe.As<Double, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetDouble(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _clsVar2), ref Unsafe.As<Double, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
-            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = TestLibrary.Generator.GetDouble(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _clsVar3), ref Unsafe.As<Double, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
         }
 
-        public SimpleTernaryOpTest__BitwiseSelect_Vector128_Double()
+        public SimpleBinaryOpTest__CompareGreaterThanOrEqual_Vector128_Double()
         {
             Succeeded = true;
 
@@ -258,16 +239,13 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _fld1), ref Unsafe.As<Double, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetDouble(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _fld2), ref Unsafe.As<Double, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
-            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = TestLibrary.Generator.GetDouble(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _fld3), ref Unsafe.As<Double, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetDouble(); }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetDouble(); }
-            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = TestLibrary.Generator.GetDouble(); }
-            _dataTable = new DataTable(_data1, _data2, _data3, new Double[RetElementCount], LargestVectorSize);
+            _dataTable = new DataTable(_data1, _data2, new Double[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => AdvSimd.IsSupported;
+        public bool IsSupported => AdvSimd.Arm64.IsSupported;
 
         public bool Succeeded { get; set; }
 
@@ -275,72 +253,67 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = AdvSimd.BitwiseSelect(
+            var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(
                 Unsafe.Read<Vector128<Double>>(_dataTable.inArray1Ptr),
-                Unsafe.Read<Vector128<Double>>(_dataTable.inArray2Ptr),
-                Unsafe.Read<Vector128<Double>>(_dataTable.inArray3Ptr)
+                Unsafe.Read<Vector128<Double>>(_dataTable.inArray2Ptr)
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunBasicScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            var result = AdvSimd.BitwiseSelect(
+            var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(
                 AdvSimd.LoadVector128((Double*)(_dataTable.inArray1Ptr)),
-                AdvSimd.LoadVector128((Double*)(_dataTable.inArray2Ptr)),
-                AdvSimd.LoadVector128((Double*)(_dataTable.inArray3Ptr))
+                AdvSimd.LoadVector128((Double*)(_dataTable.inArray2Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.BitwiseSelect), new Type[] { typeof(Vector128<Double>), typeof(Vector128<Double>), typeof(Vector128<Double>) })
+            var result = typeof(AdvSimd.Arm64).GetMethod(nameof(AdvSimd.Arm64.CompareGreaterThanOrEqual), new Type[] { typeof(Vector128<Double>), typeof(Vector128<Double>) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<Double>>(_dataTable.inArray1Ptr),
-                                        Unsafe.Read<Vector128<Double>>(_dataTable.inArray2Ptr),
-                                        Unsafe.Read<Vector128<Double>>(_dataTable.inArray3Ptr)
+                                        Unsafe.Read<Vector128<Double>>(_dataTable.inArray2Ptr)
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Double>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.BitwiseSelect), new Type[] { typeof(Vector128<Double>), typeof(Vector128<Double>), typeof(Vector128<Double>) })
+            var result = typeof(AdvSimd.Arm64).GetMethod(nameof(AdvSimd.Arm64.CompareGreaterThanOrEqual), new Type[] { typeof(Vector128<Double>), typeof(Vector128<Double>) })
                                      .Invoke(null, new object[] {
                                         AdvSimd.LoadVector128((Double*)(_dataTable.inArray1Ptr)),
-                                        AdvSimd.LoadVector128((Double*)(_dataTable.inArray2Ptr)),
-                                        AdvSimd.LoadVector128((Double*)(_dataTable.inArray3Ptr))
+                                        AdvSimd.LoadVector128((Double*)(_dataTable.inArray2Ptr))
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Double>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = AdvSimd.BitwiseSelect(
+            var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(
                 _clsVar1,
-                _clsVar2,
-                _clsVar3
+                _clsVar2
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar1, _clsVar2, _clsVar3, _dataTable.outArrayPtr);
+            ValidateResult(_clsVar1, _clsVar2, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario_Load()
@@ -349,16 +322,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
             fixed (Vector128<Double>* pClsVar1 = &_clsVar1)
             fixed (Vector128<Double>* pClsVar2 = &_clsVar2)
-            fixed (Vector128<Double>* pClsVar3 = &_clsVar3)
             {
-                var result = AdvSimd.BitwiseSelect(
+                var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(
                     AdvSimd.LoadVector128((Double*)(pClsVar1)),
-                    AdvSimd.LoadVector128((Double*)(pClsVar2)),
-                    AdvSimd.LoadVector128((Double*)(pClsVar3))
+                    AdvSimd.LoadVector128((Double*)(pClsVar2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
-                ValidateResult(_clsVar1, _clsVar2, _clsVar3, _dataTable.outArrayPtr);
+                ValidateResult(_clsVar1, _clsVar2, _dataTable.outArrayPtr);
             }
         }
 
@@ -368,11 +339,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var op1 = Unsafe.Read<Vector128<Double>>(_dataTable.inArray1Ptr);
             var op2 = Unsafe.Read<Vector128<Double>>(_dataTable.inArray2Ptr);
-            var op3 = Unsafe.Read<Vector128<Double>>(_dataTable.inArray3Ptr);
-            var result = AdvSimd.BitwiseSelect(op1, op2, op3);
+            var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(op1, op2, op3, _dataTable.outArrayPtr);
+            ValidateResult(op1, op2, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_Load()
@@ -381,42 +351,39 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var op1 = AdvSimd.LoadVector128((Double*)(_dataTable.inArray1Ptr));
             var op2 = AdvSimd.LoadVector128((Double*)(_dataTable.inArray2Ptr));
-            var op3 = AdvSimd.LoadVector128((Double*)(_dataTable.inArray3Ptr));
-            var result = AdvSimd.BitwiseSelect(op1, op2, op3);
+            var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(op1, op2, op3, _dataTable.outArrayPtr);
+            ValidateResult(op1, op2, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new SimpleTernaryOpTest__BitwiseSelect_Vector128_Double();
-            var result = AdvSimd.BitwiseSelect(test._fld1, test._fld2, test._fld3);
+            var test = new SimpleBinaryOpTest__CompareGreaterThanOrEqual_Vector128_Double();
+            var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
+            ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
 
-            var test = new SimpleTernaryOpTest__BitwiseSelect_Vector128_Double();
+            var test = new SimpleBinaryOpTest__CompareGreaterThanOrEqual_Vector128_Double();
 
             fixed (Vector128<Double>* pFld1 = &test._fld1)
             fixed (Vector128<Double>* pFld2 = &test._fld2)
-            fixed (Vector128<Double>* pFld3 = &test._fld3)
             {
-                var result = AdvSimd.BitwiseSelect(
+                var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(
                     AdvSimd.LoadVector128((Double*)(pFld1)),
-                    AdvSimd.LoadVector128((Double*)(pFld2)),
-                    AdvSimd.LoadVector128((Double*)(pFld3))
+                    AdvSimd.LoadVector128((Double*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
-                ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
+                ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
             }
         }
 
@@ -424,10 +391,10 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = AdvSimd.BitwiseSelect(_fld1, _fld2, _fld3);
+            var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(_fld1, _fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld1, _fld2, _fld3, _dataTable.outArrayPtr);
+            ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario_Load()
@@ -436,16 +403,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
             fixed (Vector128<Double>* pFld1 = &_fld1)
             fixed (Vector128<Double>* pFld2 = &_fld2)
-            fixed (Vector128<Double>* pFld3 = &_fld3)
             {
-                var result = AdvSimd.BitwiseSelect(
+                var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(
                     AdvSimd.LoadVector128((Double*)(pFld1)),
-                    AdvSimd.LoadVector128((Double*)(pFld2)),
-                    AdvSimd.LoadVector128((Double*)(pFld3))
+                    AdvSimd.LoadVector128((Double*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
-                ValidateResult(_fld1, _fld2, _fld3, _dataTable.outArrayPtr);
+                ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
             }
         }
 
@@ -454,10 +419,10 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.BitwiseSelect(test._fld1, test._fld2, test._fld3);
+            var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
+            ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario_Load()
@@ -465,14 +430,13 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.BitwiseSelect(
+            var result = AdvSimd.Arm64.CompareGreaterThanOrEqual(
                 AdvSimd.LoadVector128((Double*)(&test._fld1)),
-                AdvSimd.LoadVector128((Double*)(&test._fld2)),
-                AdvSimd.LoadVector128((Double*)(&test._fld3))
+                AdvSimd.LoadVector128((Double*)(&test._fld2))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
+            ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
         }
         
         public void RunStructFldScenario()
@@ -512,41 +476,37 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateResult(Vector128<Double> op1, Vector128<Double> op2, Vector128<Double> op3, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<Double> op1, Vector128<Double> op2, void* result, [CallerMemberName] string method = "")
         {
             Double[] inArray1 = new Double[Op1ElementCount];
             Double[] inArray2 = new Double[Op2ElementCount];
-            Double[] inArray3 = new Double[Op3ElementCount];
             Double[] outArray = new Double[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<Double, byte>(ref inArray1[0]), op1);
             Unsafe.WriteUnaligned(ref Unsafe.As<Double, byte>(ref inArray2[0]), op2);
-            Unsafe.WriteUnaligned(ref Unsafe.As<Double, byte>(ref inArray3[0]), op3);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Double>>());
 
-            ValidateResult(inArray1, inArray2, inArray3, outArray, method);
+            ValidateResult(inArray1, inArray2, outArray, method);
         }
 
-        private void ValidateResult(void* op1, void* op2, void* op3, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op1, void* op2, void* result, [CallerMemberName] string method = "")
         {
             Double[] inArray1 = new Double[Op1ElementCount];
             Double[] inArray2 = new Double[Op2ElementCount];
-            Double[] inArray3 = new Double[Op3ElementCount];
             Double[] outArray = new Double[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<Double>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector128<Double>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(op3), (uint)Unsafe.SizeOf<Vector128<Double>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Double>>());
 
-            ValidateResult(inArray1, inArray2, inArray3, outArray, method);
+            ValidateResult(inArray1, inArray2, outArray, method);
         }
 
-        private void ValidateResult(Double[] firstOp, Double[] secondOp, Double[] thirdOp, Double[] result, [CallerMemberName] string method = "")
+        private void ValidateResult(Double[] left, Double[] right, Double[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
-            if (BitConverter.DoubleToInt64Bits(Helpers.BitwiseSelect(firstOp[0], secondOp[0], thirdOp[0])) != BitConverter.DoubleToInt64Bits(result[0]))
+            if (BitConverter.DoubleToInt64Bits(Helpers.CompareGreaterThanOrEqual(left[0], right[0])) != BitConverter.DoubleToInt64Bits(result[0]))
             {
                 succeeded = false;
             }
@@ -554,7 +514,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (BitConverter.DoubleToInt64Bits(Helpers.BitwiseSelect(firstOp[i], secondOp[i], thirdOp[i])) != BitConverter.DoubleToInt64Bits(result[i]))
+                    if (BitConverter.DoubleToInt64Bits(Helpers.CompareGreaterThanOrEqual(left[i], right[i])) != BitConverter.DoubleToInt64Bits(result[i]))
                     {
                         succeeded = false;
                         break;
@@ -564,10 +524,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd)}.{nameof(AdvSimd.BitwiseSelect)}<Double>(Vector128<Double>, Vector128<Double>, Vector128<Double>): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
-                TestLibrary.TestFramework.LogInformation($"secondOp: ({string.Join(", ", secondOp)})");
-                TestLibrary.TestFramework.LogInformation($" thirdOp: ({string.Join(", ", thirdOp)})");
+                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd.Arm64)}.{nameof(AdvSimd.Arm64.CompareGreaterThanOrEqual)}<Double>(Vector128<Double>, Vector128<Double>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
+                TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 

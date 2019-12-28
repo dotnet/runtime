@@ -10,6 +10,24 @@
   <ItemGroup>
     <Compile Include="Abs.Vector128.Double.cs" />
     <Compile Include="Abs.Vector128.UInt64.cs" />
+    <Compile Include="CompareEqual.Vector128.Double.cs" />
+    <Compile Include="CompareEqual.Vector128.Int64.cs" />
+    <Compile Include="CompareEqual.Vector128.UInt64.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.Double.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.Int64.cs" />
+    <Compile Include="CompareGreaterThan.Vector128.UInt64.cs" />
+    <Compile Include="CompareGreaterThanOrEqual.Vector128.Double.cs" />
+    <Compile Include="CompareGreaterThanOrEqual.Vector128.Int64.cs" />
+    <Compile Include="CompareGreaterThanOrEqual.Vector128.UInt64.cs" />
+    <Compile Include="CompareLessThan.Vector128.Double.cs" />
+    <Compile Include="CompareLessThan.Vector128.Int64.cs" />
+    <Compile Include="CompareLessThan.Vector128.UInt64.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.Double.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.Int64.cs" />
+    <Compile Include="CompareLessThanOrEqual.Vector128.UInt64.cs" />
+    <Compile Include="CompareTest.Vector128.Double.cs" />
+    <Compile Include="CompareTest.Vector128.Int64.cs" />
+    <Compile Include="CompareTest.Vector128.UInt64.cs" />
     <Compile Include="ReverseElementBits.Vector128.Byte.cs" />
     <Compile Include="ReverseElementBits.Vector128.SByte.cs" />
     <Compile Include="ReverseElementBits.Vector64.Byte.cs" />
