@@ -76,11 +76,14 @@ namespace ILCompiler
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    LayoutInt elementSize = parameterType.GetElementSize();
-                    if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
+                    if (!parameterType.IsRuntimeDeterminedSubtype)
                     {
-                        // Element size over 64k can't be encoded in the GCDesc
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
+                        LayoutInt elementSize = parameterType.GetElementSize();
+                        if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
+                        {
+                            // Element size over 64k can't be encoded in the GCDesc
+                            ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
+                        }
                     }
 
                     if (((ArrayType)parameterizedType).Rank > 32)
@@ -101,6 +104,10 @@ namespace ILCompiler
             else if (type.IsFunctionPointer)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+            }
+            else if (type.IsGenericParameter)
+            {
+                return type;
             }
             else
             {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -11,16 +12,13 @@ using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
 
 namespace R2RDump
 {
-    public class DumpOptions
+    public class DumpOptions : IAssemblyResolver
     {
         public FileInfo[] In { get; set; }
         public FileInfo Out { get; set; }
-
-        public bool Xml { get; set; }
         public bool Raw { get; set; }
         public bool Header { get; set; }
         public bool Disasm { get; set; }
@@ -92,7 +90,7 @@ namespace R2RDump
     public abstract class Dumper
     {
         protected readonly R2RReader _r2r;
-        protected readonly TextWriter _writer;
+        protected TextWriter _writer;
         protected readonly Disassembler _disassembler;
         protected readonly DumpOptions _options;
 
@@ -137,15 +135,15 @@ namespace R2RDump
         abstract internal void WriteSubDivider();
         abstract internal void SkipLine();
         abstract internal void DumpHeader(bool dumpSections);
-        abstract internal void DumpSection(R2RSection section, XmlNode parentNode = null);
+        abstract internal void DumpSection(R2RSection section);
         abstract internal void DumpEntryPoints();
         abstract internal void DumpAllMethods();
-        abstract internal void DumpMethod(R2RMethod method, XmlNode parentNode = null);
-        abstract internal void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null);
-        abstract internal void DumpDisasm(RuntimeFunction rtf, int imageOffset, XmlNode parentNode = null);
-        abstract internal void DumpBytes(int rva, uint size, XmlNode parentNode = null, string name = "Raw", bool convertToOffset = true);
-        abstract internal void DumpSectionContents(R2RSection section, XmlNode parentNode = null);
-        abstract internal XmlNode DumpQueryCount(string q, string title, int count);
+        abstract internal void DumpMethod(R2RMethod method);
+        abstract internal void DumpRuntimeFunction(RuntimeFunction rtf);
+        abstract internal void DumpDisasm(RuntimeFunction rtf, int imageOffset);
+        abstract internal void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true);
+        abstract internal void DumpSectionContents(R2RSection section);
+        abstract internal void DumpQueryCount(string q, string title, int count);
     }
 
     class R2RDump
@@ -228,10 +226,10 @@ namespace R2RDump
             foreach (string q in queries)
             {
                 IList<R2RMethod> res = FindMethod(r2r, q, exact);
-                XmlNode queryNode = _dumper.DumpQueryCount(q, "Methods", res.Count);
+                _dumper.DumpQueryCount(q, "Methods", res.Count);
                 foreach (R2RMethod method in res)
                 {
-                    _dumper.DumpMethod(method, queryNode);
+                    _dumper.DumpMethod(method);
                 }
             }
         }
@@ -250,10 +248,10 @@ namespace R2RDump
             foreach (string q in queries)
             {
                 IList<R2RSection> res = FindSection(r2r, q);
-                XmlNode queryNode = _dumper.DumpQueryCount(q, "Sections", res.Count);
+                _dumper.DumpQueryCount(q, "Sections", res.Count);
                 foreach (R2RSection section in res)
                 {
-                    _dumper.DumpSection(section, queryNode);
+                    _dumper.DumpSection(section);
                 }
             }
         }
@@ -279,8 +277,8 @@ namespace R2RDump
                     WriteWarning("Unable to find by id " + q);
                     continue;
                 }
-                XmlNode queryNode = _dumper.DumpQueryCount(q.ToString(), "Runtime Function", 1);
-                _dumper.DumpRuntimeFunction(rtf, queryNode);
+                _dumper.DumpQueryCount(q.ToString(), "Runtime Function", 1);
+                _dumper.DumpRuntimeFunction(rtf);
             }
         }
 
@@ -482,14 +480,7 @@ namespace R2RDump
                         }
                     }
 
-                    if (_options.Xml)
-                    {
-                        _dumper = new XmlDumper(_options.IgnoreSensitive, r2r, _writer, disassembler, _options);
-                    }
-                    else
-                    {
-                        _dumper = new TextDumper(r2r, _writer, disassembler, _options);
-                    }
+                    _dumper = new TextDumper(r2r, _writer, disassembler, _options);
 
                     if (!_options.Diff)
                     {
@@ -510,17 +501,6 @@ namespace R2RDump
                 if (e is ArgumentException)
                 {
                     Console.WriteLine();
-                }
-                if (_options.Xml)
-                {
-                    XmlDocument document = new XmlDocument();
-                    XmlNode node = document.CreateNode("element", "Error", "");
-                    node.InnerText = e.Message;
-                    document.AppendChild(node);
-                    if (_writer != null)
-                    {
-                        document.Save(_writer);
-                    }
                 }
                 return 1;
             }

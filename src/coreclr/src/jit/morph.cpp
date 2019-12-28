@@ -18467,7 +18467,7 @@ private:
 
         unsigned flags = 0;
 
-        if (user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
+        if ((user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
         {
             flags |= GTF_VAR_DEF | GTF_DONT_CSE;
 

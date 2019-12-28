@@ -4015,6 +4015,36 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_get_IsValueType:
+            {
+                // Optimize
+                //
+                //   call Type.GetTypeFromHandle (which is replaced with CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE)
+                //   call Type.IsValueType
+                //
+                // to `true` or `false`
+                // e.g. `typeof(int).IsValueType` => `true`
+                if (impStackTop().val->IsCall())
+                {
+                    GenTreeCall* call = impStackTop().val->AsCall();
+                    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+                    {
+                        CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtCallArgs->GetNode());
+                        if (hClass != NO_CLASS_HANDLE)
+                        {
+                            retNode =
+                                gtNewIconNode((eeIsValueClass(hClass) &&
+                                               // pointers are not value types (e.g. typeof(int*).IsValueType is false)
+                                               info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR)
+                                                  ? 1
+                                                  : 0);
+                            impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                        }
+                    }
+                }
+                break;
+            }
+
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
             case NI_System_MathF_FusedMultiplyAdd:
@@ -4304,6 +4334,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "KeepAlive") == 0)
             {
                 result = NI_System_GC_KeepAlive;
+            }
+        }
+        else if (strcmp(className, "Type") == 0)
+        {
+            if (strcmp(methodName, "get_IsValueType") == 0)
+            {
+                result = NI_System_Type_get_IsValueType;
             }
         }
     }

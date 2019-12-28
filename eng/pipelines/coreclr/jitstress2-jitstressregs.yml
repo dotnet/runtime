@@ -33,4 +33,4 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: jitstress2-jitstressregs
-      useLiveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: Release

@@ -224,7 +224,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 1, 3, bytes, 1, 3, false, 1, 3, expectedCompleted: false);
             VerificationHelper(encoder, chars, 1, 3, bytes, 1, 5, true, 3, 5, expectedCompleted: true);
 
-            VerificationHelper(encoder, chars, 0, 1, bytes, 0, bytes.Length, false, 1, 0, expectedCompleted: false);
+            VerificationHelper(encoder, chars, 0, 1, bytes, 0, bytes.Length, false, 1, 0, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, 1, bytes, 0, bytes.Length, true, 1, 4, expectedCompleted: true);
         }
 
@@ -259,7 +259,7 @@ namespace System.Text.Tests
             Encoder encoder = Encoding.UTF8.GetEncoder();
 
             VerificationHelper(encoder, chars, 0, 1, bytes, 0, 1, true, 1, 1, expectedCompleted: true);
-            VerificationHelper(encoder, chars, 0, 2, bytes, 0, 1, false, 2, 1, expectedCompleted: false);
+            VerificationHelper(encoder, chars, 0, 2, bytes, 0, 1, false, 2, 1, expectedCompleted: true);
             VerificationHelper(encoder, chars, 2, 1, bytes, 0, 5, false, 1, 4, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, 2, bytes, 0, 7, false, 2, 4, expectedCompleted: true);
             VerificationHelper(encoder, chars, 0, 5, bytes, 0, 7, false, 5, 7, expectedCompleted: true);
@@ -268,7 +268,7 @@ namespace System.Text.Tests
             VerificationHelper(encoder, chars, 1, 3, bytes, 1, 5, false, 3, 5, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, 3, bytes, 1, 5, true, 3, 5, expectedCompleted: true);
 
-            VerificationHelper(encoder, chars, 0, 2, bytes, 0, bytes.Length, false, 2, 1, expectedCompleted: false);
+            VerificationHelper(encoder, chars, 0, 2, bytes, 0, bytes.Length, false, 2, 1, expectedCompleted: true);
             VerificationHelper(encoder, chars, 2, 2, bytes, 0, bytes.Length, false, 2, 5, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, 1, bytes, 0, bytes.Length, true, 1, 3, expectedCompleted: true);
         }

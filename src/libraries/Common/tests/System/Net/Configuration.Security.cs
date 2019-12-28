@@ -35,6 +35,8 @@ namespace System.Net.Test.Common
             //      127.0.0.1 testclienteku.contoso.com
 
             public static string HostsFileNamesInstalled => GetValue("COREFX_NET_SECURITY_HOSTS_FILE_INSTALLED");
+            // Allows packet captures.
+            public static string SecurityForceSocketStreams => GetValue("COREFX_NET_SECURITY_FORCE_SOCKET_STREAMS");
         }
     }
 }

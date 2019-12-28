@@ -6,6 +6,7 @@ using System.Threading;
 using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -107,7 +108,7 @@ namespace System
         protected virtual bool IsMarshalByRefImpl() => false;
         public bool IsPrimitive => IsPrimitiveImpl();
         protected abstract bool IsPrimitiveImpl();
-        public bool IsValueType => IsValueTypeImpl();
+        public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         public virtual bool IsSignatureType => false;

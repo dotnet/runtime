@@ -5,6 +5,7 @@ parameters:
   archType: ''
   framework: netcoreapp
   isOfficialBuild: false
+  isOfficialAllConfigurations: false
 
   # When set to a non-empty value (Debug / Release), it determines CoreCLR
   # build configuration to use for building libraries and tests. Setting this
@@ -30,6 +31,7 @@ jobs:
       archType:  ${{ parameters.archType }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}
       liveCoreClrBuildConfig: ${{ parameters.liveCoreClrBuildConfig }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       preBuildSteps: ${{ parameters.preBuildSteps }}
@@ -63,22 +65,24 @@ jobs:
         - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
           displayName: Restore
 
-        - ${{ if eq(parameters.isOfficialBuild, true) }}:
-          - task: DotNetCoreCLI@2
-            displayName: Restore internal tools
-            condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
-            inputs:
-              command: restore
-              feedsToUse: config
-              projects: 'eng/common/internal/Tools.csproj'
-              nugetConfigPath: 'eng/internal/NuGet.config'
-              restoreDirectory: '$(Build.SourcesDirectory)\.packages'
-              verbosityRestore: 'normal'
-              externalFeedCredentials: 'dotnet-core-internal-tooling'
+        # TODO: (Consolidation) Fix internal tool restore and re-enable. https://github.com/dotnet/runtime/issues/1024
+        # - ${{ if eq(parameters.isOfficialBuild, true) }}:
+        #   - task: DotNetCoreCLI@2
+        #     displayName: Restore internal tools
+        #     condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
+        #     inputs:
+        #       command: restore
+        #       feedsToUse: config
+        #       projects: 'eng/common/internal/Tools.csproj'
+        #       nugetConfigPath: 'eng/internal/NuGet.config'
+        #       restoreDirectory: '$(Build.SourcesDirectory)\.packages'
+        #       verbosityRestore: 'normal'
+        #       externalFeedCredentials: 'dotnet-core-internal-tooling'
 
         - ${{ if eq(parameters.osGroup, 'OSX') }}:
           - script: |
-              brew install pkgconfig openssl
+              brew install pkgconfig icu4c openssl
+              brew link --force icu4c
               ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
               ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
               ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
@@ -140,6 +144,7 @@ jobs:
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
+            condition: ne(variables['_skipTestHostCopy'], 'true')
 
           - task: CopyFiles@2
             displayName: Prepare artifacts toolset folder to publish
@@ -162,6 +167,14 @@ jobs:
               tarCompression: $(tarCompression)
               artifactName: $(librariesBuildArtifactName)
               displayName: Build Assets
+
+          # Save AllConfigurations artifacts using the prepare-signed-artifacts format. The
+          # platform-specific jobs' nupkgs automatically flow through the matching platform-specific
+          # Installer build, but AllConfigurations should only be uploaded once, here.
+          - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
+            - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+              parameters:
+                name: Libraries_AllConfigurations
 
         - ${{ if eq(parameters.runTests, true) }}:
           - template: /eng/pipelines/libraries/helix.yml
