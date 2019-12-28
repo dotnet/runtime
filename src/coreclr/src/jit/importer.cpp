@@ -4025,8 +4025,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     // make sure both arguments are `typeof()`
                     CORINFO_METHOD_HANDLE hTypeof = eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
-                    if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) &&
-                        (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
+                    if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) && (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
                     {
                         CORINFO_CLASS_HANDLE hClassTo =
                             gtGetHelperArgClassHandle(typeTo->AsCall()->gtCallArgs->GetNode());
