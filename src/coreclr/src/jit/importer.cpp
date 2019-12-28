@@ -3425,7 +3425,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 CORINFO_CLASS_HANDLE    clsHnd,
                                 CORINFO_METHOD_HANDLE   method,
                                 CORINFO_SIG_INFO*       sig,
-                                unsigned&               methodFlags,
+                                unsigned                methodFlags,
                                 int                     memberRef,
                                 bool                    readonlyCall,
                                 bool                    tailCall,
@@ -4045,7 +4045,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             break;
                         }
 
-                        methodFlags &= ~CORINFO_FLG_VIRTUAL;
                         retNode = gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0);
                         impPopStack(); // drop both CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE calls
                         impPopStack();
@@ -7613,9 +7612,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (call != nullptr)
             {
-                assert(!(mflags & CORINFO_FLG_VIRTUAL) || (mflags & CORINFO_FLG_FINAL) ||
-                       (clsFlags & CORINFO_FLG_FINAL));
-
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (call->OperGet() == GT_INTRINSIC)
                 {
