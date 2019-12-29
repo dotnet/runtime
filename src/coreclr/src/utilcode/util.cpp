@@ -2602,12 +2602,13 @@ void PutThumb2Mov32(UINT16 * p, UINT32 imm32)
 //*****************************************************************************
 void PutArmMov(UINT16 * p, UINT32 imm32)
 {
-    printf("%s:%d p[0] = 0x%x \n", __func__, __LINE__, p[0]);
-    printf("%s:%d p[1] = 0x%x \n", __func__, __LINE__, p[1]);
-    printf("%s:%d p[2] = 0x%x \n", __func__, __LINE__, p[2]);
-    printf("%s:%d p[3] = 0x%x \n", __func__, __LINE__, p[3]);
-    p[0] = (UINT16)imm32;
-    p[1] = (UINT16)(imm32 >> 16);
+#ifdef __thumb__
+    p[1] = (UINT16)imm32;
+    p[2] = (UINT16)(imm32 >> 16);
+#else
+    p[2] = (UINT16)imm32;
+    p[3] = (UINT16)(imm32 >> 16);
+#endif
 }
 
 //*****************************************************************************
