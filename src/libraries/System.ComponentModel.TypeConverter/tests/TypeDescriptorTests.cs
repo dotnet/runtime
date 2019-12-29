@@ -484,6 +484,8 @@ namespace System.ComponentModel.Tests
         [InlineData(typeof(ClassIDerived), typeof(IBaseConverter))]
         [InlineData(typeof(Uri), typeof(UriTypeConverter))]
         [InlineData(typeof(CultureInfo), typeof(CultureInfoConverter))]
+        [InlineData(typeof(Version), typeof(VersionConverter))]
+        [InlineData(typeof(IComponent), typeof(ComponentConverter))]
         public static void GetConverter(Type targetType, Type resultConverterType)
         {
             TypeConverter converter = TypeDescriptor.GetConverter(targetType);
@@ -1098,7 +1100,6 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NullReferenceException")]
         public void SortDescriptorArray_Invoke_ReturnsExpected()
         {
             var notADescriptor1 = new object();
@@ -1139,12 +1140,6 @@ namespace System.ComponentModel.Tests
             var descriptionAttribute = (DescriptionAttribute)property.Attributes[typeof(DescriptionAttribute)];
             Assert.Equal("Derived", descriptionAttribute.Description);
         }
-
-        [Theory]
-        [InlineData(typeof(Version), typeof(VersionConverter))]
-        [InlineData(typeof(IComponent), typeof(ComponentConverter))]
-        public static void GetConverter_NetCoreApp(Type targetType, Type resultConverterType) =>
-            GetConverter(targetType, resultConverterType);
 
         class FooBarBase
         {
