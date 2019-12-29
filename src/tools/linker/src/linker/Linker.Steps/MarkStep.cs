@@ -779,7 +779,7 @@ namespace Mono.Linker.Steps {
 				if (property != null)
 					return property;
 
-				type = type.BaseType != null ? ResolveTypeDefinition (type.BaseType) : null;
+				type = type.BaseType?.Resolve ();
 			}
 
 			return null;
@@ -810,7 +810,7 @@ namespace Mono.Linker.Steps {
 				if (field != null)
 					return field;
 
-				type = type.BaseType != null ? ResolveTypeDefinition (type.BaseType) : null;
+				type = type.BaseType?.Resolve ();
 			}
 
 			return null;
@@ -823,7 +823,7 @@ namespace Mono.Linker.Steps {
 				if (method != null)
 					return method;
 
-				type = type.BaseType != null ? ResolveTypeDefinition (type.BaseType) : null;
+				type = type.BaseType.Resolve ();
 			}
 
 			return null;
@@ -1011,7 +1011,7 @@ namespace Mono.Linker.Steps {
 			if (reference.DeclaringType is GenericInstanceType)
 				MarkType (reference.DeclaringType);
 
-			FieldDefinition field = ResolveFieldDefinition (reference);
+			FieldDefinition field = reference.Resolve ();
 
 			if (field == null) {
 				HandleUnresolvedField (reference);
@@ -1045,14 +1045,6 @@ namespace Mono.Linker.Steps {
 			return Annotations.GetAction (assembly) != AssemblyAction.Link;
 		}
 
-		static FieldDefinition ResolveFieldDefinition (FieldReference field)
-		{
-			if (field is FieldDefinition fd)
-				return fd;
-
-			return field.Resolve ();
-		}
-
 		void MarkScope (IMetadataScope scope)
 		{
 			var provider = scope as IMetadataTokenProvider;
@@ -1084,7 +1076,7 @@ namespace Mono.Linker.Steps {
 //			if (IgnoreScope (reference.Scope))
 //				return null;
 
-			TypeDefinition type = ResolveTypeDefinition (reference);
+			TypeDefinition type = reference.Resolve ();
 
 			if (type == null) {
 				HandleUnresolvedType (reference);
@@ -1102,11 +1094,11 @@ namespace Mono.Linker.Steps {
 			MarkCustomAttributes (type);
 			MarkSecurityDeclarations (type);
 
-			if (IsMulticastDelegate (type)) {
+			if (type.IsMulticastDelegate ()) {
 				MarkMulticastDelegate (type);
 			}
 
-			if (IsSerializable (type))
+			if (type.IsSerializable ())
 				MarkSerializable (type);
 
 			if (!_context.IsFeatureExcluded ("etw") && BCL.EventTracingForWindows.IsEventSourceImplementation (type, _context)) {
@@ -1227,10 +1219,7 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			if (targetTypeReference != null) 
-				return ResolveTypeDefinition (targetTypeReference);
-					
-			return null;
+			return targetTypeReference?.Resolve ();
 		}
 		
 		void MarkTypeSpecialCustomAttributes (TypeDefinition type)
@@ -1251,7 +1240,7 @@ namespace Mono.Linker.Steps {
 					MarkTypeWithDebuggerTypeProxyAttribute (type, attribute);
 					break;
 				case "EventDataAttribute" when attrType.Namespace == "System.Diagnostics.Tracing":
-					MarkMethodsIf (type.Methods, IsPublicInstancePropertyMethod);
+					MarkMethodsIf (type.Methods, MethodDefinitionExtensions.IsPublicInstancePropertyMethod);
 					break;
 				case "TypeDescriptionProviderAttribute" when attrType.Namespace == "System.ComponentModel":
 					MarkTypeConverterLikeDependency (attribute, l => l.IsDefaultConstructor ());
@@ -1368,7 +1357,7 @@ namespace Mono.Linker.Steps {
 					while (type != null) {
 						MarkMethods (type);
 						MarkFields (type, includeStatic: true);
-						type = type.BaseType != null ? ResolveTypeDefinition (type.BaseType) : null;
+						type = type.BaseType?.Resolve ();
 					}
 					return;
 				}
@@ -1393,7 +1382,7 @@ namespace Mono.Linker.Steps {
 
 				MarkType (proxyTypeReference);
 
-				TypeDefinition proxyType = ResolveTypeDefinition (proxyTypeReference);
+				TypeDefinition proxyType = proxyTypeReference.Resolve ();
 				if (proxyType != null) {
 					MarkMethods (proxyType);
 					MarkFields (proxyType, includeStatic: true);
@@ -1632,16 +1621,6 @@ namespace Mono.Linker.Steps {
 			return false;
 		}
 
-		static bool IsSerializable (TypeDefinition td)
-		{
-			return (td.Attributes & TypeAttributes.Serializable) != 0;
-		}
-
-		static bool IsMulticastDelegate (TypeDefinition td)
-		{
-			return td.BaseType != null && td.BaseType.FullName == "System.MulticastDelegate";
-		}
-
 		protected virtual bool AlwaysMarkTypeAsInstantiated (TypeDefinition td)
 		{
 			switch (td.Name) {
@@ -1669,15 +1648,6 @@ namespace Mono.Linker.Steps {
 		protected virtual void MarkMulticastDelegate (TypeDefinition type)
 		{
 			MarkMethodCollection (type.Methods);
-		}
-
-		protected static TypeDefinition ResolveTypeDefinition (TypeReference type)
-		{
-			TypeDefinition td = type as TypeDefinition;
-			if (td == null)
-				td = type.Resolve ();
-
-			return td;
 		}
 
 		TypeDefinition ResolveFullyQualifiedTypeName (string name)
@@ -1768,7 +1738,7 @@ namespace Mono.Linker.Steps {
 				if (!parameter.HasDefaultConstructorConstraint)
 					continue;
 
-				var argument_definition = ResolveTypeDefinition (argument);
+				var argument_definition = argument.Resolve ();
 				MarkDefaultConstructor (argument_definition);
 			}
 		}
@@ -1777,11 +1747,10 @@ namespace Mono.Linker.Steps {
 		{
 			var method = instance as GenericInstanceMethod;
 			if (method != null)
-				return ResolveMethodDefinition (method.ElementMethod);
+				return method.ElementMethod.Resolve ();
 
-			var type = instance as GenericInstanceType;
-			if (type != null)
-				return ResolveTypeDefinition (type.ElementType);
+			if (instance is GenericInstanceType type)
+				return type.ElementType.Resolve ();
 
 			return null;
 		}
@@ -1916,7 +1885,7 @@ namespace Mono.Linker.Steps {
 //			if (IgnoreScope (reference.DeclaringType.Scope))
 //				return;
 
-			MethodDefinition method = ResolveMethodDefinition (reference);
+			MethodDefinition method = reference.Resolve ();
 
 			try {
 				if (method == null) {
@@ -1956,14 +1925,6 @@ namespace Mono.Linker.Steps {
 			return method;
 		}
 
-		static MethodDefinition ResolveMethodDefinition (MethodReference method)
-		{
-			if (method is MethodDefinition md)
-				return md;
-
-			return method.Resolve ();
-		}
-
 		protected virtual void ProcessMethod (MethodDefinition method)
 		{
 			if (CheckProcessed (method))
@@ -1982,10 +1943,10 @@ namespace Mono.Linker.Steps {
 			if (method.IsConstructor) {
 				if (!Annotations.ProcessSatelliteAssemblies && KnownMembers.IsSatelliteAssemblyMarker (method))
 					Annotations.ProcessSatelliteAssemblies = true;
-			} else if (IsPropertyMethod (method))
-				MarkProperty (GetProperty (method));
-			else if (IsEventMethod (method))
-				MarkEvent (GetEvent (method));
+			} else if (method.IsPropertyMethod ())
+				MarkProperty (method.GetProperty ());
+			else if (method.IsEventMethod ())
+				MarkEvent (method.GetEvent ());
 
 			if (method.HasParameters) {
 				foreach (ParameterDefinition pd in method.Parameters) {
@@ -2112,7 +2073,7 @@ namespace Mono.Linker.Steps {
 				if (!method.IsInstanceConstructor ())
 					return;
 
-				var baseType = ResolveTypeDefinition (method.DeclaringType.BaseType);
+				var baseType = method.DeclaringType.BaseType.Resolve ();
 				if (!MarkDefaultConstructor (baseType))
 					throw new NotSupportedException ($"Cannot stub constructor on '{method.DeclaringType}' when base type does not have default constructor");
 
@@ -2190,7 +2151,8 @@ namespace Mono.Linker.Steps {
 
 		void ProcessInteropMethod(MethodDefinition method)
 		{
-			TypeDefinition returnTypeDefinition = ResolveTypeDefinition (method.ReturnType);
+			TypeDefinition returnTypeDefinition = method.ReturnType.Resolve ();
+
 			const bool includeStaticFields = false;
 			if (returnTypeDefinition != null && !returnTypeDefinition.IsImport) {
 				MarkDefaultConstructor (returnTypeDefinition);
@@ -2206,7 +2168,7 @@ namespace Mono.Linker.Steps {
 				if (paramTypeReference is TypeSpecification) {
 					paramTypeReference = (paramTypeReference as TypeSpecification).ElementType;
 				}
-				TypeDefinition paramTypeDefinition = ResolveTypeDefinition (paramTypeReference);
+				TypeDefinition paramTypeDefinition = paramTypeReference.Resolve ();
 				if (paramTypeDefinition != null && !paramTypeDefinition.IsImport) {
 					MarkFields (paramTypeDefinition, includeStaticFields);
 					if (pd.ParameterType.IsByReference) {
@@ -2239,44 +2201,6 @@ namespace Mono.Linker.Steps {
 			default:
 				return false;
 			}
-		}
-
-		static internal bool IsPropertyMethod (MethodDefinition md)
-		{
-			return (md.SemanticsAttributes & MethodSemanticsAttributes.Getter) != 0 ||
-				(md.SemanticsAttributes & MethodSemanticsAttributes.Setter) != 0;
-		}
-
-		static internal bool IsPublicInstancePropertyMethod (MethodDefinition md)
-		{
-			return md.IsPublic && !md.IsStatic && IsPropertyMethod (md);
-		}
-
-		static bool IsEventMethod (MethodDefinition md)
-		{
-			return (md.SemanticsAttributes & MethodSemanticsAttributes.AddOn) != 0 ||
-				(md.SemanticsAttributes & MethodSemanticsAttributes.Fire) != 0 ||
-				(md.SemanticsAttributes & MethodSemanticsAttributes.RemoveOn) != 0;
-		}
-
-		static internal PropertyDefinition GetProperty (MethodDefinition md)
-		{
-			TypeDefinition declaringType = md.DeclaringType;
-			foreach (PropertyDefinition prop in declaringType.Properties)
-				if (prop.GetMethod == md || prop.SetMethod == md)
-					return prop;
-
-			return null;
-		}
-
-		static EventDefinition GetEvent (MethodDefinition md)
-		{
-			TypeDefinition declaringType = md.DeclaringType;
-			foreach (EventDefinition evt in declaringType.Events)
-				if (evt.AddMethod == md || evt.InvokeMethod == md || evt.RemoveMethod == md)
-					return evt;
-
-			return null;
 		}
 
 		protected void MarkProperty (PropertyDefinition prop)
