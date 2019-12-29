@@ -2598,6 +2598,19 @@ void PutThumb2Mov32(UINT16 * p, UINT32 imm32)
 }
 
 //*****************************************************************************
+//  Deposit the 32-bit immediate into mov sequence
+//*****************************************************************************
+void PutArmMov(UINT16 * p, UINT32 imm32)
+{
+    printf("%s:%d p[0] = 0x%x \n", __func__, __LINE__, p[0]);
+    printf("%s:%d p[1] = 0x%x \n", __func__, __LINE__, p[1]);
+    printf("%s:%d p[2] = 0x%x \n", __func__, __LINE__, p[2]);
+    printf("%s:%d p[3] = 0x%x \n", __func__, __LINE__, p[3]);
+    p[0] = (UINT16)imm32;
+    p[1] = (UINT16)(imm32 >> 16);
+}
+
+//*****************************************************************************
 //  Extract the 24-bit rel offset from bl instruction
 //*****************************************************************************
 INT32 GetThumb2BlRel24(UINT16 * p)

@@ -420,7 +420,7 @@ void UpdateGCWriteBarriers(bool postGrow = false)
     }
 #define GWB_PATCH_OFFSET(_global)                                       \
     if (pDesc->m_dw_##_global##_offset != 0xffff)                       \
-        PutThumb2Mov32((UINT16*)(to + pDesc->m_dw_##_global##_offset - 1), (UINT32)(dac_cast<TADDR>(_global)));
+        PutArmMov((UINT16*)(to + pDesc->m_dw_##_global##_offset - 1), (UINT32)(dac_cast<TADDR>(_global)));
 
     // Iterate through the write barrier patch table created in the .clrwb section
     // (see write barrier asm code)
