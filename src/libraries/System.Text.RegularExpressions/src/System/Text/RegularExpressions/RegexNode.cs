@@ -190,7 +190,7 @@ namespace System.Text.RegularExpressions
 
                 case Loop:
                 case Lazyloop:
-                    n = ReduceRep();
+                    n = ReduceLoops();
                     break;
 
                 case Greedy:
@@ -275,9 +275,12 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Nested repeaters just get multiplied with each other if they're not too lumpy
+        /// Nested repeaters just get multiplied with each other if they're not too lumpy.
+        /// Other optimizations may have also resulted in {Lazy}loops directly containing
+        /// sets, ones, and notones, in which case they can be transformed into the corresponding
+        /// individual looping constructs.
         /// </summary>
-        private RegexNode ReduceRep()
+        private RegexNode ReduceLoops()
         {
             RegexNode u = this;
             int type = Type();
@@ -345,7 +348,30 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            return min == int.MaxValue ? new RegexNode(Nothing, Options) : u;
+            if (min == int.MaxValue)
+            {
+                return new RegexNode(Nothing, Options);
+            }
+
+            // If the Loop or Lazyloop now only has one child node and its a Set, One, or Notone,
+            // reduce to just Setloop/lazy, Oneloop/lazy, or Notoneloop/lazy.  The parser will
+            // generally have only produced the latter, but other reductions could have exposed
+            // this.
+            if (u.ChildCount() == 1)
+            {
+                RegexNode child = u.Child(0);
+                switch (child.NType)
+                {
+                    case One:
+                    case Notone:
+                    case Set:
+                        child.MakeRep(u.NType == Lazyloop ? Onelazy : Oneloop, u.M, u.N);
+                        u = child;
+                        break;
+                }
+            }
+
+            return u;
         }
 
         /// <summary>
