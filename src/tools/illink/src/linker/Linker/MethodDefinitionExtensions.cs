@@ -28,6 +28,44 @@ namespace Mono.Linker
 			return false;
 		}
 
+		public static bool IsPropertyMethod (this MethodDefinition md)
+		{
+			return (md.SemanticsAttributes & MethodSemanticsAttributes.Getter) != 0 ||
+				(md.SemanticsAttributes & MethodSemanticsAttributes.Setter) != 0;
+		}
+
+		public static bool IsPublicInstancePropertyMethod (this MethodDefinition md)
+		{
+			return md.IsPublic && !md.IsStatic && IsPropertyMethod (md);
+		}
+
+		public static bool IsEventMethod (this MethodDefinition md)
+		{
+			return (md.SemanticsAttributes & MethodSemanticsAttributes.AddOn) != 0 ||
+				(md.SemanticsAttributes & MethodSemanticsAttributes.Fire) != 0 ||
+				(md.SemanticsAttributes & MethodSemanticsAttributes.RemoveOn) != 0;
+		}
+
+		public static PropertyDefinition GetProperty (this MethodDefinition md)
+		{
+			TypeDefinition declaringType = md.DeclaringType;
+			foreach (PropertyDefinition prop in declaringType.Properties)
+				if (prop.GetMethod == md || prop.SetMethod == md)
+					return prop;
+
+			return null;
+		}
+
+		public static EventDefinition GetEvent (this MethodDefinition md)
+		{
+			TypeDefinition declaringType = md.DeclaringType;
+			foreach (EventDefinition evt in declaringType.Events)
+				if (evt.AddMethod == md || evt.InvokeMethod == md || evt.RemoveMethod == md)
+					return evt;
+
+			return null;
+		}
+
 		public static bool IsStaticConstructor (this MethodDefinition method)
 		{
 			return method.IsConstructor && method.IsStatic;
