@@ -916,14 +916,7 @@ int LinearScan::BuildRMWUsesSIMDUnary(GenTreeSIMD* node)
         return BuildOperandUses(op1);
     }
 
-    regMaskTP op1Candidates = RBM_NONE;
-#ifdef _TARGET_X86_
-    if (varTypeIsByte(node->TypeGet()))
-    {
-        op1Candidates = allByteRegs();
-    }
-#endif
-    tgtPrefUse = BuildUse(op1, op1Candidates);
+    tgtPrefUse = BuildUse(op1);
     return 1;
 }
 
@@ -931,25 +924,8 @@ int LinearScan::BuildRMWUsesSIMDBinary(GenTreeSIMD* node)
 {
     assert(node->IsBinary());
 
-    GenTree*  op1           = node->GetOp(0);
-    GenTree*  op2           = node->GetOp(1);
-    regMaskTP op1Candidates = RBM_NONE;
-    regMaskTP op2Candidates = RBM_NONE;
-
-#ifdef _TARGET_X86_
-    if (varTypeIsByte(node->TypeGet()))
-    {
-        if (!op1->isContained())
-        {
-            op1Candidates = allByteRegs();
-        }
-
-        if (node->OperIsCommutative() && !op2->isContained())
-        {
-            op2Candidates = allByteRegs();
-        }
-    }
-#endif // _TARGET_X86_
+    GenTree* op1 = node->GetOp(0);
+    GenTree* op2 = node->GetOp(1);
 
     // Determine which operand, if any, should be delayRegFree. Normally, this would be op2,
     // but if we have a commutative operator and op1 is a contained memory op, it would be op1.
@@ -988,31 +964,31 @@ int LinearScan::BuildRMWUsesSIMDBinary(GenTreeSIMD* node)
     // Build first use
     if (!op1->isContained())
     {
-        tgtPrefUse = BuildUse(op1, op1Candidates);
+        tgtPrefUse = BuildUse(op1);
         srcCount++;
     }
     else if (delayUseOperand == op1)
     {
-        srcCount += BuildDelayFreeUses(op1, op1Candidates);
+        srcCount += BuildDelayFreeUses(op1);
     }
     else
     {
-        srcCount += BuildOperandUses(op1, op1Candidates);
+        srcCount += BuildOperandUses(op1);
     }
 
     // Build second use
     if (node->isCommutativeSIMDIntrinsic() && !op2->isContained())
     {
-        tgtPrefUse2 = BuildUse(op2, op2Candidates);
+        tgtPrefUse2 = BuildUse(op2);
         srcCount++;
     }
     else if (delayUseOperand == op2)
     {
-        srcCount += BuildDelayFreeUses(op2, op2Candidates);
+        srcCount += BuildDelayFreeUses(op2);
     }
     else
     {
-        srcCount += BuildOperandUses(op2, op2Candidates);
+        srcCount += BuildOperandUses(op2);
     }
 
     return srcCount;
