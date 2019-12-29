@@ -377,10 +377,12 @@ namespace R2RDump
                         _writer.WriteLine($"[ID 0x{assemblyRefIndex:X2}]: {assemblyRefName}");
                     }
 
-                    _writer.WriteLine($"Manifest metadata AssemblyRef's ({_r2r.ManifestReferenceAssemblies.Count} entries):");
-                    for (int manifestAsmIndex = 0; manifestAsmIndex < _r2r.ManifestReferenceAssemblies.Count; manifestAsmIndex++)
+                    _writer.WriteLine($"Manifest metadata AssemblyRef's ({_r2r.ManifestReferenceAssemblies.Count()} entries):");
+                    int manifestAsmIndex = 0;
+                    foreach (string manifestReferenceAssembly in _r2r.ManifestReferenceAssemblies)
                     {
-                        _writer.WriteLine($"[ID 0x{manifestAsmIndex + assemblyRefCount + 2:X2}]: {_r2r.ManifestReferenceAssemblies[manifestAsmIndex]}");
+                        _writer.WriteLine($"[ID 0x{manifestAsmIndex + assemblyRefCount + 2:X2}]: {manifestReferenceAssembly}");
+                        manifestAsmIndex++;
                     }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_ATTRIBUTEPRESENCE:
