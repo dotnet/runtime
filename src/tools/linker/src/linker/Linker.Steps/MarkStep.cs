@@ -87,10 +87,21 @@ namespace Mono.Linker.Steps {
 		{
 			Tracer.Push (assembly);
 			try {
-				MarkAssembly (assembly);
+				switch (_context.Annotations.GetAction (assembly)) {
+				case AssemblyAction.Copy:
+				case AssemblyAction.Save:
+					MarkEntireAssembly (assembly);
+					break;
+				case AssemblyAction.Link:
+				case AssemblyAction.AddBypassNGen:
+				case AssemblyAction.AddBypassNGenUsed:
+					MarkAssembly (assembly);
 
-				foreach (TypeDefinition type in assembly.MainModule.Types)
-					InitializeType (type);
+					foreach (TypeDefinition type in assembly.MainModule.Types)
+						InitializeType (type);
+
+					break;
+				}
 			} finally {
 				Tracer.Pop ();
 			}
@@ -150,6 +161,52 @@ namespace Mono.Linker.Steps {
 			foreach (MethodDefinition method in methods)
 				if (Annotations.IsMarked (method))
 					EnqueueMethod (method);
+		}
+
+		void MarkEntireType (TypeDefinition type)
+		{
+			if (type.HasNestedTypes) {
+				foreach (TypeDefinition nested in type.NestedTypes)
+					MarkEntireType (nested);
+			}
+
+			Annotations.Mark (type);
+			MarkCustomAttributes (type);
+			MarkTypeSpecialCustomAttributes (type);
+
+			if (type.HasInterfaces) {
+				foreach (InterfaceImplementation iface in type.Interfaces) {
+					MarkInterfaceImplementation (iface);
+				}
+			}
+
+			MarkGenericParameterProvider (type);
+
+			if (type.HasFields) {
+				foreach (FieldDefinition field in type.Fields) {
+					MarkField (field);
+				}
+			}
+
+			if (type.HasMethods) {
+				foreach (MethodDefinition method in type.Methods) {
+					Annotations.Mark (method);
+					Annotations.SetAction (method, MethodAction.ForceParse);
+					EnqueueMethod (method);
+				}
+			}
+
+			if (type.HasProperties) {
+				foreach (var property in type.Properties) {
+					MarkProperty (property);
+				}
+			}
+
+			if (type.HasEvents) {
+				foreach (var ev in type.Events) {
+					MarkEvent (ev);
+				}
+			}
 		}
 
 		void Process ()
@@ -354,6 +411,8 @@ namespace Mono.Linker.Steps {
 			if (!provider.HasCustomAttributes)
 				return;
 
+			bool markOnUse = _context.KeepUsedAttributeTypesOnly && Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (provider)) == AssemblyAction.Link;
+
 			Tracer.Push (provider);
 			try {
 				foreach (CustomAttribute ca in provider.CustomAttributes) {
@@ -365,23 +424,42 @@ namespace Mono.Linker.Steps {
 							continue;
 						}
 
-						if (Annotations.GetAction (mr.DeclaringType.Module.Assembly) == AssemblyAction.Link)
+						if (Annotations.GetAction (mr.Module.Assembly) == AssemblyAction.Link)
 							continue;
 					}
 
-					if (_context.KeepUsedAttributeTypesOnly) {
+					if (markOnUse) {
 						_lateMarkedAttributes.Enqueue (new AttributeProviderPair (ca, provider));
 						continue;
 					}
-
-					if (!ShouldMarkCustomAttribute (ca, provider))
-						continue;
 
 					MarkCustomAttribute (ca);
 					MarkSpecialCustomAttributeDependencies (ca);
 				}
 			} finally {
 				Tracer.Pop ();
+			}
+		}
+
+		static AssemblyDefinition GetAssemblyFromCustomAttributeProvider (ICustomAttributeProvider provider)
+		{
+			switch (provider) {
+			case MemberReference mr:
+				return mr.Module.Assembly;
+			case AssemblyDefinition ad:
+				return ad;
+			case ModuleDefinition md:
+				return md.Assembly;
+			case InterfaceImplementation ii:
+				return ii.InterfaceType.Module.Assembly;
+			case GenericParameterConstraint gpc:
+				return gpc.ConstraintType.Module.Assembly;
+			case ParameterDefinition pd:
+				return pd.ParameterType.Module.Assembly;
+			case MethodReturnType mrt:
+				return mrt.ReturnType.Module.Assembly;
+			default:
+				throw new NotImplementedException (provider.GetType ().ToString ());
 			}
 		}
 
@@ -815,6 +893,19 @@ namespace Mono.Linker.Steps {
 
 			foreach (ModuleDefinition module in assembly.Modules)
 				LazyMarkCustomAttributes (module, assembly);
+		}
+
+		void MarkEntireAssembly (AssemblyDefinition assembly)
+		{
+			MarkCustomAttributes (assembly);
+			MarkCustomAttributes (assembly.MainModule);
+
+			if (assembly.MainModule.HasExportedTypes) {
+				// TODO: This needs more work accross all steps
+			}
+
+			foreach (TypeDefinition type in assembly.MainModule.Types)
+				MarkEntireType (type);
 		}
 
 		void ProcessModule (AssemblyDefinition assembly)
