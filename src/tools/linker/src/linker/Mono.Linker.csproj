@@ -6,6 +6,7 @@
     <Copyright>(C) 2006, Jb Evain</Copyright>
     <Version>0.2.0.0</Version>
     <Configurations>Debug;Release;illink_Debug;illink_Release</Configurations>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(Configuration.StartsWith('illink'))">

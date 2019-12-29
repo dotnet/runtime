@@ -48,16 +48,6 @@ namespace Mono.Linker.Steps {
 		protected List<TypeDefinition> _typesWithInterfaces;
 		protected List<MethodBody> _unreachableBodies;
 
-		public AnnotationStore Annotations {
-			get { return _context.Annotations; }
-		}
-
-		public Tracer Tracer {
-			get { return _context.Tracer; }
-		}
-
-		private MarkingHelpers MarkingHelpers => _context.MarkingHelpers;
-
 		public MarkStep ()
 		{
 			_methods = new Queue<MethodDefinition> ();
@@ -67,6 +57,9 @@ namespace Mono.Linker.Steps {
 			_typesWithInterfaces = new List<TypeDefinition> ();
 			_unreachableBodies = new List<MethodBody> ();
 		}
+
+		public AnnotationStore Annotations => _context.Annotations;
+		public Tracer Tracer => _context.Tracer;
 
 		public virtual void Process (LinkContext context)
 		{
@@ -238,7 +231,7 @@ namespace Mono.Linker.Steps {
 						continue;
 					Tracer.Push (type);
 					try {
-						MarkingHelpers.MarkExportedType (exported, assembly.MainModule);
+						_context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule);
 					} finally {
 						Tracer.Pop ();
 					}
@@ -399,11 +392,8 @@ namespace Mono.Linker.Steps {
 			if (!spec.HasMarshalInfo)
 				return;
 
-			var marshaler = spec.MarshalInfo as CustomMarshalInfo;
-			if (marshaler == null)
-				return;
-
-			MarkType (marshaler.ManagedType);
+			if (spec.MarshalInfo is CustomMarshalInfo marshaler)
+				MarkType (marshaler.ManagedType);
 		}
 
 		void MarkCustomAttributes (ICustomAttributeProvider provider)
@@ -443,24 +433,16 @@ namespace Mono.Linker.Steps {
 
 		static AssemblyDefinition GetAssemblyFromCustomAttributeProvider (ICustomAttributeProvider provider)
 		{
-			switch (provider) {
-			case MemberReference mr:
-				return mr.Module.Assembly;
-			case AssemblyDefinition ad:
-				return ad;
-			case ModuleDefinition md:
-				return md.Assembly;
-			case InterfaceImplementation ii:
-				return ii.InterfaceType.Module.Assembly;
-			case GenericParameterConstraint gpc:
-				return gpc.ConstraintType.Module.Assembly;
-			case ParameterDefinition pd:
-				return pd.ParameterType.Module.Assembly;
-			case MethodReturnType mrt:
-				return mrt.ReturnType.Module.Assembly;
-			default:
-				throw new NotImplementedException (provider.GetType ().ToString ());
-			}
+			return provider switch {
+				MemberReference mr => mr.Module.Assembly,
+				AssemblyDefinition ad => ad,
+				ModuleDefinition md => md.Assembly,
+				InterfaceImplementation ii => ii.InterfaceType.Module.Assembly,
+				GenericParameterConstraint gpc => gpc.ConstraintType.Module.Assembly,
+				ParameterDefinition pd => pd.ParameterType.Module.Assembly,
+				MethodReturnType mrt => mrt.ReturnType.Module.Assembly,
+				_ => throw new NotImplementedException (provider.GetType ().ToString ()),
+			};
 		}
 
 		protected virtual bool IsUserDependencyMarker (TypeReference type)
@@ -498,7 +480,7 @@ namespace Mono.Linker.Steps {
 				assembly = null;
 			}
 
-			TypeDefinition td = null;
+			TypeDefinition td;
 			if (args.Count >= 2 && args [1].Value is string typeName) {
 				td = FindType (assembly ?? context.Module.Assembly, typeName);
 
@@ -545,10 +527,9 @@ namespace Mono.Linker.Steps {
 		bool MarkDependencyMethod (TypeDefinition type, string name, string[] signature)
 		{
 			bool marked = false;
-			int arity;
 
 			int arity_marker = name.IndexOf ('`');
-			if (arity_marker < 1 || !int.TryParse (name.Substring (arity_marker + 1), out arity)) {
+			if (arity_marker < 1 || !int.TryParse (name.Substring (arity_marker + 1), out int arity)) {
 				arity = 0;
 			} else {
 				name = name.Substring (0, arity_marker);
@@ -1047,11 +1028,8 @@ namespace Mono.Linker.Steps {
 
 		void MarkScope (IMetadataScope scope)
 		{
-			var provider = scope as IMetadataTokenProvider;
-			if (provider == null)
-				return;
-
-			Annotations.Mark (provider);
+			if (scope is IMetadataTokenProvider provider)
+				Annotations.Mark (provider);
 		}
 
 		protected virtual void MarkSerializable (TypeDefinition type)
@@ -1281,11 +1259,8 @@ namespace Mono.Linker.Steps {
 
 		void MarkXmlSchemaProvider (TypeDefinition type, CustomAttribute attribute)
 		{
-			string method_name;
-			if (!TryGetStringArgument (attribute, out method_name))
-				return;
-
-			MarkNamedMethod (type, method_name);
+			if (TryGetStringArgument (attribute, out string name))
+				MarkNamedMethod (type, name);
 		}
 
 		protected virtual void MarkTypeConverterLikeDependency (CustomAttribute attribute, Func<MethodDefinition, bool> predicate)
@@ -1370,8 +1345,7 @@ namespace Mono.Linker.Steps {
 				object constructorArgument = attribute.ConstructorArguments[0].Value;
 				TypeReference proxyTypeReference = constructorArgument as TypeReference;
 				if (proxyTypeReference == null) {
-					string proxyTypeReferenceString = constructorArgument as string;
-					if (proxyTypeReferenceString != null) {
+					if (constructorArgument is string proxyTypeReferenceString) {
 						proxyTypeReference = type.Module.GetType (proxyTypeReferenceString, runtimeName: true);
 					}
 				}
@@ -1421,8 +1395,7 @@ namespace Mono.Linker.Steps {
 
 		void MarkSoapHeader (MethodDefinition method, CustomAttribute attribute)
 		{
-			string member_name;
-			if (!TryGetStringArgument (attribute, out member_name))
+			if (!TryGetStringArgument (attribute, out string member_name))
 				return;
 
 			MarkNamedField (method.DeclaringType, member_name);
@@ -1672,23 +1645,19 @@ namespace Mono.Linker.Steps {
 		protected TypeReference GetOriginalType (TypeReference type)
 		{
 			while (type is TypeSpecification) {
-				GenericInstanceType git = type as GenericInstanceType;
-				if (git != null)
+				if (type is GenericInstanceType git)
 					MarkGenericArguments (git);
 
-				var mod = type as IModifierType;
-				if (mod != null)
+				if (type is IModifierType mod)
 					MarkModifierType (mod);
 
-				var fnptr = type as FunctionPointerType;
-				if (fnptr != null) {
+				if (type is FunctionPointerType fnptr) {
 					MarkParameters (fnptr);
 					MarkType (fnptr.ReturnType);
 					break; // FunctionPointerType is the original type
 				}
-				else {
-					type = ((TypeSpecification) type).ElementType;
-				}
+
+				type = ((TypeSpecification)type).ElementType;
 			}
 
 			return type;
@@ -1743,10 +1712,9 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		IGenericParameterProvider GetGenericProviderFromInstance (IGenericInstance instance)
+		static IGenericParameterProvider GetGenericProviderFromInstance (IGenericInstance instance)
 		{
-			var method = instance as GenericInstanceMethod;
-			if (method != null)
+			if (instance is GenericInstanceMethod method)
 				return method.ElementMethod.Resolve ();
 
 			if (instance is GenericInstanceType type)
@@ -1915,8 +1883,7 @@ namespace Mono.Linker.Steps {
 		protected MethodReference GetOriginalMethod (MethodReference method)
 		{
 			while (method is MethodSpecification) {
-				GenericInstanceMethod gim = method as GenericInstanceMethod;
-				if (gim != null)
+				if (method is GenericInstanceMethod gim)
 					MarkGenericArguments (gim);
 
 				method = ((MethodSpecification) method).ElementMethod;
@@ -2383,8 +2350,7 @@ namespace Mono.Linker.Steps {
 				if (ProcessReflectionDependency (body, instruction))
 					continue;
 
-				var methodCalled = instruction.Operand as MethodReference;
-				if (methodCalled == null)
+				if (!(instruction.Operand is MethodReference methodCalled))
 					continue;
 
 				var methodCalledDefinition = methodCalled.Resolve ();
@@ -3044,8 +3010,7 @@ namespace Mono.Linker.Steps {
 				// typeof (Foo).ReflectionCall ()
 				//
 				case Code.Call:
-					var mr = instruction.Operand as MethodReference;
-					if (mr == null || mr.Name != "GetTypeFromHandle")
+					if (!(instruction.Operand is MethodReference mr) || mr.Name != "GetTypeFromHandle")
 						return null;
 
 					var ldtoken = instructions [startIndex - 1];
