@@ -60,21 +60,26 @@ namespace Mono.Linker
 			return true;
 		}
 
+		static readonly string[] corlibNames = new [] {
+			"mscorlib",
+			"System.Runtime",
+			"System.Private.CoreLib",
+			"netstandard"
+		};
+
 		public static TypeDefinition FindPredefinedType (string ns, string name, LinkContext context)
 		{
 			var cache = context.Resolver.AssemblyCache;
 
-			AssemblyDefinition corlib;
-			TypeDefinition type = null;
-			if (cache.TryGetValue ("mscorlib", out corlib)) {
-				type = corlib.MainModule.GetType (ns, name);
+			foreach (var corlibName in corlibNames) {
+				if (!cache.TryGetValue (corlibName, out AssemblyDefinition corlib))
+					continue;
+
+				TypeDefinition type = corlib.MainModule.GetType (ns, name);
 				// The assembly could be a facade with type forwarders, in which case we don't find the type in this assembly.
 				if (type != null)
 					return type;
 			}
-
-			if (cache.TryGetValue ("System.Private.CoreLib", out corlib))
-				return corlib.MainModule.GetType (ns, name);
 
 			return null;
 		}
