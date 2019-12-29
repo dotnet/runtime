@@ -848,7 +848,7 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
     // Checks apply recursively for arrays of arrays etc.
     if (elementType.IsArray())
     {
-        CheckElementType(elementType.GetElementType());
+        CheckElementType(elementType.GetArrayElementTypeHandle());
         return;
     }
 

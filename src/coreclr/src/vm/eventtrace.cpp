@@ -1796,7 +1796,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         fSucceeded = FALSE;
         EX_TRY
         {
-            pVal->rgTypeParameters.Append((ULONGLONG) th.GetElementType().AsTAddr());
+            pVal->rgTypeParameters.Append((ULONGLONG) th.GetArrayElementTypeHandle().AsTAddr());
             fSucceeded = TRUE;
         }
         EX_CATCH

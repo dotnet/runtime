@@ -4976,7 +4976,7 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
     if (WinRTSupported() && thClass.IsArray() && !pMT->IsMultiDimArray())
     {
         // We treat arrays as if they implemented IIterable<T>, IVector<T>, and IVectorView<T> (WinRT only)
-        TypeHandle thGenArg = thClass.GetElementType();
+        TypeHandle thGenArg = thClass.GetArrayElementTypeHandle();
         Instantiation inst(&thGenArg, 1);
 
         BinderClassID id = (fIterateRedirectedInterfaces ? CLASS__IITERABLE : CLASS__IENUMERABLEGENERIC);

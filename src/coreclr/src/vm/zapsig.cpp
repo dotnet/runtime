@@ -49,6 +49,7 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
         if (!this->GetSignatureForTypeHandle(desc->GetTypeParam(), pSigBuilder))
             return FALSE;
 
+        //TODO: WIP remove. 
         if (elemType == ELEMENT_TYPE_ARRAY)
         {
             MethodTable *mt = desc->GetMethodTable();
@@ -417,7 +418,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
             if (sigType != handleType)
                 RETURN(FALSE);
 
-            RETURN (CompareSignatureToTypeHandle(pSig, pModule, handle.GetTypeParam(), pZapSigContext));
+            RETURN (CompareSignatureToTypeHandle(pSig, pModule, handle.GetElementType(), pZapSigContext));
         }
 
         case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
@@ -545,7 +546,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
             if (sigType != handleType)
                 RETURN(FALSE);
 
-            if (!CompareSignatureToTypeHandle(pSig, pModule, handle.GetTypeParam(), pZapSigContext))
+            if (!CompareSignatureToTypeHandle(pSig, pModule, handle.GetArrayElementTypeHandle(), pZapSigContext))
                 RETURN(FALSE);
             SigPointer sp(pSig);
             if (FAILED(sp.SkipExactlyOne()))

@@ -511,7 +511,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     {
         // first dump the array's element type
         TypeHandle arrayTypeHandle = stackTraceArrayObj->GetTypeHandle();
-        TypeHandle elementTypeHandle = arrayTypeHandle.GetElementType();
+        TypeHandle elementTypeHandle = arrayTypeHandle.GetArrayElementTypeHandle();
         elementTypeHandle.AsMethodTable()->EnumMemoryRegions(flags);
         elementTypeHandle.AsMethodTable()->GetClass()->EnumMemoryRegions(flags, elementTypeHandle.AsMethodTable());
 

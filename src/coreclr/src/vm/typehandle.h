@@ -292,7 +292,7 @@ public:
     // Get the parent, known to be decoded
     TypeHandle GetParent() const;
 
-    // Obtain element type for an array or pointer, returning NULL otherwise
+    // Obtain element type for a byref or pointer, returning NULL otherwise
     TypeHandle GetTypeParam() const;
 
     // Obtain instantiation from an instantiated type
@@ -417,7 +417,7 @@ public:
 #endif
 
     // Unlike AsMethodTable, GetMethodTable will get the method table
-    // of the type, regardless of whether it is an array etc. 
+    // of the type, regardless of whether it is a TypeDesc. 
     // Note, however this method table may be non-exact/shared for TypeDescs. 
     // for example all pointers and function pointers use ELEMENT_TYPE_U.
     // And some types (like ByRef or generic type parameters) have no 
@@ -429,12 +429,15 @@ public:
     // So for Foo[] instead of returning Array returns Foo.
     inline MethodTable* GetMethodTableOfElementType() const;
 
-    // Returns rank for the SZARRAY or ARRAY type
-    inline unsigned int GetRank() const;
-
     // As above but returns a TypeHandle (so it will return a non-null result
     // for generic type variables, for instance).
     inline TypeHandle GetElementType() const;
+
+    // Returns the type of the array element
+    inline TypeHandle GetArrayElementTypeHandle() const;
+
+    // Returns the rank for the SZARRAY or ARRAY type
+    inline unsigned int GetRank() const;
 
     // Return the canonical representative MT amongst the set of MT's that share
     // code with the MT for the given TypeHandle because of generics.

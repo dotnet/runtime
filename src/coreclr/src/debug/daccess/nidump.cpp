@@ -8638,7 +8638,6 @@ enum TypeDescType
 {
     TDT_IsTypeDesc,
     TDT_IsParamTypeDesc,
-    TDT_IsArrayTypeDesc,
     TDT_IsTypeVarTypeDesc,
     TDT_IsFnPtrTypeDesc
 };
@@ -8646,7 +8645,6 @@ const char * const g_typeDescTypeNames[] =
 {
     "TypeDesc",
     "ParamTypeDesc",
-    "ArrayTypeDesc",
     "TypeVarTypeDesc",
     "FnPtrTypeDesc"
 };
@@ -8654,15 +8652,12 @@ int g_typeDescSizes[] =
 {
     sizeof(TypeDesc),
     sizeof(ParamTypeDesc),
-    sizeof(ArrayTypeDesc),
     sizeof(TypeVarTypeDesc),
     -1//sizeof(FnPtrTypeDesc) -- variable size
 };
 TypeDescType getTypeDescType( PTR_TypeDesc td )
 {
     _ASSERTE(td != NULL);
-    if( td->IsArray() )
-        return TDT_IsArrayTypeDesc;
     if( td->HasTypeParam() )
         return TDT_IsParamTypeDesc;
     if( td->IsGenericVariable() )
@@ -8722,7 +8717,7 @@ void NativeImageDumper::DumpTypeDesc( PTR_TypeDesc td )
                               TypeDesc, TYPEDESCS );
     DisplayWriteFieldEnumerated( m_typeAndFlags, td->m_typeAndFlags, TypeDesc,
                                  s_TDFlags, W(", "), TYPEDESCS );
-    if( tdt == TDT_IsParamTypeDesc || tdt == TDT_IsArrayTypeDesc )
+    if( tdt == TDT_IsParamTypeDesc )
     {
         PTR_ParamTypeDesc ptd(td);
         DisplayStartVStructure( "ParamTypeDesc", TYPEDESCS );

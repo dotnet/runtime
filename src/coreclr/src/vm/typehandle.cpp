@@ -43,20 +43,15 @@ BOOL TypeHandle::Verify()
     if (!IsRestored_NoLogging())
         return TRUE;
 
-    if (!IsTypeDesc())
+    if (IsArray())
+    {
+        GetArrayElementTypeHandle().Verify();
+    }
+    else if (!IsTypeDesc())
     {
         _ASSERTE(AsMethodTable()->SanityCheck());   // Sane method table
+    }
 
-        // @TODO: See TypeHandle::IsArrayType() for an explanation
-        // of why this assert is commented out.
-        //
-        // _ASSERTE(!AsMethodTable()->IsArray());
-    }
-    else
-    {
-        if (IsArray())
-            GetElementType().Verify();
-    }
     return(TRUE);
 }
 
@@ -109,6 +104,7 @@ BOOL TypeHandle::IsGenericVariable() const {
     return(IsTypeDesc() && CorTypeInfo::IsGenericVariable_NoThrow(AsTypeDesc()->GetInternalCorElementType()));
 }
 
+//TODO: WIP check use
 BOOL TypeHandle::HasTypeParam() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -241,7 +237,7 @@ Instantiation TypeHandle::GetInstantiationOfParentClass(MethodTable *pWhichParen
     return GetMethodTable()->GetInstantiationOfParentClass(pWhichParent);
 }
 
-// Obtain element type from an array or pointer type
+// Obtain element type from a byref or pointer type
 TypeHandle TypeHandle::GetTypeParam() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -346,18 +342,17 @@ BOOL TypeHandle::IsSharedByGenericInstantiations() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (IsTypeDesc())
+    if (IsArray())
     {
-        // Arrays are the only typedesc in valid generic instantiations (see code:Generics::CheckInstantiation)
-
-        if (HasTypeParam())
-        {
-            return GetTypeParam().IsCanonicalSubtype();
-        }
-        return FALSE;
+        // TODO: WIP need this?
+        return GetArrayElementTypeHandle().IsCanonicalSubtype();
     }
-    else
+    else if (!IsTypeDesc())
+    {
         return AsMethodTable()->IsSharedByGenericInstantiations();
+    }
+
+    return FALSE;
 }
 
 BOOL TypeHandle::IsCanonicalSubtype() const
@@ -469,7 +464,7 @@ BOOL TypeHandle::IsBlittable() const
         // Single dimentional array's of blittable types are also blittable.
         if (GetRank() == 1)
         {
-            if (GetElementType().IsBlittable())
+            if (GetArrayElementTypeHandle().IsBlittable())
                 return TRUE;
         }
     }
@@ -950,22 +945,22 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
 
     // If both are arrays of reference types, return an array of the common
     // ancestor.
-    taElem = ta.GetElementType();
-    if (taElem.IsEquivalentTo(tb.GetElementType()))
+    taElem = ta.GetArrayElementTypeHandle();
+    if (taElem.IsEquivalentTo(tb.GetArrayElementTypeHandle()))
     {
         // The element types match/are equivalent, so we are good to go.
         tMergeElem = taElem;
     }
-    else if (taElem.IsArray() && tb.GetElementType().IsArray())
+    else if (taElem.IsArray() && tb.GetArrayElementTypeHandle().IsArray())
     {
         // Arrays - Find the common ancestor of the element types.
-        tMergeElem = MergeArrayTypeHandlesToCommonParent(taElem, tb.GetElementType());
+        tMergeElem = MergeArrayTypeHandlesToCommonParent(taElem, tb.GetArrayElementTypeHandle());
     }
     else if (CorTypeInfo::IsObjRef(taElem.GetSignatureCorElementType()) &&
-            CorTypeInfo::IsObjRef(tb.GetElementType().GetSignatureCorElementType()))
+            CorTypeInfo::IsObjRef(tb.GetArrayElementTypeHandle().GetSignatureCorElementType()))
     {
         // Find the common ancestor of the element types.
-        tMergeElem = MergeTypeHandlesToCommonParent(taElem, tb.GetElementType());
+        tMergeElem = MergeTypeHandlesToCommonParent(taElem, tb.GetArrayElementTypeHandle());
     }
     else
     {
@@ -1136,6 +1131,12 @@ TypeHandle::IsExternallyVisible() const
     }
     CONTRACTL_END
 
+    //TODO: WIP need this? move to MT?
+    if (IsArray())
+    {
+        return GetArrayElementTypeHandle().IsExternallyVisible();
+    }
+
     if (!IsTypeDesc())
     {
         return AsMethodTable()->IsExternallyVisible();
@@ -1151,7 +1152,7 @@ TypeHandle::IsExternallyVisible() const
         // Function pointer has to check its all argument types
         return AsFnPtrType()->IsExternallyVisible();
     }
-    // ARRAY, SZARRAY, PTR, BYREF
+    // PTR, BYREF
     _ASSERTE(HasTypeParam());
 
     TypeHandle paramType = AsTypeDesc()->GetTypeParam();
@@ -1553,6 +1554,7 @@ TypeKey TypeHandle::GetTypeKey() const
     {
         TypeDesc *pTD = AsTypeDesc();
         CorElementType etype = pTD->GetInternalCorElementType();
+        //TODO: WIP remove
         if (CorTypeInfo::IsArray_NoThrow(etype))
         {
             TypeKey tk(etype, pTD->GetTypeParam(), FALSE, pTD->GetMethodTable()->GetRank());

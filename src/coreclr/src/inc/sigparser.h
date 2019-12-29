@@ -906,6 +906,7 @@ public:
         return GetTypeInfo_NoThrow(type).isFloat;
     }
 
+    // TODO: WIP check use of this
     FORCEINLINE static BOOL IsModifier(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;

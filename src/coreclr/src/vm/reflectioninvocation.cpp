@@ -679,12 +679,6 @@ OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, PTRARRAYREF* 
     }
     CONTRACTL_END;
 
-    DWORD i;
-
-    // If we're trying to create an array of pointers or function pointers,
-    // check that the caller has skip verification permission.
-    CorElementType et = th.GetElementType().GetVerifierCorElementType();
-
     // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
     _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
              th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
@@ -697,7 +691,7 @@ OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, PTRARRAYREF* 
     INT32* indexes = (INT32*) _alloca((size_t)allocSize);
     ZeroMemory(indexes, allocSize);
 
-    for (i=0; i<(DWORD)argCnt; i++)
+    for (DWORD i=0; i<(DWORD)argCnt; i++)
     {
         if (!(*objs)->m_Array[i])
             COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));

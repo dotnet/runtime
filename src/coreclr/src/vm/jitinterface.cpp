@@ -4893,17 +4893,13 @@ CorInfoType CEEInfo::getChildType (
 
     _ASSERTE(!th.IsNull());
 
-    // BYREF, ARRAY types
+    // BYREF, pointer types
     if (th.IsTypeDesc())
     {
         retType = th.AsTypeDesc()->GetTypeParam();
     }
     else
     {
-        // <REVISIT_TODO> we really should not have this case.  arrays type handles
-        // used in the JIT interface should never be ordinary method tables,
-        // indeed array type handles should really never be ordinary MTs
-        // at all.  Perhaps we should assert !th.IsTypeDesc() && th.AsMethodTable().IsArray()? </REVISIT_TODO>
         MethodTable* pMT= th.AsMethodTable();
         if (pMT->IsArray())
             retType = pMT->GetArrayElementTypeHandle();
@@ -6155,7 +6151,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
 
     CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
 
-    TypeHandle thElemType = clsHnd.GetElementType();
+    TypeHandle thElemType = clsHnd.GetArrayElementTypeHandle();
     CorElementType elemType = thElemType.GetInternalCorElementType();
 
     // This is if we're asked for newarr !0 when verifying generic code
@@ -6273,7 +6269,7 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     else
     if (clsHnd.IsArray())
     {
-        if (clsHnd.GetElementType().GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
+        if (clsHnd.GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
         {
             // Casting to multidimensional array type requires restored pointer to EEClass to fetch rank
             *pfClassMustBeRestored = true;

@@ -152,7 +152,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
         case ELEMENT_TYPE_PTR:
         case ELEMENT_TYPE_BYREF:
         {
-            TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetTypeParam(), pTypeMap, method);
+            TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetArrayElementTypeHandle(), pTypeMap, method);
             NewHolder<RefTypeInfo> typeInfo = new RefTypeInfo(typeHandle, valTypeInfo);
 
             typeInfo->m_type_offset = valTypeInfo->m_type_offset;
@@ -174,7 +174,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
             TypeInfoBase* lengthTypeInfo = GetTypeInfoFromTypeHandle(
                 TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4)), pTypeMap, method);
 
-            TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetTypeParam(), pTypeMap, method);
+            TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetArrayElementTypeHandle(), pTypeMap, method);
             info->m_array_type = new ArrayTypeInfo(typeHandle, 1, valTypeInfo);
 
             info->members[0].m_member_name = new char[16];

@@ -897,6 +897,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         {
             DWORD rank;
             TypeHandle elemType;
+            //TODO: WIP remove
             if (ty.HasTypeParam())
             {
                 rank = ty.IsArray() ? ty.GetRank() : 0;

@@ -68,6 +68,7 @@ BOOL ArrayTypeDesc::Verify() {
 
 #endif // #ifndef DACCESS_COMPILE
 
+// TODO: WIP check use of this
 TypeHandle TypeDesc::GetBaseTypeParam()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -197,6 +198,7 @@ Assembly* TypeDesc::GetAssembly() {
     return pModule->GetAssembly();
 }
 
+//TODO: WIP check for a version that works with MT
 void TypeDesc::GetName(SString &ssBuf)
 {
     CONTRACTL
@@ -307,6 +309,7 @@ void TypeDesc::ConstructName(CorElementType kind,
     }
 }
 
+// TODO: WIP remove
 BOOL TypeDesc::IsArray()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -331,6 +334,7 @@ BOOL TypeDesc::IsNativeValueType()
     return (GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE);
 }
 
+// TODO: WIP  should return false for arrays
 BOOL TypeDesc::HasTypeParam()
 {
     WRAPPER_NO_CONTRACT;
@@ -550,7 +554,7 @@ BOOL TypeDesc::IsEquivalentTo(TypeHandle type COMMA_INDEBUG(TypeHandlePairList *
 
     if (HasTypeParam())
     {
-        // pointer, byref, array
+        // pointer, byref
 
         // Arrays must have the same rank.
         if (IsArray())

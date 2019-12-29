@@ -38,24 +38,22 @@ inline void TypeHandle::SetIsFullyLoaded()
         return AsMethodTable()->SetIsFullyLoaded();
 }
 
+//TODO: WIP check use. is it right to express in terms of below?
 inline MethodTable* TypeHandle::GetMethodTableOfElementType() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (IsTypeDesc())
-    {
-        TypeHandle elementType = AsTypeDesc()->GetTypeParam();
-        return elementType.GetMethodTableOfElementType();
-    }
-    else
-    {
-        return AsMethodTable();
-    }
+    return GetElementType().GetMethodTable();
 }
 
 inline TypeHandle TypeHandle::GetElementType() const
 {
     LIMITED_METHOD_CONTRACT;
+
+    if (IsArray())
+    {
+        return GetArrayElementTypeHandle();
+    }
 
     if (IsTypeDesc())
     {
@@ -68,6 +66,15 @@ inline TypeHandle TypeHandle::GetElementType() const
     {
         return *this;
     }
+}
+
+inline TypeHandle TypeHandle::GetArrayElementTypeHandle() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(IsArray());
+
+    return GetMethodTable()->GetArrayElementTypeHandle();
 }
 
 inline unsigned int TypeHandle::GetRank() const
@@ -223,7 +230,11 @@ inline void TypeHandle::ForEachComponentMethodTable(T &callback) const
     }
     CONTRACTL_END;
 
-    if (IsTypeDesc() && AsTypeDesc()->HasTypeParam())
+    if (IsArray())
+    {
+        GetArrayElementTypeHandle().ForEachComponentMethodTable(callback);
+    }
+    else if (IsTypeDesc() && AsTypeDesc()->HasTypeParam())
     {
         // If we have a type parameter, then we just need to invoke ourselves on that parameter
         AsTypeDesc()->GetTypeParam().ForEachComponentMethodTable(callback);

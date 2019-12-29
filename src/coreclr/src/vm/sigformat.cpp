@@ -504,7 +504,7 @@ void SigFormat::AddType(TypeHandle th)
     case ELEMENT_TYPE_SZARRAY:      // Single Dim, Zero
     case ELEMENT_TYPE_ARRAY:        // General Array
         {
-            AddType(th.GetElementType());
+            AddType(th.GetArrayElementTypeHandle());
 
             if (type == ELEMENT_TYPE_ARRAY)
             {

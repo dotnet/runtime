@@ -5611,8 +5611,7 @@ BOOL ClassLoader::CanAccessFamilyVerification(TypeHandle thCurrentClass,
     if (thInstanceClass.CanCastTo(TypeHandle(pAccessor)))
         return TRUE;
 
-    //ArrayTypeDescs are the only typedescs that have methods, and their methods don't have IL.  All other
-    //TypeDescs don't need to be here.  So only run this on MethodTables.
+    //TypeDescs don't have methods so only run this on MethodTables.
     if (!thInstanceClass.IsNull())
     {
         return CanAccessFamilyVerificationEnclosingHelper(pAccessor, thInstanceClass);

@@ -2924,7 +2924,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 fCalculatingFieldMetadata ? TRUE : FALSE);
             _ASSERTE(!arrayTypeHnd.IsNull());
 
-            TypeHandle thElement = arrayTypeHnd.GetElementType();
+            TypeHandle thElement = arrayTypeHnd.GetArrayElementTypeHandle();
 
 #ifdef FEATURE_COMINTEROP
             if (m_ms != MARSHAL_SCENARIO_WINRT)

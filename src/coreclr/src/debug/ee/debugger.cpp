@@ -12183,7 +12183,7 @@ void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
         _ASSERTE(th.IsArray());
         res->ArrayTypeData.arrayRank = th.GetRank();
         TypeHandleToBasicTypeInfo(pAppDomain,
-                                  th.GetElementType(),
+                                  th.GetArrayElementTypeHandle(),
                                   &(res->ArrayTypeData.arrayTypeArg));
         break;
 

@@ -188,6 +188,7 @@ public:
 
     PTR_MethodTable  GetMethodTable();               // only meaningful for ParamTypeDesc
     TypeHandle GetTypeParam();                       // only meaningful for ParamTypeDesc
+    //TODO: WIP check this
     Instantiation GetClassOrArrayInstantiation();    // only meaningful for ParamTypeDesc; see above
 
     TypeHandle GetBaseTypeParam();                   // only allowed for ParamTypeDesc, helper method used to avoid recursion
@@ -355,14 +356,6 @@ public:
     void* operator new(size_t size, void* spot) {   return (spot); }
 
 #endif
-
-    TypeHandle GetArrayElementTypeHandle() {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        _ASSERTE(GetMethodTable()->GetArrayElementTypeHandle() == GetTypeParam());
-        return GetTypeParam();
-    }
 
     unsigned GetRank() {
         WRAPPER_NO_CONTRACT;

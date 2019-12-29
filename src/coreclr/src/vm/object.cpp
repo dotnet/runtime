@@ -210,20 +210,16 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     MethodTable * pMTToCheck = pMT;
     if (pMTToCheck->IsArray())
     {
-        TypeHandle thElem = static_cast<const ArrayBase * const>(this)->GetArrayElementTypeHandle();
-
         // Ideally, we would just call thElem.GetLoaderModule() here. Unfortunately, the
         // current TypeDesc::GetLoaderModule() implementation depends on data structures
         // that might have been unloaded already. So we just simulate
         // TypeDesc::GetLoaderModule() for the limited array case that we care about. In
         // case we're dealing with an array of arrays of arrays etc. traverse until we
         // find the deepest element, and that's the type we'll check
-        while (thElem.HasTypeParam())
+        do
         {
-            thElem = thElem.GetTypeParam();
-        }
-
-        pMTToCheck = thElem.GetMethodTable();
+            pMTToCheck = pMTToCheck->GetArrayElementTypeHandle().GetMethodTable();
+        } while (pMTToCheck->IsArray());
     }
 
     Module * pLoaderModule = pMTToCheck->GetLoaderModule();

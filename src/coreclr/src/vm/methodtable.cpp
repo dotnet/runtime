@@ -1703,8 +1703,10 @@ BOOL MethodTable::ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pV
         PRECONDITION(toTypeHnd.IsArray());
     } CONTRACTL_END;
 
+    MethodTable* toArrayType = toTypeHnd.GetMethodTable();
+
     // GetRank touches EEClass. Try to avoid it for SZArrays.
-    if (toTypeHnd.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
+    if (toArrayType->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
     {
         if (this->IsMultiDimArray())
         {
@@ -1714,16 +1716,16 @@ BOOL MethodTable::ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pV
     }
     else
     {
-        if (this->GetRank() != toTypeHnd.GetRank())
+        if (this->GetRank() != toArrayType->GetRank())
         {
             CastCache::TryAddToCache(this, toTypeHnd, FALSE);
             return TypeHandle::CannotCast;
         }
     }
-    _ASSERTE(this->GetRank() == toTypeHnd.GetRank());
+    _ASSERTE(this->GetRank() == toArrayType->GetRank());
 
     TypeHandle elementTypeHandle = this->GetArrayElementTypeHandle();
-    TypeHandle toElementTypeHandle = toTypeHnd.GetElementType();
+    TypeHandle toElementTypeHandle = toArrayType->GetArrayElementTypeHandle();
 
     BOOL result = (elementTypeHandle == toElementTypeHandle) ||
         TypeDesc::CanCastParam(elementTypeHandle, toElementTypeHandle, pVisited);

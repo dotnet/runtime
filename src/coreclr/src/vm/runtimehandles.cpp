@@ -603,7 +603,7 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClas
     TypeHandle typeReturn;
 
     if (typeHandle.IsArray())
-        typeReturn = typeHandle.GetElementType();
+        typeReturn = typeHandle.GetArrayElementTypeHandle();
     else
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
 

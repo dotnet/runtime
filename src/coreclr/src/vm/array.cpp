@@ -278,9 +278,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     {
         numCtors = 1;
         TypeHandle ptr = elemTypeHnd;
-        while (ptr.IsTypeDesc() && ptr.AsTypeDesc()->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY) {
+        while (ptr.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY) {
             numCtors++;
-            ptr = ptr.AsTypeDesc()->GetTypeParam();
+            ptr = ptr.GetArrayElementTypeHandle();
         }
     }
 

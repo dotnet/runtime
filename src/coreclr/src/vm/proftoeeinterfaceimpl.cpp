@@ -388,6 +388,7 @@ MethodDesc *FunctionIdToMethodDesc(FunctionID functionID)
 // (See comments for ArrayKindFromTypeHandle below.)
 typedef enum
 {
+    // TODO: WIP simplify?
     ARRAY_KIND_TYPEDESC,        // Normal, garden-variety typedesc array
     ARRAY_KIND_METHODTABLE,  // Weirdo array with its own unshared methodtable (e.g., System.Object[])
     ARRAY_KIND_NOTARRAY,       // Not an array
@@ -1739,11 +1740,12 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
         }
 
         case ARRAY_KIND_TYPEDESC:
+        case ARRAY_KIND_METHODTABLE:
         {
             // Fill in the type if they want it
             if (pBaseElemType != NULL)
             {
-                *pBaseElemType = th.GetElementType().GetVerifierCorElementType();
+                *pBaseElemType = th.GetArrayElementTypeHandle().GetVerifierCorElementType();
             }
 
             // If this is an array of classes and they wish to have the base type
@@ -1753,39 +1755,13 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
             // Note that for generic code we always return uninstantiated ClassIDs and FunctionIDs
             if (pBaseClassId != NULL)
             {
-                *pBaseClassId = TypeHandleToClassID(th.GetElementType());
+                *pBaseClassId = TypeHandleToClassID(th.GetArrayElementTypeHandle());
             }
 
             // If they want the number of dimensions of the array
             if (pcRank != NULL)
             {
                 *pcRank = (ULONG) th.GetRank();
-            }
-
-            // S_OK indicates that this was indeed an array
-            hr = S_OK;
-            break;
-        }
-        case ARRAY_KIND_METHODTABLE:
-        {
-            MethodTable *pArrMT = th.GetMethodTable();
-
-            // Fill in the type if they want it
-            if (pBaseElemType != NULL)
-            {
-                *pBaseElemType = pArrMT->GetArrayElementType();
-            }
-
-            // If this is an array of classes and they wish to have the base type.
-            if (pBaseClassId != NULL)
-            {
-                *pBaseClassId = TypeHandleToClassID(pArrMT->GetArrayElementTypeHandle());
-            }
-
-            // If they want the number of dimensions of the array
-            if (pcRank != NULL)
-            {
-                *pcRank = (ULONG) pArrMT->GetRank();
             }
 
             // S_OK indicates that this was indeed an array
