@@ -1020,7 +1020,7 @@ namespace System.Text.RegularExpressions
 
                         nodeType = RegexNode.Group;
                         // Disallow options in the children of a testgroup node
-                        if (_group!.NType != RegexNode.Testgroup)
+                        if (_group!.Type != RegexNode.Testgroup)
                         {
                             ScanOptions();
                         }
@@ -2155,7 +2155,7 @@ namespace System.Text.RegularExpressions
             _stack = _group!.Next;
 
             // The first () inside a Testgroup group goes directly to the group
-            if (_group.Type() == RegexNode.Testgroup && _group.ChildCount() == 0)
+            if (_group.Type == RegexNode.Testgroup && _group.ChildCount() == 0)
             {
                 if (_unit == null)
                 {
@@ -2183,7 +2183,7 @@ namespace System.Text.RegularExpressions
         {
             // The | parts inside a Testgroup group go directly to the group
 
-            if (_group!.Type() == RegexNode.Testgroup || _group.Type() == RegexNode.Testref)
+            if (_group!.Type == RegexNode.Testgroup || _group.Type == RegexNode.Testref)
             {
                 _group.AddChild(_concatenation!.ReverseLeft());
             }
@@ -2257,11 +2257,11 @@ namespace System.Text.RegularExpressions
         /// <summary>Finish the current group (in response to a ')' or end)</summary>
         private void AddGroup()
         {
-            if (_group!.Type() == RegexNode.Testgroup || _group.Type() == RegexNode.Testref)
+            if (_group!.Type == RegexNode.Testgroup || _group.Type == RegexNode.Testref)
             {
                 _group.AddChild(_concatenation!.ReverseLeft());
 
-                if (_group.Type() == RegexNode.Testref && _group.ChildCount() > 2 || _group.ChildCount() > 3)
+                if (_group.Type == RegexNode.Testref && _group.ChildCount() > 2 || _group.ChildCount() > 3)
                 {
                     throw MakeException(RegexParseError.TooManyAlternates, SR.TooManyAlternates);
                 }

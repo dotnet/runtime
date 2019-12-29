@@ -84,7 +84,7 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                switch (curNode.NType)
+                switch (curNode.Type)
                 {
                     case RegexNode.Concatenate:
                         if (curNode.ChildCount() > 0)
@@ -166,7 +166,7 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                switch (curNode.NType)
+                switch (curNode.Type)
                 {
                     case RegexNode.Concatenate:
                         if (curNode.ChildCount() > 0)
@@ -190,7 +190,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Start:
                     case RegexNode.EndZ:
                     case RegexNode.End:
-                        return result | AnchorFromType(curNode.NType);
+                        return result | AnchorFromType(curNode.Type);
 
                     case RegexNode.Empty:
                     case RegexNode.Require:
@@ -296,19 +296,20 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                if (curNode.Children == null)
+                int curNodeChildCount = curNode.ChildCount();
+                if (curNodeChildCount == 0)
                 {
                     // This is a leaf node
-                    CalculateFC(curNode.NType, curNode, 0);
+                    CalculateFC(curNode.Type, curNode, 0);
                 }
-                else if (curChild < curNode.Children.Count && !_skipAllChildren)
+                else if (curChild < curNodeChildCount && !_skipAllChildren)
                 {
                     // This is an interior node, and we have more children to analyze
-                    CalculateFC(curNode.NType | BeforeChild, curNode, curChild);
+                    CalculateFC(curNode.Type | BeforeChild, curNode, curChild);
 
                     if (!_skipchild)
                     {
-                        curNode = curNode.Children[curChild];
+                        curNode = curNode.Child(curChild);
                         // this stack is how we get a depth first walk of the tree.
                         PushInt(curChild);
                         curChild = 0;
@@ -331,7 +332,7 @@ namespace System.Text.RegularExpressions
                 curChild = PopInt();
                 curNode = curNode.Next;
 
-                CalculateFC(curNode!.NType | AfterChild, curNode, curChild);
+                CalculateFC(curNode!.Type | AfterChild, curNode, curChild);
                 if (_failed)
                     return null;
 
