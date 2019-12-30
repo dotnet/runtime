@@ -10,7 +10,6 @@
 // This file contains definitions for methods in the code:TypeDesc class and its
 // subclasses
 //     code:ParamTypeDesc,
-//     code:ArrayTypeDesc,
 //     code:TyVarTypeDesc,
 //     code:FnPtrTypeDesc
 //
@@ -48,37 +47,20 @@ BOOL ParamTypeDesc::Verify() {
     return(true);
 }
 
-BOOL ArrayTypeDesc::Verify() {
-
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_SUPPORTS_DAC;
-
-    // m_TemplateMT == 0 may be null when building types involving TypeVarTypeDesc's
-    BAD_FORMAT_NOTHROW_ASSERT(m_TemplateMT.IsNull() || GetMethodTable()->IsArray());
-    BAD_FORMAT_NOTHROW_ASSERT(CorTypeInfo::IsArray_NoThrow(GetInternalCorElementType()));
-    ParamTypeDesc::Verify();
-    return(true);
-}
-
 #endif
 
 #endif // #ifndef DACCESS_COMPILE
 
-// TODO: WiP check use. do we need this on TH?
 TypeHandle TypeDesc::GetBaseTypeParam()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(HasTypeParam());
 
-    TypeHandle th = dac_cast<PTR_ParamTypeDesc>(this)->GetTypeParam();
+    TypeHandle th = GetTypeParam();
     while (th.HasTypeParam())
     {
-        th = dac_cast<PTR_ParamTypeDesc>(th.AsTypeDesc())->GetTypeParam();
+        th = th.GetTypeParam();
     }
     _ASSERTE(!th.IsNull());
 
@@ -554,17 +536,6 @@ BOOL TypeDesc::IsEquivalentTo(TypeHandle type COMMA_INDEBUG(TypeHandlePairList *
     if (HasTypeParam())
     {
         // pointer, byref
-
-        // TODO: WIP remove
-        // Arrays must have the same rank.
-        if (IsArray())
-        {
-            ArrayTypeDesc *pThisArray = (ArrayTypeDesc *)this;
-            ArrayTypeDesc *pOtherArray = (ArrayTypeDesc *)pOther;
-            if (pThisArray->GetRank() != pOtherArray->GetRank())
-                return FALSE;
-        }
-
         return GetTypeParam().IsEquivalentTo(pOther->GetTypeParam() COMMA_INDEBUG(pVisited));
     }
 
@@ -582,11 +553,7 @@ TypeHandle TypeDesc::GetParent() {
     STATIC_CONTRACT_FORBID_FAULT;
 
     CorElementType kind = GetInternalCorElementType();
-    if (CorTypeInfo::IsArray_NoThrow(kind)) {
-        _ASSERTE(IsArray());
-        BAD_FORMAT_NOTHROW_ASSERT(kind == ELEMENT_TYPE_SZARRAY || kind == ELEMENT_TYPE_ARRAY);
-        return ((ArrayTypeDesc*)this)->GetParent();
-    }
+
     if (CorTypeInfo::IsPrimitiveType_NoThrow(kind))
         return (MethodTable*)g_pObjectClass;
     return TypeHandle();
@@ -915,15 +882,7 @@ void TypeDesc::Fixup(DataImage *image)
         // Works for PTR/BYREF types, but not function pointers
         _ASSERTE(HasTypeParam());
 
-        // TODO: WIP remove 
-        if (IsArray())
-        {
-            ((ArrayTypeDesc*) this)->Fixup(image);
-        }
-        else
-        {
-            ((ParamTypeDesc*) this)->Fixup(image);
-        }
+        ((ParamTypeDesc*) this)->Fixup(image);
     }
 
     if (NeedsRestore(image))
@@ -955,14 +914,7 @@ void ParamTypeDesc::Save(DataImage *image)
 {
     STANDARD_VM_CONTRACT;
 
-    if (IsArray())
-    {
-        image->StoreStructure(this, sizeof(ArrayTypeDesc), DataImage::ITEM_ARRAY_TYPEDESC);
-    }
-    else
-    {
-        image->StoreStructure(this, sizeof(ParamTypeDesc), DataImage::ITEM_PARAM_TYPEDESC);
-    }
+    image->StoreStructure(this, sizeof(ParamTypeDesc), DataImage::ITEM_PARAM_TYPEDESC);
 
     // This set of checks matches precisely those in ParamTypeDesc::ComputeNeedsRestore
     //
@@ -1018,18 +970,6 @@ void ParamTypeDesc::Fixup(DataImage *image)
 
     // The managed object will get regenerated on demand
     image->ZeroField(this, offsetof(ParamTypeDesc, m_hExposedClassObject), sizeof(m_hExposedClassObject));
-}
-
-void ArrayTypeDesc::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    ParamTypeDesc::Fixup(image);
-
-#ifdef FEATURE_COMINTEROP
-    // We don't save CCW templates into ngen images
-    image->ZeroField(this, offsetof(ArrayTypeDesc, m_pCCWTemplate), sizeof(m_pCCWTemplate));
-#endif // FEATURE_COMINTEROP
 }
 
 BOOL ParamTypeDesc::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited)

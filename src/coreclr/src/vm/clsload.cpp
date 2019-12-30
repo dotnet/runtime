@@ -3332,9 +3332,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             }
 
             templateMT = pLoaderModule->CreateArrayMethodTable(paramType, kind, rank, pamTracker);
-
-            BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ArrayTypeDesc))));
-            typeHnd = TypeHandle(new(mem)  ArrayTypeDesc(templateMT));
+            typeHnd = TypeHandle(templateMT);
         }
         else
         {
@@ -4069,7 +4067,8 @@ ClassLoader::LoadArrayTypeThrowing(
     }
 #endif
 
-    TypeKey key(arrayKind, elemType, FALSE, rank);
+    // TODO: WIP remove the third arg
+    TypeKey key(arrayKind, elemType, TRUE, rank);
     TypeHandle th = LoadConstructedTypeThrowing(&key, fLoadTypes, level);
 
     if (predefinedElementType != ELEMENT_TYPE_END && !th.IsNull() && th.IsFullyLoaded())

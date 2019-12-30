@@ -3834,7 +3834,6 @@ OBJECTREF MethodTable::GetManagedClassObject()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(!IsArray());      // Arrays can't go through this path.
         POSTCONDITION(GetWriteableData()->m_hExposedClassObject != 0);
         //REENTRANT
     }
