@@ -127,9 +127,9 @@ namespace System.Linq.Expressions
         /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="NewExpression.Constructor"/> property equal to.</param>
         /// <param name="arguments">An array of <see cref="Expression"/> objects to use to populate the Arguments collection.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> and <see cref="NewExpression.Arguments"/> properties set to the specified value.</returns>
-        public static NewExpression New(ConstructorInfo constructor, params Expression[] arguments)
+        public static NewExpression New(ConstructorInfo constructor, params Expression[]? arguments)
         {
-            return New(constructor, (IEnumerable<Expression>)arguments);
+            return New(constructor, (IEnumerable<Expression>?)arguments);
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace System.Linq.Expressions
         /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
         /// <param name="members">An <see cref="IEnumerable{T}"/> of <see cref="MemberInfo"/> objects to use to populate the <see cref="NewExpression.Members"/> collection.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/>, <see cref="NewExpression.Arguments"/> and <see cref="NewExpression.Members"/> properties set to the specified value.</returns>
-        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments, IEnumerable<MemberInfo> members)
+        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments, IEnumerable<MemberInfo>? members)
         {
             ContractUtils.RequiresNotNull(constructor, nameof(constructor));
             ContractUtils.RequiresNotNull(constructor.DeclaringType!, nameof(constructor) + "." + nameof(constructor.DeclaringType));
@@ -176,9 +176,9 @@ namespace System.Linq.Expressions
         /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
         /// <param name="members">An Array of <see cref="MemberInfo"/> objects to use to populate the <see cref="NewExpression.Members"/> collection.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/>, <see cref="NewExpression.Arguments"/> and <see cref="NewExpression.Members"/> properties set to the specified value.</returns>
-        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments, params MemberInfo[] members)
+        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments, params MemberInfo[]? members)
         {
-            return New(constructor, arguments, (IEnumerable<MemberInfo>)members);
+            return New(constructor, arguments, (IEnumerable<MemberInfo>?)members);
         }
 
         /// <summary>

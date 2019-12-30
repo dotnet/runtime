@@ -1866,10 +1866,10 @@ namespace System.Linq.Expressions.Interpreter
                     PushLabelBlock(LabelScopeKind.Statement);
                     return true;
                 case ExpressionType.Block:
-                    Debug.Assert(_labelBlock.Parent != null);
                     PushLabelBlock(LabelScopeKind.Block);
                     // Labels defined immediately in the block are valid for
                     // the whole block.
+                    Debug.Assert(_labelBlock.Parent != null);
                     if (_labelBlock.Parent.Kind != LabelScopeKind.Switch)
                     {
                         DefineBlockLabels(node);

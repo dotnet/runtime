@@ -295,9 +295,8 @@ namespace System.Dynamic
             }
 
             public override int GetHashCode()
-            {
-                return InstanceRestrictionHash ^ RuntimeHelpers.GetHashCode(_instance!) ^ _expression.GetHashCode();
-            }
+                => InstanceRestrictionHash ^ RuntimeHelpers.GetHashCode(_instance!) ^ _expression.GetHashCode();
+
             internal override Expression GetExpression()
             {
                 if (_instance == null)

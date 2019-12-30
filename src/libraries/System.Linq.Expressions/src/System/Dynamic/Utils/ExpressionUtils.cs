@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -133,7 +132,7 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static void ValidateArgumentCount(MethodBase? method, ExpressionType nodeKind, int count, ParameterInfo[] pis)
+        public static void ValidateArgumentCount(MethodBase method, ExpressionType nodeKind, int count, ParameterInfo[] pis)
         {
             if (pis.Length != count)
             {
@@ -153,7 +152,7 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static Expression ValidateOneArgument(MethodBase? method, ExpressionType nodeKind, Expression arguments, ParameterInfo pi, string? methodParamName, string argumentParamName, int index = -1)
+        public static Expression ValidateOneArgument(MethodBase method, ExpressionType nodeKind, Expression arguments, ParameterInfo pi, string? methodParamName, string argumentParamName, int index = -1)
         {
             RequiresCanRead(arguments, argumentParamName, index);
             Type pType = pi.ParameterType;

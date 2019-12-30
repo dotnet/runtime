@@ -96,7 +96,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Node = node;
             IsMethod = isMethod;
-            IReadOnlyList<ParameterExpression> variables = GetVariables(node)!;
+            IReadOnlyList<ParameterExpression> variables = GetVariables(node);
 
             Definitions = new Dictionary<ParameterExpression, VariableStorageKind>(variables.Count);
             foreach (ParameterExpression v in variables)
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions.Compiler
         /// needed, including creating hoisted locals and IL locals for accessing
         /// parent locals
         /// </summary>
-        internal CompilerScope Enter(LambdaCompiler? lc, CompilerScope? parent)
+        internal CompilerScope Enter(LambdaCompiler lc, CompilerScope? parent)
         {
             SetParent(lc, parent);
 
@@ -127,7 +127,6 @@ namespace System.Linq.Expressions.Compiler
 
             if (IsMethod && _closureHoistedLocals != null)
             {
-                Debug.Assert(lc != null);
                 EmitClosureAccess(lc, _closureHoistedLocals);
             }
 
@@ -179,11 +178,11 @@ namespace System.Linq.Expressions.Compiler
                 {
                     // For each variable, find what array it's defined on
                     ulong parents = 0;
-                    HoistedLocals locals = NearestHoistedLocals;
+                    HoistedLocals? locals = NearestHoistedLocals;
                     while (!locals.Indexes.ContainsKey(variable))
                     {
                         parents++;
-                        locals = locals.Parent!;
+                        locals = locals.Parent;
                         Debug.Assert(locals != null);
                     }
 
@@ -283,7 +282,7 @@ namespace System.Linq.Expressions.Compiler
 
         #endregion
 
-        private void SetParent(LambdaCompiler? lc, CompilerScope? parent)
+        private void SetParent(LambdaCompiler lc, CompilerScope? parent)
         {
             Debug.Assert(_parent == null && parent != this);
             _parent = parent;
@@ -293,34 +292,31 @@ namespace System.Linq.Expressions.Compiler
                 _closureHoistedLocals = _parent.NearestHoistedLocals;
             }
 
-            ReadOnlyCollection<ParameterExpression?> hoistedVars = GetVariables().Where(p => Definitions[p!] == VariableStorageKind.Hoisted).ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> hoistedVars = GetVariables().Where(p => Definitions[p] == VariableStorageKind.Hoisted).ToReadOnly();
 
             if (hoistedVars.Count > 0)
             {
                 _hoistedLocals = new HoistedLocals(_closureHoistedLocals, hoistedVars);
-                Debug.Assert(lc != null);
                 AddLocal(lc, _hoistedLocals.SelfVariable);
             }
         }
 
         // Emits creation of the hoisted local storage
-        private void EmitNewHoistedLocals(LambdaCompiler? lc)
+        private void EmitNewHoistedLocals(LambdaCompiler lc)
         {
             if (_hoistedLocals == null)
             {
                 return;
             }
 
-            Debug.Assert(lc != null);
             // create the array
             lc.IL.EmitPrimitive(_hoistedLocals.Variables.Count);
             lc.IL.Emit(OpCodes.Newarr, typeof(object));
 
             // initialize all elements
             int i = 0;
-            foreach (ParameterExpression? v in _hoistedLocals.Variables)
+            foreach (ParameterExpression v in _hoistedLocals.Variables)
             {
-                Debug.Assert(v != null);
                 // array[i] = new StrongBox<T>(...);
                 lc.IL.Emit(OpCodes.Dup);
                 lc.IL.EmitPrimitive(i++);
@@ -371,8 +367,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 if (ShouldCache(refCount.Key, refCount.Value))
                 {
-                    var storage = ResolveVariable(refCount.Key) as ElementBoxStorage;
-                    if (storage != null)
+                    if (ResolveVariable(refCount.Key) is ElementBoxStorage storage)
                     {
                         storage.EmitLoadBox();
                         CacheBoxToLocal(storage.Compiler, refCount.Key);
@@ -436,11 +431,10 @@ namespace System.Linq.Expressions.Compiler
         }
 
         // Allocates slots for IL locals or IL arguments
-        private void AllocateLocals(LambdaCompiler? lc)
+        private void AllocateLocals(LambdaCompiler lc)
         {
-            foreach (ParameterExpression? v in GetVariables())
+            foreach (ParameterExpression v in GetVariables())
             {
-                Debug.Assert(v != null);
                 if (Definitions[v] == VariableStorageKind.Local)
                 {
                     //
@@ -451,7 +445,6 @@ namespace System.Linq.Expressions.Compiler
                     // is possibly a byref local if the parameter is byref.
                     //
                     Storage s;
-                    Debug.Assert(lc != null);
                     if (IsMethod && lc.Parameters.Contains(v))
                     {
                         s = new ArgumentStorage(lc, v);
@@ -465,12 +458,12 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private IEnumerable<ParameterExpression?> GetVariables() =>
+        private IEnumerable<ParameterExpression> GetVariables() =>
             MergedScopes == null ? GetVariables(Node) : GetVariablesIncludingMerged();
 
-        private IEnumerable<ParameterExpression?> GetVariablesIncludingMerged()
+        private IEnumerable<ParameterExpression> GetVariablesIncludingMerged()
         {
-            foreach (ParameterExpression? param in GetVariables(Node))
+            foreach (ParameterExpression param in GetVariables(Node))
             {
                 yield return param;
             }
@@ -484,7 +477,7 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private static IReadOnlyList<ParameterExpression?> GetVariables(object scope)
+        private static IReadOnlyList<ParameterExpression> GetVariables(object scope)
         {
             if (scope is LambdaExpression lambda)
             {
@@ -495,7 +488,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 return block.Variables;
             }
-            return new[] { ((CatchBlock)scope).Variable };
+            return new[] { ((CatchBlock)scope).Variable! };
         }
 
         private string? CurrentLambdaName

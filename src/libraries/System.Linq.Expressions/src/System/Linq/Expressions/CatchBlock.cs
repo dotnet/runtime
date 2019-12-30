@@ -105,7 +105,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The body of the catch statement.</param>
         /// <param name="filter">The body of the <see cref="Exception"/> filter.</param>
         /// <returns>The created <see cref="CatchBlock"/>.</returns>
-        public static CatchBlock Catch(Type type, Expression body, Expression filter)
+        public static CatchBlock Catch(Type type, Expression body, Expression? filter)
         {
             return MakeCatchBlock(type, null, body, filter);
         }
@@ -118,7 +118,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The body of the catch statement.</param>
         /// <param name="filter">The body of the <see cref="Exception"/> filter.</param>
         /// <returns>The created <see cref="CatchBlock"/>.</returns>
-        public static CatchBlock Catch(ParameterExpression variable, Expression body, Expression filter)
+        public static CatchBlock Catch(ParameterExpression variable, Expression body, Expression? filter)
         {
             ContractUtils.RequiresNotNull(variable, nameof(variable));
             return MakeCatchBlock(variable.Type, variable, body, filter);

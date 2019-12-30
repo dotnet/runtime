@@ -52,12 +52,12 @@ namespace System.Linq.Expressions.Compiler
         internal readonly ReadOnlyDictionary<Expression, int> Indexes;
 
         // The variables, in the order they appear in the array
-        internal readonly ReadOnlyCollection<ParameterExpression?> Variables;
+        internal readonly ReadOnlyCollection<ParameterExpression> Variables;
 
         // A virtual variable for accessing this locals array
         internal readonly ParameterExpression SelfVariable;
 
-        internal HoistedLocals(HoistedLocals? parent, ReadOnlyCollection<ParameterExpression?> vars)
+        internal HoistedLocals(HoistedLocals? parent, ReadOnlyCollection<ParameterExpression> vars)
         {
             if (parent != null)
             {
@@ -68,7 +68,7 @@ namespace System.Linq.Expressions.Compiler
             Dictionary<Expression, int> indexes = new Dictionary<Expression, int>(vars.Count);
             for (int i = 0; i < vars.Count; i++)
             {
-                indexes.Add(vars[i]!, i);
+                indexes.Add(vars[i], i);
             }
 
             SelfVariable = Expression.Variable(typeof(object[]), name: null);
@@ -79,7 +79,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal ParameterExpression? ParentVariable => Parent?.SelfVariable;
 
-        internal static object[]? GetParent(object[] locals)
+        internal static object[] GetParent(object[] locals)
         {
             return ((StrongBox<object[]>)locals[0]).Value;
         }

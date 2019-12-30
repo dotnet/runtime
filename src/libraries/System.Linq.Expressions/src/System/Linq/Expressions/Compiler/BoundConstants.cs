@@ -46,7 +46,7 @@ namespace System.Linq.Expressions.Compiler
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2231:OverloadOperatorEqualsOnOverridingValueTypeEquals")]
             public override bool Equals(object? obj)
             {
-                return (obj is TypedConstant) && Equals((TypedConstant)obj);
+                return obj is TypedConstant typedConstant && Equals(typedConstant);
             }
         }
 

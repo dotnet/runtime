@@ -106,7 +106,7 @@ namespace System.Runtime.CompilerServices
                 object[] result = _data;
                 for (int parents = (int)(closureKey >> 32); parents > 0; parents--)
                 {
-                    result = HoistedLocals.GetParent(result)!;
+                    result = HoistedLocals.GetParent(result);
                 }
 
                 // Return the variable storage

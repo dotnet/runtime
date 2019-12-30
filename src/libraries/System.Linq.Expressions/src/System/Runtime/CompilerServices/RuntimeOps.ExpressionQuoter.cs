@@ -207,7 +207,7 @@ namespace System.Runtime.CompilerServices
                     {
                         break;
                     }
-                    locals = HoistedLocals.GetParent(locals)!;
+                    locals = HoistedLocals.GetParent(locals);
                 }
 
                 // Unbound variable: an error should've been thrown already

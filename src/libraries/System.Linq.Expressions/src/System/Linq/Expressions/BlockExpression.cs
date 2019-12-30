@@ -946,7 +946,7 @@ namespace System.Linq.Expressions
         /// <param name="variables">The variables in the block.</param>
         /// <param name="expressions">The expressions in the block.</param>
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
-        public static BlockExpression Block(IEnumerable<ParameterExpression> variables, params Expression[] expressions)
+        public static BlockExpression Block(IEnumerable<ParameterExpression>? variables, params Expression[] expressions)
         {
             return Block(variables, (IEnumerable<Expression>)expressions);
         }
@@ -958,7 +958,7 @@ namespace System.Linq.Expressions
         /// <param name="variables">The variables in the block.</param>
         /// <param name="expressions">The expressions in the block.</param>
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
-        public static BlockExpression Block(Type type, IEnumerable<ParameterExpression> variables, params Expression[] expressions)
+        public static BlockExpression Block(Type type, IEnumerable<ParameterExpression>? variables, params Expression[] expressions)
         {
             return Block(type, variables, (IEnumerable<Expression>)expressions);
         }
@@ -969,7 +969,7 @@ namespace System.Linq.Expressions
         /// <param name="variables">The variables in the block.</param>
         /// <param name="expressions">The expressions in the block.</param>
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
-        public static BlockExpression Block(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
+        public static BlockExpression Block(IEnumerable<ParameterExpression>? variables, IEnumerable<Expression> expressions)
         {
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
             ReadOnlyCollection<ParameterExpression> variableList = variables.ToReadOnly();

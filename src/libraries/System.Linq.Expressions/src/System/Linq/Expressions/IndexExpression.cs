@@ -157,9 +157,9 @@ namespace System.Linq.Expressions
         /// <remarks>The expression representing the array can be obtained by using the <see cref="MakeMemberAccess"/> method,
         /// or through <see cref="NewArrayBounds(Type, Expression[])"/> or <see cref="NewArrayInit(Type, Expression[])"/>.</remarks>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
-        public static IndexExpression ArrayAccess(Expression array, params Expression[] indexes)
+        public static IndexExpression ArrayAccess(Expression array, params Expression[]? indexes)
         {
-            return ArrayAccess(array, (IEnumerable<Expression>)indexes);
+            return ArrayAccess(array, (IEnumerable<Expression>?)indexes);
         }
 
         /// <summary>
@@ -209,7 +209,7 @@ namespace System.Linq.Expressions
         /// <param name="propertyName">The name of the indexer.</param>
         /// <param name="arguments">An array of <see cref="Expression"/> objects that are used to index the property.</param>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
-        public static IndexExpression Property(Expression instance, string propertyName, params Expression[] arguments)
+        public static IndexExpression Property(Expression instance, string propertyName, params Expression[]? arguments)
         {
             ExpressionUtils.RequiresCanRead(instance, nameof(instance));
             ContractUtils.RequiresNotNull(propertyName, nameof(propertyName));
@@ -223,7 +223,7 @@ namespace System.Linq.Expressions
         /// The method finds the instance property with the specified name in a type. The property's type signature needs to be compatible with
         /// the arguments if it is a indexer. If the arguments is null or empty, we get a normal property.
         /// </summary>
-        private static PropertyInfo FindInstanceProperty(Type type, string propertyName, Expression[] arguments)
+        private static PropertyInfo FindInstanceProperty(Type type, string propertyName, Expression[]? arguments)
         {
             // bind to public names first
             BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy;
@@ -263,7 +263,7 @@ namespace System.Linq.Expressions
             return argTypesStr.ToString();
         }
 
-        private static PropertyInfo? FindProperty(Type type, string propertyName, Expression[] arguments, BindingFlags flags)
+        private static PropertyInfo? FindProperty(Type type, string propertyName, Expression[]? arguments, BindingFlags flags)
         {
             PropertyInfo? property = null;
 
@@ -285,7 +285,7 @@ namespace System.Linq.Expressions
             return property;
         }
 
-        private static bool IsCompatible(PropertyInfo pi, Expression[] args)
+        private static bool IsCompatible(PropertyInfo pi, Expression[]? args)
         {
             MethodInfo? mi = pi.GetGetMethod(nonPublic: true);
             ParameterInfo[] parms;
@@ -337,9 +337,9 @@ namespace System.Linq.Expressions
         /// <param name="indexer">The <see cref="PropertyInfo"/> that represents the property to index.</param>
         /// <param name="arguments">An array of <see cref="Expression"/> objects that are used to index the property.</param>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
-        public static IndexExpression Property(Expression instance, PropertyInfo indexer, params Expression[] arguments)
+        public static IndexExpression Property(Expression instance, PropertyInfo indexer, params Expression[]? arguments)
         {
-            return Property(instance, indexer, (IEnumerable<Expression>)arguments);
+            return Property(instance, indexer, (IEnumerable<Expression>?)arguments);
         }
 
         /// <summary>

@@ -63,7 +63,7 @@ namespace System.Dynamic
         /// class has changed a full lookup for the slot will be performed and the correct
         /// value will be retrieved.
         /// </summary>
-        internal bool TryGetValue(object? indexClass, int index, string name, bool ignoreCase, [NotNullWhen(true)] out object? value)
+        internal bool TryGetValue(object? indexClass, int index, string name, bool ignoreCase, out object? value)
         {
             // read the data now.  The data is immutable so we get a consistent view.
             // If there's a concurrent writer they will replace data and it just appears
@@ -307,7 +307,7 @@ namespace System.Dynamic
             TrySetValue(null, -1, value, key, ignoreCase: false, add: true);
         }
 
-        private bool TryGetValueForKey(string key, [NotNullWhen(true)] out object? value)
+        private bool TryGetValueForKey(string key, out object? value)
         {
             // Pass null to the class, which forces lookup.
             return TryGetValue(null, -1, key, ignoreCase: false, value: out value);
@@ -1014,14 +1014,7 @@ namespace System.Dynamic
                 return BindingRestrictions.GetTypeRestriction(this);
             }
 
-            public new ExpandoObject Value
-            {
-                get
-                {
-                    Debug.Assert(base.Value != null);
-                    return (ExpandoObject)base.Value;
-                }
-            }
+            public new ExpandoObject Value => (ExpandoObject)base.Value!;
         }
 
         #endregion
@@ -1162,7 +1155,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">The out parameter containing the value of the member.</param>
         /// <returns>True if the member exists in the expando object, otherwise false.</returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool ExpandoTryGetValue(ExpandoObject expando, object indexClass, int index, string name, bool ignoreCase, [NotNullWhen(true)] out object? value)
+        public static bool ExpandoTryGetValue(ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase, out object? value)
         {
             return expando.TryGetValue(indexClass, index, name, ignoreCase, out value);
         }

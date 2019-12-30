@@ -989,24 +989,24 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitHasValue(this ILGenerator il, Type nullableType)
         {
-            MethodInfo? mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public);
-            Debug.Assert(mi != null && nullableType.IsValueType);
+            MethodInfo mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public)!;
+            Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
 
         internal static void EmitGetValue(this ILGenerator il, Type nullableType)
         {
-            MethodInfo? mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public);
-            Debug.Assert(mi != null && nullableType.IsValueType);
+            MethodInfo mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public)!;
+            Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
 
         internal static void EmitGetValueOrDefault(this ILGenerator il, Type nullableType)
         {
-            MethodInfo? mi = nullableType.GetMethod("GetValueOrDefault", System.Type.EmptyTypes);
-            Debug.Assert(mi != null && nullableType.IsValueType);
+            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.Type.EmptyTypes)!;
+            Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
