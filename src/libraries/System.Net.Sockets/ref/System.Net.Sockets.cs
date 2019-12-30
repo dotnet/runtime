@@ -365,6 +365,7 @@ namespace System.Net.Sockets
     public partial class SocketAsyncEventArgs : System.EventArgs, System.IDisposable
     {
         public SocketAsyncEventArgs() { }
+        public SocketAsyncEventArgs(bool unsafeSuppressExecutionContextFlow) { }
         public System.Net.Sockets.Socket AcceptSocket { get { throw null; } set { } }
         public byte[] Buffer { get { throw null; } }
         public System.Collections.Generic.IList<System.ArraySegment<byte>> BufferList { get { throw null; } set { } }
