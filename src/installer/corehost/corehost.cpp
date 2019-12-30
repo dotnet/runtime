@@ -218,6 +218,22 @@ int exe_start(const int argc, const pal::char_t* argv[])
             propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
 
             rc = main_fn_v2(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
+
+            if (rc == StatusCode::FrameworkMissingFailure)
+            {
+                pal::string_t ver = get_directory(fxr_path);
+                remove_trailing_dir_seperator(&ver);
+
+                fx_ver_t fx_ver;
+                fx_ver_t::parse(get_filename(ver), &fx_ver, false);
+
+                if (fx_ver.get_major() < 3)
+                {
+                    pal::string_t url = get_download_url(nullptr, nullptr);
+                    trace::error(_X("Installing the latest runtime might help resolve this problem."));
+                    trace::error(_X("  - %s"), url.c_str());
+                }
+            }
         }
     }
     else
