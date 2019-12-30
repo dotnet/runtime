@@ -771,7 +771,7 @@ ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *
     threadData->context = PTR_CDADDR(thread->m_pDomain);
     threadData->domain = PTR_CDADDR(thread->m_pDomain);
     threadData->lockCount = thread->m_dwLockCount;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     threadData->teb = TO_CDADDR(thread->m_pTEB);
 #else
     threadData->teb = NULL;
