@@ -625,9 +625,9 @@ INST2(cmhs,    "cmhs",   0, 0, IF_EN2O,   0x7EE03C00,  0x2E203C00)
                                    //  cmhs    Vd,Vn,Vm             DV_3E  01111110111mmmmm 001111nnnnnddddd   7EE0 3C00   Vd,Vn,Vm   (scalar)
                                    //  cmhs    Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 001111nnnnnddddd   2E20 3C00   Vd,Vn,Vm   (vector)
 
-INST2(ctst,    "ctst",   0, 0, IF_EN2O,   0x5EE08C00,  0x0E208C00)
-                                   //  ctst    Vd,Vn,Vm             DV_3E  01011110111mmmmm 100011nnnnnddddd   5EE0 8C00   Vd,Vn,Vm   (scalar)
-                                   //  ctst    Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 100011nnnnnddddd   0E20 8C00   Vd,Vn,Vm   (vector)
+INST2(cmtst,   "cmtst",  0, 0, IF_EN2O,   0x5EE08C00,  0x0E208C00)
+                                   //  cmtst   Vd,Vn,Vm             DV_3E  01011110111mmmmm 100011nnnnnddddd   5EE0 8C00   Vd,Vn,Vm   (scalar)
+                                   //  cmtst   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 100011nnnnnddddd   0E20 8C00   Vd,Vn,Vm   (vector)
 
 //    enum     name     FP LD/ST            DV_2G        DV_3B
 INST2(faddp,   "faddp",  0, 0, IF_EN2P,   0x7E30D800,  0x2E20D400)
