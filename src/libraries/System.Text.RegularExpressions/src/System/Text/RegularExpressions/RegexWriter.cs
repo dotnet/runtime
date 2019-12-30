@@ -28,8 +28,7 @@ namespace System.Text.RegularExpressions
 
         private ValueListBuilder<int> _emitted;
         private ValueListBuilder<int> _intStack;
-        private readonly Dictionary<string, int> _stringHash;
-        private readonly List<string> _stringTable;
+        private readonly Dictionary<string, int> _stringTable;
         private Hashtable? _caps;
         private int _trackCount;
 
@@ -37,8 +36,7 @@ namespace System.Text.RegularExpressions
         {
             _emitted = new ValueListBuilder<int>(emittedSpan);
             _intStack = new ValueListBuilder<int>(intStackSpan);
-            _stringHash = new Dictionary<string, int>();
-            _stringTable = new List<string>();
+            _stringTable = new Dictionary<string, int>();
             _caps = null;
             _trackCount = 0;
         }
@@ -135,17 +133,23 @@ namespace System.Text.RegularExpressions
             bool rtl = ((tree.Options & RegexOptions.RightToLeft) != 0);
 
             CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-            RegexBoyerMoore? bmPrefix;
 
+            RegexBoyerMoore? bmPrefix = null;
             if (prefix.Prefix.Length > 0)
+            {
                 bmPrefix = new RegexBoyerMoore(prefix.Prefix, prefix.CaseInsensitive, rtl, culture);
-            else
-                bmPrefix = null;
+            }
 
             int anchors = RegexFCD.Anchors(tree);
             int[] emitted = _emitted.AsSpan().ToArray();
 
-            return new RegexCode(emitted, _stringTable, _trackCount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
+            var strings = new string[_stringTable.Count];
+            foreach (KeyValuePair<string, int> stringEntry in _stringTable)
+            {
+                strings[stringEntry.Value] = stringEntry.Key;
+            }
+
+            return new RegexCode(emitted, strings, _trackCount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
         }
 
         /// <summary>
@@ -199,17 +203,12 @@ namespace System.Text.RegularExpressions
         /// Returns an index in the string table for a string;
         /// uses a hashtable to eliminate duplicates.
         /// </summary>
-        private int StringCode(string? str)
+        private int StringCode(string str)
         {
-            if (str == null)
-                str = string.Empty;
-
-            int i;
-            if (!_stringHash.TryGetValue(str, out i))
+            if (!_stringTable.TryGetValue(str, out int i))
             {
                 i = _stringTable.Count;
-                _stringHash[str] = i;
-                _stringTable.Add(str);
+                _stringTable.Add(str, i);
             }
 
             return i;
@@ -454,31 +453,32 @@ namespace System.Text.RegularExpressions
                     }
                     if (node.N > node.M)
                     {
-                        Emit(node.Type | bits, node.Ch, node.N == int.MaxValue ?
-                             int.MaxValue : node.N - node.M);
+                        Emit(node.Type | bits, node.Ch, node.N == int.MaxValue ? int.MaxValue : node.N - node.M);
                     }
                     break;
 
                 case RegexNode.Setloop:
                 case RegexNode.Setloopgreedy:
                 case RegexNode.Setlazy:
-                    if (node.M > 0)
                     {
-                        Emit(RegexCode.Setrep | bits, StringCode(node.Str), node.M);
-                    }
-                    if (node.N > node.M)
-                    {
-                        Emit(node.Type | bits, StringCode(node.Str),
-                             (node.N == int.MaxValue) ? int.MaxValue : node.N - node.M);
+                        int stringCode = StringCode(node.Str!);
+                        if (node.M > 0)
+                        {
+                            Emit(RegexCode.Setrep | bits, stringCode, node.M);
+                        }
+                        if (node.N > node.M)
+                        {
+                            Emit(node.Type | bits, stringCode, (node.N == int.MaxValue) ? int.MaxValue : node.N - node.M);
+                        }
                     }
                     break;
 
                 case RegexNode.Multi:
-                    Emit(node.Type | bits, StringCode(node.Str));
+                    Emit(node.Type | bits, StringCode(node.Str!));
                     break;
 
                 case RegexNode.Set:
-                    Emit(node.Type | bits, StringCode(node.Str));
+                    Emit(node.Type | bits, StringCode(node.Str!));
                     break;
 
                 case RegexNode.Ref:

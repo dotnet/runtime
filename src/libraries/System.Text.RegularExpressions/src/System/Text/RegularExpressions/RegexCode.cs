@@ -106,17 +106,17 @@ namespace System.Text.RegularExpressions
         public readonly int Anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
         public readonly bool RightToLeft;                // true if right to left
 
-        public RegexCode(int[] codes, List<string> stringlist, int trackcount,
+        public RegexCode(int[] codes, string[] strings, int trackcount,
                            Hashtable? caps, int capsize,
                            RegexBoyerMoore? bmPrefix, RegexPrefix? fcPrefix,
                            int anchors, bool rightToLeft)
         {
             Debug.Assert(codes != null, "codes cannot be null.");
-            Debug.Assert(stringlist != null, "stringlist cannot be null.");
+            Debug.Assert(strings != null, "strings cannot be null.");
 
             Codes = codes;
-            Strings = stringlist.ToArray();
-            StringsAsciiLookup = new int[Strings.Length][];
+            Strings = strings;
+            StringsAsciiLookup = new int[strings.Length][];
             TrackCount = trackcount;
             Caps = caps;
             CapSize = capsize;
