@@ -298,6 +298,9 @@ protected:
 
     union {
         CRITICAL_SECTION    m_criticalsection;
+#if defined(TARGET_UNIX) && !defined(FEATURE_PAL)
+        char                m_criticalsectionPadding[0x90]; // Hack fixme
+#endif
     };
 
     typedef enum
