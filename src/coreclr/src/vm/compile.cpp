@@ -5081,7 +5081,7 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
     STANDARD_VM_CONTRACT;
 
     // Only actual types
-    if (t.IsTypeDesc())
+    if (t.IsTypeDesc() || t.IsArray())
         return;
 
     MethodTable * pMT = t.AsMethodTable();
@@ -5411,6 +5411,7 @@ void CEEPreloader::TriageTypeForZap(TypeHandle th, BOOL fAcceptIfNotSure, BOOL f
 {
     STANDARD_VM_CONTRACT;
 
+    // TODO: WIP do we care about arrays here?
     // We care about param types only
     if (th.IsTypicalTypeDefinition() && !th.IsTypeDesc())
         return;
@@ -5519,6 +5520,7 @@ void CEEPreloader::TriageTypeForZap(TypeHandle th, BOOL fAcceptIfNotSure, BOOL f
     }
 
 #ifdef FEATURE_FULL_NGEN
+    // TODO: WIP do we care about arrays?
     // Only save param types in their preferred zap modules,
     // i.e. never duplicate them.
     if (th.IsTypeDesc())

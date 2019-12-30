@@ -334,7 +334,6 @@ BOOL TypeDesc::IsNativeValueType()
     return (GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE);
 }
 
-// TODO: WIP  should return false for arrays
 BOOL TypeDesc::HasTypeParam()
 {
     WRAPPER_NO_CONTRACT;

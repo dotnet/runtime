@@ -824,6 +824,13 @@ FCIMPLEND
 // Check we're allowed to create an array with the given element type.
 void ArrayNative::CheckElementType(TypeHandle elementType)
 {
+    // Checks apply recursively for arrays of arrays etc.
+    if (elementType.IsArray())
+    {
+        CheckElementType(elementType.GetArrayElementTypeHandle());
+        return;
+    }
+
     // Check for simple types first.
     if (!elementType.IsTypeDesc())
     {
@@ -842,13 +849,6 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
             COMPlusThrow(kNotSupportedException, W("NotSupported_VoidArray"));
 
         // That's all the dangerous simple types we know, it must be OK.
-        return;
-    }
-
-    // Checks apply recursively for arrays of arrays etc.
-    if (elementType.IsArray())
-    {
-        CheckElementType(elementType.GetArrayElementTypeHandle());
         return;
     }
 

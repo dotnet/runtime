@@ -283,6 +283,7 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
     {
         switch (AsTypeDesc()->GetInternalCorElementType())
         {
+            // TODO: WIP remove arrays
         case ELEMENT_TYPE_ARRAY:
         case ELEMENT_TYPE_SZARRAY:
         case ELEMENT_TYPE_BYREF:

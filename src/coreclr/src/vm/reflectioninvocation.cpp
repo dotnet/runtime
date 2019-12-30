@@ -2402,7 +2402,7 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
     TypeHandle type = objType->GetType();
 
     // Don't allow arrays, pointers, byrefs or function pointers.
-    if (type.IsTypeDesc())
+    if (type.IsTypeDesc() || type.IsArray())
         COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
 
     MethodTable *pMT = type.GetMethodTable();

@@ -300,7 +300,7 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
         return GetVarTypeForCVType(CorElementTypeToCVTypes(elemType));
 
     // Handle objects.
-    if (!type.IsTypeDesc())
+    if (!type.IsArray())
     {
         MethodTable * pMT = type.AsMethodTable();
 

@@ -149,21 +149,18 @@ BOOL TypeHandle::ContainsGenericVariables(BOOL methodOnly /*=FALSE*/) const
     STATIC_CONTRACT_NOTHROW;
     SUPPORTS_DAC;
 
-    if (IsTypeDesc())
+    if (HasTypeParam())
     {
-        if (IsGenericVariable())
-        {
-            if (!methodOnly)
-                return TRUE;
+        return GetTypeParam().ContainsGenericVariables(methodOnly);
+    }
 
-            PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc());
-            return TypeFromToken(pTyVar->GetTypeOrMethodDef()) == mdtMethodDef;
-        }
+    if (IsGenericVariable())
+    {
+        if (!methodOnly)
+            return TRUE;
 
-        if (HasTypeParam())
-        {
-            return GetTypeParam().ContainsGenericVariables(methodOnly);
-        }
+        PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc());
+        return TypeFromToken(pTyVar->GetTypeOrMethodDef()) == mdtMethodDef;
     }
     else if (HasInstantiation())
     {
@@ -458,21 +455,17 @@ BOOL TypeHandle::IsBlittable() const
 {
     LIMITED_METHOD_CONTRACT;
 
+    if (IsArray())
+    {
+        // Single dimentional array's of blittable types are also blittable.
+        return (GetRank() == 1 && GetArrayElementTypeHandle().IsBlittable());
+    }
+
     if (!IsTypeDesc())
     {
         // This is a simple type (not an array, ptr or byref) so if
         // simply check to see if the type is blittable.
         return AsMethodTable()->IsBlittable();
-    }
-
-    if (IsArray())
-    {
-        // Single dimentional array's of blittable types are also blittable.
-        if (GetRank() == 1)
-        {
-            if (GetArrayElementTypeHandle().IsBlittable())
-                return TRUE;
-        }
     }
     else if (AsTypeDesc()->IsNativeValueType())
     {
@@ -550,7 +543,7 @@ BOOL TypeHandle::IsExportedToWinRT() const
 ComCallWrapperTemplate *TypeHandle::GetComCallWrapperTemplate() const
 {
     LIMITED_METHOD_CONTRACT;
-    PRECONDITION(IsArray() || !IsTypeDesc());
+    PRECONDITION(!IsTypeDesc());
 
     return AsMethodTable()->GetComCallWrapperTemplate();
 }
@@ -565,7 +558,7 @@ BOOL TypeHandle::SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemplate)
     }
     CONTRACTL_END;
 
-    PRECONDITION(IsArray() || !IsTypeDesc());
+    PRECONDITION(!IsTypeDesc());
 
     return AsMethodTable()->SetComCallWrapperTemplate(pTemplate);
 }

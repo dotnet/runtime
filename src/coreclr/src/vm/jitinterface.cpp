@@ -1033,17 +1033,6 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         {
             COMPlusThrow(kInvalidProgramException);
         }
-
-        // The JIT always wants to see normalized typedescs for arrays
-        if (!th.IsTypeDesc() && th.AsMethodTable()->IsArray())
-        {
-            MethodTable * pMT = th.AsMethodTable();
-
-            // Load the TypeDesc for the array type.
-            DWORD rank = pMT->GetRank();
-            TypeHandle elemType = pMT->GetArrayElementTypeHandle();
-            th = ClassLoader::LoadArrayTypeThrowing(elemType, pMT->GetInternalCorElementType(), rank);
-        }
     }
     else
     {
@@ -3848,7 +3837,7 @@ BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
 
     if (VMClsHnd.IsTypeDesc())
     {
-        // We can't do this optimization for arrays because of the object methodtable is template methodtable
+        // We can't do this optimization for TypeDesc because methodtable could be shared
         ret = FALSE;
     }
     else
@@ -4894,15 +4883,9 @@ CorInfoType CEEInfo::getChildType (
     _ASSERTE(!th.IsNull());
 
     // BYREF, pointer types
-    if (th.IsTypeDesc())
+    if (th.HasTypeParam())
     {
-        retType = th.AsTypeDesc()->GetTypeParam();
-    }
-    else
-    {
-        MethodTable* pMT= th.AsMethodTable();
-        if (pMT->IsArray())
-            retType = pMT->GetArrayElementTypeHandle();
+        retType = th.GetTypeParam();
     }
 
     if (!retType.IsNull()) {

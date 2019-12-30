@@ -5822,19 +5822,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             break;
 
     }
-
-    if (level >= CLASS_DEPENDENCIES_LOADED && IsArray())
-    {
-        // The array type should be loaded, if template method table is loaded
-        // See also: ArrayBase::SetArrayMethodTable, ArrayBase::SetArrayMethodTableForLargeObject
-        TypeHandle th = ClassLoader::LoadArrayTypeThrowing(GetArrayElementTypeHandle(),
-                                                           GetInternalCorElementType(),
-                                                           GetRank(),
-                                                           ClassLoader::LoadTypes,
-                                                           level);
-        _ASSERTE(th.IsTypeDesc() && th.IsArray());
-        _ASSERTE(!(level == CLASS_LOADED && !th.IsFullyLoaded()));
-    }
 #endif //!DACCESS_COMPILE
 } //MethodTable::DoFullyLoad
 
@@ -6380,7 +6367,7 @@ BOOL MethodTable::IsLegalNonArrayWinRTType()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(!IsArray()); // arrays are not fully described by MethodTable
+        PRECONDITION(!IsArray()); // arrays are handled in the callers
     }
     CONTRACTL_END
 

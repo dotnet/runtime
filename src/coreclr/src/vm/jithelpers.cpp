@@ -2634,7 +2634,7 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
         Thread *thread = GetThread();
 
         TypeHandle typeHandle(typeHnd_);
-        _ASSERTE(!typeHandle.IsTypeDesc());
+        _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
         MethodTable *methodTable = typeHandle.AsMethodTable();
 
         SIZE_T size = methodTable->GetBaseSize();
@@ -2675,7 +2675,7 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     TypeHandle typeHnd(typeHnd_);
 
-    _ASSERTE(!typeHnd.IsTypeDesc());                                   // we never use this helper for arrays
+    _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
     _ASSERTE(pMT->IsRestored_NoLogging());
 
@@ -3328,7 +3328,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     TypeHandle clsHnd(type);
 
-    _ASSERTE(!clsHnd.IsTypeDesc());  // we never use this helper for arrays
+    _ASSERTE(!clsHnd.IsTypeDesc());  // boxable types have method tables
 
     MethodTable *pMT = clsHnd.AsMethodTable();
 
@@ -3453,7 +3453,7 @@ HCIMPL2(LPVOID, JIT_Unbox, CORINFO_CLASS_HANDLE type, Object* obj)
 
     TypeHandle typeHnd(type);
     VALIDATEOBJECT(obj);
-    _ASSERTE(!typeHnd.IsTypeDesc());       // value classes are always unshared
+    _ASSERTE(!typeHnd.IsTypeDesc());   // boxable types have method tables
 
         // This has been tuned so that branch predictions are good
         // (fall through for forward branches) for the common case
@@ -4068,6 +4068,7 @@ NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
     if (refType == NULL)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
+        // TODO: WIP simplify this when all arrays are MTs
         // Compensate for CORINFO_TOKENKIND_Ldtoken optimization done by CEEInfo::embedGenericHandle
         if (!typeHandle.IsTypeDesc() && typeHandle.AsMethodTable()->IsArray())
             typeHandle = ArrayBase::GetTypeHandle(typeHandle.AsMethodTable());

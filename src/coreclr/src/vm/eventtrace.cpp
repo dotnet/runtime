@@ -1743,12 +1743,6 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
 
     _ASSERTE(m_nBulkTypeValueCount < (int)_countof(m_rgBulkTypeValues));
 
-    if (!th.IsTypeDesc() && th.GetMethodTable()->IsArray())
-    {
-        _ASSERTE(!"BulkTypeEventLogger::LogSingleType called with MethodTable array");
-        return -1;
-    }
-
     BulkTypeValue * pVal = &m_rgBulkTypeValues[m_nBulkTypeValueCount];
 
     // Clear out pVal before filling it out (array elements can get reused if there

@@ -448,6 +448,7 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
     if (typeHandle.IsTypeDesc()) {
+        //TODO: WIP remove
         if (!typeHandle.IsArray())
             return NULL;
     }
@@ -573,6 +574,7 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetBaseType, ReflectClassBa
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
     if (typeHandle.IsTypeDesc()) {
+        //TODO: WIP remove
         if (!typeHandle.IsArray())
             return NULL;
     }
@@ -593,19 +595,22 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClas
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     TypeHandle typeHandle = refType->GetType();
-
-    if (!typeHandle.IsTypeDesc())
-        return 0;
-
-    if (typeHandle.IsGenericVariable())
-        return 0;
-
     TypeHandle typeReturn;
 
     if (typeHandle.IsArray())
+    {
         typeReturn = typeHandle.GetArrayElementTypeHandle();
+    }
     else
+    {
+        if (!typeHandle.IsTypeDesc())
+            return 0;
+
+        if (typeHandle.IsGenericVariable())
+            return 0;
+
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
+    }
 
     RETURN_CLASS_OBJECT(typeReturn, refType);
 }
@@ -698,7 +703,7 @@ FCIMPL3(FC_BOOL_RET, RuntimeTypeHandle::GetFields, ReflectClassBaseObject *pType
     if (typeHandle.IsGenericVariable())
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
-    if (typeHandle.IsTypeDesc()) {
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray()) {
         *pCount = 0;
         FC_RETURN_BOOL(TRUE);
     }
@@ -850,6 +855,7 @@ FCIMPL1(PtrArray*, RuntimeTypeHandle::GetInterfaces, ReflectClassBaseObject *pTy
     {
         if (typeHandle.IsTypeDesc())
         {
+            // TODO: WIP remove
             if (typeHandle.IsArray())
             {
                 ifaceCount = typeHandle.GetMethodTable()->GetNumInterfaces();
@@ -908,6 +914,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
             return tdPublic;
         }
 
+        // TODO: WIP remove
         if (!typeHandle.IsArray())
             return 0;
     }
@@ -1050,7 +1057,7 @@ FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, ReflectClassBaseObject* pTypeUN
     if (typeHandle.IsGenericVariable())
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
-    if (typeHandle.IsTypeDesc())
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
     MethodTable* pMT= typeHandle.GetMethodTable();
@@ -1087,7 +1094,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetToken, ReflectClassBaseObject *pTypeUNSAFE)
 
     TypeHandle typeHandle = refType->GetType();
 
-    if (typeHandle.IsTypeDesc())
+    if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
     {
         if (typeHandle.IsGenericVariable())
         {
@@ -1138,6 +1145,7 @@ void QCALLTYPE RuntimeTypeHandle::VerifyInterfaceIsImplemented(QCall::TypeHandle
         COMPlusThrow(kArgumentException, W("Arg_InvalidHandle"));
 
     if (typeHandle.IsTypeDesc()) {
+        //TODO: WIP remove
         if (!typeHandle.IsArray())
             COMPlusThrow(kArgumentException, W("Arg_NotFoundIFace"));
     }
@@ -1278,6 +1286,8 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetDeclaringType, ReflectCla
             HELPER_METHOD_FRAME_END();
             goto Exit;
         }
+
+        // TODO: WIP remove
         if (!typeHandle.IsArray())
         {
             retTypeHandle = TypeHandle();
@@ -2727,7 +2737,7 @@ FCIMPL2(FieldDesc*, RuntimeFieldHandle::GetStaticFieldForGenericType, FieldDesc 
 
     if (!pField)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-    if (declaringType.IsTypeDesc())
+    if (declaringType.IsTypeDesc() || declaringType.IsArray())
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
     MethodTable *pMT = declaringType.AsMethodTable();
 

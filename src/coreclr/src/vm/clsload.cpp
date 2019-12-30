@@ -3377,9 +3377,6 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
 
         // Key must match that of the handle
         PRECONDITION(typeHnd.CheckMatchesKey(pTypeKey));
-
-        // Don't publish array template method tables; these are accessed only through type descs
-        PRECONDITION(typeHnd.IsTypeDesc() || !typeHnd.AsMethodTable()->IsArray());
     }
     CONTRACTL_END;
 

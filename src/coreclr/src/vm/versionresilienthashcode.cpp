@@ -76,6 +76,11 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
 {
     STANDARD_VM_CONTRACT;
 
+    if (type.IsArray())
+    {
+        return ComputeArrayTypeHashCode(GetVersionResilientTypeHashCode(type.GetArrayElementTypeHandle()), type.GetRank());
+    }
+    else
     if (!type.IsTypeDesc())
     {
         MethodTable *pMT = type.AsMethodTable();
@@ -103,11 +108,6 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
         {
             return hashcode;
         }
-    }
-    else
-    if (type.IsArray())
-    {
-        return ComputeArrayTypeHashCode(GetVersionResilientTypeHashCode(type.GetArrayElementTypeHandle()), type.GetRank());
     }
     else
     if (type.IsPointer())

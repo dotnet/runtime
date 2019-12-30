@@ -411,14 +411,14 @@ inline ARRAY_KIND ArrayKindFromTypeHandle(TypeHandle th)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (th.IsArray())
-    {
-        return ARRAY_KIND_TYPEDESC;
-    }
-
     if (!th.IsTypeDesc() && th.GetMethodTable()->IsArray())
     {
         return ARRAY_KIND_METHODTABLE;
+    }
+
+    if (th.IsArray())
+    {
+        return ARRAY_KIND_TYPEDESC;
     }
 
     return ARRAY_KIND_NOTARRAY;
@@ -3818,7 +3818,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
 
     if (typeHandle.IsTypeDesc())
     {
-        // Not an array, but still a typedesc?  We don't know how to
+        // a typedesc?  We don't know how to
         // deal with those.
         return CORPROF_E_CLASSID_IS_COMPOSITE;
     }
