@@ -4693,13 +4693,13 @@ static bool IsTypeAccessibleOutsideItsAssembly(TypeHandle th)
 {
     STANDARD_VM_CONTRACT;
 
-    if (th.IsTypeDesc())
+    if (th.HasTypeParam())
     {
-        if (th.AsTypeDesc()->HasTypeParam())
-            return IsTypeAccessibleOutsideItsAssembly(th.AsTypeDesc()->GetTypeParam());
-
-        return true;
+        return IsTypeAccessibleOutsideItsAssembly(th.GetTypeParam());
     }
+
+    if (th.IsTypeDesc())
+        return true;
 
     MethodTable * pMT = th.AsMethodTable();
 

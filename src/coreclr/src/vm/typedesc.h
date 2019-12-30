@@ -119,7 +119,7 @@ public:
     // VALUETYPE
     BOOL IsNativeValueType();
 
-    // Is actually ParamTypeDesc (ARRAY, SZARRAY, BYREF, PTR)
+    // Is actually ParamTypeDesc (BYREF, PTR)
     BOOL HasTypeParam();
 
 #ifdef FEATURE_PREJIT
@@ -188,9 +188,7 @@ public:
 
     PTR_MethodTable  GetMethodTable();               // only meaningful for ParamTypeDesc
     TypeHandle GetTypeParam();                       // only meaningful for ParamTypeDesc
-    //TODO: WIP check this
     Instantiation GetClassOrArrayInstantiation();    // only meaningful for ParamTypeDesc; see above
-
     TypeHandle GetBaseTypeParam();                   // only allowed for ParamTypeDesc, helper method used to avoid recursion
 
     // Note that if the TypeDesc, e.g. a function pointer type, involves parts that may

@@ -104,11 +104,14 @@ BOOL TypeHandle::IsGenericVariable() const {
     return(IsTypeDesc() && CorTypeInfo::IsGenericVariable_NoThrow(AsTypeDesc()->GetInternalCorElementType()));
 }
 
-//TODO: WIP check use
 BOOL TypeHandle::HasTypeParam() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (!IsTypeDesc()) return FALSE;
+    if (IsArray())
+        return TRUE;
+
+    if (!IsTypeDesc())
+        return FALSE;
 
     CorElementType etype = AsTypeDesc()->GetInternalCorElementType();
     return(CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE);
@@ -242,10 +245,13 @@ TypeHandle TypeHandle::GetTypeParam() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+    if (IsArray())
+        return GetArrayElementTypeHandle();
+
     if (IsTypeDesc())
         return AsTypeDesc()->GetTypeParam();
-    else
-        return TypeHandle();
+    
+    return TypeHandle();
 }
 
 #ifndef DACCESS_COMPILE
@@ -1131,7 +1137,7 @@ TypeHandle::IsExternallyVisible() const
     }
     CONTRACTL_END
 
-    //TODO: WIP need this? move to MT?
+    //TODO: WIP need this? move to MT? or move TypeParam check up here
     if (IsArray())
     {
         return GetArrayElementTypeHandle().IsExternallyVisible();

@@ -232,11 +232,7 @@ static DWORD HashTypeHandle(DWORD level, TypeHandle t)
 
     DWORD retVal = 0;
 
-    if (t.IsArray())
-    {
-        retVal = HashParamType(level, t.GetInternalCorElementType(), t.GetArrayElementTypeHandle());
-    }
-    else if (t.HasTypeParam())
+    if (t.HasTypeParam())
     {
         retVal = HashParamType(level, t.GetInternalCorElementType(), t.GetTypeParam());
     }

@@ -222,14 +222,10 @@ inline void TypeHandle::ForEachComponentMethodTable(T &callback) const
     }
     CONTRACTL_END;
 
-    if (IsArray())
-    {
-        GetArrayElementTypeHandle().ForEachComponentMethodTable(callback);
-    }
-    else if (IsTypeDesc() && AsTypeDesc()->HasTypeParam())
+    if (HasTypeParam())
     {
         // If we have a type parameter, then we just need to invoke ourselves on that parameter
-        AsTypeDesc()->GetTypeParam().ForEachComponentMethodTable(callback);
+        GetTypeParam().ForEachComponentMethodTable(callback);
     }
     else if (IsFnPtrType())
     {

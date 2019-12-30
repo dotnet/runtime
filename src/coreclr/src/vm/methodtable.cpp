@@ -5116,7 +5116,11 @@ VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thCons
     }
     CONTRACTL_END;
 
-    if (thConstraint.IsTypeDesc())
+    if (thConstraint.IsArray())
+    {
+        DoAccessibilityCheckForConstraint(pAskingMT, thConstraint.GetArrayElementTypeHandle(), resIDWhy);
+    }
+    else if (thConstraint.IsTypeDesc())
     {
         TypeDesc *pTypeDesc = thConstraint.AsTypeDesc();
 

@@ -292,7 +292,7 @@ public:
     // Get the parent, known to be decoded
     TypeHandle GetParent() const;
 
-    // Obtain element type for a byref or pointer, returning NULL otherwise
+    // Obtain element type for an array, byref or pointer, returning NULL otherwise
     TypeHandle GetTypeParam() const;
 
     // Obtain instantiation from an instantiated type
@@ -424,6 +424,8 @@ public:
     // method table and this function returns NULL for them.
     inline PTR_MethodTable GetMethodTable() const;
 
+    //TODO: WIP rename to GetTypeParameterOrSelf?
+
     // Returns the type which should be used for visibility checking.
     // For TypeDescs returns the root ElementType.
     // For Foo[] instead returns Foo.
@@ -492,7 +494,7 @@ public:
 
     Module* GetDefiningModuleForOpenType() const;
 
-    // Is actually ParamTypeDesc (ARRAY, SZARRAY, BYREF, PTR)
+    // Is type that has a type parameter (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;
 
     BOOL IsRestored_NoLogging() const;

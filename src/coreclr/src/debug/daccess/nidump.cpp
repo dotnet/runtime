@@ -6108,6 +6108,7 @@ void NativeImageDumper::TypeDescToString( PTR_TypeDesc td, SString& buf )
         PTR_FnPtrTypeDesc fptd( PTR_TO_TADDR(td) );
         buf.Append( W("(fnptr)") );
     }
+    // TODO: WIP remove IsArray
     else if( td->HasTypeParam() || td->IsArray() )
     {
         //either a Parameter or an Array.
@@ -6117,7 +6118,8 @@ void NativeImageDumper::TypeDescToString( PTR_TypeDesc td, SString& buf )
          * Do I need to find a rank somewhere in the TypeDesc?
          */
         unsigned rank;
-        if( td->IsArray()  )
+        //TODO: WIP remove (MT is handled)
+        if( td->IsArray() )
         {
             //td->HasTypeParam() may also be true.
             PTR_MethodTable mt = ptd->GetTemplateMethodTableInternal();

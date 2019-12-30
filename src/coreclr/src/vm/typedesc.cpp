@@ -68,7 +68,7 @@ BOOL ArrayTypeDesc::Verify() {
 
 #endif // #ifndef DACCESS_COMPILE
 
-// TODO: WIP check use of this
+// TODO: WiP check use. do we need this on TH?
 TypeHandle TypeDesc::GetBaseTypeParam()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -198,7 +198,6 @@ Assembly* TypeDesc::GetAssembly() {
     return pModule->GetAssembly();
 }
 
-//TODO: WIP check for a version that works with MT
 void TypeDesc::GetName(SString &ssBuf)
 {
     CONTRACTL
@@ -218,6 +217,7 @@ void TypeDesc::GetName(SString &ssBuf)
     else
         th = TypeHandle(this);
 
+    //TODO: WIP remove
     if (kind == ELEMENT_TYPE_ARRAY)
         rank = this->GetMethodTable()->GetRank();
     else if (CorTypeInfo::IsGenericVariable(kind))
@@ -556,6 +556,7 @@ BOOL TypeDesc::IsEquivalentTo(TypeHandle type COMMA_INDEBUG(TypeHandlePairList *
     {
         // pointer, byref
 
+        // TODO: WIP remove
         // Arrays must have the same rank.
         if (IsArray())
         {
@@ -912,9 +913,10 @@ void TypeDesc::Fixup(DataImage *image)
     }
     else
     {
-        // Works for array and PTR/BYREF types, but not function pointers
+        // Works for PTR/BYREF types, but not function pointers
         _ASSERTE(HasTypeParam());
 
+        // TODO: WIP remove 
         if (IsArray())
         {
             ((ArrayTypeDesc*) this)->Fixup(image);
