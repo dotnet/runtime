@@ -3771,10 +3771,10 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 HRESULT
 ClrDataAccess::GetClrWatsonBuckets(CLRDATA_ADDRESS thread, void *pGenericModeBlock)
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 	// This API is not available under FEATURE_PAL
 	return E_FAIL;
-#else // FEATURE_PAL
+#else // TARGET_UNIX
     if (thread == 0 || pGenericModeBlock == NULL)
         return E_INVALIDARG;
 
@@ -3785,10 +3785,10 @@ ClrDataAccess::GetClrWatsonBuckets(CLRDATA_ADDRESS thread, void *pGenericModeBlo
 
     SOSDacLeave();
     return hr;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBlock * pGM)
 {
@@ -3861,7 +3861,7 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
     }
 }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 HRESULT ClrDataAccess::GetTLSIndex(ULONG *pIndex)
 {

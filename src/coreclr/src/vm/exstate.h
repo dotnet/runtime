@@ -215,7 +215,7 @@ public:
 private:
     ThreadExceptionFlag      m_flag;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 private:
     EHWatsonBucketTracker    m_UEWatsonBucketTracker;
 public:
@@ -224,7 +224,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ThreadExceptionState, this, m_UEWatsonBucketTracker));
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 private:
 

@@ -7409,7 +7409,7 @@ BOOL ClrDataAccess::IsExceptionFromManagedCode(EXCEPTION_RECORD* pExceptionRecor
     return flag;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 //----------------------------------------------------------------------------
 //
@@ -7449,7 +7449,7 @@ HRESULT ClrDataAccess::GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM
     return hr;
 }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 //----------------------------------------------------------------------------
 //

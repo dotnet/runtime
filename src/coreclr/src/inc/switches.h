@@ -36,7 +36,7 @@
 
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 // Failpoint support
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(TARGET_UNIX)
 #define FAILPOINTS_ENABLED
 #endif
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
@@ -90,7 +90,7 @@
 #define ENABLE_FAST_GCPOLL_HELPER
 #endif // defined(FEATURE_ENABLE_GCPOLL) && defined(_TARGET_X86_)
 
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
 // PLATFORM_SUPPORTS_THREADSUSPEND is defined for platforms where it is safe to call
 //   SuspendThread.  This API is dangerous on non-Windows platforms, as it can lead to
 //   deadlocks, due to low level OS resources that the PAL is not aware of, or due to
@@ -105,7 +105,7 @@
 
 // Some platforms may see spurious AVs when GcCoverage is enabled because of races.
 // Enable further processing to see if they recur.
-#if defined(HAVE_GCCOVER) && (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && !defined(FEATURE_PAL)
+#if defined(HAVE_GCCOVER) && (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && !defined(TARGET_UNIX)
 #define GCCOVER_TOLERATE_SPURIOUS_AV
 #endif
 
@@ -185,9 +185,9 @@
 // If defined, support interpretation.
 #if !defined(CROSSGEN_COMPILE)
 
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
 #define FEATURE_STACK_SAMPLING
-#endif // defined (ALLOW_SXS_JIT)
+#endif // defined (TARGET_UNIX)
 
 #endif // !defined(CROSSGEN_COMPILE)
 
