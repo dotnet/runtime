@@ -424,13 +424,9 @@ public:
     // method table and this function returns NULL for them.
     inline PTR_MethodTable GetMethodTable() const;
 
-    // Returns the method table which should be used for visibility checking.
-    // Like GetMethodTable except for TypeDescs returns the root ElementType.
-    // So for Foo[] instead of returning Array returns Foo.
-    inline MethodTable* GetMethodTableOfElementType() const;
-
-    // As above but returns a TypeHandle (so it will return a non-null result
-    // for generic type variables, for instance).
+    // Returns the type which should be used for visibility checking.
+    // For TypeDescs returns the root ElementType.
+    // For Foo[] instead returns Foo.
     inline TypeHandle GetElementType() const;
 
     // Returns the type of the array element

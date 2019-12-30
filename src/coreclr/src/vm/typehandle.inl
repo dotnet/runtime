@@ -38,14 +38,6 @@ inline void TypeHandle::SetIsFullyLoaded()
         return AsMethodTable()->SetIsFullyLoaded();
 }
 
-//TODO: WIP check use. is it right to express in terms of below?
-inline MethodTable* TypeHandle::GetMethodTableOfElementType() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetElementType().GetMethodTable();
-}
-
 inline TypeHandle TypeHandle::GetElementType() const
 {
     LIMITED_METHOD_CONTRACT;
