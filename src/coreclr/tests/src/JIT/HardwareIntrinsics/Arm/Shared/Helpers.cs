@@ -428,5 +428,101 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
         public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
+
+        public static float AbsoluteCompareGreaterThan(float left, float right)
+        {
+            int result = 0;
+
+            if (Math.Abs(left) > Math.Abs(right))
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareGreaterThan(double left, double right)
+        {
+            long result = 0;
+
+            if (Math.Abs(left) > Math.Abs(right))
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareGreaterThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (Math.Abs(left) >= Math.Abs(right))
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareGreaterThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (Math.Abs(left) >= Math.Abs(right))
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareLessThan(float left, float right)
+        {
+            int result = 0;
+
+            if (Math.Abs(left) < Math.Abs(right))
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareLessThan(double left, double right)
+        {
+            long result = 0;
+
+            if (Math.Abs(left) < Math.Abs(right))
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareLessThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (Math.Abs(left) <= Math.Abs(right))
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareLessThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (Math.Abs(left) <= Math.Abs(right))
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
     }
 }
