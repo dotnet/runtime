@@ -63,7 +63,6 @@ CONFIG_INTEGER(JitGCChecks, W("JitGCChecks"), 0)
 CONFIG_INTEGER(JitGCInfoLogging, W("JitGCInfoLogging"), 0) // If true, prints GCInfo-related output to standard output.
 CONFIG_INTEGER(JitHashBreak, W("JitHashBreak"), -1)        // Same as JitBreak, but for a method hash
 CONFIG_INTEGER(JitHashDump, W("JitHashDump"), -1)          // Same as JitDump, but for a method hash
-CONFIG_INTEGER(JitHashDumpIR, W("JitHashDumpIR"), -1)      // Same as JitDumpIR, but for a method hash
 CONFIG_INTEGER(JitHashHalt, W("JitHashHalt"), -1)          // Same as JitHalt, but for a method hash
 CONFIG_INTEGER(JitInlineAdditionalMultiplier, W("JitInlineAdditionalMultiplier"), 0)
 CONFIG_INTEGER(JitInlinePrintStats, W("JitInlinePrintStats"), 0)
@@ -128,7 +127,6 @@ CONFIG_INTEGER(JitStrictCheckForNonVirtualCallToVirtualMethod, W("JitStrictCheck
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0) // If non-zero, assert if # of VNF_MapSelect applications
                                                            // considered reaches this
 CONFIG_INTEGER(NgenHashDump, W("NgenHashDump"), -1)        // same as JitHashDump, but for ngen
-CONFIG_INTEGER(NgenHashDumpIR, W("NgenHashDumpIR"), -1)    // same as JitHashDumpIR, but for ngen
 CONFIG_INTEGER(NgenOrder, W("NgenOrder"), 0)
 CONFIG_INTEGER(RunAltJitCode, W("RunAltJitCode"), 1) // If non-zero, and the compilation succeeds for an AltJit, then
                                                      // use the code. If zero, then we always throw away the generated
@@ -144,7 +142,6 @@ CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembl
 CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDisasm and related info for methods
                                                              // from this semicolon-delimited list of assemblies.
 CONFIG_METHODSET(JitDump, W("JitDump"))                      // Dumps trees for specified method
-CONFIG_METHODSET(JitDumpIR, W("JitDumpIR"))                  // Dumps trees (in linear IR form) for specified method
 CONFIG_METHODSET(JitEHDump, W("JitEHDump"))                  // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
@@ -167,7 +164,6 @@ CONFIG_METHODSET(JitUnwindDump, W("JitUnwindDump")) // Dump the unwind codes for
 ///
 CONFIG_METHODSET(NgenDisasm, W("NgenDisasm")) // Same as JitDisasm, but for ngen
 CONFIG_METHODSET(NgenDump, W("NgenDump"))     // Same as JitDump, but for ngen
-CONFIG_METHODSET(NgenDumpIR, W("NgenDumpIR")) // Same as JitDumpIR, but for ngen
 CONFIG_METHODSET(NgenEHDump, W("NgenEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(NgenGCDump, W("NgenGCDump"))
 CONFIG_METHODSET(NgenDebugDump, W("NgenDebugDump"))
@@ -182,10 +178,6 @@ CONFIG_STRING(JitDumpFgPhase, W("JitDumpFgPhase")) // Phase-based Xml/Dot flowgr
                                                    // phase to see the flowgraph after that phase. Leave unset to dump
                                                    // after COLD-BLK (determine first cold block) or set to * for all
                                                    // phases
-CONFIG_STRING(JitDumpIRFormat, W("JitDumpIRFormat")) // Comma separated format control for JitDumpIR, values = {types |
-                                                     // locals | ssa | valnums | kinds | flags | nodes | nolists |
-                                                     // nostmts | noleafs | trees | dataflow}
-CONFIG_STRING(JitDumpIRPhase, W("JitDumpIRPhase"))   // Phase control for JitDumpIR, values = {* | phasename}
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
 CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
@@ -197,11 +189,9 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 ///
 /// NGEN
 ///
-CONFIG_STRING(NgenDumpFg, W("NgenDumpFg"))             // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))       // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile"))     // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpIRFormat, W("NgenDumpIRFormat")) // Same as JitDumpIRFormat, but for ngen
-CONFIG_STRING(NgenDumpIRPhase, W("NgenDumpIRPhase"))   // Same as JitDumpIRPhase, but for ngen
+CONFIG_STRING(NgenDumpFg, W("NgenDumpFg"))         // Ngen Xml Flowgraph support
+CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))   // Ngen Xml Flowgraph support
+CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml Flowgraph support
 ///
 /// JIT Hardware Intrinsics
 ///

@@ -8,7 +8,7 @@
     <ProductionVersion>$(ProductBandVersion).0</ProductionVersion>
   </PropertyGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
     <FrameworkListName>.NET Standard 2.1</FrameworkListName>

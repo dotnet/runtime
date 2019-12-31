@@ -331,7 +331,7 @@ REM Skip mscorlib since it is already precompiled.
 if /I "%3" == "mscorlib.dll" exit /b 0
 if /I "%3" == "mscorlib.ni.dll" exit /b 0
 
-"%1\crossgen.exe" /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
+"%1\crossgen.exe" /nologo /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
 set /a __exitCode = %errorlevel%
 if "%__exitCode%" == "-2146230517" (
     echo %2 is not a managed assembly.

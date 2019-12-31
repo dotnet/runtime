@@ -128,13 +128,12 @@
     <Compile Include="TypeDescriptionProviderTests.cs" />
     <Compile Include="TypeDescriptionProviderAttributeTests.cs" />
     <Compile Include="TypeDescriptorTests.cs" />
-    <Compile Include="TypeDescriptorTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="TypeListConverterTests.cs" />
     <Compile Include="UInt16ConverterTests.cs" />
     <Compile Include="UInt32ConverterTests.cs" />
     <Compile Include="UInt64ConverterTests.cs" />
     <Compile Include="UriTypeConverterTests.cs" />
-    <Compile Include="VersionConverterTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="VersionConverterTests.cs" />
     <Compile Include="Drawing\StringTypeConverterTestBase.cs" />
     <Compile Include="TimerTests.cs" />
     <Compile Include="ContainerTests.cs" />

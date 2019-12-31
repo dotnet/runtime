@@ -131,10 +131,11 @@
     <Compile Include="System\SByteTests.cs" />
     <Compile Include="System\SingleTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
+    <Compile Include="System\String.SplitTests.cs" />
     <Compile Include="System\StringComparerTests.cs" />
     <Compile Include="System\StringGetHashCodeTests.cs" />
+    <Compile Include="System\StringSplitExtensions.cs" />
     <Compile Include="System\StringTests.cs" />
-    <Compile Include="System\String.SplitTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
     <Compile Include="System\TimeoutExceptionTests.cs" />
     <Compile Include="System\TimeSpanTests.cs" />
@@ -256,13 +257,10 @@
     <Compile Include="System\Text\Unicode\Utf8Tests.cs" />
     <Compile Include="System\Text\Unicode\Utf8UtilityTests.ValidateBytes.cs" />
     <Compile Include="System\ArgIteratorTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.netcoreapp.cs" Link="System\RealFormatterTestsBase.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="System\RealFormatterTestsBase.cs" />
     <Compile Include="System\RealFormatterTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.netcoreapp.cs" Link="System\RealParserTestsBase.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="System\RealParserTestsBase.cs" />
     <Compile Include="System\RealParserTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
-    <Compile Include="System\StringSplitExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs">

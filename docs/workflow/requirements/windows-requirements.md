@@ -68,7 +68,7 @@ The dotnet/runtime repository requires at least Git 2.22.0.
 ## DotNet Core SDK
 
 While not strictly needed to build or test the .NET Core repository, having the .NET Core SDK installed lets you use the dotnet.exe command to run .NET Core applications in the 'normal' way.   We use this in the
-[Using Your Build](./testing/UsingYourBuild.md) instructions.  Visual Studio should have
+[Using Your Build](../testing/using-your-build.md) instructions.  Visual Studio should have
 installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .NET Core SDK](https://dotnet.microsoft.com/download) page.
 
 ## Adding to the default PATH variable
