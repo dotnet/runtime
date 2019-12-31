@@ -270,6 +270,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg);
                 break;
 
+            case NI_AdvSimd_AbsoluteCompareLessThan:
+            case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThan:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
+                break;
+
             default:
                 unreached();
         }
