@@ -855,9 +855,8 @@ namespace System.Linq.Expressions.Compiler
                 EmitExpression(cb.Body);
                 if (tryType != typeof(void))
                 {
-                    Debug.Assert(value != null);
                     //store the value of the catch block body
-                    _ilg.Emit(OpCodes.Stloc, value);
+                    _ilg.Emit(OpCodes.Stloc, value!);
                 }
 
                 ExitScope(cb);
@@ -895,9 +894,8 @@ namespace System.Linq.Expressions.Compiler
 
             if (tryType != typeof(void))
             {
-                Debug.Assert(value != null);
-                _ilg.Emit(OpCodes.Ldloc, value);
-                FreeLocal(value);
+                _ilg.Emit(OpCodes.Ldloc, value!);
+                FreeLocal(value!);
             }
             PopLabelBlock(LabelScopeKind.Try);
         }

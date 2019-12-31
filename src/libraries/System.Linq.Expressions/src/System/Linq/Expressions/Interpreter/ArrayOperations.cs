@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-
 namespace System.Linq.Expressions.Interpreter
 {
     internal sealed class NewArrayInitInstruction : Instruction
@@ -106,8 +104,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             int index = ConvertHelper.ToInt32NoNull(frame.Pop());
-            Array? array = (Array?)frame.Pop();
-            Debug.Assert(array != null);
+            Array array = (Array)frame.Pop()!;
             frame.Push(array.GetValue(index));
             return 1;
         }
@@ -126,8 +123,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             object? value = frame.Pop();
             int index = ConvertHelper.ToInt32NoNull(frame.Pop());
-            Array? array = (Array?)frame.Pop();
-            Debug.Assert(array != null);
+            Array array = (Array)frame.Pop()!;
             array.SetValue(value, index);
             return 1;
         }
@@ -145,8 +141,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object? obj = frame.Pop();
-            Debug.Assert(obj != null);
+            object obj = frame.Pop()!;
             frame.Push(((Array)obj).Length);
             return 1;
         }

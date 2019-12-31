@@ -411,9 +411,8 @@ namespace System.Linq.Expressions
             }
             else
             {
-                Debug.Assert(member.DeclaringType != null);
                 // For static members, include the type name
-                Out(member.DeclaringType.Name);
+                Out(member.DeclaringType!.Name);
             }
 
             Out('.');
@@ -770,8 +769,8 @@ namespace System.Linq.Expressions
             }
             else
             {
-                Debug.Assert(node.Indexer != null && node.Indexer.DeclaringType != null);
-                Out(node.Indexer.DeclaringType.Name);
+                Debug.Assert(node.Indexer != null);
+                Out(node.Indexer.DeclaringType!.Name);
             }
             if (node.Indexer != null)
             {

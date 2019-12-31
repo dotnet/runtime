@@ -120,8 +120,7 @@ namespace System.Linq.Expressions.Interpreter
                 RuntimeWrappedException? rwe = exception as RuntimeWrappedException;
                 unwrappedException = rwe != null ? rwe.WrappedException : exception;
                 Type exceptionType = unwrappedException.GetType();
-                Debug.Assert(_handlers != null);
-                foreach (ExceptionHandler candidate in _handlers)
+                foreach (ExceptionHandler candidate in _handlers!)
                 {
                     if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(frame, ref unwrappedException, candidate.Filter)))
                     {
@@ -161,7 +160,6 @@ namespace System.Linq.Expressions.Interpreter
                 // If this is the handler that will be executed, then if the filter has assigned to the exception variable
                 // that change should be visible to the handler. Otherwise, it should not, so we write it back only on true.
                 object? exceptionLocal = frame.Pop();
-
                 if ((bool)frame.Pop()!)
                 {
                     exception = exceptionLocal;
@@ -265,18 +263,18 @@ namespace System.Linq.Expressions.Interpreter
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
     internal readonly struct InterpretedFrameInfo
     {
-        private readonly string _methodName;
+        private readonly string? _methodName;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         private readonly DebugInfo? _debugInfo;
 
-        public InterpretedFrameInfo(string methodName, DebugInfo? info)
+        public InterpretedFrameInfo(string? methodName, DebugInfo? info)
         {
             _methodName = methodName;
             _debugInfo = info;
         }
 
-        public override string ToString() => _debugInfo != null ? _methodName + ": " + _debugInfo : _methodName;
+        public override string? ToString() => _debugInfo != null ? _methodName + ": " + _debugInfo : _methodName;
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
@@ -598,8 +596,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else if (index.ArgumentCount != 1)
             {
-                Debug.Assert(index.Object != null);
-                _instructions.EmitCall(index.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)!);
+                _instructions.EmitCall(index.Object!.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)!);
             }
             else
             {
@@ -638,8 +635,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else if (index.ArgumentCount != 1)
             {
-                Debug.Assert(index.Object != null);
-                _instructions.EmitCall(index.Object.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance)!);
+                _instructions.EmitCall(index.Object!.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance)!);
             }
             else
             {
@@ -1283,7 +1279,6 @@ namespace System.Linq.Expressions.Interpreter
         private void EmitUnaryMethodCall(UnaryExpression node)
         {
             Compile(node.Operand);
-            Debug.Assert(node.Method != null);
             if (node.IsLifted)
             {
                 BranchLabel notNull = _instructions.MakeLabel();
@@ -1293,13 +1288,13 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.EmitBranch(computed);
 
                 _instructions.MarkLabel(notNull);
-                _instructions.EmitCall(node.Method);
+                _instructions.EmitCall(node.Method!);
 
                 _instructions.MarkLabel(computed);
             }
             else
             {
-                _instructions.EmitCall(node.Method);
+                _instructions.EmitCall(node.Method!);
             }
         }
 
@@ -1363,8 +1358,7 @@ namespace System.Linq.Expressions.Interpreter
             Compile(expr.Left);
             _instructions.EmitDup();
 
-            Debug.Assert(expr.Method != null && expr.Method.DeclaringType != null);
-            MethodInfo? opTrue = TypeUtils.GetBooleanOperator(expr.Method.DeclaringType, andAlso ? "op_False" : "op_True");
+            MethodInfo? opTrue = TypeUtils.GetBooleanOperator(expr.Method!.DeclaringType!, andAlso ? "op_False" : "op_True");
             Debug.Assert(opTrue != null, "factory should check that the method exists");
             _instructions.EmitCall(opTrue);
             _instructions.EmitBranchTrue(labEnd);
@@ -1742,9 +1736,8 @@ namespace System.Linq.Expressions.Interpreter
             {
                 _labelBlock.TryGetLabelInfo(node.Target, out label);
 
-                Debug.Assert(_labelBlock.Parent != null);
                 // We're in a block but didn't find our label, try switch
-                if (label == null && _labelBlock.Parent.Kind == LabelScopeKind.Switch)
+                if (label == null && _labelBlock.Parent!.Kind == LabelScopeKind.Switch)
                 {
                     _labelBlock.Parent.TryGetLabelInfo(node.Target, out label);
                 }
@@ -1797,8 +1790,8 @@ namespace System.Linq.Expressions.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
         private void PopLabelBlock(LabelScopeKind kind)
         {
-            Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind && _labelBlock.Parent != null);
-            _labelBlock = _labelBlock.Parent;
+            Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
+            _labelBlock = _labelBlock.Parent!;
         }
 
         private LabelInfo EnsureLabel(LabelTarget node)
@@ -1856,8 +1849,7 @@ namespace System.Linq.Expressions.Interpreter
                         {
                             return false;
                         }
-                        Debug.Assert(_labelBlock.Parent != null);
-                        if (_labelBlock.Parent.Kind == LabelScopeKind.Switch &&
+                        if (_labelBlock.Parent!.Kind == LabelScopeKind.Switch &&
                             _labelBlock.Parent.ContainsTarget(label))
                         {
                             return false;
@@ -1869,8 +1861,7 @@ namespace System.Linq.Expressions.Interpreter
                     PushLabelBlock(LabelScopeKind.Block);
                     // Labels defined immediately in the block are valid for
                     // the whole block.
-                    Debug.Assert(_labelBlock.Parent != null);
-                    if (_labelBlock.Parent.Kind != LabelScopeKind.Switch)
+                    if (_labelBlock.Parent!.Kind != LabelScopeKind.Switch)
                     {
                         DefineBlockLabels(node);
                     }
@@ -2250,8 +2241,7 @@ namespace System.Linq.Expressions.Interpreter
                     case ExpressionType.ArrayIndex:
                         return true;
                     case ExpressionType.Index:
-                        Debug.Assert(((IndexExpression)node).Object != null);
-                        return ((IndexExpression)node).Object.Type.IsArray;
+                            return ((IndexExpression)node).Object!.Type.IsArray;
                     case ExpressionType.MemberAccess:
                         return ((MemberExpression)node).Member is FieldInfo;
                         // ExpressionType.Unbox does have the behaviour write-back is used to simulate, but
@@ -2312,13 +2302,11 @@ namespace System.Linq.Expressions.Interpreter
                         }
                         else if (indexNode.ArgumentCount == 1)
                         {
-                            Debug.Assert(indexNode.Object != null);
-                            return CompileArrayIndexAddress(indexNode.Object, indexNode.GetArgument(0), index);
+                            return CompileArrayIndexAddress(indexNode.Object!, indexNode.GetArgument(0), index);
                         }
                         else
                         {
-                            Debug.Assert(indexNode.Object != null);
-                            return CompileMultiDimArrayAccess(indexNode.Object, indexNode, index);
+                            return CompileMultiDimArrayAccess(indexNode.Object!, indexNode, index);
                         }
                     case ExpressionType.MemberAccess:
                         var member = (MemberExpression)node;
@@ -3162,16 +3150,13 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (_parameter.InClosure)
             {
-                Debug.Assert(frame.Closure != null);
-                IStrongBox? box = frame.Closure[_parameter.Index];
-                Debug.Assert(box != null);
+                IStrongBox box = frame.Closure![_parameter.Index]!;
                 box.Value = value;
             }
             else if (_parameter.IsBoxed)
             {
                 var box = (IStrongBox?)frame.Data[_parameter.Index];
-                Debug.Assert(box != null);
-                box.Value = value;
+                box!.Value = value;
             }
             else
             {

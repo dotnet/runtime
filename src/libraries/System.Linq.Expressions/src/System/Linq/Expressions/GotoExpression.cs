@@ -123,7 +123,7 @@ namespace System.Linq.Expressions
         /// the <see cref="GotoExpression.Target"/> property set to <paramref name="target"/>,
         /// and <paramref name="value"/> to be passed to the target label upon jumping.
         /// </returns>
-        public static GotoExpression Break(LabelTarget target, Expression value)
+        public static GotoExpression Break(LabelTarget target, Expression? value)
         {
             return MakeGoto(GotoExpressionKind.Break, target, value, typeof(void));
         }
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions
         /// the <see cref="Type"/> property set to <paramref name="type"/>,
         /// and <paramref name="value"/> to be passed to the target label upon jumping.
         /// </returns>
-        public static GotoExpression Break(LabelTarget target, Expression value, Type type)
+        public static GotoExpression Break(LabelTarget target, Expression? value, Type type)
         {
             return MakeGoto(GotoExpressionKind.Break, target, value, type);
         }
@@ -231,7 +231,7 @@ namespace System.Linq.Expressions
         /// the <see cref="GotoExpression.Target"/> property set to <paramref name="target"/>,
         /// and <paramref name="value"/> to be passed to the target label upon jumping.
         /// </returns>
-        public static GotoExpression Return(LabelTarget target, Expression value)
+        public static GotoExpression Return(LabelTarget target, Expression? value)
         {
             return MakeGoto(GotoExpressionKind.Return, target, value, typeof(void));
         }
@@ -249,7 +249,7 @@ namespace System.Linq.Expressions
         /// the <see cref="Type"/> property set to <paramref name="type"/>,
         /// and <paramref name="value"/> to be passed to the target label upon jumping.
         /// </returns>
-        public static GotoExpression Return(LabelTarget target, Expression value, Type type)
+        public static GotoExpression Return(LabelTarget target, Expression? value, Type type)
         {
             return MakeGoto(GotoExpressionKind.Return, target, value, type);
         }
@@ -294,7 +294,7 @@ namespace System.Linq.Expressions
         /// the <see cref="GotoExpression.Target"/> property set to <paramref name="target"/>,
         /// and <paramref name="value"/> to be passed to the target label upon jumping.
         /// </returns>
-        public static GotoExpression Goto(LabelTarget target, Expression value)
+        public static GotoExpression Goto(LabelTarget target, Expression? value)
         {
             return MakeGoto(GotoExpressionKind.Goto, target, value, typeof(void));
         }
@@ -312,7 +312,7 @@ namespace System.Linq.Expressions
         /// the <see cref="Type"/> property set to <paramref name="type"/>,
         /// and <paramref name="value"/> to be passed to the target label upon jumping.
         /// </returns>
-        public static GotoExpression Goto(LabelTarget target, Expression value, Type type)
+        public static GotoExpression Goto(LabelTarget target, Expression? value, Type type)
         {
             return MakeGoto(GotoExpressionKind.Goto, target, value, type);
         }

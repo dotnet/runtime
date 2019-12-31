@@ -119,8 +119,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (HasMultipleDefinitions)
             {
-                Debug.Assert(_node != null);
-                throw Error.AmbiguousJump(_node.Name);
+                throw Error.AmbiguousJump(_node!.Name);
             }
 
             // We didn't find an outward jump. Look for a jump across blocks
@@ -162,8 +161,7 @@ namespace System.Linq.Expressions.Interpreter
             // Make sure that if this label was jumped to, it is also defined
             if (_references.Count > 0 && !HasDefinitions)
             {
-                Debug.Assert(_node != null);
-                throw Error.LabelTargetUndefined(_node.Name);
+                throw Error.LabelTargetUndefined(_node!.Name);
             }
         }
 

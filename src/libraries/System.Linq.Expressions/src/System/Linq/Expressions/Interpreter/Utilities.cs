@@ -163,8 +163,7 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         public static void UnwrapAndRethrow(TargetInvocationException exception)
         {
-            Debug.Assert(exception.InnerException != null);
-            ExceptionDispatchInfo.Throw(exception.InnerException);
+            ExceptionDispatchInfo.Throw(exception.InnerException!);
         }
     }
 

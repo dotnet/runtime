@@ -549,8 +549,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Action == RewriteAction.SpillStack)
             {
-                Debug.Assert(node.Constructor != null);
-                cr.MarkRefArgs(node.Constructor, startIndex: 0);
+                cr.MarkRefArgs(node.Constructor!, startIndex: 0);
             }
 
             return cr.Finish(cr.Rewrite ? new NewExpression(node.Constructor, cr[0, -1]!, node.Members) : expr);

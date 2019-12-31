@@ -482,8 +482,7 @@ namespace System.Linq.Expressions.Compiler
             EmitBinaryOperator(op, leftType.GetNonNullableType(), rightType.GetNonNullableType(), resultType.GetNonNullableType(), liftedToNull: false);
 
             // construct result type
-            ConstructorInfo? ci = resultType.GetConstructor(new Type[] { resultType.GetNonNullableType() });
-            Debug.Assert(ci != null);
+            ConstructorInfo ci = resultType.GetConstructor(new Type[] { resultType.GetNonNullableType() })!;
             _ilg.Emit(OpCodes.Newobj, ci);
             _ilg.Emit(OpCodes.Stloc, locResult);
             _ilg.Emit(OpCodes.Br_S, labEnd);

@@ -176,7 +176,7 @@ namespace System.Linq.Expressions
         /// <param name="fieldName">The field to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames")]
-        public static MemberExpression Field(Expression expression, Type type, string fieldName)
+        public static MemberExpression Field(Expression? expression, Type type, string fieldName)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
 
@@ -222,7 +222,7 @@ namespace System.Linq.Expressions
         /// <param name="type">The <see cref="Type"/> containing the property.</param>
         /// <param name="propertyName">The property to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
-        public static MemberExpression Property(Expression expression, Type type, string propertyName)
+        public static MemberExpression Property(Expression? expression, Type type, string propertyName)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(propertyName, nameof(propertyName));
@@ -292,14 +292,14 @@ namespace System.Linq.Expressions
         /// <param name="expression">The containing object of the property.  This can be null for static properties.</param>
         /// <param name="propertyAccessor">An accessor method of the property to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
-        public static MemberExpression Property(Expression expression, MethodInfo propertyAccessor)
+        public static MemberExpression Property(Expression? expression, MethodInfo propertyAccessor)
         {
             ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
             ValidateMethodInfo(propertyAccessor, nameof(propertyAccessor));
             return Property(expression, GetProperty(propertyAccessor, nameof(propertyAccessor)));
         }
 
-        private static PropertyInfo GetProperty(MethodInfo mi, string paramName, int index = -1)
+        private static PropertyInfo GetProperty(MethodInfo mi, string? paramName, int index = -1)
         {
             Type? type = mi.DeclaringType;
             if (type != null)
@@ -333,8 +333,7 @@ namespace System.Linq.Expressions
             // same as that returned by reflection.
             // Check for this condition and try and get the method from reflection.
             Type? type = method.DeclaringType;
-            Debug.Assert(type != null);
-            if (type.IsInterface && method.Name == propertyMethod.Name && type.GetMethod(method.Name) == propertyMethod)
+            if (type!.IsInterface && method.Name == propertyMethod.Name && type.GetMethod(method.Name) == propertyMethod)
             {
                 return true;
             }

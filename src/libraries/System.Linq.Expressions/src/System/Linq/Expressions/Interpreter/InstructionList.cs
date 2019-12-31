@@ -99,11 +99,10 @@ namespace System.Linq.Expressions.Interpreter
 
             public InstructionView[] GetInstructionViews(bool includeDebugCookies = false)
             {
-                Debug.Assert(_list._labels != null);
                 return GetInstructionViews(
                         _list._instructions,
                         _list._objects,
-                        (index) => _list._labels[index].TargetIndex,
+                        (index) => _list._labels![index].TargetIndex,
                         includeDebugCookies ? _list._debugCookies : null
                     );
             }
@@ -379,8 +378,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            Debug.Assert(s_loadObjectCached != null);
-            if (_objects.Count < s_loadObjectCached.Length)
+            if (_objects.Count < s_loadObjectCached!.Length)
             {
                 uint index = (uint)_objects.Count;
                 _objects.Add(value);
@@ -953,8 +951,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             var result = new RuntimeLabel[_runtimeLabelCount + 1];
-            Debug.Assert(_labels != null);
-            foreach (BranchLabel label in _labels)
+            foreach (BranchLabel label in _labels!)
             {
                 if (label.HasRuntimeLabel)
                 {

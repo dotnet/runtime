@@ -81,7 +81,7 @@ namespace System.Linq.Expressions
         /// <param name="finally">The <see cref="Finally"/> property of the result.</param>
         /// <param name="fault">The <see cref="Fault"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public TryExpression Update(Expression body, IEnumerable<CatchBlock> handlers, Expression? @finally, Expression? fault)
+        public TryExpression Update(Expression body, IEnumerable<CatchBlock>? handlers, Expression? @finally, Expression? fault)
         {
             if (body == Body & @finally == Finally & fault == Fault)
             {
@@ -103,7 +103,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The body of the try block.</param>
         /// <param name="fault">The body of the fault block.</param>
         /// <returns>The created <see cref="TryExpression"/>.</returns>
-        public static TryExpression TryFault(Expression body, Expression fault)
+        public static TryExpression TryFault(Expression body, Expression? fault)
         {
             return MakeTry(null, body, null, fault, handlers: null);
         }
@@ -114,7 +114,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The body of the try block.</param>
         /// <param name="finally">The body of the finally block.</param>
         /// <returns>The created <see cref="TryExpression"/>.</returns>
-        public static TryExpression TryFinally(Expression body, Expression @finally)
+        public static TryExpression TryFinally(Expression body, Expression? @finally)
         {
             return MakeTry(null, body, @finally, fault: null, handlers: null);
         }
@@ -125,7 +125,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The body of the try block.</param>
         /// <param name="handlers">The array of zero or more <see cref="CatchBlock"/>s representing the catch statements to be associated with the try block.</param>
         /// <returns>The created <see cref="TryExpression"/>.</returns>
-        public static TryExpression TryCatch(Expression body, params CatchBlock[] handlers)
+        public static TryExpression TryCatch(Expression body, params CatchBlock[]? handlers)
         {
             return MakeTry(null, body, null, null, handlers);
         }
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions
         /// <param name="finally">The body of the finally block.</param>
         /// <param name="handlers">The array of zero or more <see cref="CatchBlock"/>s representing the catch statements to be associated with the try block.</param>
         /// <returns>The created <see cref="TryExpression"/>.</returns>
-        public static TryExpression TryCatchFinally(Expression body, Expression @finally, params CatchBlock[] handlers)
+        public static TryExpression TryCatchFinally(Expression body, Expression? @finally, params CatchBlock[]? handlers)
         {
             return MakeTry(null, body, @finally, null, handlers);
         }

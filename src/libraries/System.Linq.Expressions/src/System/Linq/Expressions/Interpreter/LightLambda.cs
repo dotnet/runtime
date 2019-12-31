@@ -57,9 +57,8 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     if (instruction is EnterTryCatchFinallyInstruction enterTryCatchFinally)
                     {
-                        TryCatchFinallyHandler? handler = enterTryCatchFinally.Handler;
+                        TryCatchFinallyHandler handler = enterTryCatchFinally.Handler!;
 
-                        Debug.Assert(handler != null);
                         AddTryStart(handler.TryStartIndex);
                         AddHandlerExit(handler.TryEndIndex + 1 /* include Goto instruction that acts as a "leave" */);
 
@@ -88,9 +87,8 @@ namespace System.Linq.Expressions.Interpreter
 
                     if (instruction is EnterTryFaultInstruction enterTryFault)
                     {
-                        TryFaultHandler? handler = enterTryFault.Handler;
+                        TryFaultHandler handler = enterTryFault.Handler!;
 
-                        Debug.Assert(handler != null);
                         AddTryStart(handler.TryStartIndex);
                         AddHandlerExit(handler.TryEndIndex + 1 /* include Goto instruction that acts as a "leave" */);
 

@@ -243,8 +243,7 @@ namespace System.Linq.Expressions
             var args = new ParameterExpression[count];
 
             int i = 0;
-            Debug.Assert(index.Object != null);
-            temps[i] = Parameter(index.Object.Type, name: null);
+            temps[i] = Parameter(index.Object!.Type, name: null);
             block[i] = Assign(temps[i], index.Object);
             i++;
             while (i <= count)
@@ -1072,7 +1071,7 @@ namespace System.Linq.Expressions
             // return type must be assignable back to the operand type
             if (!TypeUtils.AreReferenceAssignable(expression.Type, result.Type))
             {
-                throw Error.UserDefinedOpMustHaveValidReturnType(kind, method?.Name);
+                throw Error.UserDefinedOpMustHaveValidReturnType(kind, method!.Name);
             }
             return result;
         }

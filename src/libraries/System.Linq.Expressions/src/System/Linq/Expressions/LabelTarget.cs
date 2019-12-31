@@ -56,7 +56,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="name">The name of the label.</param>
         /// <returns>The new <see cref="LabelTarget"/>.</returns>
-        public static LabelTarget Label(string name)
+        public static LabelTarget Label(string? name)
         {
             return Label(typeof(void), name);
         }

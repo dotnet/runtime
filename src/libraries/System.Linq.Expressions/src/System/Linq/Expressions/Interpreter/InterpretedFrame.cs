@@ -140,7 +140,6 @@ namespace System.Linq.Expressions.Interpreter
             InterpretedFrame? frame = this;
             do
             {
-                Debug.Assert(frame.Name != null);
                 yield return new InterpretedFrameInfo(frame.Name, frame.GetDebugInfo(frame.InstructionIndex));
                 frame = frame.Parent;
             } while (frame != null);
@@ -168,8 +167,7 @@ namespace System.Linq.Expressions.Interpreter
                 InterpretedFrame? frame = this;
                 do
                 {
-                    Debug.Assert(frame.Name != null);
-                    trace.Add(frame.Name);
+                    trace.Add(frame.Name!);
                     frame = frame.Parent;
                 } while (frame != null);
                 return trace.ToArray();
@@ -205,14 +203,12 @@ namespace System.Linq.Expressions.Interpreter
 
         public void PushContinuation(int continuation)
         {
-            Debug.Assert(_continuations != null);
-            _continuations[_continuationIndex++] = continuation;
+            _continuations![_continuationIndex++] = continuation;
         }
 
         public int YieldToCurrentContinuation()
         {
-            Debug.Assert(_continuations != null);
-            RuntimeLabel target = Interpreter._labels[_continuations[_continuationIndex - 1]];
+            RuntimeLabel target = Interpreter._labels[_continuations![_continuationIndex - 1]];
             SetStackDepth(target.StackDepth);
             return target.Index - InstructionIndex;
         }

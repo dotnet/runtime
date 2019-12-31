@@ -23,7 +23,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="locals">The actual hoisted local values.</param>
         /// <returns>The quoted expression.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull("expression")]
         public static Expression? Quote(Expression? expression, object hoistedLocals, object[] locals)
         {
             Debug.Assert(hoistedLocals != null && locals != null);
@@ -199,7 +199,6 @@ namespace System.Runtime.CompilerServices
                     int hoistIndex;
                     if (scope.Indexes.TryGetValue(variable, out hoistIndex))
                     {
-                        Debug.Assert(locals != null);
                         return (IStrongBox)locals[hoistIndex];
                     }
                     scope = scope.Parent;

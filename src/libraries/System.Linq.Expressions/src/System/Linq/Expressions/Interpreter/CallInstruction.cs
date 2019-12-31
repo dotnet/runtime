@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Dynamic.Utils;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Expressions.Interpreter
@@ -126,10 +125,9 @@ namespace System.Linq.Expressions.Interpreter
 
         private static CallInstruction GetArrayAccessor(MethodInfo info, int argumentCount)
         {
-            Type? arrayType = info.DeclaringType;
+            Type arrayType = info.DeclaringType!;
             bool isGetter = info.Name == "Get";
             MethodInfo? alternativeMethod = null;
-            Debug.Assert(arrayType != null);
 
             switch (arrayType.GetArrayRank())
             {

@@ -146,8 +146,7 @@ namespace System.Linq.Expressions
         /// </summary>
         protected internal override Expression Accept(ExpressionVisitor visitor)
         {
-            var dynVisitor = visitor as DynamicExpressionVisitor;
-            if (dynVisitor != null)
+            if (visitor is DynamicExpressionVisitor dynVisitor)
             {
                 return dynVisitor.VisitDynamic(this);
             }
@@ -368,7 +367,7 @@ namespace System.Linq.Expressions
         /// <see cref="Binder">Binder</see>, and
         /// <see cref="Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static new DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments)
+        public static new DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression>? arguments)
         {
             return ExpressionExtension.MakeDynamic(delegateType, binder, arguments);
         }
@@ -386,7 +385,7 @@ namespace System.Linq.Expressions
         /// <see cref="Binder">Binder</see>, and
         /// <see cref="Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static new DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[] arguments)
+        public static new DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[]? arguments)
         {
             return ExpressionExtension.MakeDynamic(delegateType, binder, arguments);
         }

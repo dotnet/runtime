@@ -75,8 +75,7 @@ namespace System.Linq.Expressions.Compiler
             }
             if (closure)
             {
-                Debug.Assert(_scope.NearestHoistedLocals != null);
-                _scope.EmitGet(_scope.NearestHoistedLocals.SelfVariable);
+                _scope.EmitGet(_scope.NearestHoistedLocals!.SelfVariable);
             }
             else
             {

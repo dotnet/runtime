@@ -412,7 +412,7 @@ comparand: null
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments) =>
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression>? arguments) =>
             DynamicExpression.MakeDynamic(delegateType, binder, arguments);
 
         /// <summary>
@@ -498,7 +498,7 @@ comparand: null
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[] arguments) =>
-            MakeDynamic(delegateType, binder, (IEnumerable<Expression>)arguments);
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[]? arguments) =>
+            MakeDynamic(delegateType, binder, (IEnumerable<Expression>?)arguments);
     }
 }

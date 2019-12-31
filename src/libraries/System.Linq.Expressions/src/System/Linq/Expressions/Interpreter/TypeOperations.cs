@@ -564,7 +564,6 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     return node;
                 }
-                Debug.Assert(b != null);
                 return Expression.MakeCatchBlock(node.Test, node.Variable, b, f);
             }
 

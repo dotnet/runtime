@@ -763,7 +763,7 @@ namespace System.Linq.Expressions.Interpreter
                 throw new RethrowException();
             }
 
-            throw ex!; // TODO it can cause NRE what we should throw on null?
+            throw ex!;
         }
 
         private static Exception? WrapThrownObject(object? thrown) =>

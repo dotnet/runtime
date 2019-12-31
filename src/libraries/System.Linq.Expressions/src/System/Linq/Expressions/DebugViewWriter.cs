@@ -557,9 +557,8 @@ namespace System.Linq.Expressions
             }
             else
             {
-                Debug.Assert(member.DeclaringType != null);
                 // For static members, include the type name
-                Out(member.DeclaringType.ToString() + "." + member.Name);
+                Out(member.DeclaringType!.ToString() + "." + member.Name);
             }
         }
 

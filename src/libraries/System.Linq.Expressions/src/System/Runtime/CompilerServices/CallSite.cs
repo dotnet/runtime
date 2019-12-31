@@ -96,9 +96,8 @@ namespace System.Runtime.CompilerServices
 
             if (!ctors.TryGetValue(delegateType, out Func<CallSiteBinder, CallSite>? ctor))
             {
-                MethodInfo? method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create));
+                MethodInfo method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create))!;
 
-                Debug.Assert(method != null);
                 if (delegateType.IsCollectible)
                 {
                     // slow path
@@ -270,8 +269,7 @@ namespace System.Runtime.CompilerServices
         {
             if (i > 1)
             {
-                T[]? rules = Rules;
-                Debug.Assert(rules != null);
+                T[] rules = Rules!;
                 T rule = rules[i];
 
                 rules[i] = rules[i - 1];

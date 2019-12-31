@@ -278,7 +278,6 @@ namespace System.Linq.Expressions.Compiler
                 _ilg.Emit(OpCodes.Stloc, temp = GetLocal(node.Type));
             }
 
-            Debug.Assert(objectType != null);
             EmitSetIndexCall(index, objectType);
 
             // Restore the value
@@ -457,8 +456,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             OpCode callOp = UseVirtual(method) ? OpCodes.Callvirt : OpCodes.Call;
-
-            if (callOp == OpCodes.Callvirt && objectType != null && objectType.IsValueType)
+            if (callOp == OpCodes.Callvirt && objectType!.IsValueType)
             {
                 _ilg.Emit(OpCodes.Constrained, objectType);
             }
@@ -807,7 +805,8 @@ namespace System.Linq.Expressions.Compiler
                 _ilg.Emit(OpCodes.Stloc, temp = GetLocal(node.Type));
             }
 
-            if (member is FieldInfo)
+            var fld = member as FieldInfo;
+            if ((object?)fld != null)
             {
                 _ilg.EmitFieldSet((FieldInfo)member);
             }
@@ -821,9 +820,8 @@ namespace System.Linq.Expressions.Compiler
 
             if (emitAs != CompilationFlags.EmitAsVoidType)
             {
-                Debug.Assert(temp != null);
-                _ilg.Emit(OpCodes.Ldloc, temp);
-                FreeLocal(temp);
+                _ilg.Emit(OpCodes.Ldloc, temp!);
+                FreeLocal(temp!);
             }
         }
 
@@ -838,14 +836,14 @@ namespace System.Linq.Expressions.Compiler
                 EmitInstance(node.Expression, out instanceType);
             }
 
-            Debug.Assert(instanceType != null);
             EmitMemberGet(node.Member, instanceType);
         }
 
         // assumes instance is already on the stack
         private void EmitMemberGet(MemberInfo member, Type? objectType)
         {
-            if (member is FieldInfo fi)
+            var fi = member as FieldInfo;
+            if ((object?)fi != null)
             {
                 if (fi.IsLiteral)
                 {
@@ -1164,8 +1162,7 @@ namespace System.Linq.Expressions.Compiler
                         EmitMethodCallExpression(mc);
                         if (resultType.IsNullableType() && !TypeUtils.AreEquivalent(resultType, mc.Type))
                         {
-                            ConstructorInfo? ci = resultType.GetConstructor(new Type[] { mc.Type });
-                            Debug.Assert(ci != null);
+                            ConstructorInfo ci = resultType.GetConstructor(new Type[] { mc.Type })!;
                             _ilg.Emit(OpCodes.Newobj, ci);
                         }
                         _ilg.Emit(OpCodes.Br_S, exit);

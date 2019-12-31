@@ -263,7 +263,7 @@ namespace System.Linq.Expressions
             return argTypesStr.ToString();
         }
 
-        private static PropertyInfo? FindProperty(Type type, string propertyName, Expression[]? arguments, BindingFlags flags)
+        private static PropertyInfo? FindProperty(Type type, string? propertyName, Expression[]? arguments, BindingFlags flags)
         {
             PropertyInfo? property = null;
 
@@ -337,7 +337,7 @@ namespace System.Linq.Expressions
         /// <param name="indexer">The <see cref="PropertyInfo"/> that represents the property to index.</param>
         /// <param name="arguments">An array of <see cref="Expression"/> objects that are used to index the property.</param>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
-        public static IndexExpression Property(Expression instance, PropertyInfo indexer, params Expression[]? arguments)
+        public static IndexExpression Property(Expression? instance, PropertyInfo indexer, params Expression[]? arguments)
         {
             return Property(instance, indexer, (IEnumerable<Expression>?)arguments);
         }
@@ -349,10 +349,10 @@ namespace System.Linq.Expressions
         /// <param name="indexer">The <see cref="PropertyInfo"/> that represents the property to index.</param>
         /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects that are used to index the property.</param>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
-        public static IndexExpression Property(Expression instance, PropertyInfo indexer, IEnumerable<Expression>? arguments) =>
+        public static IndexExpression Property(Expression? instance, PropertyInfo indexer, IEnumerable<Expression>? arguments) =>
             MakeIndexProperty(instance, indexer, nameof(indexer), arguments.ToReadOnly());
 
-        private static IndexExpression MakeIndexProperty(Expression instance, PropertyInfo indexer, string paramName, ReadOnlyCollection<Expression> argList)
+        private static IndexExpression MakeIndexProperty(Expression? instance, PropertyInfo indexer, string paramName, ReadOnlyCollection<Expression> argList)
         {
             ValidateIndexedProperty(instance, indexer, paramName, ref argList);
             return new IndexExpression(instance, indexer, argList);
@@ -363,7 +363,7 @@ namespace System.Linq.Expressions
         //
         // Does reflection help us out at all? Expression.Property skips all of
         // these checks, so either it needs more checks or we need less here.
-        private static void ValidateIndexedProperty(Expression instance, PropertyInfo indexer, string paramName, ref ReadOnlyCollection<Expression> argList)
+        private static void ValidateIndexedProperty(Expression? instance, PropertyInfo indexer, string paramName, ref ReadOnlyCollection<Expression> argList)
         {
             // If both getter and setter specified, all their parameter types
             // should match, with exception of the last setter parameter which
@@ -447,7 +447,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        private static void ValidateAccessor(Expression instance, MethodInfo method, ParameterInfo[] indexes, ref ReadOnlyCollection<Expression> arguments, string paramName)
+        private static void ValidateAccessor(Expression? instance, MethodInfo method, ParameterInfo[] indexes, ref ReadOnlyCollection<Expression> arguments, string? paramName)
         {
             ContractUtils.RequiresNotNull(arguments, nameof(arguments));
 
@@ -478,7 +478,7 @@ namespace System.Linq.Expressions
             ValidateAccessorArgumentTypes(method, indexes, ref arguments, paramName);
         }
 
-        private static void ValidateAccessorArgumentTypes(MethodInfo method, ParameterInfo[] indexes, ref ReadOnlyCollection<Expression> arguments, string paramName)
+        private static void ValidateAccessorArgumentTypes(MethodInfo method, ParameterInfo[] indexes, ref ReadOnlyCollection<Expression> arguments, string? paramName)
         {
             if (indexes.Length > 0)
             {

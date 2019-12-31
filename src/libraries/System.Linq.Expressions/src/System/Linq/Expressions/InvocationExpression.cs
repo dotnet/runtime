@@ -682,9 +682,9 @@ namespace System.Linq.Expressions
         /// <paramref name="expression"/>.Type does not represent a delegate type or an <see cref="Expression{TDelegate}"/>.-or-The <see cref="Expression.Type"/> property of an element of <paramref name="arguments"/> is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression"/>.</exception>
         /// <exception cref="InvalidOperationException">
         /// <paramref name="arguments"/> does not contain the same number of elements as the list of parameters for the delegate represented by <paramref name="expression"/>.</exception>
-        public static InvocationExpression Invoke(Expression expression, params Expression[] arguments)
+        public static InvocationExpression Invoke(Expression expression, params Expression[]? arguments)
         {
-            return Invoke(expression, (IEnumerable<Expression>)arguments);
+            return Invoke(expression, (IEnumerable<Expression>?)arguments);
         }
 
         /// <summary>

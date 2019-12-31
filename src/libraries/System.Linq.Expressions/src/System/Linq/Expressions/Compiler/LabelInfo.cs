@@ -174,8 +174,7 @@ namespace System.Linq.Expressions.Compiler
             // Validate that we aren't jumping across a finally
             for (LabelScopeInfo? j = reference; j != common; j = j.Parent)
             {
-                Debug.Assert(j != null);
-                if (j.Kind == LabelScopeKind.Finally)
+                if (j!.Kind == LabelScopeKind.Finally)
                 {
                     throw Error.ControlCannotLeaveFinally();
                 }
@@ -193,8 +192,7 @@ namespace System.Linq.Expressions.Compiler
             // Validate that we aren't jumping into a catch or an expression
             for (LabelScopeInfo? j = def; j != common; j = j.Parent)
             {
-                Debug.Assert(j != null);
-                if (!j.CanJumpInto)
+                if (!j!.CanJumpInto)
                 {
                     if (j.Kind == LabelScopeKind.Expression)
                     {
@@ -213,7 +211,7 @@ namespace System.Linq.Expressions.Compiler
             // Make sure that if this label was jumped to, it is also defined
             if (_references.Count > 0 && _definitions.Count == 0)
             {
-                throw Error.LabelTargetUndefined(_node?.Name);
+                throw Error.LabelTargetUndefined(_node!.Name);
             }
         }
 

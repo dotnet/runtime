@@ -62,8 +62,7 @@ namespace System.Linq.Expressions.Compiler
                 return node;
             }
 
-            Debug.Assert(node.Value != null);
-            _constants.Peek().AddReference(node.Value, node.Type);
+            _constants.Peek().AddReference(node.Value!, node.Type);
             return node;
         }
 

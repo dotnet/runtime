@@ -112,8 +112,7 @@ namespace System.Runtime.CompilerServices
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static RuleCache<T> GetRuleCache<T>(CallSite<T> site) where T : class
         {
-            Debug.Assert(site.Binder != null);
-            return site.Binder.GetRuleCache<T>();
+            return site.Binder!.GetRuleCache<T>();
         }
 
         /// <summary>

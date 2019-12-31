@@ -46,8 +46,8 @@ namespace System.Linq.Expressions.Compiler
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
         private void PopLabelBlock(LabelScopeKind kind)
         {
-            Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind && _labelBlock.Parent != null);
-            _labelBlock = _labelBlock.Parent;
+            Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
+            _labelBlock = _labelBlock.Parent!;
         }
 
         private void EmitLabelExpression(Expression expr, CompilationFlags flags)
@@ -170,8 +170,7 @@ namespace System.Linq.Expressions.Compiler
                         {
                             return false;
                         }
-                        Debug.Assert(_labelBlock.Parent != null);
-                        if (_labelBlock.Parent.Kind == LabelScopeKind.Switch &&
+                        if (_labelBlock.Parent!.Kind == LabelScopeKind.Switch &&
                             _labelBlock.Parent.ContainsTarget(label))
                         {
                             return false;
@@ -187,10 +186,9 @@ namespace System.Linq.Expressions.Compiler
                     }
 
                     PushLabelBlock(LabelScopeKind.Block);
-                    Debug.Assert(_labelBlock.Parent != null);
                     // Labels defined immediately in the block are valid for
                     // the whole block.
-                    if (_labelBlock.Parent.Kind != LabelScopeKind.Switch)
+                    if (_labelBlock.Parent!.Kind != LabelScopeKind.Switch)
                     {
                         DefineBlockLabels(node);
                     }

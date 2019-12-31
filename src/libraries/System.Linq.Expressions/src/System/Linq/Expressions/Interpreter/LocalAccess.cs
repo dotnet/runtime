@@ -68,8 +68,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            var box = (IStrongBox?)frame.Data[_index];
-            Debug.Assert(box != null);
+            var box = (IStrongBox)frame.Data[_index]!;
             frame.Data[frame.StackIndex++] = box.Value;
             return 1;
         }
@@ -87,9 +86,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            Debug.Assert(frame.Closure != null);
-            IStrongBox? box = frame.Closure[_index];
-            Debug.Assert(box != null);
+            IStrongBox box = frame.Closure![_index]!;
             frame.Data[frame.StackIndex++] = box.Value;
             return 1;
         }
@@ -107,9 +104,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            Debug.Assert(frame.Closure != null);
-            IStrongBox? box = frame.Closure[_index];
-            Debug.Assert(box != null);
+            IStrongBox box = frame.Closure![_index]!;
             frame.Data[frame.StackIndex++] = box;
             return 1;
         }
@@ -177,8 +172,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            var box = (IStrongBox?)frame.Data[_index];
-            Debug.Assert(box != null);
+            var box = (IStrongBox)frame.Data[_index]!;
             box.Value = frame.Peek();
             return 1;
         }
@@ -196,8 +190,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            var box = (IStrongBox?)frame.Data[_index];
-            Debug.Assert(box != null);
+            var box = (IStrongBox)frame.Data[_index]!;
             box.Value = frame.Data[--frame.StackIndex];
             return 1;
         }
@@ -216,9 +209,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            Debug.Assert(frame.Closure != null);
-            IStrongBox? box = frame.Closure[_index];
-            Debug.Assert(box != null);
+            IStrongBox box = frame.Closure![_index]!;
             box.Value = frame.Peek();
             return 1;
         }

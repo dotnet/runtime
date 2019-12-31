@@ -30,14 +30,7 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public override Type Type
-        {
-            get
-            {
-                Debug.Assert(Constructor != null);
-                return Constructor.DeclaringType!;
-            }
-        }
+        public override Type Type => Constructor!.DeclaringType!;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
@@ -93,8 +86,7 @@ namespace System.Linq.Expressions
             {
                 return this;
             }
-            Debug.Assert(Constructor != null);
-            return Members != null ? New(Constructor, arguments, Members) : New(Constructor, arguments);
+            return Members != null ? New(Constructor!, arguments, Members) : New(Constructor!, arguments);
         }
     }
 
