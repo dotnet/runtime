@@ -67,7 +67,7 @@ namespace Mono.Linker.Steps
 					case MethodAction.ConvertToThrow:
 						continue;
 					case MethodAction.ConvertToStub:
-						var instruction = CodeRewriterStep.StubMethodWithConstant (Context, method);
+						var instruction = CodeRewriterStep.CreateConstantResultInstruction (Context, method);
 						if (instruction != null)
 							constExprMethods [method] = instruction;
 
@@ -106,6 +106,15 @@ namespace Mono.Linker.Steps
 				foreach (var method in type.Methods) {
 					if (!method.HasBody)
 						continue;
+
+					//
+					// Block methods which rewrite does not support
+					//
+					switch (method.ReturnType.MetadataType) {
+					case MetadataType.ByReference:
+					case MetadataType.FunctionPointer:
+						continue;
+					}
 
 					RewriteBody (method);
 				}
@@ -277,135 +286,20 @@ namespace Mono.Linker.Steps
 				if (!RemoveConditions ())
 					return false;
 
-				var reachableMap = GetReachableInstructionsMap ();
-				if (reachableMap == null)
+				var reachableInstrs = GetReachableInstructionsMap (out var unreachableEH);
+				if (reachableInstrs == null)
 					return false;
 
-				bool changed = false;
-				ILProcessor ilprocessor = null;
-				List<VariableDefinition> removedVariablesReferences = null;
-
-				var instrs = Body.Instructions;
-				for (int i = 0; i < instrs.Count; ++i) {
-					if (reachableMap [i])
-						continue;
-
-					var instr = instrs [i];
-					if (instr.OpCode.Code == Code.Nop)
-						continue;
-
-					if (ilprocessor == null)
-						ilprocessor = Body.GetILProcessor ();
-
-					VariableDefinition variable = GetVariableReference (instr);
-					if (variable != null) {
-						if (removedVariablesReferences == null)
-							removedVariablesReferences = new List<VariableDefinition> ();
-						if (!removedVariablesReferences.Contains (variable))
-							removedVariablesReferences.Add (variable);
-					}
-
-					ilprocessor.Replace (i, Instruction.Create (OpCodes.Nop));
-
-					changed = true;
-					InstructionsReplaced++;
+				var bodySweeper = new BodySweeper (Body, reachableInstrs, unreachableEH, context);
+				if (!bodySweeper.Initialize ()) {
+					context.LogMessage (MessageImportance.Low, $"Unreachable IL reduction is not supported for method '{Body.Method.FullName}'");
+					return false;
 				}
 
-				//
-				// Process list of conditional jump which should be removed. They cannot be
-				// replaced with nops as they alter the stack
-				//
-				if (conditionInstrsToRemove != null) {
-					int bodyExpansion = 0;
+				bodySweeper.Process (conditionInstrsToRemove);
+				InstructionsReplaced = bodySweeper.InstructionsReplaced;
 
-					foreach (int instrIndex in conditionInstrsToRemove) {
-						var index = instrIndex + bodyExpansion;
-						var instr = instrs [index];
-
-						if (instr.OpCode == OpCodes.Nop)
-							continue;
-
-						if (ilprocessor == null)
-							ilprocessor = Body.GetILProcessor ();
-
-						switch (instr.OpCode.StackBehaviourPop) {
-						case StackBehaviour.Pop1_pop1:
-
-							InstructionsReplaced += 2;
-
-							//
-							// One of the operands is most likely constant and could just be removed instead of additional pop
-							//
-							if (index > 0 && IsSideEffectFreeLoad (instrs [index - 1])) {
-								ilprocessor.Replace (index - 1, Instruction.Create (OpCodes.Pop));
-								ilprocessor.Replace (index, Instruction.Create (OpCodes.Nop));
-							} else {
-								var pop = Instruction.Create (OpCodes.Pop);
-								ilprocessor.Replace (index, pop);
-								ilprocessor.InsertAfter (pop, Instruction.Create (OpCodes.Pop));
-
-								//
-								// conditionInstrsToRemove is always sorted and instead of
-								// increasing remaining indexes we introduce index delta value
-								//
-								bodyExpansion++;
-							}
-							break;
-						case StackBehaviour.Popi:
-							ilprocessor.Replace (index, Instruction.Create (OpCodes.Pop));
-							InstructionsReplaced++;
-							break;
-						default:
-							// Should never be reached
-							throw new NotImplementedException ();
-						}
-					}
-
-					changed = true;
-				}
-
-				if (removedVariablesReferences != null) {
-					CleanRemovedVariables (removedVariablesReferences);
-				}
-
-				return changed;
-			}
-
-			void CleanRemovedVariables (List<VariableDefinition> variables)
-			{
-				foreach (var instr in Body.Instructions) {
-					VariableDefinition variable = GetVariableReference (instr);
-					if (variable == null)
-						continue;
-
-					if (!variables.Remove (variable))
-						continue;
-
-					if (variables.Count == 0)
-						return;
-				}
-
-				variables.Sort ((a, b) => b.Index.CompareTo (a.Index));
-				var body_variables = Body.Variables;
-
-				foreach (var variable in variables) {
-					var index = body_variables.IndexOf (variable);
-
-					//
-					// Remove variable only if it's the last one. Instead of
-					// re-indexing all variables we mark change it to object,
-					// which is enough to drop the dependency
-					//
-					if (index == body_variables.Count - 1) {
-						body_variables.RemoveAt (index);
-					} else {
-						var objectType = BCL.FindPredefinedType ("System", "Object", context);
-						if (objectType == null)
-							throw new NotSupportedException ("Missing predefined 'System.Object' type");
-
-						body_variables [index].VariableType = objectType;
-					}
-				}
+				return InstructionsReplaced > 0;
 			}
 
 			bool RemoveConditions ()
@@ -530,25 +424,13 @@ namespace Mono.Linker.Steps
 				return changed;
 			}
 
-			BitArray GetReachableInstructionsMap ()
+			BitArray GetReachableInstructionsMap (out List<ExceptionHandler> unreachableHandlers)
 			{
+				unreachableHandlers = null;
 				var reachable = new BitArray (FoldedInstructions.Count);
 
-				Stack<int> conditional = null;
-
-				//
-				// Mark all handlers all the time as we are not interested in optimizing handlers 
-				//
-				if (Body.HasExceptionHandlers) {
-					conditional = new Stack<int> ();
-					foreach (var handler in Body.ExceptionHandlers) {
-						conditional.Push (GetInstructionIndex (handler.HandlerStart));
-
-						if (handler.FilterStart != null)
-							conditional.Push (GetInstructionIndex (handler.FilterStart));
-					}
-				}
-
+				Stack<int> condBranches = null;
+				bool exceptionHandlersChecked = !Body.HasExceptionHandlers;
 				Instruction target;
 				int i = 0;
 				while (true) {
@@ -566,16 +448,16 @@ namespace Mono.Linker.Steps
 							continue;
 
 						case FlowControl.Cond_Branch:
-							if (conditional == null)
-								conditional = new Stack<int> ();
+							if (condBranches == null)
+								condBranches = new Stack<int> ();
 
 							switch (instr.Operand) {
 							case Instruction starget:
-								conditional.Push (GetInstructionIndex (starget));
+								condBranches.Push (GetInstructionIndex (starget));
 								continue;
 							case Instruction[] mtargets:
 								foreach (var t in mtargets)
-									conditional.Push (GetInstructionIndex (t));
+									condBranches.Push (GetInstructionIndex (t));
 								continue;
 							default:
 								throw new NotImplementedException ();
@@ -597,13 +479,51 @@ namespace Mono.Linker.Steps
 						break;
 					}
 
-					if (conditional?.Count > 0) {
-						i = conditional.Pop ();
+					if (condBranches?.Count > 0) {
+						i = condBranches.Pop ();
 						continue;
+					}
+
+					if (!exceptionHandlersChecked) {
+						exceptionHandlersChecked = true;
+
+						var instrs = Body.Instructions;
+						foreach (var handler in Body.ExceptionHandlers) {
+							int start = instrs.IndexOf (handler.TryStart);
+							int end = instrs.IndexOf (handler.TryEnd) - 1;
+
+							if (!HasAnyBitSet (reachable, start, end)) {
+								if (unreachableHandlers == null)
+									unreachableHandlers = new List<ExceptionHandler> ();
+
+								unreachableHandlers.Add (handler);
+								continue;
+							}
+
+							if (condBranches == null)
+								condBranches = new Stack<int> ();
+
+							condBranches.Push (GetInstructionIndex (handler.HandlerStart));
+						}
+
+						if (condBranches?.Count > 0) {
+							i = condBranches.Pop ();
+							continue;
+						}
 					}
 
 					return reachable;
 				}
+			}
+
+			static bool HasAnyBitSet (BitArray bitArray, int startIndex, int endIndex)
+			{
+				for (int i = startIndex; i <= endIndex; ++i) {
+					if (bitArray [i])
+						return true;
+				}
+
+				return false;
 			}
 
 			//
@@ -630,29 +550,6 @@ namespace Mono.Linker.Steps
 
 				return GetConstantValue (FoldedInstructions [index - 2], out left) &&
 					GetConstantValue (FoldedInstructions [index - 1], out right);
-			}
-
-			VariableDefinition GetVariableReference (Instruction instruction)
-			{
-				switch (instruction.OpCode.Code) {
-				case Code.Stloc_0:
-				case Code.Ldloc_0:
-					return Body.Variables [0];
-				case Code.Stloc_1:
-				case Code.Ldloc_1:
-					return Body.Variables [1];
-				case Code.Stloc_2:
-				case Code.Ldloc_2:
-					return Body.Variables [2];
-				case Code.Stloc_3:
-				case Code.Ldloc_3:
-					return Body.Variables [3];
-				}
-
-				if (instruction.Operand is VariableReference vr)
-					return vr.Resolve ();
-
-				return null;
 			}
 
 			static bool GetConstantValue (Instruction instruction, out object value)
@@ -728,39 +625,6 @@ namespace Mono.Linker.Steps
 				return false;
 			}
 
-			static bool IsSideEffectFreeLoad (Instruction instr)
-			{
-				switch (instr.OpCode.Code) {
-				case Code.Ldarg:
-				case Code.Ldloc:
-				case Code.Ldloc_0:
-				case Code.Ldloc_1:
-				case Code.Ldloc_2:
-				case Code.Ldloc_3:
-				case Code.Ldloc_S:
-				case Code.Ldc_I4_0:
-				case Code.Ldc_I4_1:
-				case Code.Ldc_I4_2:
-				case Code.Ldc_I4_3:
-				case Code.Ldc_I4_4:
-				case Code.Ldc_I4_5:
-				case Code.Ldc_I4_6:
-				case Code.Ldc_I4_7:
-				case Code.Ldc_I4_8:
-				case Code.Ldc_I4:
-				case Code.Ldc_I4_S:
-				case Code.Ldc_I4_M1:
-				case Code.Ldc_I8:
-				case Code.Ldc_R4:
-				case Code.Ldc_R8:
-				case Code.Ldnull:
-				case Code.Ldstr:
-					return true;
-				}
-
-				return false;
-			}
-
 			static bool IsComparisonAlwaysTrue (OpCode opCode, int left, int right)
 			{
 				switch (opCode.Code) {
@@ -810,6 +674,395 @@ namespace Mono.Linker.Steps
 				}
 
 				throw new NotImplementedException (opCode.ToString ());
+			}
+		}
+
+		struct BodySweeper
+		{
+			readonly MethodBody body;
+			readonly BitArray reachable;
+			readonly List<ExceptionHandler> unreachableExceptionHandlers;
+			readonly LinkContext context;
+			ILProcessor ilprocessor;
+			List<int> returnInits;
+
+			public BodySweeper (MethodBody body, BitArray reachable, List<ExceptionHandler> unreachableEH, LinkContext context)
+			{
+				this.body = body;
+				this.reachable = reachable;
+				this.unreachableExceptionHandlers = unreachableEH;
+				this.context = context;
+
+				InstructionsReplaced = 0;
+				ilprocessor = null;
+				returnInits = null;
+			}
+
+			public int InstructionsReplaced { get; set; }
+
+			public bool Initialize ()
+			{
+				var instrs = body.Instructions;
+
+				if (body.HasExceptionHandlers) {
+					foreach (var handler in body.ExceptionHandlers) {
+						if (unreachableExceptionHandlers?.Contains (handler) == true)
+							continue;
+
+						// Cecil TryEnd is off by 1 instruction
+						var handlerEnd = handler.TryEnd.Previous;
+
+						switch (handlerEnd.OpCode.Code) {
+						case Code.Leave:
+						case Code.Leave_S:
+							//
+							// Keep original leave to correctly mark handler exit
+							//
+							int index = instrs.IndexOf (handlerEnd);
+							reachable [index] = true;
+							break;
+						default:
+							Debug.Fail ("Exception handler without leave instruction");
+							return false;
+						}
+					}
+				}
+
+				//
+				// Makes the unreachable code at the end of method valid/verifiable
+				//
+				if (body.Method.ReturnType.MetadataType != MetadataType.Void && instrs.Count > 1) {
+					var retExprIndex = instrs.Count - 2;
+
+					if (!reachable [retExprIndex]) {
+						if (returnInits == null)
+							returnInits = new List<int> ();
+
+						returnInits.Add (retExprIndex);
+					}
+				}
+
+				//
+				// Reusing same reachable map to force skipping processing for instructions
+				// which will remain same
+				//
+				for (int i = 0; i < instrs.Count; ++i) {
+					if (reachable [i])
+						continue;
+
+					var instr = instrs [i];
+					switch (instr.OpCode.Code) {
+					case Code.Nop:
+						reachable [i] = true;
+						continue;
+
+					case Code.Ret:
+						if (i == instrs.Count - 1)
+							reachable [i] = true;
+
+						break;
+					}
+				}
+
+				ilprocessor = body.GetILProcessor ();
+				return true;
+			}
+
+			public void Process (List<int> conditionInstrsToRemove)
+			{
+				List<VariableDefinition> removedVariablesReferences = null;
+				Dictionary<Instruction, Instruction []> injectingInstructions = null;
+
+				//
+				// Initial pass which replaces unreachable instructions with nops or
+				// ret/leave to keep the body verifiable
+				//
+				var instrs = body.Instructions;
+				for (int i = 0; i < instrs.Count; ++i) {
+					if (reachable [i])
+						continue;
+
+					var instr = instrs [i];
+
+					Instruction newInstr;
+					if (returnInits?.Contains (i) == true) {
+						newInstr = GetReturnInitialization (out var initInstructions);
+
+						//
+						// Any new instruction injection needs to be postponed until reachableMap
+						// is fully processed to simplify the logic and avoid any re-indexing 
+						//
+						if (initInstructions != null) {
+							if (injectingInstructions == null)
+								injectingInstructions = new Dictionary<Instruction, Instruction []> ();
+							injectingInstructions.Add (newInstr, initInstructions);
+						}
+					} else if (i == instrs.Count - 1) {
+						newInstr = Instruction.Create (OpCodes.Ret);
+					} else {
+						newInstr = Instruction.Create (OpCodes.Nop);
+					}
+
+					ilprocessor.Replace (i, newInstr);
+					InstructionsReplaced++;
+
+					VariableDefinition variable = GetVariableReference (instr);
+					if (variable != null) {
+						if (removedVariablesReferences == null)
+							removedVariablesReferences = new List<VariableDefinition> ();
+						if (!removedVariablesReferences.Contains (variable))
+							removedVariablesReferences.Add (variable);
+					}
+				}
+
+				CleanExceptionHandlers ();
+
+				//
+				// Process list of conditional jump which should be removed. They cannot be
+				// replaced with nops as they alter the stack
+				//
+				if (conditionInstrsToRemove != null) {
+					int bodyExpansion = 0;
+
+					foreach (int instrIndex in conditionInstrsToRemove) {
+						var index = instrIndex + bodyExpansion;
+						var instr = instrs [index];
+
+						switch (instr.OpCode.StackBehaviourPop) {
+						case StackBehaviour.Pop1_pop1:
+
+							InstructionsReplaced += 2;
+
+							//
+							// One of the operands is most likely constant and could just be removed instead of additional pop
+							//
+							if (index > 0 && IsSideEffectFreeLoad (instrs [index - 1])) {
+								ilprocessor.Replace (index - 1, Instruction.Create (OpCodes.Pop));
+								ilprocessor.Replace (index, Instruction.Create (OpCodes.Nop));
+							} else {
+								var pop = Instruction.Create (OpCodes.Pop);
+								ilprocessor.Replace (index, pop);
+								ilprocessor.InsertAfter (pop, Instruction.Create (OpCodes.Pop));
+
+								//
+								// conditionInstrsToRemove is always sorted and instead of
+								// increasing remaining indexes we introduce index delta value
+								//
+								bodyExpansion++;
+							}
+							break;
+						case StackBehaviour.Popi:
+							ilprocessor.Replace (index, Instruction.Create (OpCodes.Pop));
+							InstructionsReplaced++;
+							break;
+						}
+					}
+				}
+
+				//
+				// To this point the original and modified bodies had exactly same number of
+				// instructions
+				//
+				if (injectingInstructions != null) {
+					foreach (var key in injectingInstructions) {
+						int index = instrs.IndexOf (key.Key);
+						Debug.Assert (index >= 0);
+
+						var newInstrs = key.Value;
+						index--;
+
+						// TODO: Simplify when Cecil has better API
+						if (IsNopRange (instrs, index, newInstrs.Length)) {
+							int counter = 0;
+							for (int i = index - newInstrs.Length + 1; i <= index; i++) {
+								ilprocessor.Replace (i, newInstrs [counter++]);
+							}
+						} else {
+							// FIXME: This could break short range jumps. We could fix
+							// that during final il optimization step once we have it
+							for (int i = newInstrs.Length; i != 0; i--) {
+								ilprocessor.InsertAfter (index, newInstrs [i - 1]);
+							}
+						}
+					}
+				}
+
+				//
+				// Replacing instructions with nops can make local variables unused. Process them
+				// as the last step to reduce more type dependencies
+				//
+				if (removedVariablesReferences != null) {
+					CleanRemovedVariables (removedVariablesReferences);
+				}
+			}
+
+			Instruction GetReturnInitialization (out Instruction[] initInstructions)
+			{
+				var cinstr = CodeRewriterStep.CreateConstantResultInstruction (body.Method);
+				if (cinstr != null) {
+					initInstructions = null;
+					return cinstr;
+				}
+
+				var rtype = body.Method.ReturnType;
+
+				switch (rtype.MetadataType) {
+				case MetadataType.MVar:
+				case MetadataType.ValueType:
+					var vd = new VariableDefinition (rtype);
+					body.Variables.Add (vd);
+					body.InitLocals = true;
+
+					initInstructions = new [] {
+						Instruction.Create (OpCodes.Ldloca_S, vd),
+						Instruction.Create (OpCodes.Initobj, rtype)
+					};
+
+					return CreateVariableLoadingInstruction (vd);
+				case MetadataType.Pointer:
+				case MetadataType.IntPtr:
+				case MetadataType.UIntPtr:
+					initInstructions = new [] {
+						Instruction.Create (OpCodes.Ldc_I4_0)
+					};
+
+					return Instruction.Create (OpCodes.Conv_I);
+				}
+
+				throw new NotImplementedException ($"Initialization of return value in method '{body.Method.FullName}'");
+			}
+
+			void CleanRemovedVariables (List<VariableDefinition> variables)
+			{
+				foreach (var instr in body.Instructions) {
+					VariableDefinition variable = GetVariableReference (instr);
+					if (variable == null)
+						continue;
+
+					if (!variables.Remove (variable))
+						continue;
+
+					if (variables.Count == 0)
+						return;
+				}
+
+				variables.Sort ((a, b) => b.Index.CompareTo (a.Index));
+				var body_variables = body.Variables;
+
+				foreach (var variable in variables) {
+					var index = body_variables.IndexOf (variable);
+
+					//
+					// Remove variable only if it's the last one. Instead of
+					// re-indexing all variables we mark change it to object,
+					// which is enough to drop the dependency
+					//
+					if (index == body_variables.Count - 1) {
+						body_variables.RemoveAt (index);
+					} else {
+						var objectType = BCL.FindPredefinedType ("System", "Object", context);
+						if (objectType == null)
+							throw new NotSupportedException ("Missing predefined 'System.Object' type");
+
+						body_variables [index].VariableType = objectType;
+					}
+				}
+			}
+
+			void CleanExceptionHandlers ()
+			{
+				if (unreachableExceptionHandlers == null)
+					return;
+
+				foreach (var eh in unreachableExceptionHandlers)
+					body.ExceptionHandlers.Remove (eh);
+			}
+
+			static Instruction CreateVariableLoadingInstruction (VariableDefinition variable)
+			{
+				switch (variable.Index) {
+				case 0:
+					return Instruction.Create (OpCodes.Ldloc_0);
+				case 1:
+					return Instruction.Create (OpCodes.Ldloc_1);
+				case 2:
+					return Instruction.Create (OpCodes.Ldloc_2);
+				case 3:
+					return Instruction.Create (OpCodes.Ldloc_3);
+				default:
+					return variable.Index < 256 ?
+						Instruction.Create (OpCodes.Ldloc_S, variable) :
+						Instruction.Create (OpCodes.Ldloc, variable);
+				}
+			}
+
+			VariableDefinition GetVariableReference (Instruction instruction)
+			{
+				switch (instruction.OpCode.Code) {
+				case Code.Stloc_0:
+				case Code.Ldloc_0:
+					return body.Variables [0];
+				case Code.Stloc_1:
+				case Code.Ldloc_1:
+					return body.Variables [1];
+				case Code.Stloc_2:
+				case Code.Ldloc_2:
+					return body.Variables [2];
+				case Code.Stloc_3:
+				case Code.Ldloc_3:
+					return body.Variables [3];
+				}
+
+				if (instruction.Operand is VariableReference vr)
+					return vr.Resolve ();
+
+				return null;
+			}
+
+			static bool IsNopRange (Collection<Instruction> collection, int startIndex, int count)
+			{
+				if (startIndex - count < 0)
+					return false;
+
+				while (count-- > 0) {
+					if (collection [startIndex--].OpCode != OpCodes.Nop)
+						return false;
+				}
+
+				return true;
+			}
+
+			static bool IsSideEffectFreeLoad (Instruction instr)
+			{
+				switch (instr.OpCode.Code) {
+				case Code.Ldarg:
+				case Code.Ldloc:
+				case Code.Ldloc_0:
+				case Code.Ldloc_1:
+				case Code.Ldloc_2:
+				case Code.Ldloc_3:
+				case Code.Ldloc_S:
+				case Code.Ldc_I4_0:
+				case Code.Ldc_I4_1:
+				case Code.Ldc_I4_2:
+				case Code.Ldc_I4_3:
+				case Code.Ldc_I4_4:
+				case Code.Ldc_I4_5:
+				case Code.Ldc_I4_6:
+				case Code.Ldc_I4_7:
+				case Code.Ldc_I4_8:
+				case Code.Ldc_I4:
+				case Code.Ldc_I4_S:
+				case Code.Ldc_I4_M1:
+				case Code.Ldc_I8:
+				case Code.Ldc_R4:
+				case Code.Ldc_R8:
+				case Code.Ldnull:
+				case Code.Ldstr:
+					return true;
+				}
+
+				return false;
 			}
 		}
 

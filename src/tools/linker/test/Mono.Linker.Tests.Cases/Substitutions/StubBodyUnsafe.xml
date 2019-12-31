@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.StubBodyUnsafe">
+      <method signature="System.Byte* TestMethod_1()" body="stub">
+      </method>
+    </type>
+  </assembly>
+</linker>
