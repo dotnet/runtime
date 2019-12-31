@@ -4346,6 +4346,9 @@ public:
     bool fgFuncletsCreated; // true if the funclet creation phase has been run
 #endif                      // FEATURE_EH_FUNCLETS
 
+    bool fgImportPhase; // indicates if we are during the importation phase
+                        // since impAssign* methods can be called from several places.
+
     bool fgGlobalMorph; // indicates if we are during the global morphing phase
                         // since fgMorphTree can be called from several places
 

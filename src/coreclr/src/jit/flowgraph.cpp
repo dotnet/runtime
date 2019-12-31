@@ -90,6 +90,8 @@ void Compiler::fgInit()
 
     genReturnBB = nullptr;
 
+    fgImportPhase = false;
+
     /* We haven't reached the global morphing phase */
     fgGlobalMorph = false;
     fgModified    = false;
@@ -6878,6 +6880,7 @@ unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNestin
 
 void Compiler::fgImport()
 {
+    fgImportPhase = true;
     impImport(fgFirstBB);
 
     if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION))
@@ -6928,6 +6931,7 @@ void Compiler::fgImport()
     {
         compInlineResult->SetImportedILSize(info.compILImportSize);
     }
+    fgImportPhase = false;
 }
 
 /*****************************************************************************
