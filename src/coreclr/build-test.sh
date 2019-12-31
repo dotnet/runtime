@@ -497,9 +497,9 @@ build_native_projects()
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
 
-        commonCrossDir="$__RepoRootDir/eng/common/cross"
-        __cmakeargs="$__cmakeargs -DCLR_COMMON_CROSS_DIR=\"$commonCrossDir\""
-        nextCommand="\"$commonCrossDir/gen-buildsys.sh\" \"$__TestDir\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType $generator $extraCmakeArguments $__cmakeargs"
+        commonDir="$__RepoRootDir/eng/common"
+        __cmakeargs="$__cmakeargs -DCLR_COMMON_DIR=\"$commonDir\""
+        nextCommand="\"$commonDir/cross/gen-buildsys.sh\" \"$__TestDir\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType $generator $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 

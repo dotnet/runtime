@@ -129,9 +129,9 @@ build_native()
     fi
 
     # Regenerate the CMake solution
-    commonCrossDir="$__rootRepo/eng/common/cross"
-    __CMakeExtraArgs="$__CMakeExtraArgs -DCLR_COMMON_CROSS_DIR=\"$commonCrossDir\""
-    nextCommand="\"$commonCrossDir/gen-buildsys.sh\" \"$__nativeroot\" \"$__nativeroot\" \"$__IntermediatesDir\" $__BuildArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\"  $__BuildType $__CMakeArgs $__CMakeExtraArgs"
+    commonDir="$__rootRepo/eng/common"
+    __CMakeExtraArgs="$__CMakeExtraArgs -DCLR_COMMON_DIR=\"$commonDir\""
+    nextCommand="\"$commonDir/cross/gen-buildsys.sh\" \"$__nativeroot\" \"$__nativeroot\" \"$__IntermediatesDir\" $__BuildArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\"  $__BuildType $__CMakeArgs $__CMakeExtraArgs"
     echo "Invoking $nextCommand"
     eval "$nextCommand"
 
@@ -292,7 +292,7 @@ while :; do
                 __PortableBuild=1
             fi
             ;;
-        clang*|-clang*)
+        clang*|-clang*|--clang*)
                 __Compiler=clang
                 # clangx.y or clang-x.y
                 version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"

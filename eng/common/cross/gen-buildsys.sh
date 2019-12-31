@@ -100,14 +100,8 @@ if [ -z "$CLR_CC" ]; then
     else
         desired_version="$(check_version_exists "$majorVersion" "$minorVersion")"
         if [ "$desired_version" = "-1" ]; then
-            if command -v "$compiler" > /dev/null; then
-                echo "WARN: Could not find specific version of $compiler $majorVersion $minorVersion, falling back to use $compiler from PATH."
-                export CC="$(command -v "$compiler")"
-                export CXX="$(command -v "$cxxCompiler")"
-            else
-                echo "ERROR: Could not find specific version of $compiler: $majorVersion $minorVersion, and there is no $compiler in PATH."
-                exit 1
-            fi
+            echo "ERROR: Could not find specific version of $compiler: $majorVersion $minorVersion."
+            exit 1
         fi
     fi
 
