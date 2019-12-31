@@ -470,6 +470,14 @@ INST2(fabd,    "fabd",   0, 0, IF_EN2G,   0x2EA0D400,  0x7EA0D400)
                                    //  fabd    Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 110101nnnnnddddd   2EA0 D400   Vd,Vn,Vm  (vector)
                                    //  fabd    Vd,Vn,Vm             DV_3D  011111101X1mmmmm 110101nnnnnddddd   7EA0 D400   Vd,Vn,Vm  (scalar)
 
+INST2(facge,   "facge",  0, 0, IF_EN2G,   0x2E20EC00,  0x7E20EC00)
+                                   //  facge   Vd,Vn,Vm             DV_3B  0Q1011100X1mmmmm 111011nnnnnddddd   2E20 EC00   Vd,Vn,Vm  (vector)
+                                   //  facge   Vd,Vn,Vm             DV_3D  011111100X1mmmmm 111011nnnnnddddd   7E20 EC00   Vd,Vn,Vm  (scalar)
+
+INST2(facgt,   "facgt",  0, 0, IF_EN2G,   0x2EA0EC00,  0x7EA0EC00)
+                                   //  facgt   Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 111011nnnnnddddd   2EA0 EC00   Vd,Vn,Vm  (vector)
+                                   //  facgt   Vd,Vn,Vm             DV_3D  011111101X1mmmmm 111011nnnnnddddd   7EA0 EC00   Vd,Vn,Vm  (scalar)
+
 //    enum     name     FP LD/ST            DV_2K        DV_1C
 INST2(fcmp,    "fcmp",   0, 0, IF_EN2I,   0x1E202000,  0x1E202008)
                                    //  fcmp    Vn,Vm                DV_2K  000111100X1mmmmm 001000nnnnn00000   1E20 2000   Vn Vm

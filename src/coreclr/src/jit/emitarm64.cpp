@@ -5384,6 +5384,8 @@ void emitter::emitIns_R_R_R(
         case INS_fabd:
         case INS_fmul:
         case INS_fmulx:
+        case INS_facge:
+        case INS_facgt:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
