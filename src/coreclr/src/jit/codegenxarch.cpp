@@ -173,8 +173,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             // returned in implicit RetBuf. If we reached here, we should not have
             // a RetBuf and the return type should not be a struct.
             assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
-            assert(!varTypeIsStruct(compiler->info.compRetNativeType));
-#endif // TARGET_AMD64
+            // __m128 should be returned in XMM0
+            assert(!varTypeIsStruct(compiler->info.compRetNativeType) || compiler->info.compRetNativeType == TYP_SIMD16);
+#endif // _TARGET_AMD64_
 
             // For x86 Windows we can't make such assertions since we generate code for returning of
             // the RetBuf in REG_INTRET only when the ProfilerHook is enabled. Otherwise
@@ -1171,13 +1172,12 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
     {
         return false;
     }
-
-#ifdef UNIX_AMD64_ABI
+#if defined(UNIX_AMD64_ABI) || defined(_TARGET_AMD64_) // // __m128 should be returned in XMM0
     return varTypeIsStruct(treeNode);
-#else  // !UNIX_AMD64_ABI
+#else  // !UNIX_AMD64_ABI && !_TARGET_AMD64_
     assert(!varTypeIsStruct(treeNode));
     return false;
-#endif // UNIX_AMD64_ABI
+#endif // UNIX_AMD64_ABI || _TARGET_AMD64_
 }
 
 //------------------------------------------------------------------------
@@ -1354,6 +1354,8 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             }
         }
     }
+#elif defined(_TARGET_AMD64_)
+    genConsumeReg(op1); // __m128 should be returned in XMM0
 #else
     unreached();
 #endif
@@ -5517,7 +5519,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
+#ifdef _TARGET_AMD64_
+        // __m128 should be returned in XMM0
+        assert(call->gtType == TYP_SIMD16 || !varTypeIsStruct(call));
+#else
         assert(!varTypeIsStruct(call));
+#endif
 
         if (call->gtType == TYP_REF)
         {
