@@ -657,7 +657,7 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
         }
 #endif  //!CROSSGEN_COMPILE
 
-        return AsMethodTable()->CanCastToClassOrInterface(type.AsMethodTable(), pVisited);
+        return AsMethodTable()->CanCastTo(type.AsMethodTable(), pVisited);
     }
 }
 
@@ -1129,12 +1129,6 @@ TypeHandle::IsExternallyVisible() const
         MODE_ANY;
     }
     CONTRACTL_END
-
-    //TODO: WIP need this? move to MT? or move TypeParam check up here
-    if (IsArray())
-    {
-        return GetArrayElementTypeHandle().IsExternallyVisible();
-    }
 
     if (!IsTypeDesc())
     {

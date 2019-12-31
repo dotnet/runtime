@@ -1633,7 +1633,7 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
 #include <optsmallperfcritical.h>
 
 //==========================================================================================
-BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
+BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
 {
     CONTRACTL
     {
@@ -1642,7 +1642,6 @@ BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePa
         MODE_COOPERATIVE;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
@@ -1652,6 +1651,23 @@ BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePa
     // callers should have handled this already according to their rules.
     _ASSERTE(!Nullable::IsNullableForType(TypeHandle(pTargetMT), this));
 #endif // CROSSGEN_COMPILE
+
+    if (IsArray())
+    {
+        if (pTargetMT->IsArray())
+        {
+            return ArrayIsInstanceOf(pTargetMT, pVisited);
+        }
+        else if (pTargetMT->IsInterface() && pTargetMT->HasInstantiation())
+        {
+            return ArraySupportsBizarreInterface(pTargetMT, pVisited);
+        }
+    }
+    else if (pTargetMT->IsArray())
+    {
+        CastCache::TryAddToCache(this, pTargetMT, false);
+        return false;
+    }
 
     BOOL result = pTargetMT->IsInterface() ?
                                 CanCastToInterface(pTargetMT, pVisited) :
@@ -1693,44 +1709,42 @@ BOOL MethodTable::ArraySupportsBizarreInterface(MethodTable * pInterfaceMT, Type
     return result;
 }
 
-BOOL MethodTable::ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pVisited)
+BOOL MethodTable::ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
 {
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(this->IsArray());
-        PRECONDITION(toTypeHnd.IsArray());
+        PRECONDITION(pTargetMT->IsArray());
     } CONTRACTL_END;
 
-    MethodTable* toArrayType = toTypeHnd.GetMethodTable();
-
     // GetRank touches EEClass. Try to avoid it for SZArrays.
-    if (toArrayType->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
+    if (pTargetMT->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
     {
         if (this->IsMultiDimArray())
         {
-            CastCache::TryAddToCache(this, toTypeHnd, FALSE);
+            CastCache::TryAddToCache(this, pTargetMT, FALSE);
             return TypeHandle::CannotCast;
         }
     }
     else
     {
-        if (this->GetRank() != toArrayType->GetRank())
+        if (this->GetRank() != pTargetMT->GetRank())
         {
-            CastCache::TryAddToCache(this, toTypeHnd, FALSE);
+            CastCache::TryAddToCache(this, pTargetMT, FALSE);
             return TypeHandle::CannotCast;
         }
     }
-    _ASSERTE(this->GetRank() == toArrayType->GetRank());
+    _ASSERTE(this->GetRank() == pTargetMT->GetRank());
 
     TypeHandle elementTypeHandle = this->GetArrayElementTypeHandle();
-    TypeHandle toElementTypeHandle = toArrayType->GetArrayElementTypeHandle();
+    TypeHandle toElementTypeHandle = pTargetMT->GetArrayElementTypeHandle();
 
     BOOL result = (elementTypeHandle == toElementTypeHandle) ||
         TypeDesc::CanCastParam(elementTypeHandle, toElementTypeHandle, pVisited);
 
-    CastCache::TryAddToCache(this, toTypeHnd, (BOOL)result);
+    CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     return result;
 }
 
@@ -1746,6 +1760,11 @@ MethodTable::IsExternallyVisible()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
+
+    if (IsArray())
+    {
+        return GetArrayElementTypeHandle().IsExternallyVisible();
+    }
 
     BOOL bIsVisible = IsTypeDefExternallyVisible(GetCl(), GetModule(), GetClass()->GetAttrClass());
 
@@ -5429,6 +5448,13 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     CONSISTENCY_CHECK(IsRestored_NoLogging());
     CONSISTENCY_CHECK(!HasApproxParent());
 
+    if (IsArray())
+    {
+        Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));
+
+        // Fully load the element type
+        GetArrayElementTypeHandle().DoFullyLoad(&newVisited, level, pPending, pfBailed, pInstContext);
+    }
 
     DoFullyLoadLocals locals(pPending, level, this, pVisited);
 

@@ -2613,24 +2613,7 @@ void CEEInfo::embedGenericHandle(
         TypeHandle th(pResolvedToken->hClass);
 
         pResult->handleType = CORINFO_HANDLETYPE_CLASS;
-
-        if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
-        {
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.GetMethodTable();
-        }
-        else
-        if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken && th.IsArray()
-            && m_pMethodBeingCompiled == MscorlibBinder::GetMethod(METHOD__BUFFER__BLOCKCOPY))
-        {
-            // Workaround for https://github.com/dotnet/coreclr/issues/10258
-            // Allow cheaper type checks to be generated in selected performance critical CoreLib methods until this issue
-            // is fixed properly.
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.GetMethodTable();
-        }
-        else
-        {
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsPtr();
-        }
+        pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsPtr();
 
         if (fEmbedParent && pResolvedToken->hMethod != NULL)
         {
@@ -5276,7 +5259,7 @@ void CEEInfo::getCallInfo(
     }
     else
     {
-        if (!exactType.IsTypeDesc())
+        if (!exactType.IsTypeDesc() && !pTargetMD->IsArray())
         {
             // Because of .NET's notion of base calls, exactType may point to a sub-class
             // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is
@@ -5293,7 +5276,6 @@ void CEEInfo::getCallInfo(
             else
 #endif
             {
-
                 exactType = pTargetMD->GetExactDeclaringType(exactType.AsMethodTable());
                 _ASSERTE(!exactType.IsNull());
             }

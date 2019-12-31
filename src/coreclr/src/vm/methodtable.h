@@ -1973,9 +1973,9 @@ public:
     //
     BOOL CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited = NULL);
     BOOL CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVisited = NULL);
-    BOOL CanCastToClassOrInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited);
+    BOOL CanCastTo(MethodTable* pTargetMT, TypeHandlePairList *pVisited);
     BOOL ArraySupportsBizarreInterface(MethodTable* pInterfaceMT, TypeHandlePairList* pVisited);
-    BOOL ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pVisited);
+    BOOL ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* pVisited);
 
     BOOL CanCastByVarianceToInterfaceOrDelegate(MethodTable* pTargetMT, TypeHandlePairList* pVisited);
 

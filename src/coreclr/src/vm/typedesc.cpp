@@ -291,13 +291,6 @@ void TypeDesc::ConstructName(CorElementType kind,
     }
 }
 
-// TODO: WIP remove
-BOOL TypeDesc::IsArray()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return CorTypeInfo::IsArray_NoThrow(GetInternalCorElementType());
-}
-
 BOOL TypeDesc::IsGenericVariable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -341,33 +334,6 @@ BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
         return TRUE;
 
     BOOL fCast = FALSE;
-
-    if (IsArray())
-    {
-        MethodTable* pMT = this->GetMethodTable();
-
-        if (toTypeHnd.IsArray())
-        {
-            fCast = pMT->ArrayIsInstanceOf(toTypeHnd, pVisited);
-        }
-        else if (!toTypeHnd.IsTypeDesc())
-        {
-            MethodTable* toMT = toTypeHnd.AsMethodTable();
-            if (toMT->IsInterface() && toMT->HasInstantiation())
-            {
-                fCast = pMT->ArraySupportsBizarreInterface(toMT, pVisited);
-            }
-            else
-            {
-                fCast = pMT->CanCastToClassOrInterface(toMT, pVisited);
-            }
-        }
-
-        // leafs add cached conversion for the method table.
-        // since we started from a typedesc, add a typedesc conversion too
-        CastCache::TryAddToCache(TypeHandle(this), toTypeHnd, fCast);
-        return fCast;
-    }
 
     //A boxed variable type can be cast to any of its constraints, or object, if none are specified
     if (IsGenericVariable())
@@ -755,10 +721,10 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
     // First ensure that we're loaded to just below CLASS_LOADED
     ClassLoader::EnsureLoaded(TypeHandle(this), (ClassLoadLevel) (level-1));
 
-    Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));
-
     if (HasTypeParam())
     {
+        Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));
+
         // Fully load the type parameter
         GetTypeParam().DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
 

@@ -1387,7 +1387,7 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pType
             }
             else
             {
-                iRetVal = fromHandle.AsMethodTable()->CanCastToClassOrInterface(toHandle.AsMethodTable(), /* pVisited */ NULL);
+                iRetVal = fromHandle.AsMethodTable()->CanCastTo(toHandle.AsMethodTable(), /* pVisited */ NULL);
             }
         }
     }

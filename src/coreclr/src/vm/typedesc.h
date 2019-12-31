@@ -107,9 +107,6 @@ public:
         return(GetInternalCorElementType() == ELEMENT_TYPE_PTR);
     }
 
-    // ARRAY, SZARRAY
-    BOOL IsArray();
-
     // VAR, MVAR
     BOOL IsGenericVariable();
 

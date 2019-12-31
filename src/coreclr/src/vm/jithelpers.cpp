@@ -2107,31 +2107,12 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         // allow an object of type T to be cast to Nullable<T> (they have the same representation)
         fCast = TRUE;
     }
-    else if (pMT->IsArray())
-    {
-        if (toTypeHnd.IsArray())
-        {
-            fCast = pMT->ArrayIsInstanceOf(toTypeHnd, /* pVisited */ NULL);
-        }
-        else if (!toTypeHnd.IsTypeDesc())
-        {
-            MethodTable* toMT = toTypeHnd.AsMethodTable();
-            if (toMT->IsInterface() && toMT->HasInstantiation())
-            {
-                fCast = pMT->ArraySupportsBizarreInterface(toMT, /* pVisited */ NULL);
-            }
-            else
-            {
-                fCast = pMT->CanCastToClassOrInterface(toMT, /* pVisited */ NULL);
-            }
-        }
-    }
     else if (toTypeHnd.IsTypeDesc())
     {
         CastCache::TryAddToCache(pMT, toTypeHnd, FALSE);
         fCast = FALSE;
     }
-    else if (pMT->CanCastToClassOrInterface(toTypeHnd.AsMethodTable(), /* pVisited */ NULL))
+    else if (pMT->CanCastTo(toTypeHnd.AsMethodTable(), /* pVisited */ NULL))
     {
         fCast = TRUE;
     }
@@ -4068,10 +4049,6 @@ NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
     if (refType == NULL)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-        // TODO: WIP simplify this when all arrays are MTs
-        // Compensate for CORINFO_TOKENKIND_Ldtoken optimization done by CEEInfo::embedGenericHandle
-        if (!typeHandle.IsTypeDesc() && typeHandle.AsMethodTable()->IsArray())
-            typeHandle = ArrayBase::GetTypeHandle(typeHandle.AsMethodTable());
         refType = typeHandle.GetManagedClassObject();
         HELPER_METHOD_FRAME_END();
     }
