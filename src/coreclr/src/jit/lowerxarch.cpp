@@ -3391,6 +3391,34 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 {
                                     op2->SetRegOptional();
                                 }
+
+                                // If we allocated a temp local for the 2nd result value in the importer and all
+                                // pre-conditions for optimization still hold, then remove the temp and replace its use
+                                // with a special value node.
+                                if (comp->opts.OptimizationEnabled() && !node->IsUnusedValue() &&
+                                    op3->OperGet() == GT_LCL_VAR_ADDR && node->gtNext != nullptr &&
+                                    node->gtNext->OperGet() == GT_LCL_VAR)
+                                {
+                                    GenTreeLclVar* op3Lcl  = op3->AsLclVar();
+                                    GenTreeLclVar* nextLcl = node->gtNext->AsLclVar();
+                                    LclVarDsc*     tmp     = comp->lvaTable + op3Lcl->GetLclNum();
+
+                                    if (tmp->lvIsTemp && tmp->TypeGet() == node->TypeGet() &&
+                                        op3Lcl->GetLclNum() == nextLcl->GetLclNum())
+                                    {
+                                        tmp->lvAddrExposed     = 0;
+                                        tmp->lvDoNotEnregister = 0;
+
+                                        BlockRange().Remove(op3);
+                                        node->gtOp1 = op1;
+                                        node->gtOp2 = op2;
+
+                                        nextLcl->ReplaceWith(
+                                            comp->gtNewScalarHWIntrinsicNode(node->TypeGet(), nullptr,
+                                                                             NI_BMI2_MultiplyNoFlags2ndValue),
+                                            comp);
+                                    }
+                                }
                                 break;
                             }
 

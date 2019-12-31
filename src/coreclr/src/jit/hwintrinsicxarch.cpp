@@ -1380,6 +1380,61 @@ GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METH
             return gtNewScalarHWIntrinsicNode(callType, op2, op1, intrinsic);
         }
 
+        case NI_BMI2_MultiplyNoFlags:
+        case NI_BMI2_X64_MultiplyNoFlags:
+        {
+            assert(sig->numArgs == 2 || sig->numArgs == 3);
+            GenTree* op3 = nullptr;
+            if (sig->numArgs == 3)
+            {
+                op3 = impPopStack().val;
+            }
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            if (sig->numArgs == 3)
+            {
+                // If op3 (low part of result) is an address of a local variable of the correct type:
+                //   MultiplyNoFlags(*, *, &someLocal);
+                // Then it is transformed to use a dedicated local for that whose value is immediately copied to the
+                // original op3 local after MultiplyNoFlags (but before producing the main result):
+                //   MultiplyNoFlags(*, *, &op3TempLocal), MOV(someLocal, op3TempLocal);
+                //
+                // After this the original local isn't marked as address-exposed and lowering will see a GT_LCL_VAR
+                // node for the op3TempLocal immediately after MULX (as GT_COMMA is transformed right before lowering)
+                // which enables it to remove the temp local entirely and replace its use with a special value node.
+                if (opts.OptimizationEnabled() && op3->OperGet() == GT_ADDR &&
+                    op3->gtGetOp1()->OperGet() == GT_LCL_VAR && op3->gtGetOp1()->TypeGet() == callType)
+                {
+                    // Get a single-use temp to store the 2nd value which we'll later remove in lowering.
+                    GenTreeLclVar* op3Local = op3->gtGetOp1()->AsLclVar();
+                    const unsigned orgNum   = op3Local->GetLclNum();
+                    const unsigned tmpNum   = lvaGrabTemp(true DEBUGARG("MULX low part"));
+                    lvaTable[tmpNum].lvType = callType;
+                    op3Local->SetLclNum(tmpNum);
+
+                    GenTree* mulx = gtNewScalarHWIntrinsicNode(callType, op1, op2, op3, intrinsic);
+
+                    // Move the 2nd value to the original local var and stitch it together. This transformation produces
+                    // correct results even if lowering fails to optimize it away.
+                    GenTree* mov = gtNewAssignNode(gtNewLclvNode(orgNum, callType), gtNewLclvNode(tmpNum, callType));
+
+                    GenTree* comma = gtNewOperNode(GT_COMMA, callType, mov, mulx);
+                    comma->gtFlags |= GTF_REVERSE_OPS;
+                    comma->gtFlags |= (mulx->gtFlags & GTF_ALL_EFFECT);
+                    comma->gtFlags |= (mov->gtFlags & GTF_ALL_EFFECT);
+                    return comma;
+                }
+
+                return gtNewScalarHWIntrinsicNode(callType, op1, op2, op3, intrinsic);
+            }
+            else
+            {
+                return gtNewScalarHWIntrinsicNode(callType, op1, op2, intrinsic);
+            }
+        }
+
         default:
             return nullptr;
     }
