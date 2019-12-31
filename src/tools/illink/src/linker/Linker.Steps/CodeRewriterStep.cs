@@ -111,11 +111,11 @@ namespace Mono.Linker.Steps {
 			case MetadataType.Void:
 				break;
 			default:
-				var instruction = StubMethodWithConstant (Context, method);
+				var instruction = CreateConstantResultInstruction (Context, method);
 				if (instruction != null) {
 					il.Append (instruction);
 				} else {
-					StubComplexBody (method, body);
+					StubComplexBody (method, body, il);
 				}
 				break;
 			}
@@ -124,7 +124,7 @@ namespace Mono.Linker.Steps {
 			return body;
 		}
 
-		static void StubComplexBody (MethodDefinition method, MethodBody body)
+		static void StubComplexBody (MethodDefinition method, MethodBody body, ILProcessor il)
 		{
 			switch (method.ReturnType.MetadataType) {
 			case MetadataType.MVar:
@@ -133,21 +133,44 @@ namespace Mono.Linker.Steps {
 				body.Variables.Add (vd);
 				body.InitLocals = true;
 
-				var il = body.GetILProcessor ();
 				il.Emit (OpCodes.Ldloca_S, vd);
 				il.Emit (OpCodes.Initobj, method.ReturnType);
 				il.Emit (OpCodes.Ldloc_0);
+				return;
+			case MetadataType.Pointer:
+			case MetadataType.IntPtr:
+			case MetadataType.UIntPtr:
+				il.Emit (OpCodes.Ldc_I4_0);
+				il.Emit (OpCodes.Conv_I);
 				return;
 			}
 
 			throw new NotImplementedException (method.FullName);
 		}
 
-		public static Instruction StubMethodWithConstant (LinkContext context, MethodDefinition method)
+		public static Instruction CreateConstantResultInstruction (LinkContext context, MethodDefinition method)
 		{
 			context.Annotations.TryGetMethodStubValue (method, out object value);
+			return CreateConstantResultInstruction (method, value);
+		}
 
-			switch (method.ReturnType.MetadataType) {
+		public static Instruction CreateConstantResultInstruction (MethodDefinition method, object value = null)
+		{
+			var rtype = method.ReturnType;
+			switch (rtype.MetadataType) {
+			case MetadataType.ValueType:
+				var definition = rtype.Resolve ();
+				if (definition?.IsEnum == true) {
+					rtype = definition.GetEnumUnderlyingType ();
+				}
+
+				break;
+			case MetadataType.GenericInstance:
+				rtype = rtype.Resolve ();
+				break;
+			}
+
+			switch (rtype.MetadataType) {
 			case MetadataType.Boolean:
 				if (value is int bintValue && bintValue == 1)
 					return Instruction.Create (OpCodes.Ldc_I4_1);
@@ -162,6 +185,7 @@ namespace Mono.Linker.Steps {
 
 			case MetadataType.Object:
 			case MetadataType.Array:
+			case MetadataType.Class:
 				Debug.Assert (value == null);
 				return Instruction.Create (OpCodes.Ldnull);
 

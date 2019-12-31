@@ -25,6 +25,8 @@
       </method>
       <method signature="System.Object TestMethod_12()" body="stub">
       </method>
+      <method signature="System.Collections.Generic.List`1&lt;System.Int32&gt; TestMethod_13()" body="stub">
+      </method>
 
       <method signature="System.Void .ctor()" body="stub">
       </method>

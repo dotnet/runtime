@@ -22,6 +22,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 			TestMethod_10 ();
 			TestMethod_11 ();
 			TestMethod_12 ();
+			TestMethod_13 ();
 		}
 
 		struct NestedType {
@@ -171,6 +172,16 @@ namespace Mono.Linker.Tests.Cases.Substitutions {
 				"ret",
 			})]
 		static object TestMethod_12 ()
+		{
+			throw new NotImplementedException ();
+		}
+
+		[Kept]
+		[ExpectedInstructionSequence (new [] {
+				"ldnull",
+				"ret",
+			})]
+		static System.Collections.Generic.List<int> TestMethod_13 ()
 		{
 			throw new NotImplementedException ();
 		}
