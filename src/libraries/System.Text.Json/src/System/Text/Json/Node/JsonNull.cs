@@ -30,7 +30,7 @@ namespace System.Text.Json
         ///   <see langword="true"/> if the <paramref name="obj"/> is <see cref="JsonNull"/>,
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public override bool Equals(object obj) => obj is JsonNull;
+        public override bool Equals(object? obj) => obj is JsonNull;
 
         /// <summary>
         ///   Calculates a hash code of this instance.
@@ -46,7 +46,7 @@ namespace System.Text.Json
         ///    <see langword="true"/> if <paramref name="other"/> is not null,
         ///    <see langword="false"/> otherwise.
         /// </returns>
-        public bool Equals(JsonNull other) => !(other is null);
+        public bool Equals(JsonNull? other) => !(other is null);
 
         /// <summary>
         ///   Compares values of two JSON nulls.
@@ -57,7 +57,7 @@ namespace System.Text.Json
         ///    <see langword="true"/> if both instances match,
         ///    <see langword="false"/> otherwise.
         /// </returns>
-        public static bool operator ==(JsonNull left, JsonNull right)
+        public static bool operator ==(JsonNull? left, JsonNull? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)
             // so it can become a simple test
@@ -79,7 +79,7 @@ namespace System.Text.Json
         ///    <see langword="true"/> if both instances do not match,
         ///    <see langword="false"/> otherwise.
         /// </returns>
-        public static bool operator !=(JsonNull left, JsonNull right) => !(left == right);
+        public static bool operator !=(JsonNull? left, JsonNull? right) => !(left == right);
 
         /// <summary>
         ///   Creates a new JSON null that is a copy of the current instance.
