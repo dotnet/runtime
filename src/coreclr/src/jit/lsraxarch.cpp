@@ -1095,6 +1095,13 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         dstCandidates = RBM_LNGRET;
     }
+#ifdef _TARGET_AMD64_
+    else if (registerType == TYP_SIMD16)
+    {
+        // __m128 should be returned in XMM0
+        dstCandidates = RBM_FLOATRET;
+    }
+#endif
     else
     {
         dstCandidates = RBM_INTRET;
