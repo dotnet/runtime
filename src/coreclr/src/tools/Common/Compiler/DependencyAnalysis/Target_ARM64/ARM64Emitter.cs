@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         public void EmitMOV(Register regDst, ushort imm16)
         {
             Debug.Assert((uint)regDst <= 0x1f);
-            uint instruction = 0xd2800009u | ((uint)imm16 << 5) | (uint)regDst;
+            uint instruction = 0xd2800000u | ((uint)imm16 << 5) | (uint)regDst;
             Builder.EmitUInt(instruction);
         }
 
