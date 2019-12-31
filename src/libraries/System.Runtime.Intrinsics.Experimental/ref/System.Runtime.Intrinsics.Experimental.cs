@@ -220,16 +220,16 @@ namespace System.Runtime.Intrinsics.Arm
             public static System.Runtime.Intrinsics.Vector128<double> Abs(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> Abs(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Add(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
-            public static byte AddAcross(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
-            public static short AddAcross(System.Runtime.Intrinsics.Vector64<short> value) { throw null; }
-            public static sbyte AddAcross(System.Runtime.Intrinsics.Vector64<sbyte> value) { throw null; }
-            public static ushort AddAcross(System.Runtime.Intrinsics.Vector64<ushort> value) { throw null; }
-            public static byte AddAcross(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
-            public static short AddAcross(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
-            public static int AddAcross(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
-            public static sbyte AddAcross(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
-            public static ushort AddAcross(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
-            public static uint AddAcross(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<byte> AddAcross(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<short> AddAcross(System.Runtime.Intrinsics.Vector64<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<sbyte> AddAcross(System.Runtime.Intrinsics.Vector64<sbyte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<ushort> AddAcross(System.Runtime.Intrinsics.Vector64<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> AddAcross(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> AddAcross(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> AddAcross(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> AddAcross(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> AddAcross(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> AddAcross(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Subtract(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<byte> ReverseElementBits(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<sbyte> ReverseElementBits(System.Runtime.Intrinsics.Vector64<sbyte> value)  { throw null; }
