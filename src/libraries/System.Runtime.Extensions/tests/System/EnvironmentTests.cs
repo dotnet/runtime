@@ -165,9 +165,24 @@ namespace System.Tests
         }
 
         [Fact]
-        public void UserInteractive_True()
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UserInteractive_Unix_True()
         {
             Assert.True(Environment.UserInteractive);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UserInteractive_Windows_DoesNotThrow()
+        {
+            var _ = Environment.UserInteractive; // Does not throw
+        }
+
+        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer)]
+        public void UserInteractive_Windows_DoesNotThrow()
+        {
+            Assert.False(Environment.UserInteractive);
         }
 
         [Fact]

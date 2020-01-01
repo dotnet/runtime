@@ -122,6 +122,28 @@ namespace System
             }
         }
 
+        public static bool UserInteractive
+        {
+            get
+            {
+                // Per documentation of GetProcessWindowStation, this handle should not be closed
+                IntPtr hwinsta = Interop.User32.GetProcessWindowStation();
+                if (hwinsta == IntPtr.Zero)
+                {
+                    return false; // eg., Windows Nano
+                }
+
+                Interop.User32.USEROBJECTFLAGS flags = default;
+                if (!Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, ref flags, Marshal.SizeOf(flags), ref _))
+                {
+                    return ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0);
+                }
+
+                // If we can't determine, return true optimistically
+                return true;
+            }
+        }
+
         public static unsafe long WorkingSet
         {
             get
