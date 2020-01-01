@@ -127,14 +127,14 @@ namespace System
             get
             {
                 // Per documentation of GetProcessWindowStation, this handle should not be closed
-                IntPtr hwinsta = Interop.User32.GetProcessWindowStation();
-                if (hwinsta == IntPtr.Zero)
+                IntPtr handle = Interop.User32.GetProcessWindowStation();
+                if (handle == IntPtr.Zero)
                 {
                     return false; // eg., Windows Nano
                 }
 
                 Interop.User32.USEROBJECTFLAGS flags = default;
-                if (!Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, ref flags, Marshal.SizeOf(flags), ref _))
+                if (!Interop.User32.GetUserObjectInformationW(handle, Interop.User32.UOI_FLAGS, ref flags, Marshal.SizeOf(flags), ref _))
                 {
                     return ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0);
                 }
