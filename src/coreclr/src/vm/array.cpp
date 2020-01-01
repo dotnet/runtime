@@ -836,19 +836,12 @@ public:
                 m_pCode->EmitLDARG(hiddenArgIdx); // hidden param
                 m_pCode->EmitBRFALSE(pTypeCheckPassed);
                 m_pCode->EmitLDARG(hiddenArgIdx);
-                m_pCode->EmitLDFLDA(tokRawData);
-                m_pCode->EmitLDC(offsetof(ParamTypeDesc, m_Arg) - (Object::GetOffsetOfFirstField()+2));
-                m_pCode->EmitADD();
-                m_pCode->EmitLDIND_I();
 
                 m_pCode->EmitLoadThis();
                 m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
                 m_pCode->EmitSUB();
                 m_pCode->EmitLDIND_I(); // Array MT
-                m_pCode->EmitLDC(MethodTable::GetOffsetOfArrayElementTypeHandle());
-                m_pCode->EmitADD();
-                m_pCode->EmitLDIND_I();
 
                 m_pCode->EmitCEQ();
                 m_pCode->EmitBRFALSE(pTypeMismatchExceptionLabel); // throw exception if not same
