@@ -178,9 +178,8 @@ namespace System.Tests
             var _ = Environment.UserInteractive; // Does not throw
         }
 
-        [Fact]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer)]
-        public void UserInteractive_Windows_DoesNotThrow()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
+        public void UserInteractive_WindowsNano()
         {
             Assert.False(Environment.UserInteractive);
         }
