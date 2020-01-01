@@ -89,6 +89,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<float> BitwiseSelect(System.Runtime.Intrinsics.Vector64<float> select, System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> BitwiseSelect(System.Runtime.Intrinsics.Vector64<ushort> select, System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> BitwiseSelect(System.Runtime.Intrinsics.Vector64<uint> select, System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> CompareEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> CompareEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> CompareEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> CompareEqual(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> CompareEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> CompareEqual(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> CompareEqual(System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> CompareEqual(System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> CompareEqual(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> CompareEqual(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> CompareEqual(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> CompareEqual(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> CompareGreaterThan(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> CompareGreaterThan(System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> CompareGreaterThan(System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> CompareGreaterThan(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> CompareGreaterThan(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> CompareGreaterThan(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> CompareGreaterThan(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareLessThan(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> CompareLessThan(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> CompareLessThan(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareLessThan(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> CompareLessThan(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> CompareLessThan(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> CompareLessThan(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> CompareLessThan(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> CompareLessThan(System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> CompareLessThan(System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> CompareLessThan(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> CompareLessThan(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> CompareLessThan(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> CompareLessThan(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> CompareTest(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> CompareTest(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> CompareTest(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> CompareTest(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> CompareTest(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> CompareTest(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> CompareTest(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> CompareTest(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> CompareTest(System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> CompareTest(System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> CompareTest(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> CompareTest(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> CompareTest(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> CompareTest(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> LeadingSignCount(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> LeadingSignCount(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> LeadingSignCount(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
@@ -220,16 +304,34 @@ namespace System.Runtime.Intrinsics.Arm
             public static System.Runtime.Intrinsics.Vector128<double> Abs(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> Abs(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Add(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
-            public static System.Runtime.Intrinsics.Vector64<byte> AddAcross(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector64<short> AddAcross(System.Runtime.Intrinsics.Vector64<short> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector64<sbyte> AddAcross(System.Runtime.Intrinsics.Vector64<sbyte> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector64<ushort> AddAcross(System.Runtime.Intrinsics.Vector64<ushort> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> AddAcross(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> AddAcross(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<int> AddAcross(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> AddAcross(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ushort> AddAcross(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<uint> AddAcross(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<byte> AddAcross(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<short> AddAcross(System.Runtime.Intrinsics.Vector64<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<sbyte> AddAcross(System.Runtime.Intrinsics.Vector64<sbyte> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<ushort> AddAcross(System.Runtime.Intrinsics.Vector64<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> CompareEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> CompareEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> CompareGreaterThanOrEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareLessThan(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> CompareLessThan(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> CompareLessThan(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> CompareLessThanOrEqual(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> CompareTest(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> CompareTest(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> CompareTest(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Subtract(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<byte> ReverseElementBits(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<sbyte> ReverseElementBits(System.Runtime.Intrinsics.Vector64<sbyte> value)  { throw null; }

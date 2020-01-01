@@ -267,7 +267,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Crc32_ComputeCrc32C:
             case NI_Crc32_Arm64_ComputeCrc32:
             case NI_Crc32_Arm64_ComputeCrc32C:
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg);
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+
+            case NI_AdvSimd_CompareLessThan:
+            case NI_AdvSimd_CompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareLessThan:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
                 break;
 
             default:

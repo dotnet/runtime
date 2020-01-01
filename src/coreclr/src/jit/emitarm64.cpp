@@ -5248,7 +5248,7 @@ void emitter::emitIns_R_R_R(
         case INS_cmgt:
         case INS_cmhi:
         case INS_cmhs:
-        case INS_ctst:
+        case INS_cmtst:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -12894,7 +12894,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
-                case INS_ctst:
+                case INS_cmtst:
                 case INS_pmul:
                 case INS_sabd:
                 case INS_uabd:

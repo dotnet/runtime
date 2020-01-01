@@ -128,6 +128,231 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 #>
         public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
+        
         public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
+
+<#
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong" })
+        {
+#>
+        public static <#= typeName #> CompareEqual(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+        public static <#= typeName #> CompareGreaterThan(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+        public static <#= typeName #> CompareGreaterThanOrEqual(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;       
+        }
+   
+        public static <#= typeName #> CompareLessThan(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+        public static <#= typeName #> CompareLessThanOrEqual(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;       
+        }
+
+        public static <#= typeName #> CompareTest(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+             
+<#
+        }
+#>
+        public static float CompareEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+        
+        public static double CompareEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareGreaterThan(float left, float right)
+        {
+            int result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+        
+        public static double CompareGreaterThan(double left, double right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareGreaterThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+        
+        public static double CompareGreaterThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }   
+
+
+        public static float CompareLessThan(float left, float right)
+        {
+            int result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+        
+        public static double CompareLessThan(double left, double right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareLessThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+        
+        public static double CompareLessThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareTest(float left, float right)
+        {
+            int result = 0;
+
+            if ((BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+        
+        public static double CompareTest(double left, double right)
+        {
+            long result = 0;
+
+            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }                        
     }
 }
