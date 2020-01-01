@@ -5411,9 +5411,8 @@ void CEEPreloader::TriageTypeForZap(TypeHandle th, BOOL fAcceptIfNotSure, BOOL f
 {
     STANDARD_VM_CONTRACT;
 
-    // TODO: WIP do we care about arrays here?
     // We care about param types only
-    if (th.IsTypicalTypeDefinition() && !th.IsTypeDesc())
+    if (th.IsTypicalTypeDefinition() && !(th.IsTypeDesc() || th.IsArray()))
         return;
 
     // We care about types from our module only
@@ -5520,10 +5519,9 @@ void CEEPreloader::TriageTypeForZap(TypeHandle th, BOOL fAcceptIfNotSure, BOOL f
     }
 
 #ifdef FEATURE_FULL_NGEN
-    // TODO: WIP do we care about arrays?
-    // Only save param types in their preferred zap modules,
+    // Only save arrays and param types in their preferred zap modules,
     // i.e. never duplicate them.
-    if (th.IsTypeDesc())
+    if (th.IsTypeDesc() || th.IsArray())
     {
         triage = Rejected;
         rejectReason = "type is a TypeDesc";

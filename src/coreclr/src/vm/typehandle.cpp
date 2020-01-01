@@ -93,9 +93,7 @@ Assembly* TypeHandle::GetAssembly() const {
 BOOL TypeHandle::IsArray() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // TODO: WIP   GetMethodTable  should be AsMethodTable eventually
-    MethodTable* mt = GetMethodTable();
-    return mt != NULL && mt->IsArray();
+    return !IsTypeDesc() && AsMethodTable()->IsArray();
 }
 
 BOOL TypeHandle::IsGenericVariable() const {
@@ -347,7 +345,6 @@ BOOL TypeHandle::IsSharedByGenericInstantiations() const
 
     if (IsArray())
     {
-        // TODO: WIP need this?
         return GetArrayElementTypeHandle().IsCanonicalSubtype();
     }
     else if (!IsTypeDesc())
@@ -1059,10 +1056,9 @@ void TypeHandle::DoRestoreTypeKey()
     {
         AsTypeDesc()->DoRestoreTypeKey();
     }
-
-    if (!IsTypeDesc() || IsArray())
+    else
     {
-        MethodTable* pMT = GetMethodTable();
+        MethodTable* pMT = AsMethodTable();
         PREFIX_ASSUME(pMT != NULL);
         pMT->DoRestoreTypeKey();
     }
@@ -1547,13 +1543,7 @@ TypeKey TypeHandle::GetTypeKey() const
     {
         TypeDesc *pTD = AsTypeDesc();
         CorElementType etype = pTD->GetInternalCorElementType();
-        //TODO: WIP remove
-        if (CorTypeInfo::IsArray_NoThrow(etype))
-        {
-            TypeKey tk(etype, pTD->GetTypeParam(), FALSE, pTD->GetMethodTable()->GetRank());
-            return tk;
-        }
-        else if (CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE)
+        if (CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE)
         {
             TypeKey tk(etype, pTD->GetTypeParam());
             return tk;
@@ -1571,7 +1561,7 @@ TypeKey TypeHandle::GetTypeKey() const
         MethodTable *pMT = AsMethodTable();
         if (pMT->IsArray())
         {
-            TypeKey tk(pMT->GetInternalCorElementType(), pMT->GetArrayElementTypeHandle(), TRUE, pMT->GetRank());
+            TypeKey tk(pMT->GetInternalCorElementType(), pMT->GetArrayElementTypeHandle(), pMT->GetRank());
             return tk;
         }
         else if (pMT->IsTypicalTypeDefinition())

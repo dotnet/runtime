@@ -2200,8 +2200,8 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
                 TypeHandle thElem = mt->GetArrayElementTypeHandle();
 
                 TypeHandle thCur  = thElem;
-                while (thCur.IsTypeDesc())
-                    thCur = thCur.GetElementType();
+                while (thCur.IsArray())
+                    thCur = thCur.GetArrayElementTypeHandle();
 
                 TADDR mtCurTADDR = thCur.AsTAddr();
                 if (!DacValidateMethodTable(PTR_MethodTable(mtCurTADDR), bFree))

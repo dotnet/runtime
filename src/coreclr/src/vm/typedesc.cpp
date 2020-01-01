@@ -199,10 +199,7 @@ void TypeDesc::GetName(SString &ssBuf)
     else
         th = TypeHandle(this);
 
-    //TODO: WIP remove
-    if (kind == ELEMENT_TYPE_ARRAY)
-        rank = this->GetMethodTable()->GetRank();
-    else if (CorTypeInfo::IsGenericVariable(kind))
+    if (CorTypeInfo::IsGenericVariable(kind))
         rank = dac_cast<PTR_TypeVarTypeDesc>(this)->GetIndex();
     else
         rank = 0;

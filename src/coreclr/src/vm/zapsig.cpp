@@ -48,16 +48,6 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
     {
         if (!this->GetSignatureForTypeHandle(desc->GetTypeParam(), pSigBuilder))
             return FALSE;
-
-        //TODO: WIP remove. 
-        if (elemType == ELEMENT_TYPE_ARRAY)
-        {
-            MethodTable *mt = desc->GetMethodTable();
-            _ASSERTE(mt->GetRank() != 0);
-            pSigBuilder->AppendData(mt->GetRank());
-            pSigBuilder->AppendData(0);
-            pSigBuilder->AppendData(0);
-        }
     }
     else
     {
@@ -418,7 +408,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
             if (sigType != handleType)
                 RETURN(FALSE);
 
-            RETURN (CompareSignatureToTypeHandle(pSig, pModule, handle.GetElementType(), pZapSigContext));
+            RETURN (CompareSignatureToTypeHandle(pSig, pModule, handle.GetTypeParam(), pZapSigContext));
         }
 
         case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:

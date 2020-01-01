@@ -448,9 +448,7 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
     if (typeHandle.IsTypeDesc()) {
-        //TODO: WIP remove
-        if (!typeHandle.IsArray())
-            return NULL;
+        return NULL;
     }
 
     MethodTable* pMT = typeHandle.GetMethodTable();
@@ -574,9 +572,7 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetBaseType, ReflectClassBa
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
     if (typeHandle.IsTypeDesc()) {
-        //TODO: WIP remove
-        if (!typeHandle.IsArray())
-            return NULL;
+        return NULL;
     }
 
     RETURN_CLASS_OBJECT(typeHandle.GetParent(), refType);
@@ -855,15 +851,7 @@ FCIMPL1(PtrArray*, RuntimeTypeHandle::GetInterfaces, ReflectClassBaseObject *pTy
     {
         if (typeHandle.IsTypeDesc())
         {
-            // TODO: WIP remove
-            if (typeHandle.IsArray())
-            {
-                ifaceCount = typeHandle.GetMethodTable()->GetNumInterfaces();
-            }
-            else
-            {
-                ifaceCount = 0;
-            }
+            ifaceCount = 0;
         }
         else
         {
@@ -914,9 +902,7 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
             return tdPublic;
         }
 
-        // TODO: WIP remove
-        if (!typeHandle.IsArray())
-            return 0;
+        return 0;
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -1145,9 +1131,7 @@ void QCALLTYPE RuntimeTypeHandle::VerifyInterfaceIsImplemented(QCall::TypeHandle
         COMPlusThrow(kArgumentException, W("Arg_InvalidHandle"));
 
     if (typeHandle.IsTypeDesc()) {
-        //TODO: WIP remove
-        if (!typeHandle.IsArray())
-            COMPlusThrow(kArgumentException, W("Arg_NotFoundIFace"));
+        COMPlusThrow(kArgumentException, W("Arg_NotFoundIFace"));
     }
 
     if (typeHandle.IsInterface())
@@ -1287,12 +1271,8 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetDeclaringType, ReflectCla
             goto Exit;
         }
 
-        // TODO: WIP remove
-        if (!typeHandle.IsArray())
-        {
-            retTypeHandle = TypeHandle();
-            goto Exit;
-        }
+        retTypeHandle = TypeHandle();
+        goto Exit;
     }
 
     pMT = typeHandle.GetMethodTable();

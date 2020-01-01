@@ -4067,8 +4067,7 @@ ClassLoader::LoadArrayTypeThrowing(
     }
 #endif
 
-    // TODO: WIP remove the third arg
-    TypeKey key(arrayKind, elemType, TRUE, rank);
+    TypeKey key(arrayKind, elemType, rank);
     TypeHandle th = LoadConstructedTypeThrowing(&key, fLoadTypes, level);
 
     if (predefinedElementType != ELEMENT_TYPE_END && !th.IsNull() && th.IsFullyLoaded())
@@ -4931,7 +4930,7 @@ BOOL ClassLoader::CanAccessMethodInstantiation( // True if access is legal, fals
         {
             TypeHandle th = inst[i];
 
-            MethodTable* pMT = th.GetElementType().GetMethodTable();
+            MethodTable* pMT = th.GetMethodTableOfRootElementType();
 
             // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
             if (pMT == NULL)
@@ -4993,7 +4992,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
         {
             TypeHandle th = inst[i];
 
-            MethodTable* pMT = th.GetElementType().GetMethodTable();
+            MethodTable* pMT = th.GetMethodTableOfRootElementType();
 
             // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
             if (pMT == NULL)

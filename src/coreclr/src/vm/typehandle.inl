@@ -38,26 +38,15 @@ inline void TypeHandle::SetIsFullyLoaded()
         return AsMethodTable()->SetIsFullyLoaded();
 }
 
-inline TypeHandle TypeHandle::GetElementType() const
+inline MethodTable* TypeHandle::GetMethodTableOfRootElementType() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (IsArray())
-    {
-        return GetArrayElementTypeHandle();
-    }
+    TypeHandle current = *this;
+    while (current.HasTypeParam())
+        current = current.GetTypeParam();
 
-    if (IsTypeDesc())
-    {
-        if (IsGenericVariable())
-            return *this;
-
-        return AsTypeDesc()->GetTypeParam().GetElementType();
-    }
-    else
-    {
-        return *this;
-    }
+    return current.GetMethodTable();
 }
 
 inline TypeHandle TypeHandle::GetArrayElementTypeHandle() const
@@ -66,7 +55,7 @@ inline TypeHandle TypeHandle::GetArrayElementTypeHandle() const
 
     _ASSERTE(IsArray());
 
-    return GetMethodTable()->GetArrayElementTypeHandle();
+    return AsMethodTable()->GetArrayElementTypeHandle();
 }
 
 inline unsigned int TypeHandle::GetRank() const
@@ -75,7 +64,7 @@ inline unsigned int TypeHandle::GetRank() const
 
     _ASSERTE(IsArray());
 
-    return GetMethodTable()->GetRank();
+    return AsMethodTable()->GetRank();
 }
 
 inline BOOL TypeHandle::IsZapped() const
@@ -283,9 +272,6 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
     {
         switch (AsTypeDesc()->GetInternalCorElementType())
         {
-            // TODO: WIP remove arrays
-        case ELEMENT_TYPE_ARRAY:
-        case ELEMENT_TYPE_SZARRAY:
         case ELEMENT_TYPE_BYREF:
         case ELEMENT_TYPE_PTR:
             o = dac_cast<PTR_ParamTypeDesc>(AsTypeDesc())->GetManagedClassObjectFast();

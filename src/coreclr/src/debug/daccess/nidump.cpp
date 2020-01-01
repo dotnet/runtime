@@ -6108,53 +6108,17 @@ void NativeImageDumper::TypeDescToString( PTR_TypeDesc td, SString& buf )
         PTR_FnPtrTypeDesc fptd( PTR_TO_TADDR(td) );
         buf.Append( W("(fnptr)") );
     }
-    // TODO: WIP remove IsArray
-    else if( td->HasTypeParam() || td->IsArray() )
+    else if(td->HasTypeParam())
     {
-        //either a Parameter or an Array.
         PTR_ParamTypeDesc ptd(PTR_TO_TADDR(td));
-        TypeHandle elemType;
-        /* REVISIT_TODO Thu 10/5/2006
-         * Do I need to find a rank somewhere in the TypeDesc?
-         */
-        unsigned rank;
-        //TODO: WIP remove (MT is handled)
-        if( td->IsArray() )
-        {
-            //td->HasTypeParam() may also be true.
-            PTR_MethodTable mt = ptd->GetTemplateMethodTableInternal();
-            _ASSERTE( PTR_TO_TADDR(mt) );
-            if( CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(mt)) )
-            {
-                if (!isSelf(GetDependencyForPointer(PTR_TO_TADDR(ptd))))
-                {
-                    //this is an RVA from another hardbound dependency.  We cannot decode it
-                    buf.Append(W("OUT_OF_MODULE_FIXUP"));
-                }
-                else
-                {
-                    RVA rva = CORCOMPILE_UNTAG_TOKEN(PTR_TO_TADDR(mt));
-                    FixupBlobToString(rva, buf);
-                }
-                return;
-            }
-            else
-            {
-                _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(mt)) );
-                MethodTableToString( mt, buf );
-                rank = mt->GetRank();
-            }
-        }
-        else
-        {
-            _ASSERTE(td->HasTypeParam());
-            TypeHandle th(ptd->GetTypeParam());
-            _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(th.AsTAddr()) );
-            _ASSERTE( th.AsTAddr() );
-            TypeHandleToString(th, buf);
-            rank = 0;
-        }
-        AppendTypeQualifier( td->GetInternalCorElementType(), rank, buf );
+
+        _ASSERTE(td->HasTypeParam());
+        TypeHandle th(ptd->GetTypeParam());
+        _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(th.AsTAddr()) );
+        _ASSERTE( th.AsTAddr() );
+        TypeHandleToString(th, buf);
+
+        AppendTypeQualifier( td->GetInternalCorElementType(), /*rank*/ 0, buf );
     }
     else
     {
