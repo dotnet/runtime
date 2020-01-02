@@ -2180,7 +2180,9 @@ public:
                     /* The following formula is good choice when optimizing CSE for SMALL_CODE */
                     cse_def_cost = 3; // mov [EBP-1C],reg
                     cse_use_cost = 2; //     [EBP-1C]
-#else                                         // _TARGET_ARM_
+
+#else // _TARGET_ARM_
+
                     cse_def_cost = 2; // str reg,[sp+0x9c]
                     cse_use_cost = 2; // ldr reg,[sp+0x9c]
 #endif
@@ -2225,7 +2227,7 @@ public:
                                moderateRefCnt);
                     }
 #endif
-                    cse_def_cost   = 2;
+                    cse_def_cost = 2;
                     if (canEnregister)
                     {
                         if (enregCount < (CNT_CALLEE_ENREG * 3 / 2))
@@ -2294,6 +2296,25 @@ public:
         {
             cse_def_cost *= slotCount;
             cse_use_cost *= slotCount;
+        }
+
+        // If this CSE is live across a call then we may need to spill an additional caller save register
+        //
+        if (candidate->LiveAcrossCall())
+        {
+            // If we don't have a lot of variable to enregister or we  have a floating point tye
+            // then we likely need to spill an additional caller save register
+            //
+            if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()->TypeGet()))
+            {
+                // Extra cost in case we have to spill/restore a caller saved register
+                extra_yes_cost = BB_UNITY_WEIGHT;
+
+                if (cseRefCnt < moderateRefCnt) // If Conservative CSE promotion
+                {
+                    extra_yes_cost *= 2; // full cost if we are being Conservative
+                }
+            }
         }
 
         // estimate the cost from lost codesize reduction if we do not perform the CSE
