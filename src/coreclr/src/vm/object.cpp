@@ -192,20 +192,6 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     //         Object[], in which case its MT is in mscorlib and thus doesn't unload.
 
     MethodTable * pMTToCheck = pMT;
-    if (pMTToCheck->IsArray())
-    {
-        // Ideally, we would just call thElem.GetLoaderModule() here. Unfortunately, the
-        // current TypeDesc::GetLoaderModule() implementation depends on data structures
-        // that might have been unloaded already. So we just simulate
-        // TypeDesc::GetLoaderModule() for the limited array case that we care about. In
-        // case we're dealing with an array of arrays of arrays etc. traverse until we
-        // find the deepest element, and that's the type we'll check
-        do
-        {
-            pMTToCheck = pMTToCheck->GetArrayElementTypeHandle().GetMethodTable();
-        } while (pMTToCheck->IsArray());
-    }
-
     Module * pLoaderModule = pMTToCheck->GetLoaderModule();
 
     // Don't look up types that are unloading due to Collectible Assemblies. Haven't been
