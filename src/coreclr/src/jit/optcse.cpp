@@ -2287,17 +2287,6 @@ public:
                     cse_use_cost += 1;
                 }
             }
-
-            if (largeFrame)
-            {
-                cse_def_cost++;
-                cse_use_cost++;
-            }
-            if (hugeFrame)
-            {
-                cse_def_cost++;
-                cse_use_cost++;
-            }
         }
 
         if (slotCount > 1)
