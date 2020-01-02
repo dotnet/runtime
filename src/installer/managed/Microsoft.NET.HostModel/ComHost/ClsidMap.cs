@@ -216,8 +216,8 @@ namespace Microsoft.NET.HostModel.ComHost
 
         private static bool IsTargetAttribute(MetadataReader reader, CustomAttribute attribute, string targetNamespace, string targetName)
         {
-            StringHandle namespaceMaybe = new StringHandle();
-            StringHandle nameMaybe = new StringHandle();
+            StringHandle namespaceMaybe;
+            StringHandle nameMaybe;
             switch (attribute.Constructor.Kind)
             {
                 case HandleKind.MemberReference:
