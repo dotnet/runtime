@@ -548,7 +548,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="serializedTypeName">The name of the type, or null.</param>
         /// <exception cref="ArgumentException"><paramref name="serializedTypeName"/> is empty.</exception>
-        public void SystemType(string serializedTypeName)
+        public void SystemType(string? serializedTypeName)
         {
             if (serializedTypeName != null && serializedTypeName.Length == 0)
             {

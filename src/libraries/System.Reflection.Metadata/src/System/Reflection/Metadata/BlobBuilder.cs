@@ -332,7 +332,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination!.Write(chunk._buffer, 0, chunk.Length);
+                destination.Write(chunk._buffer, 0, chunk.Length);
             }
         }
 
@@ -362,7 +362,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination!.WriteBytes(chunk._buffer, 0, chunk.Length);
+                destination.WriteBytes(chunk._buffer, 0, chunk.Length);
             }
         }
 
@@ -735,7 +735,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteBytes(ImmutableArray<byte> buffer, int start, int byteCount)
         {
-            WriteBytes(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(buffer), start, byteCount);
+            WriteBytes(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(buffer)!, start, byteCount);
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>

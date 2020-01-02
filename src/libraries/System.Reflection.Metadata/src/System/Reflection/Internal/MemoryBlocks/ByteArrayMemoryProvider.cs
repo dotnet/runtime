@@ -46,7 +46,7 @@ namespace System.Reflection.Internal
             {
                 if (_pinned == null)
                 {
-                    var newPinned = new PinnedObject(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array));
+                    var newPinned = new PinnedObject(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array)!);
 
                     if (Interlocked.CompareExchange(ref _pinned, newPinned, null) != null)
                     {

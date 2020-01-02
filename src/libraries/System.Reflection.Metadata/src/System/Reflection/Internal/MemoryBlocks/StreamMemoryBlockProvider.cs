@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 
@@ -23,7 +24,7 @@ namespace System.Reflection.Internal
 
         // The stream is user specified and might not be thread-safe.
         // Any read from the stream must be protected by streamGuard.
-        private Stream? _stream;
+        private Stream _stream;
         private readonly object _streamGuard;
 
         private readonly bool _leaveOpen;
@@ -53,7 +54,7 @@ namespace System.Reflection.Internal
             Debug.Assert(disposing);
             if (!_leaveOpen)
             {
-                Interlocked.Exchange(ref _stream, null)?.Dispose();
+                Interlocked.Exchange(ref _stream, null!)?.Dispose();
             }
 
             Interlocked.Exchange(ref _lazyMemoryMap, null)?.Dispose();
@@ -101,10 +102,9 @@ namespace System.Reflection.Internal
 
             if (_useMemoryMap && size > MemoryMapThreshold)
             {
-                MemoryMappedFileBlock? block;
-                if (TryCreateMemoryMappedFileBlock(absoluteStart, size, out block))
+                if (TryCreateMemoryMappedFileBlock(absoluteStart, size, out MemoryMappedFileBlock? block))
                 {
-                    return block!;
+                    return block;
                 }
 
                 _useMemoryMap = false;
@@ -123,7 +123,7 @@ namespace System.Reflection.Internal
         }
 
         /// <exception cref="IOException">IO error while mapping memory or not enough memory to create the mapping.</exception>
-        private unsafe bool TryCreateMemoryMappedFileBlock(long start, int size, out MemoryMappedFileBlock? block)
+        private unsafe bool TryCreateMemoryMappedFileBlock(long start, int size, [NotNullWhen(true)]out MemoryMappedFileBlock? block)
         {
             if (_lazyMemoryMap == null)
             {

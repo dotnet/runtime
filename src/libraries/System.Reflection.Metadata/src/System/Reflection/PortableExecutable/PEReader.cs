@@ -527,7 +527,9 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="InvalidOperationException">PE image not available.</exception>
         public ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
         {
-            var debugDirectory = PEHeaders.PEHeader!.DebugTableDirectory;
+            Debug.Assert(PEHeaders.PEHeader != null);
+
+            var debugDirectory = PEHeaders.PEHeader.DebugTableDirectory;
             if (debugDirectory.Size == 0)
             {
                 return ImmutableArray<DebugDirectoryEntry>.Empty;

@@ -80,18 +80,18 @@ namespace System.Reflection.Internal
         /// whose underlying backing field is modified.
         /// </remarks>
         /// <returns>The underlying array, or null if <see cref="ImmutableArray{T}.IsDefault"/> is true.</returns>
-        internal static byte[] DangerousGetUnderlyingArray(ImmutableArray<byte> array)
+        internal static byte[]? DangerousGetUnderlyingArray(ImmutableArray<byte> array)
         {
             ByteArrayUnion union = default;
             union.ImmutableArray = array;
-            return union.UnderlyingArray!;
+            return union.UnderlyingArray;
         }
 
         [StructLayout(LayoutKind.Explicit)]
         private struct ByteArrayUnion
         {
             [FieldOffset(0)]
-            internal byte[] UnderlyingArray;
+            internal byte[]? UnderlyingArray;
 
             [FieldOffset(0)]
             internal ImmutableArray<byte> ImmutableArray;

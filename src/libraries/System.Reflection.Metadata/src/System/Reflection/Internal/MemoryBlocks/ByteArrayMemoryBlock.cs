@@ -12,7 +12,7 @@ namespace System.Reflection.Internal
     /// </summary>
     internal sealed class ByteArrayMemoryBlock : AbstractMemoryBlock
     {
-        private ByteArrayMemoryProvider? _provider;
+        private ByteArrayMemoryProvider _provider;
         private readonly int _start;
         private readonly int _size;
 
@@ -25,7 +25,7 @@ namespace System.Reflection.Internal
 
         public override void Dispose()
         {
-            _provider = null;
+            _provider = null!;
         }
 
         public unsafe override byte* Pointer => _provider!.Pointer + _start;

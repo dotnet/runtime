@@ -31,7 +31,7 @@ namespace System.Reflection.PortableExecutable
                     Throw.ArgumentNull(nameof(name));
                 }
 
-                Name = name!;
+                Name = name;
                 Characteristics = characteristics;
             }
         }
@@ -68,7 +68,7 @@ namespace System.Reflection.PortableExecutable
 
             IdProvider = deterministicIdProvider ?? BlobContentId.GetTimeBasedProvider();
             IsDeterministic = deterministicIdProvider != null;
-            Header = header!;
+            Header = header;
             _lazySections = new Lazy<ImmutableArray<Section>>(CreateSections);
         }
 

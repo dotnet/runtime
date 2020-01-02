@@ -390,7 +390,7 @@ namespace System.Reflection.Metadata
         public void WriteBytes(System.Reflection.Metadata.BlobBuilder source) { }
         public void WriteCompressedInteger(int value) { }
         public void WriteCompressedSignedInteger(int value) { }
-        public void WriteConstant(object value) { }
+        public void WriteConstant(object? value) { }
         public void WriteDateTime(System.DateTime value) { }
         public void WriteDecimal(decimal value) { }
         public void WriteDouble(double value) { }
@@ -402,7 +402,7 @@ namespace System.Reflection.Metadata
         public void WriteInt64(long value) { }
         public void WriteReference(int reference, bool isSmall) { }
         public void WriteSByte(sbyte value) { }
-        public void WriteSerializedString(string str) { }
+        public void WriteSerializedString(string? str) { }
         public void WriteSingle(float value) { }
         public void WriteUInt16(ushort value) { }
         public void WriteUInt16BE(ushort value) { }
@@ -1253,8 +1253,8 @@ namespace System.Reflection.Metadata
     {
         public ImageFormatLimitationException() { }
         protected ImageFormatLimitationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public ImageFormatLimitationException(string message) { }
-        public ImageFormatLimitationException(string message, System.Exception innerException) { }
+        public ImageFormatLimitationException(string? message) { }
+        public ImageFormatLimitationException(string? message, System.Exception? innerException) { }
     }
     public readonly partial struct ImportDefinition
     {
@@ -2743,7 +2743,7 @@ namespace System.Reflection.Metadata.Ecma335
         public System.Reflection.Metadata.AssemblyDefinitionHandle AddAssembly(System.Reflection.Metadata.StringHandle name, System.Version version, System.Reflection.Metadata.StringHandle culture, System.Reflection.Metadata.BlobHandle publicKey, System.Reflection.AssemblyFlags flags, System.Reflection.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         public System.Reflection.Metadata.AssemblyFileHandle AddAssemblyFile(System.Reflection.Metadata.StringHandle name, System.Reflection.Metadata.BlobHandle hashValue, bool containsMetadata) { throw null; }
         public System.Reflection.Metadata.AssemblyReferenceHandle AddAssemblyReference(System.Reflection.Metadata.StringHandle name, System.Version version, System.Reflection.Metadata.StringHandle culture, System.Reflection.Metadata.BlobHandle publicKeyOrToken, System.Reflection.AssemblyFlags flags, System.Reflection.Metadata.BlobHandle hashValue) { throw null; }
-        public System.Reflection.Metadata.ConstantHandle AddConstant(System.Reflection.Metadata.EntityHandle parent, object value) { throw null; }
+        public System.Reflection.Metadata.ConstantHandle AddConstant(System.Reflection.Metadata.EntityHandle parent, object? value) { throw null; }
         public System.Reflection.Metadata.CustomAttributeHandle AddCustomAttribute(System.Reflection.Metadata.EntityHandle parent, System.Reflection.Metadata.EntityHandle constructor, System.Reflection.Metadata.BlobHandle value) { throw null; }
         public System.Reflection.Metadata.CustomDebugInformationHandle AddCustomDebugInformation(System.Reflection.Metadata.EntityHandle parent, System.Reflection.Metadata.GuidHandle kind, System.Reflection.Metadata.BlobHandle value) { throw null; }
         public System.Reflection.Metadata.DeclarativeSecurityAttributeHandle AddDeclarativeSecurityAttribute(System.Reflection.Metadata.EntityHandle parent, System.Reflection.DeclarativeSecurityAction action, System.Reflection.Metadata.BlobHandle permissionSet) { throw null; }
@@ -3009,7 +3009,7 @@ namespace System.Reflection.Metadata.Ecma335
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void Constant(object? value) { }
         public void NullArray() { }
-        public void SystemType(string serializedTypeName) { }
+        public void SystemType(string? serializedTypeName) { }
     }
     public readonly partial struct SignatureDecoder<TType, TGenericContext>
     {
