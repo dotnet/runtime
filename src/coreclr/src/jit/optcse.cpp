@@ -2188,6 +2188,14 @@ public:
 #endif
                 }
             }
+#ifdef _TARGET_AMD64_
+            if (varTypeIsFloating(candidate->Expr()->TypeGet()))
+            {
+                // floating point loads/store encode larger
+                cse_def_cost += 2;
+                cse_use_cost += 1;
+            }
+#endif // _TARGET_AMD64_
         }
         else // not SMALL_CODE ...
         {
