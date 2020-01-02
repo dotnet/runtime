@@ -4432,7 +4432,6 @@ namespace System.Globalization
         public System.Globalization.CultureInfo GetConsoleFallbackUICulture() { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(int culture) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(string name) { throw null; }
-        public static System.Globalization.CultureInfo GetCultureInfo(string name, bool predefinedOnly) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(string name, string altName) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfoByIetfLanguageTag(string name) { throw null; }
         public static System.Globalization.CultureInfo[] GetCultures(System.Globalization.CultureTypes types) { throw null; }
