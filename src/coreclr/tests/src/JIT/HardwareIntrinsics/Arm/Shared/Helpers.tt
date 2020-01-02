@@ -174,47 +174,32 @@ namespace JIT.HardwareIntrinsics.Arm
         } // foreach (string typeName in ... )
 
         foreach ((string methodName, string compareOp, bool absoluteCompare) in new (string, string, bool)[] {
+          ("AbsoluteCompareGreaterThan", ">", true),
+          ("AbsoluteCompareGreaterThanOrEqual", ">=", true),
+          ("AbsoluteCompareLessThan", "<", true),
+          ("AbsoluteCompareLessThanOrEqual", "<=", true),
           ("CompareEqual", "==", false),
-          ("CompareGreaterThan", ">", true),
-          ("CompareGreaterThanOrEqual", ">=", true),
-          ("CompareLessThan", "<", true),
-          ("CompareLessThanOrEqual", "<=", true) })
+          ("CompareGreaterThan", ">", false),
+          ("CompareGreaterThanOrEqual", ">=", false),
+          ("CompareLessThan", "<", false),
+          ("CompareLessThanOrEqual", "<=", false),
+        })
         {
-
-        if (absoluteCompare)
-        {
-#>
-        public static double Absolute<#= methodName #>(double left, double right)
-        {
-            long result = 0;
-
-            if (Math.Abs(left) <#= compareOp #> Math.Abs(right))
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float Absolute<#= methodName #>(float left, float right)
-        {
-            int result = 0;
-
-            if (Math.Abs(left) <#= compareOp #> Math.Abs(right))
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-<#
-        }
 #>
         public static double <#= methodName #>(double left, double right)
         {
             long result = 0;
 
+<#
+            if (absoluteCompare)
+            {
+#>
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+<#
+            }
+#>
             if (left <#= compareOp #> right)
             {
                 result = -1;
@@ -227,6 +212,16 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             int result = 0;
 
+<#
+            if (absoluteCompare)
+            {
+#>
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+<#
+            }
+#>
             if (left <#= compareOp #> right)
             {
                 result = -1;

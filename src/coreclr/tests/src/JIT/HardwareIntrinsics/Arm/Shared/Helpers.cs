@@ -1006,6 +1006,126 @@ namespace JIT.HardwareIntrinsics.Arm
             return (ulong)result;
         }
 
+        public static double AbsoluteCompareGreaterThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareGreaterThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareGreaterThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareGreaterThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareLessThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareLessThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareLessThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareLessThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
         public static double CompareEqual(double left, double right)
         {
             long result = 0;
@@ -1023,30 +1143,6 @@ namespace JIT.HardwareIntrinsics.Arm
             int result = 0;
 
             if (left == right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double AbsoluteCompareGreaterThan(double left, double right)
-        {
-            long result = 0;
-
-            if (Math.Abs(left) > Math.Abs(right))
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float AbsoluteCompareGreaterThan(float left, float right)
-        {
-            int result = 0;
-
-            if (Math.Abs(left) > Math.Abs(right))
             {
                 result = -1;
             }
@@ -1078,30 +1174,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return BitConverter.Int32BitsToSingle(result);
         }
 
-        public static double AbsoluteCompareGreaterThanOrEqual(double left, double right)
-        {
-            long result = 0;
-
-            if (Math.Abs(left) >= Math.Abs(right))
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float AbsoluteCompareGreaterThanOrEqual(float left, float right)
-        {
-            int result = 0;
-
-            if (Math.Abs(left) >= Math.Abs(right))
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
         public static double CompareGreaterThanOrEqual(double left, double right)
         {
             long result = 0;
@@ -1126,30 +1198,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return BitConverter.Int32BitsToSingle(result);
         }
 
-        public static double AbsoluteCompareLessThan(double left, double right)
-        {
-            long result = 0;
-
-            if (Math.Abs(left) < Math.Abs(right))
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float AbsoluteCompareLessThan(float left, float right)
-        {
-            int result = 0;
-
-            if (Math.Abs(left) < Math.Abs(right))
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
         public static double CompareLessThan(double left, double right)
         {
             long result = 0;
@@ -1167,30 +1215,6 @@ namespace JIT.HardwareIntrinsics.Arm
             int result = 0;
 
             if (left < right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double AbsoluteCompareLessThanOrEqual(double left, double right)
-        {
-            long result = 0;
-
-            if (Math.Abs(left) <= Math.Abs(right))
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float AbsoluteCompareLessThanOrEqual(float left, float right)
-        {
-            int result = 0;
-
-            if (Math.Abs(left) <= Math.Abs(right))
             {
                 result = -1;
             }
