@@ -1951,7 +1951,7 @@ monodis_assembly_search_hook (MonoAssemblyLoadContext *alc, MonoAssembly *reques
 
        for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
                MonoAssembly *ass = (MonoAssembly *)tmp->data;
-               if (mono_assembly_names_equal (aname, &ass->aname))
+               if (mono_assembly_check_name_match (aname, &ass->aname))
 		       return ass;
        }
        return NULL;

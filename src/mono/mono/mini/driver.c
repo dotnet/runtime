@@ -2362,9 +2362,9 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--assembly-loader=", strlen("--assembly-loader=")) == 0) {
 			gchar *arg = argv [i] + strlen ("--assembly-loader=");
 			if (strcmp (arg, "strict") == 0)
-				mono_loader_set_strict_strong_names (TRUE);
+				mono_loader_set_strict_assembly_name_check (TRUE);
 			else if (strcmp (arg, "legacy") == 0)
-				mono_loader_set_strict_strong_names (FALSE);
+				mono_loader_set_strict_assembly_name_check (FALSE);
 			else
 				fprintf (stderr, "Warning: unknown argument to --assembly-loader. Should be \"strict\" or \"legacy\"\n");
 		} else if (strncmp (argv [i], MONO_HANDLERS_ARGUMENT, MONO_HANDLERS_ARGUMENT_LEN) == 0) {

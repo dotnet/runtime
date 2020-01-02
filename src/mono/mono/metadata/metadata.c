@@ -516,12 +516,12 @@ static const gint16 tableidx [] = {
 #undef TABLEDEF
 };
 
-/* If TRUE (but also see DISABLE_STICT_STRONG_NAMES #define), Mono will check
+/* On legacy, if TRUE (but also see DISABLE_DESKTOP_LOADER #define), Mono will check
  * that the public key token, culture and version of a candidate assembly matches
- * the requested strong name.  If FALSE, as long as the name matches, the candidate
- * will be allowed.
+ * the requested strong name. On netcore, it will check the culture and version.
+ * If FALSE, as long as the name matches, the candidate will be allowed.
  */
-static gboolean check_strong_names_strictly = FALSE;
+static gboolean check_assembly_names_strictly = FALSE;
 
 // Amount initially reserved in each imageset's mempool.
 // FIXME: This number is arbitrary, a more practical number should be found
@@ -7563,15 +7563,19 @@ mono_find_image_set_owner (void *ptr)
 }
 
 void
-mono_loader_set_strict_strong_names (gboolean enabled)
+mono_loader_set_strict_assembly_name_check (gboolean enabled)
 {
-	check_strong_names_strictly = enabled;
+	check_assembly_names_strictly = enabled;
 }
 
 gboolean
-mono_loader_get_strict_strong_names (void)
+mono_loader_get_strict_assembly_name_check (void)
 {
-	return check_strong_names_strictly;
+#if !defined(DISABLE_DESKTOP_LOADER) || defined(ENABLE_NETCORE)
+	return check_assembly_names_strictly;
+#else
+	return FALSE;
+#endif
 }
 
 

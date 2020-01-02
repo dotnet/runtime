@@ -1143,10 +1143,10 @@ void
 mono_ginst_get_desc (GString *str, MonoGenericInst *ginst);
 
 void
-mono_loader_set_strict_strong_names (gboolean enabled);
+mono_loader_set_strict_assembly_name_check (gboolean enabled);
 
 gboolean
-mono_loader_get_strict_strong_names (void);
+mono_loader_get_strict_assembly_name_check (void);
 
 gboolean
 mono_type_in_image (MonoType *type, MonoImage *image);

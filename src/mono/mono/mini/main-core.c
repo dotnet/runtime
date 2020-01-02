@@ -232,9 +232,9 @@ int STDAPICALLTYPE coreclr_initialize (const char* exePath, const char* appDomai
 
 	/*
 	 * Don't use Mono's legacy assembly name matching behavior - respect
-	 * the requested version and public key token.
+	 * the requested version and culture.
 	 */
-	mono_loader_set_strict_strong_names (TRUE);
+	mono_loader_set_strict_assembly_name_check (TRUE);
 
 	return 0;
 }
