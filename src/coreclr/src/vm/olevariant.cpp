@@ -300,7 +300,7 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
         return GetVarTypeForCVType(CorElementTypeToCVTypes(elemType));
 
     // Handle objects.
-    if (!type.IsArray())
+    if (!type.IsTypeDesc())
     {
         MethodTable * pMT = type.AsMethodTable();
 
@@ -349,6 +349,9 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
 
         if (pMT->IsValueType())
             return VT_RECORD;
+
+        if (pMT->IsArray())
+            return VT_ARRAY;
 
 #ifdef FEATURE_COMINTEROP
         // There is no VT corresponding to SafeHandles as they cannot be stored in
@@ -400,14 +403,8 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
         return VT_UNKNOWN;
     }
 
-    // Handle array's.
-    if (!CorTypeInfo::IsArray(elemType))
-    {
-        // Non interop compatible type.
-        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-    }
-
-    return VT_ARRAY;
+    // Non interop compatible type.
+    COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
 }
 
 //
