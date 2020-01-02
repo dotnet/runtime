@@ -4121,8 +4121,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 	// As per the LLVM docs, a function has a noalias return value if and only if
 	// it is an allocation function. This is an allocation function.
-	if (call->method && call->method->wrapper_type == MONO_WRAPPER_ALLOC)
+	if (call->method && call->method->wrapper_type == MONO_WRAPPER_ALLOC) {
 		mono_llvm_set_call_noalias_ret (lcall);
+		// All objects are expected to be 8-byte aligned (SGEN_ALLOC_ALIGN)
+		mono_llvm_set_alignment_ret (lcall, 8);
+	}
 
 	/*
 	 * Modify cconv and parameter attributes to pass rgctx/imt correctly.
