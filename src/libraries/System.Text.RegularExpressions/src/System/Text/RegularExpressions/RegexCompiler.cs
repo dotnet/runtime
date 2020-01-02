@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -54,6 +55,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
+        private static readonly MethodInfo s_spanSliceMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
 #if DEBUG
         private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) })!;
@@ -77,7 +79,7 @@ namespace System.Text.RegularExpressions
         private LocalBuilder? _loopTimeoutCounterLocal; // timeout counter for setrep and setloop
 
         protected RegexOptions _options;      // options
-        protected RegexCode? _code;           // the RegexCode object (used for debugging only)
+        protected RegexCode? _code;           // the RegexCode object
         protected int[]? _codes;              // the RegexCodes being translated
         protected string[]? _strings;         // the stringtable associated with the RegexCodes
         protected RegexPrefix? _fcPrefix;     // the possible first chars computed by RegexFCD
@@ -368,8 +370,14 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Blt) (long form).</summary>
         private void BltFar(Label l) => _ilg!.Emit(OpCodes.Blt, l);
 
+        /// <summary>A macro for _ilg.Emit(OpCodes.Blt_Un) (long form).</summary>
+        private void BltUnFar(Label l) => _ilg!.Emit(OpCodes.Blt_Un, l);
+
         /// <summary>A macro for _ilg.Emit(OpCodes.Bge) (long form).</summary>
         private void BgeFar(Label l) => _ilg!.Emit(OpCodes.Bge, l);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Bge_Un) (long form).</summary>
+        private void BgeUnFar(Label l) => _ilg!.Emit(OpCodes.Bge_Un, l);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Bgt) (long form).</summary>
         private void BgtFar(Label l) => _ilg!.Emit(OpCodes.Bgt, l);
@@ -1414,9 +1422,586 @@ namespace System.Text.RegularExpressions
             Ret();
         }
 
+        private bool TryGenerateNonBacktrackingGo(RegexNode node)
+        {
+            Debug.Assert(node.Type == RegexNode.Capture && node.ChildCount() == 1,
+                "Every generated tree should begin with a capture node that has a single child.");
+
+            // RightToLeft is rare and not worth adding a lot of custom code to handle in this path.
+            if ((node.Options & RegexOptions.RightToLeft) != 0)
+            {
+                return false;
+            }
+
+            // Skip the Capture node.  This path only supports the implicit capture of the whole match,
+            // which we handle implicitly at the end of the generated code in one location.
+            node = node.Child(0);
+
+            // Alternate is supported only at the root (a global alternate). That way, any failures in a
+            // branch can be unwound by just resetting everything, rather than keeping track of a backtracking stack.
+            if (node.Type == RegexNode.Alternate)
+            {
+                int branchCount = node.ChildCount();
+                Debug.Assert(branchCount >= 2);
+                for (int i = 0; i < branchCount; i++)
+                {
+                    if (!NodeSupportsNonBacktrackingImplementation(node.Child(i)))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else if (!NodeSupportsNonBacktrackingImplementation(node))
+            {
+                return false;
+            }
+
+            // We've determined that the RegexNode can be handled with this optimized path.  Generate the code.
+#if DEBUG
+            if ((_options & RegexOptions.Debug) != 0)
+            {
+                Debug.WriteLine("Using optimized non-backtracking code gen.");
+            }
+#endif
+
+            // Declare some locals.
+            LocalBuilder runtextposLocal = DeclareInt32();
+            LocalBuilder originalruntextposLocal = DeclareInt32();
+            LocalBuilder textSpanLocal = DeclareReadOnlySpanChar();
+            LocalBuilder originalTextSpanLocal = DeclareReadOnlySpanChar();
+            LocalBuilder setScratchLocal = DeclareInt32();
+            LocalBuilder? iterationLocal = null;
+            Label stopSuccessLabel = DefineLabel();
+            Label doneLabel = DefineLabel();
+            if (_hasTimeout)
+            {
+                _loopTimeoutCounterLocal = DeclareInt32();
+            }
+
+            // CultureInfo culture = CultureInfo.CurrentCulture;
+            // (only if the whole expression or any subportion is ignoring case, and we're not using invariant)
+            InitializeCultureForGoIfNecessary();
+
+            // int runtextpos = this.runtextpos;
+            // int originalruntextpos = runtextpos;
+            Ldthisfld(s_runtextposField);
+            Dup();
+            Stloc(runtextposLocal);
+            Stloc(originalruntextposLocal);
+
+            // ReadOnlySpan<char> textSpan = this.runtext.AsSpan(this.runtextpos, this.runtextend - this.runtextpos);
+            // ReadOnlySpan<char> originalTextSpan = textSpan;
+            Ldthisfld(s_runtextField);
+            Ldthisfld(s_runtextposField);
+            Ldthisfld(s_runtextendField);
+            Ldthisfld(s_runtextposField);
+            Sub();
+            Call(s_stringAsSpanMethod);
+            Dup();
+            Stloc(textSpanLocal);
+            Stloc(originalTextSpanLocal);
+
+            // The implementation tries to use const indexes into the span wherever possible, which we can do
+            // in all places except for variable-length loops.  For everything else, we know at any point in
+            // the regex exactly how far into it we are, and we can use that to index into the span created
+            // at the beginning of the routine to begin at exactly where we're starting in the input.  For
+            // variable-length loops, we index at this position + i, and then after the loop we slice the input
+            // by i so that this position is still accurate for everything after it.
+            int textSpanPos = 0;
+
+            // Emit the code for all nodes in the tree.
+            if (node.Type == RegexNode.Alternate)
+            {
+                EmitGlobalAlternate(node);
+            }
+            else
+            {
+                EmitNode(node);
+            }
+
+            // Success:
+            // this.runtextpos = runtextpos + textSpanPos;
+            MarkLabel(stopSuccessLabel);
+            Ldthis();
+            Ldloc(runtextposLocal);
+            Ldc(textSpanPos);
+            Add();
+            Stfld(s_runtextposField);
+
+            // Capture(0, originalruntextposLocal, this.runtextpos);
+            Ldthis();
+            Ldc(0);
+            Ldloc(originalruntextposLocal);
+            Ldthisfld(s_runtextposField);
+            Callvirt(s_captureMethod);
+
+            // Done:
+            // return;
+            MarkLabel(doneLabel);
+            Ret();
+
+            // Generated code successfully with non-backtracking implementation.
+            return true;
+
+            // Determines whether the node supports an optimized implementation that doesn't allow for backtracking.
+            static bool NodeSupportsNonBacktrackingImplementation(RegexNode node)
+            {
+                bool supported = false;
+
+                // We only support the default left-to-right, not right-to-left, which requires more complication in the gerated code.
+                if ((node.Options & RegexOptions.RightToLeft) == 0)
+                {
+                    switch (node.Type)
+                    {
+                        // One/Notone/Set/Multi don't involve any repetition and are easily supported.
+                        case RegexNode.One:
+                        case RegexNode.Notone:
+                        case RegexNode.Set:
+                        case RegexNode.Multi:
+                            supported = true;
+                            break;
+
+                        // Boundaries are like set checks and don't involve repetition, either.
+                        case RegexNode.Boundary:
+                        case RegexNode.Nonboundary:
+                        case RegexNode.ECMABoundary:
+                        case RegexNode.NonECMABoundary:
+                            supported = true;
+                            break;
+
+                        // {Set/One}loopgreedy are optimized nodes that represent non-backtracking variable-length loops.
+                        // These consume their {Set/One} inputs as long as they match, and don't give up anything they
+                        // matched, which means we can support them without backtracking.
+                        case RegexNode.Setloopgreedy:
+                        case RegexNode.Oneloopgreedy:
+                            // TODO: Add support for greedy {Lazy}Loop around supported elements, namely Concatenate.
+                            //       Nested loops will require multiple iteration variables to be defined.
+                            supported = true;
+                            break;
+
+                        // Repeaters don't require backtracking as long as their min and max are equal.
+                        // At that point they're just a shorthand for writing out the One/Notone/Set
+                        // that number of times.
+                        case RegexNode.Oneloop:
+                        case RegexNode.Onelazy:
+                        case RegexNode.Notoneloop:
+                        case RegexNode.Notonelazy:
+                        case RegexNode.Setloop:
+                        case RegexNode.Setlazy:
+                            // TODO: Add support for {Lazy}Loop with M == N.
+                            //       Nested loops will require adding a recursion cut-off to avoid stack dives for bad regexes.
+                            supported = node.M == node.N;
+                            break;
+
+                        // Concatenation doesn't require backtracking as long as its children don't.
+                        case RegexNode.Concatenate:
+                            supported = true;
+                            int childCount = node.ChildCount();
+                            for (int i = 0; i < childCount; i++)
+                            {
+                                Debug.Assert(node.Child(i).Type != RegexNode.Concatenate, "Should have been eliminated by parser / tree reducer. Failure to do so could lead to stack dives here.");
+                                if (!NodeSupportsNonBacktrackingImplementation(node.Child(i)))
+                                {
+                                    supported = false;
+                                    break;
+                                }
+                            }
+                            break;
+
+                        // "Empty" is easy: nothing is emitted for it.
+                        // "Nothing" is also easy: it doesn't match anything.
+                        case RegexNode.Empty:
+                        case RegexNode.Nothing:
+                            supported = true;
+                            break;
+                    }
+                }
+
+                if (supported)
+                {
+                    return true;
+                }
+
+                // This node can't be supported today by the current non-backtracking implementation.
+#if DEBUG
+                if ((node.Options & RegexOptions.Debug) != 0)
+                {
+                    Debug.WriteLine($"Unable to use non-backtracking code gen: node {node.Description()} isn't supported.");
+                }
+#endif
+                return false;
+            }
+
+            static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
+
+            // Emits a check that the span is large enough at the currently known static position to handle the required additional length.
+            void EmitSpanLengthCheck(int requiredLength)
+            {
+                // if ((uint)(textSpanPos + requiredLength - 1) >= (uint)textSpan.Length) goto Done;
+                Debug.Assert(requiredLength > 0);
+                Ldc(textSpanPos + requiredLength - 1);
+                Ldloca(textSpanLocal);
+                Call(s_spanGetLengthMethod);
+                BgeUnFar(doneLabel);
+            }
+
+            // Emits the code for an Alternate at the root of the tree.  This amounts to generating the code for each branch,
+            // with failures in a branch resetting state to what it was initially and then jumping to the next branch.
+            // We don't need to worry about uncapturing, because capturing is only allowed for the implicit capture that
+            // happens for the whole match at the end.
+            void EmitGlobalAlternate(RegexNode node)
+            {
+                // Branch0(); // jumps to NextBranch1 on failure
+                // goto Success;
+                //
+                // NextBranch1:
+                // runtextpos = originalruntextpos;
+                // textSpan = originalTextSpan;
+                // Branch1(); // jumps to NextBranch2 on failure
+                // goto Success;
+                //
+                // ...
+                //
+                // NextBranchN:
+                // runtextpos = originalruntextpos;
+                // textSpan = originalTextSpan;
+                // BranchN(); // jumps to Done on failure
+
+                Label postAlternateDone = doneLabel;
+                int childCount = node.ChildCount();
+                for (int i = 0; i < childCount - 1; i++)
+                {
+                    Label nextBranch = DefineLabel();
+                    doneLabel = nextBranch;
+
+                    EmitNode(node.Child(i));
+                    BrFar(stopSuccessLabel);
+
+                    MarkLabel(nextBranch);
+
+                    // Reset state for next branch
+                    textSpanPos = 0;
+                    Ldloc(originalruntextposLocal);
+                    Stloc(runtextposLocal);
+                    Ldloc(originalTextSpanLocal);
+                    Stloc(textSpanLocal);
+                }
+
+                doneLabel = postAlternateDone;
+                EmitNode(node.Child(childCount - 1));
+            }
+
+            // Emits the code for the node.
+            void EmitNode(RegexNode node)
+            {
+                switch (node.Type)
+                {
+                    case RegexNode.One:
+                    case RegexNode.Notone:
+                    case RegexNode.Set:
+                        EmitSingleChar(node);
+                        break;
+
+                    case RegexNode.Boundary:
+                    case RegexNode.Nonboundary:
+                    case RegexNode.ECMABoundary:
+                    case RegexNode.NonECMABoundary:
+                        EmitBoundary(node);
+                        break;
+
+                    case RegexNode.Multi:
+                        EmitMultiChar(node);
+                        break;
+
+                    case RegexNode.Oneloopgreedy:
+                    case RegexNode.Setloopgreedy:
+                        EmitGreedyLoop(node);
+                        break;
+
+                    case RegexNode.Oneloop:
+                    case RegexNode.Onelazy:
+                    case RegexNode.Notoneloop:
+                    case RegexNode.Notonelazy:
+                    case RegexNode.Setloop:
+                    case RegexNode.Setlazy:
+                        EmitRepeater(node);
+                        break;
+
+                    case RegexNode.Concatenate:
+                        int childCount = node.ChildCount();
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            EmitNode(node.Child(i));
+                        }
+                        break;
+
+                    case RegexNode.Nothing:
+                        BrFar(doneLabel);
+                        break;
+
+                    case RegexNode.Empty:
+                        // Emit nothing.
+                        break;
+
+                    default:
+                        Debug.Fail($"Unexpected node type: {node.Type}");
+                        break;
+                }
+            }
+
+            // Emits the code to handle a single-character match.
+            void EmitSingleChar(RegexNode node)
+            {
+                // if (textSpanPos >= textSpan.Length || textSpan[textSpanPos] != ch) goto Done;
+                EmitSpanLengthCheck(1);
+                Ldloca(textSpanLocal);
+                Ldc(textSpanPos);
+                Call(s_spanGetItemMethod);
+                LdindU2();
+                switch (node.Type)
+                {
+                    // This only emits a single check, but it's called from the looping constructs in a loop
+                    // to generate the code for a single check, so we map those looping constructs to the
+                    // appropriate single check.
+
+                    case RegexNode.Set:
+                    case RegexNode.Setlazy:
+                    case RegexNode.Setloop:
+                    case RegexNode.Setloopgreedy:
+                        EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
+                        BrfalseFar(doneLabel);
+                        break;
+
+                    case RegexNode.One:
+                    case RegexNode.Onelazy:
+                    case RegexNode.Oneloop:
+                    case RegexNode.Oneloopgreedy:
+                        if (IsCaseInsensitive(node)) CallToLower();
+                        Ldc(node.Ch);
+                        BneFar(doneLabel);
+                        break;
+
+                    default:
+                        Debug.Assert(node.Type == RegexNode.Notone || node.Type == RegexNode.Notonelazy || node.Type == RegexNode.Notoneloop);
+                        if (IsCaseInsensitive(node)) CallToLower();
+                        Ldc(node.Ch);
+                        BeqFar(doneLabel);
+                        break;
+                }
+
+                textSpanPos++;
+            }
+
+            // Emits the code to handle a boundary check on a character.
+            void EmitBoundary(RegexNode node)
+            {
+                // if (!IsBoundary(runtextpos + textSpanPos, this.runtextbeg, this.runtextend)) goto doneLabel;
+                Ldthis();
+                Ldloc(runtextposLocal);
+                Ldc(textSpanPos);
+                Add();
+                Ldthisfld(s_runtextbegField!);
+                Ldthisfld(s_runtextendField!);
+                switch (node.Type)
+                {
+                    case RegexNode.Boundary:
+                        Callvirt(s_isBoundaryMethod);
+                        BrfalseFar(doneLabel);
+                        break;
+
+                    case RegexNode.Nonboundary:
+                        Callvirt(s_isBoundaryMethod);
+                        BrtrueFar(doneLabel);
+                        break;
+
+                    case RegexNode.ECMABoundary:
+                        Callvirt(s_isECMABoundaryMethod);
+                        BrfalseFar(doneLabel);
+                        break;
+
+                    default:
+                        Debug.Assert(node.Type == RegexNode.NonECMABoundary);
+                        Callvirt(s_isECMABoundaryMethod);
+                        BrtrueFar(doneLabel);
+                        break;
+                }
+            }
+
+            // Emits the code to handle a multiple-character match.
+            void EmitMultiChar(RegexNode node)
+            {
+                // if (textSpanPos + node.Str.Length >= textSpan.Length) goto doneLabel;
+                // if (node.Str[0] != textSpan[textSpanPos]) goto doneLabel;
+                // if (node.Str[1] != textSpan[textSpanPos+1]) goto doneLabel;
+                // ...
+                EmitSpanLengthCheck(node.Str!.Length);
+                for (int i = 0; i < node.Str!.Length; i++)
+                {
+                    Ldloca(textSpanLocal);
+                    Ldc(textSpanPos + i);
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    if (IsCaseInsensitive(node)) CallToLower();
+                    Ldc(node.Str[i]);
+                    BneFar(doneLabel);
+                }
+
+                textSpanPos += node.Str.Length;
+            }
+
+            // Emits the code to handle a loop (repeater) with a fixed number of iterations.
+            // This is used both to handle the case of A{5, 5} where the min and max are equal,
+            // and also to handle part of the case of A{3, 5}, where this method is called to
+            // handle the A{3, 3} portion, and then remaining A{0, 2} is handled separately.
+            void EmitRepeater(RegexNode node, int iterations = -1)
+            {
+                if (iterations == -1)
+                {
+                    Debug.Assert(node.M > 0 && node.M == node.N);
+                    iterations = node.M;
+                }
+                Debug.Assert(iterations > 0);
+
+                // for (int i = 0; i < iterations; i++)
+                // {
+                //     TimeoutCheck();
+                //     if (textSpan[textSpanPos] != ch) goto Done;
+                // }
+
+                Label conditionLabel = DefineLabel();
+                Label bodyLabel = DefineLabel();
+
+                iterationLocal ??= DeclareInt32();
+
+                Ldc(0);
+                Stloc(iterationLocal);
+                BrFar(conditionLabel);
+
+                MarkLabel(bodyLabel);
+                EmitTimeoutCheck();
+                EmitSingleChar(node);
+                Ldloc(iterationLocal);
+                Ldc(1);
+                Add();
+                Stloc(iterationLocal);
+
+                MarkLabel(conditionLabel);
+                Ldloc(iterationLocal);
+                Ldc(iterations);
+                BltFar(bodyLabel);
+
+                textSpanPos += (iterations - 1); // EmitSingleChar already incremented +1
+            }
+
+            // Emits the code to handle a non-backtracking, variable-length loop (Oneloopgreedy or Setloopgreedy).
+            void EmitGreedyLoop(RegexNode node)
+            {
+                Debug.Assert(node.Type == RegexNode.Oneloopgreedy || node.Type == RegexNode.Setloopgreedy);
+                Debug.Assert(node.M < int.MaxValue);
+
+                // First generate the code to handle the required number of iterations.
+                if (node.M > 0)
+                {
+                    EmitRepeater(node, node.M);
+                }
+
+                // Then generate the code to handle the 0 or more remaining optional iterations.
+                if (node.N > node.M)
+                {
+                    Label conditionLabel = DefineLabel();
+                    Label bodyLabel = DefineLabel();
+                    Label originalDoneLabel = doneLabel;
+                    iterationLocal ??= DeclareInt32();
+
+                    doneLabel = DefineLabel();
+                    int maxIterations = node.N == int.MaxValue ? int.MaxValue : node.N - node.M;
+
+                    // int i = 0;
+                    Ldc(0);
+                    Stloc(iterationLocal);
+                    BrFar(conditionLabel);
+
+                    // Body:
+                    // TimeoutCheck();
+                    // if (!match) goto Done;
+                    MarkLabel(bodyLabel);
+                    EmitTimeoutCheck();
+
+                    // if (textSpan[textSpanPos + i] != ch) goto Done;
+                    Ldloca(textSpanLocal);
+                    Ldc(textSpanPos);
+                    Ldloc(iterationLocal);
+                    Add();
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    if (node.Type == RegexNode.Oneloopgreedy)
+                    {
+                        if (IsCaseInsensitive(node)) CallToLower();
+                        Ldc(node.Ch);
+                        BneFar(doneLabel);
+                    }
+                    else // Setloopgreedy
+                    {
+                        EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
+                        BrfalseFar(doneLabel);
+                    }
+
+                    // i++;
+                    Ldloc(iterationLocal);
+                    Ldc(1);
+                    Add();
+                    Stloc(iterationLocal);
+
+                    // if ((uint)(textSpanPos + i) >= (uint)textSpan.Length || i >= maxIterations) goto Done;
+                    MarkLabel(conditionLabel);
+                    Ldc(textSpanPos);
+                    Ldloc(iterationLocal);
+                    Add();
+                    Ldloca(textSpanLocal);
+                    Call(s_spanGetLengthMethod);
+                    BgeUnFar(doneLabel);
+                    if (maxIterations != int.MaxValue)
+                    {
+                        Ldloc(iterationLocal);
+                        Ldc(maxIterations);
+                        BltFar(bodyLabel);
+                    }
+                    else
+                    {
+                        BrFar(bodyLabel);
+                    }
+
+                    // Done:
+                    MarkLabel(doneLabel);
+                    doneLabel = originalDoneLabel; // Restore the original done label
+
+                    // textSpan = textSpan.Slice(i);
+                    Ldloca(textSpanLocal);
+                    Ldloc(iterationLocal);
+                    Call(s_spanSliceMethod);
+                    Stloc(textSpanLocal);
+
+                    // runtextpos += i;
+                    Ldloc(runtextposLocal);
+                    Ldloc(iterationLocal);
+                    Add();
+                    Stloc(runtextposLocal);
+                }
+            }
+        }
+
         /// <summary>Generates the code for "RegexRunner.Go".</summary>
         protected void GenerateGo()
         {
+            // Generate backtrack-free code when we're dealing with simpler regexes.
+            if (TryGenerateNonBacktrackingGo(_code!.Tree.Root))
+            {
+                return;
+            }
+
+            // We're dealing with a regex more complicated that the fast-path non-backtracking
+            // implementation can handle.  Do the full-fledged thing.
+
             // declare some locals
 
             _runtextposLocal = DeclareInt32();
@@ -1435,10 +2020,31 @@ namespace System.Text.RegularExpressions
             _runtextbegLocal = DeclareInt32();
             _runtextendLocal = DeclareInt32();
 
+            InitializeCultureForGoIfNecessary();
+
+            // clear some tables
+
+            _labels = null;
+            _notes = null;
+            _notecount = 0;
+
+            // globally used labels
+
+            _backtrack = DefineLabel();
+
+            // emit the code!
+
+            GenerateForwardSection();
+            GenerateMiddleSection();
+            GenerateBacktrackSection();
+        }
+
+        private void InitializeCultureForGoIfNecessary()
+        {
             _cultureLocal = null;
-            if (!_options.HasFlag(RegexOptions.CultureInvariant))
+            if ((_options & RegexOptions.CultureInvariant) == 0)
             {
-                bool needsCulture = _options.HasFlag(RegexOptions.IgnoreCase);
+                bool needsCulture = (_options & RegexOptions.IgnoreCase) != 0;
                 if (!needsCulture)
                 {
                     for (int codepos = 0; codepos < _codes!.Length; codepos += RegexCode.OpcodeSize(_codes[codepos]))
@@ -1453,31 +2059,11 @@ namespace System.Text.RegularExpressions
 
                 if (needsCulture)
                 {
+                    // cache CultureInfo in local variable which saves excessive thread local storage accesses
                     _cultureLocal = DeclareCultureInfo();
+                    InitLocalCultureInfo();
                 }
             }
-
-            // clear some tables
-
-            _labels = null;
-            _notes = null;
-            _notecount = 0;
-
-            // globally used labels
-
-            _backtrack = DefineLabel();
-
-            // emit the code!
-
-            // cache CultureInfo in local variable which saves excessive thread local storage accesses
-            if (_cultureLocal != null)
-            {
-                InitLocalCultureInfo();
-            }
-
-            GenerateForwardSection();
-            GenerateMiddleSection();
-            GenerateBacktrackSection();
         }
 
 #if DEBUG
@@ -2648,10 +3234,7 @@ namespace System.Text.RegularExpressions
 
                         if (Code() == RegexCode.Setrep)
                         {
-                            if (_hasTimeout)
-                            {
-                                EmitTimeoutCheck();
-                            }
+                            EmitTimeoutCheck();
                             EmitCallCharInClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
                             BrfalseFar(_backtrack);
                         }
@@ -2787,10 +3370,7 @@ namespace System.Text.RegularExpressions
 
                         if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopgreedy)
                         {
-                            if (_hasTimeout)
-                            {
-                                EmitTimeoutCheck();
-                            }
+                            EmitTimeoutCheck();
                             EmitCallCharInClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
                             BrtrueFar(l1);
                         }
@@ -3217,7 +3797,12 @@ namespace System.Text.RegularExpressions
         /// <summary>Emits a timeout check.</summary>
         private void EmitTimeoutCheck()
         {
-            Debug.Assert(_hasTimeout && _loopTimeoutCounterLocal != null);
+            if (!_hasTimeout)
+            {
+                return;
+            }
+
+            Debug.Assert(_loopTimeoutCounterLocal != null);
 
             // Increment counter for each loop iteration.
             Ldloc(_loopTimeoutCounterLocal);

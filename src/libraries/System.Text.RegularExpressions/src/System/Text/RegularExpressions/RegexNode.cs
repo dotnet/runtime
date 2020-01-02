@@ -832,7 +832,7 @@ namespace System.Text.RegularExpressions
             "Oneloopgreedy", "Setloopgreedy",
         };
 
-        private string Description()
+        public string Description()
         {
             StringBuilder argSb = new StringBuilder();
 

@@ -94,6 +94,7 @@ namespace System.Text.RegularExpressions
         public const int Back2 = 256; // bit to indicate that we're backtracking on a second branch.
         public const int Ci = 512;    // bit to indicate that we're case-insensitive.
 
+        public readonly RegexTree Tree;                  // the optimized parse tree
         public readonly int[] Codes;                     // the code
         public readonly string[] Strings;                // the string/set table
         public readonly int[]?[] StringsAsciiLookup;     // the ASCII lookup table optimization for the sets in Strings
@@ -106,14 +107,12 @@ namespace System.Text.RegularExpressions
         public readonly int Anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
         public readonly bool RightToLeft;                // true if right to left
 
-        public RegexCode(int[] codes, string[] strings, int trackcount,
-                           Hashtable? caps, int capsize,
-                           RegexBoyerMoore? bmPrefix, RegexPrefix? fcPrefix,
-                           int anchors, bool rightToLeft)
+        public RegexCode(RegexTree tree, int[] codes, string[] strings, int trackcount,
+                         Hashtable? caps, int capsize,
+                         RegexBoyerMoore? bmPrefix, RegexPrefix? fcPrefix,
+                         int anchors, bool rightToLeft)
         {
-            Debug.Assert(codes != null, "codes cannot be null.");
-            Debug.Assert(strings != null, "strings cannot be null.");
-
+            Tree = tree;
             Codes = codes;
             Strings = strings;
             StringsAsciiLookup = new int[strings.Length][];

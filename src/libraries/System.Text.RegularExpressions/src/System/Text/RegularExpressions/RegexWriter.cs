@@ -149,7 +149,7 @@ namespace System.Text.RegularExpressions
                 strings[stringEntry.Value] = stringEntry.Key;
             }
 
-            return new RegexCode(emitted, strings, _trackCount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
+            return new RegexCode(tree, emitted, strings, _trackCount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
         }
 
         /// <summary>
