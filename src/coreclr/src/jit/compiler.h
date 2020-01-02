@@ -2995,6 +2995,7 @@ public:
     // Getters and setters for address-exposed and do-not-enregister local var properties.
     bool lvaVarAddrExposed(unsigned varNum);
     void lvaSetVarAddrExposed(unsigned varNum);
+    void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 #ifdef DEBUG
     // Reasons why we can't enregister.  Some of these correspond to debug properties of local vars.
