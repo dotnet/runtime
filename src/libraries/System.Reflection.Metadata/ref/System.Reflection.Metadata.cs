@@ -101,7 +101,10 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle PublicKey { get { throw null; } }
         public System.Version Version { get { throw null; } }
+
+#if !NETSTANDARD1_1
         public System.Reflection.AssemblyName GetAssemblyName() { throw null; }
+#endif
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
         public System.Reflection.Metadata.DeclarativeSecurityAttributeHandleCollection GetDeclarativeSecurityAttributes() { throw null; }
     }
@@ -169,7 +172,10 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.BlobHandle PublicKeyOrToken { get { throw null; } }
         public System.Version Version { get { throw null; } }
+
+#if !NETSTANDARD1_1
         public System.Reflection.AssemblyName GetAssemblyName() { throw null; }
+#endif
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
     }
     public readonly partial struct AssemblyReferenceHandle : System.IEquatable<System.Reflection.Metadata.AssemblyReferenceHandle>
@@ -1252,7 +1258,9 @@ namespace System.Reflection.Metadata
     public partial class ImageFormatLimitationException : System.Exception
     {
         public ImageFormatLimitationException() { }
+#if !NETSTANDARD1_1
         protected ImageFormatLimitationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+#endif
         public ImageFormatLimitationException(string? message) { }
         public ImageFormatLimitationException(string? message, System.Exception? innerException) { }
     }
@@ -2062,6 +2070,8 @@ namespace System.Reflection.Metadata
             void System.IDisposable.Dispose() { }
         }
     }
+
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class PEReaderExtensions
     {
         public static System.Reflection.Metadata.MetadataReader GetMetadataReader(this System.Reflection.PortableExecutable.PEReader peReader) { throw null; }
