@@ -368,7 +368,7 @@ void ArrayNative::BoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BASEA
     _ASSERTE(!destTH.GetMethodTable()->IsValueType());
 
     // Get method table of type we're copying from - we need to allocate objects of that type.
-    MethodTable * pSrcMT = srcTH.GetMethodTable();
+    MethodTable * pSrcMT = srcTH.AsMethodTable();
     PREFIX_ASSUME(pSrcMT != NULL);
 
     if (!pSrcMT->IsClassInited())
@@ -437,7 +437,7 @@ void ArrayNative::UnBoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BAS
     _ASSERTE(destTH.GetSignatureCorElementType() == ELEMENT_TYPE_CLASS || destTH.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE || CorTypeInfo::IsPrimitiveType(pDest->GetArrayElementType()));
     _ASSERTE(!srcTH.GetMethodTable()->IsValueType());
 
-    MethodTable * pDestMT = destTH.GetMethodTable();
+    MethodTable * pDestMT = destTH.AsMethodTable();
     PREFIX_ASSUME(pDestMT != NULL);
 
     SIZE_T destSize = pDest->GetComponentSize();
@@ -1040,7 +1040,7 @@ FCIMPL2(void, ArrayNative::SetValue, TypedByRef * target, Object* objUNSAFE)
 
     TypeHandle thTarget(target->type);
 
-    MethodTable* pTargetMT = thTarget.GetMethodTable();
+    MethodTable* pTargetMT = thTarget.AsMethodTable();
     PREFIX_ASSUME(NULL != pTargetMT);
 
     if (obj == NULL)

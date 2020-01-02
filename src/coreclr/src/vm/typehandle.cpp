@@ -179,7 +179,7 @@ DWORD TypeHandle::GetNumGenericArgs() const {
     if (IsTypeDesc())
         return 0;
     else
-        return GetMethodTable()->GetNumGenericArgs();
+        return AsMethodTable()->GetNumGenericArgs();
 }
 
 BOOL TypeHandle::IsGenericTypeDefinition() const {
@@ -1000,7 +1000,7 @@ BOOL TypeHandle::IsRestored_NoLogging() const
 
     if (!IsTypeDesc())
     {
-        return GetMethodTable()->IsRestored_NoLogging();
+        return AsMethodTable()->IsRestored_NoLogging();
     }
     else
     {
@@ -1014,7 +1014,7 @@ BOOL TypeHandle::IsRestored() const
 
     if (!IsTypeDesc())
     {
-        return GetMethodTable()->IsRestored();
+        return AsMethodTable()->IsRestored();
     }
     else
     {
@@ -1109,7 +1109,7 @@ BOOL TypeHandle::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited)
     _ASSERTE(GetAppDomain()->IsCompilationDomain());
 
     if (!IsTypeDesc())
-        return GetMethodTable()->ComputeNeedsRestore(image, pVisited);
+        return AsMethodTable()->ComputeNeedsRestore(image, pVisited);
     else
         return AsTypeDesc()->ComputeNeedsRestore(image, pVisited);
 }
@@ -1377,7 +1377,7 @@ TypeHandle::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         }
         else
         {
-            GetMethodTable()->EnumMemoryRegions(flags);
+            AsMethodTable()->EnumMemoryRegions(flags);
         }
     );
 }
@@ -1615,11 +1615,6 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
             {
                 CHECK_MSGF(pTD->GetTypeParam() == pKey->GetElementType(),
                            ("Element type of TypeDesc does not match key %S",typeKeyString.GetUnicode()));
-            }
-            if (CorTypeInfo::IsArray(pKey->GetKind()))
-            {
-                CHECK_MSGF(pTD->GetMethodTable()->GetRank() == pKey->GetRank(),
-                           ("Rank %d of array TypeDesc does not match key %S", pTD->GetMethodTable()->GetRank(), typeKeyString.GetUnicode()));
             }
         }
         else

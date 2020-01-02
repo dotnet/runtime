@@ -2405,7 +2405,7 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
     if (type.IsTypeDesc() || type.IsArray())
         COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
 
-    MethodTable *pMT = type.GetMethodTable();
+    MethodTable *pMT = type.AsMethodTable();
     PREFIX_ASSUME(pMT != NULL);
 
     //We don't allow unitialized Strings or Utf8Strings.

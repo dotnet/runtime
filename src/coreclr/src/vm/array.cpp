@@ -261,7 +261,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     {
         // This is loading the canonical version of the array so we can override
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-        pCanonMT = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass), arrayKind, Rank).GetMethodTable();
+        pCanonMT = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass), arrayKind, Rank).AsMethodTable();
     }
 
     BOOL            containsPointers = CorTypeInfo::IsObjRef(elemType);

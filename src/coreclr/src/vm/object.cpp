@@ -1656,7 +1656,7 @@ OBJECTREF Nullable::Box(void* srcPtr, MethodTable* nullableMT)
 
     OBJECTREF obj = 0;
     GCPROTECT_BEGININTERIOR (src);
-    MethodTable* argMT = nullableMT->GetInstantiation()[0].GetMethodTable();
+    MethodTable* argMT = nullableMT->GetInstantiation()[0].AsMethodTable();
     obj = argMT->Allocate();
     CopyValueClass(obj->UnBox(), src->ValueAddr(nullableMT), argMT);
     GCPROTECT_END ();

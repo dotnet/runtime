@@ -3398,7 +3398,7 @@ LPVOID __fastcall JIT_Unbox_Helper(CORINFO_CLASS_HANDLE type, Object* obj)
     CorElementType type2 = pMT2->GetInternalCorElementType();
     if (type1 == type2)
     {
-        MethodTable* pMT1 = typeHnd.GetMethodTable();
+        MethodTable* pMT1 = typeHnd.AsMethodTable();
         if (pMT1 && (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
         {
