@@ -139,7 +139,9 @@ class DefaultSHashTraits
 
 template <typename TRAITS>
 class SHash : public TRAITS
-            , private noncopyable
+#if !defined(DACCESS_COMPILE)
+    , private noncopyable
+#endif
 {
     friend class VerifyLayoutsMD;  // verifies class layout doesn't accidentally change
 
