@@ -62,19 +62,12 @@ class ComCallWrapperTemplate;
 
 // At the present time a TypeHandle can point at two possible things
 //
-//      1) A MethodTable    (Intrinsics, Classes, Value Types and their instantiations)
-//      2) A TypeDesc       (all other cases: arrays, byrefs, pointer types, function pointers, generic type variables)
+//      1) A MethodTable    (Arrays, Intrinsics, Classes, Value Types and their instantiations)
+//      2) A TypeDesc       (all other cases: byrefs, pointer types, function pointers, generic type variables)
 //
 // or with IL stubs, a third thing:
 //
 //      3) A MethodTable for a native value type.
-//
-// Array MTs are not valid TypeHandles: for example no allocated object will
-// ever return such a type handle from Object::GetTypeHandle(), and
-// these type handles should not be passed across the JIT Interface
-// as CORINFO_CLASS_HANDLEs.  However some code in the EE does create
-// temporary TypeHandles out of these MTs, so we can't yet assert
-// !pMT->IsArray() in the TypeHandle constructor.
 //
 // Wherever possible, you should be using TypeHandles or MethodTables.
 // Code that is known to work over Class/ValueClass types (including their
@@ -82,7 +75,6 @@ class ComCallWrapperTemplate;
 //
 // TypeDescs in turn break down into several variants and are
 // for special cases around the edges
-//    - array types whose method tables get share
 //    - types for function pointers for verification and reflection
 //    - types for generic parameters for verification and reflection
 //
@@ -425,7 +417,7 @@ public:
     inline PTR_MethodTable GetMethodTable() const;
 
     // Returns the type which should be used for visibility checking.
-    inline MethodTable* GetMethodTableOfRootElementType() const;
+    inline MethodTable* GetMethodTableOfRootTypeParam() const;
 
     // Returns the type of the array element
     inline TypeHandle GetArrayElementTypeHandle() const;

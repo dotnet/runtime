@@ -51,7 +51,7 @@ BOOL ParamTypeDesc::Verify() {
 
 #endif // #ifndef DACCESS_COMPILE
 
-TypeHandle TypeDesc::GetBaseTypeParam()
+TypeHandle TypeDesc::GetRootTypeParam()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -76,7 +76,7 @@ PTR_Module TypeDesc::GetLoaderModule()
 
     if (HasTypeParam())
     {
-        return GetBaseTypeParam().GetLoaderModule();
+        return GetRootTypeParam().GetLoaderModule();
     }
     else if (IsGenericVariable())
     {
@@ -136,7 +136,7 @@ PTR_Module TypeDesc::GetModule() {
 
     if (HasTypeParam())
     {
-        return GetBaseTypeParam().GetModule();
+        return GetRootTypeParam().GetModule();
     }
 
     if (IsGenericVariable())

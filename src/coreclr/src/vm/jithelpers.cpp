@@ -3037,21 +3037,6 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
 }
 HCIMPLEND
 
-//*************************************************************
-// R2R-specific array allocation wrapper that extracts array method table from type handle
-//
-HCIMPL2(Object*, JIT_NewArr1_R2R, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle arrayTypeHandle(arrayTypeHnd_);
-    MethodTable *pArrayMT = arrayTypeHandle.AsMethodTable();
-
-    ENDFORBIDGC();
-    return HCCALL2(JIT_NewArr1, (CORINFO_CLASS_HANDLE)pArrayMT, size);
-}
-HCIMPLEND
-
 #include <optdefault.h>
 
 /*************************************************************/

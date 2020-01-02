@@ -2598,7 +2598,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
     // The object is potentially agile so if allocate out of the current domain and then hand out to
     // multiple domains we might never release the wrapper for that object and hence never unload the CCWC.
     ComCallWrapperCache *pWrapperCache = NULL;
-    TypeHandle thClass = pServer->GetTrueTypeHandle();
+    TypeHandle thClass = pServer->GetTypeHandle();
 
     pWrapperCache = thClass.GetMethodTable()->GetLoaderAllocator()->GetComCallWrapperCache();
 

@@ -4930,7 +4930,7 @@ BOOL ClassLoader::CanAccessMethodInstantiation( // True if access is legal, fals
         {
             TypeHandle th = inst[i];
 
-            MethodTable* pMT = th.GetMethodTableOfRootElementType();
+            MethodTable* pMT = th.GetMethodTableOfRootTypeParam();
 
             // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
             if (pMT == NULL)
@@ -4992,7 +4992,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
         {
             TypeHandle th = inst[i];
 
-            MethodTable* pMT = th.GetMethodTableOfRootElementType();
+            MethodTable* pMT = th.GetMethodTableOfRootTypeParam();
 
             // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
             if (pMT == NULL)

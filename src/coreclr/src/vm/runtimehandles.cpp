@@ -451,7 +451,7 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
         return NULL;
     }
 
-    MethodTable* pMT = typeHandle.GetMethodTable();
+    MethodTable* pMT = typeHandle.AsMethodTable();
     if (pMT == NULL)
         return NULL;
 
@@ -1046,7 +1046,7 @@ FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, ReflectClassBaseObject* pTypeUN
     if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
-    MethodTable* pMT= typeHandle.GetMethodTable();
+    MethodTable* pMT= typeHandle.AsMethodTable();
 
     if (pMT == NULL)
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));

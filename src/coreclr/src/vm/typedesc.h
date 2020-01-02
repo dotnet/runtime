@@ -186,7 +186,7 @@ public:
     PTR_MethodTable  GetMethodTable();               // only meaningful for ParamTypeDesc
     TypeHandle GetTypeParam();                       // only meaningful for ParamTypeDesc
     Instantiation GetClassOrArrayInstantiation();    // only meaningful for ParamTypeDesc; see above
-    TypeHandle GetBaseTypeParam();                   // only allowed for ParamTypeDesc, helper method used to avoid recursion
+    TypeHandle GetRootTypeParam();                   // only allowed for ParamTypeDesc, helper method used to avoid recursion
 
     // Note that if the TypeDesc, e.g. a function pointer type, involves parts that may
     // come from either a SharedDomain or an AppDomain then special rules apply to GetDomain.

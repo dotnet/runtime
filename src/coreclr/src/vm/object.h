@@ -206,7 +206,6 @@ class Object
     }
 
     TypeHandle      GetTypeHandle();
-    TypeHandle      GetTrueTypeHandle();
 
         // Methods used to determine if an object supports a given interface.
     static BOOL     SupportsInterface(OBJECTREF pObj, MethodTable *pInterfaceMT);
@@ -572,14 +571,6 @@ private:
     // INT32      lowerBounds[rank];  Valid indexes are lowerBounds[i] <= index[i] < lowerBounds[i] + bounds[i]
 
 public:
-    // Gets the unique type handle for this array object.
-    // This will call the loader in don't-load mode - the allocator
-    // always makes sure that the particular array type for this array
-    // type is available before allocating any instances.
-    inline TypeHandle GetTypeHandle() const;
-
-    inline static TypeHandle GetTypeHandle(MethodTable * pMT);
-
     // Get the element type for the array, this works whether the the element
     // type is stored in the array or not
     inline TypeHandle GetArrayElementTypeHandle() const;

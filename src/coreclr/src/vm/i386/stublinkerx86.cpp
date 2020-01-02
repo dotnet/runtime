@@ -4498,11 +4498,9 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
 
             X86EmitCondJump(Inner_passedTypeCheck, X86CondCode::kJZ);
 
-            // Compare MT against the MT of the array.
-            // mov ESI/R10, [kArrayRefReg]
-            X86EmitOp(0x8b, kArrayMTReg, kArrayRefReg, 0 AMD64_ARG(k64BitOp));
-            // cmp typeReg, kArrayMTReg
-            X86EmitR2ROp(0x3B, typeReg, kArrayMTReg);                             
+            // Compare MT against the MT of the array.                     
+            // cmp typeReg, [kArrayRefReg]
+            X86EmitOp(0x3b, typeReg, kArrayRefReg, 0 AMD64_ARG(k64BitOp));
 
             // Throw error if not equal
             Inner_typeMismatchexception = NewCodeLabel();

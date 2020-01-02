@@ -885,7 +885,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
                                                                  false /* do not allow code with a shared-code calling convention to be returned */,
                                                                  true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
                 BOOL fIsOpenDelegate;
-                if (!COMDelegate::IsMethodDescCompatible((gc.target == NULL) ? TypeHandle() : gc.target->GetTrueTypeHandle(),
+                if (!COMDelegate::IsMethodDescCompatible((gc.target == NULL) ? TypeHandle() : gc.target->GetTypeHandle(),
                                                         methodType,
                                                         pCurMethod,
                                                         gc.refThis->GetTypeHandle(),
@@ -966,7 +966,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                                      true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
 
     BOOL fIsOpenDelegate;
-    if (COMDelegate::IsMethodDescCompatible((gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTrueTypeHandle(),
+    if (COMDelegate::IsMethodDescCompatible((gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTypeHandle(),
                                             TypeHandle(pMethMT),
                                             method,
                                             gc.refThis->GetTypeHandle(),

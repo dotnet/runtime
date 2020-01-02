@@ -3121,7 +3121,7 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
 
     TypeHandle objArray = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
     if (objArray != NULL)
-        globalsData->ArrayMethodTable = HOST_CDADDR(objArray.GetMethodTable());
+        globalsData->ArrayMethodTable = HOST_CDADDR(objArray.AsMethodTable());
     else
         globalsData->ArrayMethodTable = 0;
 

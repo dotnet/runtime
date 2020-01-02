@@ -3817,13 +3817,8 @@ BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
     _ASSERTE(clsHnd);
 
     TypeHandle VMClsHnd(clsHnd);
+    _ASSERTE(!VMClsHnd.IsTypeDesc());
 
-    if (VMClsHnd.IsTypeDesc())
-    {
-        // We can't do this optimization for TypeDesc because methodtable could be shared
-        ret = FALSE;
-    }
-    else
     if (VMClsHnd == TypeHandle(g_pCanonMethodTableClass))
     {
         // We can't do this optimization in shared generics code because of we do not know what the actual type is going to be.

@@ -38,7 +38,7 @@ inline void TypeHandle::SetIsFullyLoaded()
         return AsMethodTable()->SetIsFullyLoaded();
 }
 
-inline MethodTable* TypeHandle::GetMethodTableOfRootElementType() const
+inline MethodTable* TypeHandle::GetMethodTableOfRootTypeParam() const
 {
     LIMITED_METHOD_CONTRACT;
 

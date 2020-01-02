@@ -139,22 +139,6 @@ BOOL Object::ValidateObjectWithPossibleAV()
 
 #ifndef DACCESS_COMPILE
 
-TypeHandle Object::GetTrueTypeHandle()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_pMethTab->IsArray())
-        return ((ArrayBase*) this)->GetTypeHandle();
-    else
-        return TypeHandle(GetMethodTable());
-}
-
 // There are cases where it is not possible to get a type handle during a GC.
 // If we can get the type handle, this method will return it.
 // Otherwise, the method will return NULL.
