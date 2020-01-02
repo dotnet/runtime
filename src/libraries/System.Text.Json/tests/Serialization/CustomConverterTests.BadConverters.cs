@@ -332,5 +332,37 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("'System.Text.Json.Serialization.JsonConverterAttribute'", ex.Message);
             Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithTwoConverters'", ex.Message);
         }
+
+        [Fact]
+        public static void ConverterWithoutDefaultCtor()
+        {
+            string json = @"{""MyType"":""ABC""}";
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithConverterWithoutPublicEmptyCtor>(json));
+            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+ClassWithConverterWithoutPublicEmptyCtor'", ex.Message);
+        }
+
+        [JsonConverter(typeof(ConverterWithoutPublicEmptyCtor))]
+        public class ClassWithConverterWithoutPublicEmptyCtor
+        {
+            public string MyType { get; set; }
+        }
+
+        internal class ConverterWithoutPublicEmptyCtor : JsonConverter<ClassWithConverterWithoutPublicEmptyCtor>
+        {
+            public ConverterWithoutPublicEmptyCtor(int x)
+            {
+            }
+
+            public override ClassWithConverterWithoutPublicEmptyCtor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, ClassWithConverterWithoutPublicEmptyCtor value, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

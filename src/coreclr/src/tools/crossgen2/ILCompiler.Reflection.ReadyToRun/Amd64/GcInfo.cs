@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun.Amd64
 {
@@ -38,7 +37,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
         public struct SafePointOffset
         {
-            [XmlAttribute("Index")]
             public int Index { get; set; }
             public uint Value { get; set; }
             public SafePointOffset(int index, uint value)

@@ -1314,12 +1314,7 @@ public:
 
     void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
 
-    void inst_TT_RV(instruction ins,
-                    GenTree*    tree,
-                    regNumber   reg,
-                    unsigned    offs  = 0,
-                    emitAttr    size  = EA_UNKNOWN,
-                    insFlags    flags = INS_FLAGS_DONT_CARE);
+    void inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg);
 
     void inst_RV_TT(instruction ins,
                     regNumber   reg,

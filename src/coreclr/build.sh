@@ -101,7 +101,7 @@ restore_optdata()
     local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
     if [[ ( $__SkipRestoreOptData == 0 ) && ( $__isMSBuildOnNETCoreSupported == 1 ) ]]; then
         echo "Restoring the OptimizationData package"
-        "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                                $OptDataProjectFilePath /t:Restore /m \
                                                $__CommonMSBuildArgs $__UnprocessedBuildArgs
         local exit_code=$?
@@ -118,7 +118,7 @@ restore_optdata()
         local IbcDataPackagePathOutputFile="${__IntermediatesDir}/ibcoptdatapath.txt"
 
         # Writes into ${PgoDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} 2>&1 > /dev/null
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} 2>&1 > /dev/null
         local exit_code=$?
         if [ $exit_code != 0 ] || [ ! -f "${PgoDataPackagePathOutputFile}" ]; then
             echo "${__ErrMsgPrefix}Failed to get PGO data package path."
@@ -128,7 +128,7 @@ restore_optdata()
         __PgoOptDataPath=$(<"${PgoDataPackagePathOutputFile}")
 
         # Writes into ${IbcDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpIbcDataPackagePath ${__CommonMSBuildArgs} /p:IbcDataPackagePathOutputFile=${IbcDataPackagePathOutputFile} 2>&1 > /dev/null
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpIbcDataPackagePath ${__CommonMSBuildArgs} /p:IbcDataPackagePathOutputFile=${IbcDataPackagePathOutputFile} 2>&1 > /dev/null
         local exit_code=$?
         if [ $exit_code != 0 ] || [ ! -f "${IbcDataPackagePathOutputFile}" ]; then
             echo "${__ErrMsgPrefix}Failed to get IBC data package path."
@@ -193,7 +193,7 @@ build_native()
         __versionSourceFile="$intermediatesForBuild/version.c"
         if [ $__SkipGenerateVersion == 0 ]; then
             pwd
-            "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $__RepoRootDir/eng/empty.csproj \
+            "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $__RepoRootDir/eng/empty.csproj \
                                                    /p:NativeVersionFile=$__versionSourceFile \
                                                    /t:GenerateNativeVersionFile /restore \
                                                    $__CommonMSBuildArgs $__UnprocessedBuildArgs
@@ -320,7 +320,7 @@ build_CoreLib_ni()
     fi
     echo "Generating native image of System.Private.CoreLib.dll for $__BuildOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
     echo "$__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll"
-    $__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
+    $__CrossGenExec /nologo /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
     local exit_code=$?
     if [ $exit_code != 0 ]; then
         echo "${__ErrMsgPrefix}Failed to generate native image for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
@@ -330,7 +330,7 @@ build_CoreLib_ni()
     if [ "$__BuildOS" == "Linux" ]; then
         echo "Generating symbol file for System.Private.CoreLib.dll"
         echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
-        $__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
+        $__CrossGenExec /nologo /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
         local exit_code=$?
         if [ $exit_code != 0 ]; then
             echo "${__ErrMsgPrefix}Failed to generate symbol file for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
@@ -364,7 +364,7 @@ build_CoreLib()
         __ExtraBuildArgs="$__ExtraBuildArgs /p:BuildManagedTools=true"
     fi
 
-    "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+    "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj /t:Restore \
                                            /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
@@ -377,7 +377,7 @@ build_CoreLib()
         exit $exit_code
     fi
 
-    "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+    "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj \
                                            /p:PortableBuild=true /maxcpucount \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
@@ -392,7 +392,7 @@ build_CoreLib()
 
     if [[ "$__BuildManagedTools" -eq "1" ]]; then
         echo "Publishing crossgen2 for $__DistroRid"
-        "$__RepoRootDir/dotnet.sh" publish --self-contained -r $__DistroRid -c $__BuildType -o "$__BinDir/crossgen2" "$__ProjectRoot/src/tools/crossgen2/crossgen2/crossgen2.csproj" /p:BuildArch=$__BuildArch
+        "$__RepoRootDir/dotnet.sh" publish --self-contained -r $__DistroRid -c $__BuildType -o "$__BinDir/crossgen2" "$__ProjectRoot/src/tools/crossgen2/crossgen2/crossgen2.csproj" /nologo /p:BuildArch=$__BuildArch
 
         local exit_code=$?
         if [ $exit_code != 0 ]; then

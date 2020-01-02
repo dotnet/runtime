@@ -244,7 +244,8 @@ Each source file should use the following guidelines
   - `.WinRT.cs` - implementation based on [WinRT](https://en.wikipedia.org/wiki/Windows_Runtime)
 
 ## Define naming convention
-As mentioned in [Conventions for forked code](conventions-for-forked-code) `#ifdef`ing the code is the last resort as it makes code harder to maintain overtime. If we do need to use `#ifdef`'s we should use the following conventions:
+
+As mentioned in [Conventions for forked code](#conventions-for-forked-code) `#ifdef`ing the code is the last resort as it makes code harder to maintain overtime. If we do need to use `#ifdef`'s we should use the following conventions:
 - Defines based on conventions should be one of `$(OSGroup)`, `$(TargetGroup)`, `$(ConfigurationGroup)`, or `$(Platform)`, matching exactly by case to ensure consistency.
  - Examples: `<DefineConstants>$(DefineConstants);net46</DefineConstants>`
 - Defines based on convention should match the pattern `FEATURE_<feature name>`. These can unique to a given library project or potentially shared (via name) across multiple projects.

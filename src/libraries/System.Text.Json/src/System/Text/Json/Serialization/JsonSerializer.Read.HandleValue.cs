@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
@@ -17,7 +18,8 @@ namespace System.Text.Json
                 return;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
+            JsonPropertyInfo? jsonPropertyInfo = state.Current.JsonPropertyInfo;
+            Debug.Assert(state.Current.JsonClassInfo != null);
             if (jsonPropertyInfo == null)
             {
                 jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootProperty(options);

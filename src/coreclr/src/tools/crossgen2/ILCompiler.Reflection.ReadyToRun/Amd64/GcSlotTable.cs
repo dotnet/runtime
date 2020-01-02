@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun.Amd64
 {
@@ -15,7 +14,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
     {
         public class GcSlot : BaseGcSlot
         {
-            [XmlAttribute("Index")]
             public int Index { get; set; }
             public int RegisterNumber { get; set; }
             public GcStackSlot StackSlot { get; set; }

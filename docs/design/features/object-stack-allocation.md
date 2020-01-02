@@ -28,7 +28,7 @@ various Java runtimes.  This optimization is more important for Java since it do
 An object is said to escape a method if it can be accessed after the method's execution has finished.
 An object allocation can be moved to the stack safely only if the object doesn't escape the allocating method.
 
-Several escape algorithms have been implemented in different Java implementations. Of the 3 algorithms listed in [references](References),
+Several escape algorithms have been implemented in different Java implementations. Of the 3 algorithms listed in [references](#References),
 [[1]](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.73.4799&rep=rep1&type=pdf)
 is the most precise and most expensive (it is based on connection graphs) and was used in the context of a static Java compiler,
 [[3]](https://pdfs.semanticscholar.org/1b33/dff471644f309392049c2791bca9a7f3b19c.pdf)
