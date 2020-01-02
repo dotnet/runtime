@@ -2788,7 +2788,6 @@ IMetaDataImport2 * NativeImageDumper::TypeToString(PTR_CCOR_SIGNATURE &sig,
         buf.Append( W("System.__Canon") );
         break;
 
-    case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
     case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
         {
             buf.Append( W("native ") );

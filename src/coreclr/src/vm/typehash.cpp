@@ -402,8 +402,6 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
                     if (pDefiningModule == NULL)
                         break;
 
-                    _ASSERTE(*pSig == ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
-                    pSig++;
                     _ASSERTE(*pSig == ELEMENT_TYPE_ARRAY);
                     pSig++;
                     SigPointer sp(pSig);

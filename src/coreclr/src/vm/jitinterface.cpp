@@ -3296,11 +3296,6 @@ NoSpecialCase:
         {
             if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
             {
-                if (!IsReadyToRunCompilation())
-                {
-                    sigBuilder.AppendElementType((CorElementType)ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
-                }
-
                 sigBuilder.AppendElementType(ELEMENT_TYPE_SZARRAY);
             }
 

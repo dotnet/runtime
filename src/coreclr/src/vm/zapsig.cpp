@@ -158,7 +158,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         // Check for an array type and encode that we are dealing with a MethodTable representation
         if (elemType == ELEMENT_TYPE_SZARRAY || elemType == ELEMENT_TYPE_ARRAY)
         {
-            pSigBuilder->AppendElementType((CorElementType)ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
             pSigBuilder->AppendElementType(elemType);
 
             TypeHandle elementType = pMT->GetArrayElementTypeHandle();
@@ -409,14 +408,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 RETURN(FALSE);
 
             RETURN (CompareSignatureToTypeHandle(pSig, pModule, handle.GetTypeParam(), pZapSigContext));
-        }
-
-        case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
-        {
-            if (handle.IsTypeDesc() || !handle.AsMethodTable()->IsArray())
-                RETURN(FALSE);
-
-            RETURN (CompareSignatureToTypeHandle(pSig, pModule, handle, pZapSigContext));
         }
 
         case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
@@ -1165,7 +1156,7 @@ void ZapSig::CopyTypeSignature(SigParser* pSigParser, SigBuilder* pSigBuilder, D
 
         // The following elements are not expected in the signatures this function processes. They are followed by
         if (type == ELEMENT_TYPE_BYREF || type == ELEMENT_TYPE_PTR || type == ELEMENT_TYPE_PINNED ||
-            type == ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG || type == ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG)
+            type == ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG)
         {
             _ASSERTE(FALSE);
         }
