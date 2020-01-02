@@ -340,7 +340,7 @@ namespace System.Globalization.Tests
             Assert.Equal(lcid, ci.LCID);
         }
 
-        [ConditionalTheory(typeof(CompareInfoCompareTests), nameof(CompareInfoCompareTests.IsNotWindowsRegressedVersion))]
+        [ConditionalTheory(typeof(CompareInfoCompareTests), nameof(CompareInfoCompareTests.IsNotWindowsKanaRegressedVersion))]
         [MemberData(nameof(SortKey_Kana_TestData))]
         public void SortKeyKanaTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {

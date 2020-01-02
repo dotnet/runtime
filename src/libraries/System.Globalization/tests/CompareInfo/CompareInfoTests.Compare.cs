@@ -252,7 +252,7 @@ namespace System.Globalization.Tests
         }
 
         // There is a regression in Windows 190xx version with the Kana comparison. Avoid running this test there.
-        public static bool IsNotWindowsRegressedVersion() => !PlatformDetection.IsWindows10Version1903OrGreater ||
+        public static bool IsNotWindowsKanaRegressedVersion() => !PlatformDetection.IsWindows10Version1903OrGreater ||
                                                               s_invariantCompare.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) == 0;
 
         [Fact]
@@ -263,7 +263,7 @@ namespace System.Globalization.Tests
             Compare(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }
 
-        [ConditionalTheory(nameof(IsNotWindowsRegressedVersion))]
+        [ConditionalTheory(nameof(IsNotWindowsKanaRegressedVersion))]
         [MemberData(nameof(Compare_Kana_TestData))]
         public void CompareWithKana(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
