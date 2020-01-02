@@ -175,13 +175,14 @@ namespace System.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void UserInteractive_Windows_DoesNotThrow()
         {
-            var _ = Environment.UserInteractive; // Does not throw
+            Environment.UserInteractive; // Does not throw
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
         public void UserInteractive_WindowsNano()
         {
-            Assert.False(Environment.UserInteractive);
+            // Defaults to true on Nano, because it doesn't expose WindowStations
+            Assert.True(Environment.UserInteractive);
         }
 
         [Fact]

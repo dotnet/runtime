@@ -122,7 +122,7 @@ namespace System
             }
         }
 
-        public static bool UserInteractive
+        public static unsafe bool UserInteractive
         {
             get
             {
@@ -131,7 +131,8 @@ namespace System
                 if (handle != IntPtr.Zero)
                 {
                     Interop.User32.USEROBJECTFLAGS flags = default;
-                    if (Interop.User32.GetUserObjectInformationW(handle, Interop.User32.UOI_FLAGS, ref flags, sizeof(flags), ref _))
+                    int dummy = 0;
+                    if (Interop.User32.GetUserObjectInformationW(handle, Interop.User32.UOI_FLAGS, ref flags, sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
                     {
                         return ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0);
                     }
