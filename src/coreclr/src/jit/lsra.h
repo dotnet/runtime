@@ -388,10 +388,11 @@ struct LsraBlockInfo
     // 0 for fgFirstBB.
     unsigned int         predBBNum;
     BasicBlock::weight_t weight;
-    bool                 hasCriticalInEdge;
-    bool                 hasCriticalOutEdge;
-    bool                 hasEHBoundaryIn;
-    bool                 hasEHBoundaryOut;
+    bool                 hasCriticalInEdge : 1;
+    bool                 hasCriticalOutEdge : 1;
+    bool                 hasEHBoundaryIn : 1;
+    bool                 hasEHBoundaryOut : 1;
+    bool                 hasEHPred : 1;
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.

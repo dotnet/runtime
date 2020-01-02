@@ -86,7 +86,7 @@ void Compiler::lvaInit()
 
     structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
 
-    lvaEnregEHVars = ((opts.compFlags & CLFLG_REGVAR) != 0);
+    lvaEnregEHVars = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableEHWriteThru());
 }
 
 /*****************************************************************************/
@@ -2371,6 +2371,7 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum)
     lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_AddrExposed));
 }
 
+//------------------------------------------------------------------------
 // lvaSetVarLiveInOutOfHandler: Set the local varNum as being live in and/or out of a handler
 //
 // Arguments:
@@ -2391,7 +2392,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
         for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
         {
             noway_assert(lvaTable[i].lvIsStructField);
-            lvaTable[i].lvLiveInOutOfHndlr = 1; // Make field local as address-exposed.
+            lvaTable[i].lvLiveInOutOfHndlr = 1;
             if (!lvaEnregEHVars)
             {
                 lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
@@ -2404,11 +2405,11 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
         lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
     }
 #ifdef JIT32_GCENCODER
-    // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
-    // in the same register for the entire method, or keep it on the stack. If it is EH-exposed, we can't ever
-    // keep it in a register, since it must also be live on the stack. Therefore, we won't attempt to allocate it.
-    if (lvaKeepAliveAndReportThis() && (varNum == info.compThisArg))
+    else if (lvaKeepAliveAndReportThis() && (varNum == info.compThisArg))
     {
+        // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
+        // in the same register for the entire method, or keep it on the stack. If it is EH-exposed, we can't ever
+        // keep it in a register, since it must also be live on the stack. Therefore, we won't attempt to allocate it.
         lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
     }
 #endif // JIT32_GCENCODER
@@ -6856,7 +6857,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("V");
         }
-        if (varDsc->lvLiveInOutOfHndlr)
+        if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
             printf("H");
         }

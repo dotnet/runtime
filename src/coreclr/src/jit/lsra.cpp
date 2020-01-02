@@ -194,7 +194,7 @@ unsigned LinearScan::getWeight(RefPosition* refPos)
                 }
                 else
                 {
-                    weight -= compiler->fgFirstBB->getBBWeight(compiler);
+                    weight -= BB_UNITY_WEIGHT;
                 }
             }
         }
@@ -833,6 +833,7 @@ void LinearScan::setBlockSequence()
         blockInfo[block->bbNum].weight             = block->getBBWeight(compiler);
         blockInfo[block->bbNum].hasEHBoundaryIn    = block->hasEHBoundaryIn();
         blockInfo[block->bbNum].hasEHBoundaryOut   = block->hasEHBoundaryOut();
+        blockInfo[block->bbNum].hasEHPred          = false;
 
 #if TRACK_LSRA_STATS
         blockInfo[block->bbNum].spillCount         = 0;
@@ -859,7 +860,17 @@ void LinearScan::setBlockSequence()
             }
             if (block->isBBCallAlwaysPairTail() || (hasUniquePred && predBlock->hasEHBoundaryOut()))
             {
-                blockInfo[block->bbNum].hasEHBoundaryIn = true;
+                if (((predBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0) || hasUniquePred)
+                {
+                    // Treat this as having incoming EH flow, since we can't insert resolution moves into
+                    // the ALWAYS block of a BBCallAlwaysPair, and a unique pred with an EH out edge won't
+                    // allow us to keep any variables enregistered.
+                    blockInfo[block->bbNum].hasEHBoundaryIn = true;
+                }
+                else
+                {
+                    blockInfo[block->bbNum].hasEHPred = true;
+                }
             }
         }
 
@@ -2305,13 +2316,20 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                         //       |
                         //     block
                         //
-                        for (flowList* pred = otherBlock->bbPreds; pred != nullptr; pred = pred->flNext)
+                        if (blockInfo[otherBlock->bbNum].hasEHBoundaryIn)
                         {
-                            BasicBlock* otherPred = pred->flBlock;
-                            if (otherPred->bbNum == blockInfo[otherBlock->bbNum].predBBNum)
+                            return nullptr;
+                        }
+                        else
+                        {
+                            for (flowList* pred = otherBlock->bbPreds; pred != nullptr; pred = pred->flNext)
                             {
-                                predBlock = otherPred;
-                                break;
+                                BasicBlock* otherPred = pred->flBlock;
+                                if (otherPred->bbNum == blockInfo[otherBlock->bbNum].predBBNum)
+                                {
+                                    predBlock = otherPred;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -2896,10 +2914,10 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         {
             lastRefPosition = rangeEndInterval->lastRefPosition;
         }
-        if ((relatedInterval != nullptr) && !relatedInterval->isWriteThru)
-        {
-            relatedLastLocation = relatedInterval->lastRefPosition->nodeLocation;
-        }
+    }
+    if ((relatedInterval != nullptr) && !relatedInterval->isWriteThru)
+    {
+        relatedLastLocation = relatedInterval->lastRefPosition->nodeLocation;
     }
 
     regMaskTP callerCalleePrefs;
@@ -4877,15 +4895,14 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         // Special handling for variables live in/out of exception handlers.
         if (interval->isWriteThru)
         {
-            if (predBBNum == 0)
-            {
-                leaveOnStack = true;
-            }
-            // Variables that are live in or out of exception handlers may be conservatively live in other
-            // liveness sets. This can cause problems if we allocate a register for the regions where
-            // it is not actually live, because there isn't actually an associated end to the live range,
-            // so there is no place for codegen to record that the register is no longer occupied.
-            else if ((nextRefPosition == nullptr) || (RefTypeIsDef(nextRefPosition->refType)))
+            // There are 3 cases where we will leave writethru lclVars on the stack:
+            // 1) There is no predecessor.
+            // 2) It is conservatively or artificially live - that is, it has no next use,
+            //    so there is no place for codegen to record that the register is no longer occupied.
+            // 3) This block has a predecessor with an outgoing EH edge. We won't be able to add "join"
+            //    resolution to load the EH var into a register along that edge, so it must be on stack.
+            if ((predBBNum == 0) || (nextRefPosition == nullptr) || (RefTypeIsDef(nextRefPosition->refType)) ||
+                blockInfo[currentBlock->bbNum].hasEHPred)
             {
                 leaveOnStack = true;
             }
@@ -5273,14 +5290,6 @@ void LinearScan::allocateRegisters()
     bool firstBBExceptionEdge = enregisterLocalVars && blockInfo[compiler->fgFirstBB->bbNum].hasEHBoundaryIn;
     if (enregisterLocalVars)
     {
-#if DEBUG
-        BasicBlock* firstBB = compiler->fgFirstBB;
-        for (flowList* pred = firstBB->bbPreds; pred != nullptr; pred = pred->flNext)
-        {
-            assert(!blockInfo[pred->flBlock->bbNum].hasEHBoundaryOut || firstBBExceptionEdge);
-        }
-#endif // DEBUG
-
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         VarSetOps::Iter largeVectorVarsIter(compiler, largeVectorVars);
         unsigned        largeVectorVarIndex = 0;
@@ -5496,6 +5505,7 @@ void LinearScan::allocateRegisters()
                 unassignPhysReg(currentReg, assignedInterval->recentRefPosition);
             }
             currentReg->isBusyUntilNextKill = false;
+            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, nullptr, currentReg->regNum));
             continue;
         }
 
@@ -7989,14 +7999,24 @@ void LinearScan::addResolution(
     BasicBlock* block, GenTree* insertionPoint, Interval* interval, regNumber toReg, regNumber fromReg)
 {
 #ifdef DEBUG
-    const char* insertionPointString = "top";
-#endif // DEBUG
+    const char* insertionPointString;
     if (insertionPoint == nullptr)
     {
-#ifdef DEBUG
+        // We can't add resolution to a register at the bottom of a block that has an EHBoundaryOut,
+        // except in the case of the "EH Dummy" resolution from the stack.
+        assert((block->bbNum > bbNumMaxBeforeResolution) || (fromReg == REG_STK) ||
+               !blockInfo[block->bbNum].hasEHBoundaryOut);
         insertionPointString = "bottom";
-#endif // DEBUG
     }
+    else
+    {
+        // We can't add resolution at the top of a block that has an EHBoundaryIn,
+        // except in the case of the "EH Dummy" resolution to the stack.
+        assert((block->bbNum > bbNumMaxBeforeResolution) || (toReg == REG_STK) ||
+               !blockInfo[block->bbNum].hasEHBoundaryIn);
+        insertionPointString = "top";
+    }
+#endif // DEBUG
 
     JITDUMP("   " FMT_BB " %s: move V%02u from ", block->bbNum, insertionPointString, interval->varNum);
     JITDUMP("%s to %s", getRegName(fromReg), getRegName(toReg));

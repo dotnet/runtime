@@ -1182,6 +1182,10 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                     interval->preferCalleeSave = true;
                 }
 
+                // We are more conservative about allocating callee-saves registers to write-thru vars, since
+                // a call only requires reloading after (not spilling before). So we record (above) the fact
+                // that we'd prefer a callee-save register, but we don't update the preferences at this point.
+                // See the "heuristics for writeThru intervals" in 'buildIntervals()'.
                 if (!interval->isWriteThru || !isCallKill)
                 {
                     regMaskTP newPreferences = allRegs(interval->registerType) & (~killMask);
@@ -2146,8 +2150,10 @@ void LinearScan::buildIntervals()
                         // Compute set difference: newLiveIn = currentLiveVars - predBlock->bbLiveOut
                         VarSetOps::DiffD(compiler, newLiveIn, predBlock->bbLiveOut);
                     }
+                    // Don't create dummy defs for EH vars; we'll load them from the stack as/when needed.
+                    VarSetOps::DiffD(compiler, newLiveIn, exceptVars);
 
-                // Create dummy def RefPositions
+                    // Create dummy def RefPositions
 
                     if (!VarSetOps::IsEmpty(compiler, newLiveIn))
                     {
@@ -2159,17 +2165,13 @@ void LinearScan::buildIntervals()
                         unsigned        varIndex = 0;
                         while (iter.NextElem(&varIndex))
                         {
-                            LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
                             // Add a dummyDef for any candidate vars that are in the "newLiveIn" set.
-                            // If this is the entry block, don't add any incoming parameters (they're handled with
-                            // ParamDefs).
-                            if (isCandidateVar(varDsc) && (predBlock != nullptr || !varDsc->lvIsParam))
-                            {
-                                Interval*    interval = getIntervalForLocalVar(varIndex);
-                                RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
-                                                                  allRegs(interval->registerType));
-                                pos->setRegOptional(true);
-                            }
+                            LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+                            assert(isCandidateVar(varDsc));
+                            Interval*    interval = getIntervalForLocalVar(varIndex);
+                            RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
+                                                              allRegs(interval->registerType));
+                            pos->setRegOptional(true);
                         }
                         JITDUMP("Finished creating dummy definitions\n\n");
                     }

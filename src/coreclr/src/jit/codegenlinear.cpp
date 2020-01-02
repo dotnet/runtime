@@ -1881,15 +1881,18 @@ void CodeGen::genProduceReg(GenTree* tree)
             LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
             assert(!varDsc->lvNormalizeOnStore() || (tree->TypeGet() == genActualType(varDsc->TypeGet())));
 
-            // First, check for the case of an EH var that is being "spilled" to the stack, indicated
-            // by a non-def GT_LCL_VAR that is marked GTF_SPILL.
-            // This case occurs at the end of a block when its register is going dead.
-            // It is already valid on the stack.
+            // The GTF_SPILL flag generally means that we need to spill this local.
+            // The exception is the case of an EH var that is being "spilled"
+            // to the stack, indicated by aby an EH GT_LCL_VAR use that is marked GTF_SPILL
+            // (note that all EH lclVar defs are always "spilled", i.e. write-thru).
+            // It is always valid on the stack, but the GTF_SPILL flag records the fact
+            // that the register value is going dead.
             if (((tree->gtFlags & GTF_VAR_DEF) != 0) || !varDsc->lvLiveInOutOfHndlr)
             {
                 // Store local variable to its home location.
                 // Ensure that lclVar stores are typed correctly.
-                inst_TT_RV(ins_Store(tree->gtType, compiler->isSIMDTypeLocalAligned(varNum)), tree, tree->GetRegNum());
+                inst_TT_RV(ins_Store(tree->gtType, compiler->isSIMDTypeLocalAligned(varNum)),
+                           emitTypeSize(tree->TypeGet()), tree, tree->GetRegNum());
             }
         }
         else
