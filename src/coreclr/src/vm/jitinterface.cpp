@@ -3812,8 +3812,6 @@ BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
     _ASSERTE(clsHnd);
 
     TypeHandle VMClsHnd(clsHnd);
-    _ASSERTE(!VMClsHnd.IsTypeDesc());
-
     if (VMClsHnd == TypeHandle(g_pCanonMethodTableClass))
     {
         // We can't do this optimization in shared generics code because of we do not know what the actual type is going to be.
@@ -3823,6 +3821,9 @@ BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
     else
     {
         // It is safe to perform this optimization
+        // NOTE: clsHnd could be a MethodDesc with shared MethodTable (ex: typeof(int*) == o.GetType()), but that is still optimizable.
+        //       That is because optimized version compares literally a handle to a methodtable and that will be not equal,
+        //       which is valid since none of MethodDesc types can have heap instances.
         ret = TRUE;
     }
 
