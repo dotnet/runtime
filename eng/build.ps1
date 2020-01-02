@@ -1,5 +1,6 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
+  [switch][Alias('h')]$help,
   [switch][Alias('b')]$build,
   [switch][Alias('t')]$test,
   [switch]$buildtests,
@@ -54,6 +55,11 @@ function Get-Help() {
 
 # Exit if script has been dot-sourced
 if ($MyInvocation.InvocationName -eq ".") {
+  exit 0
+}
+
+if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $properties.Contains('/?')))) {
+  Get-Help
   exit 0
 }
 
@@ -121,7 +127,8 @@ foreach ($argument in $PSBoundParameters.Keys)
     "buildtests"        { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
     "test"              { $arguments += " -test" }
     "configuration"     { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
-    "framework"         { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())"}
+    # This should be removed after we have finalized our ci build pipeline.
+    "framework"         { if ($PSBoundParameters[$argument].ToLowerInvariant() -eq 'netcoreapp') { $arguments += " /p:TargetGroup=netcoreapp5.0" } else { if ($PSBoundParameters[$argument].ToLowerInvariant() -eq 'netfx') { $arguments += " /p:TargetGroup=net472" } else { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())"}}}
     "os"                { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
     "allconfigurations" { $arguments += " /p:BuildAllConfigurations=true" }
     "arch"              { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }

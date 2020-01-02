@@ -77,6 +77,18 @@ jobs:
       testGroup: outerloop
 
 #
+# Release library builds
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    platformGroup: all
+    jobParameters:
+      isOfficialBuild: false
+      liveCoreClrBuildConfig: checked
+
+#
 # Checked test builds
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -92,6 +104,8 @@ jobs:
     - Windows_NT_x64
     - Windows_NT_x86
     testGroup: outerloop
+    jobParameters:
+      liveLibrariesBuildConfig: Release
 
 #
 # Checked JIT test runs
@@ -105,6 +119,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
+      liveLibrariesBuildConfig: Release
 
 #
 # Checked R2R test runs
@@ -129,6 +144,7 @@ jobs:
       testGroup: outerloop
       readyToRun: true
       displayNameArgs: R2R
+      liveLibrariesBuildConfig: Release
 
 #
 # Crossgen-comparison jobs

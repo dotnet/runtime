@@ -110,23 +110,6 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void TestParseFailsWhenExceedsMaxDepth()
-        {
-            var builder = new StringBuilder();
-            for (int i = 0; i < 100; i++)
-            {
-                builder.Append("[");
-            }
-
-            for (int i = 0; i < 100; i++)
-            {
-                builder.Append("]");
-            }
-
-            Assert.ThrowsAny<JsonException>(() => JsonNode.Parse(builder.ToString()));
-        }
-
-        [Fact]
         public static void TestDeepCopyDoesNotStackOverflow()
         {
             var builder = new StringBuilder();

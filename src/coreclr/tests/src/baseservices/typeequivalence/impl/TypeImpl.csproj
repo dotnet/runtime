@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('TypeEquivalence.props', '$(MSBuildThisFileDirectory)../'))" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(TypeEquivalence.props))" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
   </PropertyGroup>
@@ -12,5 +12,5 @@
       <EmbedTypes>true</EmbedTypes>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('TypeEquivalence.targets', '$(MSBuildThisFileDirectory)../'))" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(TypeEquivalence.targets))" />
 </Project>

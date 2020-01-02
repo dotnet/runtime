@@ -171,31 +171,30 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
-        private bool ShouldSkipCompilation(IMethodNode methodCodeNodeNeedingCode)
+        public static bool ShouldSkipCompilation(MethodDesc methodNeedingCode)
         {
-            MethodDesc method = methodCodeNodeNeedingCode.Method;
-            if (method.IsAggressiveOptimization)
+            if (methodNeedingCode.IsAggressiveOptimization)
             {
                 return true;
             }
-            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(methodNeedingCode))
             {
                 return true;
             }
-            if (MethodBeingCompiled.IsAbstract)
+            if (methodNeedingCode.IsAbstract)
             {
                 return true;
             }
-            if (MethodBeingCompiled.OwningType.IsDelegate && (
-                MethodBeingCompiled.IsConstructor ||
-                MethodBeingCompiled.Name == "BeginInvoke" ||
-                MethodBeingCompiled.Name == "Invoke" ||
-                MethodBeingCompiled.Name == "EndInvoke"))
+            if (methodNeedingCode.OwningType.IsDelegate && (
+                methodNeedingCode.IsConstructor ||
+                methodNeedingCode.Name == "BeginInvoke" ||
+                methodNeedingCode.Name == "Invoke" ||
+                methodNeedingCode.Name == "EndInvoke"))
             {
                 // Special methods on delegate types
                 return true;
             }
-            if (method.HasCustomAttribute("System.Runtime", "BypassReadyToRunAttribute"))
+            if (methodNeedingCode.HasCustomAttribute("System.Runtime", "BypassReadyToRunAttribute"))
             {
                 // This is a quick workaround to opt specific methods out of ReadyToRun compilation to work around bugs.
                 return true;
@@ -211,7 +210,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (!ShouldSkipCompilation(methodCodeNodeNeedingCode))
+                if (!ShouldSkipCompilation(MethodBeingCompiled))
                 {
                     CompileMethodInternal(methodCodeNodeNeedingCode);
                     codeGotPublished = true;
@@ -889,6 +888,31 @@ namespace Internal.JitInterface
             return false;
         }
 
+        private bool IsGenericTooDeeplyNested(Instantiation instantiation, int nestingLevel)
+        {
+            const int MaxInstatiationNesting = 10;
+
+            if (nestingLevel == MaxInstatiationNesting)
+            {
+                return true;
+            }
+
+            foreach (TypeDesc instantiationType in instantiation)
+            {
+                if (instantiationType.HasInstantiation && IsGenericTooDeeplyNested(instantiationType.Instantiation, nestingLevel + 1))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsGenericTooDeeplyNested(Instantiation instantiation)
+        {
+            return IsGenericTooDeeplyNested(instantiation, 0);
+        }
+
         private void ceeInfoGetCallInfo(
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -928,6 +952,17 @@ namespace Internal.JitInterface
             useInstantiatingStub = originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
 
             callerMethod = HandleToObject(callerHandle);
+
+            if (originalMethod.HasInstantiation && IsGenericTooDeeplyNested(originalMethod.Instantiation))
+            {
+                throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
+            }
+
+            if (originalMethod.OwningType.HasInstantiation && IsGenericTooDeeplyNested(originalMethod.OwningType.Instantiation))
+            {
+                throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
+            }
+
             if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod))
             {
                 // We must abort inline attempts calling from outside of the version bubble being compiled
@@ -1220,6 +1255,9 @@ namespace Internal.JitInterface
             }
             else
             {
+                // At this point, we knew it is a virtual call to targetMethod, 
+                // If it is also a default interface method call, it should go through instantiating stub.
+                useInstantiatingStub = useInstantiatingStub || (targetMethod.OwningType.IsInterface && !originalMethod.IsAbstract);
                 // Insert explicit null checks for cross-version bubble non-interface calls.
                 // It is required to handle null checks properly for non-virtual <-> virtual change between versions
                 pResult->nullInstanceCheck = callVirtCrossingVersionBubble && !targetMethod.OwningType.IsInterface;
@@ -1358,6 +1396,18 @@ namespace Internal.JitInterface
                 }
             }
             return attribs;
+        }
+
+        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+            classMustBeLoadedBeforeCodeIsRun(type);
+        }
+
+        private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
+        {
+            ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type, GetSignatureContext());
+            ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
         }
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
@@ -2048,5 +2098,48 @@ namespace Internal.JitInterface
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
+
+        private void setEHcount(uint cEH)
+        {
+            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
+        }
+
+        private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
+        {
+            // Filters don't have class token in the clause.ClassTokenOrOffset
+            if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) == 0)
+            {
+                if (clause.ClassTokenOrOffset != 0)
+                {
+                    MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+                    mdToken classToken = (mdToken)clause.ClassTokenOrOffset;
+                    TypeDesc clauseType = (TypeDesc)ResolveTokenInScope(methodIL, MethodBeingCompiled, classToken);
+
+                    CORJIT_FLAGS flags = default(CORJIT_FLAGS);
+                    getJitFlags(ref flags, 0);
+
+                    if (flags.IsSet(CorJitFlag.CORJIT_FLAG_IL_STUB))
+                    {
+                        // IL stub tokens are 'private' and do not resolve correctly in their parent module's metadata.
+
+                        // Currently, the only place we are using a token here is for a COM-to-CLR exception-to-HRESULT
+                        // mapping catch clause.  We want this catch clause to catch all exceptions, so we override the
+                        // token to be mdTypeRefNil, which used by the EH system to mean catch(...)
+                        Debug.Assert(clauseType.IsObject);
+                        clause.ClassTokenOrOffset = 0;
+                    }
+                    else
+                    {
+                        // For all clause types add fixup to ensure the types are loaded before the code of the method
+                        // containing the catch blocks is executed. This ensures that a failure to load the types would
+                        // not happen when the exception handling is in progress and it is looking for a catch handler.
+                        // At that point, we could only fail fast.
+                        classMustBeLoadedBeforeCodeIsRun(clauseType);
+                    }
+                }
+            }
+
+            _ehClauses[EHnumber] = clause;
+        }
     }
 }

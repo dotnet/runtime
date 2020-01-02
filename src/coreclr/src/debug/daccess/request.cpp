@@ -129,15 +129,8 @@ BOOL DacValidateMethodTable(MethodTable *pMT, BOOL &bIsFree)
     EX_TRY
     {
         bIsFree = FALSE;
-        EEClass *pEEClass = pMT->GetClass();
-        if (pEEClass==NULL)
+        if (HOST_CDADDR(pMT) == HOST_CDADDR(g_pFreeObjectMethodTable))
         {
-            // Okay to have a NULL EEClass if this is a free methodtable
-            CLRDATA_ADDRESS MethTableAddr = HOST_CDADDR(pMT);
-            CLRDATA_ADDRESS FreeObjMethTableAddr = HOST_CDADDR(g_pFreeObjectMethodTable);
-            if (MethTableAddr != FreeObjMethTableAddr)
-                goto BadMethodTable;
-
             bIsFree = TRUE;
         }
         else

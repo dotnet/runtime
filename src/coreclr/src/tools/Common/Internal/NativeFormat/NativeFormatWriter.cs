@@ -201,7 +201,7 @@ namespace Internal.NativeFormat
 
         public void WriteString(string s)
         {
-            // The actual bytes are only necessary for the final version during the growing plase
+            // The actual bytes are only necessary for the final version during the growing phase
             if (IsGrowing())
             {
                 byte[] bytes = _stringEncoding.GetBytes(s);
