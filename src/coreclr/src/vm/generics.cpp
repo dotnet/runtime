@@ -800,9 +800,9 @@ void RecursionGraph::AddDependency(MethodTable *pMT, TypeHandleList *pExpansionV
         }
         else
         {
-            while (thArg.IsArray())
+            while (thArg.HasTypeParam())
             {
-                thArg = thArg.GetArrayElementTypeHandle();
+                thArg = thArg.GetTypeParam();
 
                 if (thArg.IsGenericVariable()) // : A<!T[]>
                 {
