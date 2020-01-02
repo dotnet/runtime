@@ -1522,10 +1522,6 @@ private:
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
 #ifdef _TARGET_XARCH_
     int BuildRMWUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
-#ifdef FEATURE_SIMD
-    int BuildRMWUsesSIMDUnary(GenTreeSIMD* node);
-    int BuildRMWUsesSIMDBinary(GenTreeSIMD* node);
-#endif
 #endif // !_TARGET_XARCH_
     // This is the main entry point for building the RefPositions for a node.
     // These methods return the number of sources.
@@ -1596,6 +1592,8 @@ private:
 
 #ifdef FEATURE_SIMD
     int BuildSIMD(GenTreeSIMD* tree);
+    int BuildSIMDUnaryRMWUses(GenTreeSIMD* node);
+    int BuildSIMDBinaryRMWUses(GenTreeSIMD* node);
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS

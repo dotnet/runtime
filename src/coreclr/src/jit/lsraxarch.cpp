@@ -904,97 +904,6 @@ int LinearScan::BuildRMWUses(GenTreeOp* node, regMaskTP candidates)
     return srcCount;
 }
 
-#ifdef FEATURE_SIMD
-int LinearScan::BuildRMWUsesSIMDUnary(GenTreeSIMD* node)
-{
-    assert(node->IsUnary());
-
-    GenTree* op1 = node->GetOp(0);
-
-    if (op1->isContained())
-    {
-        return BuildOperandUses(op1);
-    }
-
-    tgtPrefUse = BuildUse(op1);
-    return 1;
-}
-
-int LinearScan::BuildRMWUsesSIMDBinary(GenTreeSIMD* node)
-{
-    assert(node->IsBinary());
-
-    GenTree* op1 = node->GetOp(0);
-    GenTree* op2 = node->GetOp(1);
-
-    // Determine which operand, if any, should be delayRegFree. Normally, this would be op2,
-    // but if we have a commutative operator and op1 is a contained memory op, it would be op1.
-    // We need to make the delayRegFree operand remain live until the op is complete, by marking
-    // the source(s) associated with op2 as "delayFree".
-    // Note that if op2 of a binary RMW operator is a memory op, even if the operator
-    // is commutative, codegen cannot reverse them.
-    // TODO-XArch-CQ: This is not actually the case for all RMW binary operators, but there's
-    // more work to be done to correctly reverse the operands if they involve memory
-    // operands.  Also, we may need to handle more cases than GT_IND, especially once
-    // we've modified the register allocator to not require all nodes to be assigned
-    // a register (e.g. a spilled lclVar can often be referenced directly from memory).
-    // Note that we may have a null op2, even with 2 sources, if op1 is a base/index memory op.
-    GenTree* delayUseOperand = op2;
-
-    if (node->isCommutativeSIMDIntrinsic())
-    {
-        if (op1->isContained())
-        {
-            delayUseOperand = op1;
-        }
-        else if (!op2->isContained() || op2->IsCnsIntOrI())
-        {
-            // If we have a commutative operator and op2 is not a memory op, we don't need
-            // to set delayRegFree on either operand because codegen can swap them.
-            delayUseOperand = nullptr;
-        }
-    }
-    else if (op1->isContained())
-    {
-        delayUseOperand = nullptr;
-    }
-
-    int srcCount = 0;
-
-    // Build first use
-    if (!op1->isContained())
-    {
-        tgtPrefUse = BuildUse(op1);
-        srcCount++;
-    }
-    else if (delayUseOperand == op1)
-    {
-        srcCount += BuildDelayFreeUses(op1);
-    }
-    else
-    {
-        srcCount += BuildOperandUses(op1);
-    }
-
-    // Build second use
-    if (node->isCommutativeSIMDIntrinsic() && !op2->isContained())
-    {
-        tgtPrefUse2 = BuildUse(op2);
-        srcCount++;
-    }
-    else if (delayUseOperand == op2)
-    {
-        srcCount += BuildDelayFreeUses(op2);
-    }
-    else
-    {
-        srcCount += BuildOperandUses(op2);
-    }
-
-    return srcCount;
-}
-#endif // FEATURE_SIMD
-
 //------------------------------------------------------------------------
 // BuildShiftRotate: Set the NodeInfo for a shift or rotate.
 //
@@ -1932,7 +1841,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 // BuildSIMD: Set the NodeInfo for a GT_SIMD tree.
 //
 // Arguments:
-//    tree       - The GT_SIMD node of interest
+//    simdTree - The GT_SIMD node of interest
 //
 // Return Value:
 //    The number of sources consumed by this node.
@@ -2321,11 +2230,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         if (simdTree->IsUnary())
         {
-            srcCount = BuildRMWUsesSIMDUnary(simdTree);
+            srcCount = BuildSIMDUnaryRMWUses(simdTree);
         }
         else
         {
-            srcCount = BuildRMWUsesSIMDBinary(simdTree);
+            srcCount = BuildSIMDBinaryRMWUses(simdTree);
         }
     }
 
@@ -2338,6 +2247,125 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     {
         assert(dstCount == 0);
     }
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildSIMDUnaryRMWUses: Build uses for a RMW unary SIMD node.
+//
+// Arguments:
+//    node - The GT_SIMD node of interest
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+// Notes:
+//    SSE unary instructions (sqrtps, cvttps2dq etc.) aren't really RMW,
+//    they have "dst, src" forms even when the VEX encoding is not available.
+//    However, it seems that SIMDIntrinsicConvertToSingle with UINT base type
+//    could benefit from getting the same register for both destination and
+//    source because its rather complicated codegen expansion starts by copying
+//    the source to the destination register.
+//
+int LinearScan::BuildSIMDUnaryRMWUses(GenTreeSIMD* node)
+{
+    assert(node->IsUnary());
+
+    GenTree* op1 = node->GetOp(0);
+
+    if (op1->isContained())
+    {
+        return BuildOperandUses(op1);
+    }
+
+    tgtPrefUse = BuildUse(op1);
+    return 1;
+}
+
+//------------------------------------------------------------------------
+// BuildSIMDBinaryRMWUses: Build uses for a RMW binary SIMD node.
+//
+// Arguments:
+//    node - The GT_SIMD node of interest
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildSIMDBinaryRMWUses(GenTreeSIMD* node)
+{
+    assert(node->IsBinary());
+
+    GenTree* op1 = node->GetOp(0);
+    GenTree* op2 = node->GetOp(1);
+
+    // Determine which operand, if any, should be delayRegFree. Normally, this would be op2,
+    // but if we have a commutative operator codegen can swap the operands, avoiding the need
+    // for delayRegFree.
+    //
+    // TODO-XArch-CQ: This should not be necessary when VEX encoding is available, at least
+    // for those intrinsics that directly map to SSE/AVX instructions. Intrinsics that require
+    // custom codegen expansion may still neeed this.
+    //
+    // Also, this doesn't check if the intrinsic is really RMW:
+    //  - SIMDIntrinsicOpEquality/SIMDIntrinsicOpInEquality - they don't have a register def.
+    //  - SIMDIntrinsicShuffleSSE2 - the second operand is always a contained immediate so they're
+    //    really unary as far as the register allocator is concerned.
+    //  - SIMDIntrinsicGetItem - the second operand is always an integer but the first may be a float
+    //    and in that case delayRegFree is not needed. Either way, it's not a real RMW operation. It's
+    //    also the only binary SIMD intrinsic that can have a contained op1.
+
+    GenTree* delayUseOperand = op2;
+
+    if (node->isCommutativeSIMDIntrinsic())
+    {
+        if (op1->isContained())
+        {
+            delayUseOperand = op1;
+        }
+        else if (!op2->isContained() || op2->IsCnsIntOrI())
+        {
+            // If we have a commutative operator and op2 is not a memory op, we don't need
+            // to set delayRegFree on either operand because codegen can swap them.
+            delayUseOperand = nullptr;
+        }
+    }
+    else if (op1->isContained())
+    {
+        delayUseOperand = nullptr;
+    }
+
+    int srcCount = 0;
+
+    // Build first use
+    if (!op1->isContained())
+    {
+        tgtPrefUse = BuildUse(op1);
+        srcCount++;
+    }
+    else if (delayUseOperand == op1)
+    {
+        srcCount += BuildDelayFreeUses(op1);
+    }
+    else
+    {
+        srcCount += BuildOperandUses(op1);
+    }
+
+    // Build second use
+    if (node->isCommutativeSIMDIntrinsic() && !op2->isContained())
+    {
+        tgtPrefUse2 = BuildUse(op2);
+        srcCount++;
+    }
+    else if (delayUseOperand == op2)
+    {
+        srcCount += BuildDelayFreeUses(op2);
+    }
+    else
+    {
+        srcCount += BuildOperandUses(op2);
+    }
+
     return srcCount;
 }
 #endif // FEATURE_SIMD
