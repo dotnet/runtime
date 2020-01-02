@@ -853,7 +853,7 @@ namespace Internal.JitInterface
     public enum CORINFO_OS
     {
         CORINFO_WINNT,
-        CORINFO_PAL,
+        CORINFO_UNIX,
     }
 
     public enum CORINFO_RUNTIME_ABI
