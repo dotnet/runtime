@@ -585,15 +585,6 @@
 -nonamespace Tests.Integration
 
 ####################################################################
-##  System.Composition.TypedParts.Tests
-####################################################################
-
-# Missing assembly Microsoft.VisualStudio.TestPlatform.ObjectModel, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a
-# https://github.com/mono/mono/issues/15170
--nomethod System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssemblies_Assemblies_ThrowsCompositionFailedExceptionOnCreation
--nomethod System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssembly_Assembly_ThrowsCompositionFailedExceptionOnCreation
-
-####################################################################
 ##  System.Data.Common.Tests
 ####################################################################
 
