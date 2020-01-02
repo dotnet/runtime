@@ -24,6 +24,9 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
       <Link>System\Security\Cryptography\CryptoPool.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="Internal\Cryptography\AsnFormatter.Windows.cs" />

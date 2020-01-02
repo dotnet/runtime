@@ -1404,7 +1404,6 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        public static readonly char[] Hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
         public static readonly string[] Categories = new string[] {"Lu", "Ll", "Lt", "Lm", "Lo", InternalRegexIgnoreCase,
                                                                      "Mn", "Mc", "Me",
                                                                      "Nd", "Nl", "No",
@@ -1546,7 +1545,7 @@ namespace System.Text.RegularExpressions
             while (shift > 0)
             {
                 shift -= 4;
-                sb.Append(Hex[(ch >> shift) & 0xF]);
+                sb.Append(HexConverter.ToCharLower(ch >> shift));
             }
 
             return sb.ToString();

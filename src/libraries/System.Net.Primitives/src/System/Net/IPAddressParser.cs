@@ -279,22 +279,18 @@ namespace System.Net
         }
 
         /// <summary>Appends a number as hexadecimal (without the leading "0x") to the StringBuilder.</summary>
-        private static unsafe void AppendHex(ushort value, StringBuilder buffer)
+        private static void AppendHex(ushort value, StringBuilder buffer)
         {
-            const int MaxLength = sizeof(ushort) * 2; // two hex chars per byte
-            char* chars = stackalloc char[MaxLength];
-            int pos = MaxLength;
+            if ((value & 0xF000) != 0)
+                buffer.Append(HexConverter.ToCharLower(value >> 12));
 
-            do
-            {
-                int rem = value % 16;
-                value /= 16;
-                chars[--pos] = rem < 10 ? (char)('0' + rem) : (char)('a' + (rem - 10));
-                Debug.Assert(pos >= 0);
-            }
-            while (value != 0);
+            if ((value & 0xFF00) != 0)
+                buffer.Append(HexConverter.ToCharLower(value >> 8));
 
-            buffer.Append(chars + pos, MaxLength - pos);
+            if ((value & 0xFFF0) != 0)
+                buffer.Append(HexConverter.ToCharLower(value >> 4));
+
+            buffer.Append(HexConverter.ToCharLower(value));
         }
 
         /// <summary>Extracts the IPv4 address from the end of the IPv6 address byte array.</summary>

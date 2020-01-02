@@ -28,6 +28,9 @@
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs">
       <Link>CommonTest\System\Net\SslProtocolSupport.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->

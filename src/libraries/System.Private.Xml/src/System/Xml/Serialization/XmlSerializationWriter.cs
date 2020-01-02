@@ -1527,7 +1527,6 @@ namespace System.Xml.Serialization
 
     internal class ReflectionAwareCodeGen
     {
-        private const string hexDigits = "0123456789ABCDEF";
         private const string arrayMemberKey = "0";
         // reflectionVariables holds mapping between a reflection entity
         // referenced in the generated code (such as TypeInfo,
@@ -2110,8 +2109,8 @@ namespace System.Xml.Serialization
                     {
                         byte b = (byte)ch;
                         writer.Write("\\x");
-                        writer.Write(hexDigits[b >> 4]);
-                        writer.Write(hexDigits[b & 0xF]);
+                        writer.Write(HexConverter.ToCharUpper(b >> 4));
+                        writer.Write(HexConverter.ToCharUpper(b));
                     }
                 }
                 else if (ch == '\"')

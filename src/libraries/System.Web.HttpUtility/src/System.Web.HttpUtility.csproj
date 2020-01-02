@@ -10,6 +10,9 @@
     <Compile Include="System\Web\Util\HttpEncoderUtility.cs" />
     <Compile Include="System\Web\Util\UriUtil.cs" />
     <Compile Include="System\Web\Util\Utf16StringValidator.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Specialized" />

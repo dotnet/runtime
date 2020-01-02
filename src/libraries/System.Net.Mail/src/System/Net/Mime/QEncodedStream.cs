@@ -40,9 +40,6 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         };
 
-        //bytes that correspond to the hex char representations in ASCII (0-9, A-F)
-        private static readonly byte[] s_hexEncodeMap = new byte[] { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
-
         private ReadStateInfo _readState;
         private readonly WriteStateInfoBase _writeState;
 
@@ -248,9 +245,9 @@ namespace System.Net.Mime
                     //append an = to indicate an encoded character
                     WriteState.Append((byte)'=');
                     //shift 4 to get the first four bytes only and look up the hex digit
-                    WriteState.Append(s_hexEncodeMap[buffer[cur] >> 4]);
+                    WriteState.Append((byte)HexConverter.ToCharUpper(buffer[cur] >> 4));
                     //clear the first four bytes to get the last four and look up the hex digit
-                    WriteState.Append(s_hexEncodeMap[buffer[cur] & 0xF]);
+                    WriteState.Append((byte)HexConverter.ToCharUpper(buffer[cur]));
                 }
             }
             WriteState.AppendFooter();

@@ -325,21 +325,9 @@ namespace Internal.Cryptography
         }
 
 #if NETCOREAPP || NETSTANDARD2_1
-        private static unsafe string ToUpperHexString(ReadOnlySpan<byte> ba)
+        private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
-            fixed (byte* baPtr = ba)
-            {
-                return string.Create(ba.Length * 2, (Ptr: new IntPtr(baPtr), ba.Length), (span, args) =>
-                {
-                    const string HexValues = "0123456789ABCDEF";
-                    int p = 0;
-                    foreach (byte b in new ReadOnlySpan<byte>((byte*)args.Ptr, args.Length))
-                    {
-                        span[p++] = HexValues[b >> 4];
-                        span[p++] = HexValues[b & 0xF];
-                    }
-                });
-            }
+            return HexConverter.ToString(ba, HexConverter.Casing.Upper);
         }
 #else
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)

@@ -383,23 +383,21 @@ namespace System
 
             return string.Create(length * 3 - 1, (value, startIndex, length), (dst, state) =>
             {
-                const string HexValues = "0123456789ABCDEF";
-
                 var src = new ReadOnlySpan<byte>(state.value, state.startIndex, state.length);
 
                 int i = 0;
                 int j = 0;
 
                 byte b = src[i++];
-                dst[j++] = HexValues[b >> 4];
-                dst[j++] = HexValues[b & 0xF];
+                dst[j++] = HexConverter.ToCharUpper(b >> 4);
+                dst[j++] = HexConverter.ToCharUpper(b);
 
                 while (i < src.Length)
                 {
                     b = src[i++];
                     dst[j++] = '-';
-                    dst[j++] = HexValues[b >> 4];
-                    dst[j++] = HexValues[b & 0xF];
+                    dst[j++] = HexConverter.ToCharUpper(b >> 4);
+                    dst[j++] = HexConverter.ToCharUpper(b);
                 }
             });
         }

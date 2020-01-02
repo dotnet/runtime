@@ -91,16 +91,7 @@ namespace System.Net.NetworkInformation
 
         public override string ToString()
         {
-            return string.Create(_address.Length * 2, _address, (span, addr) =>
-            {
-                int p = 0;
-                foreach (byte value in addr)
-                {
-                    byte upper = (byte)(value >> 4), lower = (byte)(value & 0xF);
-                    span[p++] = (char)(upper + (upper < 10 ? '0' : 'A' - 10));
-                    span[p++] = (char)(lower + (lower < 10 ? '0' : 'A' - 10));
-                }
-            });
+            return HexConverter.ToString(_address.AsSpan(), HexConverter.Casing.Upper);
         }
 
         public byte[] GetAddressBytes()

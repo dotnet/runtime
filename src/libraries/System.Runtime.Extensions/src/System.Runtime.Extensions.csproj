@@ -51,6 +51,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

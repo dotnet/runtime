@@ -1235,24 +1235,12 @@ namespace System.Net
                 else
                 {
                     expandedBytes[pos++] = (byte)'%';
-                    expandedBytes[pos++] = (byte)IntToHex((b >> 4) & 0xf);
-                    expandedBytes[pos++] = (byte)IntToHex(b & 0x0f);
+                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b >> 4);
+                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b);
                 }
             }
 
             return expandedBytes;
-        }
-
-        private static char IntToHex(int n)
-        {
-            Debug.Assert(n < 0x10);
-
-            if (n <= 9)
-            {
-                return (char)(n + (int)'0');
-            }
-
-            return (char)(n - 10 + (int)'a');
         }
 
         private static bool IsSafe(char ch)
