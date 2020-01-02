@@ -18251,12 +18251,8 @@ private:
             {
                 m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField ? varDsc->lvParentLcl : val.LclNum());
             }
-            else if (node->OperIs(GT_IND, GT_FIELD))
+            else
             {
-                // TODO-ADDR: This should also work with OBJ and BLK but that typically requires
-                // struct typed LCL_FLDs which are not yet supported. Also, OBJs that are call
-                // arguments requires special care - at least because of the current PUTARG_STK
-                // codegen that requires OBJs.
                 MorphLocalIndir(val, user);
             }
         }
@@ -18384,7 +18380,7 @@ private:
 
     //------------------------------------------------------------------------
     // MorphLocalIndir: Change a tree that represents an indirect access to a struct
-    //    variable to a single LCL_FLD node.
+    //    variable to a single LCL_VAR or LCL_FLD node.
     //
     // Arguments:
     //    val - a value that represents the local indirection
@@ -18395,19 +18391,21 @@ private:
         assert(val.IsLocation());
 
         GenTree* indir = val.Node();
-        assert(indir->OperIs(GT_IND, GT_FIELD));
+        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD));
 
-        if ((indir->OperIs(GT_IND) && indir->AsIndir()->IsVolatile()) ||
-            (indir->OperIs(GT_FIELD) && indir->AsField()->IsVolatile()))
+        if (val.Offset() > UINT16_MAX)
         {
+            // TODO-ADDR: We can't use LCL_FLD because the offset is too large but we should
+            // transform the tree into IND(ADD(LCL_VAR_ADDR, offset)) instead of leaving this
+            // this to fgMorphField.
             return;
         }
 
-        if (varTypeIsStruct(indir->TypeGet()))
+        if (indir->OperIs(GT_FIELD) ? indir->AsField()->IsVolatile() : indir->AsIndir()->IsVolatile())
         {
-            // TODO-ADDR: Skip struct indirs for now, they require struct typed LCL_FLDs.
-            // Also skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
-            // but there are exceptions - fgMorphFieldAssignToSIMDIntrinsicSet for example.
+            // TODO-ADDR: We shouldn't remove the indir because it's volatile but we should
+            // transform the tree into IND(LCL_VAR|FLD_ADDR) instead of leaving this to
+            // fgMorphField.
             return;
         }
 
@@ -18433,13 +18431,35 @@ private:
             return;
         }
 
-        FieldSeqNode* fieldSeq = val.FieldSeq();
+        ClassLayout*  structLayout = nullptr;
+        FieldSeqNode* fieldSeq     = val.FieldSeq();
 
         if ((fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
         {
-            if (indir->OperIs(GT_IND))
+            // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
+            // handle so we cannot use FieldSeqNode::GetFieldHandle() because it asserts on such
+            // handles. ObjectAllocator should be changed to create LCL_FLD nodes directly.
+            assert(!indir->OperIs(GT_FIELD) || (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->m_fieldHnd));
+        }
+        else
+        {
+            // Normalize fieldSeq to null so we don't need to keep checking for both null and NotAField.
+            fieldSeq = nullptr;
+        }
+
+        if (varTypeIsSIMD(indir->TypeGet()))
+        {
+            // TODO-ADDR: Skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
+            // but there are exceptions - fgMorphFieldAssignToSIMDIntrinsicSet for example.
+            // And more importantly, SIMD call args have to be wrapped in OBJ nodes currently.
+            return;
+        }
+
+        if (indir->TypeGet() != TYP_STRUCT)
+        {
+            if ((fieldSeq != nullptr) && !indir->OperIs(GT_FIELD))
             {
-                // If we have an IND node and a field sequence then they should have the same type.
+                // If we have an indirection node and a field sequence then they should have the same type.
                 // Otherwise it's best to forget the field sequence since the resulting LCL_FLD
                 // doesn't match a real struct field. Value numbering protects itself from such
                 // mismatches but there doesn't seem to be any good reason to generate a LCL_FLD
@@ -18451,19 +18471,69 @@ private:
                     fieldSeq = nullptr;
                 }
             }
-            else if (indir->OperIs(GT_FIELD))
+        }
+        else
+        {
+            if (indir->OperIs(GT_IND))
             {
-                // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
-                // handle so we cannot use FieldSeqNode::GetFieldHandle() because it asserts on such
-                // handles. ObjectAllocator should be changed to create LCL_FLD nodes directly.
-                assert(fieldSeq->GetTail()->m_fieldHnd == indir->AsField()->gtFldHnd);
+                // Skip TYP_STRUCT IND nodes, it's not clear what we can do with them.
+                // Normally these should appear only as sources of variable sized copy block
+                // operations (DYN_BLK) so it probably doesn't make much sense to try to
+                // convert these to local nodes.
+                return;
             }
+
+            if ((user == nullptr) || !user->OperIs(GT_ASG))
+            {
+                // TODO-ADDR: Skip TYP_STRUCT indirs for now, unless they're used by an ASG.
+                // At least call args will require extra work because currently they must be
+                // wrapped in OBJ nodes so we can't replace those with local nodes.
+                return;
+            }
+
+            if (indir->OperIs(GT_FIELD))
+            {
+                CORINFO_CLASS_HANDLE fieldClassHandle;
+                CorInfoType          corType =
+                    m_compiler->info.compCompHnd->getFieldType(indir->AsField()->gtFldHnd, &fieldClassHandle);
+                assert(corType == CORINFO_TYPE_VALUECLASS);
+
+                structLayout = m_compiler->typGetObjLayout(fieldClassHandle);
+            }
+            else
+            {
+                structLayout = indir->AsBlk()->GetLayout();
+            }
+
+            // We're not going to produce a TYP_STRUCT LCL_FLD so we don't need the field sequence.
+            fieldSeq = nullptr;
         }
 
-        indir->ChangeOper(GT_LCL_FLD);
-        indir->AsLclFld()->SetLclNum(val.LclNum());
-        indir->AsLclFld()->SetLclOffs(val.Offset());
-        indir->AsLclFld()->SetFieldSeq(fieldSeq == nullptr ? FieldSeqStore::NotAField() : fieldSeq);
+        // We're only processing TYP_STRUCT variables now so the layout should never be null,
+        // otherwise the below layout equality check would be insufficient.
+        assert(varDsc->GetLayout() != nullptr);
+
+        if ((val.Offset() == 0) && (structLayout == varDsc->GetLayout()))
+        {
+            indir->ChangeOper(GT_LCL_VAR);
+            indir->AsLclVar()->SetLclNum(val.LclNum());
+        }
+        else if (!varTypeIsStruct(indir->TypeGet()))
+        {
+            indir->ChangeOper(GT_LCL_FLD);
+            indir->AsLclFld()->SetLclNum(val.LclNum());
+            indir->AsLclFld()->SetLclOffs(val.Offset());
+            indir->AsLclFld()->SetFieldSeq(fieldSeq == nullptr ? FieldSeqStore::NotAField() : fieldSeq);
+
+            // Promoted struct vars aren't currently handled here so the created LCL_FLD can't be
+            // later transformed into a LCL_VAR and the variable cannot be enregistered.
+            m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(Compiler::DNER_LocalField));
+        }
+        else
+        {
+            // TODO-ADDR: Add TYP_STRUCT support to LCL_FLD.
+            return;
+        }
 
         unsigned flags = 0;
 
@@ -18471,17 +18541,20 @@ private:
         {
             flags |= GTF_VAR_DEF | GTF_DONT_CSE;
 
-            if (genTypeSize(indir->TypeGet()) < m_compiler->lvaLclExactSize(val.LclNum()))
+            if (indir->OperIs(GT_LCL_FLD))
             {
-                flags |= GTF_VAR_USEASG;
+                // Currently we don't generate TYP_STRUCT LCL_FLDs so we do not need to
+                // bother to find out the size of the LHS for "partial definition" purposes.
+                assert(!varTypeIsStruct(indir->TypeGet()));
+
+                if (genTypeSize(indir->TypeGet()) < m_compiler->lvaLclExactSize(val.LclNum()))
+                {
+                    flags |= GTF_VAR_USEASG;
+                }
             }
         }
 
         indir->gtFlags = flags;
-
-        // Promoted struct vars aren't currently handled here so the created LCL_FLD can't be
-        // later transformed into a LCL_VAR and the variable cannot be enregistered.
-        m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(Compiler::DNER_LocalField));
 
         INDEBUG(m_stmtModified = true;)
     }
