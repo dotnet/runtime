@@ -30,6 +30,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetClassInfo.cs">
       <Link>Common\Interop\Windows\User32\Interop.GetClassInfo.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetProcessWindowStation.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetProcessWindowStation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetUserObjectInformation.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetUserObjectInformation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetWindowThreadProcessId.cs">
       <Link>Common\Interop\Windows\User32\Interop.GetWindowThreadProcessId.cs</Link>
     </Compile>
@@ -80,6 +86,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.UnregisterClass.cs">
       <Link>Common\Interop\Windows\User32\Interop.UnregisterClass.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs">
+      <Link>Common\Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.WNDCLASS.cs">
       <Link>Common\Interop\Windows\User32\Interop.WNDCLASS.cs</Link>

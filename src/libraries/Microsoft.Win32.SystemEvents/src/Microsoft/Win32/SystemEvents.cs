@@ -68,6 +68,45 @@ namespace Microsoft.Win32
             // This class is intended to be static, but predates static classes (which were introduced in C# 2.0).
         }
 
+        // stole from SystemInformation... if we get SystemInformation moved
+        // to somewhere that we can use it... rip this!
+        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
+        private static volatile IntPtr s_processWinStation = IntPtr.Zero;
+        private static volatile bool s_isUserInteractive = false;
+        private static unsafe bool UserInteractive
+        {
+            get
+            {
+                if (Environment.OSVersion.Platform == System.PlatformID.Win32NT)
+                {
+                    IntPtr hwinsta = IntPtr.Zero;
+
+                    hwinsta = Interop.User32.GetProcessWindowStation();
+                    if (hwinsta != IntPtr.Zero && s_processWinStation != hwinsta)
+                    {
+                        s_isUserInteractive = true;
+
+                        int lengthNeeded = 0;
+                        Interop.User32.USEROBJECTFLAGS flags = default;
+
+                        if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, ref flags, sizeof(Interop.User32.USEROBJECTFLAGS), ref lengthNeeded))
+                        {
+                            if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
+                            {
+                                s_isUserInteractive = false;
+                            }
+                        }
+                        s_processWinStation = hwinsta;
+                    }
+                }
+                else
+                {
+                    s_isUserInteractive = true;
+                }
+                return s_isUserInteractive;
+            }
+        }
+
         /// <summary>
         ///  Occurs when the display settings are changing.
         /// </summary>
@@ -437,7 +476,7 @@ namespace Microsoft.Win32
                     {
                         // If we are creating system events on a thread declared as STA, then
                         // just share the thread.
-                        if (!Environment.UserInteractive || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+                        if (!UserInteractive || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
                         {
                             SystemEvents systemEvents = new SystemEvents();
                             systemEvents.Initialize();
