@@ -175,7 +175,7 @@ namespace System.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void UserInteractive_Windows_DoesNotThrow()
         {
-            Environment.UserInteractive; // Does not throw
+            var dummy = Environment.UserInteractive; // Does not throw
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
