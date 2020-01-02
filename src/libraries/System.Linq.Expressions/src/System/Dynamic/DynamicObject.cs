@@ -860,14 +860,7 @@ namespace System.Dynamic
                 return Expression.Convert(Expression, typeof(DynamicObject));
             }
 
-            private new DynamicObject Value
-            {
-                get
-                {
-                    Debug.Assert(base.Value != null);
-                    return (DynamicObject)base.Value;
-                }
-            }
+            private new DynamicObject Value => (DynamicObject)base.Value!;
 
             // It is okay to throw NotSupported from this binder. This object
             // is only used by DynamicObject.GetMember--it is not expected to

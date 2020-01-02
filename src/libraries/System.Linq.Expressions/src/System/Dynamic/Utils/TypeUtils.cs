@@ -850,8 +850,7 @@ namespace System.Dynamic.Utils
                 return true;
             }
 
-            Debug.Assert(dest != null); // Seems can be null
-            return !dest.IsValueType && !src.IsValueType && dest.IsAssignableFrom(src);
+            return !dest!.IsValueType && !src.IsValueType && dest.IsAssignableFrom(src);
         }
 
         public static bool IsSameOrSubclass(Type type, Type subType) =>

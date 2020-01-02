@@ -27,28 +27,28 @@ namespace System.Dynamic.Utils
 #if !FEATURE_DYNAMIC_DELEGATE
 
         private static readonly CacheDict<Type, MethodInfo> s_thunks = new CacheDict<Type, MethodInfo>(256);
-        private static readonly MethodInfo s_FuncInvoke = typeof(Func<object[], object>).GetMethod("Invoke")!;
+        private static readonly MethodInfo s_FuncInvoke = typeof(Func<object?[], object?>).GetMethod("Invoke")!;
         private static readonly MethodInfo s_ArrayEmpty = typeof(Array).GetMethod(nameof(Array.Empty))!.MakeGenericMethod(typeof(object));
         private static readonly MethodInfo[] s_ActionThunks = GetActionThunks();
         private static readonly MethodInfo[] s_FuncThunks = GetFuncThunks();
         private static int s_ThunksCreated;
 
-        public static void ActionThunk(Func<object[], object> handler)
+        public static void ActionThunk(Func<object?[], object?> handler)
         {
-            handler(Array.Empty<object>());
+            handler(Array.Empty<object?>());
         }
 
-        public static void ActionThunk1<T1>(Func<object?[], object> handler, T1 t1)
+        public static void ActionThunk1<T1>(Func<object?[], object?> handler, T1 t1)
         {
             handler(new object?[]{t1});
         }
 
-        public static void ActionThunk2<T1, T2>(Func<object?[], object> handler, T1 t1, T2 t2)
+        public static void ActionThunk2<T1, T2>(Func<object?[], object?> handler, T1 t1, T2 t2)
         {
             handler(new object?[]{t1, t2});
         }
 
-        public static TReturn FuncThunk<TReturn>(Func<object[], object> handler)
+        public static TReturn FuncThunk<TReturn>(Func<object?[], object> handler)
         {
             return (TReturn)handler(Array.Empty<object>());
         }

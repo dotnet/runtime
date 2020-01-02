@@ -2241,7 +2241,7 @@ namespace System.Linq.Expressions.Interpreter
                     case ExpressionType.ArrayIndex:
                         return true;
                     case ExpressionType.Index:
-                            return ((IndexExpression)node).Object!.Type.IsArray;
+                        return ((IndexExpression)node).Object!.Type.IsArray;
                     case ExpressionType.MemberAccess:
                         return ((MemberExpression)node).Member is FieldInfo;
                         // ExpressionType.Unbox does have the behaviour write-back is used to simulate, but

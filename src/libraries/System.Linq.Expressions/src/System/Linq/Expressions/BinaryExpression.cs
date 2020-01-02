@@ -234,8 +234,7 @@ namespace System.Linq.Expressions
             var vars = new ArrayBuilder<ParameterExpression>(index.ArgumentCount + 2);
             var exprs = new ArrayBuilder<Expression>(index.ArgumentCount + 3);
 
-            Debug.Assert(index.Object != null);
-            ParameterExpression tempObj = Expression.Variable(index.Object.Type, "tempObj");
+            ParameterExpression tempObj = Expression.Variable(index.Object!.Type, "tempObj");
             vars.UncheckedAdd(tempObj);
             exprs.UncheckedAdd(Expression.Assign(tempObj, index.Object));
 
@@ -398,8 +397,7 @@ namespace System.Linq.Expressions
             ParameterExpression left = Parameter(Left.Type, "left");
             ParameterExpression right = Parameter(Right.Type, "right");
             string opName = NodeType == ExpressionType.AndAlso ? "op_False" : "op_True";
-            Debug.Assert(Method != null && Method.DeclaringType != null);
-            MethodInfo? opTrueFalse = TypeUtils.GetBooleanOperator(Method.DeclaringType, opName);
+            MethodInfo? opTrueFalse = TypeUtils.GetBooleanOperator(Method!.DeclaringType!, opName);
             Debug.Assert(opTrueFalse != null);
 
             return Block(
@@ -656,10 +654,9 @@ namespace System.Linq.Expressions
             }
             else
             {
-                Debug.Assert(b.Method != null);
                 // add the conversion to the result
-                ValidateOpAssignConversionLambda(conversion, b.Left, b.Method, b.NodeType);
-                b = new OpAssignMethodConversionBinaryExpression(b.NodeType, b.Left, b.Right, b.Left.Type, b.Method, conversion);
+                ValidateOpAssignConversionLambda(conversion, b.Left, b.Method!, b.NodeType);
+                b = new OpAssignMethodConversionBinaryExpression(b.NodeType, b.Left, b.Right, b.Left.Type, b.Method!, conversion);
             }
             return b;
         }
@@ -2749,8 +2746,7 @@ namespace System.Linq.Expressions
                         }
                     }
 
-                    Debug.Assert(b.Method != null);
-                    ParameterInfo[] pis = b.Method.GetParametersCached();
+                    ParameterInfo[] pis = b.Method!.GetParametersCached();
                     ValidateParamswithOperandsOrThrow(pis[0].ParameterType, left.Type, ExpressionType.Power, name);
                     ValidateParamswithOperandsOrThrow(pis[1].ParameterType, right.Type, ExpressionType.Power, name);
                     return b;

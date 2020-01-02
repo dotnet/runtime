@@ -123,8 +123,7 @@ namespace System.Dynamic
             {
                 if (restrictions == BindingRestrictions.Empty)
                 {
-                    Debug.Assert(target.Value! != null);
-                    throw System.Linq.Expressions.Error.DynamicBindingNeedsRestrictions(target.Value.GetType(), this);
+                    throw System.Linq.Expressions.Error.DynamicBindingNeedsRestrictions(target.Value!.GetType(), this);
                 }
             }
 

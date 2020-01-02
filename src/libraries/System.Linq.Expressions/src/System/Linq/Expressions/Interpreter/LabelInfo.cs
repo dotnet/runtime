@@ -56,20 +56,19 @@ namespace System.Linq.Expressions.Interpreter
 
         internal void Define(LabelScopeInfo block)
         {
-            Debug.Assert(_node != null);
             // Prevent the label from being shadowed, which enforces cleaner
             // trees. Also we depend on this for simplicity (keeping only one
             // active IL Label per LabelInfo)
             for (LabelScopeInfo? j = block; j != null; j = j.Parent)
             {
-                if (j.ContainsTarget(_node))
+                if (j.ContainsTarget(_node!))
                 {
-                    throw Error.LabelTargetAlreadyDefined(_node.Name);
+                    throw Error.LabelTargetAlreadyDefined(_node!.Name);
                 }
             }
 
             AddDefinition(block);
-            block.AddLabelInfo(_node, this);
+            block.AddLabelInfo(_node!, this);
 
             // Once defined, validate all jumps
             if (HasDefinitions && !HasMultipleDefinitions)
@@ -85,7 +84,7 @@ namespace System.Linq.Expressions.Interpreter
                 // now invalid
                 if (_acrossBlockJump)
                 {
-                    throw Error.AmbiguousJump(_node.Name);
+                    throw Error.AmbiguousJump(_node!.Name);
                 }
                 // For local jumps, we need a new IL label
                 // This is okay because:

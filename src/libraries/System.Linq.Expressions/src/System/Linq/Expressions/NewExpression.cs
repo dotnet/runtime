@@ -86,6 +86,7 @@ namespace System.Linq.Expressions
             {
                 return this;
             }
+
             return Members != null ? New(Constructor!, arguments, Members) : New(Constructor!, arguments);
         }
     }

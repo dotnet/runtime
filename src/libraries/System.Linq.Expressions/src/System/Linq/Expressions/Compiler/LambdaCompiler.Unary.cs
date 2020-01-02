@@ -351,11 +351,10 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitUnaryMethod(UnaryExpression node, CompilationFlags flags)
         {
-            Debug.Assert(node.Method != null);
             if (node.IsLifted)
             {
                 ParameterExpression v = Expression.Variable(node.Operand.Type.GetNonNullableType(), name: null);
-                MethodCallExpression mc = Expression.Call(node.Method, v);
+                MethodCallExpression mc = Expression.Call(node.Method!, v);
 
                 Type resultType = mc.Type.GetNullableType();
                 EmitLift(node.NodeType, resultType, mc, new ParameterExpression[] { v }, new Expression[] { node.Operand });
@@ -363,7 +362,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                EmitMethodCallExpression(Expression.Call(node.Method, node.Operand), flags);
+                EmitMethodCallExpression(Expression.Call(node.Method!, node.Operand), flags);
             }
         }
     }

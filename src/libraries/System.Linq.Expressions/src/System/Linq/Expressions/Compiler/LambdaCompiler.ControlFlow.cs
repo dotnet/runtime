@@ -63,10 +63,9 @@ namespace System.Linq.Expressions.Compiler
             if (_labelBlock.Kind == LabelScopeKind.Block)
             {
                 _labelBlock.TryGetLabelInfo(node.Target, out label);
-                Debug.Assert(_labelBlock.Parent != null);
 
                 // We're in a block but didn't find our label, try switch
-                if (label == null && _labelBlock.Parent.Kind == LabelScopeKind.Switch)
+                if (label == null && _labelBlock.Parent!.Kind == LabelScopeKind.Switch)
                 {
                     _labelBlock.Parent.TryGetLabelInfo(node.Target, out label);
                 }

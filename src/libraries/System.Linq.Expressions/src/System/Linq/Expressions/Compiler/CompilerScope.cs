@@ -483,7 +483,6 @@ namespace System.Linq.Expressions.Compiler
             {
                 return new ParameterList(lambda);
             }
-
             if (scope is BlockExpression block)
             {
                 return block.Variables;

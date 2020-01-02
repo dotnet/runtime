@@ -1170,12 +1170,12 @@ namespace System.Linq.Expressions.Compiler
                     {
                         // Type.GetTypeCode on an enum returns the underlying
                         // integer TypeCode, so we won't get here.
-                        Debug.Assert(locals != null && !type.IsEnum);
+                        Debug.Assert(!type.IsEnum);
 
                         // This is the IL for default(T) if T is a generic type
                         // parameter, so it should work for any type. It's also
                         // the standard pattern for structs.
-                        LocalBuilder lb = locals.GetLocal(type);
+                        LocalBuilder lb = locals!.GetLocal(type);
                         il.Emit(OpCodes.Ldloca, lb);
                         il.Emit(OpCodes.Initobj, type);
                         il.Emit(OpCodes.Ldloc, lb);

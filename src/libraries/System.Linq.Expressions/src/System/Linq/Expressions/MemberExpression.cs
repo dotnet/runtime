@@ -332,8 +332,8 @@ namespace System.Linq.Expressions
             // If the type is an interface then the handle for the method got by the compiler will not be the
             // same as that returned by reflection.
             // Check for this condition and try and get the method from reflection.
-            Type? type = method.DeclaringType;
-            if (type!.IsInterface && method.Name == propertyMethod.Name && type.GetMethod(method.Name) == propertyMethod)
+            Type type = method.DeclaringType!;
+            if (type.IsInterface && method.Name == propertyMethod.Name && type.GetMethod(method.Name) == propertyMethod)
             {
                 return true;
             }
@@ -382,7 +382,6 @@ namespace System.Linq.Expressions
             {
                 return Expression.Field(expression, fi);
             }
-
             if (member is PropertyInfo pi)
             {
                 return Expression.Property(expression, pi);

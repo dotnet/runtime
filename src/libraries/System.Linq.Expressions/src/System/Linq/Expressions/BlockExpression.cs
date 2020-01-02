@@ -588,7 +588,7 @@ namespace System.Linq.Expressions
         {
             if (args == null)
             {
-                Debug.Assert(variables != null && variables.Count == Variables.Count);
+                Debug.Assert(variables!.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
                 return new Scope1(variables, _body);
             }
@@ -627,7 +627,7 @@ namespace System.Linq.Expressions
         {
             if (args == null)
             {
-                Debug.Assert(variables != null && variables.Count == Variables.Count);
+                Debug.Assert(variables!.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
                 return new ScopeN(variables, _body);
             }
@@ -652,7 +652,7 @@ namespace System.Linq.Expressions
         {
             if (args == null)
             {
-                Debug.Assert(variables != null && variables.Count == Variables.Count);
+                Debug.Assert(variables!.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
                 return new ScopeWithType(variables, Body, Type);
             }

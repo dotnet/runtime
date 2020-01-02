@@ -87,21 +87,19 @@ namespace System.Linq.Expressions.Compiler
         // or false if the label is now ambiguous
         internal void Define(LabelScopeInfo block)
         {
-            Debug.Assert(_node != null);
-
             // Prevent the label from being shadowed, which enforces cleaner
             // trees. Also we depend on this for simplicity (keeping only one
             // active IL Label per LabelInfo)
             for (LabelScopeInfo? j = block; j != null; j = j.Parent)
             {
-                if (j.ContainsTarget(_node))
+                if (j.ContainsTarget(_node!))
                 {
-                    throw Error.LabelTargetAlreadyDefined(_node.Name);
+                    throw Error.LabelTargetAlreadyDefined(_node!.Name);
                 }
             }
 
             _definitions.Add(block);
-            block.AddLabelInfo(_node, this);
+            block.AddLabelInfo(_node!, this);
 
             // Once defined, validate all jumps
             if (_definitions.Count == 1)
@@ -117,7 +115,7 @@ namespace System.Linq.Expressions.Compiler
                 // now invalid
                 if (_acrossBlockJump)
                 {
-                    throw Error.AmbiguousJump(_node.Name);
+                    throw Error.AmbiguousJump(_node!.Name);
                 }
                 // For local jumps, we need a new IL label
                 // This is okay because:
@@ -160,8 +158,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (_definitions.Count > 1)
             {
-                Debug.Assert(_node != null);
-                throw Error.AmbiguousJump(_node.Name);
+                throw Error.AmbiguousJump(_node!.Name);
             }
 
             // We didn't find an outward jump. Look for a jump across blocks

@@ -155,8 +155,7 @@ namespace System.Linq.Expressions
                 MemberBinding b = bindings[i];
                 ContractUtils.RequiresNotNull(b, nameof(bindings));
                 b.ValidateAsDefinedHere(i);
-                Debug.Assert(b.Member.DeclaringType != null);
-                if (!b.Member.DeclaringType.IsAssignableFrom(type))
+                if (!b.Member.DeclaringType!.IsAssignableFrom(type))
                 {
                     throw Error.NotAMemberOfType(b.Member.Name, type, nameof(bindings), i);
                 }

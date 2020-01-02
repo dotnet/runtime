@@ -138,7 +138,7 @@ namespace System.Linq.Expressions
     /// </summary>
     internal sealed class PrimitiveParameterExpression<T> : ParameterExpression
     {
-        internal PrimitiveParameterExpression(string?name)
+        internal PrimitiveParameterExpression(string? name)
             : base(name)
         {
         }

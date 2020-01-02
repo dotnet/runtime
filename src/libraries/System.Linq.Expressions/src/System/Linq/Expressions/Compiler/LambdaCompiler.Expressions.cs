@@ -298,8 +298,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                Debug.Assert(objectType != null);
-                EmitGetArrayElement(objectType);
+                EmitGetArrayElement(objectType!);
             }
         }
 
@@ -1266,8 +1265,7 @@ namespace System.Linq.Expressions.Compiler
                         EmitMethodCallExpression(mc);
                         if (resultType.IsNullableType() && !TypeUtils.AreEquivalent(resultType, mc.Type))
                         {
-                            ConstructorInfo? ci = resultType.GetConstructor(new Type[] { mc.Type });
-                            Debug.Assert(ci != null);
+                            ConstructorInfo ci = resultType.GetConstructor(new Type[] { mc.Type })!;
                             _ilg.Emit(OpCodes.Newobj, ci);
                         }
                         _ilg.Emit(OpCodes.Br_S, exit);

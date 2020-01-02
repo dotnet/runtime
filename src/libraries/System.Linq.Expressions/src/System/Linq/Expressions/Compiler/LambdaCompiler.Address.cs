@@ -193,16 +193,15 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
-            Debug.Assert(node.Object != null);
             if (node.ArgumentCount == 1)
             {
-                EmitExpression(node.Object);
+                EmitExpression(node.Object!);
                 EmitExpression(node.GetArgument(0));
                 _ilg.Emit(OpCodes.Ldelema, node.Type);
             }
             else
             {
-                MethodInfo address = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance)!;
+                MethodInfo address = node.Object!.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance)!;
                 EmitMethodCall(node.Object, address, node);
             }
         }
