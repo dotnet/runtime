@@ -111,6 +111,9 @@ private:
     // Number of non-type-argument slots in this bucket
     WORD m_numSlots;
 
+    // Number of non-type-argument slots of the initial layout before any expansion
+    WORD m_numInitialSlots;
+
     // m_numSlots of these
     DictionaryEntryLayout m_slots[1];
 
@@ -167,6 +170,7 @@ public:
                           WORD*                             pSlotOut);
 
     DWORD GetMaxSlots();
+    DWORD GetNumInitialSlots();
     DWORD GetNumUsedSlots();
 
     PTR_DictionaryEntryLayout GetEntryLayout(DWORD i)
@@ -212,7 +216,7 @@ class Dictionary
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
-  private:
+private:
     // First N entries are generic instantiations arguments. They are stored as FixupPointers
     // in NGen images. It means that the lowest bit is used to mark optional indirection (see code:FixupPointer).
     // The rest of the open array are normal pointers (no optional indirection).
@@ -226,7 +230,7 @@ class Dictionary
             idx * sizeof(m_pEntries[0]);
     }
 
-  public:
+public:
     inline DPTR(FixupPointer<TypeHandle>) GetInstantiation()
     {
         LIMITED_METHOD_CONTRACT;
@@ -238,11 +242,11 @@ class Dictionary
     inline void* AsPtr()
     {
         LIMITED_METHOD_CONTRACT;
-        return (void*) m_pEntries;
+        return (void*)m_pEntries;
     }
 #endif // #ifndef DACCESS_COMPILE
 
-  private:
+private:
 
 #ifndef DACCESS_COMPILE
 
@@ -251,50 +255,50 @@ class Dictionary
         LIMITED_METHOD_CONTRACT;
         return *GetTypeHandleSlotAddr(numGenericArgs, i);
     }
-    inline MethodDesc *GetMethodDescSlot(DWORD numGenericArgs, DWORD i)
+    inline MethodDesc* GetMethodDescSlot(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return *GetMethodDescSlotAddr(numGenericArgs,i);
+        return *GetMethodDescSlotAddr(numGenericArgs, i);
     }
-    inline FieldDesc *GetFieldDescSlot(DWORD numGenericArgs, DWORD i)
+    inline FieldDesc* GetFieldDescSlot(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return *GetFieldDescSlotAddr(numGenericArgs,i);
+        return *GetFieldDescSlotAddr(numGenericArgs, i);
     }
-    inline TypeHandle *GetTypeHandleSlotAddr(DWORD numGenericArgs, DWORD i)
+    inline TypeHandle* GetTypeHandleSlotAddr(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((TypeHandle *) &m_pEntries[numGenericArgs + i]);
+        return ((TypeHandle*)&m_pEntries[numGenericArgs + i]);
     }
-    inline MethodDesc **GetMethodDescSlotAddr(DWORD numGenericArgs, DWORD i)
+    inline MethodDesc** GetMethodDescSlotAddr(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((MethodDesc **) &m_pEntries[numGenericArgs + i]);
+        return ((MethodDesc**)&m_pEntries[numGenericArgs + i]);
     }
-    inline FieldDesc **GetFieldDescSlotAddr(DWORD numGenericArgs, DWORD i)
+    inline FieldDesc** GetFieldDescSlotAddr(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((FieldDesc **) &m_pEntries[numGenericArgs + i]);
+        return ((FieldDesc**)&m_pEntries[numGenericArgs + i]);
     }
-    inline DictionaryEntry *GetSlotAddr(DWORD numGenericArgs, DWORD i)
+    inline DictionaryEntry* GetSlotAddr(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((void **) &m_pEntries[numGenericArgs + i]);
+        return ((void**)&m_pEntries[numGenericArgs + i]);
     }
     inline DictionaryEntry GetSlot(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return *GetSlotAddr(numGenericArgs,i);
+        return *GetSlotAddr(numGenericArgs, i);
     }
     inline BOOL IsSlotEmpty(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return GetSlot(numGenericArgs,i) == NULL;
+        return GetSlot(numGenericArgs, i) == NULL;
     }
 
 #endif // #ifndef DACCESS_COMPILE
 
-  public:
+public:
 
 #ifndef DACCESS_COMPILE
 
@@ -310,9 +314,13 @@ class Dictionary
                                MethodTable * pMT,
                                BOOL nonExpansive);
 
+private:
+    static Dictionary* GetTypeDictionaryWithSizeCheck(MethodTable* pMT);
+    static Dictionary* GetMethodDictionaryWithSizeCheck(MethodDesc* pMD);
+
 #endif // #ifndef DACCESS_COMPILE
 
-  public:
+public:
 
 #ifdef FEATURE_PREJIT
 
@@ -330,13 +338,13 @@ class Dictionary
                BOOL canSaveInstantiation,
                BOOL canSaveSlots,
                DWORD numGenericArgs,            // Must be non-zero
-               Module *pModule, // module of the generic code
+               Module *pModule,                 // module of the generic code
                DictionaryLayout *pDictLayout);  // If NULL, then only type arguments are present
 
     BOOL IsWriteable(DataImage *image,
                BOOL canSaveSlots,
                DWORD numGenericArgs,            // Must be non-zero
-               Module *pModule, // module of the generic code
+               Module *pModule,                 // module of the generic code
                DictionaryLayout *pDictLayout);  // If NULL, then only type arguments are present
 
     BOOL ComputeNeedsRestore(DataImage *image,

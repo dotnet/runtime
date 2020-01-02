@@ -3240,26 +3240,14 @@ public:
 
 #ifndef CROSSGEN_COMPILE
 private:
-    class DynamicDictSlotsForTypesTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodTable*, MethodTable*> { };
-    typedef CrossLoaderAllocatorHash<DynamicDictSlotsForTypesTrackerHashTraits> DynamicDictSlotsForTypesTrackerHash;
+    class SharedGenericTypeDependencyTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodTable*, MethodTable*> { };
+    typedef CrossLoaderAllocatorHash<SharedGenericTypeDependencyTrackerHashTraits> SharedGenericTypeDependencyTrackerHash;
 
-    class DynamicDictSlotsForMethodsTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodDesc*, MethodDesc*> { };
-    typedef CrossLoaderAllocatorHash<DynamicDictSlotsForMethodsTrackerHashTraits> DynamicDictSlotsForMethodsTrackerHash;
-
-    DynamicDictSlotsForTypesTrackerHash m_dynamicSlotsHashForTypes;
-    DynamicDictSlotsForMethodsTrackerHash m_dynamicSlotsHashForMethods;
+    SharedGenericTypeDependencyTrackerHash m_sharedGenericTypeDependencies;
 
 public:
-    void RecordTypeForDictionaryExpansion_Locked(MethodTable* pGenericParentMT, MethodTable* pDependencyMT);
-    void RecordMethodForDictionaryExpansion_Locked(MethodDesc* pDependencyMD);
-
-    void ExpandTypeDictionaries_Locked(MethodTable* pMT, DictionaryLayout* pOldLayout, DictionaryLayout* pNewLayout);
-    void ExpandMethodDictionaries_Locked(MethodDesc* pMD, DictionaryLayout* pOldLayout, DictionaryLayout* pNewLayout);
-
-#ifdef _DEBUG
-    void EnsureTypeRecorded(MethodTable* pMT);
-    void EnsureMethodRecorded(MethodDesc* pMD);
-#endif
+    void RecordSharedGenericTypeDependency(MethodTable* pMT, MethodTable* pDependencyMT);
+    void UpdateDictionaryOnSharedGenericTypeDependencies(MethodTable* pMT, Dictionary* pDictionary, ULONG dictionaryIndex);
 #endif //!CROSSGEN_COMPILE
 };
 

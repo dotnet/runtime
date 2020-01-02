@@ -279,10 +279,9 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     // Finally we need space for the instantiation/dictionary for this type
     // Note that this is an unsafe operation because it uses the dictionary layout to compute the size needed,
-    // and the dictionary layout can be updated by other threads during a dictionary size expansion. To account for 
-    // this rare race condition, right before registering this type for dictionary expansions, we will check that its
-    // dictionary has enough slots to match its dictionary layout if it got updated.
-    // See: Module::RecordTypeForDictionaryExpansion_Locked.
+    // and the dictionary layout can be updated by other threads during a dictionary size expansion. This is
+    // not a problem anyways because whenever we load a value from the dictionary after a certain index, we will
+    // always check the size of the dictionary and expand it if needed
     DWORD cbInstAndDict = pOldMT->GetInstAndDictSize();
 
     // Allocate from the high frequence heap of the correct domain

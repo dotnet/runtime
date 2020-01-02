@@ -1154,6 +1154,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->signature = pLookup->signature;
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
 
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
+
     // It's available only via the run-time helper function
     if (pLookup->indirections == CORINFO_USEHELPER)
     {
@@ -1172,11 +1174,11 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         for (WORD i = 0; i < pLookup->indirections; i++)
             indirectionsSize += (pLookup->offsets[i] >= 0x80 ? 7 : 4);
 
-        int codeSize = indirectionsSize + (pLookup->testForNull ? 30 : 4);
+        int codeSize = indirectionsSize + (pLookup->testForNull ? 30 : 4) + (pLookup->sizeOffset != 0xFFFF ? 13 : 0);
 
         BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
 
-        if (pLookup->testForNull)
+        if (pLookup->testForNull || pLookup->sizeOffset != 0xFFFF)
         {
             // rcx/rdi contains the generic context parameter. Save a copy of it in the rax register
 #ifdef UNIX_AMD64_ABI
@@ -1188,6 +1190,24 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != 0xFFFF)
+            {
+                _ASSERTE(pLookup->testForNull);
+
+                // cmp qword ptr[rcx/rdi + sizeOffset],slotOffset
+#ifdef UNIX_AMD64_ABI
+                *(UINT32*)p = 0x00bf8148; p += 3;
+#else
+                *(UINT32*)p = 0x00b98148; p += 3;
+#endif
+                *(UINT32*)p = (UINT32)pLookup->sizeOffset; p += 4;
+                *(UINT32*)p = (UINT32)slotOffset; p += 4;
+
+                // jle 'HELPER CALL'
+                UINT8 jmpLength = (UINT8)(codeSize - 18 - (p - pStart) - 2);
+                *p++ = 0x7e;
+                *p++ = jmpLength;
+            }
 #ifdef UNIX_AMD64_ABI
             // mov rdi,qword ptr [rdi+offset]
             if (pLookup->offsets[i] >= 0x80)
@@ -1218,6 +1238,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // No null test required
         if (!pLookup->testForNull)
         {
+            _ASSERTE(pLookup->sizeOffset == 0xFFFF);
+
             // No fixups needed for R2R
 
 #ifdef UNIX_AMD64_ABI

@@ -297,8 +297,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                   MethodDesc* pGenericMDescInRepMT,
                                                   MethodDesc* pWrappedMD,
                                                   Instantiation methodInst,
-                                                  BOOL getWrappedCode,
-                                                  BOOL recordForDictionaryExpansion)
+                                                  BOOL getWrappedCode)
 {
     CONTRACT(InstantiatedMethodDesc*)
     {
@@ -375,9 +374,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 if (pWrappedMD->IsSharedByGenericMethodInstantiations())
                 {
                     // It is ok to not take a lock here while reading the dictionary layout pointer. This is because
-                    // when we reach the point of registering the newly created MethodDesc, we take the lock and 
-                    // check if the dictionary layout was expanded, and if so, we expand the dictionary of the method
-                    // before recording it for future dictionary expansions and publishing it.
+                    // when we load values from a generic dictionary beyond a certain index, we will check the size of
+                    // the dictionary and expand it if needed.
                     pDL = pWrappedMD->AsInstantiatedMethodDesc()->GetDictLayoutRaw();
                 }
             }
@@ -520,15 +518,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 // Verify that we are not creating redundant MethodDescs
                 _ASSERTE(!pNewMD->IsTightlyBoundToMethodTable());
 
-#ifndef CROSSGEN_COMPILE
-                if (recordForDictionaryExpansion && pNewMD->HasMethodInstantiation())
-                {
-                    // Recording needs to happen before the MD gets published to the hashtable of InstantiatedMethodDescs
-                    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
-                    pNewMD->GetModule()->RecordMethodForDictionaryExpansion_Locked(pNewMD);
-                }
-#endif
-
                 // The method desc is fully set up; now add to the table
                 InstMethodHashTable* pTable = pExactMDLoaderModule->GetInstMethodHashTable();
                 pTable->InsertMethodDesc(pNewMD);
@@ -574,7 +563,6 @@ InstantiatedMethodDesc::FindOrCreateExactClassMethod(MethodTable *pExactMT,
                                             pCanonicalMD,
                                             pCanonicalMD,
                                             Instantiation(),
-                                            FALSE,
                                             FALSE);
     }
 
@@ -1174,8 +1162,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                             pMDescInCanonMT,
                                                                             NULL,
                                                                             Instantiation(repInst, methodInst.GetNumArgs()),
-                                                                            TRUE,
-                                                                            FALSE);
+                                                                            TRUE);
             }
         }
         else if (getWrappedThenStub)
@@ -1210,8 +1197,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                             pMDescInCanonMT,
                                                                             pWrappedMD,
                                                                             methodInst,
-                                                                            FALSE,
-                                                                            TRUE);
+                                                                            FALSE);
             }
         }
         else
@@ -1236,7 +1222,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                             pMDescInCanonMT,
                                                                             NULL,
                                                                             methodInst,
-                                                                            FALSE,
                                                                             FALSE);
             }
         }
