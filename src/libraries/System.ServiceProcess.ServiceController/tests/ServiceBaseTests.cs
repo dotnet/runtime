@@ -142,6 +142,7 @@ namespace System.ServiceProcess.Tests
             ServiceController controller = ConnectToServer();
 
             controller.ExecuteCommand(128);
+            // If we get 129, then Environment.UserInteractive was unexpectedly true
             Assert.Equal(128, _testService.GetByte());
 
             controller.Stop();

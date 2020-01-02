@@ -43,6 +43,10 @@ namespace System.ServiceProcess.Tests
         protected override void OnCustomCommand(int command)
         {
             base.OnCustomCommand(command);
+
+            if (Environment.UserInteractive) // verify this is false
+                command++;
+
             WriteStreamAsync(PipeMessageByteCode.OnCustomCommand, command).Wait();
         }
 
