@@ -119,7 +119,7 @@ echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Bu
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.targets"
 
 if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
-echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK".
+echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
 Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
 Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
