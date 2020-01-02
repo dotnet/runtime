@@ -712,31 +712,41 @@ namespace System.Text.RegularExpressions
                             case Notone when node.Ch == subsequent.Ch:
                             case Notonelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
                             case Notoneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                            case Multi when !string.IsNullOrEmpty(subsequent.Str) && node.Ch != subsequent.Str[0]:
-                            case Set when subsequent.Str != null && !RegexCharClass.CharInClass(node.Ch, subsequent.Str):
-                            case Setlazy when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.CharInClass(node.Ch, subsequent.Str):
-                            case Setloop when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.CharInClass(node.Ch, subsequent.Str):
-                            case Setloopgreedy when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.CharInClass(node.Ch, subsequent.Str):
+                            case Multi when node.Ch != subsequent.Str![0]:
+                            case Set when !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                            case Setlazy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                            case Setloop when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                            case Setloopgreedy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                            case End:
+                            case Boundary when RegexCharClass.IsWordChar(node.Ch):
+                            case Nonboundary when !RegexCharClass.IsWordChar(node.Ch):
+                            case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
+                            case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
                                 node.Type = Oneloopgreedy;
                                 break;
                         }
                         break;
 
-                    case Setloop when node.Str != null:
+                    case Setloop:
                         switch (subsequent.Type)
                         {
-                            case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str):
-                            case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str):
-                            case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str):
-                            case Oneloopgreedy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str):
-                            case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str):
-                            case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str):
-                            case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str):
-                            case Multi when !string.IsNullOrEmpty(subsequent.Str) && !RegexCharClass.CharInClass(subsequent.Str[0], node.Str):
-                            case Set when subsequent.Str != null && !RegexCharClass.MayOverlap(node.Str, subsequent.Str):
-                            case Setlazy when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.MayOverlap(node.Str, subsequent.Str):
-                            case Setloop when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.MayOverlap(node.Str, subsequent.Str):
-                            case Setloopgreedy when subsequent.M > 0 && subsequent.Str != null && !RegexCharClass.MayOverlap(node.Str, subsequent.Str):
+                            case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Oneloopgreedy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Multi when !string.IsNullOrEmpty(subsequent.Str) && !RegexCharClass.CharInClass(subsequent.Str[0], node.Str!):
+                            case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                            case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                            case Setloop when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                            case Setloopgreedy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                            case End:
+                            case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass: // TODO: Expand these with a more inclusive overlap check that considers categories
+                            case Nonboundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
+                            case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
+                            case NonECMABoundary when node.Str == RegexCharClass.NotECMAWordClass || node.Str == RegexCharClass.NotDigitClass:
                                 node.Type = Setloopgreedy;
                                 break;
                         }

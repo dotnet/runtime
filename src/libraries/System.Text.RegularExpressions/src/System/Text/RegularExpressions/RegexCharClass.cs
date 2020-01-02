@@ -815,6 +815,12 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public static bool MayOverlap(string set1, string set2)
         {
+            // If either set is all-inclusive, there's overlap.
+            if (set1 == AnyClass || set2 == AnyClass)
+            {
+                return true;
+            }
+
             // If the sets are identical other than one being the negation of the other, they don't overlap.
             if (IsNegated(set1) != IsNegated(set2) && set1.AsSpan(1).SequenceEqual(set2.AsSpan(1)))
             {
