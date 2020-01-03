@@ -802,7 +802,7 @@ void Compiler::impAssignTempGenStruct(unsigned              tmpNum,
         val->gtType = lvaTable[tmpNum].lvType;
 
         GenTree* dst = gtNewLclvNode(tmpNum, val->gtType);
-        asg = impAssignStruct(dst, val, structType, asgPlace.spillLevel, asgPlace.pAfterStmt, ilOffset, asgPlace.block);
+        asg          = impAssignStruct(dst, val, structType, asgPlace, ilOffset);
     }
     else
     {
@@ -1062,13 +1062,11 @@ GenTreeCall::Use* Compiler::impPopReverseCallArgs(unsigned count, CORINFO_SIG_IN
 // Notes:
 //    Temp assignments may be appended to impStmtList if spilling is necessary.
 
-GenTree* Compiler::impAssignStruct(GenTree*             dest,
-                                   GenTree*             src,
-                                   CORINFO_CLASS_HANDLE structHnd,
-                                   unsigned             curLevel,
-                                   Statement**          pAfterStmt, /* = nullptr */
-                                   IL_OFFSETX           ilOffset,   /* = BAD_IL_OFFSET */
-                                   BasicBlock*          block       /* = nullptr */
+GenTree* Compiler::impAssignStruct(GenTree*              dest,
+                                   GenTree*              src,
+                                   CORINFO_CLASS_HANDLE  structHnd,
+                                   const impAssignPlace& asgPlace,
+                                   IL_OFFSETX            ilOffset /* = BAD_IL_OFFSET */
                                    )
 {
     assert(varTypeIsStruct(dest));
@@ -1084,15 +1082,15 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
         assert(varTypeIsStruct(dest->AsOp()->gtOp2));
 
         // Append all the op1 of GT_COMMA trees before we evaluate op2 of the GT_COMMA tree.
-        if (pAfterStmt)
+        if (asgPlace.useStmts)
         {
             Statement* newStmt = gtNewStmt(dest->AsOp()->gtOp1, ilOffset);
-            fgInsertStmtAfter(block, *pAfterStmt, newStmt);
-            *pAfterStmt = newStmt;
+            fgInsertStmtAfter(asgPlace.block, *asgPlace.pAfterStmt, newStmt);
+            *asgPlace.pAfterStmt = newStmt;
         }
         else
         {
-            impAppendTree(dest->AsOp()->gtOp1, curLevel, ilOffset); // do the side effect
+            impAppendTree(dest->AsOp()->gtOp1, asgPlace.spillLevel, ilOffset); // do the side effect
         }
 
         // set dest to the second thing
@@ -1122,7 +1120,8 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
         destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
     }
 
-    return (impAssignStructPtr(destAddr, src, structHnd, curLevel, pAfterStmt, ilOffset, block));
+    return impAssignStructPtr(destAddr, src, structHnd, asgPlace.spillLevel, asgPlace.pAfterStmt, ilOffset,
+                              asgPlace.block);
 }
 
 //------------------------------------------------------------------------
@@ -11240,7 +11239,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (varTypeIsStruct(lclTyp))
                 {
-                    op1 = impAssignStruct(op2, op1, clsHnd, (unsigned)CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op2, op1, clsHnd, impAssignPlace::s_SpillAll);
                 }
                 else
                 {
@@ -11974,7 +11973,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 if (varTypeIsStruct(op1))
                 {
-                    op1 = impAssignStruct(op1, op2, stelemClsHnd, (unsigned)CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op1, op2, stelemClsHnd, impAssignPlace::s_SpillAll);
                 }
                 else
                 {
@@ -14652,7 +14651,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (deferStructAssign)
                 {
-                    op1 = impAssignStruct(op1, op2, clsHnd, (unsigned)CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op1, op2, clsHnd, impAssignPlace::s_SpillAll);
                 }
             }
                 goto APPEND;
@@ -15295,7 +15294,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
+                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, impAssignPlace::s_SpillAll);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
@@ -15333,7 +15332,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
+                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, impAssignPlace::s_SpillAll);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);

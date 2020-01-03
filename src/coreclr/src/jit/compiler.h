@@ -1946,10 +1946,14 @@ enum SpillLevel
 struct impAssignPlace
 {
 public:
-    bool        useStmts;
-    Statement** pAfterStmt;
-    BasicBlock* block;
-    int         spillLevel;
+    bool        useStmts   = false;
+    Statement** pAfterStmt = nullptr;
+    BasicBlock* block      = nullptr;
+    int         spillLevel = CHECK_SPILL_INVALID;
+
+    impAssignPlace()
+    {
+    }
 
     impAssignPlace(Statement** pAfterStmt, BasicBlock* block)
         : useStmts(true), pAfterStmt(pAfterStmt), block(block), spillLevel(CHECK_SPILL_INVALID)
@@ -1957,8 +1961,7 @@ public:
         assert((pAfterStmt != nullptr) && (block != nullptr));
     }
 
-    explicit impAssignPlace(int spillLevel)
-        : useStmts(false), pAfterStmt(nullptr), block(nullptr), spillLevel(spillLevel)
+    explicit impAssignPlace(int spillLevel) : useStmts(false), spillLevel(spillLevel)
     {
     }
 
@@ -3773,13 +3776,11 @@ public:
                           CORINFO_CLASS_HANDLE structHnd,
                           unsigned             curLevel,
                           Statement** pAfterStmt DEBUGARG(const char* reason));
-    GenTree* impAssignStruct(GenTree*             dest,
-                             GenTree*             src,
-                             CORINFO_CLASS_HANDLE structHnd,
-                             unsigned             curLevel,
-                             Statement**          pAfterStmt = nullptr,
-                             IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
-                             BasicBlock*          block      = nullptr);
+    GenTree* impAssignStruct(GenTree*              dest,
+                             GenTree*              src,
+                             CORINFO_CLASS_HANDLE  structHnd,
+                             const impAssignPlace& asgPlace,
+                             IL_OFFSETX            ilOffset = BAD_IL_OFFSET);
     GenTree* impAssignStructPtr(GenTree*             dest,
                                 GenTree*             src,
                                 CORINFO_CLASS_HANDLE structHnd,
