@@ -431,9 +431,6 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
 
 void Compiler::fgEnsureFirstBBisScratch()
 {
-    // This method does not update predecessor lists and so must only be called before they are computed.
-    assert(!fgComputePredsDone);
-
     // Have we already allocated a scratch block?
 
     if (fgFirstBBisScratch())
@@ -453,6 +450,15 @@ void Compiler::fgEnsureFirstBBisScratch()
             block->inheritWeight(fgFirstBB);
         }
 
+        // The first block has an implicit ref count which we must
+        // remove. Note the ref count could be greater that one, if
+        // the first block is not scratch and is targeted by a
+        // branch.
+        assert(fgFirstBB->bbRefs >= 1);
+        fgFirstBB->bbRefs--;
+
+        // The new scratch bb will fall through to the old first bb
+        fgAddRefPred(fgFirstBB, block);
         fgInsertBBbefore(fgFirstBB, block);
     }
     else
@@ -465,6 +471,9 @@ void Compiler::fgEnsureFirstBBisScratch()
     noway_assert(fgLastBB != nullptr);
 
     block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
+
+    // This new first BB has an implicit ref, and no others.
+    block->bbRefs = 1;
 
     fgFirstBBScratch = fgFirstBB;
 
@@ -8244,7 +8253,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
     block->bbJumpKind = BBJ_ALWAYS;
     block->bbJumpDest = genReturnBB;
-    block->bbJumpDest->bbRefs++;
+    fgAddRefPred(genReturnBB, block);
 
 #ifdef DEBUG
     if (verbose)
@@ -8531,7 +8540,7 @@ private:
         newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
         comp->fgReturnCount++;
 
-        newReturnBB->bbFlags |= BBF_INTERNAL;
+        newReturnBB->bbFlags |= (BBF_INTERNAL | BBF_JMP_TARGET);
 
         noway_assert(newReturnBB->bbNext == nullptr);
 
@@ -13102,6 +13111,7 @@ void Compiler::fgComputeBlockAndEdgeWeights()
     const bool usingProfileWeights = fgIsUsingProfileWeights();
     const bool isOptimizing        = opts.OptimizationEnabled();
 
+    fgModified             = false;
     fgHaveValidEdgeWeights = false;
     fgCalledCount          = BB_UNITY_WEIGHT;
 

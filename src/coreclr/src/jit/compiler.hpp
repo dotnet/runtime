@@ -2729,6 +2729,8 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 */
 inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
 {
+    JITDUMP("Converting " FMT_BB " to BBJ_THROW\n", block->bbNum);
+
     // If we're converting a BBJ_CALLFINALLY block to a BBJ_THROW block,
     // then mark the subsequent BBJ_ALWAYS block as unreferenced.
     if (block->isBBCallAlwaysPair())
@@ -2758,8 +2760,14 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     }
 
+    // Scrub this block from the pred lists of any successors
+    fgRemoveBlockAsPred(block);
+
+    // Update jump kind after the scrub.
     block->bbJumpKind = BBJ_THROW;
-    block->bbSetRunRarely(); // any block with a throw is rare
+
+    // Any block with a throw is rare
+    block->bbSetRunRarely();
 }
 
 /*****************************************************************************

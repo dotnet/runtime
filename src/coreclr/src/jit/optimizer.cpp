@@ -4073,6 +4073,13 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
         return;
     }
 
+    // block can't be the scratch bb, since we prefer to keep flow
+    // out of the scratch bb as BBJ_ALWAYS or BBJ_NONE.
+    if (fgBBisScratch(block))
+    {
+        return;
+    }
+
     // It has to be a forward jump
     //  TODO-CQ: Check if we can also optimize the backwards jump as well.
     //
