@@ -15,6 +15,7 @@ namespace System.Collections.Generic
         }
 
         [return: MaybeNull]
+        [return: NotNullIfNotNull("defaultValue")]
         public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, [AllowNull] TValue defaultValue)
         {
             if (dictionary == null)
