@@ -20852,6 +20852,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 #endif // DEBUG
 
+    assert((impStmtList == nullptr) && (impLastStmt == nullptr));
+
     fgDebugCheckBlockLinks();
 
     if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
