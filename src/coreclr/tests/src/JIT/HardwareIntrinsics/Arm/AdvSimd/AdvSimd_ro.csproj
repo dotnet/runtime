@@ -16,6 +16,14 @@
     <Compile Include="Abs.Vector128.Single.cs" />
     <Compile Include="Abs.Vector128.UInt16.cs" />
     <Compile Include="Abs.Vector128.UInt32.cs" />
+    <Compile Include="AbsoluteCompareGreaterThan.Vector64.Single.cs" />
+    <Compile Include="AbsoluteCompareGreaterThanOrEqual.Vector64.Single.cs" />
+    <Compile Include="AbsoluteCompareLessThan.Vector64.Single.cs" />
+    <Compile Include="AbsoluteCompareLessThanOrEqual.Vector64.Single.cs" />
+    <Compile Include="AbsoluteCompareGreaterThan.Vector128.Single.cs" />
+    <Compile Include="AbsoluteCompareGreaterThanOrEqual.Vector128.Single.cs" />
+    <Compile Include="AbsoluteCompareLessThan.Vector128.Single.cs" />
+    <Compile Include="AbsoluteCompareLessThanOrEqual.Vector128.Single.cs" />
     <Compile Include="AbsScalar.Vector64.Single.cs" />
     <Compile Include="Add.Vector64.Byte.cs" />
     <Compile Include="Add.Vector64.Int16.cs" />

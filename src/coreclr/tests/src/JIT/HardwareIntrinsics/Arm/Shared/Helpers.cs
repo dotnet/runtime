@@ -427,7 +427,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
-        
+
         public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
 
         public static sbyte CompareEqual(sbyte left, sbyte right)
@@ -463,9 +463,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (sbyte)result;       
+            return (sbyte)result;
         }
-   
+
         public static sbyte CompareLessThan(sbyte left, sbyte right)
         {
             long result = 0;
@@ -487,7 +487,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (sbyte)result;       
+            return (sbyte)result;
         }
 
         public static sbyte CompareTest(sbyte left, sbyte right)
@@ -501,7 +501,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (sbyte)result;
         }
-             
+
         public static byte CompareEqual(byte left, byte right)
         {
             long result = 0;
@@ -535,9 +535,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (byte)result;       
+            return (byte)result;
         }
-   
+
         public static byte CompareLessThan(byte left, byte right)
         {
             long result = 0;
@@ -559,7 +559,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (byte)result;       
+            return (byte)result;
         }
 
         public static byte CompareTest(byte left, byte right)
@@ -573,7 +573,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (byte)result;
         }
-             
+
         public static short CompareEqual(short left, short right)
         {
             long result = 0;
@@ -607,9 +607,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (short)result;       
+            return (short)result;
         }
-   
+
         public static short CompareLessThan(short left, short right)
         {
             long result = 0;
@@ -631,7 +631,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (short)result;       
+            return (short)result;
         }
 
         public static short CompareTest(short left, short right)
@@ -645,7 +645,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (short)result;
         }
-             
+
         public static ushort CompareEqual(ushort left, ushort right)
         {
             long result = 0;
@@ -679,9 +679,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (ushort)result;       
+            return (ushort)result;
         }
-   
+
         public static ushort CompareLessThan(ushort left, ushort right)
         {
             long result = 0;
@@ -703,7 +703,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (ushort)result;       
+            return (ushort)result;
         }
 
         public static ushort CompareTest(ushort left, ushort right)
@@ -717,7 +717,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (ushort)result;
         }
-             
+
         public static int CompareEqual(int left, int right)
         {
             long result = 0;
@@ -751,9 +751,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (int)result;       
+            return (int)result;
         }
-   
+
         public static int CompareLessThan(int left, int right)
         {
             long result = 0;
@@ -775,7 +775,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (int)result;       
+            return (int)result;
         }
 
         public static int CompareTest(int left, int right)
@@ -789,7 +789,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (int)result;
         }
-             
+
         public static uint CompareEqual(uint left, uint right)
         {
             long result = 0;
@@ -823,9 +823,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (uint)result;       
+            return (uint)result;
         }
-   
+
         public static uint CompareLessThan(uint left, uint right)
         {
             long result = 0;
@@ -847,7 +847,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (uint)result;       
+            return (uint)result;
         }
 
         public static uint CompareTest(uint left, uint right)
@@ -861,7 +861,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (uint)result;
         }
-             
+
         public static long CompareEqual(long left, long right)
         {
             long result = 0;
@@ -895,9 +895,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (long)result;       
+            return (long)result;
         }
-   
+
         public static long CompareLessThan(long left, long right)
         {
             long result = 0;
@@ -919,7 +919,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (long)result;       
+            return (long)result;
         }
 
         public static long CompareTest(long left, long right)
@@ -933,7 +933,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (long)result;
         }
-             
+
         public static ulong CompareEqual(ulong left, ulong right)
         {
             long result = 0;
@@ -967,9 +967,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (ulong)result;       
+            return (ulong)result;
         }
-   
+
         public static ulong CompareLessThan(ulong left, ulong right)
         {
             long result = 0;
@@ -991,7 +991,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (ulong)result;       
+            return (ulong)result;
         }
 
         public static ulong CompareTest(ulong left, ulong right)
@@ -1005,7 +1005,139 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (ulong)result;
         }
-             
+
+        public static double AbsoluteCompareGreaterThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareGreaterThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareGreaterThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareGreaterThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareLessThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareLessThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareLessThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareLessThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double CompareEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
         public static float CompareEqual(float left, float right)
         {
             int result = 0;
@@ -1017,12 +1149,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return BitConverter.Int32BitsToSingle(result);
         }
-        
-        public static double CompareEqual(double left, double right)
+
+        public static double CompareGreaterThan(double left, double right)
         {
             long result = 0;
 
-            if (left == right)
+            if (left > right)
             {
                 result = -1;
             }
@@ -1041,12 +1173,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return BitConverter.Int32BitsToSingle(result);
         }
-        
-        public static double CompareGreaterThan(double left, double right)
+
+        public static double CompareGreaterThanOrEqual(double left, double right)
         {
             long result = 0;
 
-            if (left > right)
+            if (left >= right)
             {
                 result = -1;
             }
@@ -1065,19 +1197,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return BitConverter.Int32BitsToSingle(result);
         }
-        
-        public static double CompareGreaterThanOrEqual(double left, double right)
+
+        public static double CompareLessThan(double left, double right)
         {
             long result = 0;
 
-            if (left >= right)
+            if (left < right)
             {
                 result = -1;
             }
 
             return BitConverter.Int64BitsToDouble(result);
-        }   
-
+        }
 
         public static float CompareLessThan(float left, float right)
         {
@@ -1090,12 +1221,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return BitConverter.Int32BitsToSingle(result);
         }
-        
-        public static double CompareLessThan(double left, double right)
+
+        public static double CompareLessThanOrEqual(double left, double right)
         {
             long result = 0;
 
-            if (left < right)
+            if (left <= right)
             {
                 result = -1;
             }
@@ -1114,12 +1245,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return BitConverter.Int32BitsToSingle(result);
         }
-        
-        public static double CompareLessThanOrEqual(double left, double right)
+
+        public static double CompareTest(double left, double right)
         {
             long result = 0;
 
-            if (left <= right)
+            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
             {
                 result = -1;
             }
@@ -1138,17 +1269,5 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return BitConverter.Int32BitsToSingle(result);
         }
-        
-        public static double CompareTest(double left, double right)
-        {
-            long result = 0;
-
-            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }                        
     }
 }
