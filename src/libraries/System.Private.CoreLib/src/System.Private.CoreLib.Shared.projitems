@@ -1335,7 +1335,7 @@
     <Compile Include="$(LibrariesProjectRoot)Common\src\Interop\Windows\User32\Interop.GetProcessWindowStation.cs">
       <Link>Common\Interop\Windows\User32\Interop.GetProcessWindowStation.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Interop\Windows\User32\Interop.GetUserObjectInformation.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetUserObjectInformation.cs">
       <Link>Common\Interop\Windows\User32\Interop.GetUserObjectInformation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs">
