@@ -499,7 +499,7 @@ namespace System.Text.RegularExpressions
 
             AddGroup();
 
-            return Unit()!;
+            return Unit()!.FinalOptimize();
         }
 
         /*

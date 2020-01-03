@@ -172,6 +172,48 @@ namespace System.Text.RegularExpressions
             N = max;
         }
 
+        /// <summary>Performs additional optimizations on an entire tree prior to being used.</summary>
+        internal RegexNode FinalOptimize()
+        {
+            // If we find a setloop or oneloop as the final node in the regex, upgrade it to be greedy,
+            // to avoid unnecessary backtracking costs.  We conservatively only follow nodes we can easily
+            // prove are correct.  For example, we don't want to explore alternations or loops, where another
+            // branch could end up coming after the found node at execution time even if it's the right-most
+            // leaf in the physical tree.
+            if ((Options & RegexOptions.RightToLeft) == 0) // only apply optimization when LTR to avoid needing additional code for the rare RTL case
+            {
+                RegexNode node = this;
+                while (true)
+                {
+                    switch (node.Type)
+                    {
+                        case Setloop:
+                            node.Type = Setloopgreedy;
+                            break;
+
+                        case Oneloop:
+                            node.Type = Oneloopgreedy;
+                            break;
+
+                        case Capture:
+                        case Greedy:
+                            Debug.Assert(node.ChildCount() == 1);
+                            node = node.Child(0);
+                            continue;
+
+                        case Concatenate:
+                            Debug.Assert(node.ChildCount() > 1);
+                            node = node.Child(node.ChildCount() - 1);
+                            continue;
+                    }
+
+                    break;
+                }
+            }
+
+            return this;
+        }
+
         /// <summary>
         /// Removes redundant nodes from the subtree, and returns a reduced subtree.
         /// </summary>
