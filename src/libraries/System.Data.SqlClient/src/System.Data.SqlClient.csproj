@@ -217,14 +217,14 @@
   </ItemGroup>
   <!-- SqlFileStream Windows Netcoreapp only -->
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FileTypes.cs">
-      <Link>Interop\Windows\Kernel32\Interop.FileTypes.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FileTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
-      <Link>Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs">
       <Link>System\IO\PathInternal.Windows.cs</Link>
@@ -361,8 +361,8 @@
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs">
       <Link>Common\System\Net\Security\NetEventSource.Security.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\GlobalSSPI.cs">
       <Link>Common\Interop\Windows\SspiCli\GlobalSSPI.cs</Link>

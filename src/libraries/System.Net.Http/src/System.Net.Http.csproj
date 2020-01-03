@@ -348,8 +348,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.certificates.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>System\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs</Link>
@@ -441,8 +441,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
       <Link>Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs</Link>
@@ -532,23 +532,23 @@
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
       <Link>Common\System\Net\UriScheme.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.IOErrors.cs">
-      <Link>Interop\Unix\Interop.IOErrors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs">
+      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Open.cs">
-      <Link>Interop\Unix\System.Native\Interop.Open.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Open.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.OpenFlags.cs">
-      <Link>Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.OpenFlags.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Pipe.cs</Link>
@@ -556,10 +556,10 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs">
       <Link>Common\Interop\Unix\libc\Interop.Poll.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Read.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\libc\Interop.Read.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Write.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs">

@@ -24,8 +24,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.ReadLink.cs">
-      <Link>Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\UnixCommandLinePing.cs">
       <Link>Common\System\Net\NetworkInformation\UnixCommandLinePing.cs</Link>
