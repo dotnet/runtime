@@ -9,6 +9,7 @@
     <NativeVersionFile Condition="'$(OS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="'$(OS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <_BuildNativeArgs>$(ArchGroup) $(ConfigurationGroup) $(OSGroup) outconfig $(Configuration)</_BuildNativeArgs>
+    <OutputPath>$(BaseOutputPath)$(BuildTargetFramework)-$(ConfigurationGroup)</OutputPath>
   </PropertyGroup>
 
   <Target Name="BuildNativeUnix"
