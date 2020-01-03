@@ -56,3 +56,5 @@ DLLEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLeng
 DLLEXPORT int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
 
 DLLEXPORT int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLength);
+
+DLLEXPORT int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName);
