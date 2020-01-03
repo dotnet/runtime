@@ -2910,6 +2910,8 @@ protected:
     size_t  compute_in (int gen_number);
     PER_HEAP
     void compute_new_dynamic_data (int gen_number);
+    PER_HEAP_ISOLATED
+    gc_history_global* get_gc_data_global();
     PER_HEAP
     gc_history_per_heap* get_gc_data_per_heap();
     PER_HEAP
@@ -3026,9 +3028,6 @@ protected:
     // Restores BGC settings if necessary.
     PER_HEAP_ISOLATED
     void recover_bgc_settings();
-
-    PER_HEAP
-    void save_bgc_data_per_heap();
 
     PER_HEAP
     BOOL should_commit_mark_array();
@@ -3639,6 +3638,9 @@ protected:
 
     PER_HEAP_ISOLATED
     gc_mechanisms saved_bgc_settings;
+
+    PER_HEAP_ISOLATED
+    gc_history_global bgc_data_global;
 
     PER_HEAP
     gc_history_per_heap bgc_data_per_heap;

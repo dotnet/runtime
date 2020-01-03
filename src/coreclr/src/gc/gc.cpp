@@ -2608,6 +2608,8 @@ GCEvent     gc_heap::bgc_start_event;
 
 gc_mechanisms gc_heap::saved_bgc_settings;
 
+gc_history_global gc_heap::bgc_data_global;
+
 GCEvent     gc_heap::background_gc_done_event;
 
 GCEvent     gc_heap::ee_proceed_event;
@@ -3190,20 +3192,22 @@ void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per
 
 void gc_heap::fire_pevents()
 {
-    settings.record (&gc_data_global);
-    gc_data_global.print();
+    gc_history_global* current_gc_data_global = get_gc_data_global();
+
+    settings.record (current_gc_data_global);
+    current_gc_data_global->print();
 
     FIRE_EVENT(GCGlobalHeapHistory_V3,
-               gc_data_global.final_youngest_desired,
-               gc_data_global.num_heaps,
-               gc_data_global.condemned_generation,
-               gc_data_global.gen0_reduction_count,
-               gc_data_global.reason,
-               gc_data_global.global_mechanisms_p,
-               gc_data_global.pause_mode,
-               gc_data_global.mem_pressure,
-               gc_data_global.gen_to_condemn_reasons.get_reasons0(),
-               gc_data_global.gen_to_condemn_reasons.get_reasons1());
+               current_gc_data_global->final_youngest_desired,
+               current_gc_data_global->num_heaps,
+               current_gc_data_global->condemned_generation,
+               current_gc_data_global->gen0_reduction_count,
+               current_gc_data_global->reason,
+               current_gc_data_global->global_mechanisms_p,
+               current_gc_data_global->pause_mode,
+               current_gc_data_global->mem_pressure,
+               current_gc_data_global->gen_to_condemn_reasons.get_reasons0(),
+               current_gc_data_global->gen_to_condemn_reasons.get_reasons1());
 
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
@@ -15515,7 +15519,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                                            BOOL* blocking_collection_p
                                            STRESS_HEAP_ARG(int n_original))
 {
-    gc_heap::gc_data_global.gen_to_condemn_reasons.init();
+    gc_data_global.gen_to_condemn_reasons.init();
 #ifdef BGC_SERVO_TUNING
     if (settings.entry_memory_load == 0)
     {
@@ -15565,7 +15569,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             else
             {
                 n = max_generation - 1;
-                gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j1);
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_avoid_unproductive);
                 settings.elevation_reduced = TRUE;
             }
         }
@@ -15590,6 +15594,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             // where foreground GCs are asking for a compacting full GC right away
             // and not getting it.
             dprintf (GTC_LOG, ("full GC induced, not reducing gen"));
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_user_requested);
             *blocking_collection_p = TRUE;
         }
         else if (should_expand_in_full_gc || joined_last_gc_before_oom)
@@ -15600,7 +15605,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
         {
             dprintf (GTC_LOG, ("reducing gen in PM: %d->%d->%d", initial_gen, n, (max_generation - 1)));
-            gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j2);
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_last_gen2_fragmented);
             n = max_generation - 1;
         }
     }
@@ -15622,6 +15627,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 
         if (joined_last_gc_before_oom)
         {
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_last_gc_oom);
             full_compact_gc_p = true;
         }
         else if ((current_total_committed * 10) >= (heap_hard_limit * 9))
@@ -15632,6 +15638,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             if ((loh_frag * 8) >= heap_hard_limit)
             {
                 dprintf (GTC_LOG, ("loh frag: %Id > 1/8 of limit %Id", loh_frag, (heap_hard_limit / 8)));
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_heap_limit_fragmented);
                 full_compact_gc_p = true;
             }
             else
@@ -15639,6 +15646,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                 // If there's not much fragmentation but it looks like it'll be productive to
                 // collect LOH, do that.
                 size_t est_loh_reclaim = get_total_gen_estimated_reclaim (max_generation + 1);
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_heap_limit_productive);
                 full_compact_gc_p = ((est_loh_reclaim * 8) >= heap_hard_limit);
                 dprintf (GTC_LOG, ("loh est reclaim: %Id, 1/8 of limit %Id", est_loh_reclaim, (heap_hard_limit / 8)));
             }
@@ -15646,7 +15654,6 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 
         if (full_compact_gc_p)
         {
-            gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j3);
             n = max_generation;
             *blocking_collection_p = TRUE;
             settings.loh_compaction = TRUE;
@@ -15664,14 +15671,14 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     if ((n < max_generation) && !recursive_gc_sync::background_running_p() &&
         bgc_tuning::stepping_trigger (settings.entry_memory_load, get_current_gc_index (max_generation)))
     {
-        gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j4);
+        gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_initial);
         n = max_generation;
         saved_bgc_tuning_reason = reason_bgc_stepping;
     }
 
     if ((n < max_generation) && bgc_tuning::should_trigger_bgc())
     {
-        gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j5);
+        gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_bgc);
         n = max_generation;
     }
 
@@ -15679,7 +15686,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     {
         if (bgc_tuning::should_delay_alloc (max_generation))
         {
-            gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j6);
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_postpone);
             n -= 1;
         }
     }
@@ -15719,7 +15726,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             // in gc stress, only escalate every 10th non-gen2 collection to a gen2...
             if ((current_gc_count % 10) == 0)
             {
-                gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j7);
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_stress_mix);
                 n = max_generation;
             }
         }
@@ -15734,15 +15741,12 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
 #endif // !FEATURE_REDHAWK
         {
-            gc_heap::gc_data_global.gen_to_condemn_reasons.set_condition(j8);
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_stress);
             n = max_generation;
         }
     }
 #endif //BACKGROUND_GC
 #endif //STRESS_HEAP
-
-    // TODO: Fix the 1st parameter
-    gc_heap::gc_data_global.gen_to_condemn_reasons.set_gen(gen_alloc_budget, n);
 
     return n;
 }
@@ -18164,8 +18168,12 @@ void gc_heap::garbage_collect (int n)
             ((settings.pause_mode == pause_interactive) || (settings.pause_mode == pause_sustained_low_latency)))
         {
             keep_bgc_threads_p = TRUE;
-            c_write (settings.concurrent,  TRUE);
+            c_write (settings.concurrent, TRUE);
         }
+
+        memset(&bgc_data_global, 0, sizeof(bgc_data_global));
+        memcpy(&bgc_data_global, &gc_data_global, sizeof(gc_data_global));
+
 #endif //BACKGROUND_GC
 
         settings.gc_index = (uint32_t)dd_collection_count (dynamic_data_of (0)) + 1;
@@ -32852,6 +32860,16 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
     return final_new_allocation;
 }
 #endif // BIT64
+
+inline
+gc_history_global* gc_heap::get_gc_data_global()
+{
+#ifdef BACKGROUND_GC
+    return (settings.concurrent ? &bgc_data_global : &gc_data_global);
+#else
+    return &gc_data_global;
+#endif //BACKGROUND_GC
+}
 
 inline
 gc_history_per_heap* gc_heap::get_gc_data_per_heap()
