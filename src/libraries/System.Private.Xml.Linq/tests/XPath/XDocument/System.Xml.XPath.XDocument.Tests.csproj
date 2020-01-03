@@ -3,7 +3,7 @@
   <PropertyGroup>
     <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
     <CommonPathXPath>$(CommonPath)System\Xml\XPath</CommonPathXPath>
-    <Configurations>Debug;Release</Configurations>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <!-- XPath.XDocument navigator -->
