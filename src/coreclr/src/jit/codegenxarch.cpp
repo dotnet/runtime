@@ -175,7 +175,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
 #ifdef _TARGET_WINDOWS_
             // TYP_SIMD16 should be returned in XMM0
-            assert(!varTypeIsStruct(compiler->info.compRetNativeType) || compiler->info.compRetNativeType == TYP_SIMD16);
+            assert(!varTypeIsStruct(compiler->info.compRetNativeType) ||
+                   compiler->info.compRetNativeType == TYP_SIMD16);
 #else
             assert(!varTypeIsStruct(compiler->info.compRetNativeType));
 #endif
@@ -1176,10 +1177,11 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
     {
         return false;
     }
-#if defined(UNIX_AMD64_ABI) || (defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)) // UNIX_AMD64_ABI || _TARGET_AMD64_ && _TARGET_WINDOWS_
+#if defined(UNIX_AMD64_ABI) ||                                                                                         \
+    (defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)) // UNIX_AMD64_ABI || _TARGET_AMD64_ && _TARGET_WINDOWS_
     // TYP_SIMD16 should be returned in XMM0
     return varTypeIsStruct(treeNode);
-#else  // !UNIX_AMD64_ABI && (!_TARGET_AMD64_ || !_TARGET_WINDOWS_)
+#else // !UNIX_AMD64_ABI && (!_TARGET_AMD64_ || !_TARGET_WINDOWS_)
     assert(!varTypeIsStruct(treeNode));
     return false;
 #endif // UNIX_AMD64_ABI || _TARGET_AMD64_ && _TARGET_WINDOWS_
@@ -1361,7 +1363,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     }
 #elif defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
     // TYP_SIMD16 should be returned in XMM0
-    genConsumeReg(op1); 
+    genConsumeReg(op1);
 #else
     unreached();
 #endif
