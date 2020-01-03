@@ -856,7 +856,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT)
         FlushProcessWriteBuffers();
 
         // Update dictionary pointer on derived types
-        pMT->GetModule()->UpdateDictionaryOnSharedGenericTypeDependencies(pMT, pDictionary, dictionaryIndex);
+        pMT->GetLoaderModule()->UpdateDictionaryOnSharedGenericTypeDependencies(pMT, pDictionary, dictionaryIndex);
         FlushProcessWriteBuffers();
     }
 #endif

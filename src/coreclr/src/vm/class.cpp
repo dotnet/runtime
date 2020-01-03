@@ -1038,7 +1038,7 @@ void ClassLoader::RecordDependenciesForDictionaryExpansion(MethodTable* pMT)
         while (pCurrentMT)
         {
             if (pCurrentMT != pMT && pCurrentMT->HasInstantiation() && !pCurrentMT->IsCanonicalMethodTable())
-                pCurrentMT->GetModule()->RecordSharedGenericTypeDependency(pCurrentMT, pMT);
+                pCurrentMT->GetLoaderModule()->RecordSharedGenericTypeDependency(pCurrentMT, pMT);
 
             pCurrentMT = pCurrentMT->GetParentMethodTable();
         }

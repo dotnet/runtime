@@ -1672,6 +1672,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->signature = pLookup->signature;
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
 
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
+
     // It's available only via the run-time helper function
     if (pLookup->indirections == CORINFO_USEHELPER)
     {
@@ -1690,11 +1692,11 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         for (WORD i = 0; i < pLookup->indirections; i++)
             indirectionsSize += (pLookup->offsets[i] >= 0x80 ? 6 : 3);
 
-        int codeSize = indirectionsSize + (pLookup->testForNull ? 21 : 3);
+        int codeSize = indirectionsSize + (pLookup->testForNull ? 21 : 3) + (pLookup->sizeOffset != 0xFFFF ? 12 : 0);
 
         BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
 
-        if (pLookup->testForNull)
+        if (pLookup->testForNull || pLookup->sizeOffset != 0xFFFF)
         {
             // ecx contains the generic context parameter. Save a copy of it in the eax register
             // mov eax,ecx
@@ -1703,6 +1705,21 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != 0xFFFF)
+            {
+                _ASSERTE(pLookup->testForNull);
+
+                // cmp dword ptr[ecx + sizeOffset],slotOffset
+                *(UINT16*)p = 0xb981; p += 2;
+                *(UINT32*)p = (UINT32)pLookup->sizeOffset; p += 4;
+                *(UINT32*)p = (UINT32)slotOffset; p += 4;
+
+                // jle 'HELPER CALL'
+                UINT8 jmpLength = (UINT8)(codeSize - 12 - (p - pStart) - 2);
+                *p++ = 0x7e;
+                *p++ = jmpLength;
+            }
+
             // mov ecx,qword ptr [ecx+offset]
             if (pLookup->offsets[i] >= 0x80)
             {

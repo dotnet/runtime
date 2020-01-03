@@ -3626,7 +3626,7 @@ public:
     }
 };
 
-typedef EEHashTable<const JitGenericHandleCacheKey *, JitGenericHandleCacheTraits, FALSE> JitGenericHandleCache;
+/*typedef EEHashTable<const JitGenericHandleCacheKey *, JitGenericHandleCacheTraits, FALSE> JitGenericHandleCache;
 
 JitGenericHandleCache *g_pJitGenericHandleCache = NULL;    //cache of calls to JIT_GenericHandle
 CrstStatic g_pJitGenericHandleCacheCrst;
@@ -3655,7 +3655,7 @@ void AddToGenericHandleCache(JitGenericHandleCacheKey* pKey, HashDatum datum)
     {
     }
     EX_END_CATCH(SwallowAllExceptions)  // Swallow OOM
-}
+}*/
 
 /* static */
 void ClearJitGenericHandleCache(AppDomain *pDomain)
@@ -3672,7 +3672,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     // enough information to do that.  However everything in the cache can be found again by calling
     // loader functions, and the total number of entries in the cache is typically very small (indeed
     // normally the cache is not used at all - it is only used when the generic dictionaries overflow).
-    if (g_pJitGenericHandleCache)
+    /*if (g_pJitGenericHandleCache)
     {
         // It's not necessary to take the lock here because this function should only be called when EE is suspended,
         // the lock is only taken to fullfill the threadsafety check and to be consistent. If the lock becomes a problem, we
@@ -3699,7 +3699,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
                 keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
             }
         }
-    }
+    }*/
 }
 
 // Factored out most of the body of JIT_GenericHandle so it could be called easily from the CER reliability code to pre-populate the
@@ -3755,7 +3755,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
 
         if (pDeclaringMT != pMT)
         {
-            JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, NULL, signature);
+            /*JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, NULL, signature);
             HashDatum res;
             if (g_pJitGenericHandleCache->GetValue(&key,&res))
             {
@@ -3764,12 +3764,12 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
                 JitGenericHandleCacheKey denormKey((CORINFO_CLASS_HANDLE)pMT, NULL, signature);
                 AddToGenericHandleCache(&denormKey, res);
                 return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
-            }
+            }*/
         }
     }
 
     DictionaryEntry * pSlot;
-    CORINFO_GENERIC_HANDLE result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
+    CORINFO_GENERIC_HANDLE result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, /*TODO: pass pMT to update chain */ signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pSlot == NULL)
     {
@@ -3787,8 +3787,8 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
 
         // Add the normalized key (pDeclaringMT) here so that future lookups of any
         // inherited types are faster next time rather than just just for this specific pMT.
-        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
-        AddToGenericHandleCache(&key, (HashDatum)result);
+        /*JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
+        AddToGenericHandleCache(&key, (HashDatum)result);*/
     }
 
     return result;
@@ -3841,10 +3841,10 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethod, CORINFO_METHOD_HANDLE  
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
-    JitGenericHandleCacheKey key(NULL, methodHnd, signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-        return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
+    // JitGenericHandleCacheKey key(NULL, methodHnd, signature);
+    // HashDatum res;
+    // if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
+    //     return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
@@ -3861,10 +3861,10 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINF
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
-    JitGenericHandleCacheKey key(NULL, methodHnd, pArgs->signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key, &res))
-        return (CORINFO_GENERIC_HANDLE)(DictionaryEntry)res;
+    // JitGenericHandleCacheKey key(NULL, methodHnd, pArgs->signature);
+    // HashDatum res;
+    // if (g_pJitGenericHandleCache->GetValueSpeculative(&key, &res))
+    //     return (CORINFO_GENERIC_HANDLE)(DictionaryEntry)res;
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
@@ -3885,10 +3885,10 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_H
 
     g_IBCLogger.LogMethodDescAccess(GetMethod(methodHnd));
 
-    JitGenericHandleCacheKey key(NULL, methodHnd, signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-        return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
+    // JitGenericHandleCacheKey key(NULL, methodHnd, signature);
+    // HashDatum res;
+    // if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
+    //     return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
@@ -3907,10 +3907,10 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE cla
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
-    JitGenericHandleCacheKey key(classHnd, NULL, signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-        return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
+    // JitGenericHandleCacheKey key(classHnd, NULL, signature);
+    // HashDatum res;
+    // if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
+    //     return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
@@ -3927,10 +3927,10 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
-    JitGenericHandleCacheKey key(classHnd, NULL, pArgs->signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key, &res))
-        return (CORINFO_GENERIC_HANDLE)(DictionaryEntry)res;
+    // JitGenericHandleCacheKey key(classHnd, NULL, pArgs->signature);
+    // HashDatum res;
+    // if (g_pJitGenericHandleCache->GetValueSpeculative(&key, &res))
+    //     return (CORINFO_GENERIC_HANDLE)(DictionaryEntry)res;
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
@@ -3951,10 +3951,10 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
 
     g_IBCLogger.LogMethodTableAccess((MethodTable *)classHnd);
 
-    JitGenericHandleCacheKey key(classHnd, NULL, signature);
-    HashDatum res;
-    if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-        return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
+    // JitGenericHandleCacheKey key(classHnd, NULL, signature);
+    // HashDatum res;
+    // if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
+    //     return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
@@ -4013,8 +4013,8 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
         _ASSERTE(addr);
 
         // This is not a critical entry - no need to specify appdomain affinity
-        JitGenericHandleCacheKey key(objRef->GetMethodTable(), classHnd, methodHnd);
-        AddToGenericHandleCache(&key, (HashDatum)addr);
+        // JitGenericHandleCacheKey key(objRef->GetMethodTable(), classHnd, methodHnd);
+        // AddToGenericHandleCache(&key, (HashDatum)addr);
     }
 
     HELPER_METHOD_FRAME_END();
@@ -4127,10 +4127,10 @@ HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer, Object * objectUNSAFE,
 
     if (objRef != NULL)
     {
-        JitGenericHandleCacheKey key(objRef->GetMethodTable(), classHnd, methodHnd);
-        HashDatum res;
-        if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-            return (CORINFO_GENERIC_HANDLE)res;
+        // JitGenericHandleCacheKey key(objRef->GetMethodTable(), classHnd, methodHnd);
+        // HashDatum res;
+        // if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
+        //     return (CORINFO_GENERIC_HANDLE)res;
     }
 
     // Tailcall to the slow helper
@@ -4147,10 +4147,10 @@ HCIMPL2(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Dynamic, Object * objectUN
 
     if (objRef != NULL)
     {
-        JitGenericHandleCacheKey key(objRef->GetMethodTable(), pArgs->classHnd, pArgs->methodHnd);
-        HashDatum res;
-        if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
-            return (CORINFO_GENERIC_HANDLE)res;
+        // JitGenericHandleCacheKey key(objRef->GetMethodTable(), pArgs->classHnd, pArgs->methodHnd);
+        // HashDatum res;
+        // if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
+        //     return (CORINFO_GENERIC_HANDLE)res;
     }
 
     // Tailcall to the slow helper
@@ -5608,14 +5608,14 @@ void InitJITHelpers2()
 
     InitJitHelperLogging();
 
-    g_pJitGenericHandleCacheCrst.Init(CrstJitGenericHandleCache, CRST_UNSAFE_COOPGC);
+    /*g_pJitGenericHandleCacheCrst.Init(CrstJitGenericHandleCache, CRST_UNSAFE_COOPGC);
 
     // Allocate and initialize the table
     NewHolder <JitGenericHandleCache> tempGenericHandleCache (new JitGenericHandleCache());
     LockOwner sLock = {&g_pJitGenericHandleCacheCrst, IsOwnerOfCrst};
     if (!tempGenericHandleCache->Init(59, &sLock))
         COMPlusThrowOM();
-    g_pJitGenericHandleCache = tempGenericHandleCache.Extract();
+    g_pJitGenericHandleCache = tempGenericHandleCache.Extract();*/
 }
 
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
