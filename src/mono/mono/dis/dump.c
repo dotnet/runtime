@@ -137,15 +137,28 @@ dump_table_assemblyref (MonoImage *m)
 			 cols [MONO_ASSEMBLYREF_REV_NUMBER],
 			 mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
 		fprintf (output, "\tFlags=0x%08x\n", cols [MONO_ASSEMBLYREF_FLAGS]);
-		ptr = mono_metadata_blob_heap (m, cols [MONO_ASSEMBLYREF_PUBLIC_KEY]);
-		len = mono_metadata_decode_value (ptr, &ptr);
+		ptr = mono_metadata_blob_heap_null_ok (m, cols [MONO_ASSEMBLYREF_PUBLIC_KEY]);
+		if (ptr)
+			len = mono_metadata_decode_value (ptr, &ptr);
+		else
+			len = 0;
 		if (len > 0){
 			fprintf (output, "\tPublic Key:");
 			hex_dump (ptr, 0, len);
 			fprintf (output, "\n");
 		} else
 			fprintf (output, "\tZero sized public key\n");
-		
+		ptr = mono_metadata_blob_heap_null_ok (m, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
+		if (ptr)
+			len = mono_metadata_decode_value (ptr, &ptr);
+		else
+			len = 0;
+		if (len > 0) {
+			fprintf (output, "\tHash:");
+			hex_dump (ptr, 0, len);
+			fprintf (output, "\n");
+		} else
+			fprintf (output, "\tZero sized hash value\n");
 	}
 	fprintf (output, "\n");
 }

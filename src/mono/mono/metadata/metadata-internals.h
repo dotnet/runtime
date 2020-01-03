@@ -907,6 +907,8 @@ mono_image_load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo);
 
 const char*
 mono_metadata_string_heap_checked (MonoImage *meta, uint32_t table_index, MonoError *error);
+const char *
+mono_metadata_blob_heap_null_ok (MonoImage *meta, guint32 index);
 const char*
 mono_metadata_blob_heap_checked (MonoImage *meta, uint32_t table_index, MonoError *error);
 gboolean
