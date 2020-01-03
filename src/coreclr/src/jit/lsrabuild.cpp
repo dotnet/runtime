@@ -3269,8 +3269,8 @@ int LinearScan::BuildReturn(GenTree* tree)
                 case TYP_FLOAT:
                     useCandidates = RBM_FLOATRET;
                     break;
-#ifdef _TARGET_AMD64_
-                case TYP_SIMD16: // __m128 should be returned in XMM0
+#if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
+                case TYP_SIMD16: // TYP_SIMD16 should be returned in XMM0
 #endif
                 case TYP_DOUBLE:
                     // We ONLY want the valid double register in the RBM_DOUBLERET mask.

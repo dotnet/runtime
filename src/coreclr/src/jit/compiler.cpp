@@ -961,10 +961,10 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     // so we can skip calling getPrimitiveTypeForStruct when we
     // have a struct that is larger than that.
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
     if ((impNormStructType(clsHnd) == TYP_SIMD16))
     {
-        // __m128 should be returned in XMM0
+        // TYP_SIMD16 should be returned in XMM0
         howToReturnStruct = SPK_PrimitiveType;
         useType = TYP_SIMD16;
     }

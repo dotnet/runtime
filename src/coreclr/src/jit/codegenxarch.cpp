@@ -166,8 +166,12 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             // returned in implicit RetBuf. If we reached here, we should not have
             // a RetBuf and the return type should not be a struct.
             assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
-            // __m128 should be returned in XMM0
+#ifdef _TARGET_WINDOWS_
+            // TYP_SIMD16 should be returned in XMM0
             assert(!varTypeIsStruct(compiler->info.compRetNativeType) || compiler->info.compRetNativeType == TYP_SIMD16);
+#else
+            assert(!varTypeIsStruct(compiler->info.compRetNativeType));
+#endif
 #endif // _TARGET_AMD64_
 
             // For x86 Windows we can't make such assertions since we generate code for returning of
@@ -1165,12 +1169,13 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
     {
         return false;
     }
-#if defined(UNIX_AMD64_ABI) || defined(_TARGET_AMD64_) // // __m128 should be returned in XMM0
+#if defined(UNIX_AMD64_ABI) || (defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)) // UNIX_AMD64_ABI || _TARGET_AMD64_ && _TARGET_WINDOWS_
+    // TYP_SIMD16 should be returned in XMM0
     return varTypeIsStruct(treeNode);
-#else  // !UNIX_AMD64_ABI && !_TARGET_AMD64_
+#else  // !UNIX_AMD64_ABI && (!_TARGET_AMD64_ || !_TARGET_WINDOWS_)
     assert(!varTypeIsStruct(treeNode));
     return false;
-#endif // UNIX_AMD64_ABI || _TARGET_AMD64_
+#endif // UNIX_AMD64_ABI || _TARGET_AMD64_ && _TARGET_WINDOWS_
 }
 
 //------------------------------------------------------------------------
@@ -1347,8 +1352,9 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             }
         }
     }
-#elif defined(_TARGET_AMD64_)
-    genConsumeReg(op1); // __m128 should be returned in XMM0
+#elif defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
+    // TYP_SIMD16 should be returned in XMM0
+    genConsumeReg(op1); 
 #else
     unreached();
 #endif
