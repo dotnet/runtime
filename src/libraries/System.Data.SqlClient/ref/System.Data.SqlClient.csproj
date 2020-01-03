@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release</Configurations>
+    <TargetFrameworks>netcoreapp2.1;$(NetCoreAppCurrent);</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.SqlClient.cs" />
