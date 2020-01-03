@@ -470,6 +470,14 @@ INST2(fabd,    "fabd",   0, 0, IF_EN2G,   0x2EA0D400,  0x7EA0D400)
                                    //  fabd    Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 110101nnnnnddddd   2EA0 D400   Vd,Vn,Vm  (vector)
                                    //  fabd    Vd,Vn,Vm             DV_3D  011111101X1mmmmm 110101nnnnnddddd   7EA0 D400   Vd,Vn,Vm  (scalar)
 
+INST2(facge,   "facge",  0, 0, IF_EN2G,   0x2E20EC00,  0x7E20EC00)
+                                   //  facge   Vd,Vn,Vm             DV_3B  0Q1011100X1mmmmm 111011nnnnnddddd   2E20 EC00   Vd,Vn,Vm  (vector)
+                                   //  facge   Vd,Vn,Vm             DV_3D  011111100X1mmmmm 111011nnnnnddddd   7E20 EC00   Vd,Vn,Vm  (scalar)
+
+INST2(facgt,   "facgt",  0, 0, IF_EN2G,   0x2EA0EC00,  0x7EA0EC00)
+                                   //  facgt   Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 111011nnnnnddddd   2EA0 EC00   Vd,Vn,Vm  (vector)
+                                   //  facgt   Vd,Vn,Vm             DV_3D  011111101X1mmmmm 111011nnnnnddddd   7EA0 EC00   Vd,Vn,Vm  (scalar)
+
 //    enum     name     FP LD/ST            DV_2K        DV_1C
 INST2(fcmp,    "fcmp",   0, 0, IF_EN2I,   0x1E202000,  0x1E202008)
                                    //  fcmp    Vn,Vm                DV_2K  000111100X1mmmmm 001000nnnnn00000   1E20 2000   Vn Vm
@@ -625,9 +633,9 @@ INST2(cmhs,    "cmhs",   0, 0, IF_EN2O,   0x7EE03C00,  0x2E203C00)
                                    //  cmhs    Vd,Vn,Vm             DV_3E  01111110111mmmmm 001111nnnnnddddd   7EE0 3C00   Vd,Vn,Vm   (scalar)
                                    //  cmhs    Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 001111nnnnnddddd   2E20 3C00   Vd,Vn,Vm   (vector)
 
-INST2(ctst,    "ctst",   0, 0, IF_EN2O,   0x5EE08C00,  0x0E208C00)
-                                   //  ctst    Vd,Vn,Vm             DV_3E  01011110111mmmmm 100011nnnnnddddd   5EE0 8C00   Vd,Vn,Vm   (scalar)
-                                   //  ctst    Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 100011nnnnnddddd   0E20 8C00   Vd,Vn,Vm   (vector)
+INST2(cmtst,   "cmtst",  0, 0, IF_EN2O,   0x5EE08C00,  0x0E208C00)
+                                   //  cmtst   Vd,Vn,Vm             DV_3E  01011110111mmmmm 100011nnnnnddddd   5EE0 8C00   Vd,Vn,Vm   (scalar)
+                                   //  cmtst   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 100011nnnnnddddd   0E20 8C00   Vd,Vn,Vm   (vector)
 
 //    enum     name     FP LD/ST            DV_2G        DV_3B
 INST2(faddp,   "faddp",  0, 0, IF_EN2P,   0x7E30D800,  0x2E20D400)

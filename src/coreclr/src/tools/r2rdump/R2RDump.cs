@@ -9,7 +9,9 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -44,8 +46,6 @@ namespace R2RDump
         public bool SignatureBinary { get; set; }
         public bool InlineSignatureBinary { get; set; }
 
-        public Dictionary<string, EcmaMetadataReader> AssemblyCache = new Dictionary<string, EcmaMetadataReader>(StringComparer.OrdinalIgnoreCase);
-
         /// <summary>
         /// Probing extensions to use when looking up assemblies under reference paths.
         /// </summary>
@@ -58,13 +58,15 @@ namespace R2RDump
         /// <param name="simpleName">Simple name of the assembly to look up</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
-        public string FindAssembly(string simpleName, string parentFile)
+
+        public MetadataReader FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
+            string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
             foreach (FileInfo refAsm in Reference ?? Enumerable.Empty<FileInfo>())
             {
                 if (Path.GetFileNameWithoutExtension(refAsm.FullName).Equals(simpleName, StringComparison.OrdinalIgnoreCase))
                 {
-                    return refAsm.FullName;
+                    return Open(refAsm.FullName);
                 }
             }
 
@@ -78,12 +80,30 @@ namespace R2RDump
                     string probeFile = Path.Combine(refPath, simpleName + extension);
                     if (File.Exists(probeFile))
                     {
-                        return probeFile;
+                        return Open(probeFile);
                     }
                 }
             }
 
             return null;
+        }
+
+        private static unsafe MetadataReader Open(string filename)
+        {
+            byte[] Image = File.ReadAllBytes(filename);
+
+            fixed (byte* p = Image)
+            {
+                IntPtr ptr = (IntPtr)p;
+                PEReader peReader = new PEReader(p, Image.Length);
+
+                if (!peReader.HasMetadata)
+                {
+                    throw new Exception($"ECMA metadata not found in file '{filename}'");
+                }
+
+                return peReader.GetMetadataReader();
+            }
         }
     }
 

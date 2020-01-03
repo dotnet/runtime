@@ -9,7 +9,7 @@ namespace System.Text.Json
 {
     internal abstract class MemberAccessor
     {
-        public abstract JsonClassInfo.ConstructorDelegate CreateConstructor(Type classType);
+        public abstract JsonClassInfo.ConstructorDelegate? CreateConstructor(Type classType);
 
         public abstract Action<TProperty> CreateAddDelegate<TProperty>(MethodInfo addMethod, object target);
 
@@ -21,22 +21,12 @@ namespace System.Text.Json
         {
             MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
 
-            if (createRangeMethod == null)
-            {
-                return null;
-            }
-
             return createRangeMethod.MakeGenericMethod(elementType);
         }
 
         protected MethodInfo ImmutableDictionaryCreateRangeMethod(Type constructingType, Type elementType)
         {
             MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
-
-            if (createRangeMethod == null)
-            {
-                return null;
-            }
 
             return createRangeMethod.MakeGenericMethod(typeof(string), elementType);
         }
@@ -57,11 +47,11 @@ namespace System.Text.Json
             // a CreateRange method. `null` being returned here will cause a JsonException to be
             // thrown when the desired CreateRange delegate is about to be invoked.
             Debug.Fail("Could not create the appropriate CreateRange method.");
-            return null;
+            return null!;
         }
 
-        public abstract Func<object, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo);
+        public abstract Func<object?, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo);
 
-        public abstract Action<object, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo);
+        public abstract Action<object?, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo);
     }
 }

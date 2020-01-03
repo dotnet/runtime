@@ -46,7 +46,7 @@
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs">
-      <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

@@ -1351,7 +1351,6 @@ void Interval::setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l
 //
 void LinearScan::identifyCandidatesExceptionDataflow()
 {
-    VarSetOps::AssignNoCopy(compiler, exceptVars, VarSetOps::MakeEmpty(compiler));
 #ifdef DEBUG
     VARSET_TP finallyVars(VarSetOps::MakeEmpty(compiler));
 #endif
@@ -1563,6 +1562,7 @@ void LinearScan::identifyCandidates()
         return;
     }
 
+    VarSetOps::AssignNoCopy(compiler, exceptVars, VarSetOps::MakeEmpty(compiler));
     if (compiler->compHndBBtabCount > 0)
     {
         identifyCandidatesExceptionDataflow();
@@ -2223,16 +2223,33 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                                                BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated))
 {
     BasicBlock* predBlock = nullptr;
+    assert(*pPredBlockIsAllocated == false);
 
     // Blocks with exception flow on entry use no predecessor blocks, as all incoming vars
     // are on the stack.
     if (blockInfo[block->bbNum].hasEHBoundaryIn)
     {
+        JITDUMP("\n\nIncoming EH boundary; ");
         return nullptr;
     }
 
+    if (block == compiler->fgFirstBB)
+    {
+        return nullptr;
+    }
+
+    if (block->bbPreds == nullptr)
+    {
+        // We may have unreachable blocks, due to optimization.
+        // We don't want to set the predecessor as null in this case, since that will result in
+        // unnecessary DummyDefs, and possibly result in inconsistencies requiring resolution
+        // (since these unreachable blocks can have reachable successors).
+        assert((block != compiler->fgFirstBB) || (prevBlock != nullptr));
+        JITDUMP("\n\nNo predecessor; ");
+        return prevBlock;
+    }
+
 #ifdef DEBUG
-    assert(*pPredBlockIsAllocated == false);
     if (getLsraBlockBoundaryLocations() == LSRA_BLOCK_BOUNDARY_LAYOUT)
     {
         if (prevBlock != nullptr)
@@ -2242,7 +2259,6 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
     }
     else
 #endif // DEBUG
-        if (block != compiler->fgFirstBB)
     {
         predBlock = block->GetUniquePred(compiler);
         if (predBlock != nullptr)
@@ -2256,7 +2272,7 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                     // Special handling to improve matching on backedges.
                     BasicBlock* otherBlock = (block == predBlock->bbNext) ? predBlock->bbJumpDest : predBlock->bbNext;
                     noway_assert(otherBlock != nullptr);
-                    if (isBlockVisited(otherBlock))
+                    if (isBlockVisited(otherBlock) && !blockInfo[otherBlock->bbNum].hasEHBoundaryIn)
                     {
                         // This is the case when we have a conditional branch where one target has already
                         // been visited.  It would be best to use the same incoming regs as that block,
@@ -4766,16 +4782,19 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     if (predBBNum == 0)
     {
 #if DEBUG
-        // This should still be in its initialized empty state.
-        for (unsigned varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
+        if (blockInfo[currentBlock->bbNum].hasEHBoundaryIn || !allocationPassComplete)
         {
-            // In the case where we're extending lifetimes for stress, we are intentionally modeling variables
-            // as live when they really aren't to create extra register pressure & constraints.
-            // However, this means that non-EH-vars will be live into EH regions. We can and should ignore the
-            // locations of these. Note that they aren't reported to codegen anyway.
-            if (!getLsraExtendLifeTimes() || VarSetOps::IsMember(compiler, currentBlock->bbLiveIn, varIndex))
+            // This should still be in its initialized empty state.
+            for (unsigned varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
             {
-                assert(inVarToRegMap[varIndex] == REG_STK);
+                // In the case where we're extending lifetimes for stress, we are intentionally modeling variables
+                // as live when they really aren't to create extra register pressure & constraints.
+                // However, this means that non-EH-vars will be live into EH regions. We can and should ignore the
+                // locations of these. Note that they aren't reported to codegen anyway.
+                if (!getLsraExtendLifeTimes() || VarSetOps::IsMember(compiler, currentBlock->bbLiveIn, varIndex))
+                {
+                    assert(inVarToRegMap[varIndex] == REG_STK);
+                }
             }
         }
 #endif // DEBUG

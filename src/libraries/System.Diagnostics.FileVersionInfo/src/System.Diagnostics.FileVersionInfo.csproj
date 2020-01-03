@@ -40,10 +40,10 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Stat.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>
   </ItemGroup>

@@ -140,7 +140,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
       <Link>ProductionCode\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs">

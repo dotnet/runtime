@@ -1090,11 +1090,8 @@ exit /b 1
 
 :NoDIA
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-This is due to a bug in the Visual Studio installer. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
-at the install location of previous Visual Studio version. The workaround is to copy the DIA SDK folder from the Visual Studio install location ^
-of the previous version to "%VSINSTALLDIR%" and then build.
-REM DIA SDK not included in Express editions
-echo Visual Studio Express does not include the DIA SDK. ^
-You need Visual Studio 2017 or 2019 (Community is free).
-echo See: https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md#prerequisites
+Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
+Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
+Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
+may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1
