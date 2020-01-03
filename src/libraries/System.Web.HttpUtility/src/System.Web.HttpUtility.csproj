@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent);</TargetFrameworks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">

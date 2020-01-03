@@ -4,7 +4,7 @@
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED</DefineConstants>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILEAPIS</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent);</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

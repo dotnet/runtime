@@ -9,7 +9,7 @@
     <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);FEATURE_TCPKEEPALIVE</DefineConstants>
     <Nullable>annotations</Nullable>
     <DefineConstants Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netcoreapp2.1-Unix-Debug;netcoreapp2.1-Unix-Release;netcoreapp2.1-Windows_NT-Debug;netcoreapp2.1-Windows_NT-Release;netstandard2.0-Unix-Debug;netstandard2.0-Unix-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release;</Configurations>
+    <TargetFrameworks>netstandard2.0-Unix;netstandard2.0-Windows_NT;netcoreapp2.1;netcoreapp2.1-Unix;netcoreapp2.1-Windows_NT;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
