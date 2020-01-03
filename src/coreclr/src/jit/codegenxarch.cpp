@@ -5516,8 +5516,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
-#ifdef _TARGET_AMD64_
-        // __m128 should be returned in XMM0
+#if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
+        // TYP_SIMD16 should be returned in XMM0
         assert(call->gtType == TYP_SIMD16 || !varTypeIsStruct(call));
 #else
         assert(!varTypeIsStruct(call));
