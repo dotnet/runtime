@@ -51,8 +51,8 @@
     <Compile Include="System\Diagnostics\OverflowAction.cs" />
     <Compile Include="System\Diagnostics\SafeEventLogReadHandle.cs" />
     <Compile Include="System\Diagnostics\SafeEventLogWriteHandle.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>

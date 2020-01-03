@@ -164,8 +164,8 @@
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs">
       <Link>Common\System\Net\Sockets\SocketErrorPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -173,7 +173,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNameInfo.cs">
@@ -192,7 +192,7 @@
       <Link>Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs">
-      <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

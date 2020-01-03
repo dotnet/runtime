@@ -29,22 +29,22 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs">
       <Link>Common\Interop\Windows\Interop.GetVolumeInformation.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
       <Link>Common\Interop\Windows\Interop.GetLogicalDrives.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetDiskFreeSpaceEx.cs">
       <Link>Common\Interop\Windows\Interop.GetDiskFreeSpaceEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
-      <Link>Interop\Windows\Interop.MAX_PATH.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
+      <Link>Common\Interop\Windows\Interop.MAX_PATH.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetVolumeLabel.cs">
       <Link>Common\Interop\Windows\Interop.SetVolumeLabel.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
-      <Link>Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
+      <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs">
@@ -53,7 +53,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\DisableMediaInsertionPrompt.cs">
@@ -74,19 +74,19 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.IOErrors.cs">
-      <Link>Interop\Unix\Interop.IOErrors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs">
+      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.PathConf.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.MountPoints.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs">
       <Link>Common\Interop\Unix\Interop.MountPoints.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs">
