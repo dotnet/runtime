@@ -52,6 +52,7 @@
     <Compile Include="CultureInfo\CultureInfoReadOnly.cs" />
     <Compile Include="CultureInfo\CultureInfoTwoLetterISOLanguageName.cs" />
     <Compile Include="CultureInfo\CultureInfoCurrentCulture.cs" />
+    <Compile Include="CultureInfo\GetCultureInfo.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedDayNames.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthGenitiveNames.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthNames.cs" />
