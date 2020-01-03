@@ -82,10 +82,10 @@ namespace Microsoft.Win32
                 {
                     s_isUserInteractive = true;
 
-                    int lengthNeeded = 0;
+                    uint dummy = 0;
                     Interop.User32.USEROBJECTFLAGS flags = default;
 
-                    if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, ref flags, sizeof(Interop.User32.USEROBJECTFLAGS), ref lengthNeeded))
+                    if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, (void*)&flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
                     {
                         if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
                         {
