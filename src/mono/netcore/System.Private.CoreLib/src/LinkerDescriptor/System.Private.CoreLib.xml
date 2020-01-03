@@ -23,8 +23,12 @@
 		  <method name="MonoResolveUsingResolveSatelliteAssembly" />
 		  <!-- appdomain.c: mono_try_assembly_resolve_handle () -->
 		  <method name="OnAssemblyResolve"/>
+		  <!-- appdomain.c: mono_domain_fire_assembly_load_event () -->
+		  <method name="OnAssemblyLoad"/>
 		  <!-- native-library.c: netcore_resolve_with_load () -->
 		  <method name="MonoResolveUnmanagedDll"/>
+		  <!-- native-library.c: netcore_resolve_with_resolving_event () -->
+		  <method name="MonoResolveUnmanagedDllUsingEvent"/>
 		  <!-- appdomain.c: mono_domain_fire_assembly_load_event -->
 		  <method name="OnAssemblyLoad"/>
 		</type>
