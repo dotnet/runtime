@@ -7,6 +7,7 @@
   <PropertyGroup>
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
+    <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
   </PropertyGroup>
 
   <!-- Import configuration data model -->
@@ -64,7 +65,7 @@
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' and '$(BuildConfigurations)' == ''">package</BuildConfigurations>
   </PropertyGroup>
 
-  <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.props" />
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
 
   <!-- Define test projects and companions -->
   <PropertyGroup>
@@ -153,8 +154,8 @@
 
   <!-- set properties for each vertical -->
   <PropertyGroup>
-    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(_bc_TargetGroup)' == '$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
-    <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(_bc_TargetGroup)' == '$(NetFrameworkCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
+    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
+    <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' and ('$(BuildTargetFramework)' == '$(NetFrameworkCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
     <BinPlaceNETCoreAppPackage Condition="'$(BuildingNETCoreAppVertical)' == 'true'">true</BinPlaceNETCoreAppPackage>
   </PropertyGroup>
 
@@ -251,7 +252,7 @@
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildConfiguration)'))</RuntimePath>
     <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
-    <BuildConfigurationRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(_bc_TargetGroup)'))</BuildConfigurationRefPath>
+    <BuildConfigurationRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(BuildTargetFramework)'))</BuildConfigurationRefPath>
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
@@ -302,8 +303,8 @@
 
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
-    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
-    <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
+    <BinPlaceTestSharedFramework Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">true</BinPlaceTestSharedFramework>
+    <BinPlaceNETFXRuntime Condition="'$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">true</BinPlaceNETFXRuntime>
 
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 

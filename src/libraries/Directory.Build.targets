@@ -48,55 +48,54 @@
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
   </PropertyGroup>
 
-  <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
+  <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
     <!-- binplace to directories for the target vertical -->
-    <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
+    <BinPlaceTargetFrameworks Include="$(BuildTargetFramework)-$(OSGroup)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
     <!-- binplace to directories for packages -->
-    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)-$(_bc_OSGroup)">
+    <BinPlaceTargetFrameworks Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)-$(OSGroup)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
-      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(_bc_OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
+      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
       <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(ConfigurationGroup)</RefPath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' and '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
 
     <!-- Setup the shared framework directory for testing -->
-    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(_bc_OSGroup)">
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(OSGroup)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="$(NetFrameworkCurrent)-Windows_NT">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="$(NetFrameworkCurrent)-Windows_NT">
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
 
     <!-- binplace targeting packs which may be different from BuildConfiguration -->
-    <BinPlaceConfiguration Include="netstandard2.0">
+    <BinPlaceTargetFrameworks Include="netstandard2.0">
       <RefPath>$(NetStandard20RefPath)</RefPath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Include="netstandard2.1">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="netstandard2.1">
       <RefPath>$(NetStandard21RefPath)</RefPath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
     <!-- some libraries that produce packages will remain targeting netcoreapp2.0 -->
-    <BinPlaceConfiguration Condition="'$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp2.0">
+    <BinPlaceTargetFrameworks Condition="'$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp2.0">
       <RefPath>$(RefRootPath)netcoreapp2.0/</RefPath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
     <!-- for BuildAllConfigurations make sure all refpaths are created.  -->
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(TargetGroups)">
+    <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(TargetGroups)">
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
     <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or '$(_bc_TargetGroup)' != '$(NetCoreAppCurrent)')" Include="$(NetCoreAppCurrent)-$(_bc_OSGroup)">
+    <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or '$(BuildTargetFramework)' != '$(NetCoreAppCurrent)')" Include="$(NetCoreAppCurrent)-$(OSGroup)">
       <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
 
-    <BinPlaceConfiguration Include="@(AdditionalBinPlaceConfiguration)" />
+    <BinPlaceTargetFrameworks Include="@(AdditionalBinPlaceTargetFrameworks)" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
-  <Import Project="$(RepositoryEngineeringDir)depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
@@ -104,7 +103,7 @@
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
-  <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.targets" />
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.targets" />
   <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" />
 
   <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />

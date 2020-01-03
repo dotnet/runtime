@@ -2,13 +2,9 @@
   <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
-    <!-- We need configuration-specific assets files. -->
-    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
-    <ProjectAssetsFile>$(RestoreOutputPath)/project.assets.json</ProjectAssetsFile>
-    <MSBuildProjectExtensionsPath>$(IntermediateOutputPath)</MSBuildProjectExtensionsPath>
-    <SkipDeriveTargetFrameworks>true</SkipDeriveTargetFrameworks>
     <!-- let us control the output path -->
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(ConfigurationGroup)</OutputPath>
+    <AdditionalBuildTargetFrameworks>netstandard2.0-$(OSGroup)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
   
   <!-- don't bring in props/targets from packages, we're not consuming them we're
