@@ -228,18 +228,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 Image = File.ReadAllBytes(Filename);
 
-                fixed (byte* p = Image)
+                PEReader = new PEReader(ImmutableArray.Create<byte>(Image, 0, Image.Length));
+
+                if (!PEReader.HasMetadata)
                 {
-                    IntPtr ptr = (IntPtr)p;
-                    PEReader = new PEReader(p, Image.Length);
-
-                    if (!PEReader.HasMetadata)
-                    {
-                        throw new Exception($"ECMA metadata not found in file '{Filename}'");
-                    }
-
-                    MetadataReader = PEReader.GetMetadataReader();
+                    throw new Exception($"ECMA metadata not found in file '{Filename}'");
                 }
+
+                MetadataReader = PEReader.GetMetadataReader();
+
             }
             else
             {
