@@ -85,7 +85,7 @@ namespace Microsoft.Win32
                     uint dummy = 0;
                     Interop.User32.USEROBJECTFLAGS flags = default;
 
-                    if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, (void*)&flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
+                    if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, &flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
                     {
                         if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
                         {

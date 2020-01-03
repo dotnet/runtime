@@ -132,7 +132,7 @@ namespace System
                 {
                     Interop.User32.USEROBJECTFLAGS flags = default;
                     uint dummy = 0;
-                    if (Interop.User32.GetUserObjectInformationW(handle, Interop.User32.UOI_FLAGS, (void*)&flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
+                    if (Interop.User32.GetUserObjectInformationW(handle, Interop.User32.UOI_FLAGS, &flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
                     {
                         return ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0);
                     }
