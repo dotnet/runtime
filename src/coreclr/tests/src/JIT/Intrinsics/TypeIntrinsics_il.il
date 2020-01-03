@@ -17,25 +17,15 @@
     .entrypoint
     .maxstack  1
     // it's not currently possible to produce `ldtoken string&` in C#
-    ldtoken    [System.Runtime]System.String&
+    ldtoken    string&
     call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       instance bool [System.Runtime]System.Type::get_IsValueType()
     brtrue     FAILED
 
-    ldtoken    [System.Runtime]System.Int16&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsValueType()
-    brfalse.s  FAILED
-
-    ldtoken    [System.Runtime]System.Object&
+    ldtoken    object&
     call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
     call       instance bool [System.Runtime]System.Type::get_IsValueType()
     brtrue.s   FAILED
-
-    ldtoken    [System.Runtime]System.Decimal&
-    call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-    call       instance bool [System.Runtime]System.Type::get_IsValueType()
-    brfalse.s  FAILED
 
     ldc.i4.s   100
     ret
