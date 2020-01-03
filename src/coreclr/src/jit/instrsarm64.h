@@ -1221,6 +1221,18 @@ INST1(umaxv,   "umaxv",  0, 0, IF_DV_2M,  0x2E30A800)
 INST1(uminv,   "uminv",  0, 0, IF_DV_2M,  0x2E31A800)
                                    //  uminv   Vd,Vn                DV_2M  0Q101110XX110001 101010nnnnnddddd   2E31 A800   Vd,Vn      (vector)
 
+INST1(uzp1,    "uzp1",   0, 0, IF_DV_3A,  0x0E001800)
+                                   //  uzp1    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 000110nnnnnddddd   0E00 1800   Vd,Vn,Vm  (vector)
+
+INST1(uzp2,    "uzp2",   0, 0, IF_DV_3A,  0x0E005800)
+                                   //  upz2    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 010110nnnnnddddd   0E00 5800   Vd,Vn,Vm  (vector)
+
+INST1(zip1,    "zip1",   0, 0, IF_DV_3A,  0x0E003800)
+                                   //  zip1    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 011110nnnnnddddd   0E00 3800   Vd,Vn,Vm  (vector)
+
+INST1(zip2,    "zip2",   0, 0, IF_DV_3A,  0x0E007800)
+                                   //  zip2    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 001110nnnnnddddd   0E00 7800   Vd,Vn,Vm  (vector)
+
 INST1(xtn,     "xtn",    0, 0, IF_DV_2M,  0x0E212800)
                                    //  xtn     Vd,Vn                DV_2M  00101110XX110000 001110nnnnnddddd   0E21 2800   Vd,Vn      (vector)
 

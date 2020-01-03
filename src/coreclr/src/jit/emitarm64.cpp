@@ -5304,6 +5304,13 @@ void emitter::emitIns_R_R_R(
         case INS_uabd:
         case INS_umax:
         case INS_umin:
+            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
+            __fallthrough;
+
+        case INS_uzp1:
+        case INS_uzp2:
+        case INS_zip1:
+        case INS_zip2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -5313,7 +5320,6 @@ void emitter::emitIns_R_R_R(
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
-            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
 
             fmt = IF_DV_3A;
             break;
@@ -12892,6 +12898,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_umax:
                 case INS_smin:
                 case INS_smax:
+                case INS_uzp1:
+                case INS_uzp2:
+                case INS_zip1:
+                case INS_zip2:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
