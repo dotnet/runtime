@@ -44,7 +44,7 @@ namespace System.ServiceProcess.Tests
         {
             base.OnCustomCommand(command);
 
-            if (Environment.UserInteractive) // verify this is false
+            if (Environment.UserInteractive) // see ServiceBaseTests.TestOnExecuteCustomCommand()
                 command++;
 
             WriteStreamAsync(PipeMessageByteCode.OnCustomCommand, command).Wait();

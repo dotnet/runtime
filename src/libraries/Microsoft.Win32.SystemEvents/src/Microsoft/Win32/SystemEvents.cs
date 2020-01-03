@@ -77,9 +77,7 @@ namespace Microsoft.Win32
         {
             get
             {
-                IntPtr hwinsta = IntPtr.Zero;
-
-                hwinsta = Interop.User32.GetProcessWindowStation();
+                IntPtr hwinsta = Interop.User32.GetProcessWindowStation();
                 if (hwinsta != IntPtr.Zero && s_processWinStation != hwinsta)
                 {
                     s_isUserInteractive = true;
