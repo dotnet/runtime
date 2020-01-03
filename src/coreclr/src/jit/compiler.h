@@ -327,7 +327,7 @@ public:
         }
 
         unsigned ssaNum    = GetMinSsaNum() + m_count;
-        m_array[m_count++] = T(jitstd::forward<Args>(args)...);
+        m_array[m_count++] = T(std::forward<Args>(args)...);
 
         // Ensure that the first SSA number we allocate is SsaConfig::FIRST_SSA_NUM
         assert((ssaNum == SsaConfig::FIRST_SSA_NUM) || (m_count > 1));

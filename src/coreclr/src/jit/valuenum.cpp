@@ -634,7 +634,7 @@ float ValueNumStore::EvalOpSpecialized<float>(VNFunc vnf, float v0, float v1)
 template <typename T>
 T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
 {
-    typedef typename jitstd::make_unsigned<T>::type UT;
+    typedef typename std::make_unsigned<T>::type UT;
 
     assert((sizeof(T) == 4) || (sizeof(T) == 8));
 
@@ -853,7 +853,7 @@ int ValueNumStore::EvalComparison<float>(VNFunc vnf, float v0, float v1)
 template <typename T>
 int ValueNumStore::EvalComparison(VNFunc vnf, T v0, T v1)
 {
-    typedef typename jitstd::make_unsigned<T>::type UT;
+    typedef typename std::make_unsigned<T>::type UT;
 
     // Here we handle the compare ops that are the same for all integer types.
     if (vnf < VNF_Boundary)
@@ -1956,7 +1956,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         // Order arg0 arg1 by numerical VN value.
         if (arg0VN > arg1VN)
         {
-            jitstd::swap(arg0VN, arg1VN);
+            std::swap(arg0VN, arg1VN);
         }
     }
 
