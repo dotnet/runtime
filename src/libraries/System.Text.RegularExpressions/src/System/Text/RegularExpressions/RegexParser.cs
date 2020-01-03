@@ -562,6 +562,10 @@ namespace System.Text.RegularExpressions
                 {
                     charClass!.Negate = true;
                 }
+                if ((_options & RegexOptions.ECMAScript) != 0 && CharAt(_currentPos) == ']')
+                {
+                    firstChar = false;
+                }
             }
 
             for (; CharsRight() > 0; firstChar = false)

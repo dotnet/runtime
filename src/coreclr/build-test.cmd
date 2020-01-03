@@ -205,7 +205,7 @@ REM Set the environment for the native build
 
 REM Eval the output from set-cmake-path.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
-REM echo Using CMake from %CMakePath%
+echo %__MsgPrefix%Using CMake from !CMakePath!
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
 REM processor(s). It is used to set optimal level of CL parallelism during native build step
@@ -259,7 +259,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-"%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+"%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: native test build failed.

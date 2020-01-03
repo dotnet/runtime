@@ -48,11 +48,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AssemblyTests.netcoreapp.cs" />
-    <Compile Include="MemberInfoTests.netcoreapp.cs" />
-    <Compile Include="TypeInfoTests.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_0_0_0_0.csproj" />
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_0_0_0.csproj" />
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_1_1_0_0.csproj" />

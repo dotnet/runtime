@@ -140,6 +140,19 @@ namespace System.Text.RegularExpressions.Tests
                     new CaptureData("C789", 10, 4),
                 }
             };
+
+            yield return new object[]
+            {
+                "[^]", "every", RegexOptions.ECMAScript,
+                new CaptureData[]
+                {
+                    new CaptureData("e", 0, 1),
+                    new CaptureData("v", 1, 1),
+                    new CaptureData("e", 2, 1),
+                    new CaptureData("r", 3, 1),
+                    new CaptureData("y", 4, 1),
+                }
+            };
         }
 
         [Theory]

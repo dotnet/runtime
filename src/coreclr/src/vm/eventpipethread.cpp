@@ -102,12 +102,7 @@ void AcquireEventPipeThreadRef(EventPipeThread *pThread)
     pThread->AddRef();
 }
 
-#ifndef __GNUC__
-__declspec(thread)
-#else // !__GNUC__
-thread_local
-#endif // !__GNUC__
-EventPipeThreadHolder EventPipeThread::gCurrentEventPipeThreadHolder;
+thread_local EventPipeThreadHolder EventPipeThread::gCurrentEventPipeThreadHolder;
 
 EventPipeThread::EventPipeThread()
 {

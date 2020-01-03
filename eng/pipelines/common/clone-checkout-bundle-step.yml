@@ -1,6 +1,5 @@
 steps:
 - checkout: none
-  clean: true
 
 - download: current
   artifact: Checkout_bundle

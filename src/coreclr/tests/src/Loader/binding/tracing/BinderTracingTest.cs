@@ -30,8 +30,31 @@ namespace BinderTracingTests
     {
         public class CustomALC : AssemblyLoadContext
         {
-            public CustomALC(string name) : base(name)
-            { }
+            private string assemblyNameToLoad;
+            private string assemblyPathToLoad;
+            private bool throwOnLoad;
+
+            public CustomALC(string name, bool throwOnLoad = false) : base(name)
+            {
+                this.throwOnLoad = throwOnLoad;
+            }
+
+            public void EnableLoad(string assemblyName, string path)
+            {
+                assemblyNameToLoad = assemblyName;
+                assemblyPathToLoad = path;
+            }
+
+            protected override Assembly Load(AssemblyName assemblyName)
+            {
+                if (throwOnLoad)
+                    throw new Exception($"Exception on Load in '{ToString()}'");
+
+                if (!string.IsNullOrEmpty(assemblyNameToLoad) && assemblyName.Name == assemblyNameToLoad)
+                    return LoadFromAssemblyPath(assemblyPathToLoad);
+
+                return null;
+            }
         }
 
         private const string DefaultALC = "Default";
@@ -372,7 +395,7 @@ namespace BinderTracingTests
                     // Run specific test - first argument should be the test method name
                     MethodInfo method = typeof(BinderTracingTest)
                         .GetMethod(args[0], BindingFlags.Public | BindingFlags.Static);
-                    Assert.IsTrue(method != null && method.GetCustomAttribute<BinderTestAttribute>() != null && method.ReturnType == typeof(BindOperation), "Invalid test muthod specified");
+                    Assert.IsTrue(method != null && method.GetCustomAttribute<BinderTestAttribute>() != null && method.ReturnType == typeof(BindOperation), "Invalid test method specified");
                     success = RunSingleTest(method);
                 }
             }
@@ -411,7 +434,7 @@ namespace BinderTracingTests
                 if (!string.IsNullOrEmpty(attribute.TestSetup))
                 {
                     MethodInfo setupMethod = method.DeclaringType
-                        .GetMethod(attribute.TestSetup, BindingFlags.Public | BindingFlags.Static);
+                        .GetMethod(attribute.TestSetup, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                     Assert.IsTrue(setupMethod != null);
                     setupMethod.Invoke(null, new object[0]);
                 }
@@ -420,7 +443,7 @@ namespace BinderTracingTests
                 using (var listener = new BinderEventListener())
                 {
                     BindOperation expected = func();
-                    ValidateSingleBind(listener, expected.AssemblyName.Name, expected);
+                    ValidateSingleBind(listener, expected.AssemblyName, expected);
                 }
             }
             catch (Exception e)
@@ -457,7 +480,7 @@ namespace BinderTracingTests
             }
         }
 
-        private static void ValidateSingleBind(BinderEventListener listener, string assemblyName, BindOperation expected)
+        private static void ValidateSingleBind(BinderEventListener listener, AssemblyName assemblyName, BindOperation expected)
         {
             BindOperation[] binds = listener.WaitAndGetEventsForAssembly(assemblyName);
             Assert.IsTrue(binds.Length == 1, $"Bind event count for {assemblyName} - expected: 1, actual: {binds.Length}");

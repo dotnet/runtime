@@ -54,12 +54,12 @@ namespace System.Text.Json
 
         private static bool NeedsEscapingNoBoundsCheck(char value) => AllowList[value] == 0;
 
-        public static int NeedsEscaping(ReadOnlySpan<byte> value, JavaScriptEncoder encoder)
+        public static int NeedsEscaping(ReadOnlySpan<byte> value, JavaScriptEncoder? encoder)
         {
             return (encoder ?? JavaScriptEncoder.Default).FindFirstCharacterToEncodeUtf8(value);
         }
 
-        public static unsafe int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder encoder)
+        public static unsafe int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
         {
             // Some implementations of JavaScriptEncoder.FindFirstCharacterToEncode may not accept
             // null pointers and guard against that. Hence, check up-front to return -1.
@@ -100,7 +100,7 @@ namespace System.Text.Json
             written += encoderBytesWritten;
         }
 
-        public static void EscapeString(ReadOnlySpan<byte> value, Span<byte> destination, int indexOfFirstByteToEscape, JavaScriptEncoder encoder, out int written)
+        public static void EscapeString(ReadOnlySpan<byte> value, Span<byte> destination, int indexOfFirstByteToEscape, JavaScriptEncoder? encoder, out int written)
         {
             Debug.Assert(indexOfFirstByteToEscape >= 0 && indexOfFirstByteToEscape < value.Length);
 
@@ -211,7 +211,7 @@ namespace System.Text.Json
             written += encoderCharsWritten;
         }
 
-        public static void EscapeString(ReadOnlySpan<char> value, Span<char> destination, int indexOfFirstByteToEscape, JavaScriptEncoder encoder, out int written)
+        public static void EscapeString(ReadOnlySpan<char> value, Span<char> destination, int indexOfFirstByteToEscape, JavaScriptEncoder? encoder, out int written)
         {
             Debug.Assert(indexOfFirstByteToEscape >= 0 && indexOfFirstByteToEscape < value.Length);
 

@@ -5448,18 +5448,23 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         GenTree* arrRef2 = nullptr; // The second copy will be used in array address expression
         GenTree* index2  = nullptr;
 
-        // If the arrRef expression involves an assignment, a call or reads from global memory,
-        // then we *must* allocate a temporary in which to "localize" those values,
-        // to ensure that the same values are used in the bounds check and the actual
-        // dereference.
-        // Also we allocate the temporary when the arrRef is sufficiently complex/expensive.
-        // Note that if 'arrRef' is a GT_FIELD, it has not yet been morphed so its true
-        // complexity is not exposed. (Without that condition there are cases of local struct
-        // fields that were previously, needlessly, marked as GTF_GLOB_REF, and when that was
-        // fixed, there were some regressions that were mostly ameliorated by adding this condition.)
+        // If the arrRef or index expressions involves an assignment, a call or reads from global memory,
+        // then we *must* allocate a temporary in which to "localize" those values, to ensure that the
+        // same values are used in the bounds check and the actual dereference.
+        // Also we allocate the temporary when the expresion is sufficiently complex/expensive.
         //
+        // Note that if the expression is a GT_FIELD, it has not yet been morphed so its true complexity is
+        // not exposed. Without that condition there are cases of local struct fields that were previously,
+        // needlessly, marked as GTF_GLOB_REF, and when that was fixed, there were some regressions that
+        // were mostly ameliorated by adding this condition.
+        //
+        // Likewise, allocate a temporary if the expression is a GT_LCL_FLD node. These used to be created
+        // after fgMorphArrayIndex from GT_FIELD trees so this preserves the existing behavior. This is
+        // perhaps a decision that should be left to CSE but FX diffs show that it is slightly better to
+        // do this here.
+
         if ((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) ||
-            gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY) || (arrRef->OperGet() == GT_FIELD))
+            gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY) || arrRef->OperIs(GT_FIELD, GT_LCL_FLD))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             arrRefDefn            = gtNewTempAssign(arrRefTmpNum, arrRef);
@@ -5472,16 +5477,10 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             noway_assert(arrRef2 != nullptr);
         }
 
-        // If the index expression involves an assignment, a call or reads from global memory,
-        // we *must* allocate a temporary in which to "localize" those values,
-        // to ensure that the same values are used in the bounds check and the actual
-        // dereference.
-        // Also we allocate the temporary when the index is sufficiently complex/expensive.
-        //
         if ((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || gtComplexityExceeds(&index, MAX_ARR_COMPLEXITY) ||
-            (arrRef->OperGet() == GT_FIELD))
+            index->OperIs(GT_FIELD, GT_LCL_FLD))
         {
-            unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
+            unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
             indexDefn            = gtNewTempAssign(indexTmpNum, index);
             index                = gtNewLclvNode(indexTmpNum, index->TypeGet());
             index2               = gtNewLclvNode(indexTmpNum, index->TypeGet());
@@ -5759,7 +5758,7 @@ GenTree* Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType,
         // Create a node representing the local pointing to the base of the args
         GenTree* ptrArg =
             gtNewOperNode(GT_SUB, TYP_I_IMPL, gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL),
-                          gtNewIconNode(varDsc->lvStkOffs - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES +
+                          gtNewIconNode(varDsc->lvStkOffs - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES -
                                         lclOffs));
 
         // Access the argument through the local
@@ -8551,9 +8550,14 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         const bool forceRemorph = false;
         return fgMorphLocalVar(tree, forceRemorph);
     }
-#ifdef _TARGET_X86_
     else if (tree->gtOper == GT_LCL_FLD)
     {
+        if (lvaGetDesc(tree->AsLclFld())->lvAddrExposed)
+        {
+            tree->gtFlags |= GTF_GLOB_REF;
+        }
+
+#ifdef _TARGET_X86_
         if (info.compIsVarArgs)
         {
             GenTree* newTree = fgMorphStackArgForVarArgs(tree->AsLclFld()->GetLclNum(), tree->TypeGet(),
@@ -8567,8 +8571,8 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
                 return newTree;
             }
         }
-    }
 #endif // _TARGET_X86_
+    }
     else if (tree->gtOper == GT_FTN_ADDR)
     {
         CORINFO_CONST_LOOKUP addrInfo;
@@ -17655,7 +17659,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         }
 
         //------------------------------------------------------------------------
-        // Location: Produce an address value from a GT_LCL_VAR_ADDR node.
+        // Address: Produce an address value from a GT_LCL_VAR_ADDR node.
         //
         // Arguments:
         //    lclVar - a GT_LCL_VAR_ADDR node that defines the address
@@ -18247,6 +18251,10 @@ private:
             {
                 m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField ? varDsc->lvParentLcl : val.LclNum());
             }
+            else
+            {
+                MorphLocalIndir(val, user);
+            }
         }
 
         INDEBUG(val.Consume();)
@@ -18366,6 +18374,187 @@ private:
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
         addr->gtFlags = 0;
+
+        INDEBUG(m_stmtModified = true;)
+    }
+
+    //------------------------------------------------------------------------
+    // MorphLocalIndir: Change a tree that represents an indirect access to a struct
+    //    variable to a single LCL_VAR or LCL_FLD node.
+    //
+    // Arguments:
+    //    val - a value that represents the local indirection
+    //    user - the indirection's user node
+    //
+    void MorphLocalIndir(const Value& val, GenTree* user)
+    {
+        assert(val.IsLocation());
+
+        GenTree* indir = val.Node();
+        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD));
+
+        if (val.Offset() > UINT16_MAX)
+        {
+            // TODO-ADDR: We can't use LCL_FLD because the offset is too large but we should
+            // transform the tree into IND(ADD(LCL_VAR_ADDR, offset)) instead of leaving this
+            // this to fgMorphField.
+            return;
+        }
+
+        if (indir->OperIs(GT_FIELD) ? indir->AsField()->IsVolatile() : indir->AsIndir()->IsVolatile())
+        {
+            // TODO-ADDR: We shouldn't remove the indir because it's volatile but we should
+            // transform the tree into IND(LCL_VAR|FLD_ADDR) instead of leaving this to
+            // fgMorphField.
+            return;
+        }
+
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
+
+        if (varDsc->TypeGet() != TYP_STRUCT)
+        {
+            // TODO-ADDR: Skip integral/floating point variables for now, they're more
+            // complicated to transform. We can always turn an indirect access of such
+            // a variable into a LCL_FLD but that blocks enregistration so we need to
+            // detect those case where we can use LCL_VAR instead, perhaps in conjuction
+            // with CAST and/or BITCAST.
+            // Also skip SIMD variables for now, fgMorphFieldAssignToSIMDIntrinsicSet and
+            // others need to be updated to recognize LCL_FLDs.
+            return;
+        }
+
+        if (varDsc->lvPromoted || varDsc->lvIsStructField || m_compiler->lvaIsImplicitByRefLocal(val.LclNum()))
+        {
+            // TODO-ADDR: For now we ignore promoted and "implict by ref" variables,
+            // they require additional changes in subsequent phases
+            // (e.g. fgMorphImplicitByRefArgs does not handle LCL_FLD nodes).
+            return;
+        }
+
+        ClassLayout*  structLayout = nullptr;
+        FieldSeqNode* fieldSeq     = val.FieldSeq();
+
+        if ((fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
+        {
+            // TODO-ADDR: ObjectAllocator produces FIELD nodes with FirstElemPseudoField as field
+            // handle so we cannot use FieldSeqNode::GetFieldHandle() because it asserts on such
+            // handles. ObjectAllocator should be changed to create LCL_FLD nodes directly.
+            assert(!indir->OperIs(GT_FIELD) || (indir->AsField()->gtFldHnd == fieldSeq->GetTail()->m_fieldHnd));
+        }
+        else
+        {
+            // Normalize fieldSeq to null so we don't need to keep checking for both null and NotAField.
+            fieldSeq = nullptr;
+        }
+
+        if (varTypeIsSIMD(indir->TypeGet()))
+        {
+            // TODO-ADDR: Skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
+            // but there are exceptions - fgMorphFieldAssignToSIMDIntrinsicSet for example.
+            // And more importantly, SIMD call args have to be wrapped in OBJ nodes currently.
+            return;
+        }
+
+        if (indir->TypeGet() != TYP_STRUCT)
+        {
+            if ((fieldSeq != nullptr) && !indir->OperIs(GT_FIELD))
+            {
+                // If we have an indirection node and a field sequence then they should have the same type.
+                // Otherwise it's best to forget the field sequence since the resulting LCL_FLD
+                // doesn't match a real struct field. Value numbering protects itself from such
+                // mismatches but there doesn't seem to be any good reason to generate a LCL_FLD
+                // with a mismatched field sequence only to have to ignore it later.
+
+                if (indir->TypeGet() !=
+                    JITtype2varType(m_compiler->info.compCompHnd->getFieldType(fieldSeq->GetTail()->GetFieldHandle())))
+                {
+                    fieldSeq = nullptr;
+                }
+            }
+        }
+        else
+        {
+            if (indir->OperIs(GT_IND))
+            {
+                // Skip TYP_STRUCT IND nodes, it's not clear what we can do with them.
+                // Normally these should appear only as sources of variable sized copy block
+                // operations (DYN_BLK) so it probably doesn't make much sense to try to
+                // convert these to local nodes.
+                return;
+            }
+
+            if ((user == nullptr) || !user->OperIs(GT_ASG))
+            {
+                // TODO-ADDR: Skip TYP_STRUCT indirs for now, unless they're used by an ASG.
+                // At least call args will require extra work because currently they must be
+                // wrapped in OBJ nodes so we can't replace those with local nodes.
+                return;
+            }
+
+            if (indir->OperIs(GT_FIELD))
+            {
+                CORINFO_CLASS_HANDLE fieldClassHandle;
+                CorInfoType          corType =
+                    m_compiler->info.compCompHnd->getFieldType(indir->AsField()->gtFldHnd, &fieldClassHandle);
+                assert(corType == CORINFO_TYPE_VALUECLASS);
+
+                structLayout = m_compiler->typGetObjLayout(fieldClassHandle);
+            }
+            else
+            {
+                structLayout = indir->AsBlk()->GetLayout();
+            }
+
+            // We're not going to produce a TYP_STRUCT LCL_FLD so we don't need the field sequence.
+            fieldSeq = nullptr;
+        }
+
+        // We're only processing TYP_STRUCT variables now so the layout should never be null,
+        // otherwise the below layout equality check would be insufficient.
+        assert(varDsc->GetLayout() != nullptr);
+
+        if ((val.Offset() == 0) && (structLayout == varDsc->GetLayout()))
+        {
+            indir->ChangeOper(GT_LCL_VAR);
+            indir->AsLclVar()->SetLclNum(val.LclNum());
+        }
+        else if (!varTypeIsStruct(indir->TypeGet()))
+        {
+            indir->ChangeOper(GT_LCL_FLD);
+            indir->AsLclFld()->SetLclNum(val.LclNum());
+            indir->AsLclFld()->SetLclOffs(val.Offset());
+            indir->AsLclFld()->SetFieldSeq(fieldSeq == nullptr ? FieldSeqStore::NotAField() : fieldSeq);
+
+            // Promoted struct vars aren't currently handled here so the created LCL_FLD can't be
+            // later transformed into a LCL_VAR and the variable cannot be enregistered.
+            m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(Compiler::DNER_LocalField));
+        }
+        else
+        {
+            // TODO-ADDR: Add TYP_STRUCT support to LCL_FLD.
+            return;
+        }
+
+        unsigned flags = 0;
+
+        if ((user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
+        {
+            flags |= GTF_VAR_DEF | GTF_DONT_CSE;
+
+            if (indir->OperIs(GT_LCL_FLD))
+            {
+                // Currently we don't generate TYP_STRUCT LCL_FLDs so we do not need to
+                // bother to find out the size of the LHS for "partial definition" purposes.
+                assert(!varTypeIsStruct(indir->TypeGet()));
+
+                if (genTypeSize(indir->TypeGet()) < m_compiler->lvaLclExactSize(val.LclNum()))
+                {
+                    flags |= GTF_VAR_USEASG;
+                }
+            }
+        }
+
+        indir->gtFlags = flags;
 
         INDEBUG(m_stmtModified = true;)
     }
@@ -18606,7 +18795,6 @@ void Compiler::fgMarkAddressExposedLocals()
 
 bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt)
 {
-
     GenTree* tree = stmt->GetRootNode();
     assert(tree->OperGet() == GT_ASG);
 
@@ -18677,31 +18865,44 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
         fgRemoveStmt(block, stmt->GetNextStmt());
     }
 
-    GenTree* copyBlkDst = createAddressNodeForSIMDInit(originalLHS, simdSize);
-    if (simdStructNode->OperIsLocal())
-    {
-        setLclRelatedToSIMDIntrinsic(simdStructNode);
-    }
-    GenTree* copyBlkAddr = copyBlkDst;
-    if (copyBlkAddr->gtOper == GT_LEA)
-    {
-        copyBlkAddr = copyBlkAddr->AsAddrMode()->Base();
-    }
-    GenTreeLclVarCommon* localDst = nullptr;
-    if (copyBlkAddr->IsLocalAddrExpr(this, &localDst, nullptr))
-    {
-        setLclRelatedToSIMDIntrinsic(localDst);
-    }
+    GenTree* dstNode;
 
-    if (simdStructNode->TypeGet() == TYP_BYREF)
+    if (originalLHS->OperIs(GT_LCL_FLD))
     {
-        assert(simdStructNode->OperIsLocal());
-        assert(lvaIsImplicitByRefLocal(simdStructNode->AsLclVarCommon()->GetLclNum()));
-        simdStructNode = gtNewIndir(simdType, simdStructNode);
+        dstNode         = originalLHS;
+        dstNode->gtType = simdType;
+        dstNode->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
     }
     else
     {
-        assert(varTypeIsSIMD(simdStructNode));
+        GenTree* copyBlkDst = createAddressNodeForSIMDInit(originalLHS, simdSize);
+        if (simdStructNode->OperIsLocal())
+        {
+            setLclRelatedToSIMDIntrinsic(simdStructNode);
+        }
+        GenTree* copyBlkAddr = copyBlkDst;
+        if (copyBlkAddr->gtOper == GT_LEA)
+        {
+            copyBlkAddr = copyBlkAddr->AsAddrMode()->Base();
+        }
+        GenTreeLclVarCommon* localDst = nullptr;
+        if (copyBlkAddr->IsLocalAddrExpr(this, &localDst, nullptr))
+        {
+            setLclRelatedToSIMDIntrinsic(localDst);
+        }
+
+        if (simdStructNode->TypeGet() == TYP_BYREF)
+        {
+            assert(simdStructNode->OperIsLocal());
+            assert(lvaIsImplicitByRefLocal(simdStructNode->AsLclVarCommon()->GetLclNum()));
+            simdStructNode = gtNewIndir(simdType, simdStructNode);
+        }
+        else
+        {
+            assert(varTypeIsSIMD(simdStructNode));
+        }
+
+        dstNode = gtNewOperNode(GT_IND, simdType, copyBlkDst);
     }
 
 #ifdef DEBUG
@@ -18714,13 +18915,16 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     }
 #endif
 
-    GenTree* dstNode = gtNewOperNode(GT_IND, simdType, copyBlkDst);
-    tree             = gtNewAssignNode(dstNode, simdStructNode);
+    tree = gtNewAssignNode(dstNode, simdStructNode);
 
     stmt->SetRootNode(tree);
 
     // Since we generated a new address node which didn't exist before,
     // we should expose this address manually here.
+    // TODO-ADDR: Remove this when LocalAddressVisitor transforms all
+    // local field access into LCL_FLDs, at that point we would be
+    // combining 2 existing LCL_FLDs or 2 FIELDs that do not reference
+    // a local and thus cannot result in a new address exposed local.
     LocalAddressVisitor visitor(this);
     visitor.VisitStmt(stmt);
 

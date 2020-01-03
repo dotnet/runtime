@@ -1,40 +1,25 @@
 parameters:
   name: ''
-  skipTests: false
+
+  isOfficialBuild: false
 
 steps:
-# Upload build outputs as build artifacts only if internal and not PR, to save storage space.
-- ${{ if eq(variables.isOfficialBuild, true) }}:
-  - task: CopyFiles@2
-    displayName: Prepare job-specific Artifacts subdirectory
-    inputs:
-      SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
-      Contents: |
-        Shipping/**/*
-        NonShipping/**/*
-      TargetFolder: '$(Build.StagingDirectory)/Artifacts/${{ parameters.name }}'
-      CleanTargetFolder: true
-    condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+# Upload build artifacts (packages) to pipeline only if official, to save storage space.
+- ${{ if eq(parameters.isOfficialBuild, true) }}:
+  - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+    parameters:
+      name: ${{ parameters.name }}
 
-  - task: PublishBuildArtifacts@1
-    displayName: Publish Artifacts
-    inputs:
-      pathToPublish: '$(Build.StagingDirectory)/Artifacts'
-      artifactName: IntermediateUnsignedArtifacts
-      artifactType: container
-    condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
-
-- ${{ if eq(parameters.skipTests, false) }}:
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    inputs:
-      testResultsFormat: 'xUnit'
-      testResultsFiles: '*.xml'
-      searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
-      mergeTestResults: true
-      testRunTitle: Installer-${{ parameters.name }}-$(_BuildConfig)
-    continueOnError: true
-    condition: always()
+- task: PublishTestResults@2
+  displayName: Publish Test Results
+  inputs:
+    testResultsFormat: 'xUnit'
+    testResultsFiles: '*.xml'
+    searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
+    mergeTestResults: true
+    testRunTitle: Installer-${{ parameters.name }}-$(_BuildConfig)
+  continueOnError: true
+  condition: eq(variables.SkipTests, false)
 
 - task: CopyFiles@2
   displayName: Prepare BuildLogs staging directory

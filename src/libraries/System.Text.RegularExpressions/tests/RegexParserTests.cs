@@ -713,6 +713,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\d{2147483648}", RegexOptions.None, RegexParseError.CaptureGroupOutOfRange)]
         [InlineData("[a-z-[b][", RegexOptions.None, RegexParseError.UnterminatedBracket)]
         [InlineData("(?()|||||)", RegexOptions.None, RegexParseError.TooManyAlternates)]
+        [InlineData("[^]", RegexOptions.None, RegexParseError.UnterminatedBracket)]
         public void Parse(string pattern, RegexOptions options, object errorObj)
         {
             RegexParseError? error = (RegexParseError?)errorObj;

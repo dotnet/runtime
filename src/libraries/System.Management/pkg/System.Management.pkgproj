@@ -1,5 +1,5 @@
 ﻿<Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Management.csproj">
       <SupportedFramework>uap10.0.16299;netcoreapp2.0;net45;$(AllXamarinFrameworks)</SupportedFramework>
@@ -12,5 +12,5 @@
       <TargetPath>runtimes/win/lib/net45</TargetPath>
     </File>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

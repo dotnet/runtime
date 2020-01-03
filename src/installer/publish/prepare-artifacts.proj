@@ -1,6 +1,24 @@
 <Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
+  <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
+
+  <PropertyGroup>
+    <SuppressFinalPackageVersion>true</SuppressFinalPackageVersion>
+  </PropertyGroup>
+
+  <Target Name="CreateChecksums">
+    <ItemGroup>
+      <ArtifactsForGeneratingChecksums
+        Include="@(UploadToBlobStorageFile)"
+        DestinationPath="%(FullPath)$(ChecksumExtension)" />
+
+      <GeneratedChecksumFile Include="@(ArtifactsForGeneratingChecksums -> '%(DestinationPath)')" />
+    </ItemGroup>
+
+    <GenerateChecksums Items="@(ArtifactsForGeneratingChecksums)" />
+  </Target>
+
   <Target Name="SignPackages"
           Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'">
     <Message Importance="High" Text="Signing final packages" />
@@ -13,12 +31,17 @@
   <Target Name="UploadPreparedArtifactsToPipeline"
           DependsOnTargets="
             FindDownloadedArtifacts;
-            SignPackages">
+            SignPackages;
+            CreateChecksums">
     <PropertyGroup>
       <PreparedFileUploadDir>$(ArtifactsObjDir)PreparedFileUpload\</PreparedFileUploadDir>
     </PropertyGroup>
 
-    <Copy SourceFiles="@(UploadToBlobStorageFile)" DestinationFolder="$(PreparedFileUploadDir)">
+    <ItemGroup>
+      <AllFilesToBlobStorage Include="@(UploadToBlobStorageFile);@(UploadToBlobStorageFile)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(AllFilesToBlobStorage)" DestinationFolder="$(PreparedFileUploadDir)">
       <Output TaskParameter="CopiedFiles" ItemName="CopiedUploadToBlobStorageFile" />
     </Copy>
 
@@ -96,9 +119,13 @@
 
       <ItemsToPush
         Include="@(UploadToBlobStorageFile)"
-        Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)" />
-      <ItemsToPush>
-        <RelativeBlobPath>assets/core-setup/$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+        Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)">
+        <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+      </ItemsToPush>
+
+      <ItemsToPush Include="@(GeneratedChecksumFile)">
+        <RelativeBlobPath>$(InstallersRelativePath)%(Filename)%(Extension)</RelativeBlobPath>
+        <Category>Checksum</Category>
       </ItemsToPush>
     </ItemGroup>
 

@@ -94,7 +94,6 @@
 
 //-----------------------------------------------------------------------------------------------------------
 
-#include "strongname.h"
 #include "stdmacros.h"
 
 #define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:I64(0xCCCCCCCCCCCCCCCC)))

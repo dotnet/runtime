@@ -11,7 +11,7 @@ set __ThisScriptFull="%~f0"
 set __ThisScriptDir="%~dp0"
 
 call "%__ThisScriptDir%"\setup_vs_tools.cmd
-if NOT '%ERRORLEVEL%' == '0' exit /b 1
+if NOT '%ERRORLEVEL%' == '0' goto ExitWithError
 
 if defined VS160COMNTOOLS (
     set "__VSToolsRoot=%VS160COMNTOOLS%"
@@ -347,7 +347,7 @@ if %__BuildNative%==0 if %__BuildNativeCoreLib%==0 if %__BuildTests%==0 set __CM
 if %__CMakeNeeded%==1 (
     REM Eval the output from set-cmake-path.ps1
     for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
-    REM echo Using CMake from %CMakePath%
+    echo %__MsgPrefix%Using CMake from !CMakePath!
 )
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
@@ -370,13 +370,14 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     %__RepoRootDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
     /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
-    exit /b !errorlevel!
+    set __exitCode=!errorlevel!
+    goto ExitWithCode
 )
 
 REM =========================================================================================
@@ -388,12 +389,13 @@ REM ============================================================================
 set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
         %OptDataProjectFilePath% /t:Restore^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to restore the optimization data package.
-        exit /b !errorlevel!
+        set __exitCode=!errorlevel!
+        goto ExitWithCode
     )
 )
 
@@ -401,31 +403,33 @@ set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
 set IbcDataPackagePathOutputFile="%__IntermediatesDir%\ibcoptdatapath.txt"
 
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%Failed to get PGO data package path.
-    exit /b !errorlevel!
+    set __exitCode=!errorlevel!
+    goto ExitWithCode
 )
 if not exist "!PgoDataPackagePathOutputFile!" (
     echo %__ErrMsgPrefix%Failed to get PGO data package path.
-    exit /b 1
+    goto ExitWithError
 )
 
 set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     "%OptDataProjectFilePath%" /t:DumpIbcDataPackagePath /nologo %__CommonMSBuildArgs% /p:IbcDataPackagePathOutputFile="!IbcDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%Failed to get IBC data package path.
-    exit /b !errorlevel!
+    set __exitCode=!errorlevel!
+    goto ExitWithCode
 )
 
 if not exist "!IbcDataPackagePathOutputFile!" (
     echo %__ErrMsgPrefix%Failed to get IBC data package path.
-    exit /b 1
+    goto ExitWithError
 )
 
 set /p __IbcOptDataPath=<"!IbcDataPackagePathOutputFile!"
@@ -447,12 +451,12 @@ set /p PYTHON=<%TEMP%\pythonlocation.txt
 
 if NOT DEFINED PYTHON (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Could not find a python installation
-    exit /b 1
+    goto ExitWithError
 )
 
 if %__BuildCoreLib% EQU 1 (
     echo %__MsgPrefix%Laying out dynamically generated EventSource classes
-    "!PYTHON!" -B -Wall %__SourceDir%\scripts\genRuntimeEventSources.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate %__IntermediatesEventingDir% || exit /b 1
+    "!PYTHON!" -B -Wall %__SourceDir%\scripts\genRuntimeEventSources.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate %__IntermediatesEventingDir% || goto ExitWithError
 )
 
 REM =========================================================================================
@@ -485,14 +489,14 @@ if %__BuildCrossArchNative% EQU 1 (
     
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
-        exit /b 1
+        goto ExitWithError
     )
     @if defined _echo @echo on
 
 :SkipConfigureCrossBuild
     if not exist "%__CrossCompIntermediatesDir%\CMakeCache.txt" (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated native component build project!
-        exit /b 1
+        goto ExitWithError
     )
 
     if defined __ConfigureOnly goto SkipCrossCompBuild
@@ -507,11 +511,12 @@ if %__BuildCrossArchNative% EQU 1 (
     set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed.
-        exit /b !errorlevel!
+        set __exitCode=!errorlevel!
+        goto ExitWithCode
     )
 
 :SkipCrossCompBuild
@@ -554,7 +559,7 @@ if %__BuildNative% EQU 1 (
 
     if not defined VSINSTALLDIR (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: VSINSTALLDIR variable not defined.
-        exit /b 1
+        goto ExitWithError
     )
     if not exist "!VSINSTALLDIR!DIA SDK" goto NoDIA
 
@@ -566,7 +571,7 @@ if %__BuildNative% EQU 1 (
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
-        exit /b 1
+        goto ExitWithError
     )
     
     @if defined _echo @echo on
@@ -574,7 +579,7 @@ if %__BuildNative% EQU 1 (
 :SkipConfigure
     if not exist "%__IntermediatesDir%\CMakeCache.txt" (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated native component build project!
-        exit /b 1
+        goto ExitWithError
     )
 
     if defined __ConfigureOnly goto SkipNativeBuild
@@ -589,11 +594,12 @@ if %__BuildNative% EQU 1 (
     set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: native component build failed.
-        exit /b !errorlevel!
+        set __exitCode=!errorlevel!
+        goto ExitWithCode
     )
 
 :SkipNativeBuild
@@ -631,7 +637,7 @@ if %__BuildCoreLib% EQU 1 (
         set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
         set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj /t:Restore^
             /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true^
             !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
@@ -640,10 +646,11 @@ if %__BuildCoreLib% EQU 1 (
             echo     !__BuildLog!
             echo     !__BuildWrn!
             echo     !__BuildErr!
-            exit /b !errorlevel!
+            set __exitCode=!errorlevel!
+            goto ExitWithCode
         )
 
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj /nodeReuse:false /p:PortableBuild=true /maxcpucount^
             '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
@@ -651,39 +658,42 @@ if %__BuildCoreLib% EQU 1 (
             echo     !__BuildLog!
             echo     !__BuildWrn!
             echo     !__BuildErr!
-            exit /b !errorlevel!
+            set __exitCode=!errorlevel!
+            goto ExitWithCode
         )
 
         if "%__BuildManagedTools%" == "1" (
             echo %__MsgPrefix%Publishing crossgen2...
-            call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /p:BuildArch=%__BuildArch%
-            
+            call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /nologo /p:BuildArch=%__BuildArch%
+
             if not !errorlevel! == 0 (
                 echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to build crossgen2.
                 echo     !__BuildLog!
                 echo     !__BuildWrn!
                 echo     !__BuildErr!
-                exit /b !errorlevel!
+                set __exitCode=!errorlevel!
+                goto ExitWithCode
             )
 
-            copy /Y "%__BinDir%\clrjit.dll" "%__BinDir%\crossgen2\clrjitilc.dll"
-            copy /Y "%__BinDir%\jitinterface.dll" "%__BinDir%\crossgen2\jitinterface.dll"
+            copy /Y "%__BinDir%\clrjit.dll" "%__BinDir%\crossgen2\clrjitilc.dll"  | find /i /v "file(s) copied"
+            copy /Y "%__BinDir%\jitinterface.dll" "%__BinDir%\crossgen2\jitinterface.dll" | find /i /v "file(s) copied"
         )
     )
     if %__IbcOptimize% EQU 1 (
         echo %__MsgPrefix%Commencing IBCMerge of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
         set IbcMergeProjectFilePath=%__ProjectDir%\src\.nuget\optdata\ibcmerge.csproj
         set IbcMergePackagePathOutputFile="%__IntermediatesDir%\ibcmergepath.txt"
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackagePath /nologo %__CommonMSBuildArgs% /p:IbcMergePackagePathOutputFile="!IbcMergePackagePathOutputFile!"
 
         if not !errorlevel! == 0 (
             echo %__ErrMsgPrefix%Failed to determine IBC Merge path.
-            exit /b !errorlevel!
+            set __exitCode=!errorlevel!
+            goto ExitWithCode
         )
         if not exist "!IbcMergePackagePathOutputFile!" (
             echo %__ErrMsgPrefix%Failed to determine IBC Merge path.
-            exit /b 1
+            goto ExitWithError
         )
 
         set /p __IbcMergePath=<"!IbcMergePackagePathOutputFile!"
@@ -716,7 +726,7 @@ if %__BuildCoreLib% EQU 1 (
                     echo %__ErrMsgPrefix%%__MsgPrefix%Error: IbcMerge of System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
                     REM Put it in the same log, helpful for Jenkins
                     type %__CrossGenCoreLibLog%
-                    goto CrossgenFailure
+                    goto ExitWithError
                 )
 
                 REM Verify that the optimization data has been merged
@@ -727,7 +737,7 @@ if %__BuildCoreLib% EQU 1 (
                     echo %__ErrMsgPrefix%%__MsgPrefix%Error: IbcMerge of System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
                     REM Put it in the same log, helpful for Jenkins
                     type %__CrossGenCoreLibLog%
-                    goto CrossgenFailure
+                    goto ExitWithError
                 )
 
                 REM Save the module as *.pgo to match the convention expected
@@ -746,7 +756,7 @@ if %__BuildCoreLib% EQU 1 (
                     echo %__ErrMsgPrefix%%__MsgPrefix%Error: IbcMerge of System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
                     REM Put it in the same log, helpful for Jenkins
                     type %__CrossGenCoreLibLog%
-                    goto CrossgenFailure
+                    goto ExitWithError
                 )
 
                 REM Verify that the optimization data has been applied
@@ -757,18 +767,18 @@ if %__BuildCoreLib% EQU 1 (
                     echo %__ErrMsgPrefix%%__MsgPrefix%Error: IbcMerge of System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
                     REM Put it in the same log, helpful for Jenkins
                     type %__CrossGenCoreLibLog%
-                    goto CrossgenFailure
+                    goto ExitWithError
                 )
             ) else (
                 echo %__MsgPrefix%!TargetOptimizationDataFile! does not exist >> %__CrossGenCoreLibLog%
                 echo %__ErrMsgPrefix%%__MsgPrefix%Error: IbcMerge of System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
                 REM Put it in the same log, helpful for Jenkins
                 type %__CrossGenCoreLibLog%
-                goto CrossgenFailure
+                goto ExitWithError
             )
         ) else (
           echo Could not find IBCMerge at !IbcMergePath!. Have you restored src/.nuget/optdata/ibcmerge.csproj?
-          goto CrossgenFailure
+          goto ExitWithError
         )
     )
 
@@ -801,7 +811,7 @@ if %__BuildNativeCoreLib% EQU 1 (
         @if defined _echo @echo on
         if NOT !errorlevel! == 0 (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to load native tools environment for !__VCExecArch!
-            goto CrossgenFailure
+            goto ExitWithError
         )
 
         REM HACK: Workaround for [dotnet/coreclr#13970](https://github.com/dotnet/coreclr/issues/13970)
@@ -812,7 +822,7 @@ if %__BuildNativeCoreLib% EQU 1 (
         echo %__MsgPrefix%Copying "!__PgoRtPath!" into "%__BinDir%"
         copy /y "!__PgoRtPath!" "%__BinDir%" || (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: copy failed
-            goto CrossgenFailure
+            goto ExitWithError
         )
         REM End HACK
     )
@@ -830,7 +840,7 @@ if %__BuildNativeCoreLib% EQU 1 (
         set COMPlus_ContinueOnAssert=0
     )
 
-    set NEXTCMD="%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%\IL" /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
+    set NEXTCMD="%__CrossgenExe%" /nologo %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%\IL" /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
     echo %__MsgPrefix%!NEXTCMD!
     echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
     !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
@@ -838,10 +848,10 @@ if %__BuildNativeCoreLib% EQU 1 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
         REM Put it in the same log, helpful for Jenkins
         type %__CrossGenCoreLibLog%
-        goto CrossgenFailure
+        goto ExitWithError
     )
 
-    set NEXTCMD="%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
+    set NEXTCMD="%__CrossgenExe%" /nologo /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
     echo %__MsgPrefix%!NEXTCMD!
     echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
     !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
@@ -849,7 +859,7 @@ if %__BuildNativeCoreLib% EQU 1 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: CrossGen /CreatePdb System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
         REM Put it in the same log, helpful for Jenkins
         type %__CrossGenCoreLibLog%
-        goto CrossgenFailure
+        goto ExitWithError
     )
 )
 
@@ -874,13 +884,14 @@ if %__BuildPackages% EQU 1 (
     REM Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\build.ps1"^
         -r -b -projects %__SourceDir%\.nuget\packages.builds^
-        -verbosity minimal /nodeReuse:false /bl:!__BuildLog!^
+        -verbosity minimal /clp:nosummary /nodeReuse:false /bl:!__BuildLog!^
         /p:PortableBuild=true^
         /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: Nuget package generation failed. Refer to the build log file for details.
         echo     !__BuildLog!
-        exit /b !errorlevel!
+        set __exitCode=!errorlevel!
+        goto ExitWithCode
     )
 
     REM } Scope environment changes end
@@ -906,7 +917,7 @@ if %__BuildTests% EQU 1 (
 
     if not !errorlevel! == 0 (
         REM buildtest.cmd has already emitted an error message and mentioned the build log file to examine.
-        exit /b 1
+        goto ExitWithError
     )
 ) else if %__GenerateLayout% EQU 1 (
     echo %__MsgPrefix%Generating layout for %__BuildOS%.%__BuildArch%.%__BuildType%
@@ -917,7 +928,7 @@ if %__BuildTests% EQU 1 (
 
     if not !errorlevel! == 0 (
         REM runtest.cmd has already emitted an error message and mentioned the build log file to examine.
-        exit /b 1
+        goto ExitWithError
     )
 )
 
@@ -986,7 +997,7 @@ if %__AllBuildSuccess%==true (
     echo %__MsgPrefix%Builds failed:
     type %__BuildResultFile%
     del /f /q %__BuildResultFile%
-    exit /b 1
+    goto ExitWithError
 )
 
 REM This code is unreachable, but leaving it nonetheless, just in case things change.
@@ -1010,8 +1021,17 @@ REM === Helper routines
 REM ===
 REM =========================================================================================
 
-:CrossgenFailure
+
+REM =========================================================================================
+REM === These two routines are intended for the exit code to propagate to the parent process
+REM === Like MSBuild or Powershell. If we directly exit /b 1 from within a if statement in
+REM === any of the routines, the exit code is not propagated.
+REM =========================================================================================
+:ExitWithError
 exit /b 1
+
+:ExitWithCode
+exit /b !__exitCode!
 
 :Usage
 echo.

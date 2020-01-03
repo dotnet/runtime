@@ -4066,34 +4066,6 @@ inline void Compiler::EndPhase(Phases phase)
     fgDumpFlowGraph(phase);
 #endif // DUMP_FLOWGRAPHS
     previousCompletedPhase = phase;
-#ifdef DEBUG
-    if (dumpIR)
-    {
-        if ((*dumpIRPhase == L'*') || (wcscmp(dumpIRPhase, PhaseShortNames[phase]) == 0))
-        {
-            printf("\n");
-            printf("IR after %s (switch: %ls)\n", PhaseEnums[phase], PhaseShortNames[phase]);
-            printf("\n");
-
-            if (dumpIRLinear)
-            {
-                dFuncIR();
-            }
-            else if (dumpIRTrees)
-            {
-                dTrees();
-            }
-
-            // If we are just dumping a single method and we have a request to exit
-            // after dumping, do so now.
-
-            if (dumpIRExit && ((*dumpIRPhase != L'*') || (phase == PHASE_EMIT_GCEH)))
-            {
-                exit(0);
-            }
-        }
-    }
-#endif
 }
 
 /*****************************************************************************/

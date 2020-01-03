@@ -6,13 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.PortableExecutable;
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun.Amd64
 {
     public struct InterruptibleRange
     {
-        [XmlAttribute("Index")]
         public uint Index { get; set; }
         public uint StartOffset { get; set; }
         public uint StopOffset { get; set; }

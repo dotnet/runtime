@@ -347,7 +347,8 @@ namespace BinderTracingTests
         {
             Null,
             RequestedAssembly,
-            NameMismatch
+            NameMismatch,
+            Exception
         }
 
         private class Handlers : IDisposable
@@ -380,6 +381,9 @@ namespace BinderTracingTests
 
             private Assembly OnAssemblyLoadContextResolving(AssemblyLoadContext context, AssemblyName assemblyName)
             {
+                if (handlerReturn == HandlerReturn.Exception)
+                    throw new Exception("Exception in handler for AssemblyLoadContext.Resolving");
+
                 Assembly asm = ResolveAssembly(context, assemblyName);
                 var invocation = new HandlerInvocation()
                 {
@@ -399,6 +403,9 @@ namespace BinderTracingTests
 
             private Assembly OnAppDomainAssemblyResolve(object sender, ResolveEventArgs args)
             {
+                if (handlerReturn == HandlerReturn.Exception)
+                    throw new Exception("Exception in handler for AppDomain.AssemblyResolve");
+
                 var assemblyName = new AssemblyName(args.Name);
                 var customContext = new CustomALC(nameof(OnAppDomainAssemblyResolve));
                 Assembly asm = ResolveAssembly(customContext, assemblyName);

@@ -39,9 +39,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             return formatter.EmitHandleName(handle, namespaceQualified, owningTypeOverride, signaturePrefix);
         }
 
-        public static string FormatSignature(IAssemblyResolver assemblyResolver, EcmaMetadataReader ecmaReader, int imageOffset)
+        public static string FormatSignature(IAssemblyResolver assemblyResolver, R2RReader r2rReader, int imageOffset)
         {
-            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, ecmaReader, imageOffset);
+            SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, r2rReader, imageOffset);
             string result = decoder.ReadR2RSignature();
             return result;
         }
@@ -348,12 +348,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// ECMA reader is used to access the embedded MSIL metadata blob in the R2R file.
         /// </summary>
-        private readonly EcmaMetadataReader _ecmaReader;
+        private readonly MetadataReader _metadataReader;
 
         /// <summary>
         /// ECMA reader representing the top-level signature context.
         /// </summary>
-        private readonly EcmaMetadataReader _contextReader;
+        private readonly R2RReader _contextReader;
 
         /// <summary>
         /// Dump options are used to specify details of signature formatting.
@@ -379,28 +379,28 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Construct the signature decoder by storing the image byte array and offset within the array.
         /// </summary>
         /// <param name="options">Dump options and paths</param>
-        /// <param name="ecmaReader">EcmaMetadataReader object representing the PE file containing the ECMA metadata</param>
+        /// <param name="r2rReader">R2RReader object representing the PE file containing the ECMA metadata</param>
         /// <param name="offset">Signature offset within the PE file byte array</param>
-        public SignatureDecoder(IAssemblyResolver options, EcmaMetadataReader ecmaReader, int offset)
+        public SignatureDecoder(IAssemblyResolver options, R2RReader r2rReader, int offset)
         {
-            _ecmaReader = ecmaReader;
+            _metadataReader = r2rReader.MetadataReader;
             _options = options;
-            _image = ecmaReader.Image;
+            _image = r2rReader.Image;
             _offset = offset;
-            _contextReader = ecmaReader;
+            _contextReader = r2rReader;
         }
 
         /// <summary>
         /// Construct the signature decoder by storing the image byte array and offset within the array.
         /// </summary>
         /// <param name="options">Dump options and paths</param>
-        /// <param name="ecmaReader">Metadata reader for the R2R image</param>
+        /// <param name="metadataReader">Metadata reader for the R2R image</param>
         /// <param name="signature">Signature to parse</param>
         /// <param name="offset">Signature offset within the signature byte array</param>
         /// <param name="contextReader">Top-level signature context reader</param>
-        public SignatureDecoder(IAssemblyResolver options, EcmaMetadataReader ecmaReader, byte[] signature, int offset, EcmaMetadataReader contextReader)
+        private SignatureDecoder(IAssemblyResolver options, MetadataReader metadataReader, byte[] signature, int offset, R2RReader contextReader)
         {
-            _ecmaReader = ecmaReader;
+            _metadataReader = metadataReader;
             _options = options;
             _image = signature;
             _offset = offset;
@@ -638,7 +638,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 fixupType &= ~(uint)ReadyToRunFixupKind.ModuleOverride;
                 int moduleIndex = (int)ReadUIntAndEmitInlineSignatureBinary(builder);
-                EcmaMetadataReader refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                MetadataReader refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
                 moduleDecoder = new SignatureDecoder(_options, refAsmEcmaReader, _image, _offset, _contextReader);
             }
 
@@ -1069,7 +1069,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG:
                     {
                         int moduleIndex = (int)ReadUIntAndEmitInlineSignatureBinary(builder);
-                        EcmaMetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                        MetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
                         SignatureDecoder refAsmDecoder = new SignatureDecoder(_options, refAsmReader, _image, _offset, _contextReader);
                         refAsmDecoder.ParseType(builder);
                         _offset = refAsmDecoder.Offset;
@@ -1089,11 +1089,11 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 ReadElementType();
                 int moduleIndex = (int)ReadUInt();
-                EcmaMetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                MetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
 
                 _offset = currentOffset;
 
-                return refAsmReader.MetadataReader;
+                return refAsmReader;
             }
             return null;
         }
@@ -1119,7 +1119,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             StringBuilder signaturePrefixBuilder = new StringBuilder();
             uint token = ReadTokenAndEmitInlineSignatureBinary(signaturePrefixBuilder);
             builder.Append(MetadataNameFormatter.FormatHandle(
-                _ecmaReader.MetadataReader,
+                _metadataReader,
                 MetadataTokens.Handle((int)token),
                 owningTypeOverride: null,
                 signaturePrefix: signaturePrefixBuilder.ToString()));
@@ -1145,7 +1145,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             string owningTypeOverride = null;
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
-                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_options, _ecmaReader, _image, _offset, _contextReader);
+                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_options, _metadataReader, _image, _offset, _contextReader);
                 owningTypeOverride = owningTypeDecoder.ReadTypeSignatureNoEmit();
                 _offset = owningTypeDecoder._offset;
             }
@@ -1193,7 +1193,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             StringBuilder signaturePrefixBuilder = new StringBuilder();
             uint methodDefToken = ReadUIntAndEmitInlineSignatureBinary(signaturePrefixBuilder) | (uint)CorTokenType.mdtMethodDef;
             builder.Append(MetadataNameFormatter.FormatHandle(
-                _ecmaReader.MetadataReader,
+                _metadataReader,
                 MetadataTokens.Handle((int)methodDefToken),
                 namespaceQualified: true,
                 owningTypeOverride: owningTypeOverride,
@@ -1210,7 +1210,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             StringBuilder signaturePrefixBuilder = new StringBuilder();
             uint methodRefToken = ReadUIntAndEmitInlineSignatureBinary(signaturePrefixBuilder) | (uint)CorTokenType.mdtMemberRef;
             builder.Append(MetadataNameFormatter.FormatHandle(
-                _ecmaReader.MetadataReader,
+                _metadataReader,
                 MetadataTokens.Handle((int)methodRefToken),
                 namespaceQualified: false,
                 owningTypeOverride: owningTypeOverride,
@@ -1242,7 +1242,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 fieldToken = ReadUIntAndEmitInlineSignatureBinary(signaturePrefixBuilder) | (uint)CorTokenType.mdtFieldDef;
             }
             builder.Append(MetadataNameFormatter.FormatHandle(
-                _ecmaReader.MetadataReader,
+                _metadataReader,
                 MetadataTokens.Handle((int)fieldToken),
                 namespaceQualified: false,
                 owningTypeOverride: owningTypeOverride,
@@ -1640,7 +1640,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             uint rid = ReadUIntAndEmitInlineSignatureBinary(builder);
             UserStringHandle stringHandle = MetadataTokens.UserStringHandle((int)rid);
-            builder.Append(_ecmaReader.MetadataReader.GetUserString(stringHandle));
+            builder.Append(_metadataReader.GetUserString(stringHandle));
         }
     }
 }
