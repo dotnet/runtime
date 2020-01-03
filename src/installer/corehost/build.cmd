@@ -85,7 +85,7 @@ set __VSVersion=15 2017
 call "%VS150COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 
 :SetupDirs
-if "%__rootDir%" == "" (
+if [%__rootDir%] == [] (
     echo Root directory must be provided via the rootDir parameter.
     exit /b 1
 )
@@ -97,10 +97,11 @@ set __objDir=%__rootDir%\artifacts\obj
 echo Commencing build of corehost
 echo.
 
-if "%__CMakeBinDir%" == "" (
+if %__CMakeBinDir% == "" (
     set "__CMakeBinDir=%__binDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%"
 )
-if "%__IntermediatesDir%" == "" (
+
+if %__IntermediatesDir% == "" (
     set "__IntermediatesDir=%__objDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\corehost"
 )
 set "__ResourcesDir=%__objDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\hostResourceFiles"
