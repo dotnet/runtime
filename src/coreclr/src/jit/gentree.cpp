@@ -4478,8 +4478,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             else
             {
                 level  = 0;
-                costEx = 1;
-                costSz = 1;
+                costEx = tree->AsSIMD()->GetNumOps();
+                costSz = tree->AsSIMD()->GetNumOps();
 
                 for (GenTreeSIMD::Use& use : tree->AsSIMD()->Uses())
                 {
@@ -4487,6 +4487,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx += use.GetNode()->GetCostEx();
                     costSz += use.GetNode()->GetCostSz();
                 }
+
+                level++;
             }
             break;
 #endif // FEATURE_SIMD
