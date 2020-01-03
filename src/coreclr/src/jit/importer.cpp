@@ -1120,8 +1120,7 @@ GenTree* Compiler::impAssignStruct(GenTree*              dest,
         destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
     }
 
-    return impAssignStructPtr(destAddr, src, structHnd, asgPlace.spillLevel, asgPlace.pAfterStmt, ilOffset,
-                              asgPlace.block);
+    return impAssignStructPtr(destAddr, src, structHnd, asgPlace, ilOffset);
 }
 
 //------------------------------------------------------------------------
@@ -1142,13 +1141,11 @@ GenTree* Compiler::impAssignStruct(GenTree*              dest,
 // Notes:
 //    Temp assignments may be appended to impStmtList if spilling is necessary.
 
-GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
-                                      GenTree*             src,
-                                      CORINFO_CLASS_HANDLE structHnd,
-                                      unsigned             curLevel,
-                                      Statement**          pAfterStmt, /* = NULL */
-                                      IL_OFFSETX           ilOffset,   /* = BAD_IL_OFFSET */
-                                      BasicBlock*          block       /* = NULL */
+GenTree* Compiler::impAssignStructPtr(GenTree*              destAddr,
+                                      GenTree*              src,
+                                      CORINFO_CLASS_HANDLE  structHnd,
+                                      const impAssignPlace& asgPlace,
+                                      IL_OFFSETX            ilOffset /* = BAD_IL_OFFSET */
                                       )
 {
     GenTree* dest      = nullptr;
@@ -1296,8 +1293,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         // "destAddr" must point to a refany.
 
         GenTree* destAddrClone;
-        destAddr =
-            impCloneExpr(destAddr, &destAddrClone, structHnd, curLevel, pAfterStmt DEBUGARG("MKREFANY assignment"));
+        destAddr = impCloneExpr(destAddr, &destAddrClone, structHnd, asgPlace.spillLevel,
+                                asgPlace.pAfterStmt DEBUGARG("MKREFANY assignment"));
 
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
@@ -1311,15 +1308,15 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
         // append the assign of the pointer value
         GenTree* asg = gtNewAssignNode(ptrSlot, src->AsOp()->gtOp1);
-        if (pAfterStmt)
+        if (asgPlace.useStmts)
         {
             Statement* newStmt = gtNewStmt(asg, ilOffset);
-            fgInsertStmtAfter(block, *pAfterStmt, newStmt);
-            *pAfterStmt = newStmt;
+            fgInsertStmtAfter(asgPlace.block, *asgPlace.pAfterStmt, newStmt);
+            *asgPlace.pAfterStmt = newStmt;
         }
         else
         {
-            impAppendTree(asg, curLevel, ilOffset);
+            impAppendTree(asg, asgPlace.spillLevel, ilOffset);
         }
 
         // return the assign of the type value, to be appended
@@ -1329,30 +1326,29 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     {
         // The second thing is the struct or its address.
         assert(varTypeIsStruct(src->AsOp()->gtOp2) || src->AsOp()->gtOp2->gtType == TYP_BYREF);
-        if (pAfterStmt)
+        if (asgPlace.useStmts)
         {
             // Insert op1 after '*pAfterStmt'
             Statement* newStmt = gtNewStmt(src->AsOp()->gtOp1, ilOffset);
-            fgInsertStmtAfter(block, *pAfterStmt, newStmt);
-            *pAfterStmt = newStmt;
+            fgInsertStmtAfter(asgPlace.block, *asgPlace.pAfterStmt, newStmt);
+            *asgPlace.pAfterStmt = newStmt;
         }
         else if (impLastStmt != nullptr)
         {
             // Do the side-effect as a separate statement.
-            impAppendTree(src->AsOp()->gtOp1, curLevel, ilOffset);
+            impAppendTree(src->AsOp()->gtOp1, asgPlace.spillLevel, ilOffset);
         }
         else
         {
             // In this case we have neither been given a statement to insert after, nor are we
             // in the importer where we can append the side effect.
             // Instead, we're going to sink the assignment below the COMMA.
-            src->AsOp()->gtOp2 =
-                impAssignStructPtr(destAddr, src->AsOp()->gtOp2, structHnd, curLevel, pAfterStmt, ilOffset, block);
+            src->AsOp()->gtOp2 = impAssignStructPtr(destAddr, src->AsOp()->gtOp2, structHnd, asgPlace, ilOffset);
             return src;
         }
 
         // Evaluate the second thing using recursion.
-        return impAssignStructPtr(destAddr, src->AsOp()->gtOp2, structHnd, curLevel, pAfterStmt, ilOffset, block);
+        return impAssignStructPtr(destAddr, src->AsOp()->gtOp2, structHnd, asgPlace, ilOffset);
     }
     else if (src->IsLocal())
     {
@@ -6034,7 +6030,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         if (varTypeIsStruct(exprToBox))
         {
             assert(info.compCompHnd->getClassSize(pResolvedToken->hClass) == info.compCompHnd->getClassSize(operCls));
-            op1 = impAssignStructPtr(op1, exprToBox, operCls, (unsigned)CHECK_SPILL_ALL);
+            op1 = impAssignStructPtr(op1, exprToBox, operCls, impAssignPlace::s_SpillAll);
         }
         else
         {
@@ -15811,7 +15807,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp(varTypeIsStruct(op2));
 
-                op1 = impAssignStructPtr(op1, op2, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
+                op1 = impAssignStructPtr(op1, op2, resolvedToken.hClass, impAssignPlace::s_SpillAll);
 
                 if (op1->OperIsBlkOp() && (prefixFlags & PREFIX_UNALIGNED))
                 {
@@ -16620,12 +16616,12 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                         {
                             impInlineInfo->retExpr =
                                 impAssignStructPtr(dest, gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType),
-                                                   retClsHnd, (unsigned)CHECK_SPILL_ALL);
+                                                   retClsHnd, impAssignPlace::s_SpillAll);
                         }
                     }
                     else
                     {
-                        impInlineInfo->retExpr = impAssignStructPtr(dest, op2, retClsHnd, (unsigned)CHECK_SPILL_ALL);
+                        impInlineInfo->retExpr = impAssignStructPtr(dest, op2, retClsHnd, impAssignPlace::s_SpillAll);
                     }
                 }
             }
@@ -16647,7 +16643,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
         // Assign value to return buff (first param)
         GenTree* retBuffAddr = gtNewLclvNode(info.compRetBuffArg, TYP_BYREF DEBUGARG(impCurStmtOffs));
 
-        op2 = impAssignStructPtr(retBuffAddr, op2, retClsHnd, (unsigned)CHECK_SPILL_ALL);
+        op2 = impAssignStructPtr(retBuffAddr, op2, retClsHnd, impAssignPlace::s_SpillAll);
         impAppendTree(op2, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
 
         // There are cases where the address of the implicit RetBuf should be returned explicitly (in RAX).

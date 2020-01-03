@@ -3781,13 +3781,11 @@ public:
                              CORINFO_CLASS_HANDLE  structHnd,
                              const impAssignPlace& asgPlace,
                              IL_OFFSETX            ilOffset = BAD_IL_OFFSET);
-    GenTree* impAssignStructPtr(GenTree*             dest,
-                                GenTree*             src,
-                                CORINFO_CLASS_HANDLE structHnd,
-                                unsigned             curLevel,
-                                Statement**          pAfterStmt = nullptr,
-                                IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
-                                BasicBlock*          block      = nullptr);
+    GenTree* impAssignStructPtr(GenTree*              dest,
+                                GenTree*              src,
+                                CORINFO_CLASS_HANDLE  structHnd,
+                                const impAssignPlace& asgPlace,
+                                IL_OFFSETX            ilOffset = BAD_IL_OFFSET);
 
     GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);
 
