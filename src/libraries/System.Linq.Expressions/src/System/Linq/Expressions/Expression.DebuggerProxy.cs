@@ -324,7 +324,7 @@ namespace System.Linq.Expressions
             public string DebugView => _node.DebugView;
             public MethodInfo Method => _node.Method;
             public ExpressionType NodeType => _node.NodeType;
-            public Expression Object => _node.Object;
+            public Expression? Object => _node.Object;
             public Type Type => _node.Type;
         }
 

@@ -10,7 +10,6 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Reflection;
 using static System.Linq.Expressions.CachedReflectionInfo;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.CompilerServices
 {
@@ -107,10 +106,9 @@ namespace System.Runtime.CompilerServices
         /// <param name="site">The CallSite the bind is being performed for.</param>
         /// <param name="args">The arguments for the binder.</param>
         /// <returns>A new delegate which replaces the CallSite Target.</returns>
-        [return: MaybeNull]
-        public virtual T BindDelegate<T>(CallSite<T> site, object[] args) where T : class
+        public virtual T? BindDelegate<T>(CallSite<T> site, object[] args) where T : class
         {
-            return null!;
+            return null;
         }
 
         internal T BindCore<T>(CallSite<T> site, object[] args) where T : class
@@ -118,7 +116,7 @@ namespace System.Runtime.CompilerServices
             //
             // Try to find a precompiled delegate, and return it if found.
             //
-            T result = BindDelegate(site, args)!;
+            T? result = BindDelegate(site, args);
             if (result != null)
             {
                 return result;

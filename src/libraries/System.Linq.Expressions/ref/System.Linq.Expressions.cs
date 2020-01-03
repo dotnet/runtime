@@ -790,7 +790,7 @@ namespace System.Linq.Expressions
         public virtual System.Linq.Expressions.Expression? Visit(System.Linq.Expressions.Expression? node) { throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<T> VisitAndConvert<T>(System.Collections.ObjectModel.ReadOnlyCollection<T> nodes, string? callerName) where T : System.Linq.Expressions.Expression { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("node")]
-        public T VisitAndConvert<T>(T node, string? callerName) where T : System.Linq.Expressions.Expression { throw null; }
+        public T? VisitAndConvert<T>(T? node, string? callerName) where T : System.Linq.Expressions.Expression { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitBinary(System.Linq.Expressions.BinaryExpression node) { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitBlock(System.Linq.Expressions.BlockExpression node) { throw null; }
         protected virtual System.Linq.Expressions.CatchBlock VisitCatchBlock(System.Linq.Expressions.CatchBlock node) { throw null; }
@@ -1010,7 +1010,7 @@ namespace System.Linq.Expressions
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.Expression> Arguments { get { throw null; } }
         public System.Reflection.MethodInfo Method { get { throw null; } }
         public sealed override System.Linq.Expressions.ExpressionType NodeType { get { throw null; } }
-        public System.Linq.Expressions.Expression Object { get { throw null; } }
+        public System.Linq.Expressions.Expression? Object { get { throw null; } }
         int System.Linq.Expressions.IArgumentProvider.ArgumentCount { get { throw null; } }
         public sealed override System.Type Type { get { throw null; } }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
@@ -1134,8 +1134,7 @@ namespace System.Runtime.CompilerServices
         protected CallSiteBinder() { }
         public static System.Linq.Expressions.LabelTarget UpdateLabel { get { throw null; } }
         public abstract System.Linq.Expressions.Expression Bind(object[] args, System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.ParameterExpression> parameters, System.Linq.Expressions.LabelTarget returnLabel);
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public virtual T BindDelegate<T>(System.Runtime.CompilerServices.CallSite<T> site, object[] args) where T : class { throw null; }
+        public virtual T? BindDelegate<T>(System.Runtime.CompilerServices.CallSite<T> site, object[] args) where T : class { throw null; }
         protected void CacheTarget<T>(T target) where T : class { }
     }
     public static partial class CallSiteHelpers

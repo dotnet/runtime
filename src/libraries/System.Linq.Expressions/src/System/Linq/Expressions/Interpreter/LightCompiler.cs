@@ -2139,7 +2139,7 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileMethodCallExpression(Expression expr)
         {
             var node = (MethodCallExpression)expr;
-            CompileMethodCallExpression(node.Object, node.Method, node);
+            CompileMethodCallExpression(node.Object!, node.Method, node);
         }
 
         private void CompileMethodCallExpression(Expression @object, MethodInfo method, IArgumentProvider arguments)
@@ -2346,7 +2346,7 @@ namespace System.Linq.Expressions.Interpreter
                         // this situation and replace it with a call to the Address method.
                         var call = (MethodCallExpression)node;
                         if (!call.Method.IsStatic &&
-                            call.Object.Type.IsArray &&
+                            call.Object!.Type.IsArray &&
                             call.Method == call.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance))
                         {
                             return CompileMultiDimArrayAccess(

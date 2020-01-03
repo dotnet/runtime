@@ -130,7 +130,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the invocation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryInvoke(InvokeBinder binder, object?[]? args, out object? result)
+        public virtual bool TryInvoke(InvokeBinder binder, object[] args, out object? result)
         {
             result = null;
             return false;

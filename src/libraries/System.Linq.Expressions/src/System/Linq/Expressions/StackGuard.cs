@@ -33,7 +33,7 @@ namespace System.Linq.Expressions
         {
             RunOnEmptyStackCore(s =>
             {
-                var t = (Tuple<Action<T1, T2>, T1, T2>)s!;
+                var t = (Tuple<Action<T1, T2>, T1, T2>)s;
                 t.Item1(t.Item2, t.Item3);
                 return default(object);
             }, Tuple.Create(action, arg1, arg2));
@@ -43,7 +43,7 @@ namespace System.Linq.Expressions
         {
             RunOnEmptyStackCore(s =>
             {
-                var t = (Tuple<Action<T1, T2, T3>, T1, T2, T3>)s!;
+                var t = (Tuple<Action<T1, T2, T3>, T1, T2, T3>)s;
                 t.Item1(t.Item2, t.Item3, t.Item4);
                 return default(object);
             }, Tuple.Create(action, arg1, arg2, arg3));
@@ -53,7 +53,7 @@ namespace System.Linq.Expressions
         {
             return RunOnEmptyStackCore(s =>
             {
-                var t = (Tuple<Func<T1, T2, R>, T1, T2>)s!;
+                var t = (Tuple<Func<T1, T2, R>, T1, T2>)s;
                 return t.Item1(t.Item2, t.Item3);
             }, Tuple.Create(action, arg1, arg2));
         }
@@ -62,19 +62,19 @@ namespace System.Linq.Expressions
         {
             return RunOnEmptyStackCore(s =>
             {
-                var t = (Tuple<Func<T1, T2, T3, R>, T1, T2, T3>)s!;
+                var t = (Tuple<Func<T1, T2, T3, R>, T1, T2, T3>)s;
                 return t.Item1(t.Item2, t.Item3, t.Item4);
             }, Tuple.Create(action, arg1, arg2, arg3));
         }
 
-        private R RunOnEmptyStackCore<R>(Func<object?, R> action, object state)
+        private R RunOnEmptyStackCore<R>(Func<object, R> action, object state)
         {
             _executionStackCount++;
 
             try
             {
                 // Using default scheduler rather than picking up the current scheduler.
-                Task<R> task = Task.Factory.StartNew(action, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                Task<R> task = Task.Factory.StartNew(action!, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
                 TaskAwaiter<R> awaiter = task.GetAwaiter();
 

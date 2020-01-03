@@ -192,7 +192,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitInlinedInvoke(InvocationExpression invoke, CompilationFlags flags)
         {
-            LambdaExpression lambda = invoke.LambdaOperand;
+            LambdaExpression lambda = invoke.LambdaOperand!;
 
             // This is tricky: we need to emit the arguments outside of the
             // scope, but set them inside the scope. Fortunately, using the IL
@@ -326,8 +326,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                Debug.Assert(objectType != null);
-                EmitSetArrayElement(objectType);
+                EmitSetArrayElement(objectType!);
             }
         }
 

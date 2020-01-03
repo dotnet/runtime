@@ -22,7 +22,7 @@ namespace System.Linq.Expressions
             Method = method;
         }
 
-        internal virtual Expression GetInstance() => null!;
+        internal virtual Expression? GetInstance() => null;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
@@ -45,7 +45,7 @@ namespace System.Linq.Expressions
         /// Gets the <see cref="Expression"/> that represents the instance
         /// for instance method calls or null for static method calls.
         /// </summary>
-        public Expression Object => GetInstance();
+        public Expression? Object => GetInstance();
 
         /// <summary>
         /// Gets a collection of expressions that represent arguments to the method call.

@@ -128,13 +128,13 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         /// <exception cref="InvalidOperationException">The visit method for this node returned a different type.</exception>
         [return: NotNullIfNotNull("node")]
-        public T VisitAndConvert<T>(T node, string? callerName) where T : Expression
+        public T? VisitAndConvert<T>(T? node, string? callerName) where T : Expression
         {
             if (node == null)
             {
-                return null!;
+                return null;
             }
-            node = (Visit(node) as T)!;
+            node = (Visit(node) as T);
             if (node == null)
             {
                 throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
@@ -157,7 +157,7 @@ namespace System.Linq.Expressions
             T[]? newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++)
             {
-                T node = (Visit(nodes[i]) as T)!;
+                T? node = Visit(nodes[i]) as T;
                 if (node == null)
                 {
                     throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
@@ -197,7 +197,7 @@ namespace System.Linq.Expressions
                 node,
                 node.Update(
                     Visit(node.Left),
-                    VisitAndConvert(node.Conversion!, nameof(VisitBinary)),
+                    VisitAndConvert(node.Conversion, nameof(VisitBinary)),
                     Visit(node.Right)
                 )
             );
@@ -385,14 +385,14 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitIndex(IndexExpression node)
         {
-            Expression? o = Visit(node.Object);
+            Expression o = Visit(node.Object)!;
             Expression[]? a = VisitArguments(node);
             if (o == node.Object && a == null)
             {
                 return node;
             }
 
-            return node.Rewrite(o!, a);
+            return node.Rewrite(o, a);
         }
 
         /// <summary>
@@ -403,7 +403,7 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitMethodCall(MethodCallExpression node)
         {
-            Expression o = Visit(node.Object);
+            Expression o = Visit(node.Object)!;
             Expression[]? a = VisitArguments(node);
             if (o == node.Object && a == null)
             {
@@ -501,7 +501,7 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected virtual CatchBlock VisitCatchBlock(CatchBlock node)
         {
-            return node.Update(VisitAndConvert(node.Variable!, nameof(VisitCatchBlock)), Visit(node.Filter), Visit(node.Body));
+            return node.Update(VisitAndConvert(node.Variable, nameof(VisitCatchBlock)), Visit(node.Filter), Visit(node.Body));
         }
 
         /// <summary>

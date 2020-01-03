@@ -525,7 +525,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitMethodCall(MethodCallExpression node)
         {
             int start = 0;
-            Expression ob = node.Object;
+            Expression? ob = node.Object;
 
             if (node.Method.GetCustomAttribute(typeof(ExtensionAttribute)) != null)
             {

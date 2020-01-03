@@ -110,13 +110,13 @@ namespace System.Linq.Expressions
             throw ContractUtils.Unreachable;
         }
 
-        internal LambdaExpression LambdaOperand
+        internal LambdaExpression? LambdaOperand
         {
             get
             {
                 return (Expression.NodeType == ExpressionType.Quote)
                     ? (LambdaExpression)((UnaryExpression)Expression).Operand
-                    : (Expression as LambdaExpression)!;
+                    : (Expression as LambdaExpression);
             }
         }
     }

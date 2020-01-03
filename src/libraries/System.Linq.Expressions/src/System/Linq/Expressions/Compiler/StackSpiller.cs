@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -497,7 +498,7 @@ namespace System.Linq.Expressions.Compiler
             ChildRewriter cr;
 
             // See if the lambda will be inlined.
-            LambdaExpression lambda = node.LambdaOperand;
+            LambdaExpression? lambda = node.LambdaOperand;
             if (lambda != null)
             {
                 // Arguments execute on current stack.
@@ -1093,11 +1094,11 @@ namespace System.Linq.Expressions.Compiler
         {
             if (IsRefInstance(instance))
             {
-                throw Error.TryNotSupportedForValueTypeInstances(instance!.Type);
+                throw Error.TryNotSupportedForValueTypeInstances(instance.Type);
             }
         }
 
-        private static bool IsRefInstance(Expression? instance)
+        private static bool IsRefInstance([NotNullWhen(true)] Expression? instance)
         {
             // Primitive value types are okay because they are all read-only,
             // but we can't rely on this for non-primitive types. So we have

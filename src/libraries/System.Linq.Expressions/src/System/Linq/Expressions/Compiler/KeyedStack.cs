@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -25,8 +24,7 @@ namespace System.Linq.Expressions.Compiler
             stack.Push(value);
         }
 
-        [return: MaybeNull]
-        internal TValue TryPop(TKey key) =>
-            _data.TryGetValue(key, out Stack<TValue>? stack) && stack.TryPop(out TValue? value) ? value : null!;
+        internal TValue? TryPop(TKey key) =>
+            _data.TryGetValue(key, out Stack<TValue>? stack) && stack.TryPop(out TValue? value) ? value : null;
     }
 }

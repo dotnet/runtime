@@ -10,8 +10,7 @@ namespace System.Dynamic.Utils
     // Miscellaneous helpers that don't belong anywhere else
     internal static class Helpers
     {
-        [return: MaybeNull]
-        internal static T CommonNode<T>(T first, T second, Func<T, T> parent) where T : class
+        internal static T? CommonNode<T>(T first, T second, Func<T, T> parent) where T : class
         {
             EqualityComparer<T> cmp = EqualityComparer<T>.Default;
             if (cmp.Equals(first, second))
@@ -30,7 +29,7 @@ namespace System.Dynamic.Utils
                     return t;
                 }
             }
-            return null!;
+            return null;
         }
 
         internal static void IncrementCount<T>(T key, Dictionary<T, int> dict) where T : notnull

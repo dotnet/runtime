@@ -263,7 +263,7 @@ namespace System.Linq.Expressions
             return argTypesStr.ToString();
         }
 
-        private static PropertyInfo? FindProperty(Type type, string? propertyName, Expression[]? arguments, BindingFlags flags)
+        private static PropertyInfo? FindProperty(Type type, string propertyName, Expression[]? arguments, BindingFlags flags)
         {
             PropertyInfo? property = null;
 

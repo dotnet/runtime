@@ -172,7 +172,7 @@ namespace System.Linq.Expressions.Compiler
             // get the address of a Get method, and it will fail to do so. Instead, detect
             // this situation and replace it with a call to the Address method.
             if (!node.Method.IsStatic &&
-                node.Object.Type.IsArray &&
+                node.Object!.Type.IsArray &&
                 node.Method == node.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance))
             {
                 MethodInfo mi = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance)!;
