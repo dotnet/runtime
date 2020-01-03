@@ -321,7 +321,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
-    <Compile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' AND '$(BuildingInsideVisualStudio)' != 'true' " />
+
+    <!-- This file should be generated in such a way that VS can regenerate it, rather than with python (src\coreclr\src\scripts\genRuntimeEventSources.py) -->
+    <!-- For now, help VS users figure out how to be successful -->
+    <Compile Include="### Build from the command line once to generate NativeRuntimeEventSource.cs ###"
+            Condition="'$(FeaturePerfTracing)' == 'true' and
+                       '$(BuildingInsideVisualStudio)' == 'true' and
+                       !exists('$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs')"/>
+    <Compile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
@@ -424,7 +433,8 @@
   <PropertyGroup>
     <CheckCDefines Condition="'$(CheckCDefines)'==''">true</CheckCDefines>
   </PropertyGroup>
-  <Target Name="CDefineChecker" BeforeTargets="Build" Condition="'$(CheckCDefines)'=='true'">
+  <!-- PYTHON will not be defined when building in VS-->
+  <Target Name="CDefineChecker" BeforeTargets="Build" Condition="'$(CheckCDefines)'=='true' and '$(BuildingInsideVisualStudio)' != 'true'">
     <!-- Compiler Definition Verification -->
     <PropertyGroup>
       <CMakeDefinitionSaveFile>$(IntermediateOutputPath)\cmake.definitions</CMakeDefinitionSaveFile>
