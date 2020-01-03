@@ -78,8 +78,9 @@ namespace System.Text.RegularExpressions
         public const int EndZ = RegexCode.EndZ;                       //          \Z
         public const int End = RegexCode.End;                         //          \z
 
-        public const int Oneloopgreedy = RegexCode.Oneloopgreedy;     // c,n      (?> a*)
-        public const int Setloopgreedy = RegexCode.Setloopgreedy;     // set,n    (?> \d*)
+        public const int Oneloopgreedy = RegexCode.Oneloopgreedy;        // c,n      (?> a*)
+        public const int Notoneloopgreedy = RegexCode.Notoneloopgreedy;  // c,n      (?> .*)
+        public const int Setloopgreedy = RegexCode.Setloopgreedy;        // set,n    (?> \d*)
 
         // Interior nodes do not correspond to primitive operations, but
         // control structures compositing other operations
@@ -187,12 +188,16 @@ namespace System.Text.RegularExpressions
                 {
                     switch (node.Type)
                     {
-                        case Setloop:
-                            node.Type = Setloopgreedy;
-                            break;
-
                         case Oneloop:
                             node.Type = Oneloopgreedy;
+                            break;
+
+                        case Notoneloop:
+                            node.Type = Notoneloopgreedy;
+                            break;
+
+                        case Setloop:
+                            node.Type = Setloopgreedy;
                             break;
 
                         case Capture:
@@ -304,11 +309,16 @@ namespace System.Text.RegularExpressions
                     child.Type = Oneloopgreedy;
                     return child;
 
+                case Notoneloop:
+                    child.Type = Notoneloopgreedy;
+                    return child;
+
                 case Setloop:
                     child.Type = Setloopgreedy;
                     return child;
 
                 case Oneloopgreedy:
+                case Notoneloopgreedy:
                 case Setloopgreedy:
                     return child;
             }
@@ -346,6 +356,7 @@ namespace System.Text.RegularExpressions
                             case Oneloop:
                             case Oneloopgreedy:
                             case Notoneloop:
+                            case Notoneloopgreedy:
                             case Setloop:
                             case Setloopgreedy:
                                 valid = true;
@@ -739,8 +750,8 @@ namespace System.Text.RegularExpressions
                     continue;
                 }
 
-                // If this node is a oneloop or a setloop, see if it overlaps with its successor in the concatenation.
-                // If it doesn't, then we can upgrade it to being a oneloopgreedy or setloopgreedy, respectively.
+                // If this node is a one/notone/setloop, see if it overlaps with its successor in the concatenation.
+                // If it doesn't, then we can upgrade it to being a one/notone/setloopgreedy.
                 // Doing so avoids unnecessary backtracking.
                 switch (node.Type)
                 {
@@ -754,6 +765,7 @@ namespace System.Text.RegularExpressions
                             case Notone when node.Ch == subsequent.Ch:
                             case Notonelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
                             case Notoneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                            case Notoneloopgreedy when subsequent.M > 0 && node.Ch == subsequent.Ch:
                             case Multi when node.Ch != subsequent.Str![0]:
                             case Set when !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
                             case Setlazy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
@@ -769,6 +781,20 @@ namespace System.Text.RegularExpressions
                         }
                         break;
 
+                    case Notoneloop:
+                        switch (subsequent.Type)
+                        {
+                            case One when node.Ch == subsequent.Ch:
+                            case Onelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                            case Oneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                            case Oneloopgreedy when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                            case Multi when node.Ch == subsequent.Str![0]:
+                            case End:
+                                node.Type = Notoneloopgreedy;
+                                break;
+                        }
+                        break;
+
                     case Setloop:
                         switch (subsequent.Type)
                         {
@@ -779,7 +805,8 @@ namespace System.Text.RegularExpressions
                             case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Multi when !string.IsNullOrEmpty(subsequent.Str) && !RegexCharClass.CharInClass(subsequent.Str[0], node.Str!):
+                            case Notoneloopgreedy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                             case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                             case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                             case Setloop when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
@@ -881,7 +908,7 @@ namespace System.Text.RegularExpressions
             "Testref", "Testgroup",
             "", "", "", "", "", "",
             "ECMABoundary", "NonECMABoundary",
-            "Oneloopgreedy", "Setloopgreedy",
+            "Oneloopgreedy", "Notoneloopgreedy", "Setloopgreedy",
         };
 
         public string Description()
@@ -910,6 +937,7 @@ namespace System.Text.RegularExpressions
                 case Oneloop:
                 case Oneloopgreedy:
                 case Notoneloop:
+                case Notoneloopgreedy:
                 case Onelazy:
                 case Notonelazy:
                 case One:
@@ -939,6 +967,7 @@ namespace System.Text.RegularExpressions
                 case Oneloop:
                 case Oneloopgreedy:
                 case Notoneloop:
+                case Notoneloopgreedy:
                 case Onelazy:
                 case Notonelazy:
                 case Setloop:

@@ -85,7 +85,8 @@ namespace System.Text.RegularExpressions
         // These exist to reduce backtracking (both actually performing it and spitting code for it).
 
         public const int Oneloopgreedy = 43;      // lef,back char,min,max    (?> a {,n} )
-        public const int Setloopgreedy = 44;      // lef,back set,min,max     (?> [\d]{,n} )
+        public const int Notoneloopgreedy = 44;   // lef,back set,min,max     (?> . {,n} )
+        public const int Setloopgreedy = 45;      // lef,back set,min,max     (?> [\d]{,n} )
 
         // Modifiers for alternate modes
         public const int Mask = 63;   // Mask to get unmodified ordinary operator
@@ -207,6 +208,7 @@ namespace System.Text.RegularExpressions
                 case Oneloop:
                 case Oneloopgreedy:
                 case Notoneloop:
+                case Notoneloopgreedy:
                 case Onelazy:
                 case Notonelazy:
                 case Setlazy:
@@ -236,7 +238,7 @@ namespace System.Text.RegularExpressions
             "Setjump", "Backjump", "Forejump", "Testref", "Goto",
             "Prune", "Stop",
             "ECMABoundary", "NonECMABoundary",
-            "Oneloopgreedy", "Setloopgreedy"
+            "Oneloopgreedy", "Notoneloopgreedy", "Setloopgreedy"
         };
 
         private static string OperatorDescription(int Opcode)
@@ -275,6 +277,7 @@ namespace System.Text.RegularExpressions
                 case Oneloop:
                 case Oneloopgreedy:
                 case Notoneloop:
+                case Notoneloopgreedy:
                 case Onelazy:
                 case Notonelazy:
                     sb.Append("Ch = ");
@@ -335,6 +338,7 @@ namespace System.Text.RegularExpressions
                 case Oneloop:
                 case Oneloopgreedy:
                 case Notoneloop:
+                case Notoneloopgreedy:
                 case Onelazy:
                 case Notonelazy:
                 case Setrep:

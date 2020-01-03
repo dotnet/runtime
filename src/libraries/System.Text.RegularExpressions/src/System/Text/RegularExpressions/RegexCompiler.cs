@@ -1572,8 +1572,9 @@ namespace System.Text.RegularExpressions
                         // {Set/One}loopgreedy are optimized nodes that represent non-backtracking variable-length loops.
                         // These consume their {Set/One} inputs as long as they match, and don't give up anything they
                         // matched, which means we can support them without backtracking.
-                        case RegexNode.Setloopgreedy:
                         case RegexNode.Oneloopgreedy:
+                        case RegexNode.Notoneloopgreedy:
+                        case RegexNode.Setloopgreedy:
                             // TODO: Add support for greedy {Lazy}Loop around supported elements, namely Concatenate.
                             //       Nested loops will require multiple iteration variables to be defined.
                             supported = true;
@@ -1714,6 +1715,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNode.Oneloopgreedy:
+                    case RegexNode.Notoneloopgreedy:
                     case RegexNode.Setloopgreedy:
                         EmitGreedyLoop(node);
                         break;
@@ -1782,7 +1784,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        Debug.Assert(node.Type == RegexNode.Notone || node.Type == RegexNode.Notonelazy || node.Type == RegexNode.Notoneloop);
+                        Debug.Assert(node.Type == RegexNode.Notone || node.Type == RegexNode.Notonelazy || node.Type == RegexNode.Notoneloop || node.Type == RegexNode.Notoneloopgreedy);
                         if (IsCaseInsensitive(node)) CallToLower();
                         Ldc(node.Ch);
                         BeqFar(doneLabel);
@@ -1896,7 +1898,7 @@ namespace System.Text.RegularExpressions
             // Emits the code to handle a non-backtracking, variable-length loop (Oneloopgreedy or Setloopgreedy).
             void EmitGreedyLoop(RegexNode node)
             {
-                Debug.Assert(node.Type == RegexNode.Oneloopgreedy || node.Type == RegexNode.Setloopgreedy);
+                Debug.Assert(node.Type == RegexNode.Oneloopgreedy || node.Type == RegexNode.Notoneloopgreedy || node.Type == RegexNode.Setloopgreedy);
                 Debug.Assert(node.M < int.MaxValue);
 
                 // First generate the code to handle the required number of iterations.
@@ -1934,16 +1936,22 @@ namespace System.Text.RegularExpressions
                     Add();
                     Call(s_spanGetItemMethod);
                     LdindU2();
-                    if (node.Type == RegexNode.Oneloopgreedy)
+                    switch (node.Type)
                     {
-                        if (IsCaseInsensitive(node)) CallToLower();
-                        Ldc(node.Ch);
-                        BneFar(doneLabel);
-                    }
-                    else // Setloopgreedy
-                    {
-                        EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
-                        BrfalseFar(doneLabel);
+                        case RegexNode.Oneloopgreedy:
+                            if (IsCaseInsensitive(node)) CallToLower();
+                            Ldc(node.Ch);
+                            BneFar(doneLabel);
+                            break;
+                        case RegexNode.Notoneloopgreedy:
+                            if (IsCaseInsensitive(node)) CallToLower();
+                            Ldc(node.Ch);
+                            BeqFar(doneLabel);
+                            break;
+                        case RegexNode.Setloopgreedy:
+                            EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
+                            BrfalseFar(doneLabel);
+                            break;
                     }
 
                     // i++;
@@ -3281,12 +3289,16 @@ namespace System.Text.RegularExpressions
                 case RegexCode.Notoneloop | RegexCode.Ci | RegexCode.Rtl:
                 case RegexCode.Setloop | RegexCode.Ci | RegexCode.Rtl:
                 case RegexCode.Oneloopgreedy:
+                case RegexCode.Notoneloopgreedy:
                 case RegexCode.Setloopgreedy:
                 case RegexCode.Oneloopgreedy | RegexCode.Rtl:
+                case RegexCode.Notoneloopgreedy | RegexCode.Rtl:
                 case RegexCode.Setloopgreedy | RegexCode.Rtl:
                 case RegexCode.Oneloopgreedy | RegexCode.Ci:
+                case RegexCode.Notoneloopgreedy | RegexCode.Ci:
                 case RegexCode.Setloopgreedy | RegexCode.Ci:
                 case RegexCode.Oneloopgreedy | RegexCode.Ci | RegexCode.Rtl:
+                case RegexCode.Notoneloopgreedy | RegexCode.Ci | RegexCode.Rtl:
                 case RegexCode.Setloopgreedy | RegexCode.Ci | RegexCode.Rtl:
                     //: int c = Operand(1);
                     //: if (c > Rightchars())
@@ -3388,6 +3400,7 @@ namespace System.Text.RegularExpressions
                             }
                             else
                             {
+                                Debug.Assert(Code() == RegexCode.Notoneloop || Code() == RegexCode.Notoneloopgreedy);
                                 Bne(l1);
                             }
                         }
@@ -3399,7 +3412,7 @@ namespace System.Text.RegularExpressions
 
                         MarkLabel(l2);
 
-                        if (Code() != RegexCode.Oneloopgreedy && Code() != RegexCode.Setloopgreedy)
+                        if (Code() != RegexCode.Oneloopgreedy && Code() != RegexCode.Notoneloopgreedy && Code() != RegexCode.Setloopgreedy)
                         {
                             Ldloc(lenLocal);
                             Ldloc(cLocal);

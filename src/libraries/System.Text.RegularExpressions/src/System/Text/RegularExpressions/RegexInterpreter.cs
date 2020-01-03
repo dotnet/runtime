@@ -1163,6 +1163,7 @@ namespace System.Text.RegularExpressions
                         }
 
                     case RegexCode.Notoneloop:
+                    case RegexCode.Notoneloopgreedy:
                         {
                             int c = Operand(1);
 
@@ -1182,8 +1183,10 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (c > i)
+                            if (c > i && Operator() == RegexCode.Notoneloop)
+                            {
                                 TrackPush(c - i - 1, Textpos() - Bump());
+                            }
 
                             advance = 2;
                             continue;

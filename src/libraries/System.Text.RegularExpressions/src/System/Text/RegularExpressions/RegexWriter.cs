@@ -442,6 +442,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Notoneloop:
+                case RegexNode.Notoneloopgreedy:
                 case RegexNode.Notonelazy:
                 case RegexNode.Oneloop:
                 case RegexNode.Oneloopgreedy:

@@ -446,6 +446,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Notoneloop:
+                case RegexNode.Notoneloopgreedy:
                 case RegexNode.Notonelazy:
                     PushFC(new RegexFC(node.Ch, true, node.M == 0, ci));
                     break;
