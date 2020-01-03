@@ -1332,7 +1332,7 @@
       <Link>Common\Interop\Windows\User32\Interop.LoadString.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\User32\Interop.SendMessageTimeout.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\src\Interop\Windows\User32\Interop.GetProcessWindowStation.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetProcessWindowStation.cs">
       <Link>Common\Interop\Windows\User32\Interop.GetProcessWindowStation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetUserObjectInformation.cs">
