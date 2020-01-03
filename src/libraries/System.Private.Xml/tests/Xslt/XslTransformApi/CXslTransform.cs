@@ -478,7 +478,7 @@ namespace System.Xml.Tests
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
             {
-                LoadXSL("xmlResolver_document_function_absolute_uri.xsl", inputType, readerType);
+                LoadXSL("xmlResolver_document_function_absolute_uri_replaced.xsl", inputType, readerType);
                 xslt.XmlResolver = new XmlUrlResolver();
                 Transform("fruits.xml", transformType, docType);
                 VerifyResult(@"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>");
@@ -2102,7 +2102,7 @@ namespace System.Xml.Tests
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
             {
-                LoadXSL("xmlResolver_document_function_absolute_uri.xsl", inputType, readerType);
+                LoadXSL("xmlResolver_document_function_absolute_uri_replaced.xsl", inputType, readerType);
                 TransformResolver("fruits.xml", transformType, docType, new XmlUrlResolver());
                 VerifyResult(@"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>");
             });
