@@ -5527,7 +5527,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         {
             if (!IsComObjectType()) //RCW's are special - they are manufactured by the runtime and derive from the non-public type System.__ComObject
             {
-                // A transparenct type should not be allowed to derive from a critical type.
+                // A transparent type should not be allowed to derive from a critical type.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
                 DoAccessibilityCheck(this, pParentMT, E_ACCESSDENIED);
@@ -5546,7 +5546,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             if (IsInterfaceDeclaredOnClass(it.GetIndex())) // only test directly implemented interfaces (it's
                                                            // legal for an inherited interface to be private.)
             {
-                // A transparenct type should not be allowed to implement a critical interface.
+                // A transparent type should not be allowed to implement a critical interface.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
                 DoAccessibilityCheck(this, it.GetInterface(), IDS_CLASSLOAD_INTERFACE_NO_ACCESS);
@@ -7623,6 +7623,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     BOOL        bGenerated = FALSE;     // A flag indicating if we generated the GUID from name.
 
     _ASSERTE(pGuid != NULL);
+    _ASSERTE(!this->IsArray());
 
     // Use the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID of non-WinRT type
     GuidInfo *pInfo = ((bClassic && !IsProjectedFromWinRT()) ? GetClass()->GetGuidInfo() : GetGuidInfo());

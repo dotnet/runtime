@@ -191,8 +191,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     //         allocated on the same loader heap, except the case where the array is
     //         Object[], in which case its MT is in mscorlib and thus doesn't unload.
 
-    MethodTable * pMTToCheck = pMT;
-    Module * pLoaderModule = pMTToCheck->GetLoaderModule();
+    Module * pLoaderModule = pMT->GetLoaderModule();
 
     // Don't look up types that are unloading due to Collectible Assemblies. Haven't been
     // able to find a case where we actually encounter objects like this that can cause

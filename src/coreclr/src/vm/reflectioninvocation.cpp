@@ -2348,7 +2348,7 @@ FCIMPL2(void, ReflectionInvocation::GetGUID, ReflectClassBaseObject* refThisUNSA
         COMPlusThrow(kNullReferenceException);
 
     TypeHandle type = refThis->GetType();
-    if (type.IsTypeDesc()) {
+    if (type.IsTypeDesc() || type.IsArray()) {
         memset(result,0,sizeof(GUID));
         goto lExit;
     }

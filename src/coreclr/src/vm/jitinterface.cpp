@@ -3821,7 +3821,7 @@ BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
     else
     {
         // It is safe to perform this optimization
-        // NOTE: clsHnd could be a MethodDesc with shared MethodTable (ex: typeof(int*) == o.GetType()), but that is still optimizable.
+        // NOTE: clsHnd could be a TypeDesc with shared MethodTable (ex: typeof(int*) == o.GetType()), but that is still optimizable.
         //       That is because optimized version compares literally a handle to a methodtable and that will be not equal,
         //       which is valid since none of MethodDesc types can have heap instances.
         ret = TRUE;
