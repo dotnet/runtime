@@ -131,8 +131,8 @@ namespace System
                 if (handle != IntPtr.Zero)
                 {
                     Interop.User32.USEROBJECTFLAGS flags = default;
-                    int dummy = 0;
-                    if (Interop.User32.GetUserObjectInformationW(handle, Interop.User32.UOI_FLAGS, ref flags, sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
+                    uint dummy = 0;
+                    if (Interop.User32.GetUserObjectInformationW(handle, Interop.User32.UOI_FLAGS, (void*)&flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
                     {
                         return ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0);
                     }
