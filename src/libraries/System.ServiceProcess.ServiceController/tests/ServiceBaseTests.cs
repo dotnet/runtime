@@ -150,7 +150,7 @@ namespace System.ServiceProcess.Tests
             // will always return true, even within a service process.
             // Otherwise, we expect it to be false.
             // (This is the only place we verify Environment.UserInteractive can return false)
-            byte expected = PlatformDetection.HasWindowsShell ? 128 : 129;
+            byte expected = PlatformDetection.HasWindowsShell ? (byte)128 : (byte)129;
             Assert.Equal(expected, _testService.GetByte());
 
             controller.Stop();
