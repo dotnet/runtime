@@ -954,23 +954,23 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 #endif // UNIX_AMD64_ABI
 
-    // Check for cases where a small struct is returned in a register
-    // via a primitive type.
-    //
-    // The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES
-    // so we can skip calling getPrimitiveTypeForStruct when we
-    // have a struct that is larger than that.
+// Check for cases where a small struct is returned in a register
+// via a primitive type.
+//
+// The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES
+// so we can skip calling getPrimitiveTypeForStruct when we
+// have a struct that is larger than that.
 
 #if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
     if ((impNormStructType(clsHnd) == TYP_SIMD16))
     {
         // TYP_SIMD16 should be returned in XMM0
         howToReturnStruct = SPK_PrimitiveType;
-        useType = TYP_SIMD16;
+        useType           = TYP_SIMD16;
     }
     else
 #endif
-    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= MAX_PASS_SINGLEREG_BYTES))
+        if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= MAX_PASS_SINGLEREG_BYTES))
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
