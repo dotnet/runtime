@@ -3741,13 +3741,13 @@ public:
                           Statement** pAfterStmt = nullptr,
                           IL_OFFSETX  ilOffset   = BAD_IL_OFFSET,
                           BasicBlock* block      = nullptr);
-    void impAssignTempGen(unsigned             tmpNum,
-                          GenTree*             val,
-                          CORINFO_CLASS_HANDLE structHnd,
-                          unsigned             curLevel,
-                          Statement**          pAfterStmt = nullptr,
-                          IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
-                          BasicBlock*          block      = nullptr);
+    void impAssignTempGenStruct(unsigned             tmpNum,
+                                GenTree*             val,
+                                CORINFO_CLASS_HANDLE structHnd,
+                                unsigned             curLevel,
+                                Statement**          pAfterStmt = nullptr,
+                                IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
+                                BasicBlock*          block      = nullptr);
 
     Statement* impExtractLastStmt();
     GenTree* impCloneExpr(GenTree*             tree,
