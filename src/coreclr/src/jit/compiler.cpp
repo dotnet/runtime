@@ -55,6 +55,11 @@ bool       Compiler::s_pJitFunctionFileInitialized = false;
 MethodSet* Compiler::s_pJitMethodSet               = nullptr;
 #endif // DEBUG
 
+// static
+const impAssignPlace impAssignPlace::s_SpillAll     = impAssignPlace(SpillLevel::CHECK_SPILL_ALL);
+const impAssignPlace impAssignPlace::s_SpillNone    = impAssignPlace(SpillLevel::CHECK_SPILL_NONE);
+const impAssignPlace impAssignPlace::s_SpillInvalid = impAssignPlace(SpillLevel::CHECK_SPILL_INVALID);
+
 /*****************************************************************************
  *
  *  Little helpers to grab the current cycle counter value; this is done

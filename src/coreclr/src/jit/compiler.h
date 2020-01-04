@@ -1936,6 +1936,37 @@ public:
     void Dump(Compiler* compiler);
 };
 
+enum SpillLevel
+{
+    CHECK_SPILL_ALL     = -1,
+    CHECK_SPILL_NONE    = -2,
+    CHECK_SPILL_INVALID = -3
+};
+
+struct impAssignPlace
+{
+public:
+    bool        useStmts;
+    Statement** pAfterStmt;
+    BasicBlock* block;
+    int         spillLevel;
+
+    impAssignPlace(Statement** pAfterStmt, BasicBlock* block)
+        : useStmts(true), pAfterStmt(pAfterStmt), block(block), spillLevel(CHECK_SPILL_INVALID)
+    {
+        assert((pAfterStmt != nullptr) && (block != nullptr));
+    }
+
+    explicit impAssignPlace(int spillLevel)
+        : useStmts(false), pAfterStmt(nullptr), block(nullptr), spillLevel(spillLevel)
+    {
+    }
+
+    const static impAssignPlace s_SpillAll;
+    const static impAssignPlace s_SpillNone;
+    const static impAssignPlace s_SpillInvalid;
+};
+
 #ifdef DEBUG
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // We have the ability to mark source expressions with "Test Labels."
@@ -3720,12 +3751,6 @@ protected:
     Statement* impLastStmt; // The last statement for the current BB.
 
 public:
-    enum
-    {
-        CHECK_SPILL_ALL  = -1,
-        CHECK_SPILL_NONE = -2
-    };
-
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -3735,16 +3760,12 @@ public:
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, IL_OFFSETX offset);
     void impInsertTreeBefore(GenTree* tree, IL_OFFSETX offset, Statement* stmtBefore);
-    void impAssignTempGen(unsigned    tmp,
-                          GenTree*    val,
-                          unsigned    curLevel);
-    void impAssignTempGenStruct(unsigned             tmpNum,
-                                GenTree*             val,
-                                CORINFO_CLASS_HANDLE structHnd,
-                                unsigned             curLevel,
-                                Statement**          pAfterStmt = nullptr,
-                                IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
-                                BasicBlock*          block      = nullptr);
+    void impAssignTempGen(unsigned tmp, GenTree* val, unsigned curLevel);
+    void impAssignTempGenStruct(unsigned              tmpNum,
+                                GenTree*              val,
+                                CORINFO_CLASS_HANDLE  structHnd,
+                                const impAssignPlace& asgPlace,
+                                IL_OFFSETX            ilOffset = BAD_IL_OFFSET);
 
     Statement* impExtractLastStmt();
     GenTree* impCloneExpr(GenTree*             tree,
