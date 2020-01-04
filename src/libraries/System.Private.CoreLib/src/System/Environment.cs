@@ -138,8 +138,6 @@ namespace System
             }
         }
 
-        public static bool UserInteractive => true;
-
         public static Version Version
         {
             get

@@ -1325,11 +1325,22 @@
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs">
       <Link>Common\Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\User32\Interop.Constants.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\User32\Interop.Constants.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.LoadString.cs">
       <Link>Common\Interop\Windows\User32\Interop.LoadString.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\User32\Interop.SendMessageTimeout.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetProcessWindowStation.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetProcessWindowStation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetUserObjectInformation.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetUserObjectInformation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs">
+      <Link>Common\Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs</Link>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Win32\RegistryKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
