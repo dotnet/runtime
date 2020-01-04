@@ -42,7 +42,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -199,6 +198,12 @@ namespace System.Text.RegularExpressions
                         case Setloop:
                             node.Type = Setloopgreedy;
                             break;
+
+                        // TODO: We should be able to automatically upgrade an Alternate by inserting a Greedy node
+                        // around it when the Alternate is the last node.  This won't help to curtail backtracking,
+                        // but it will enable more trees to take the non-backtracking fast path in the compiler.
+
+                        // TODO: Same goes for Loop and Lazyloop.
 
                         case Capture:
                         case Greedy:
@@ -772,6 +777,8 @@ namespace System.Text.RegularExpressions
                             case Setloop when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
                             case Setloopgreedy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
                             case End:
+                            case EndZ when node.Ch != '\n':
+                            case Eol when node.Ch != '\n':
                             case Boundary when RegexCharClass.IsWordChar(node.Ch):
                             case Nonboundary when !RegexCharClass.IsWordChar(node.Ch):
                             case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
@@ -812,6 +819,8 @@ namespace System.Text.RegularExpressions
                             case Setloop when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                             case Setloopgreedy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                             case End:
+                            case EndZ when !RegexCharClass.CharInClass('\n', node.Str!):
+                            case Eol when !RegexCharClass.CharInClass('\n', node.Str!):
                             case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass: // TODO: Expand these with a more inclusive overlap check that considers categories
                             case Nonboundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
                             case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
