@@ -6,5 +6,6 @@
       be resolved by default.
     -->
     <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
+    <AssemblySearchPaths Condition="'$(TargetFramework)' == ''">$(AssemblySearchPaths);C:\git\runtime\artifacts\bin\ref\$(BuildTargetFramework)\</AssemblySearchPaths>
   </PropertyGroup>
 </Project>

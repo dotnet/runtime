@@ -4,6 +4,7 @@
   <PropertyGroup>
     <!-- let us control the output path -->
     <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(ConfigurationGroup)</OutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AdditionalBuildTargetFrameworks>netstandard2.0-$(OSGroup)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
   
