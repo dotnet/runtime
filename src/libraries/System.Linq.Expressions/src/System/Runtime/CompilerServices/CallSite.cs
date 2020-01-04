@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
@@ -157,10 +156,10 @@ namespace System.Runtime.CompilerServices
         internal CallSite? _cachedMatchmaker;
 
         // Cached update delegate for all sites with a given T
-        [MaybeNull] private static T s_cachedUpdate = default!;
+        private static T? s_cachedUpdate;
 
         // Cached noMatch delegate for all sites with a given T
-        [MaybeNull] private static volatile T s_cachedNoMatch = default!;
+        private static volatile T? s_cachedNoMatch;
 
         private CallSite(CallSiteBinder binder)
             : base(binder)
@@ -222,10 +221,10 @@ namespace System.Runtime.CompilerServices
             // This is intentionally non-static to speed up creation - in particular MakeUpdateDelegate
             // as static generic methods are more expensive than instance methods.  We call a ref helper
             // so we only access the generic static field once.
-            return GetUpdateDelegate(ref s_cachedUpdate!);
+            return GetUpdateDelegate(ref s_cachedUpdate);
         }
 
-        private T GetUpdateDelegate(ref T addr)
+        private T GetUpdateDelegate(ref T? addr)
         {
             if (addr == null)
             {
@@ -393,7 +392,6 @@ namespace System.Runtime.CompilerServices
             return supported;
         }
 #endif
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private T CreateCustomUpdateDelegate(MethodInfo invoke)
         {

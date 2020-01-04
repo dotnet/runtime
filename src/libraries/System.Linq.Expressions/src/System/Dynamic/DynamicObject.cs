@@ -48,7 +48,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the get operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryGetMember(GetMemberBinder binder, [NotNullWhen(true)] out object? result)
+        public virtual bool TryGetMember(GetMemberBinder binder, out object? result)
         {
             result = null;
             return false;
@@ -114,7 +114,7 @@ namespace System.Dynamic
         /// <param name="result">The created instance.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryCreateInstance(CreateInstanceBinder binder, object[]? args, out object? result)
+        public virtual bool TryCreateInstance(CreateInstanceBinder binder, object?[]? args, [NotNullWhen(true)] out object? result)
         {
             result = null;
             return false;
@@ -130,7 +130,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the invocation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryInvoke(InvokeBinder binder, object[] args, out object? result)
+        public virtual bool TryInvoke(InvokeBinder binder, object?[]? args, out object? result)
         {
             result = null;
             return false;
@@ -146,7 +146,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryBinaryOperation(BinaryOperationBinder binder, object arg, [NotNullWhen(true)] out object? result)
+        public virtual bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object? result)
         {
             result = null;
             return false;

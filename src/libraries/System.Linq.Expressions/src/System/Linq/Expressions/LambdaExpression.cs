@@ -581,16 +581,16 @@ namespace System.Linq.Expressions
         /// Creates an Expression{T} given the delegate type. Caches the
         /// factory method to speed up repeated creations for the same T.
         /// </summary>
-        internal static LambdaExpression CreateLambda(Type delegateType, Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression>? parameters)
+        internal static LambdaExpression CreateLambda(Type delegateType, Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {
             // Get or create a delegate to the public Expression.Lambda<T>
             // method and call that will be used for creating instances of this
             // delegate type
-            Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>?, LambdaExpression>? fastPath;
-            CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>?, LambdaExpression>>? factories = s_lambdaFactories;
+            Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>? fastPath;
+            CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? factories = s_lambdaFactories;
             if (factories == null)
             {
-                s_lambdaFactories = factories = new CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>?, LambdaExpression>>(50);
+                s_lambdaFactories = factories = new CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>(50);
             }
 
             if (!factories.TryGetValue(delegateType, out fastPath))
@@ -605,7 +605,7 @@ namespace System.Linq.Expressions
                     return (LambdaExpression)create.Invoke(null, new object?[] { body, name, tailCall, parameters })!;
                 }
 
-                factories[delegateType] = fastPath = (Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>?, LambdaExpression>)create.CreateDelegate(typeof(Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
+                factories[delegateType] = fastPath = (Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)create.CreateDelegate(typeof(Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
             }
 
             return fastPath(body, name, tailCall, parameters);

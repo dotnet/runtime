@@ -138,7 +138,7 @@ namespace System.Linq.Expressions
             {
                 if (expression == null) throw Error.OnlyStaticFieldsHaveNullInstance(nameof(field));
                 ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-                if (!TypeUtils.AreReferenceAssignable(field.DeclaringType, expression.Type))
+                if (!TypeUtils.AreReferenceAssignable(field.DeclaringType!, expression.Type))
                 {
                     throw Error.FieldInfoNotDefinedForType(field.DeclaringType, field.Name, expression.Type);
                 }

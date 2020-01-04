@@ -38,7 +38,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the operand of the unary operation.
         /// </summary>
-        /// <returns> An <see cref="Expression"/> that represents the operand of the unary operation. Returns null if node type is <see cref="ExpressionType.Throw"/> </returns>
+        /// <returns> An <see cref="Expression"/> that represents the operand of the unary operation. Returns null with no operand.</returns>
         public Expression Operand { get; }
 
         /// <summary>

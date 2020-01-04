@@ -166,14 +166,14 @@ namespace System.Dynamic.Utils
         public static bool IsValidInstanceType(MemberInfo member, Type instanceType)
         {
             Type? targetType = member.DeclaringType;
-            if (AreReferenceAssignable(targetType, instanceType))
-            {
-                return true;
-            }
-
             if (targetType == null)
             {
                 return false;
+            }
+
+            if (AreReferenceAssignable(targetType, instanceType))
+            {
+                return true;
             }
 
             if (instanceType.IsValueType)
@@ -842,7 +842,7 @@ namespace System.Dynamic.Utils
 
         public static bool AreEquivalent(Type? t1, Type? t2) => t1 != null && t1.IsEquivalentTo(t2);
 
-        public static bool AreReferenceAssignable(Type? dest, Type src)
+        public static bool AreReferenceAssignable(Type dest, Type src)
         {
             // This actually implements "Is this identity assignable and/or reference assignable?"
             if (AreEquivalent(dest, src))
@@ -850,7 +850,7 @@ namespace System.Dynamic.Utils
                 return true;
             }
 
-            return !dest!.IsValueType && !src.IsValueType && dest.IsAssignableFrom(src);
+            return !dest.IsValueType && !src.IsValueType && dest.IsAssignableFrom(src);
         }
 
         public static bool IsSameOrSubclass(Type type, Type subType) =>

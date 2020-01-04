@@ -115,13 +115,13 @@ namespace System.Dynamic
         protected DynamicObject() { }
         public virtual System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() { throw null; }
         public virtual System.Dynamic.DynamicMetaObject GetMetaObject(System.Linq.Expressions.Expression parameter) { throw null; }
-        public virtual bool TryBinaryOperation(System.Dynamic.BinaryOperationBinder binder, object arg, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)]  out object? result) { throw null; }
+        public virtual bool TryBinaryOperation(System.Dynamic.BinaryOperationBinder binder, object arg, out object? result) { throw null; }
         public virtual bool TryConvert(System.Dynamic.ConvertBinder binder, out object? result) { throw null; }
-        public virtual bool TryCreateInstance(System.Dynamic.CreateInstanceBinder binder, object[]? args, out object? result) { throw null; }
+        public virtual bool TryCreateInstance(System.Dynamic.CreateInstanceBinder binder, object?[]? args, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public virtual bool TryDeleteIndex(System.Dynamic.DeleteIndexBinder binder, object[] indexes) { throw null; }
         public virtual bool TryDeleteMember(System.Dynamic.DeleteMemberBinder binder) { throw null; }
         public virtual bool TryGetIndex(System.Dynamic.GetIndexBinder binder, object[] indexes, out object? result) { throw null; }
-        public virtual bool TryGetMember(System.Dynamic.GetMemberBinder binder, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
+        public virtual bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object? result) { throw null; }
         public virtual bool TryInvoke(System.Dynamic.InvokeBinder binder, object?[]? args, out object? result) { throw null; }
         public virtual bool TryInvokeMember(System.Dynamic.InvokeMemberBinder binder, object?[]? args, out object? result) { throw null; }
         public virtual bool TrySetIndex(System.Dynamic.SetIndexBinder binder, object[] indexes, object? value) { throw null; }
