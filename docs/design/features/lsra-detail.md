@@ -224,7 +224,7 @@ The register lifetimes must obey the following lifetime model:
 
 -   Next, the destination register(s) are defined.
 
--   Finally, any `delayRegFree` source registesr are freed.
+-   Finally, any `delayRegFree` source registers are freed.
 
 There are several things to note about this order:
 
@@ -344,7 +344,7 @@ well as supporting components) in more depth.
     -   This mostly duplicates what is done in
         `Compiler::lvaMarkLocalVars(). There are differences in what
         constitutes a register candidate vs. what is tracked, but we
-        should probably handle them in ` Compiler::lvaMarkLocalVars()`
+        should probably handle them in `Compiler::lvaMarkLocalVars()`
         when it is called after `Lowering`.
 
     -   It sets the ` lvLRACandidate` flag on lclVars that are going
@@ -393,7 +393,7 @@ internal registers) are constructed as the relevant node is encountered.
 
 The building of `RefPosition`s is done via a traversal of the nodes, using the `blockSequence`
 constructed as described above. This traversal invokes `LinearScan::BuildNode()` for each
-node, which builds `RefPositions` according the the liveness model described above:
+node, which builds `RefPositions` according to the liveness model described above:
 
 -   First, we create `RefPosition`s to define any internal registers that are required.
     As we create new `Interval`s for these, we add the definition `RefPosition` to an array,
@@ -421,7 +421,7 @@ node, which builds `RefPositions` according the the liveness model described abo
          between defs and uses of tree temps is rarely very great.
 
          For x86 and x64, when we have an instruction that will overwrite one of its sources,
-         we need to ensure that the other source isn't assigned the same register as the
+         we need to ensure that the other source isn't given the same register as the
          target. For this, we annotate the use `RefPosition` with `delayRegFree`.
 
 -   Next we create the uses of the internal registers, using the `InternalDefs` array.
@@ -474,6 +474,8 @@ During this phase, preferences are set:
 
         - When the use or definition of a value must use a fixed register, due to instruction
           or ABI constraints. In this case, the register may be added to the `registerPreferences`,
+          depending on whether it conflicts with existing preferences
+          (the heuristics for determining this are in `LinearScan::mergeRegisterPreferences()`).
 
         - When a register is killed at a point where a lclVar is live, that register is removed
           from the `registerPreferences` of the lclVar `Interval`.
@@ -970,8 +972,8 @@ This would be best done after [Merge Allocation of Free and Busy Registers](#com
 The idea would be to add support to change the weight given to the various selection heuristics
 according to a configuration specification, allowing them to be auto-tuned.
 
-The scoring could be done using perf scores, or even using actual performance measurements (though the
-former would be considerably more efficient).
+The scoring could be done using perf scores, or even using actual performance measurements,
+though running actual benchmarks on each configuration could be quite costly.
 
 In order to enable this capability without impacting throughput, it is likely that the configurability
 would be added as an alternate path in the register allocator, leaving the default path as-is.
@@ -993,7 +995,7 @@ a reasonable approach for Tier 1 or higher
 an alternate approach would be to only perform
 pre-allocation at block granularity, including block boundaries (for which the variable
 locations are recorded in the `varToRegMaps`). Without an interference graph or a reservation
-table, it will likely be limited to a small number of the highest frequencly lclVars.
+table, it will likely be limited to a small number of the highest frequency lclVars.
 
 One strategy would be to do something along the lines of (appropriate hand-waving applies):
 
@@ -1019,7 +1021,7 @@ When the register allocator performs resolution across block boundaries, it may 
 edges (edges from a block with multiple successors to a block with multiple predecessors).
 This can seriously impact performance, and is especially bad when the edge is a loop backedge.
 
-One option would be go avoid edge splitting altogether. Instead, we would construct `CriticalEdgeSet`s that
+One option would be to avoid edge splitting altogether. Instead, we would construct `CriticalEdgeSet`s that
 would include the set of critical edges that have any edges in common.
 For these, once we have allocated the first block that contains either an in-edge or an out-edge in such
 a set, the variable locations on that edge would be fixed, and future blocks that have edges in that
@@ -1038,10 +1040,11 @@ Currently the register allocator doesn't track whether a local variable has the 
 as in a register. The work-in-progress to support "write-thru" EH variables (variables live across exception
 boundaries) adds capability to liveness analysis and code generation (in addition to the register allocator)
 to handle variables that are live in both registers and on the stack. This support could be further leveraged
-to avoid re-storing single-def variables if they are spilled at their definition.
+to avoid spilling single-def variables to memory if they have already been spilled at their
+definition.
 
 Extending such support to more generally track whether there is already a valid stack copy involves more
-work. Fully generaly support would require such information at block boundaries, but it might be worth
+work. Fully general support would require such information at block boundaries, but it might be worth
 investigating whether it would be worthwhile and cheaper to simply track this information within a block.
 
 ### Support Reg-Optional Defs
@@ -1095,8 +1098,9 @@ creating `Interval`s, nor the resolution phase.
 Currently, the register allocator builds the RefPositions for the entire method at once.
 In Min-Opts and Tier 0, or any time there are no local variables available for enregistration,
 there is no value in doing so, as no values remain live beyond the top-level node of an
-expression. Although it is possible for the nodes of multiple top-level trees to overlap each
-other in execution order, that is not commonly the case.
+expression. Since the JIT doesn't do instruction scheduling or other reordering of nodes
+after `Lowering`, it is generally the case that the live-ranges for the values produced by
+nodes of disjoint top-level trees do not overlap.
 
 Performing the entire allocation (building, allocation and write-back) on a single expression
 at a time, and maintaining pools of data structures for reuse, could improve
