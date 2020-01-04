@@ -177,6 +177,9 @@ namespace System.Runtime.CompilerServices
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface, IsInstanceOfClass, and IsIsntanceofArray functions,
         // this test must deal with all kinds of type tests
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static object? JIT_IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
             CastResult result;
@@ -199,6 +202,9 @@ namespace System.Runtime.CompilerServices
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the ChkCastInterface, ChkCastClass, and ChkCastArray functions,
         // this test must deal with all kinds of type tests
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static object? JIT_ChkCastAny(void* toTypeHnd, object? obj)
         {
             CastResult result;
