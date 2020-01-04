@@ -106,6 +106,8 @@ DoCall:
         je      ReturnsFloat
         cmp     ecx, 8
         je      ReturnsDouble
+        cmp     ecx, 16
+        je      ReturnsQuad
         ; unexpected
         jmp     Epilog
 
@@ -125,6 +127,10 @@ ReturnsFloat:
 
 ReturnsDouble:
         movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
+        jmp     Epilog
+
+ReturnsQuad:
+        movapd  xmmword ptr [rbx+CallDescrData__returnValue], xmm0
         jmp     Epilog
 
         NESTED_END CallDescrWorkerInternal, _TEXT

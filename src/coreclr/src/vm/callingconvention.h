@@ -1547,6 +1547,14 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             }
 #endif
 
+#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
+            if (thValueType.AsMethodTable()->GetVectorSize() == 16) /* (Andrew Au) Check if it is a Vector128<T> */
+            {
+                flags |= 16 << RETURN_FP_SIZE_SHIFT;
+                break;
+            }
+#endif
+
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;
 #endif // UNIX_AMD64_ABI
