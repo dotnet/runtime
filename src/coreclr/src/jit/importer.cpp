@@ -758,26 +758,13 @@ void Compiler::impInsertTreeBefore(GenTree* tree, IL_OFFSETX offset, Statement* 
 
 void Compiler::impAssignTempGen(unsigned    tmp,
                                 GenTree*    val,
-                                unsigned    curLevel,
-                                Statement** pAfterStmt, /* = NULL */
-                                IL_OFFSETX  ilOffset,   /* = BAD_IL_OFFSET */
-                                BasicBlock* block       /* = NULL */
+                                unsigned    curLevel
                                 )
 {
     GenTree* asg = gtNewTempAssign(tmp, val);
-
     if (!asg->IsNothingNode())
     {
-        if (pAfterStmt)
-        {
-            Statement* asgStmt = gtNewStmt(asg, ilOffset);
-            fgInsertStmtAfter(block, *pAfterStmt, asgStmt);
-            *pAfterStmt = asgStmt;
-        }
-        else
-        {
-            impAppendTree(asg, curLevel, impCurStmtOffs);
-        }
+       impAppendTree(asg, curLevel, impCurStmtOffs);
     }
 }
 
