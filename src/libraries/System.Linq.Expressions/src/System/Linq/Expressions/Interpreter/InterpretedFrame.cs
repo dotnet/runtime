@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Interpreter
         public readonly object?[] Data;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        public readonly IStrongBox?[]? Closure;
+        public readonly IStrongBox[]? Closure;
 
         public int StackIndex;
         public int InstructionIndex;
@@ -39,7 +39,7 @@ namespace System.Linq.Expressions.Interpreter
         public ExceptionHandler CurrentAbortHandler;
 #endif
 
-        internal InterpretedFrame(Interpreter interpreter, IStrongBox?[]? closure)
+        internal InterpretedFrame(Interpreter interpreter, IStrongBox[]? closure)
         {
             Interpreter = interpreter;
             StackIndex = interpreter.LocalCount;

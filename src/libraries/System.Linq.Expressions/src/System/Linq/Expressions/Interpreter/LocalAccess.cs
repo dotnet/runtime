@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            IStrongBox box = frame.Closure![_index]!;
+            IStrongBox box = frame.Closure![_index];
             frame.Data[frame.StackIndex++] = box.Value;
             return 1;
         }
@@ -104,7 +104,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            IStrongBox box = frame.Closure![_index]!;
+            IStrongBox box = frame.Closure![_index];
             frame.Data[frame.StackIndex++] = box;
             return 1;
         }
@@ -209,7 +209,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            IStrongBox box = frame.Closure![_index]!;
+            IStrongBox box = frame.Closure![_index];
             box.Value = frame.Peek();
             return 1;
         }

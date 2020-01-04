@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Interpreter
     [DebuggerDisplay("{DebugView,nq}")]
     public partial class LightLambda
     {
-        private readonly IStrongBox?[]? _closure;
+        private readonly IStrongBox[]? _closure;
         private readonly Interpreter _interpreter;
 #if NO_FEATURE_STATIC_DELEGATE
         private static readonly CacheDict<Type, Func<LightLambda, Delegate>> _runCache = new CacheDict<Type, Func<LightLambda, Delegate>>(100);
@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Interpreter
         // Adaptive compilation support
         private readonly LightDelegateCreator _delegateCreator;
 
-        internal LightLambda(LightDelegateCreator delegateCreator, IStrongBox?[]? closure)
+        internal LightLambda(LightDelegateCreator delegateCreator, IStrongBox[]? closure)
         {
             _delegateCreator = delegateCreator;
             _closure = closure;

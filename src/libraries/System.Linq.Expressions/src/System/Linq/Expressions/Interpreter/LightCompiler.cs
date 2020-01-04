@@ -3150,13 +3150,13 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (_parameter.InClosure)
             {
-                IStrongBox box = frame.Closure![_parameter.Index]!;
+                IStrongBox box = frame.Closure![_parameter.Index];
                 box.Value = value;
             }
             else if (_parameter.IsBoxed)
             {
-                var box = (IStrongBox?)frame.Data[_parameter.Index];
-                box!.Value = value;
+                var box = (IStrongBox)frame.Data[_parameter.Index]!;
+                box.Value = value;
             }
             else
             {

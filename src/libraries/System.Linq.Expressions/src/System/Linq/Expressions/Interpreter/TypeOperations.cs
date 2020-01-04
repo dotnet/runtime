@@ -25,13 +25,13 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            IStrongBox?[]? closure;
+            IStrongBox[]? closure;
             if (ConsumedStack > 0)
             {
                 closure = new IStrongBox[ConsumedStack];
                 for (int i = closure.Length - 1; i >= 0; i--)
                 {
-                    closure[i] = (IStrongBox?)frame.Pop();
+                    closure[i] = (IStrongBox?)frame.Pop()!;
                 }
             }
             else
