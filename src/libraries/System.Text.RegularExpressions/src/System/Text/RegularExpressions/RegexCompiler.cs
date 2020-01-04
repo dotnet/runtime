@@ -51,6 +51,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringIndexOf = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_spanIndexOf = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
@@ -1901,6 +1902,8 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Type == RegexNode.Oneloopgreedy || node.Type == RegexNode.Notoneloopgreedy || node.Type == RegexNode.Setloopgreedy);
                 Debug.Assert(node.M < int.MaxValue);
 
+                iterationLocal ??= DeclareInt32();
+
                 // First generate the code to handle the required number of iterations.
                 if (node.M > 0)
                 {
@@ -1910,73 +1913,105 @@ namespace System.Text.RegularExpressions
                 // Then generate the code to handle the 0 or more remaining optional iterations.
                 if (node.N > node.M)
                 {
-                    Label conditionLabel = DefineLabel();
-                    Label bodyLabel = DefineLabel();
                     Label originalDoneLabel = doneLabel;
-                    iterationLocal ??= DeclareInt32();
-
                     doneLabel = DefineLabel();
-                    int maxIterations = node.N == int.MaxValue ? int.MaxValue : node.N - node.M;
 
-                    // int i = 0;
-                    Ldc(0);
-                    Stloc(iterationLocal);
-                    BrFar(conditionLabel);
-
-                    // Body:
-                    // TimeoutCheck();
-                    // if (!match) goto Done;
-                    MarkLabel(bodyLabel);
-                    EmitTimeoutCheck();
-
-                    // if (textSpan[textSpanPos + i] != ch) goto Done;
-                    Ldloca(textSpanLocal);
-                    Ldc(textSpanPos);
-                    Ldloc(iterationLocal);
-                    Add();
-                    Call(s_spanGetItemMethod);
-                    LdindU2();
-                    switch (node.Type)
+                    if (node.Type == RegexNode.Notoneloopgreedy && node.N == int.MaxValue && !IsCaseInsensitive(node))
                     {
-                        case RegexNode.Oneloopgreedy:
-                            if (IsCaseInsensitive(node)) CallToLower();
-                            Ldc(node.Ch);
-                            BneFar(doneLabel);
-                            break;
-                        case RegexNode.Notoneloopgreedy:
-                            if (IsCaseInsensitive(node)) CallToLower();
-                            Ldc(node.Ch);
-                            BeqFar(doneLabel);
-                            break;
-                        case RegexNode.Setloopgreedy:
-                            EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
-                            BrfalseFar(doneLabel);
-                            break;
-                    }
+                        // For Notoneloopgreedy, we're looking for a specific character, as everything until we find
+                        // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
+                        // we can use the vectorized IndexOf to do the search, rather than open-coding it. (In the future,
+                        // we could consider using IndexOf with StringComparison for case insensitivity.)
 
-                    // i++;
-                    Ldloc(iterationLocal);
-                    Ldc(1);
-                    Add();
-                    Stloc(iterationLocal);
+                        // int i = textSpan.Slice(textSpanPos).IndexOf(char);
+                        Ldloca(textSpanLocal);
+                        Ldc(textSpanPos);
+                        Call(s_spanSliceMethod);
+                        Ldc(node.Ch);
+                        Call(s_spanIndexOf);
+                        Stloc(iterationLocal);
 
-                    // if ((uint)(textSpanPos + i) >= (uint)textSpan.Length || i >= maxIterations) goto Done;
-                    MarkLabel(conditionLabel);
-                    Ldc(textSpanPos);
-                    Ldloc(iterationLocal);
-                    Add();
-                    Ldloca(textSpanLocal);
-                    Call(s_spanGetLengthMethod);
-                    BgeUnFar(doneLabel);
-                    if (maxIterations != int.MaxValue)
-                    {
+                        // if (i != -1) goto doneLabel;
                         Ldloc(iterationLocal);
-                        Ldc(maxIterations);
-                        BltFar(bodyLabel);
+                        Ldc(-1);
+                        BneFar(doneLabel);
+
+                        // i = textSpan.Length - textSpanPos;
+                        Ldloca(textSpanLocal);
+                        Call(s_spanGetLengthMethod);
+                        Ldc(textSpanPos);
+                        Sub();
+                        Stloc(iterationLocal);
                     }
                     else
                     {
-                        BrFar(bodyLabel);
+                        // For everything else, do a normal loop.
+
+                        Label conditionLabel = DefineLabel();
+                        Label bodyLabel = DefineLabel();
+
+                        int maxIterations = node.N == int.MaxValue ? int.MaxValue : node.N - node.M;
+
+                        // int i = 0;
+                        Ldc(0);
+                        Stloc(iterationLocal);
+                        BrFar(conditionLabel);
+
+                        // Body:
+                        // TimeoutCheck();
+                        // if (!match) goto Done;
+                        MarkLabel(bodyLabel);
+                        EmitTimeoutCheck();
+
+                        // if (textSpan[textSpanPos + i] != ch) goto Done;
+                        Ldloca(textSpanLocal);
+                        Ldc(textSpanPos);
+                        Ldloc(iterationLocal);
+                        Add();
+                        Call(s_spanGetItemMethod);
+                        LdindU2();
+                        switch (node.Type)
+                        {
+                            case RegexNode.Oneloopgreedy:
+                                if (IsCaseInsensitive(node)) CallToLower();
+                                Ldc(node.Ch);
+                                BneFar(doneLabel);
+                                break;
+                            case RegexNode.Notoneloopgreedy:
+                                if (IsCaseInsensitive(node)) CallToLower();
+                                Ldc(node.Ch);
+                                BeqFar(doneLabel);
+                                break;
+                            case RegexNode.Setloopgreedy:
+                                EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
+                                BrfalseFar(doneLabel);
+                                break;
+                        }
+
+                        // i++;
+                        Ldloc(iterationLocal);
+                        Ldc(1);
+                        Add();
+                        Stloc(iterationLocal);
+
+                        // if ((uint)(textSpanPos + i) >= (uint)textSpan.Length || i >= maxIterations) goto Done;
+                        MarkLabel(conditionLabel);
+                        Ldc(textSpanPos);
+                        Ldloc(iterationLocal);
+                        Add();
+                        Ldloca(textSpanLocal);
+                        Call(s_spanGetLengthMethod);
+                        BgeUnFar(doneLabel);
+                        if (maxIterations != int.MaxValue)
+                        {
+                            Ldloc(iterationLocal);
+                            Ldc(maxIterations);
+                            BltFar(bodyLabel);
+                        }
+                        else
+                        {
+                            BrFar(bodyLabel);
+                        }
                     }
 
                     // Done:
