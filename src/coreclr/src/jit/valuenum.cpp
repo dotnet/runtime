@@ -8762,7 +8762,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_JitNewArr;
             break;
 
-        case CORINFO_HELP_NEWARR_1_R2R_DIRECT:
         case CORINFO_HELP_READYTORUN_NEWARR_1:
             vnf = VNF_JitReadyToRunNewArr;
             break;

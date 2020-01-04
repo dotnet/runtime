@@ -1125,31 +1125,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             break;
         }
 
-        case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
-        {
-#ifndef DACCESS_COMPILE
-            TypeHandle baseType = psig.GetTypeHandleThrowing(pModule,
-                                                             pTypeContext,
-                                                             fLoadTypes,
-                                                             level,
-                                                             dropGenericArgumentLevel,
-                                                             pSubst,
-                                                             pZapSigContext);
-            if (baseType.IsNull())
-            {
-                thRet = baseType;
-            }
-            else
-            {
-                thRet = baseType.GetMethodTable();
-            }
-#else
-            DacNotImpl();
-            thRet = TypeHandle();
-#endif
-            break;
-        }
-
         case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
         {
 #ifndef DACCESS_COMPILE

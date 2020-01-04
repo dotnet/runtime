@@ -1506,50 +1506,6 @@ FCIMPL2(Object*, MarshalNative::GetObjectsForNativeVariants, VARIANT* aSrcNative
 }
 FCIMPLEND
 
-
-FCIMPL2(void, MarshalNative::DoGenerateGuidForType, GUID * result, ReflectClassBaseObject* refTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF) refTypeUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refType);
-    GCPROTECT_BEGININTERIOR (result);
-
-    // Validate the arguments.
-    if (refType == NULL)
-        COMPlusThrowArgumentNull(W("type"));
-
-    MethodTable *pRefMT = refType->GetMethodTable();
-    if (pRefMT != g_pRuntimeTypeClass)
-        COMPlusThrowArgumentException(W("type"), W("Argument_MustBeRuntimeType"));
-    if (result == NULL)
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_GUID"));
-
-    // Check to see if the type is a COM object or not.
-    if (IsComObjectClass(refType->GetType()))
-    {
-#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        // The type is a COM object then we get the GUID from the class factory.
-        SyncBlock* pSyncBlock = refType->GetSyncBlock();
-
-        ComClassFactory* pComClsFac = pSyncBlock->GetInteropInfo()->GetComClassFactory();
-        memcpy(result, &pComClsFac->m_rclsid, sizeof(GUID));
-#else // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-        memset(result,0,sizeof(GUID));
-#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    }
-    else
-    {
-        // The type is a normal COM+ class so we need to generate the GUID.
-        TypeHandle classTH = refType->GetType();
-        classTH.GetMethodTable()->GetGuid(result, TRUE);
-    }
-
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 FCIMPL2(void, MarshalNative::DoGetTypeLibGuid, GUID * result, Object* refTlbUNSAFE)
 {
     FCALL_CONTRACT;

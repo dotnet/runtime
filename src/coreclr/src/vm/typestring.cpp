@@ -891,24 +891,15 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
     //   element_ty[*] (1-d, ARRAY)
     //   element_ty[,] (2-d, ARRAY) etc
     // or a pointer (*) or byref (&)
-    if (ty.HasTypeParam() || (!ty.IsTypeDesc() && ty.AsMethodTable()->IsArray()))
+    if (ty.HasTypeParam())
     {
         if (ty.GetSignatureCorElementType() != ELEMENT_TYPE_VALUETYPE)
         {
             DWORD rank;
             TypeHandle elemType;
-            if (ty.HasTypeParam())
-            {
-                rank = ty.IsArray() ? ty.AsArray()->GetRank() : 0;
-                elemType = ty.GetTypeParam();
-            }
-            else
-            {
-                MethodTable *pMT = ty.GetMethodTable();
-                PREFIX_ASSUME(pMT != NULL);
-                rank = pMT->GetRank();
-                elemType = pMT->GetArrayElementTypeHandle();
-            }
+
+            rank = ty.IsArray() ? ty.GetRank() : 0;
+            elemType = ty.GetTypeParam();
 
             _ASSERTE(!elemType.IsNull());
             AppendType(tnb, elemType, Instantiation(), format & ~FormatAssembly);

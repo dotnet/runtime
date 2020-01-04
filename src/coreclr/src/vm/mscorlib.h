@@ -961,7 +961,6 @@ DEFINE_METHOD(DEBUGGER,             BREAK_CAN_THROW,        BreakCanThrow,      
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
-DEFINE_METHOD(BUFFER,               BLOCKCOPY,              BlockCopy,              SM_Array_Int_Array_Int_Int_RetVoid)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(WINDOWSRUNTIMEMARSHAL, WinRT,  WindowsRuntimeMarshal)
