@@ -1560,21 +1560,23 @@ namespace System.Text.RegularExpressions
                         // At that point they're just a shorthand for writing out the One/Notone/Set
                         // that number of times.
                         case RegexNode.Oneloop:
-                        case RegexNode.Onelazy:
                         case RegexNode.Notoneloop:
-                        case RegexNode.Notonelazy:
                         case RegexNode.Setloop:
+                            Debug.Assert(node.Next == null || node.Next.Type != RegexNode.Greedy, "Loop should have been transformed into a greedy type.");
+                            goto case RegexNode.Onelazy;
+                        case RegexNode.Onelazy:
+                        case RegexNode.Notonelazy:
                         case RegexNode.Setlazy:
                             supported = node.M == node.N;
                             break;
 
                         // {Lazy}Loop repeaters are the same, except their child also needs to be supported.
-                        // TODO: We should also be able to support {lazy}loops if Next.Type == Greedy, but doing
-                        // so will require custom logic to handle the case where an optional iteration only
-                        // fails part-way through it.
+                        // We also support such loops being greedy.
                         case RegexNode.Loop:
                         case RegexNode.Lazyloop:
-                            supported = node.M == node.N && NodeSupportsNonBacktrackingImplementation(node.Child(0), level + 1);
+                            supported =
+                                (node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Greedy)) &&
+                                NodeSupportsNonBacktrackingImplementation(node.Child(0), level + 1);
                             break;
 
                         // We can handle greedy as long as we can handle making its child greedy, or
@@ -1741,9 +1743,9 @@ namespace System.Text.RegularExpressions
                     EmitNode(node.Child(i));
 
                     // If we get here in the generated code, the branch completed successfully.
-                    // Before jumping to the end, we need to zero out textSpanPos, just as we
-                    // did at the beginning, so that no matter what the value is after the
-                    // branch, whatever follows the alternate will see the same textSpanPos.
+                    // Before jumping to the end, we need to zero out textSpanPos, so that no
+                    // matter what the value is after the branch, whatever follows the alternate
+                    // will see the same textSpanPos.
                     TransferTextSpanPosToRunTextPos();
                     BrFar(doneAlternate);
 
@@ -1846,7 +1848,19 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Oneloopgreedy:
                     case RegexNode.Notoneloopgreedy:
                     case RegexNode.Setloopgreedy:
+                    case RegexNode.Loop:
                         EmitGreedyLoop(node);
+                        break;
+
+                    case RegexNode.Lazyloop:
+                        // A greedy lazy loop amounts to doing the minimum amount of work possible.
+                        // That means iterating as little as is required, which means a repeater
+                        // for the min, and if min is 0, doing nothing.
+                        Debug.Assert(node.Next != null && node.Next.Type == RegexNode.Greedy);
+                        if (node.M > 0)
+                        {
+                            EmitRepeater(node, repeatChildNode: true, iterations: node.M);
+                        }
                         break;
 
                     case RegexNode.Greedy:
@@ -1864,11 +1878,6 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Setloop:
                     case RegexNode.Setlazy:
                         EmitRepeater(node);
-                        break;
-
-                    case RegexNode.Loop:
-                    case RegexNode.Lazyloop:
-                        EmitRepeater(node, repeatChildNode: true);
                         break;
 
                     case RegexNode.Concatenate:
@@ -2152,7 +2161,11 @@ namespace System.Text.RegularExpressions
             // Emits the code to handle a non-backtracking, variable-length loop (Oneloopgreedy or Setloopgreedy).
             void EmitGreedyLoop(RegexNode node)
             {
-                Debug.Assert(node.Type == RegexNode.Oneloopgreedy || node.Type == RegexNode.Notoneloopgreedy || node.Type == RegexNode.Setloopgreedy);
+                Debug.Assert(
+                    node.Type == RegexNode.Oneloopgreedy ||
+                    node.Type == RegexNode.Notoneloopgreedy ||
+                    node.Type == RegexNode.Setloopgreedy ||
+                    (node.Type == RegexNode.Loop && node.Next != null && node.Next.Type == RegexNode.Greedy));
                 Debug.Assert(node.M < int.MaxValue);
 
                 LocalBuilder iterationLocal = RentInt32Local();
@@ -2160,7 +2173,7 @@ namespace System.Text.RegularExpressions
                 // First generate the code to handle the required number of iterations.
                 if (node.M > 0)
                 {
-                    EmitRepeater(node, iterations: node.M);
+                    EmitRepeater(node, repeatChildNode: node.Type == RegexNode.Loop, iterations: node.M);
                 }
 
                 // Then generate the code to handle the 0 or more remaining optional iterations.
@@ -2253,6 +2266,42 @@ namespace System.Text.RegularExpressions
                                 EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
                                 ReturnInt32Local(setScratchLocal);
                                 BrfalseFar(doneLabel);
+                                break;
+                            case RegexNode.Loop:
+                                {
+                                    Label successfulIterationLabel = DefineLabel();
+
+                                    Label prevDone = doneLabel;
+                                    doneLabel = DefineLabel();
+
+                                    // We might loop any number of times.  In order to ensure this loop
+                                    // and subsequent code sees textSpanPos the same regardless, we always need it to contain
+                                    // the same value, and the easiest such value is 0.  So, we transfer
+                                    // textSpanPos to runtextpos, and ensure that any path out of here has
+                                    // textSpanPos as 0.
+                                    TransferTextSpanPosToRunTextPos();
+
+                                    // Save off runtextpos.
+                                    LocalBuilder startingRunTextPos = RentInt32Local();
+                                    Ldloc(runtextposLocal);
+                                    Stloc(startingRunTextPos);
+
+                                    // Emit the child.
+                                    EmitNode(node.Child(0));
+                                    TransferTextSpanPosToRunTextPos(); // ensure textSpanPos remains 0
+                                    Br(successfulIterationLabel); // iteration succeeded
+
+                                    // If the generated code gets here, the iteration failed.
+                                    // Reset state, but still consider this a success.
+                                    MarkLabel(doneLabel);
+                                    Ldloc(startingRunTextPos);
+                                    Stloc(runtextposLocal);
+
+                                    // Reset the done label.
+                                    doneLabel = prevDone;
+
+                                    MarkLabel(successfulIterationLabel);
+                                }
                                 break;
                         }
 
