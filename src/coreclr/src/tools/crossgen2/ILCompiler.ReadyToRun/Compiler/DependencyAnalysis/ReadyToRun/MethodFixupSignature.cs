@@ -48,6 +48,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 150063499;
 
+        public bool IsUnboxingStub => _isUnboxingStub;
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             if (relocsOnly)
