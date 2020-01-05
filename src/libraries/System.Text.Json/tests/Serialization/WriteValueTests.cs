@@ -285,5 +285,38 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
         }
+
+        public class CustomClassToExceedMaxBufferSize
+        {
+            public CustomClassToExceedMaxBufferSize Internal1 { get; set; }
+            public CustomClassToExceedMaxBufferSize Internal2 { get; set; }
+
+            static string name = new string('a', 53687091);
+            public string GetName1 { get { return name; } }
+            public string GetName2 { get { return name; } }
+            public string GetName3 { get { return name; } }
+            public string GetName4 { get { return name; } }
+            public string GetName5 { get { return name; } }
+            public string GetName6 { get { return name; } }
+            public string GetName7 { get { return name; } }
+            public string GetName8 { get { return name; } }
+            public string GetName9 { get { return name; } }
+            public string GetName10 { get { return name; } }
+        }
+
+        [Fact]
+        public static void SerializeExceedMaximumBufferSize()
+        {
+            CustomClassToExceedMaxBufferSize temp = new CustomClassToExceedMaxBufferSize();
+
+            for (int i = 0; i < 2; i++)
+            {
+                CustomClassToExceedMaxBufferSize temp2 = new CustomClassToExceedMaxBufferSize() { Internal1 = temp, Internal2 = temp };
+                temp = temp2;
+            }
+
+            //System.OverflowException
+            JsonSerializer.Serialize(temp, typeof(CustomClassToExceedMaxBufferSize));
+        }
     }
 }
