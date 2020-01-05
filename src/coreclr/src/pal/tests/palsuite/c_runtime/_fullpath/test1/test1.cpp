@@ -83,7 +83,7 @@ int __cdecl main( int argc, char **argv )
         /* 
          * Set the current directory to relPath.
          */
-        bRet = SetCurrentDirectory(testcases[i].relPath);
+        bRet = SetCurrentDirectoryA(testcases[i].relPath);
         if (0 == bRet) 
         {
             Fail ("PALSUITE ERROR: _fullpath (char *, %s, %d) test failed."
@@ -105,7 +105,7 @@ int __cdecl main( int argc, char **argv )
         }
             
         /* Set the current directory back to the original one */
-        bRet = SetCurrentDirectory(szDirNameOWD);
+        bRet = SetCurrentDirectoryA(szDirNameOWD);
         if (0 == bRet) 
         {
             Fail ("PALSUITE ERROR: _fullpath (char *, %s, %d) test failed."

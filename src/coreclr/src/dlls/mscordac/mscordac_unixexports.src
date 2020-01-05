@@ -81,7 +81,6 @@ nativeStringResourceTable_mscorrc_debug
 #sscanf_s
 
 #CopyFileW
-#CreateDirectoryW
 #CreateFileMappingA
 #CreateFileMappingW
 #CreateFileA
@@ -158,12 +157,10 @@ nativeStringResourceTable_mscorrc_debug
 #ReadFile
 #ReleaseMutex
 #ReleaseSemaphore
-#RemoveDirectoryW
 #ResetEvent
 #ResumeThread
 #SearchPathW
 #SetEvent
-#SetFileAttributesW
 #SetFilePointer
 #SetLastError
 #SetErrorMode

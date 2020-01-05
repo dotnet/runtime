@@ -1725,6 +1725,131 @@ done:
 
 /*++
 Function:
+  SetFileAttributesA
+
+Notes:
+  Used for setting read-only attribute on file only.
+
+--*/
+BOOL
+PALAPI
+SetFileAttributesA(
+           IN LPCSTR lpFileName,
+           IN DWORD dwFileAttributes)
+{
+    CPalThread *pThread;
+    struct stat stat_data;
+    mode_t new_mode;
+
+    DWORD dwLastError = 0;
+    BOOL  bRet = FALSE;
+    LPSTR unixFileName = NULL;
+
+    PERF_ENTRY(SetFileAttributesA);
+    ENTRY("SetFileAttributesA(lpFileName=%p (%s), dwFileAttributes=%#x)\n",
+        lpFileName?lpFileName:"NULL",
+        lpFileName?lpFileName:"NULL", dwFileAttributes);
+
+    pThread = InternalGetCurrentThread();
+
+    /* Windows behavior for SetFileAttributes is that any valid attributes
+    are set on a file and any invalid attributes are ignored. SetFileAttributes
+    returns success and does not set an error even if some or all of the
+    attributes are invalid. If all the attributes are invalid, SetFileAttributes
+    sets a file's attribute to NORMAL. */
+
+    /* If dwFileAttributes does not contain READONLY or NORMAL, set it to NORMAL
+    and print a warning message. */
+    if ( !(dwFileAttributes & (FILE_ATTRIBUTE_READONLY |FILE_ATTRIBUTE_NORMAL)) )
+    {
+        dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+        WARN("dwFileAttributes(%#x) contains attributes that are either not supported "
+            "or cannot be set via SetFileAttributes.\n");
+    }
+
+    if ( (dwFileAttributes & FILE_ATTRIBUTE_NORMAL) &&
+         (dwFileAttributes != FILE_ATTRIBUTE_NORMAL) )
+    {
+        WARN("Ignoring FILE_ATTRIBUTE_NORMAL -- it must be used alone\n");
+    }
+
+    if (lpFileName == NULL)
+    {
+        dwLastError = ERROR_FILE_NOT_FOUND;
+        goto done;
+    }
+
+    if ((unixFileName = strdup(lpFileName)) == NULL)
+    {
+        ERROR("strdup() failed\n");
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
+
+    FILEDosToUnixPathA( unixFileName );
+    if ( stat(unixFileName, &stat_data) != 0 )
+    {
+        TRACE("stat failed on %s; errno is %d (%s)\n",
+             unixFileName, errno, strerror(errno));
+        dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
+        goto done;
+    }
+
+    new_mode = stat_data.st_mode;
+    TRACE("st_mode is %#x\n", new_mode);
+
+    /* if we can't do GetFileAttributes on it, don't do SetFileAttributes */
+    if ( !(new_mode & S_IFREG) && !(new_mode & S_IFDIR) )
+    {
+        ERROR("Not a regular file or directory, S_IFMT is %#x\n",
+              new_mode & S_IFMT);
+        dwLastError = ERROR_ACCESS_DENIED;
+        goto done;
+    }
+
+    /* set or unset the "read-only" attribute */
+    if (dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+    {
+        /* remove the write bit from everybody */
+        new_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
+    }
+    else
+    {
+        /* give write permission to the owner if the owner
+         * already has read permission */
+        if ( new_mode & S_IRUSR )
+        {
+            new_mode |= S_IWUSR;
+        }
+    }
+    TRACE("new mode is %#x\n", new_mode);
+
+    bRet = TRUE;
+    if ( new_mode != stat_data.st_mode )
+    {
+        if ( chmod(unixFileName, new_mode) != 0 )
+        {
+            ERROR("chmod(%s, %#x) failed\n", unixFileName, new_mode);
+            dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
+            bRet = FALSE;
+        }
+    }
+
+done:
+    if (dwLastError)
+    {
+        pThread->SetLastError(dwLastError);
+    }
+
+    free(unixFileName);
+
+    LOGEXIT("SetFileAttributesA returns BOOL %d\n", bRet);
+    PERF_EXIT(SetFileAttributesA);
+    return bRet;
+}
+
+/*++
+Function:
   SetFileAttributesW
 
 Notes:
@@ -3574,131 +3699,6 @@ done:
     return bGood;
 }
 
-
-/*++
-Function:
-  SetFileAttributesA
-
-Notes:
-  Used for setting read-only attribute on file only.
-
---*/
-BOOL
-PALAPI
-SetFileAttributesA(
-           IN LPCSTR lpFileName,
-           IN DWORD dwFileAttributes)
-{
-    CPalThread *pThread;
-    struct stat stat_data;
-    mode_t new_mode;
-
-    DWORD dwLastError = 0;
-    BOOL  bRet = FALSE;
-    LPSTR unixFileName = NULL;
-
-    PERF_ENTRY(SetFileAttributesA);
-    ENTRY("SetFileAttributesA(lpFileName=%p (%s), dwFileAttributes=%#x)\n",
-        lpFileName?lpFileName:"NULL",
-        lpFileName?lpFileName:"NULL", dwFileAttributes);
-
-    pThread = InternalGetCurrentThread();
-
-    /* Windows behavior for SetFileAttributes is that any valid attributes
-    are set on a file and any invalid attributes are ignored. SetFileAttributes
-    returns success and does not set an error even if some or all of the
-    attributes are invalid. If all the attributes are invalid, SetFileAttributes
-    sets a file's attribute to NORMAL. */
-
-    /* If dwFileAttributes does not contain READONLY or NORMAL, set it to NORMAL
-    and print a warning message. */
-    if ( !(dwFileAttributes & (FILE_ATTRIBUTE_READONLY |FILE_ATTRIBUTE_NORMAL)) )
-    {
-        dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
-        WARN("dwFileAttributes(%#x) contains attributes that are either not supported "
-            "or cannot be set via SetFileAttributes.\n");
-    }
-
-    if ( (dwFileAttributes & FILE_ATTRIBUTE_NORMAL) &&
-         (dwFileAttributes != FILE_ATTRIBUTE_NORMAL) )
-    {
-        WARN("Ignoring FILE_ATTRIBUTE_NORMAL -- it must be used alone\n");
-    }
-
-    if (lpFileName == NULL)
-    {
-        dwLastError = ERROR_FILE_NOT_FOUND;
-        goto done;
-    }
-
-    if ((unixFileName = strdup(lpFileName)) == NULL)
-    {
-        ERROR("strdup() failed\n");
-        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-
-    FILEDosToUnixPathA( unixFileName );
-    if ( stat(unixFileName, &stat_data) != 0 )
-    {
-        TRACE("stat failed on %s; errno is %d (%s)\n",
-             unixFileName, errno, strerror(errno));
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
-        goto done;
-    }
-
-    new_mode = stat_data.st_mode;
-    TRACE("st_mode is %#x\n", new_mode);
-
-    /* if we can't do GetFileAttributes on it, don't do SetFileAttributes */
-    if ( !(new_mode & S_IFREG) && !(new_mode & S_IFDIR) )
-    {
-        ERROR("Not a regular file or directory, S_IFMT is %#x\n",
-              new_mode & S_IFMT);
-        dwLastError = ERROR_ACCESS_DENIED;
-        goto done;
-    }
-
-    /* set or unset the "read-only" attribute */
-    if (dwFileAttributes & FILE_ATTRIBUTE_READONLY)
-    {
-        /* remove the write bit from everybody */
-        new_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
-    }
-    else
-    {
-        /* give write permission to the owner if the owner
-         * already has read permission */
-        if ( new_mode & S_IRUSR )
-        {
-            new_mode |= S_IWUSR;
-        }
-    }
-    TRACE("new mode is %#x\n", new_mode);
-
-    bRet = TRUE;
-    if ( new_mode != stat_data.st_mode )
-    {
-        if ( chmod(unixFileName, new_mode) != 0 )
-        {
-            ERROR("chmod(%s, %#x) failed\n", unixFileName, new_mode);
-            dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
-            bRet = FALSE;
-        }
-    }
-
-done:
-    if (dwLastError)
-    {
-        pThread->SetLastError(dwLastError);
-    }
-
-    free(unixFileName);
-
-    LOGEXIT("SetFileAttributesA returns BOOL %d\n", bRet);
-    PERF_EXIT(SetFileAttributesA);
-    return bRet;
-}
 
 PAL_ERROR
 CorUnix::InternalCreatePipe(

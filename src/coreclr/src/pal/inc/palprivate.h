@@ -62,6 +62,13 @@ CreateDirectoryA(
          IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
 
 PALIMPORT
+BOOL
+PALAPI
+CreateDirectoryW(
+         IN LPCWSTR lpPathName,
+         IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
+
+PALIMPORT
 HANDLE
 PALAPI
 FindFirstFileA(
@@ -86,6 +93,13 @@ BOOL
 PALAPI
 SetFileAttributesA(
            IN LPCSTR lpFileName,
+           IN DWORD dwFileAttributes);
+
+PALIMPORT
+BOOL
+PALAPI
+SetFileAttributesW(
+           IN LPCWSTR lpFileName,
            IN DWORD dwFileAttributes);
 
 PALIMPORT
@@ -119,6 +133,12 @@ PALAPI
 GetCurrentDirectoryA(
              IN DWORD nBufferLength,
              OUT LPSTR lpBuffer);
+
+PALIMPORT
+BOOL
+PALAPI
+SetCurrentDirectoryW(
+            IN LPCWSTR lpPathName);
 
 PALIMPORT
 BOOL
@@ -259,6 +279,12 @@ BOOL
 PALAPI
 RemoveDirectoryA(
                  IN LPCSTR lpPathName);
+
+PALIMPORT
+BOOL
+PALAPI
+RemoveDirectoryW(
+                 IN LPCWSTR lpPathName);
 
 PALIMPORT
 BOOL

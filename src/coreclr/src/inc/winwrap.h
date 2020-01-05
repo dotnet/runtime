@@ -93,13 +93,9 @@
 #undef GetSystemDirectory
 #undef GetTempPath
 #undef GetTempFileName
-#undef SetCurrentDirectory
 #undef GetCurrentDirectory
-#undef CreateDirectory
-#undef RemoveDirectory
 #undef GetFullPathName
 #undef CreateFile
-#undef SetFileAttributes
 #undef GetFileAttributes
 #undef GetFileAttributesEx
 #undef DeleteFile
@@ -230,7 +226,6 @@
 #define WszFindFirstFileEx     FindFirstFileExWrapper
 #define WszFindNextFile        FindNextFileW
 #define WszMoveFileEx          MoveFileExWrapper
-#define WszCreateDirectory     CreateDirectoryWrapper
 
 //Can not use extended syntax
 #define WszGetFullPathName     GetFullPathNameW
@@ -248,7 +243,6 @@
 //NOTE: IF the following API's are enabled ensure that they can work with LongFile Names
 //See the usage and implementation of above API's
 //
-//#define WszSetCurrentDirectory SetCurrentDirectoryW
 //#define WszGetBinaryType       GetBinaryTypeWrapper     //Coresys does not seem to have this API
 
 #if FEATURE_PAL

@@ -748,31 +748,6 @@ MoveFileExW(
 #define MoveFileEx MoveFileExA
 #endif
 
-PALIMPORT
-BOOL
-PALAPI
-CreateDirectoryW(
-         IN LPCWSTR lpPathName,
-         IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
-
-#ifdef UNICODE
-#define CreateDirectory CreateDirectoryW
-#else
-#define CreateDirectory CreateDirectoryA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-RemoveDirectoryW(
-         IN LPCWSTR lpPathName);
-
-#ifdef UNICODE
-#define RemoveDirectory RemoveDirectoryW
-#else
-#define RemoveDirectory RemoveDirectoryA
-#endif
-
 typedef struct _BY_HANDLE_FILE_INFORMATION {
     DWORD dwFileAttributes;
     FILETIME ftCreationTime;
@@ -902,19 +877,6 @@ GetFileAttributesExW(
 
 #ifdef UNICODE
 #define GetFileAttributesEx GetFileAttributesExW
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-SetFileAttributesW(
-           IN LPCWSTR lpFileName,
-           IN DWORD dwFileAttributes);
-
-#ifdef UNICODE
-#define SetFileAttributes SetFileAttributesW
-#else
-#define SetFileAttributes SetFileAttributesA
 #endif
 
 typedef struct _OVERLAPPED {
@@ -1110,19 +1072,6 @@ GetCurrentDirectoryW(
 #define GetCurrentDirectory GetCurrentDirectoryW
 #else
 #define GetCurrentDirectory GetCurrentDirectoryA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-SetCurrentDirectoryW(
-            IN LPCWSTR lpPathName);
-
-
-#ifdef UNICODE
-#define SetCurrentDirectory SetCurrentDirectoryW
-#else
-#define SetCurrentDirectory SetCurrentDirectoryA
 #endif
 
 PALIMPORT
