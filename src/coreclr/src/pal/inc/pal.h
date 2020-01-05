@@ -993,13 +993,6 @@ PALAPI GetFileSizeEx(
         OUT  PLARGE_INTEGER lpFileSize);
 
 PALIMPORT
-BOOL
-PALAPI
-GetFileInformationByHandle(
-        IN HANDLE hFile,
-        OUT BY_HANDLE_FILE_INFORMATION* lpFileInformation);
-
-PALIMPORT
 LONG
 PALAPI
 CompareFileTime(
