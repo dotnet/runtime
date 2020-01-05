@@ -107,7 +107,6 @@
 #undef FindFirstFileEx
 #undef FindFirstFile
 #undef FindNextFile
-#undef SearchPath
 #undef CopyFile
 #undef CopyFileEx
 #undef MoveFile

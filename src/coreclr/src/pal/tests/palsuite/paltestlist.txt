@@ -567,7 +567,6 @@ file_io/ReadFile/test3/paltest_readfile_test3
 file_io/ReadFile/test4/paltest_readfile_test4
 file_io/RemoveDirectoryA/test1/paltest_removedirectorya_test1
 file_io/RemoveDirectoryW/test1/paltest_removedirectoryw_test1
-file_io/SearchPathA/test1/paltest_searchpatha_test1
 file_io/SearchPathW/test1/paltest_searchpathw_test1
 file_io/SetCurrentDirectoryA/test1/paltest_setcurrentdirectorya_test1
 file_io/SetCurrentDirectoryA/test2/paltest_setcurrentdirectorya_test2

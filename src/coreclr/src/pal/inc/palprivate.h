@@ -32,18 +32,6 @@ CreateFileA(
         IN HANDLE hTemplateFile);
 
 PALIMPORT
-DWORD
-PALAPI
-SearchPathA(
-    IN LPCSTR lpPath,
-    IN LPCSTR lpFileName,
-    IN LPCSTR lpExtension,
-    IN DWORD nBufferLength,
-    OUT LPSTR lpBuffer,
-    OUT LPSTR *lpFilePart
-    );
-
-PALIMPORT
 BOOL
 PALAPI
 CopyFileA(
