@@ -515,7 +515,6 @@ filemapping_memmgt/VirtualProtect/test4/paltest_virtualprotect_test4
 filemapping_memmgt/VirtualProtect/test6/paltest_virtualprotect_test6
 filemapping_memmgt/VirtualProtect/test7/paltest_virtualprotect_test7
 filemapping_memmgt/VirtualQuery/test1/paltest_virtualquery_test1
-file_io/CompareFileTime/test1/paltest_comparefiletime_test1
 file_io/CopyFileA/test1/paltest_copyfilea_test1
 file_io/CopyFileA/test2/paltest_copyfilea_test2
 file_io/CopyFileA/test3/paltest_copyfilea_test3

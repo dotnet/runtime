@@ -267,6 +267,13 @@ PAL_GetPALDirectoryA(
     OUT LPSTR lpDirectoryName,
     IN UINT* cchDirectoryName);
 
+PALIMPORT
+LONG
+PALAPI
+CompareFileTime(
+        IN CONST FILETIME *lpFileTime1,
+        IN CONST FILETIME *lpFileTime2);
+
 #ifdef  __cplusplus
 }
 #endif

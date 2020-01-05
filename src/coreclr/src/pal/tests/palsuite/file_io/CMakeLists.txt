@@ -1,4 +1,3 @@
-add_subdirectory(CompareFileTime)
 add_subdirectory(CopyFileA)
 add_subdirectory(CopyFileW)
 add_subdirectory(CreateDirectoryA)
