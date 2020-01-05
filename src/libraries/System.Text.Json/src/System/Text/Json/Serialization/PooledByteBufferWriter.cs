@@ -138,7 +138,12 @@ namespace System.Text.Json
             {
                 int growBy = Math.Max(sizeHint, _rentedBuffer.Length);
 
-                int newSize = checked(_rentedBuffer.Length + growBy);
+                int newSize = _rentedBuffer.Length + growBy;
+
+                if ((uint)newSize > int.MaxValue)
+                {
+                    throw new JsonException();
+                }
 
                 byte[] oldBuffer = _rentedBuffer;
 
