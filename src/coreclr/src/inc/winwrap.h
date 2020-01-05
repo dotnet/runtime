@@ -57,7 +57,6 @@
 // winbase.h
 #undef GetBinaryType
 #undef GetShortPathName
-#undef GetLongPathName
 #undef GetEnvironmentStrings
 #undef FreeEnvironmentStrings
 #undef FormatMessage

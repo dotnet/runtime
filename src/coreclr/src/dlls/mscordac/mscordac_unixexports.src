@@ -120,7 +120,6 @@ nativeStringResourceTable_mscorrc_debug
 #GetFileSize
 #GetFullPathNameW
 #GetLastError
-#GetLongPathNameW
 #GetModuleFileNameW
 #GetNumaHighestNodeNumber
 #GetProcAddress

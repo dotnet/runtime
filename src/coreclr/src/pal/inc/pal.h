@@ -1053,18 +1053,6 @@ GetFullPathNameW(
 PALIMPORT
 DWORD
 PALAPI
-GetLongPathNameW(
-         IN LPCWSTR lpszShortPath,
-                 OUT LPWSTR lpszLongPath,
-         IN DWORD cchBuffer);
-
-#ifdef UNICODE
-#define GetLongPathName GetLongPathNameW
-#endif
-
-PALIMPORT
-DWORD
-PALAPI
 GetShortPathNameW(
          IN LPCWSTR lpszLongPath,
                  OUT LPWSTR lpszShortPath,
