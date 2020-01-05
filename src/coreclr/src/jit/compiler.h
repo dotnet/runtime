@@ -5578,6 +5578,7 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     void fgMarkAddressExposedLocals();
+    void fgMarkAddressExposedLocals(Statement* stmt);
 
     static fgWalkPreFn  fgUpdateSideEffectsPre;
     static fgWalkPostFn fgUpdateSideEffectsPost;
