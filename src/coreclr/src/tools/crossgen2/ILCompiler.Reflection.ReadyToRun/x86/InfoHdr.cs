@@ -276,7 +276,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                                 break;
 
                             case (byte)InfoHdrAdjust.NEXT_OPCODE:
-                                encoding = (byte)(image[offset++] & (int)InfoHdrAdjustConstants.ADJ_ENCODING_MAX);
+                                encoding = (byte)((nextByte = image[offset++]) & (int)InfoHdrAdjustConstants.ADJ_ENCODING_MAX);
                                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
 
                                 if (encoding < (int)InfoHdrAdjustConstants.SET_RET_KIND_MAX)
