@@ -1489,8 +1489,11 @@ namespace System.Text.RegularExpressions
             MarkLabel(stopSuccessLabel);
             Ldthis();
             Ldloc(runtextposLocal);
-            Ldc(textSpanPos);
-            Add();
+            if (textSpanPos > 0)
+            {
+                Ldc(textSpanPos);
+                Add();
+            }
             Stfld(s_runtextposField);
 
             // Capture(0, originalruntextposLocal, this.runtextpos);
@@ -1949,8 +1952,11 @@ namespace System.Text.RegularExpressions
                 // if (!IsBoundary(runtextpos + textSpanPos, this.runtextbeg, this.runtextend)) goto doneLabel;
                 Ldthis();
                 Ldloc(runtextposLocal);
-                Ldc(textSpanPos);
-                Add();
+                if (textSpanPos > 0)
+                {
+                    Ldc(textSpanPos);
+                    Add();
+                }
                 Ldthisfld(s_runtextbegField!);
                 Ldthisfld(s_runtextendField!);
                 switch (node.Type)
@@ -2172,8 +2178,11 @@ namespace System.Text.RegularExpressions
 
                         // int i = textSpan.Slice(textSpanPos).IndexOf(char);
                         Ldloca(textSpanLocal);
-                        Ldc(textSpanPos);
-                        Call(s_spanSliceMethod);
+                        if (textSpanPos > 0)
+                        {
+                            Ldc(textSpanPos);
+                            Call(s_spanSliceMethod);
+                        }
                         Ldc(node.Ch);
                         Call(s_spanIndexOf);
                         Stloc(iterationLocal);
@@ -2186,8 +2195,11 @@ namespace System.Text.RegularExpressions
                         // i = textSpan.Length - textSpanPos;
                         Ldloca(textSpanLocal);
                         Call(s_spanGetLengthMethod);
-                        Ldc(textSpanPos);
-                        Sub();
+                        if (textSpanPos > 0)
+                        {
+                            Ldc(textSpanPos);
+                            Sub();
+                        }
                         Stloc(iterationLocal);
                     }
                     else
@@ -2212,9 +2224,16 @@ namespace System.Text.RegularExpressions
 
                         // if (textSpan[textSpanPos + i] != ch) goto Done;
                         Ldloca(textSpanLocal);
-                        Ldc(textSpanPos);
-                        Ldloc(iterationLocal);
-                        Add();
+                        if (textSpanPos > 0)
+                        {
+                            Ldc(textSpanPos);
+                            Ldloc(iterationLocal);
+                            Add();
+                        }
+                        else
+                        {
+                            Ldloc(iterationLocal);
+                        }
                         Call(s_spanGetItemMethod);
                         LdindU2();
                         switch (node.Type)
@@ -2245,9 +2264,16 @@ namespace System.Text.RegularExpressions
 
                         // if ((uint)(textSpanPos + i) >= (uint)textSpan.Length || i >= maxIterations) goto Done;
                         MarkLabel(conditionLabel);
-                        Ldc(textSpanPos);
-                        Ldloc(iterationLocal);
-                        Add();
+                        if (textSpanPos > 0)
+                        {
+                            Ldc(textSpanPos);
+                            Ldloc(iterationLocal);
+                            Add();
+                        }
+                        else
+                        {
+                            Ldloc(iterationLocal);
+                        }
                         Ldloca(textSpanLocal);
                         Call(s_spanGetLengthMethod);
                         BgeUnFar(doneLabel);
