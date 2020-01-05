@@ -59,7 +59,7 @@
     <Compile Include="..\..\src\System\Net\IPAddressParser.cs">
       <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
       <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
     </Compile>
   </ItemGroup>
@@ -90,7 +90,7 @@
     <Compile Include="$(CommonPath)System\Marvin.cs">
       <Link>Common\System\Marvin.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
       <Link>Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
     <!-- Logging -->

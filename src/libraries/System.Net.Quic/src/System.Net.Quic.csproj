@@ -18,8 +18,8 @@
     <Compile Include="System\Net\Quic\QuicConnection.cs" />
     <Compile Include="System\Net\Quic\QuicListener.cs" />
     <Compile Include="System\Net\Quic\QuicStream.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

@@ -43,8 +43,8 @@
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs">
       <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
   <!--

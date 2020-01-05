@@ -99,8 +99,8 @@
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
       <Link>Common\System\Text\SimpleRegex.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
@@ -139,8 +139,8 @@
     </Compile>
     <Compile Include="Tests\System\Net\VirtualNetworkTest.cs" />
     <Compile Include="Tests\System\Net\VirtualNetworkStreamTest.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs">
       <Link>System\IO\PathInternal.cs</Link>
@@ -160,8 +160,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
-      <Link>System\IO\Win32Marshal.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\Win32Marshal.Tests.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Windows.cs">
