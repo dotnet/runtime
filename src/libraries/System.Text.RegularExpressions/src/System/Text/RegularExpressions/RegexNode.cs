@@ -175,14 +175,15 @@ namespace System.Text.RegularExpressions
         /// <summary>Performs additional optimizations on an entire tree prior to being used.</summary>
         internal RegexNode FinalOptimize()
         {
-            // If we find a setloop or oneloop as the final node in the regex, upgrade it to be greedy,
-            // to avoid unnecessary backtracking costs.  We conservatively only follow nodes we can easily
-            // prove are correct.  For example, we don't want to explore alternations or loops, where another
-            // branch could end up coming after the found node at execution time even if it's the right-most
-            // leaf in the physical tree.
-            if ((Options & RegexOptions.RightToLeft) == 0) // only apply optimization when LTR to avoid needing additional code for the rare RTL case
+            RegexNode rootNode = this;
+
+            // If we find backtracking construct at the end of the regex, we can instead make it non-backtracking,
+            // since nothing would ever backtrack into it anyway.  Doing this then makes the construct available
+            // to implementations that don't support backtracking.
+            if ((Options & RegexOptions.RightToLeft) == 0 && // only apply optimization when LTR to avoid needing additional code for the rarer RTL case
+                (Options & RegexOptions.Compiled) != 0) // only apply when we're compiling, as that's the only time it would make a meaningful difference
             {
-                RegexNode node = this;
+                RegexNode node = rootNode;
                 while (true)
                 {
                     switch (node.Type)
@@ -199,21 +200,27 @@ namespace System.Text.RegularExpressions
                             node.Type = Setloopgreedy;
                             break;
 
-                        // TODO: We should be able to automatically upgrade an Alternate by inserting a Greedy node
-                        // around it when the Alternate is the last node.  This won't help to curtail backtracking,
-                        // but it will enable more trees to take the non-backtracking fast path in the compiler.
-
-                        // TODO: Same goes for Loop and Lazyloop.
-
                         case Capture:
-                        case Greedy:
-                            Debug.Assert(node.ChildCount() == 1);
-                            node = node.Child(0);
+                        case Concatenate:
+                            RegexNode existingChild = node.Child(node.ChildCount() - 1);
+                            switch (existingChild.Type)
+                            {
+                                default:
+                                    node = existingChild;
+                                    break;
+
+                                case Alternate:
+                                case Loop:
+                                case Lazyloop:
+                                    var greedy = new RegexNode(Greedy, Options);
+                                    greedy.AddChild(existingChild);
+                                    node.ReplaceChild(node.ChildCount() - 1, greedy);
+                                    break;
+                            }
                             continue;
 
-                        case Concatenate:
-                            Debug.Assert(node.ChildCount() > 1);
-                            node = node.Child(node.ChildCount() - 1);
+                        case Greedy:
+                            node = node.Child(0);
                             continue;
                     }
 
@@ -221,7 +228,8 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            return this;
+            // Done optimizing.  Return the final tree.
+            return rootNode;
         }
 
         /// <summary>
@@ -872,6 +880,22 @@ namespace System.Text.RegularExpressions
             else
             {
                 ((List<RegexNode>)Children).Add(reducedChild);
+            }
+        }
+
+        public void ReplaceChild(int index, RegexNode newChild)
+        {
+            Debug.Assert(Children != null);
+            Debug.Assert(index < ChildCount());
+
+            newChild.Next = this;
+            if (Children is RegexNode)
+            {
+                Children = newChild;
+            }
+            else
+            {
+                ((List<RegexNode>)Children)[index] = newChild;
             }
         }
 
