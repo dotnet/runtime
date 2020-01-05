@@ -125,7 +125,6 @@
 
 #undef SendMessage
 #undef CharLower
-#undef CharNext
 #undef MessageBox
 #undef GetClassName
 #undef LoadString
@@ -181,7 +180,6 @@
 #define WszGetMessage GetMessageW
 #define WszSendMessage SendMessageW
 #define WszCharLower CharLowerW
-#define WszCharNext CharNextW
 #define WszMessageBox LateboundMessageBoxW
 #define WszGetClassName GetClassNameW
 #define WszLoadString LoadStringW

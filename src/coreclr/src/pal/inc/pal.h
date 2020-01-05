@@ -546,25 +546,6 @@ PALAPI
 PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
-PALIMPORT
-LPSTR
-PALAPI
-CharNextA(
-            IN LPCSTR lpsz);
-
-PALIMPORT
-LPSTR
-PALAPI
-CharNextExA(
-        IN WORD CodePage,
-        IN LPCSTR lpCurrentChar,
-        IN DWORD dwFlags);
-
-#ifndef UNICODE
-#define CharNext CharNextA
-#define CharNextEx CharNextExA
-#endif
-
 
 #define MB_OK                   0x00000000L
 #define MB_OKCANCEL             0x00000001L
