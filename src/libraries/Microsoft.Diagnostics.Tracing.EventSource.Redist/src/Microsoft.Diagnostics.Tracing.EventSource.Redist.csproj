@@ -24,7 +24,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteString.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\*.cs" />
-    <Compile Remove="..\..\System.Private.CoreLib\srcSystem\Diagnostics\Tracing\FrameworkEventSource.cs" />
+    <Compile Remove="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\*.cs" />
   </ItemGroup>
   <ItemGroup>
