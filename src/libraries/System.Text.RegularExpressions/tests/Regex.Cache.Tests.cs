@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public class RegexCacheTests
     {
         [Theory]
