@@ -198,6 +198,14 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(expectedBytes, addressBytes);
         }
 
+        [Fact]
+        public void ParseSpan_Empty_Success()
+        {
+            PhysicalAddress parsedAddress = PhysicalAddress.Parse(new ReadOnlySpan<char>());
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Equal(0, addressBytes.Length);
+        }
+
         [Theory]
         [MemberData(nameof(RoundtripParseToString_String_Bytes))]
         public void TryParseSpan_Valid_Success(string address, byte[] expectedBytes)
@@ -205,6 +213,14 @@ namespace System.Net.NetworkInformation.Tests
             Assert.True(PhysicalAddress.TryParse(address.AsSpan(), out PhysicalAddress parsedAddress));
             byte[] addressBytes = parsedAddress.GetAddressBytes();
             Assert.Equal(expectedBytes, addressBytes);
+        }
+
+        [Fact]
+        public void TryParseSpan_Empty_Success()
+        {
+            Assert.True(PhysicalAddress.TryParse(new ReadOnlySpan<char>(), out PhysicalAddress parsedAddress));
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Equal(0, addressBytes.Length);
         }
 
         [Theory]
