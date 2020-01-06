@@ -14562,7 +14562,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     if (helperNode != nullptr)
                     {
-                        op1 = gtNewOperNode(GT_COMMA, op1->TypeGet(), helperNode, op1);
+                        // Spill the init node.
+                        impAppendTree(helperNode, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
                     }
                 }
 
