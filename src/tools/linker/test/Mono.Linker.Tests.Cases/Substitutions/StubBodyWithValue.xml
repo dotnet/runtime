@@ -21,6 +21,10 @@
       </method>
       <method signature="System.UInt64 TestMethod_10()" body="stub" value="123456">
       </method>
+      <method signature="System.Int64 TestMethod_11()" body="stub" value="-1000">
+      </method>
+      <method signature="System.UInt32 TestMethod_12()" body="stub" value="4294967295">
+      </method>
     </type>
   </assembly>
 </linker>

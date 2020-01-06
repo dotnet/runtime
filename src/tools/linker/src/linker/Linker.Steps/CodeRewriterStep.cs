@@ -207,6 +207,7 @@ namespace Mono.Linker.Steps {
 			case MetadataType.Int16:
 			case MetadataType.UInt16:
 			case MetadataType.Int32:
+			case MetadataType.UInt32:
 				if (value is int intValue)
 					return Instruction.Create (OpCodes.Ldc_I4, intValue);
 
