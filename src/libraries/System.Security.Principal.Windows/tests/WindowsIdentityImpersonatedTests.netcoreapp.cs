@@ -26,6 +26,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [OuterLoop]
     public async Task RunImpersonatedAsync_TaskAndTaskOfT()
     {
         WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();

@@ -678,9 +678,11 @@ namespace System.Security.Principal
             return result;
         }
 
-        public static Task RunImpersonatedAsync(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task> func) => RunImpersonated(safeAccessTokenHandle, func);
+        public static Task RunImpersonatedAsync(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task> func)
+            => RunImpersonated(safeAccessTokenHandle, func);
 
-        public static Task<T> RunImpersonatedAsync<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task<T>> func) => RunImpersonated(safeAccessTokenHandle, func);
+        public static Task<T> RunImpersonatedAsync<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task<T>> func)
+            => RunImpersonated(safeAccessTokenHandle, func);
 
         protected virtual void Dispose(bool disposing)
         {
