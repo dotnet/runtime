@@ -147,7 +147,22 @@ namespace System.Net.NetworkInformation.Tests
         {
             PhysicalAddress parsedAddress = PhysicalAddress.Parse(address);
             byte[] addressBytes = parsedAddress.GetAddressBytes();
-            Assert.Equal(addressBytes, expectedBytes);
+            Assert.Equal(expectedBytes, addressBytes);
+        }
+
+        [Fact]
+        public void ParseString_Null_Success()
+        {
+            PhysicalAddress parsedAddress = PhysicalAddress.Parse(null);
+            Assert.Equal(PhysicalAddress.None, parsedAddress);
+        }
+
+        [Fact]
+        public void ParseString_Empty_Success()
+        {
+            PhysicalAddress parsedAddress = PhysicalAddress.Parse(string.Empty);
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Equal(0, addressBytes.Length);
         }
 
         [Theory]
@@ -156,7 +171,22 @@ namespace System.Net.NetworkInformation.Tests
         {
             Assert.True(PhysicalAddress.TryParse(address, out PhysicalAddress parsedAddress));
             byte[] addressBytes = parsedAddress.GetAddressBytes();
-            Assert.Equal(addressBytes, expectedBytes);
+            Assert.Equal(expectedBytes, addressBytes);
+        }
+
+        [Fact]
+        public void TryParseString_Null_Success()
+        {
+            Assert.True(PhysicalAddress.TryParse(null, out PhysicalAddress parsedAddress));
+            Assert.Equal(PhysicalAddress.None, parsedAddress);
+        }
+
+        [Fact]
+        public void TryParseString_Empty_Success()
+        {
+            Assert.True(PhysicalAddress.TryParse(string.Empty, out PhysicalAddress parsedAddress));
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Equal(0, addressBytes.Length);
         }
 
         [Theory]
@@ -165,7 +195,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             PhysicalAddress parsedAddress = PhysicalAddress.Parse(address.AsSpan());
             byte[] addressBytes = parsedAddress.GetAddressBytes();
-            Assert.Equal(addressBytes, expectedBytes);
+            Assert.Equal(expectedBytes, addressBytes);
         }
 
         [Theory]
@@ -174,7 +204,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             Assert.True(PhysicalAddress.TryParse(address.AsSpan(), out PhysicalAddress parsedAddress));
             byte[] addressBytes = parsedAddress.GetAddressBytes();
-            Assert.Equal(addressBytes, expectedBytes);
+            Assert.Equal(expectedBytes, addressBytes);
         }
 
         [Theory]

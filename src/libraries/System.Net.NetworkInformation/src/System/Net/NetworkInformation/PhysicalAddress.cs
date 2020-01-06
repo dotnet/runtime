@@ -103,7 +103,7 @@ namespace System.Net.NetworkInformation
             return (byte[])_address.Clone();
         }
 
-        public static PhysicalAddress Parse(string address) => Parse(address.AsSpan());
+        public static PhysicalAddress Parse(string address) => address != null ? Parse(address.AsSpan()) : None;
 
         public static PhysicalAddress Parse(ReadOnlySpan<char> address)
         {
@@ -116,7 +116,16 @@ namespace System.Net.NetworkInformation
                 throw new FormatException(SR.Format(SR.net_bad_mac_address, new string(address)));
         }
 
-        public static bool TryParse(string address, out PhysicalAddress value) => TryParseInternal(address.AsSpan(), out value);
+        public static bool TryParse(string address, out PhysicalAddress value)
+        {
+            if (address == null)
+            {
+                value = None;
+                return true;
+            }
+
+            return TryParseInternal(address, out value);
+        }
 
         public static bool TryParse(ReadOnlySpan<char> address, out PhysicalAddress value) => TryParseInternal(address, out value);
 
@@ -126,12 +135,6 @@ namespace System.Net.NetworkInformation
             char? delimiter = null;
             byte[] buffer;
             value = null;
-
-            if (address == null)
-            {
-                value = None;
-                return true;
-            }
 
             if (address.Contains('-'))
             {
