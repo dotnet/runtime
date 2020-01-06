@@ -3775,11 +3775,7 @@ public:
                           GenTree**            clone,
                           CORINFO_CLASS_HANDLE structHnd,
                           unsigned curLevel DEBUGARG(const char* reason));
-    GenTree* impAssignStruct(GenTree*              dest,
-                             GenTree*              src,
-                             CORINFO_CLASS_HANDLE  structHnd,
-                             const impAssignPlace& asgPlace,
-                             IL_OFFSETX            ilOffset = BAD_IL_OFFSET);
+    GenTree* impAssignStruct(GenTree* dest, GenTree* src, CORINFO_CLASS_HANDLE structHnd);
     GenTree* impAssignStructPtr(GenTree* dest, GenTree* src, CORINFO_CLASS_HANDLE structHnd);
 
     GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);

@@ -14897,17 +14897,7 @@ GenTree* Compiler::gtNewTempAssign(
         }
         dest->gtFlags |= GTF_DONT_CSE;
         valx->gtFlags |= GTF_DONT_CSE;
-        impAssignPlace asgPlace;
-        if (pAfterStmt != nullptr)
-        {
-            asgPlace = impAssignPlace(pAfterStmt, block);
-        }
-        else
-        {
-            asgPlace = impAssignPlace::s_SpillNone;
-        }
-
-        asg = impAssignStruct(dest, val, structHnd, asgPlace, ilOffset);
+        asg = impAssignStruct(dest, val, structHnd);
     }
     else
     {
