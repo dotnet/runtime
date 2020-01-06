@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Reflection;
 using Internal.Runtime.CompilerServices;
 
@@ -151,8 +150,8 @@ namespace System
                 (uint)length <= (nuint)destinationArray.LongLength)
             {
                 nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
-                ref byte src = ref MemoryMarshal.GetRawArrayData(Unsafe.As<byte[]>(sourceArray));
-                ref byte dst = ref MemoryMarshal.GetRawArrayData(Unsafe.As<byte[]>(destinationArray));
+                ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
+                ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
 
                 if (pMT->ContainsGCPointers)
                     Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
@@ -183,8 +182,8 @@ namespace System
                 {
                     nuint elementSize = (nuint)pMT->ComponentSize;
                     nuint byteCount = (uint)length * elementSize;
-                    ref byte src = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetRawArrayData(Unsafe.As<byte[]>(sourceArray)), (uint)sourceIndex * elementSize);
-                    ref byte dst = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetRawArrayData(Unsafe.As<byte[]>(destinationArray)), (uint)destinationIndex * elementSize);
+                    ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(sourceArray).Data, (uint)sourceIndex * elementSize);
+                    ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
 
                     if (pMT->ContainsGCPointers)
                         Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);

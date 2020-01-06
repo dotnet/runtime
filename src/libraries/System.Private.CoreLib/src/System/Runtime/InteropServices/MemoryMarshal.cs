@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
-
-using Internal.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -16,7 +15,7 @@ namespace System.Runtime.InteropServices
     /// Provides a collection of methods for interoperating with <see cref="Memory{T}"/>, <see cref="ReadOnlyMemory{T}"/>,
     /// <see cref="Span{T}"/>, and <see cref="ReadOnlySpan{T}"/>.
     /// </summary>
-    public static class MemoryMarshal
+    public static partial class MemoryMarshal
     {
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
@@ -75,19 +74,6 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> memory) =>
             Unsafe.As<ReadOnlyMemory<T>, Memory<T>>(ref memory);
-
-        /// <summary>
-        /// Returns a reference to the 0th element of <paramref name="array"/>. If the array is empty, returns a reference to where the 0th element
-        /// would have been stored. Such a reference may be used for pinning but must never be dereferenced.
-        /// </summary>
-        /// <exception cref="NullReferenceException">If <paramref name="array"/> is <see langword="null"/>.</exception>
-        /// <remarks>
-        /// This method does not perform array variance checks. The caller must manually perform any array variance checks
-        /// if the caller wishes to write to the returned reference.
-        /// </remarks>
-        [Intrinsic]
-        public static ref T GetRawArrayData<T>(T[] array) =>
-            ref Unsafe.As<byte, T>(ref Unsafe.As<RawArrayData>(array).Data);
 
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element

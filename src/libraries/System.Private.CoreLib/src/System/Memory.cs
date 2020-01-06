@@ -321,7 +321,7 @@ namespace System
                     {
                         // We know the object is not null, it's not a string, and it is variable-length. The only
                         // remaining option is for it to be a T[] (or a U[] which is blittable to T[], like int[]
-                        // and uint[]). As a special case of the this, ROM<T> allows some amount of array variance
+                        // and uint[]). As a special case of this, ROM<T> allows some amount of array variance
                         // that Memory<T> disallows. For example, an array of actual type string[] cannot be turned
                         // into a Memory<object> or a Span<object>, but it can be turned into a ROM/ROS<object>.
                         // We'll assume these checks succeeded because they're performed during Memory<T> construction.
