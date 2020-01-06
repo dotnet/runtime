@@ -153,13 +153,9 @@ initDistroRidGlobal()
         export __PortableBuild=1
         local distroRid=""
 
-        # Check for alpine. It is the only portable build that will will have
-        # its name in the portable build rid.
-        if [ -e "${rootfsDir}/etc/os-release" ]; then
-            source "${rootfsDir}/etc/os-release"
-            if [ "${ID}" = "alpine" ]; then
-                distroRid="linux-musl-${buildArch}"
-            fi
+        # Check for musl-based distros (e.g Alpine Linux, Void Linux).
+        if (ldd --version 2>&1 || true) | grep -q musl; then
+            distroRid="linux-musl-${buildArch}"
         fi
 
         if [ "${distroRid}" == "" ]; then
