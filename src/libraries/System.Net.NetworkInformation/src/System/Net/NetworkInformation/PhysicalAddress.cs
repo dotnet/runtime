@@ -108,12 +108,9 @@ namespace System.Net.NetworkInformation
         public static PhysicalAddress Parse(ReadOnlySpan<char> address)
         {
             if (!TryParseInternal(address, out PhysicalAddress value))
-                ThrowBadAddressException(address);
+                throw new FormatException(SR.Format(SR.net_bad_mac_address, new string(address)));
 
             return value;
-
-            static void ThrowBadAddressException(ReadOnlySpan<char> address) =>
-                throw new FormatException(SR.Format(SR.net_bad_mac_address, new string(address)));
         }
 
         public static bool TryParse(string address, out PhysicalAddress value)
