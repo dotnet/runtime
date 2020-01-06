@@ -323,19 +323,22 @@ endif()
 
 add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
-set(RYUJIT_LINK_LIBRARIES
+set(JIT_LINK_LIBRARIES
    utilcodestaticnohost
+)
+
+set(JIT_ARCH_LINK_LIBRARIES
    gcinfo
 )
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-    list(APPEND RYUJIT_LINK_LIBRARIES
+    list(APPEND JIT_LINK_LIBRARIES
        mscorrc_debug
        coreclrpal
        palrt
     )
 else()
-    list(APPEND RYUJIT_LINK_LIBRARIES
+    list(APPEND JIT_LINK_LIBRARIES
        ${STATIC_MT_CRT_LIB}
        ${STATIC_MT_VCRT_LIB}
        kernel32.lib
@@ -351,6 +354,36 @@ else()
        RuntimeObject.lib
     )
 endif(CLR_CMAKE_PLATFORM_UNIX)
+
+# Shared function for generating JIT
+function(add_jit jitName)
+    if(WIN32)
+        add_definitions(-DFX_VER_INTERNALNAME_STR=${jitName}.dll)
+    endif(WIN32)
+
+    set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
+
+    add_library_clr(${jitName}
+        SHARED
+        ${SHARED_LIB_SOURCES}
+        ${JIT_ARCH_SOURCES}
+    )
+
+    target_precompile_header(TARGET ${jitName} HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
+
+    add_dependencies(${jitName} jit_exports)
+
+    set_property(TARGET ${jitName} APPEND_STRING PROPERTY LINK_FLAGS ${JIT_EXPORTS_LINKER_OPTION})
+    set_property(TARGET ${jitName} APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPORTS_FILE})
+
+    target_link_libraries(${jitName}
+        ${JIT_LINK_LIBRARIES}
+        ${JIT_ARCH_LINK_LIBRARIES}
+    )
+
+    # add the install targets
+    install_clr(TARGETS ${jitName})
+endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
