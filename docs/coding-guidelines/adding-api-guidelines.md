@@ -61,7 +61,7 @@ the implementation without compat concerns in future releases.
 
 ## Documentation
 
-New public APIs must be documented with triple slash comments on top of them. Visual Studio automatically generates the structure for you when you type `\\\`.
+New public APIs must be documented with triple-slash comments on top of them. Visual Studio automatically generates the structure for you when you type `///`.
 
 If your new API or the APIs it calls throw any exceptions, those need to be manually documented by adding the `<exception></exception>` elements.
 
