@@ -91,6 +91,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
                     CALL_MANAGED_METHOD_NORET(args)
 
                     pManagedAssemblyLoadContext = GetManagedAssemblyLoadContext();
+                    _ASSERTE(pManagedAssemblyLoadContext != NULL);
                 }
             }
 
