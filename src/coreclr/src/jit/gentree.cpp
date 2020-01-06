@@ -14878,6 +14878,12 @@ GenTree* Compiler::gtNewTempAssign(
     CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(val);
     if (varTypeIsStruct(valTyp) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
     {
+        // There are 3 possibilitiess here:
+        //   1) `pAfterStmt != nullptr`, so we know where to insert a new stmt if we need to;
+        //   2) we are during importation, so we can spill stmt to `impStmtList`;
+        //   3) we don't have `pAfterStmt` and we are not during importation, then we probably don't need to create new
+        //   stmt or
+        //      we will do magic with commas in `impAssignStructPtr`.
         // The struct value may be be a child of a GT_COMMA.
         GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
 

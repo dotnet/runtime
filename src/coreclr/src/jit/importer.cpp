@@ -1140,6 +1140,24 @@ GenTree* Compiler::impAssignStruct(GenTree*              dest,
 //
 // Notes:
 //    Temp assignments may be appended to impStmtList if spilling is necessary.
+//    sandreenko:
+//      1) The method has imp prefix, but it is a lie, because it can be called from
+//      `gtNewTempAssign` that can be called, for example, from `PerformCSE`.
+//      2) the method could create a new statement in `src->gtOper == GT_MKREFANY` case, that is only valid during
+//      import phase,
+//      and in `src->gtOper == GT_COMMA` case. Other cases do not need `asgPlace` and do not create any stms.
+//      Comma case needs to spill COMMA operands, because some phases do not support struct assignments with COMMAs on
+//      the rhs.
+//      If `asgPlace.useStms == true` then it will spill `COMMA->gtOp1` there, otherwise, if we are during importation,
+//      it will spill `COMMA->gtOp1`
+//      into `impStmtList`. Otherwise it will sink the assignment below the COMMA. The third case is ugly also because
+//      it violates "Return Value" contract for that method. It returns not the tree that should be appended, but a
+//      comma tree that is already in
+//      the stmt list and the callers should check for this case as `PerfomCSE` does.
+//      If we get rid of creating new Stmt in that method for these 2 cases we will be able to get rid of `asgPlace`
+//      argument.
+//
+//
 
 GenTree* Compiler::impAssignStructPtr(GenTree*              destAddr,
                                       GenTree*              src,
@@ -1310,16 +1328,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*              destAddr,
 
         // append the assign of the pointer value
         GenTree* asg = gtNewAssignNode(ptrSlot, src->AsOp()->gtOp1);
-        if (asgPlace.useStmts)
-        {
-            Statement* newStmt = gtNewStmt(asg, ilOffset);
-            fgInsertStmtAfter(asgPlace.block, *asgPlace.pAfterStmt, newStmt);
-            *asgPlace.pAfterStmt = newStmt;
-        }
-        else
-        {
-            impAppendTree(asg, asgPlace.spillLevel, ilOffset);
-        }
+        impAppendTree(asg, asgPlace.spillLevel, ilOffset);
 
         // return the assign of the type value, to be appended
         return gtNewAssignNode(typeSlot, src->AsOp()->gtOp2);
