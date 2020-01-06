@@ -87,7 +87,7 @@
        extends [mscorlib]System.Object
 {
 
-  .method public static int32 Go(){
+  .method public static int32 Go() noinlining {
     .maxstack 8
     .locals init (class MyFoo V_1)
     newobj     instance void MyBar::.ctor()

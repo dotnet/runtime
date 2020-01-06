@@ -9,6 +9,7 @@ set(MDRUNTIME_SOURCES
   recordpool.cpp
   mdinternaldisp.cpp
   mdinternalro.cpp
+  strongnameinternal.cpp
 )
 
 set(MDRUNTIME_HEADERS
@@ -33,9 +34,6 @@ set(MDRUNTIME_HEADERS
   metamodelcolumndefs.h
   mdinternaldisp.h
   mdinternalro.h
-  metamodel.cpp
-  metamodelro.cpp
-  recordpool.cpp
 )
 
 convert_to_absolute_path(MDRUNTIME_HEADERS ${MDRUNTIME_HEADERS})

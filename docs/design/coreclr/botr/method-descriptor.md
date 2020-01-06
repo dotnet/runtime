@@ -50,11 +50,11 @@ P/Invoke methods. These are methods marked with DllImport attribute.
 
 **EEImpl**
 
-Delegate methods whose implementation is provided by the runtime (Invoke, BeginInvoke, EndInvoke). See [ECMA 335 Partition II - Delegates](../project-docs/dotnet-standards.md).
+Delegate methods whose implementation is provided by the runtime (Invoke, BeginInvoke, EndInvoke). See [ECMA 335 Partition II - Delegates](../../../project/dotnet-standards.md).
 
 **Array**
 
-Array methods whose implementation is provided by the runtime (Get, Set, Address). See [ECMA Partition II – Arrays](../project-docs/dotnet-standards.md).
+Array methods whose implementation is provided by the runtime (Get, Set, Address). See [ECMA Partition II – Arrays](../../../project/dotnet-standards.md).
 
 **ComInterop**
 

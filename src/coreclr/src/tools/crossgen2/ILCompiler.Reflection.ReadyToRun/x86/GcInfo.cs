@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.PortableExecutable;
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun.x86
 {

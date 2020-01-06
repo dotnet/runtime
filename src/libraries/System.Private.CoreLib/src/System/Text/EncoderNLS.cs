@@ -194,12 +194,39 @@ namespace System.Text
             bytesUsed = _encoding.GetBytes(chars, charCount, bytes, byteCount, this);
             charsUsed = _charsUsed;
 
-            // Per MSDN, "The completed output parameter indicates whether all the data in the input
-            // buffer was converted and stored in the output buffer." That means we've successfully
-            // consumed all the input _and_ there's no pending state or fallback data remaining to be output.
+            // If the 'completed' out parameter is set to false, it means one of two things:
+            // a) this call to Convert did not consume the entire source buffer; or
+            // b) this call to Convert did consume the entire source buffer, but there's
+            //    still pending data that needs to be written to the destination buffer.
+            //
+            // In either case, the caller should slice the input buffer, provide a fresh
+            // destination buffer, and call Convert again in a loop until 'completed' is true.
+            //
+            // The caller *must* specify flush = true on the final iteration(s) of the loop
+            // and iterate until 'completed' is set to true. Otherwise data loss may occur.
+            //
+            // Technically, the expected logic is detailed below.
+            //
+            // If 'flush' = false, the 'completed' parameter MUST be set to false if not all
+            // elements of the source buffer have been consumed. The 'completed' parameter MUST
+            // be set to true once the entire source buffer has been consumed and there is no
+            // pending data for the destination buffer. (In other words, the 'completed' parameter
+            // MUST be set to true if passing a zero-length source buffer and an infinite-length
+            // destination buffer will make no forward progress.) The 'completed' parameter value
+            // is undefined for the case where all source data has been consumed but there remains
+            // pending data for the destination buffer.
+            //
+            // If 'flush' = true, the 'completed' parameter is set to true IF AND ONLY IF:
+            // a) all elements of the source buffer have been transcoded into the destination buffer; AND
+            // b) there remains no internal partial read state within this instance; AND
+            // c) there remains no pending data for the destination buffer.
+            //
+            // In other words, if 'flush' = true, then when 'completed' is set to true it should mean
+            // that all data has been converted and that this instance is indistinguishable from a
+            // freshly-reset instance.
 
             completed = (charsUsed == charCount)
-                && !this.HasState
+                && (!flush || !this.HasState)
                 && (_fallbackBuffer is null || _fallbackBuffer.Remaining == 0);
         }
 

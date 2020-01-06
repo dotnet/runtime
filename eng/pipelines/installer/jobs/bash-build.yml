@@ -7,7 +7,6 @@ parameters:
   disableCrossgen: false
   container: ''
   packageDistroList: null
-  skipTests: false
   archType: x64
   timeoutInMinutes: 120
   pool: ''
@@ -17,6 +16,8 @@ jobs:
 - template: base-job.yml
   parameters:
     ${{ insert }}: ${{ parameters }}
+
+    skipTests: ${{ or(parameters.isOfficialBuild, parameters.crossBuild) }}
 
     # Do not attempt to clean workspace: the agent might not be able to remove the files because
     # they may be owned by "root" due to the way this job uses Docker. This job does its own cleanup
@@ -63,10 +64,11 @@ jobs:
       # This causes a newline in the arg string that causes failure.
       BuildArguments: >-
         --restore --build --ci --test
+        -configuration $(_BuildConfig)
         /p:CrossBuild=${{ parameters.crossBuild }}
         /p:DisableCrossgen=${{ parameters.disableCrossgen }}
         /p:PortableBuild=${{ parameters.portableBuild }}
-        /p:SkipTests=${{ parameters.skipTests }}
+        /p:SkipTests=$(SkipTests)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         ${{ parameters.additionalMSBuildArgs }}

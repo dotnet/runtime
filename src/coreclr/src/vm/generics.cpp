@@ -800,10 +800,9 @@ void RecursionGraph::AddDependency(MethodTable *pMT, TypeHandleList *pExpansionV
         }
         else
         {
-            while (thArg.IsTypeDesc())
+            while (thArg.HasTypeParam())
             {
-                _ASSERTE(thArg.HasTypeParam());
-                thArg = (static_cast<PTR_ParamTypeDesc>(thArg.AsTypeDesc()))->GetModifiedType();
+                thArg = thArg.GetTypeParam();
 
                 if (thArg.IsGenericVariable()) // : A<!T[]>
                 {
@@ -820,6 +819,10 @@ void RecursionGraph::AddDependency(MethodTable *pMT, TypeHandleList *pExpansionV
                 // instantiation.
                 TypeHandleList newExpansionVars(thVar, pExpansionVars);
                 AddDependency(thArg.AsMethodTable(), &newExpansionVars);
+            }
+            else
+            {
+                _ASSERTE(thArg.IsGenericVariable());
             }
         }
     }

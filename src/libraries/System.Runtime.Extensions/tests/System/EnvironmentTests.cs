@@ -165,8 +165,23 @@ namespace System.Tests
         }
 
         [Fact]
-        public void UserInteractive_True()
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UserInteractive_Unix_True()
         {
+            Assert.True(Environment.UserInteractive);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UserInteractive_Windows_DoesNotThrow()
+        {
+            var dummy = Environment.UserInteractive; // Does not throw
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
+        public void UserInteractive_WindowsNano()
+        {
+            // Defaults to true on Nano, because it doesn't expose WindowStations
             Assert.True(Environment.UserInteractive);
         }
 

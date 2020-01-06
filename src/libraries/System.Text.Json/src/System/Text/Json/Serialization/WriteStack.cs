@@ -39,7 +39,7 @@ namespace System.Text.Json
             _index++;
         }
 
-        public void Push(JsonClassInfo nextClassInfo, object nextValue)
+        public void Push(JsonClassInfo nextClassInfo, object? nextValue)
         {
             Push();
             Current.JsonClassInfo = nextClassInfo;
@@ -84,11 +84,11 @@ namespace System.Text.Json
         private void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)
         {
             // Append the property name.
-            string propertyName = frame.JsonPropertyInfo?.PropertyInfo?.Name;
+            string? propertyName = frame.JsonPropertyInfo?.PropertyInfo?.Name;
             AppendPropertyName(sb, propertyName);
         }
 
-        private void AppendPropertyName(StringBuilder sb, string propertyName)
+        private void AppendPropertyName(StringBuilder sb, string? propertyName)
         {
             if (propertyName != null)
             {

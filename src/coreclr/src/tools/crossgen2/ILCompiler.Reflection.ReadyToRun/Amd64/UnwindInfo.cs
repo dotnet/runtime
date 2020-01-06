@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun.Amd64
 {
@@ -43,7 +42,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
     /// </summary>
     public class UnwindCode
     {
-        [XmlAttribute("Index")]
         public int Index { get; set; }
 
         public byte CodeOffset { get; set; }
@@ -97,7 +95,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         public Registers FrameRegister { get; set; } //4 bits
         public byte FrameOffset { get; set; } //4 bits
         public UnwindCode[] UnwindCodeArray { get; set; }
-        [XmlIgnore]
         public Dictionary<int, List<UnwindCode>> UnwindCodes { get; set; }
         public uint PersonalityRoutineRVA { get; set; }
 

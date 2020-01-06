@@ -4,13 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Xml.Serialization;
 
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
@@ -25,7 +26,6 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public struct FixupCell
     {
-        [XmlAttribute("Index")]
         public int Index { get; set; }
 
         /// <summary>
@@ -78,22 +78,34 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
     }
 
-    public class EcmaMetadataReader
+    public sealed class R2RReader
     {
-        protected IAssemblyResolver _assemblyResolver;
-        protected Dictionary<string, EcmaMetadataReader> _assemblyCache;
-
+        private IAssemblyResolver _assemblyResolver;
+        private Dictionary<int, MetadataReader> _assemblyCache;
+        private Dictionary<int, DebugInfo> _runtimeFunctionToDebugInfo;
+        private MetadataReader _manifestReader;
+        private List<AssemblyReferenceHandle> _manifestReferences;
 
         /// <summary>
         /// Underlying PE image reader is used to access raw PE structures like header
         /// or section list.
         /// </summary>
-        public readonly PEReader PEReader;
+        public PEReader PEReader { get; private set; }
 
         /// <summary>
         /// MetadataReader is used to access the MSIL metadata in the R2R file.
         /// </summary>
-        public readonly MetadataReader MetadataReader;
+        public MetadataReader MetadataReader { get; private set; }
+
+        /// <summary>
+        /// Byte array containing the ReadyToRun image
+        /// </summary>
+        public byte[] Image { get; private set; }
+
+        /// <summary>
+        /// Name of the image file
+        /// </summary>
+        public string Filename { get; private set; }
 
         /// <summary>
         /// Extra reference assemblies parsed from the manifest metadata.
@@ -105,99 +117,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// The list originates in the top-level R2R image and is copied
         /// to all reference assemblies for the sake of simplicity.
         /// </summary>
-        public readonly List<string> ManifestReferenceAssemblies;
-
-        /// <summary>
-        /// Byte array containing the ReadyToRun image
-        /// </summary>
-        public byte[] Image { get; }
-
-        /// <summary>
-        /// Name of the image file
-        /// </summary>
-        public string Filename { get; set; }
-
-        /// <summary>
-        /// The default constructor initializes an empty metadata reader.
-        /// </summary>
-        public EcmaMetadataReader()
+        public IEnumerable<string> ManifestReferenceAssemblies
         {
-        }
-
-        /// <summary>
-        /// Open an MSIL binary and locate the metadata blob.
-        /// </summary>
-        /// <param name="options">Ambient options to use</param>
-        /// <param name="filename">PE image</param>
-        /// <param name="manifestReferenceAssemblies">List of reference assemblies from the R2R metadata manifest</param>
-        /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
-        public unsafe EcmaMetadataReader(IAssemblyResolver assemblyResolver, string filename, List<string> manifestReferenceAssemblies)
-        {
-            _assemblyResolver = assemblyResolver;
-            _assemblyCache = new Dictionary<string, EcmaMetadataReader>();
-            Filename = filename;
-            ManifestReferenceAssemblies = manifestReferenceAssemblies;
-            Image = File.ReadAllBytes(filename);
-
-            fixed (byte* p = Image)
+            get
             {
-                IntPtr ptr = (IntPtr)p;
-                PEReader = new PEReader(p, Image.Length);
-
-                if (!PEReader.HasMetadata)
+                foreach (AssemblyReferenceHandle _manifestReference in _manifestReferences)
                 {
-                    throw new Exception($"ECMA metadata not found in file '{filename}'");
+                    yield return _manifestReader.GetString(_manifestReader.GetAssemblyReference(_manifestReference).Name);
                 }
-
-                MetadataReader = PEReader.GetMetadataReader();
             }
         }
-
-        /// <summary>
-        /// Open a given reference assembly (relative to this ECMA metadata file).
-        /// </summary>
-        /// <param name="refAsmIndex">Reference assembly index</param>
-        /// <returns>EcmaMetadataReader instance representing the reference assembly</returns>
-        public EcmaMetadataReader OpenReferenceAssembly(int refAsmIndex)
-        {
-            if (refAsmIndex == 0)
-            {
-                return this;
-            }
-
-            int assemblyRefCount = MetadataReader.GetTableRowCount(TableIndex.AssemblyRef);
-            string name;
-            if (refAsmIndex <= assemblyRefCount)
-            {
-                AssemblyReference asmRef = MetadataReader.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle(refAsmIndex));
-                name = MetadataReader.GetString(asmRef.Name);
-            }
-            else
-            {
-                name = ManifestReferenceAssemblies[refAsmIndex - assemblyRefCount - 2];
-            }
-
-            EcmaMetadataReader ecmaReader;
-            if (!_assemblyCache.TryGetValue(name, out ecmaReader))
-            {
-                string assemblyPath = _assemblyResolver.FindAssembly(name, Filename);
-                if (assemblyPath == null)
-                {
-                    throw new Exception($"Missing reference assembly: {name}");
-                }
-                ecmaReader = new EcmaMetadataReader(_assemblyResolver, assemblyPath, ManifestReferenceAssemblies);
-                _assemblyCache.Add(name, ecmaReader);
-            }
-            return ecmaReader;
-        }
-    }
-
-    public class R2RReader : EcmaMetadataReader
-    {
-        /// <summary>
-        /// True if the image is ReadyToRun
-        /// </summary>
-        public bool IsR2R { get; set; }
 
         /// <summary>
         /// The type of target machine
@@ -228,46 +157,56 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The ReadyToRun header
         /// </summary>
-        public R2RHeader R2RHeader { get; }
+        public R2RHeader R2RHeader { get; private set; }
 
         /// <summary>
         /// The runtime functions and method signatures of each method
         /// </summary>
-        public IList<R2RMethod> R2RMethods { get; }
+        public IList<R2RMethod> R2RMethods { get; private set; }
 
         /// <summary>
         /// Parsed instance entrypoint table entries.
         /// </summary>
-        public IList<InstanceMethod> InstanceMethods { get; }
+        public IList<InstanceMethod> InstanceMethods { get; private set; }
 
         /// <summary>
         /// The available types from READYTORUN_SECTION_AVAILABLE_TYPES
         /// </summary>
-        public IList<string> AvailableTypes { get; }
+        public IList<string> AvailableTypes { get; private set; }
 
         /// <summary>
         /// The compiler identifier string from READYTORUN_SECTION_COMPILER_IDENTIFIER
         /// </summary>
-        public string CompilerIdentifier { get; }
+        public string CompilerIdentifier { get; private set; }
 
         /// <summary>
         /// Exception lookup table is used to map runtime function addresses to EH clauses.
         /// </summary>
-        public EHLookupTable EHLookupTable { get; }
+        public EHLookupTable EHLookupTable { get; private set; }
 
         /// <summary>
         /// List of import sections present in the R2R executable.
         /// </summary>
-        public IList<R2RImportSection> ImportSections { get; }
+        public IList<R2RImportSection> ImportSections { get; private set; }
 
         /// <summary>
         /// Map from import cell addresses to their symbolic names.
         /// </summary>
-        public Dictionary<int, string> ImportCellNames { get; }
+        public Dictionary<int, string> ImportCellNames { get; private set; }
 
-        private Dictionary<int, DebugInfo> _runtimeFunctionToDebugInfo = new Dictionary<int, DebugInfo>();
-
-        public R2RReader() { }
+        /// <summary>
+        /// Initializes the fields of the R2RHeader and R2RMethods
+        /// </summary>
+        /// <param name="filename">PE image</param>
+        /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
+        public R2RReader(IAssemblyResolver assemblyResolver, MetadataReader metadata, PEReader peReader, string filename)
+        {
+            _assemblyResolver = assemblyResolver;
+            MetadataReader = metadata;
+            PEReader = peReader;            
+            Filename = filename;
+            Initialize();
+        }
 
         /// <summary>
         /// Initializes the fields of the R2RHeader and R2RMethods
@@ -275,10 +214,94 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="filename">PE image</param>
         /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
         public unsafe R2RReader(IAssemblyResolver assemblyResolver, string filename)
-            : base(assemblyResolver, filename, new List<string>())
         {
-            IsR2R = ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) != 0);
-            if (!IsR2R)
+            _assemblyResolver = assemblyResolver;
+            Filename = filename;
+            Initialize();
+        }
+
+        private unsafe void Initialize()
+        {
+            _assemblyCache = new Dictionary<int, MetadataReader>();
+            this._manifestReferences = new List<AssemblyReferenceHandle>();
+
+            if (MetadataReader == null)
+            {
+                byte[] image = File.ReadAllBytes(Filename);
+                Image = image;
+
+                PEReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
+
+                if (!PEReader.HasMetadata)
+                {
+                    throw new Exception($"ECMA metadata not found in file '{Filename}'");
+                }
+
+                MetadataReader = PEReader.GetMetadataReader();
+
+            }
+            else
+            {
+                ImmutableArray<byte> content = PEReader.GetEntireImage().GetContent();
+                Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
+            }
+
+            ParseHeader();
+
+            ParseDebugInfo();
+
+            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA))
+            {
+                R2RSection manifestMetadata = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA];
+                fixed (byte* image = Image)
+                {
+                    _manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
+                    int assemblyRefCount = _manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
+                    for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
+                    {
+                        AssemblyReferenceHandle asmRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
+                        _manifestReferences.Add(asmRefHandle);
+                    }
+                }
+            }
+
+            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO))
+            {
+                R2RSection exceptionInfoSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO];
+                EHLookupTable = new EHLookupTable(Image, GetOffset(exceptionInfoSection.RelativeVirtualAddress), exceptionInfoSection.Size);
+            }
+
+            ImportSections = new List<R2RImportSection>();
+            ImportCellNames = new Dictionary<int, string>();
+            ParseImportSections();
+
+            R2RMethods = new List<R2RMethod>();
+            InstanceMethods = new List<InstanceMethod>();
+
+            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
+            {
+                int runtimeFunctionSize = CalculateRuntimeFunctionSize();
+                R2RSection runtimeFunctionSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS];
+
+                uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
+                int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
+                bool[] isEntryPoint = new bool[nRuntimeFunctions];
+
+                // initialize R2RMethods
+                ParseMethodDefEntrypoints(isEntryPoint);
+                ParseInstanceMethodEntrypoints(isEntryPoint);
+                ParseRuntimeFunctions(isEntryPoint, runtimeFunctionOffset, runtimeFunctionSize);
+            }
+
+            AvailableTypes = new List<string>();
+            ParseAvailableTypes();
+
+            CompilerIdentifier = ParseCompilerIdentifier();
+        }
+
+        private unsafe void ParseHeader()
+        {
+            if ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
             {
                 throw new BadImageFormatException("The file is not a ReadyToRun image");
             }
@@ -338,58 +361,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 throw new BadImageFormatException("The calculated size of the R2RHeader doesn't match the size saved in the ManagedNativeHeaderDirectory");
             }
-
-            ParseDebugInfo();
-
-            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA))
-            {
-                R2RSection manifestMetadata = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA];
-                fixed (byte* image = Image)
-                {
-                    MetadataReader manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
-                    int assemblyRefCount = manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
-                    for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
-                    {
-                        AssemblyReferenceHandle asmRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
-                        AssemblyReference asmRef = manifestReader.GetAssemblyReference(asmRefHandle);
-                        string asmRefName = manifestReader.GetString(asmRef.Name);
-                        ManifestReferenceAssemblies.Add(asmRefName);
-                    }
-                }
-            }
-
-            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO))
-            {
-                R2RSection exceptionInfoSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO];
-                EHLookupTable = new EHLookupTable(Image, GetOffset(exceptionInfoSection.RelativeVirtualAddress), exceptionInfoSection.Size);
-            }
-
-            ImportSections = new List<R2RImportSection>();
-            ImportCellNames = new Dictionary<int, string>();
-            ParseImportSections();
-
-            R2RMethods = new List<R2RMethod>();
-            InstanceMethods = new List<InstanceMethod>();
-
-            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
-            {
-                int runtimeFunctionSize = CalculateRuntimeFunctionSize();
-                R2RSection runtimeFunctionSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS];
-
-                uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
-                int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
-                bool[] isEntryPoint = new bool[nRuntimeFunctions];
-
-                // initialize R2RMethods
-                ParseMethodDefEntrypoints(isEntryPoint);
-                ParseInstanceMethodEntrypoints(isEntryPoint);
-                ParseRuntimeFunctions(isEntryPoint, runtimeFunctionOffset, runtimeFunctionSize);
-            }
-
-            AvailableTypes = new List<string>();
-            ParseAvailableTypes();
-
-            CompilerIdentifier = ParseCompilerIdentifier();
         }
 
         public bool InputArchitectureSupported()
@@ -755,6 +726,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private void ParseDebugInfo()
         {
+            _runtimeFunctionToDebugInfo = new Dictionary<int, DebugInfo>();
             if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_DEBUG_INFO))
             {
                 return;
@@ -795,7 +767,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Get the full name of an ExportedType, including namespace
         /// </summary>
-        public static string GetExportedTypeFullName(MetadataReader mdReader, ExportedTypeHandle handle)
+        private static string GetExportedTypeFullName(MetadataReader mdReader, ExportedTypeHandle handle)
         {
             string typeNamespace = "";
             string typeStr = "";
@@ -882,6 +854,47 @@ namespace ILCompiler.Reflection.ReadyToRun
             } // Done with all entries in this table
 
             return cells.ToArray();
+        }
+
+        /// <summary>
+        /// Open a given reference assembly (relative to this ECMA metadata file).
+        /// </summary>
+        /// <param name="refAsmIndex">Reference assembly index</param>
+        /// <returns>MetadataReader instance representing the reference assembly</returns>
+        internal MetadataReader OpenReferenceAssembly(int refAsmIndex)
+        {
+            if (refAsmIndex == 0)
+            {
+                return this.MetadataReader;
+            }
+
+            int assemblyRefCount = MetadataReader.GetTableRowCount(TableIndex.AssemblyRef);
+            MetadataReader metadataReader;
+            AssemblyReferenceHandle assemblyReferenceHandle;
+            if (refAsmIndex <= assemblyRefCount)
+            {
+                metadataReader = MetadataReader;
+                assemblyReferenceHandle = MetadataTokens.AssemblyReferenceHandle(refAsmIndex);
+            }
+            else
+            {
+                metadataReader = _manifestReader;
+                assemblyReferenceHandle = _manifestReferences[refAsmIndex - assemblyRefCount - 2];
+            }
+            
+
+            MetadataReader result;
+            if (!_assemblyCache.TryGetValue(refAsmIndex, out result))
+            {
+                result = _assemblyResolver.FindAssembly(metadataReader, assemblyReferenceHandle, Filename);
+                if (result == null)
+                {
+                    string name = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
+                    throw new Exception($"Missing reference assembly: {name}");
+                }
+                _assemblyCache.Add(refAsmIndex, result);
+            }
+            return result;
         }
     }
 }

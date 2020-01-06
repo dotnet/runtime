@@ -394,6 +394,7 @@
                           value="32" eventGUID="{BCF2339E-B0A6-452D-966C-33AC9DD82573}"
                           message="$(string.RuntimePublisher.AssemblyLoaderTaskMessage)">
                         <opcodes>
+                            <opcode name="ResolutionAttempted" message="$(string.RuntimePublisher.ResolutionAttemptedOpcodeMessage)" symbol="CLR_RESOLUTION_ATTEMPTED_OPCODE" value="11"/>
                             <opcode name="AssemblyLoadContextResolvingHandlerInvoked" message="$(string.RuntimePublisher.AssemblyLoadContextResolvingHandlerInvokedOpcodeMessage)" symbol="CLR_ALC_RESOLVING_HANDLER_INVOKED_OPCODE" value="12"/>
                             <opcode name="AppDomainAssemblyResolveHandlerInvoked" message="$(string.RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedOpcodeMessage)" symbol="CLR_APPDOMAIN_ASSEMBLY_RESOLVE_HANDLER_INVOKED_OPCODE" value="13"/>
                             <opcode name="AssemblyLoadFromResolveHandlerInvoked" message="$(string.RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedOpcodeMessage)" symbol="CLR_ASSEMBLY_LOAD_FROM_RESOLVE_HANDLER_INVOKED_OPCODE" value="14"/>
@@ -485,6 +486,23 @@
                         <map value="0x2" message="$(string.RuntimePublisher.KnownPathSource.AppPathsMessage)"/>
                         <map value="0x3" message="$(string.RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage)"/>
                         <map value="0x4" message="$(string.RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage)"/>
+                    </valueMap>
+                    <valueMap name="ResolutionAttemptedStageMap">
+                      <map value="0x0" message="$(string.RuntimePublisher.ResolutionAttempted.FindInLoadContext)"/>
+                      <map value="0x1" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextLoad)"/>
+                      <map value="0x2" message="$(string.RuntimePublisher.ResolutionAttempted.ApplicationAssemblies)"/>
+                      <map value="0x3" message="$(string.RuntimePublisher.ResolutionAttempted.DefaultAssemblyLoadContextFallback)"/>
+                      <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.ResolveSatelliteAssembly)"/>
+                      <map value="0x5" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent)"/>
+                      <map value="0x6" message="$(string.RuntimePublisher.ResolutionAttempted.AppDomainAssemblyResolveEvent)"/>
+                    </valueMap>
+                    <valueMap name="ResolutionAttemptedResultMap">
+                      <map value="0x0" message="$(string.RuntimePublisher.ResolutionAttempted.Success)"/>
+                      <map value="0x1" message="$(string.RuntimePublisher.ResolutionAttempted.AssemblyNotFound)"/>
+                      <map value="0x2" message="$(string.RuntimePublisher.ResolutionAttempted.MismatchedAssemblyName)"/>
+                      <map value="0x3" message="$(string.RuntimePublisher.ResolutionAttempted.IncompatibleVersion)"/>
+                      <map value="0x4" message="$(string.RuntimePublisher.ResolutionAttempted.Failure)"/>
+                      <map value="0x5" message="$(string.RuntimePublisher.ResolutionAttempted.Exception)"/>
                     </valueMap>
 
                     <!-- BitMaps -->
@@ -1695,6 +1713,29 @@
                                 <ResultAssemblyPath> %9 </ResultAssemblyPath>
                                 <Cached> %10 </Cached>
                             </AssemblyLoadStop>
+                        </UserData>
+                    </template>
+
+                    <template tid="ResolutionAttempted">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="AssemblyName" inType="win:UnicodeString" />
+                        <data name="Stage" map="ResolutionAttemptedStageMap" inType="win:UInt16" />
+                        <data name="AssemblyLoadContext" inType="win:UnicodeString" />
+                        <data name="Result" map="ResolutionAttemptedResultMap" inType="win:UInt16" />
+                        <data name="ResultAssemblyName" inType="win:UnicodeString" />
+                        <data name="ResultAssemblyPath" inType="win:UnicodeString" />
+                        <data name="ErrorMessage" inType="win:UnicodeString" />
+                        <UserData>
+                            <ResolutionAttempted xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <AssemblyName> %2 </AssemblyName>
+                                <Stage> %3 </Stage>
+                                <AssemblyLoadContext> %4 </AssemblyLoadContext>
+                                <Result> %5 </Result>
+                                <ResultAssemblyName> %6 </ResultAssemblyName>
+                                <ResultAssemblyPath> %7 </ResultAssemblyPath>
+                                <ErrorMessage> %8 </ErrorMessage>
+                            </ResolutionAttempted>
                         </UserData>
                     </template>
 
@@ -3580,6 +3621,11 @@
                            keywords ="AssemblyLoaderKeyword" opcode="win:Stop"
                            task="AssemblyLoader"
                            symbol="AssemblyLoadStop" message="$(string.RuntimePublisher.AssemblyLoadStopEventMessage)"/>
+
+                    <event value="292" version="0" level="win:Informational"  template="ResolutionAttempted"
+                           keywords ="AssemblyLoaderKeyword" opcode="ResolutionAttempted"
+                           task="AssemblyLoader"
+                           symbol="ResolutionAttempted" message="$(string.RuntimePublisher.ResolutionAttemptedEventMessage)"/>
 
                     <event value="293" version="0" level="win:Informational"  template="AssemblyLoadContextResolvingHandlerInvoked"
                            keywords ="AssemblyLoaderKeyword" opcode="AssemblyLoadContextResolvingHandlerInvoked"
@@ -6802,6 +6848,7 @@
                 <string id="RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nHandlerName=%3;%nResultAssemblyName=%4;%nResultAssemblyPath=%5" />
                 <string id="RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nIsTrackedLoad=%3;%nRequestingAssemblyPath=%4;%nComputedRequestedAssemblyPath=%5" />
                 <string id="RuntimePublisher.KnownPathProbedEventMessage" value="ClrInstanceID=%1;%nFilePath=%2;%nSource=%3;%nResult=%4" />
+                <string id="RuntimePublisher.ResolutionAttemptedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nStage=%3;%nAssemblyLoadContext=%4;%nResult=%5;%nResultAssemblyName=%6;%nResultAssemblyPath=%7;%nErrorMessage=%8" />
                 <string id="RuntimePublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedEventMessage" value="AppDomainID=%1;%nAllocated=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.AppDomainMemSurvivedEventMessage" value="AppDomainID=%1;%nSurvived=%2;%nProcessSurvived=%3;%nClrInstanceID=%4" />
@@ -7159,6 +7206,19 @@
                 <string id="RuntimePublisher.KnownPathSource.AppPathsMessage" value="AppPaths" />
                 <string id="RuntimePublisher.KnownPathSource.PlatformResourceRootsMessage" value="PlatformResourceRoots" />
                 <string id="RuntimePublisher.KnownPathSource.SatelliteSubdirectoryMessage" value="SatelliteSubdirectory" />
+                <string id="RuntimePublisher.ResolutionAttempted.FindInLoadContext" value="FindInLoadContext" />
+                <string id="RuntimePublisher.ResolutionAttempted.AssemblyLoadContextLoad" value="AssemblyLoadContextLoad"/>
+                <string id="RuntimePublisher.ResolutionAttempted.ApplicationAssemblies" value="ApplicationAssemblies" />
+                <string id="RuntimePublisher.ResolutionAttempted.DefaultAssemblyLoadContextFallback" value="DefaultAssemblyLoadContextFallback" />
+                <string id="RuntimePublisher.ResolutionAttempted.ResolveSatelliteAssembly" value="ResolveSatelliteAssembly" />
+                <string id="RuntimePublisher.ResolutionAttempted.AssemblyLoadContextResolvingEvent" value="AssemblyLoadContextResolvingEvent" />
+                <string id="RuntimePublisher.ResolutionAttempted.AppDomainAssemblyResolveEvent" value="AppDomainAssemblyResolveEvent" />
+                <string id="RuntimePublisher.ResolutionAttempted.Success" value="Success" />
+                <string id="RuntimePublisher.ResolutionAttempted.AssemblyNotFound" value="AssemblyNotFound" />
+                <string id="RuntimePublisher.ResolutionAttempted.MismatchedAssemblyName" value="MismatchedAssemblyName" />
+                <string id="RuntimePublisher.ResolutionAttempted.IncompatibleVersion" value="IncompatibleVersion" />
+                <string id="RuntimePublisher.ResolutionAttempted.Failure" value="Failure" />
+                <string id="RuntimePublisher.ResolutionAttempted.Exception" value="Exception" />
 
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />
@@ -7439,6 +7499,7 @@
                 <string id="RuntimePublisher.AppDomainAssemblyResolveHandlerInvokedOpcodeMessage" value="AppDomainAssemblyResolveHandlerInvoked" />
                 <string id="RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedOpcodeMessage" value="AssemblyLoadFromResolveHandlerInvoked" />
                 <string id="RuntimePublisher.KnownPathProbedOpcodeMessage" value="KnownPathProbed" />
+                <string id="RuntimePublisher.ResolutionAttemptedOpcodeMessage" value="ResolutionAttempted" />
 
                 <string id="RundownPublisher.MethodDCStartOpcodeMessage" value="DCStart" />
                 <string id="RundownPublisher.MethodDCEndOpcodeMessage" value="DCStop" />

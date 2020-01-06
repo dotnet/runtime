@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 new object[] { EnumConverterOptions.AllowNumbers },
-                culture: null);
+                culture: null)!;
 
             return converter;
         }

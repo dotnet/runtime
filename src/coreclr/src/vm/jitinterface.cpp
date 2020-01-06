@@ -1033,17 +1033,6 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         {
             COMPlusThrow(kInvalidProgramException);
         }
-
-        // The JIT always wants to see normalized typedescs for arrays
-        if (!th.IsTypeDesc() && th.AsMethodTable()->IsArray())
-        {
-            MethodTable * pMT = th.AsMethodTable();
-
-            // Load the TypeDesc for the array type.
-            DWORD rank = pMT->GetRank();
-            TypeHandle elemType = pMT->GetArrayElementTypeHandle();
-            th = ClassLoader::LoadArrayTypeThrowing(elemType, pMT->GetInternalCorElementType(), rank);
-        }
     }
     else
     {
@@ -2624,24 +2613,7 @@ void CEEInfo::embedGenericHandle(
         TypeHandle th(pResolvedToken->hClass);
 
         pResult->handleType = CORINFO_HANDLETYPE_CLASS;
-
-        if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
-        {
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsArray()->GetTemplateMethodTable();
-        }
-        else
-        if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken && th.IsArray()
-            && m_pMethodBeingCompiled == MscorlibBinder::GetMethod(METHOD__BUFFER__BLOCKCOPY))
-        {
-            // Workaround for https://github.com/dotnet/coreclr/issues/10258
-            // Allow cheaper type checks to be generated in selected performance critical CoreLib methods until this issue
-            // is fixed properly.
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsArray()->GetTemplateMethodTable();
-        }
-        else
-        {
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsPtr();
-        }
+        pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsPtr();
 
         if (fEmbedParent && pResolvedToken->hMethod != NULL)
         {
@@ -3324,11 +3296,6 @@ NoSpecialCase:
         {
             if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
             {
-                if (!IsReadyToRunCompilation())
-                {
-                    sigBuilder.AppendElementType((CorElementType)ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
-                }
-
                 sigBuilder.AppendElementType(ELEMENT_TYPE_SZARRAY);
             }
 
@@ -3845,13 +3812,6 @@ BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
     _ASSERTE(clsHnd);
 
     TypeHandle VMClsHnd(clsHnd);
-
-    if (VMClsHnd.IsTypeDesc())
-    {
-        // We can't do this optimization for arrays because of the object methodtable is template methodtable
-        ret = FALSE;
-    }
-    else
     if (VMClsHnd == TypeHandle(g_pCanonMethodTableClass))
     {
         // We can't do this optimization in shared generics code because of we do not know what the actual type is going to be.
@@ -3861,6 +3821,9 @@ BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
     else
     {
         // It is safe to perform this optimization
+        // NOTE: clsHnd could be a TypeDesc with shared MethodTable (ex: typeof(int*) == o.GetType()), but that is still optimizable.
+        //       That is because optimized version compares literally a handle to a methodtable and that will be not equal,
+        //       which is valid since none of MethodDesc types can have heap instances.
         ret = TRUE;
     }
 
@@ -4893,20 +4856,10 @@ CorInfoType CEEInfo::getChildType (
 
     _ASSERTE(!th.IsNull());
 
-    // BYREF, ARRAY types
-    if (th.IsTypeDesc())
+    // BYREF, pointer types
+    if (th.HasTypeParam())
     {
-        retType = th.AsTypeDesc()->GetTypeParam();
-    }
-    else
-    {
-        // <REVISIT_TODO> we really should not have this case.  arrays type handles
-        // used in the JIT interface should never be ordinary method tables,
-        // indeed array type handles should really never be ordinary MTs
-        // at all.  Perhaps we should assert !th.IsTypeDesc() && th.AsMethodTable().IsArray()? </REVISIT_TODO>
-        MethodTable* pMT= th.AsMethodTable();
-        if (pMT->IsArray())
-            retType = pMT->GetArrayElementTypeHandle();
+        retType = th.GetTypeParam();
     }
 
     if (!retType.IsNull()) {
@@ -4961,7 +4914,7 @@ BOOL CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
 
     _ASSERTE(!th.IsNull());
 
-    if (th.IsArrayType())
+    if (th.IsArray())
     {
         // Lots of code used to think that System.Array's methodtable returns TRUE for IsArray(). It doesn't.
         _ASSERTE(th != TypeHandle(g_pArrayClass));
@@ -4992,12 +4945,12 @@ unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
 
     _ASSERTE(!th.IsNull());
 
-    if (th.IsArrayType())
+    if (th.IsArray())
     {
         // Lots of code used to think that System.Array's methodtable returns TRUE for IsArray(). It doesn't.
         _ASSERTE(th != TypeHandle(g_pArrayClass));
 
-        result = th.GetPossiblySharedArrayMethodTable()->GetRank();
+        result = th.GetRank();
     }
 
     EE_TO_JIT_TRANSITION();
@@ -5297,7 +5250,7 @@ void CEEInfo::getCallInfo(
     }
     else
     {
-        if (!exactType.IsTypeDesc())
+        if (!exactType.IsTypeDesc() && !pTargetMD->IsArray())
         {
             // Because of .NET's notion of base calls, exactType may point to a sub-class
             // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is
@@ -5314,7 +5267,6 @@ void CEEInfo::getCallInfo(
             else
 #endif
             {
-
                 exactType = pTargetMD->GetExactDeclaringType(exactType.AsMethodTable());
                 _ASSERTE(!exactType.IsNull());
             }
@@ -6146,8 +6098,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
 {
     STANDARD_VM_CONTRACT;
 
-    ArrayTypeDesc* arrayTypeDesc = clsHnd.AsArray();
-    _ASSERTE(arrayTypeDesc->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
+    _ASSERTE(clsHnd.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 
     if (GCStress<cfg_alloc>::IsEnabled())
     {
@@ -6156,7 +6107,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
 
     CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
 
-    TypeHandle thElemType = arrayTypeDesc->GetTypeParam();
+    TypeHandle thElemType = clsHnd.GetArrayElementTypeHandle();
     CorElementType elemType = thElemType.GetInternalCorElementType();
 
     // This is if we're asked for newarr !0 when verifying generic code
@@ -6274,7 +6225,7 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     else
     if (clsHnd.IsArray())
     {
-        if (clsHnd.AsArray()->GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
+        if (clsHnd.GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
         {
             // Casting to multidimensional array type requires restored pointer to EEClass to fetch rank
             *pfClassMustBeRestored = true;

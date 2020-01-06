@@ -205,7 +205,7 @@ REM Set the environment for the native build
 
 REM Eval the output from set-cmake-path.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
-REM echo Using CMake from %CMakePath%
+echo %__MsgPrefix%Using CMake from !CMakePath!
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
 REM processor(s). It is used to set optimal level of CL parallelism during native build step
@@ -234,7 +234,7 @@ if not defined VSINSTALLDIR (
 )
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
-set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
+set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_COMMON_DIR=%__RepoRootDir%/eng/common"
 call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
 
 if not !errorlevel! == 0 (
@@ -259,7 +259,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-"%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+"%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: native test build failed.
@@ -593,13 +593,10 @@ exit /b 1
 
 :NoDIA
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-This is due to a bug in the Visual Studio installer. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
-at the install location of previous Visual Studio version. The workaround is to copy the DIA SDK folder from the Visual Studio install location ^
-of the previous version to "%VSINSTALLDIR%" and then build.
-REM DIA SDK not included in Express editions
-echo Visual Studio Express does not include the DIA SDK. ^
-You need Visual Studio 2017 or 2019 (Community is free).
-echo See: https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md#prerequisites
+Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
+Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
+Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
+may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1
 
 :PrecompileFX

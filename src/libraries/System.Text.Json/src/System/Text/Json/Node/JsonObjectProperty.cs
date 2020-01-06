@@ -8,10 +8,10 @@ namespace System.Text.Json
     {
         internal string Name { get; }
         internal JsonNode Value { get; set;  }
-        internal JsonObjectProperty Prev { get; set; }
-        internal JsonObjectProperty Next { get; set; }
+        internal JsonObjectProperty? Prev { get; set; }
+        internal JsonObjectProperty? Next { get; set; }
 
-        public JsonObjectProperty(string name, JsonNode value, JsonObjectProperty prev, JsonObjectProperty next)
+        public JsonObjectProperty(string name, JsonNode value, JsonObjectProperty? prev, JsonObjectProperty? next)
         {
             Name = name;
             Value = value;

@@ -142,6 +142,14 @@ void BindResult::SetResult(BindResult *pBindResult)
     SAFE_RELEASE(m_pAssemblyName);
     m_pAssemblyName = pBindResult->GetAssemblyName(TRUE /* fAddRef */);
     m_pIUnknownAssembly = pBindResult->GetAssembly(TRUE /* fAddRef */);
+
+    const AttemptResult *attempt = pBindResult->GetAttempt(true /*foundInContext*/);
+    if (attempt != nullptr)
+        m_inContextAttempt.Set(attempt);
+
+    attempt = pBindResult->GetAttempt(false /*foundInContext*/);
+    if (attempt != nullptr)
+        m_applicationAssembliesAttempt.Set(attempt);
 }
 
 void BindResult::SetNoResult()
@@ -159,8 +167,47 @@ void BindResult::Reset()
     SAFE_RELEASE(m_pAssemblyName);
     m_pIUnknownAssembly = NULL;
     m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
+    m_inContextAttempt.Reset();
+    m_applicationAssembliesAttempt.Reset();
+}
+
+void BindResult::SetAttemptResult(HRESULT hr, ContextEntry *pContextEntry)
+{
+    Assembly *assembly = nullptr;
+    if (pContextEntry != nullptr)
+        assembly = static_cast<Assembly *>(pContextEntry->GetAssembly(TRUE /* fAddRef */));
+
+    m_inContextAttempt.Assembly = assembly;
+    m_inContextAttempt.HResult = hr;
+    m_inContextAttempt.Attempted = true;
+}
+
+void BindResult::SetAttemptResult(HRESULT hr, Assembly *pAssembly)
+{
+    if (pAssembly != nullptr)
+        pAssembly->AddRef();
+
+    m_applicationAssembliesAttempt.Assembly = pAssembly;
+    m_applicationAssembliesAttempt.HResult = hr;
+    m_applicationAssembliesAttempt.Attempted = true;
+}
+
+const BindResult::AttemptResult* BindResult::GetAttempt(bool foundInContext) const
+{
+    const BindResult::AttemptResult &result = foundInContext ? m_inContextAttempt : m_applicationAssembliesAttempt;
+    return result.Attempted ? &result : nullptr;
+}
+
+void BindResult::AttemptResult::Set(const BindResult::AttemptResult *result)
+{
+    BINDER_SPACE::Assembly *assembly = result->Assembly;
+    if (assembly != nullptr)
+        assembly->AddRef();
+
+    Assembly = assembly;
+    HResult = result->HResult;
+    Attempted = result->Attempted;
 }
 
 }
-
 #endif

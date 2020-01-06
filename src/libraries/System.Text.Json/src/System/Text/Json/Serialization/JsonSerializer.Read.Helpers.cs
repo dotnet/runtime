@@ -6,7 +6,7 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static object ReadCore(
+        private static object? ReadCore(
             Type returnType,
             JsonSerializerOptions options,
             ref Utf8JsonReader reader)

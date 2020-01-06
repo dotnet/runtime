@@ -385,44 +385,6 @@ MethodDesc *FunctionIdToMethodDesc(FunctionID functionID)
     return pMethodDesc;
 }
 
-// (See comments for ArrayKindFromTypeHandle below.)
-typedef enum
-{
-    ARRAY_KIND_TYPEDESC,        // Normal, garden-variety typedesc array
-    ARRAY_KIND_METHODTABLE,  // Weirdo array with its own unshared methodtable (e.g., System.Object[])
-    ARRAY_KIND_NOTARRAY,       // Not an array
-} ARRAY_KIND;
-
-//---------------------------------------------------------------------------------------
-//
-// A couple Info calls need to understand what constitutes an "array", and what
-// kinds of arrays there are.  ArrayKindFromTypeHandle tries to put some of this
-// knowledge in a single place
-//
-// Arguments:
-//      th - TypeHandle to inspect
-//
-// Return Value:
-//      ARRAY_KIND describing th
-//
-
-inline ARRAY_KIND ArrayKindFromTypeHandle(TypeHandle th)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (th.IsArray())
-    {
-        return ARRAY_KIND_TYPEDESC;
-    }
-
-    if (!th.IsTypeDesc() && th.GetMethodTable()->IsArray())
-    {
-        return ARRAY_KIND_METHODTABLE;
-    }
-
-    return ARRAY_KIND_NOTARRAY;
-}
-
 #ifdef PROFILING_SUPPORTED
 
 //---------------------------------------------------------------------------------------
@@ -1726,86 +1688,42 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
 
     TypeHandle th = TypeHandle::FromPtr((void *)classId);
 
-    ARRAY_KIND arrayKind = ArrayKindFromTypeHandle(th);
-
-    // If this is indeed an array class, get some info about it
-    switch (arrayKind)
+    if (th.IsArray())
     {
-        default:
+        // Fill in the type if they want it
+        if (pBaseElemType != NULL)
         {
-            _ASSERTE(!"Unexpected return from ArrayKindFromTypeHandle()");
-            hr = E_UNEXPECTED;
-            break;
+            *pBaseElemType = th.GetArrayElementTypeHandle().GetVerifierCorElementType();
         }
 
-        case ARRAY_KIND_TYPEDESC:
+        // If this is an array of classes and they wish to have the base type
+        // If there is no associated class with this type, then there's no problem
+        // because GetClass returns NULL which is the default we want to return in
+        // this case.
+        // Note that for generic code we always return uninstantiated ClassIDs and FunctionIDs
+        if (pBaseClassId != NULL)
         {
-            // This is actually an array, so cast it up
-            ArrayTypeDesc *pArr = th.AsArray();
-
-            // Fill in the type if they want it
-            if (pBaseElemType != NULL)
-            {
-                *pBaseElemType = pArr->GetArrayElementTypeHandle().GetVerifierCorElementType();
-            }
-
-            // If this is an array of classes and they wish to have the base type
-            // If there is no associated class with this type, then there's no problem
-            // because GetClass returns NULL which is the default we want to return in
-            // this case.
-            // Note that for generic code we always return uninstantiated ClassIDs and FunctionIDs
-            if (pBaseClassId != NULL)
-            {
-                *pBaseClassId = TypeHandleToClassID(pArr->GetTypeParam());
-            }
-
-            // If they want the number of dimensions of the array
-            if (pcRank != NULL)
-            {
-                *pcRank = (ULONG) pArr->GetRank();
-            }
-
-            // S_OK indicates that this was indeed an array
-            hr = S_OK;
-            break;
+            *pBaseClassId = TypeHandleToClassID(th.GetArrayElementTypeHandle());
         }
-        case ARRAY_KIND_METHODTABLE:
+
+        // If they want the number of dimensions of the array
+        if (pcRank != NULL)
         {
-            MethodTable *pArrMT = th.GetMethodTable();
-
-            // Fill in the type if they want it
-            if (pBaseElemType != NULL)
-            {
-                *pBaseElemType = pArrMT->GetArrayElementType();
-            }
-
-            // If this is an array of classes and they wish to have the base type.
-            if (pBaseClassId != NULL)
-            {
-                *pBaseClassId = TypeHandleToClassID(pArrMT->GetArrayElementTypeHandle());
-            }
-
-            // If they want the number of dimensions of the array
-            if (pcRank != NULL)
-            {
-                *pcRank = (ULONG) pArrMT->GetRank();
-            }
-
-            // S_OK indicates that this was indeed an array
-            hr = S_OK;
-            break;
+            *pcRank = (ULONG) th.GetRank();
         }
-        case ARRAY_KIND_NOTARRAY:
+
+        // S_OK indicates that this was indeed an array
+        hr = S_OK;
+    }
+    else
+    {
+        if (pBaseClassId != NULL)
         {
-            if (pBaseClassId != NULL)
-            {
-                *pBaseClassId = NULL;
-            }
-
-            // This is not an array, S_FALSE indicates so.
-            hr = S_FALSE;
-            break;
+            *pBaseClassId = NULL;
         }
+
+        // This is not an array, S_FALSE indicates so.
+        hr = S_FALSE;
     }
 
     return hr;
@@ -3835,17 +3753,14 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
     //
     // Do not do arrays via this API
     //
-    ARRAY_KIND arrayKind = ArrayKindFromTypeHandle(typeHandle);
-    if (arrayKind == ARRAY_KIND_TYPEDESC || arrayKind == ARRAY_KIND_METHODTABLE)
+    if (typeHandle.IsArray())
     {
         return CORPROF_E_CLASSID_IS_ARRAY;
     }
 
-    _ASSERTE (arrayKind == ARRAY_KIND_NOTARRAY);
-
     if (typeHandle.IsTypeDesc())
     {
-        // Not an array, but still a typedesc?  We don't know how to
+        // a typedesc?  We don't know how to
         // deal with those.
         return CORPROF_E_CLASSID_IS_COMPOSITE;
     }

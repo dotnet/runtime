@@ -1129,6 +1129,9 @@
   <data name="Argument_InvalidCultureName" xml:space="preserve">
     <value>Culture name '{0}' is not supported.</value>
   </data>
+  <data name="Argument_InvalidPredefinedCultureName" xml:space="preserve">
+    <value>Culture name '{0}' is not a predefined culture.</value>
+  </data>
   <data name="Argument_InvalidDateTimeKind" xml:space="preserve">
     <value>Invalid DateTimeKind value.</value>
   </data>

@@ -261,7 +261,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     {
         // This is loading the canonical version of the array so we can override
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-        pCanonMT = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass), arrayKind, Rank).GetMethodTable();
+        pCanonMT = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass), arrayKind, Rank).AsMethodTable();
     }
 
     BOOL            containsPointers = CorTypeInfo::IsObjRef(elemType);
@@ -278,9 +278,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     {
         numCtors = 1;
         TypeHandle ptr = elemTypeHnd;
-        while (ptr.IsTypeDesc() && ptr.AsTypeDesc()->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY) {
+        while (ptr.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY) {
             numCtors++;
-            ptr = ptr.AsTypeDesc()->GetTypeParam();
+            ptr = ptr.GetArrayElementTypeHandle();
         }
     }
 
@@ -505,7 +505,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
     // Mark the type as restored to avoid asserts. Note that this also enables IBC logging.
-    pMTWriteableData->SetIsFullyLoadedForBuildMethodTable();
+    pMTWriteableData->SetIsRestoredForBuildArrayMethodTable();
 
     {
         // Fill out the vtable indirection slots
@@ -836,19 +836,12 @@ public:
                 m_pCode->EmitLDARG(hiddenArgIdx); // hidden param
                 m_pCode->EmitBRFALSE(pTypeCheckPassed);
                 m_pCode->EmitLDARG(hiddenArgIdx);
-                m_pCode->EmitLDFLDA(tokRawData);
-                m_pCode->EmitLDC(offsetof(ParamTypeDesc, m_Arg) - (Object::GetOffsetOfFirstField()+2));
-                m_pCode->EmitADD();
-                m_pCode->EmitLDIND_I();
 
                 m_pCode->EmitLoadThis();
                 m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
                 m_pCode->EmitSUB();
                 m_pCode->EmitLDIND_I(); // Array MT
-                m_pCode->EmitLDC(MethodTable::GetOffsetOfArrayElementTypeHandle());
-                m_pCode->EmitADD();
-                m_pCode->EmitLDIND_I();
 
                 m_pCode->EmitCEQ();
                 m_pCode->EmitBRFALSE(pTypeMismatchExceptionLabel); // throw exception if not same

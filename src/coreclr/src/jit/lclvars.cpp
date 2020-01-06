@@ -2369,6 +2369,33 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum)
     lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_AddrExposed));
 }
 
+//------------------------------------------------------------------------
+// lvaSetVarLiveInOutOfHandler: Set the local varNum as being live in and/or out of a handler
+//
+// Arguments:
+//    varNum - the varNum of the local
+//
+void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+    INDEBUG(varDsc->lvLiveInOutOfHndlr = 1);
+
+    if (varDsc->lvPromoted)
+    {
+        noway_assert(varTypeIsStruct(varDsc));
+
+        for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
+        {
+            noway_assert(lvaTable[i].lvIsStructField);
+            INDEBUG(lvaTable[i].lvLiveInOutOfHndlr = 1);
+            lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
+        }
+    }
+
+    lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+}
+
 /*****************************************************************************
  *
  *  Record that the local var "varNum" should not be enregistered (for one of several reasons.)
@@ -6777,6 +6804,11 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvIsHfa())
     {
         printf(" HFA(%s) ", varTypeName(varDsc->GetHfaType()));
+    }
+
+    if (varDsc->lvLiveInOutOfHndlr)
+    {
+        printf(" EH");
     }
 
     if (varDsc->lvDoNotEnregister)

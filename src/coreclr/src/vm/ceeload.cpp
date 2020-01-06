@@ -3251,14 +3251,6 @@ void Module::FreeClassTables()
                         }
                     }
                 }
-                else if (th.IsArray())
-                {
-                    ComCallWrapperTemplate *pTemplate = th.AsArray()->GetComCallWrapperTemplate();
-                    if (pTemplate != NULL)
-                    {
-                        pTemplate->Release();
-                    }
-                }
 #endif // FEATURE_COMINTEROP
 
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table

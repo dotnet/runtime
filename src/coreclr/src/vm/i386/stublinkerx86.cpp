@@ -4491,26 +4491,16 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             // Load up the hidden type parameter into 'typeReg'
             X86Reg typeReg = LoadArrayOpArg(pArrayOpScript->m_typeParamOffs, this, kEAX, ofsadjust);
 
-            // 'typeReg' holds the typeHandle for the ARRAY.  This must be a ArrayTypeDesc*, so
-            // mask off the low two bits to get the TypeDesc*
-            X86EmitR2ROp(0x83, (X86Reg)4, typeReg);    //   AND typeReg, 0xFFFFFFFC
-            Emit8(0xFC);
-
+            // 'typeReg' holds the typeHandle/MethodTable for the ARRAY.
             // If 'typeReg' is NULL then we're executing the readonly ::Address and no type check is
             // needed.
             CodeLabel *Inner_passedTypeCheck = NewCodeLabel();
 
             X86EmitCondJump(Inner_passedTypeCheck, X86CondCode::kJZ);
 
-            // Get the parameter of the parameterize type
-            // mov typeReg, [typeReg.m_Arg]
-            X86EmitOp(0x8b, typeReg, typeReg, offsetof(ParamTypeDesc, m_Arg) AMD64_ARG(k64BitOp));
-
-            // Compare this against the element type of the array.
-            // mov ESI/R10, [kArrayRefReg]
-            X86EmitOp(0x8b, kArrayMTReg, kArrayRefReg, 0 AMD64_ARG(k64BitOp));
-            // cmp typeReg, [ESI/R10+m_ElementType];
-            X86EmitOp(0x3b, typeReg, kArrayMTReg, MethodTable::GetOffsetOfArrayElementTypeHandle() AMD64_ARG(k64BitOp));
+            // Compare MT against the MT of the array.                     
+            // cmp typeReg, [kArrayRefReg]
+            X86EmitOp(0x3b, typeReg, kArrayRefReg, 0 AMD64_ARG(k64BitOp));
 
             // Throw error if not equal
             Inner_typeMismatchexception = NewCodeLabel();

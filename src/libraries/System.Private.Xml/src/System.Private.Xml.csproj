@@ -8,11 +8,11 @@
     <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
-      <Link>System\StringBuilderCache.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
+      <Link>Common\System\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Marvin.cs">
-      <Link>System\Marvin.cs</Link>
+      <Link>Common\System\Marvin.cs</Link>
     </Compile>
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
     <Compile Include="System\Xml\BinaryXml\BinXmlToken.cs" />

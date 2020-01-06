@@ -4288,7 +4288,7 @@ namespace System
             }
             else
             {
-                return SpanHelpers.SequenceEqual<byte>(ref *s.m_pStringHeap, ref *m_pStringHeap, m_StringHeapByteLength);
+                return SpanHelpers.SequenceEqual(ref *s.m_pStringHeap, ref *m_pStringHeap, (uint)m_StringHeapByteLength);
             }
         }
 
