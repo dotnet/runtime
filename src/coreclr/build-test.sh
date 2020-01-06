@@ -155,27 +155,26 @@ precompile_coreroot_fx()
 
         mkdir ${outputDir}
 
-        skipCrossGenFiles+=('System.Private.CoreLib.dll')
-        skipCrossGenFiles+=('System.Runtime.Serialization.Formatters.dll')
         skipCrossGenFiles+=('Microsoft.CodeAnalysis.CSharp.dll')
         skipCrossGenFiles+=('Microsoft.CodeAnalysis.dll')
         skipCrossGenFiles+=('Microsoft.CodeAnalysis.VisualBasic.dll')
-        skipCrossGenFiles+=('CommandLine.dll')
 
-        for reference in ${overlayDir}/*.dll
-        do
+        for reference in ${overlayDir}/*.dll; do
             crossgen2References+=" -r:${reference}"
         done
     fi
 
     echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
 
-    filesToPrecompile=$(find -L $overlayDir -maxdepth 1 -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -type f)
-    for fileToPrecompile in ${filesToPrecompile}
-    do
+    local totalPrecompiled=0
+    local failedToPrecompile=0
+    declare -a failedAssemblies
+
+    filesToPrecompile=$(find -L $overlayDir -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -type f)
+    for fileToPrecompile in ${filesToPrecompile}; do
         local filename=${fileToPrecompile}
         if is_skip_crossgen_test "$(basename $filename)"; then
-                continue
+            continue
         fi
 
         echo Precompiling $filename
@@ -193,20 +192,33 @@ precompile_coreroot_fx()
             if grep -q -e '0x80131018' $filename.stderr; then
                 printf "\n\t$filename is not a managed assembly.\n\n"
             else
-                echo Unable to precompile $filename.
+                echo Unable to precompile $filename, exit code is $exitCode.
                 cat $filename.stdout
                 cat $filename.stderr
-                exit $exitCode
+                failedAssemblies+=($(basename -- "$filename"))
+                failedToPrecompile=$((failedToPrecompile+1))
             fi
         else
             rm $filename.{stdout,stderr}
         fi
+
+        totalPrecompiled=$((totalPrecompiled+1))
+        echo Processed: $totalPrecompiled, failed $failedToPrecompile
     done
 
     if [[ $__DoCrossgen2 != 0 ]]; then
         # Copy the Crossgen-compiled assemblies back to CORE_ROOT
         mv -f ${outputDir}/* ${overlayDir}/
         rm -r ${outputDir}
+    fi
+
+    if [[ $failedToPrecompile != 0 ]]; then
+        echo Failed assemblies:
+        for assembly in "${failedAssemblies[@]}"; do
+            echo "  $assembly"
+        done
+
+        exit 1
     fi
 }
 
@@ -740,4 +752,3 @@ else
     echo "To run single test use the following command:"
     echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"
 fi
-

@@ -613,10 +613,13 @@ set __TotalPrecompiled=0
 set __FailedToPrecompile=0
 set __FailedAssemblies=
 for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll") do (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" if not "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" if not "%%~nxF"=="Microsoft.CodeAnalysis.dll" (
+    if not "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" (
+    if not "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" (
+    if not "%%~nxF"=="Microsoft.CodeAnalysis.dll" (
+    if not "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (
         call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
         echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
-    )
+    )))))
 )
 
 if !__FailedToPrecompile! NEQ 0 (
@@ -631,14 +634,6 @@ REM Compile the managed assemblies in Core_ROOT before running the tests
 
 set AssemblyPath=%1
 set AssemblyName=%2
-
-REM Don't precompile xunit.* files
-echo "%AssemblyName%" | findstr /b "xunit." >nul && (
-  exit /b 0
-)
-
-REM Skip the Win32 API dll's
-if /i "%AssemblyName:~0,4%"=="api-" exit /b 0
 
 set __CrossgenExe="%CORE_ROOT%\crossgen.exe"
 if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT%\x86\crossgen.exe" )
@@ -672,7 +667,7 @@ if "%__exitCode%" == "-2146230517" (
 )
 
 if %__exitCode% neq 0 (
-    echo Unable to precompile %AssemblyPath%, Exit Code is %__exitCode%
+    echo Unable to precompile %AssemblyPath%, exit code is %__exitCode%
     set /a "%~4+=1"
     set "%~5=!%~5!,!AssemblyName!"
     exit /b 0
