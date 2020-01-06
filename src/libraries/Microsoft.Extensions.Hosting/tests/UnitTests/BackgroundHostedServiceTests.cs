@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -106,11 +106,36 @@ namespace Microsoft.Extensions.Hosting.Tests
             service.Dispose();
         }
 
+        [Fact]
+        public async Task StartAsyncThenCancelShouldCancelExecutingTask()
+        {
+            var tokenSource = new CancellationTokenSource();
+
+            var service = new WaitForCancelledTokenService();
+
+            await service.StartAsync(tokenSource.Token);
+
+            tokenSource.Cancel();
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() => service.ExecutingTask);
+        }
+
+        [Fact]
+        public void CreateAndDisposeShouldNotThrow()
+        {
+            var service = new WaitForCancelledTokenService();
+
+            service.Dispose();
+        }
+
         private class WaitForCancelledTokenService : BackgroundService
         {
+            public Task ExecutingTask { get; private set; }
+
             protected override Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                return Task.Delay(Timeout.Infinite, stoppingToken);
+                ExecutingTask = Task.Delay(Timeout.Infinite, stoppingToken);
+                return ExecutingTask;
             }
         }
 
