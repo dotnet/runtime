@@ -19,8 +19,8 @@ Param(
 
 function Get-Help() {
   Write-Host "Common settings:"
-  Write-Host "  -subset                 Build a subset, print availabe subsets with -subset help"
-  Write-Host "  -subsetCategory         Build a subsetCategory, print availabe subsetCategories with -subset help"
+  Write-Host "  -subset                 Build a subset, print available subsets with -subset help"
+  Write-Host "  -subsetCategory         Build a subsetCategory, print available subsetCategories with -subset help"
   Write-Host "  -os                     Build operating system: Windows_NT or Unix"
   Write-Host "  -arch                   Build platform: x86, x64, arm or arm64"
   Write-Host "  -configuration <value>  Build configuration: Debug or Release (short: -c)"
