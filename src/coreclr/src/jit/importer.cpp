@@ -1076,25 +1076,9 @@ GenTree* Compiler::impAssignStruct(GenTree*              dest,
         ilOffset = impCurStmtOffs;
     }
 
-    while (dest->gtOper == GT_COMMA)
+    if (dest->gtOper == GT_COMMA)
     {
-        // Second thing is the struct.
-        assert(varTypeIsStruct(dest->AsOp()->gtOp2));
-
-        // Append all the op1 of GT_COMMA trees before we evaluate op2 of the GT_COMMA tree.
-        if (asgPlace.useStmts)
-        {
-            Statement* newStmt = gtNewStmt(dest->AsOp()->gtOp1, ilOffset);
-            fgInsertStmtAfter(asgPlace.block, *asgPlace.pAfterStmt, newStmt);
-            *asgPlace.pAfterStmt = newStmt;
-        }
-        else
-        {
-            impAppendTree(dest->AsOp()->gtOp1, asgPlace.spillLevel, ilOffset); // do the side effect
-        }
-
-        // set dest to the second thing
-        dest = dest->AsOp()->gtOp2;
+        unreached();
     }
 
     assert(dest->gtOper == GT_LCL_VAR || dest->gtOper == GT_RETURN || dest->gtOper == GT_FIELD ||
