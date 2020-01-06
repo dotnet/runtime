@@ -2200,7 +2200,7 @@ T GetUnsignedMagic(T d, bool* add /*out*/, int* shift /*out*/)
         return magic->magic;
     }
 
-    typedef typename jitstd::make_signed<T>::type ST;
+    typedef typename std::make_signed<T>::type ST;
 
     const unsigned bits       = sizeof(T) * 8;
     const unsigned bitsMinus1 = bits - 1;
@@ -2355,7 +2355,7 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     const int bits         = sizeof(T) * 8;
     const int bits_minus_1 = bits - 1;
 
-    typedef typename jitstd::make_unsigned<T>::type UT;
+    typedef typename std::make_unsigned<T>::type UT;
 
     const UT two_nminus1 = UT(1) << bits_minus_1;
 
