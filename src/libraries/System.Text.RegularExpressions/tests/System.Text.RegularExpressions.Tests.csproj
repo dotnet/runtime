@@ -10,6 +10,7 @@
     <Compile Include="CaptureCollectionTests.cs" />
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
+    <Compile Include="MonoRegexTests.cs" />
     <Compile Include="Regex.Cache.Tests.cs" />
     <Compile Include="Regex.EscapeUnescape.Tests.cs" />
     <Compile Include="Regex.GetGroupNames.Tests.cs" />
@@ -21,6 +22,7 @@
     <Compile Include="Regex.Split.Tests.cs" />
     <Compile Include="Regex.Match.Tests.cs" />
     <Compile Include="Regex.Tests.Common.cs" />
+    <Compile Include="RegexCharacterSetTests.cs" />
     <Compile Include="RegexCompilationHelper.cs" />
     <Compile Include="RegexCultureTests.cs" />
     <Compile Include="RegexParserTests.cs" />
