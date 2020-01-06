@@ -68,7 +68,7 @@ int __cdecl main(int argc, char *argv[])
     */
     if ( !SetCurrentDirectoryW(szDotDot) )
     {
-        Fail("ERROR: SetCurrentDirectoryW failed with error code %u "
+        Fail("ERROR: SetCurrentDirectoryA failed with error code %u "
              "when passed \"%S\".\n",
              GetLastError(),
              szDotDot);

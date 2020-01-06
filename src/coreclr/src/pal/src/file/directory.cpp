@@ -33,131 +33,7 @@ Revision History:
 
 SET_DEFAULT_DEBUG_CHANNEL(FILE);
 
-/*++
-Function:
-  CreateDirectoryA
 
-Note:
-  lpSecurityAttributes always NULL.
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-CreateDirectoryA(
-         IN LPCSTR lpPathName,
-         IN LPSECURITY_ATTRIBUTES lpSecurityAttributes)
-{
-    BOOL  bRet = FALSE;
-    DWORD dwLastError = 0;
-    PathCharString realPath;
-    char* realPathBuf;
-    LPSTR unixPathName = NULL;
-    int pathLength;
-    int i;
-    const int mode = S_IRWXU | S_IRWXG | S_IRWXO;
-
-    if ( lpSecurityAttributes )
-    {
-        ASSERT("lpSecurityAttributes is not NULL as it should be\n");
-        dwLastError = ERROR_INVALID_PARAMETER;
-        goto done;
-    }
-
-    // Windows returns ERROR_PATH_NOT_FOUND when called with NULL.
-    // If we don't have this check, strdup(NULL) segfaults.
-    if (lpPathName == NULL)
-    {
-        ERROR("CreateDirectoryA called with NULL pathname!\n");
-        dwLastError = ERROR_PATH_NOT_FOUND;
-        goto done;
-    }
-
-    unixPathName = PAL__strdup(lpPathName);
-    if (unixPathName == NULL )
-    {
-        ERROR("PAL__strdup() failed\n");
-        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-    FILEDosToUnixPathA( unixPathName );
-    // Remove any trailing slashes at the end because mkdir might not
-    // handle them appropriately on all platforms.
-    pathLength = strlen(unixPathName);
-    i = pathLength;
-    while(i > 1)
-    {
-        if(unixPathName[i - 1] =='/')
-        {
-            unixPathName[i - 1]='\0';
-            i--;
-        }
-        else
-        {
-            break;
-        }
-    }
-
-
-    // Get an absolute path.
-    if (unixPathName[0] == '/')
-    {
-        realPathBuf = unixPathName;
-    }
-    else
-    {
-
-        DWORD len = GetCurrentDirectoryA(realPath);
-        if (len == 0 || !realPath.Reserve(realPath.GetCount() + pathLength + 1 ))
-        {
-            dwLastError = DIRGetLastErrorFromErrno();
-            WARN("Getcwd failed with errno=%d \n", dwLastError);
-            goto done;
-        }
-
-        realPath.Append("/", 1);
-        realPath.Append(unixPathName, pathLength);
-        realPathBuf = realPath.OpenStringBuffer(realPath.GetCount());
-    }
-
-    // Canonicalize the path so we can determine its length.
-    FILECanonicalizePath(realPathBuf);
-
-    if ( mkdir(realPathBuf, mode) != 0 )
-    {
-        TRACE("Creation of directory [%s] was unsuccessful, errno = %d.\n",
-              unixPathName, errno);
-
-        switch( errno )
-        {
-        case ENOTDIR:
-            /* FALL THROUGH */
-        case ENOENT:
-            FILEGetProperNotFoundError( realPathBuf, &dwLastError );
-            goto done;
-        case EEXIST:
-            dwLastError = ERROR_ALREADY_EXISTS;
-            break;
-        default:
-            dwLastError = ERROR_ACCESS_DENIED;
-        }
-    }
-    else
-    {
-        TRACE("Creation of directory [%s] was successful.\n", unixPathName);
-        bRet = TRUE;
-    }
-
-    realPath.CloseBuffer(0); //The PathCharString usage is done
-done:
-    if( dwLastError )
-    {
-        SetLastError( dwLastError );
-    }
-    PAL_free( unixPathName );
-
-    return bRet;
-}
 
 /*++
 Function:
@@ -178,6 +54,11 @@ CreateDirectoryW(
     DWORD dwLastError = 0;
     int   mb_size;
     char  *mb_dir = NULL;
+
+    PERF_ENTRY(CreateDirectoryW);
+    ENTRY("CreateDirectoryW(lpPathName=%p (%S), lpSecurityAttr=%p)\n",
+          lpPathName?lpPathName:W16_NULLSTRING,
+          lpPathName?lpPathName:W16_NULLSTRING, lpSecurityAttributes);
 
     if ( lpSecurityAttributes )
     {
@@ -215,7 +96,8 @@ done:
     {
         PAL_free(mb_dir);
     }
-
+    LOGEXIT("CreateDirectoryW returns BOOL %d\n", bRet);
+    PERF_EXIT(CreateDirectoryW);
     return bRet;
 }
 
@@ -403,6 +285,7 @@ done:
     PERF_EXIT(RemoveDirectoryW);
     return bRet;
 }
+
 
 /*++
 Function:
@@ -621,6 +504,137 @@ done:
     return bRet;
 }
 
+/*++
+Function:
+  CreateDirectoryA
+
+Note:
+  lpSecurityAttributes always NULL.
+
+See MSDN doc.
+--*/
+BOOL
+PALAPI
+CreateDirectoryA(
+         IN LPCSTR lpPathName,
+         IN LPSECURITY_ATTRIBUTES lpSecurityAttributes)
+{
+    BOOL  bRet = FALSE;
+    DWORD dwLastError = 0;
+    PathCharString realPath;
+    char* realPathBuf;
+    LPSTR unixPathName = NULL;
+    int pathLength;
+    int i;
+    const int mode = S_IRWXU | S_IRWXG | S_IRWXO;
+
+    PERF_ENTRY(CreateDirectoryA);
+    ENTRY("CreateDirectoryA(lpPathName=%p (%s), lpSecurityAttr=%p)\n",
+          lpPathName?lpPathName:"NULL",
+          lpPathName?lpPathName:"NULL", lpSecurityAttributes);
+
+    if ( lpSecurityAttributes )
+    {
+        ASSERT("lpSecurityAttributes is not NULL as it should be\n");
+        dwLastError = ERROR_INVALID_PARAMETER;
+        goto done;
+    }
+
+    // Windows returns ERROR_PATH_NOT_FOUND when called with NULL.
+    // If we don't have this check, strdup(NULL) segfaults.
+    if (lpPathName == NULL)
+    {
+        ERROR("CreateDirectoryA called with NULL pathname!\n");
+        dwLastError = ERROR_PATH_NOT_FOUND;
+        goto done;
+    }
+
+    unixPathName = PAL__strdup(lpPathName);
+    if (unixPathName == NULL )
+    {
+        ERROR("PAL__strdup() failed\n");
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
+    FILEDosToUnixPathA( unixPathName );
+    // Remove any trailing slashes at the end because mkdir might not
+    // handle them appropriately on all platforms.
+    pathLength = strlen(unixPathName);
+    i = pathLength;
+    while(i > 1)
+    {
+        if(unixPathName[i - 1] =='/')
+        {
+            unixPathName[i - 1]='\0';
+            i--;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+
+    // Get an absolute path.
+    if (unixPathName[0] == '/')
+    {
+        realPathBuf = unixPathName;
+    }
+    else
+    {
+
+        DWORD len = GetCurrentDirectoryA(realPath);
+        if (len == 0 || !realPath.Reserve(realPath.GetCount() + pathLength + 1 ))
+        {
+            dwLastError = DIRGetLastErrorFromErrno();
+            WARN("Getcwd failed with errno=%d \n", dwLastError);
+            goto done;
+        }
+
+        realPath.Append("/", 1);
+        realPath.Append(unixPathName, pathLength);
+        realPathBuf = realPath.OpenStringBuffer(realPath.GetCount());
+    }
+
+    // Canonicalize the path so we can determine its length.
+    FILECanonicalizePath(realPathBuf);
+
+    if ( mkdir(realPathBuf, mode) != 0 )
+    {
+        TRACE("Creation of directory [%s] was unsuccessful, errno = %d.\n",
+              unixPathName, errno);
+
+        switch( errno )
+        {
+        case ENOTDIR:
+            /* FALL THROUGH */
+        case ENOENT:
+            FILEGetProperNotFoundError( realPathBuf, &dwLastError );
+            goto done;
+        case EEXIST:
+            dwLastError = ERROR_ALREADY_EXISTS;
+            break;
+        default:
+            dwLastError = ERROR_ACCESS_DENIED;
+        }
+    }
+    else
+    {
+        TRACE("Creation of directory [%s] was successful.\n", unixPathName);
+        bRet = TRUE;
+    }
+
+    realPath.CloseBuffer(0); //The PathCharString usage is done
+done:
+    if( dwLastError )
+    {
+        SetLastError( dwLastError );
+    }
+    PAL_free( unixPathName );
+    LOGEXIT("CreateDirectoryA returns BOOL %d\n", bRet);
+    PERF_EXIT(CreateDirectoryA);
+    return bRet;
+}
 
 /*++
 Function:

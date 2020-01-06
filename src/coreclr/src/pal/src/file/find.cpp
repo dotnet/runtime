@@ -334,6 +334,7 @@ done:
     return retval;
 }
 
+
 /*++
 Function:
   FindNextFileA
