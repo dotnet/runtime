@@ -83,7 +83,7 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
       <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
     </Compile>	
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
@@ -101,8 +101,8 @@
     <Compile Include="System\Net\Http\WinHttpResponseStream.cs" />
     <Compile Include="System\Net\Http\WinHttpTraceHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpTransportContext.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>

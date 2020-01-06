@@ -4,7 +4,6 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
