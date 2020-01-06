@@ -137,7 +137,7 @@ namespace System.Security.Principal
                 // Now is a good time to get rid of the returned pointer
                 //
 
-                Interop.Kernel32.LocalFree(ByteArray);
+                Marshal.FreeHGlobal(ByteArray);
             }
 
             //
