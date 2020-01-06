@@ -77,9 +77,9 @@ namespace System.Text.RegularExpressions
         public const int EndZ = RegexCode.EndZ;                       //          \Z
         public const int End = RegexCode.End;                         //          \z
 
-        public const int Oneloopgreedy = RegexCode.Oneloopgreedy;        // c,n      (?> a*)
-        public const int Notoneloopgreedy = RegexCode.Notoneloopgreedy;  // c,n      (?> .*)
-        public const int Setloopgreedy = RegexCode.Setloopgreedy;        // set,n    (?> \d*)
+        public const int Oneloopatomic = RegexCode.Oneloopatomic;        // c,n      (?> a*)
+        public const int Notoneloopatomic = RegexCode.Notoneloopatomic;  // c,n      (?> .*)
+        public const int Setloopatomic = RegexCode.Setloopatomic;        // set,n    (?> \d*)
 
         // Interior nodes do not correspond to primitive operations, but
         // control structures compositing other operations
@@ -99,7 +99,7 @@ namespace System.Text.RegularExpressions
         public const int Group = 29;                                  //          (?:)       - noncapturing group
         public const int Require = 30;                                //          (?=) (?<=) - lookahead and lookbehind assertions
         public const int Prevent = 31;                                //          (?!) (?<!) - negative lookahead and lookbehind assertions
-        public const int Greedy = 32;                                 //          (?>)       - greedy subexpression
+        public const int Atomic = 32;                                 //          (?>)       - atomic subexpression
         public const int Testref = 33;                                //          (?(n) | )  - alternation, reference
         public const int Testgroup = 34;                              //          (?(...) | )- alternation, expression
 
@@ -189,15 +189,15 @@ namespace System.Text.RegularExpressions
                     switch (node.Type)
                     {
                         case Oneloop:
-                            node.Type = Oneloopgreedy;
+                            node.Type = Oneloopatomic;
                             break;
 
                         case Notoneloop:
-                            node.Type = Notoneloopgreedy;
+                            node.Type = Notoneloopatomic;
                             break;
 
                         case Setloop:
-                            node.Type = Setloopgreedy;
+                            node.Type = Setloopatomic;
                             break;
 
                         case Capture:
@@ -212,14 +212,14 @@ namespace System.Text.RegularExpressions
                                 case Alternate:
                                 case Loop:
                                 case Lazyloop:
-                                    var greedy = new RegexNode(Greedy, Options);
-                                    greedy.AddChild(existingChild);
-                                    node.ReplaceChild(node.ChildCount() - 1, greedy);
+                                    var atomic = new RegexNode(Atomic, Options);
+                                    atomic.AddChild(existingChild);
+                                    node.ReplaceChild(node.ChildCount() - 1, atomic);
                                     break;
                             }
                             continue;
 
-                        case Greedy:
+                        case Atomic:
                             node = node.Child(0);
                             continue;
                     }
@@ -254,8 +254,8 @@ namespace System.Text.RegularExpressions
                     n = ReduceLoops();
                     break;
 
-                case Greedy:
-                    n = ReduceGreedy();
+                case Atomic:
+                    n = ReduceAtomic();
                     break;
 
                 case Group:
@@ -306,33 +306,32 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Simple optimization. If a greedy subexpression contains only a set loop
-        /// or a one loop, change them to be a greedy set loop or greedy one loop,
-        /// and remove the greedy node.
+        /// Simple optimization. If an atomic subexpression contains only a one/notone/set loop,
+        /// change it to be an atomic one/notone/set loop and remove the atomic node.
         /// </summary>
-        private RegexNode ReduceGreedy()
+        private RegexNode ReduceAtomic()
         {
-            Debug.Assert(Type == Greedy);
+            Debug.Assert(Type == Atomic);
             Debug.Assert(ChildCount() == 1);
 
             RegexNode child = Child(0);
             switch (child.Type)
             {
                 case Oneloop:
-                    child.Type = Oneloopgreedy;
+                    child.Type = Oneloopatomic;
                     return child;
 
                 case Notoneloop:
-                    child.Type = Notoneloopgreedy;
+                    child.Type = Notoneloopatomic;
                     return child;
 
                 case Setloop:
-                    child.Type = Setloopgreedy;
+                    child.Type = Setloopatomic;
                     return child;
 
-                case Oneloopgreedy:
-                case Notoneloopgreedy:
-                case Setloopgreedy:
+                case Oneloopatomic:
+                case Notoneloopatomic:
+                case Setloopatomic:
                     return child;
             }
 
@@ -367,11 +366,11 @@ namespace System.Text.RegularExpressions
                         switch (child.Type)
                         {
                             case Oneloop:
-                            case Oneloopgreedy:
+                            case Oneloopatomic:
                             case Notoneloop:
-                            case Notoneloopgreedy:
+                            case Notoneloopatomic:
                             case Setloop:
-                            case Setloopgreedy:
+                            case Setloopatomic:
                                 valid = true;
                                 break;
                         }
@@ -699,10 +698,10 @@ namespace System.Text.RegularExpressions
                 children.RemoveRange(j, i - j);
             }
 
-            // Now try to convert as many loops as possible to be greedy to avoid unnecessary backtracking.
+            // Now try to convert as many loops as possible to be atomic to avoid unnecessary backtracking.
             if ((Options & RegexOptions.RightToLeft) == 0)
             {
-                ReduceConcatenateWithAutoGreedy();
+                ReduceConcatenateWithAutoAtomic();
             }
 
             // If the concatenation is now empty, return an empty node, or if it's got a single child, return that child.
@@ -712,11 +711,11 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Finds oneloop and setloop nodes in the concatenation that can be automatically upgraded
-        /// to oneloopgreedy and setloopgreedy nodes.  Such changes avoid potential useless backtracking.
+        /// to oneloopatomic and setloopatomic nodes.  Such changes avoid potential useless backtracking.
         /// This looks for cases like A*B, where A and B are known to not overlap: in such cases,
         /// we can effectively convert this to (?>A*)B.
         /// </summary>
-        private void ReduceConcatenateWithAutoGreedy()
+        private void ReduceConcatenateWithAutoAtomic()
         {
             Debug.Assert(Type == Concatenate);
             Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
@@ -743,7 +742,7 @@ namespace System.Text.RegularExpressions
                     switch (subsequent.Type)
                     {
                         case Capture:
-                        case Greedy:
+                        case Atomic:
                         case Require:
                         case Concatenate:
                         case Loop when subsequent.M > 0:
@@ -764,7 +763,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // If this node is a one/notone/setloop, see if it overlaps with its successor in the concatenation.
-                // If it doesn't, then we can upgrade it to being a one/notone/setloopgreedy.
+                // If it doesn't, then we can upgrade it to being a one/notone/setloopatomic.
                 // Doing so avoids unnecessary backtracking.
                 switch (node.Type)
                 {
@@ -774,16 +773,16 @@ namespace System.Text.RegularExpressions
                             case One when node.Ch != subsequent.Ch:
                             case Onelazy when subsequent.M > 0 && node.Ch != subsequent.Ch:
                             case Oneloop when subsequent.M > 0 && node.Ch != subsequent.Ch:
-                            case Oneloopgreedy when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                            case Oneloopatomic when subsequent.M > 0 && node.Ch != subsequent.Ch:
                             case Notone when node.Ch == subsequent.Ch:
                             case Notonelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
                             case Notoneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                            case Notoneloopgreedy when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                            case Notoneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
                             case Multi when node.Ch != subsequent.Str![0]:
                             case Set when !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
                             case Setlazy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
                             case Setloop when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                            case Setloopgreedy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                            case Setloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
                             case End:
                             case EndZ when node.Ch != '\n':
                             case Eol when node.Ch != '\n':
@@ -791,7 +790,7 @@ namespace System.Text.RegularExpressions
                             case Nonboundary when !RegexCharClass.IsWordChar(node.Ch):
                             case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
                             case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
-                                node.Type = Oneloopgreedy;
+                                node.Type = Oneloopatomic;
                                 break;
                         }
                         break;
@@ -802,10 +801,10 @@ namespace System.Text.RegularExpressions
                             case One when node.Ch == subsequent.Ch:
                             case Onelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
                             case Oneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                            case Oneloopgreedy when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                            case Oneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
                             case Multi when node.Ch == subsequent.Str![0]:
                             case End:
-                                node.Type = Notoneloopgreedy;
+                                node.Type = Notoneloopatomic;
                                 break;
                         }
                         break;
@@ -816,16 +815,16 @@ namespace System.Text.RegularExpressions
                             case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Oneloopgreedy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Oneloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Notoneloopgreedy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case Notoneloopatomic when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                             case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                             case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                             case Setloop when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                            case Setloopgreedy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                            case Setloopatomic when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                             case End:
                             case EndZ when !RegexCharClass.CharInClass('\n', node.Str!):
                             case Eol when !RegexCharClass.CharInClass('\n', node.Str!):
@@ -833,7 +832,7 @@ namespace System.Text.RegularExpressions
                             case Nonboundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
                             case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
                             case NonECMABoundary when node.Str == RegexCharClass.NotECMAWordClass || node.Str == RegexCharClass.NotDigitClass:
-                                node.Type = Setloopgreedy;
+                                node.Type = Setloopatomic;
                                 break;
                         }
                         break;
@@ -937,11 +936,11 @@ namespace System.Text.RegularExpressions
             "Nothing", "Empty",
             "Alternate", "Concatenate",
             "Loop", "Lazyloop",
-            "Capture", "Group", "Require", "Prevent", "Greedy",
+            "Capture", "Group", "Require", "Prevent", "Atomic",
             "Testref", "Testgroup",
             "", "", "", "", "", "",
             "ECMABoundary", "NonECMABoundary",
-            "Oneloopgreedy", "Notoneloopgreedy", "Setloopgreedy",
+            "Oneloopatomic", "Notoneloopatomic", "Setloopatomic",
         };
 
         public string Description()
@@ -968,9 +967,9 @@ namespace System.Text.RegularExpressions
             switch (Type)
             {
                 case Oneloop:
-                case Oneloopgreedy:
+                case Oneloopatomic:
                 case Notoneloop:
-                case Notoneloopgreedy:
+                case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
                 case One:
@@ -989,7 +988,7 @@ namespace System.Text.RegularExpressions
                     break;
                 case Set:
                 case Setloop:
-                case Setloopgreedy:
+                case Setloopatomic:
                 case Setlazy:
                     argSb.Append("(Set = " + RegexCharClass.SetDescription(Str!) + ")");
                     break;
@@ -998,13 +997,13 @@ namespace System.Text.RegularExpressions
             switch (Type)
             {
                 case Oneloop:
-                case Oneloopgreedy:
+                case Oneloopatomic:
                 case Notoneloop:
-                case Notoneloopgreedy:
+                case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
                 case Setloop:
-                case Setloopgreedy:
+                case Setloopatomic:
                 case Setlazy:
                 case Loop:
                 case Lazyloop:

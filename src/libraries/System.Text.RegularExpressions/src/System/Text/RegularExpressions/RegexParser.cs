@@ -802,8 +802,8 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '>':
-                        // greedy subexpression
-                        nodeType = RegexNode.Greedy;
+                        // atomic subexpression
+                        nodeType = RegexNode.Atomic;
                         break;
 
                     case '\'':

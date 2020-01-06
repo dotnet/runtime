@@ -1545,12 +1545,12 @@ namespace System.Text.RegularExpressions
                         case RegexNode.Eol:
                         case RegexNode.End:
                         case RegexNode.EndZ:
-                        // {Set/One}loopgreedy are optimized nodes that represent non-backtracking variable-length loops.
+                        // {Set/One/Notone}loopatomic are optimized nodes that represent non-backtracking variable-length loops.
                         // These consume their {Set/One} inputs as long as they match, and don't give up anything they
                         // matched, which means we can support them without backtracking.
-                        case RegexNode.Oneloopgreedy:
-                        case RegexNode.Notoneloopgreedy:
-                        case RegexNode.Setloopgreedy:
+                        case RegexNode.Oneloopatomic:
+                        case RegexNode.Notoneloopatomic:
+                        case RegexNode.Setloopatomic:
                         // "Empty" is easy: nothing is emitted for it.
                         // "Nothing" is also easy: it doesn't match anything.
                         case RegexNode.Empty:
@@ -1564,7 +1564,7 @@ namespace System.Text.RegularExpressions
                         case RegexNode.Oneloop:
                         case RegexNode.Notoneloop:
                         case RegexNode.Setloop:
-                            Debug.Assert(node.Next == null || node.Next.Type != RegexNode.Greedy, "Loop should have been transformed into a greedy type.");
+                            Debug.Assert(node.Next == null || node.Next.Type != RegexNode.Atomic, "Loop should have been transformed into an atomic type.");
                             goto case RegexNode.Onelazy;
                         case RegexNode.Onelazy:
                         case RegexNode.Notonelazy:
@@ -1573,17 +1573,17 @@ namespace System.Text.RegularExpressions
                             break;
 
                         // {Lazy}Loop repeaters are the same, except their child also needs to be supported.
-                        // We also support such loops being greedy.
+                        // We also support such loops being atomic.
                         case RegexNode.Loop:
                         case RegexNode.Lazyloop:
                             supported =
-                                (node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Greedy)) &&
+                                (node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic)) &&
                                 NodeSupportsNonBacktrackingImplementation(node.Child(0), level + 1);
                             break;
 
-                        // We can handle greedy as long as we can handle making its child greedy, or
+                        // We can handle atomic as long as we can handle making its child atomic, or
                         // its child doesn't have that concept.
-                        case RegexNode.Greedy:
+                        case RegexNode.Atomic:
                         // Lookahead assertions also only require that the child node be supported.
                         // The RightToLeft check earlier is important to differentiate lookbehind,
                         // which is not supported.
@@ -1592,12 +1592,12 @@ namespace System.Text.RegularExpressions
                             supported = NodeSupportsNonBacktrackingImplementation(node.Child(0), level + 1);
                             break;
 
-                        // We can handle alternates as long as they're greedy (a root / global alternate is
-                        // effectively greedy, as nothing will try to backtrack into it as it's the last thing).
+                        // We can handle alternates as long as they're atomic (a root / global alternate is
+                        // effectively atomic, as nothing will try to backtrack into it as it's the last thing).
                         // Its children must all also be supported.
                         case RegexNode.Alternate:
                             if (node.Next != null &&
-                                (node.Next.Type == RegexNode.Greedy || // greedy alternate
+                                (node.Next.Type == RegexNode.Atomic || // atomic alternate
                                 (node.Next.Type == RegexNode.Capture && node.Next.Next is null))) // root alternate
                             {
                                 goto case RegexNode.Concatenate;
@@ -1710,11 +1710,11 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            // Emits the code for a greedy alternate, one that once a branch successfully matches is non-backtracking into it.
+            // Emits the code for an atomic alternate, one that once a branch successfully matches is non-backtracking into it.
             // This amounts to generating the code for each branch, with failures in a branch resetting state to what it was initially
             // and then jumping to the next branch. We don't need to worry about uncapturing, because capturing is only allowed for the
             // implicit capture that happens for the whole match at the end.
-            void EmitGreedyAlternate(RegexNode node)
+            void EmitAtomicAlternate(RegexNode node)
             {
                 // int startingTextSpanPos = textSpanPos;
                 // int startingRunTextPos = runtextpos;
@@ -1867,30 +1867,30 @@ namespace System.Text.RegularExpressions
                         EmitMultiChar(node);
                         break;
 
-                    case RegexNode.Oneloopgreedy:
-                    case RegexNode.Notoneloopgreedy:
-                    case RegexNode.Setloopgreedy:
+                    case RegexNode.Oneloopatomic:
+                    case RegexNode.Notoneloopatomic:
+                    case RegexNode.Setloopatomic:
                     case RegexNode.Loop:
-                        EmitGreedyLoop(node);
+                        EmitAtomicLoop(node);
                         break;
 
                     case RegexNode.Lazyloop:
-                        // A greedy lazy loop amounts to doing the minimum amount of work possible.
+                        // An atomic lazy loop amounts to doing the minimum amount of work possible.
                         // That means iterating as little as is required, which means a repeater
                         // for the min, and if min is 0, doing nothing.
-                        Debug.Assert(node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Greedy));
+                        Debug.Assert(node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic));
                         if (node.M > 0)
                         {
                             EmitRepeater(node, repeatChildNode: true, iterations: node.M);
                         }
                         break;
 
-                    case RegexNode.Greedy:
+                    case RegexNode.Atomic:
                         EmitNode(node.Child(0));
                         break;
 
                     case RegexNode.Alternate:
-                        EmitGreedyAlternate(node);
+                        EmitAtomicAlternate(node);
                         break;
 
                     case RegexNode.Oneloop:
@@ -1955,7 +1955,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Set:
                     case RegexNode.Setlazy:
                     case RegexNode.Setloop:
-                    case RegexNode.Setloopgreedy:
+                    case RegexNode.Setloopatomic:
                         LocalBuilder setScratchLocal = RentInt32Local();
                         EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
                         ReturnInt32Local(setScratchLocal);
@@ -1965,14 +1965,14 @@ namespace System.Text.RegularExpressions
                     case RegexNode.One:
                     case RegexNode.Onelazy:
                     case RegexNode.Oneloop:
-                    case RegexNode.Oneloopgreedy:
+                    case RegexNode.Oneloopatomic:
                         if (IsCaseInsensitive(node)) CallToLower();
                         Ldc(node.Ch);
                         BneFar(doneLabel);
                         break;
 
                     default:
-                        Debug.Assert(node.Type == RegexNode.Notone || node.Type == RegexNode.Notonelazy || node.Type == RegexNode.Notoneloop || node.Type == RegexNode.Notoneloopgreedy);
+                        Debug.Assert(node.Type == RegexNode.Notone || node.Type == RegexNode.Notonelazy || node.Type == RegexNode.Notoneloop || node.Type == RegexNode.Notoneloopatomic);
                         if (IsCaseInsensitive(node)) CallToLower();
                         Ldc(node.Ch);
                         BeqFar(doneLabel);
@@ -2193,14 +2193,14 @@ namespace System.Text.RegularExpressions
                 ReturnInt32Local(iterationLocal);
             }
 
-            // Emits the code to handle a non-backtracking, variable-length loop (Oneloopgreedy or Setloopgreedy).
-            void EmitGreedyLoop(RegexNode node)
+            // Emits the code to handle a non-backtracking, variable-length loop (Oneloopatomic or Setloopatomic).
+            void EmitAtomicLoop(RegexNode node)
             {
                 Debug.Assert(
-                    node.Type == RegexNode.Oneloopgreedy ||
-                    node.Type == RegexNode.Notoneloopgreedy ||
-                    node.Type == RegexNode.Setloopgreedy ||
-                    (node.Type == RegexNode.Loop && (node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Greedy))));
+                    node.Type == RegexNode.Oneloopatomic ||
+                    node.Type == RegexNode.Notoneloopatomic ||
+                    node.Type == RegexNode.Setloopatomic ||
+                    (node.Type == RegexNode.Loop && (node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic))));
                 Debug.Assert(node.M < int.MaxValue);
 
                 // First generate the code to handle the required number of iterations.
@@ -2217,9 +2217,9 @@ namespace System.Text.RegularExpressions
                     Label originalDoneLabel = doneLabel;
                     doneLabel = DefineLabel();
 
-                    if (node.Type == RegexNode.Notoneloopgreedy && node.N == int.MaxValue && !IsCaseInsensitive(node))
+                    if (node.Type == RegexNode.Notoneloopatomic && node.N == int.MaxValue && !IsCaseInsensitive(node))
                     {
-                        // For Notoneloopgreedy, we're looking for a specific character, as everything until we find
+                        // For Notoneloopatomic, we're looking for a specific character, as everything until we find
                         // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
                         // we can use the vectorized IndexOf to do the search, rather than open-coding it. (In the future,
                         // we could consider using IndexOf with StringComparison for case insensitivity.)
@@ -2348,17 +2348,17 @@ namespace System.Text.RegularExpressions
                             LdindU2();
                             switch (node.Type)
                             {
-                                case RegexNode.Oneloopgreedy:
+                                case RegexNode.Oneloopatomic:
                                     if (IsCaseInsensitive(node)) CallToLower();
                                     Ldc(node.Ch);
                                     BneFar(doneLabel);
                                     break;
-                                case RegexNode.Notoneloopgreedy:
+                                case RegexNode.Notoneloopatomic:
                                     if (IsCaseInsensitive(node)) CallToLower();
                                     Ldc(node.Ch);
                                     BeqFar(doneLabel);
                                     break;
-                                case RegexNode.Setloopgreedy:
+                                case RegexNode.Setloopatomic:
                                     LocalBuilder setScratchLocal = RentInt32Local();
                                     EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
                                     ReturnInt32Local(setScratchLocal);
@@ -3705,18 +3705,18 @@ namespace System.Text.RegularExpressions
                 case RegexCode.Oneloop | RegexCode.Ci | RegexCode.Rtl:
                 case RegexCode.Notoneloop | RegexCode.Ci | RegexCode.Rtl:
                 case RegexCode.Setloop | RegexCode.Ci | RegexCode.Rtl:
-                case RegexCode.Oneloopgreedy:
-                case RegexCode.Notoneloopgreedy:
-                case RegexCode.Setloopgreedy:
-                case RegexCode.Oneloopgreedy | RegexCode.Rtl:
-                case RegexCode.Notoneloopgreedy | RegexCode.Rtl:
-                case RegexCode.Setloopgreedy | RegexCode.Rtl:
-                case RegexCode.Oneloopgreedy | RegexCode.Ci:
-                case RegexCode.Notoneloopgreedy | RegexCode.Ci:
-                case RegexCode.Setloopgreedy | RegexCode.Ci:
-                case RegexCode.Oneloopgreedy | RegexCode.Ci | RegexCode.Rtl:
-                case RegexCode.Notoneloopgreedy | RegexCode.Ci | RegexCode.Rtl:
-                case RegexCode.Setloopgreedy | RegexCode.Ci | RegexCode.Rtl:
+                case RegexCode.Oneloopatomic:
+                case RegexCode.Notoneloopatomic:
+                case RegexCode.Setloopatomic:
+                case RegexCode.Oneloopatomic | RegexCode.Rtl:
+                case RegexCode.Notoneloopatomic | RegexCode.Rtl:
+                case RegexCode.Setloopatomic | RegexCode.Rtl:
+                case RegexCode.Oneloopatomic | RegexCode.Ci:
+                case RegexCode.Notoneloopatomic | RegexCode.Ci:
+                case RegexCode.Setloopatomic | RegexCode.Ci:
+                case RegexCode.Oneloopatomic | RegexCode.Ci | RegexCode.Rtl:
+                case RegexCode.Notoneloopatomic | RegexCode.Ci | RegexCode.Rtl:
+                case RegexCode.Setloopatomic | RegexCode.Ci | RegexCode.Rtl:
                     //: int c = Operand(1);
                     //: if (c > Rightchars())
                     //:     c = Rightchars();
@@ -3779,7 +3779,7 @@ namespace System.Text.RegularExpressions
                         Dup();
                         Stloc(cLocal);
                         Ldc(0);
-                        if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopgreedy)
+                        if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopatomic)
                         {
                             BleFar(l2);
                         }
@@ -3797,7 +3797,7 @@ namespace System.Text.RegularExpressions
                             Rightcharnext();
                         }
 
-                        if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopgreedy)
+                        if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopatomic)
                         {
                             EmitTimeoutCheck();
                             EmitCallCharInClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
@@ -3811,13 +3811,13 @@ namespace System.Text.RegularExpressions
                             }
 
                             Ldc(Operand(0));
-                            if (Code() == RegexCode.Oneloop || Code() == RegexCode.Oneloopgreedy)
+                            if (Code() == RegexCode.Oneloop || Code() == RegexCode.Oneloopatomic)
                             {
                                 Beq(l1);
                             }
                             else
                             {
-                                Debug.Assert(Code() == RegexCode.Notoneloop || Code() == RegexCode.Notoneloopgreedy);
+                                Debug.Assert(Code() == RegexCode.Notoneloop || Code() == RegexCode.Notoneloopatomic);
                                 Bne(l1);
                             }
                         }
@@ -3829,7 +3829,7 @@ namespace System.Text.RegularExpressions
 
                         MarkLabel(l2);
 
-                        if (Code() != RegexCode.Oneloopgreedy && Code() != RegexCode.Notoneloopgreedy && Code() != RegexCode.Setloopgreedy)
+                        if (Code() != RegexCode.Oneloopatomic && Code() != RegexCode.Notoneloopatomic && Code() != RegexCode.Setloopatomic)
                         {
                             Ldloc(lenLocal);
                             Ldloc(cLocal);

@@ -642,8 +642,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(cat){5,dog}?", "cat{5,dog}?", RegexOptions.None, new string[] { "cat{5,dog}", "cat" } };
             yield return new object[] { null, @"(cat){cat,dog}?", "cat{cat,dog}?", RegexOptions.None, new string[] { "cat{cat,dog}", "cat" } };
 
-            // Atomic ("greedy") subexpressions
-            // Implicitly upgrading oneloop to be greedy
+            // Atomic subexpressions
+            // Implicitly upgrading oneloop to be atomic
             yield return new object[] { null, @"a*", "aaa", RegexOptions.None, new string[] { "aaa" } };
             yield return new object[] { null, @"a*b", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"a*b+", "aaab", RegexOptions.None, new string[] { "aaab" } };
@@ -665,14 +665,14 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"a*\b", "aaa bbb", RegexOptions.ECMAScript, new string[] { "aaa" } };
             yield return new object[] { null, @"@*\B", "@@@", RegexOptions.None, new string[] { "@@@" } };
             yield return new object[] { null, @"@*\B", "@@@", RegexOptions.ECMAScript, new string[] { "@@@" } };
-            // Implicitly upgrading notoneloop to be greedy
+            // Implicitly upgrading notoneloop to be atomic
             yield return new object[] { null, @"[^b]*b", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"[^b]*b+", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"[^b]*b+?", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"[^b]*(?>b+)", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"[^b]*bac", "aaabac", RegexOptions.None, new string[] { "aaabac" } };
             yield return new object[] { null, @"[^b]*", "aaa", RegexOptions.None, new string[] { "aaa" } };
-            // Implicitly upgrading setloop to be greedy
+            // Implicitly upgrading setloop to be atomic
             yield return new object[] { null, @"[ac]*", "aaa", RegexOptions.None, new string[] { "aaa" } };
             yield return new object[] { null, @"[ac]*b", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"[ac]*b+", "aaab", RegexOptions.None, new string[] { "aaab" } };
@@ -694,7 +694,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"[ac]*\b", "aaa bbb", RegexOptions.ECMAScript, new string[] { "aaa" } };
             yield return new object[] { null, @"[@']*\B", "@@@", RegexOptions.None, new string[] { "@@@" } };
             yield return new object[] { null, @"[@']*\B", "@@@", RegexOptions.ECMAScript, new string[] { "@@@" } };
-            // Implicitly upgrading nested loops to be greedy
+            // Implicitly upgrading nested loops to be atomic
             yield return new object[] { null, @"(?:a){3}", "aaaaaaaaa", RegexOptions.None, new string[] { "aaa" } };
             yield return new object[] { null, @"(?:a){3}?", "aaaaaaaaa", RegexOptions.None, new string[] { "aaa" } };
             yield return new object[] { null, @"(?:a{2}){3}", "aaaaaaaaa", RegexOptions.None, new string[] { "aaaaaa" } };

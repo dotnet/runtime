@@ -94,14 +94,14 @@ namespace System.Text.RegularExpressions
                         }
                         break;
 
-                    case RegexNode.Greedy:
+                    case RegexNode.Atomic:
                     case RegexNode.Capture:
                         curNode = curNode.Child(0);
                         concatNode = null;
                         continue;
 
                     case RegexNode.Oneloop:
-                    case RegexNode.Oneloopgreedy:
+                    case RegexNode.Oneloopatomic:
                     case RegexNode.Onelazy:
 
                         // In release, cutoff at a length to which we can still reasonably construct a string
@@ -176,7 +176,7 @@ namespace System.Text.RegularExpressions
                         }
                         break;
 
-                    case RegexNode.Greedy:
+                    case RegexNode.Atomic:
                     case RegexNode.Capture:
                         curNode = curNode.Child(0);
                         concatNode = null;
@@ -420,8 +420,8 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Group | AfterChild:
                 case RegexNode.Capture | BeforeChild:
                 case RegexNode.Capture | AfterChild:
-                case RegexNode.Greedy | BeforeChild:
-                case RegexNode.Greedy | AfterChild:
+                case RegexNode.Atomic | BeforeChild:
+                case RegexNode.Atomic | AfterChild:
                     break;
 
                 case RegexNode.Require | BeforeChild:
@@ -440,13 +440,13 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Oneloop:
-                case RegexNode.Oneloopgreedy:
+                case RegexNode.Oneloopatomic:
                 case RegexNode.Onelazy:
                     PushFC(new RegexFC(node.Ch, false, node.M == 0, ci));
                     break;
 
                 case RegexNode.Notoneloop:
-                case RegexNode.Notoneloopgreedy:
+                case RegexNode.Notoneloopatomic:
                 case RegexNode.Notonelazy:
                     PushFC(new RegexFC(node.Ch, true, node.M == 0, ci));
                     break;
@@ -465,7 +465,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Setloop:
-                case RegexNode.Setloopgreedy:
+                case RegexNode.Setloopatomic:
                 case RegexNode.Setlazy:
                     PushFC(new RegexFC(node.Str!, node.M == 0, ci));
                     break;

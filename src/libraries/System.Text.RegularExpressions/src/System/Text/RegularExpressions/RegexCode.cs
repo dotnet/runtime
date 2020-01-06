@@ -84,9 +84,9 @@ namespace System.Text.RegularExpressions
         // Manufactured primitive operations, derived from the tree that comes from the parser.
         // These exist to reduce backtracking (both actually performing it and spitting code for it).
 
-        public const int Oneloopgreedy = 43;      // lef,back char,min,max    (?> a {,n} )
-        public const int Notoneloopgreedy = 44;   // lef,back set,min,max     (?> . {,n} )
-        public const int Setloopgreedy = 45;      // lef,back set,min,max     (?> [\d]{,n} )
+        public const int Oneloopatomic = 43;      // lef,back char,min,max    (?> a {,n} )
+        public const int Notoneloopatomic = 44;   // lef,back set,min,max     (?> . {,n} )
+        public const int Setloopatomic = 45;      // lef,back set,min,max     (?> [\d]{,n} )
 
         // Modifiers for alternate modes
         public const int Mask = 63;   // Mask to get unmodified ordinary operator
@@ -206,15 +206,15 @@ namespace System.Text.RegularExpressions
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
-                case Oneloopgreedy:
+                case Oneloopatomic:
                 case Notoneloop:
-                case Notoneloopgreedy:
+                case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
                 case Setlazy:
                 case Setrep:
                 case Setloop:
-                case Setloopgreedy:
+                case Setloopatomic:
                     return 3;
 
                 default:
@@ -238,7 +238,7 @@ namespace System.Text.RegularExpressions
             "Setjump", "Backjump", "Forejump", "Testref", "Goto",
             "Prune", "Stop",
             "ECMABoundary", "NonECMABoundary",
-            "Oneloopgreedy", "Notoneloopgreedy", "Setloopgreedy"
+            "Oneloopatomic", "Notoneloopatomic", "Setloopatomic"
         };
 
         private static string OperatorDescription(int Opcode)
@@ -275,9 +275,9 @@ namespace System.Text.RegularExpressions
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
-                case Oneloopgreedy:
+                case Oneloopatomic:
                 case Notoneloop:
-                case Notoneloopgreedy:
+                case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
                     sb.Append("Ch = ");
@@ -287,7 +287,7 @@ namespace System.Text.RegularExpressions
                 case Set:
                 case Setrep:
                 case Setloop:
-                case Setloopgreedy:
+                case Setloopatomic:
                 case Setlazy:
                     sb.Append("Set = ");
                     sb.Append(RegexCharClass.SetDescription(Strings[Codes[offset + 1]]));
@@ -336,14 +336,14 @@ namespace System.Text.RegularExpressions
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
-                case Oneloopgreedy:
+                case Oneloopatomic:
                 case Notoneloop:
-                case Notoneloopgreedy:
+                case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
                 case Setrep:
                 case Setloop:
-                case Setloopgreedy:
+                case Setloopatomic:
                 case Setlazy:
                     sb.Append(", Rep = ");
                     if (Codes[offset + 2] == int.MaxValue)

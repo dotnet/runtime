@@ -1133,7 +1133,7 @@ namespace System.Text.RegularExpressions
                         }
 
                     case RegexCode.Oneloop:
-                    case RegexCode.Oneloopgreedy:
+                    case RegexCode.Oneloopatomic:
                         {
                             int c = Operand(1);
 
@@ -1163,7 +1163,7 @@ namespace System.Text.RegularExpressions
                         }
 
                     case RegexCode.Notoneloop:
-                    case RegexCode.Notoneloopgreedy:
+                    case RegexCode.Notoneloopatomic:
                         {
                             int c = Operand(1);
 
@@ -1193,7 +1193,7 @@ namespace System.Text.RegularExpressions
                         }
 
                     case RegexCode.Setloop:
-                    case RegexCode.Setloopgreedy:
+                    case RegexCode.Setloopatomic:
                         {
                             int c = Operand(1);
 

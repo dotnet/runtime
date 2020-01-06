@@ -428,11 +428,11 @@ namespace System.Text.RegularExpressions
                     Emit(RegexCode.Forejump);
                     break;
 
-                case RegexNode.Greedy | BeforeChild:
+                case RegexNode.Atomic | BeforeChild:
                     Emit(RegexCode.Setjump);
                     break;
 
-                case RegexNode.Greedy | AfterChild:
+                case RegexNode.Atomic | AfterChild:
                     Emit(RegexCode.Forejump);
                     break;
 
@@ -442,14 +442,14 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Notoneloop:
-                case RegexNode.Notoneloopgreedy:
+                case RegexNode.Notoneloopatomic:
                 case RegexNode.Notonelazy:
                 case RegexNode.Oneloop:
-                case RegexNode.Oneloopgreedy:
+                case RegexNode.Oneloopatomic:
                 case RegexNode.Onelazy:
                     if (node.M > 0)
                     {
-                        Emit(((node.Type == RegexNode.Oneloop || node.Type == RegexNode.Oneloopgreedy || node.Type == RegexNode.Onelazy) ?
+                        Emit(((node.Type == RegexNode.Oneloop || node.Type == RegexNode.Oneloopatomic || node.Type == RegexNode.Onelazy) ?
                               RegexCode.Onerep : RegexCode.Notonerep) | bits, node.Ch, node.M);
                     }
                     if (node.N > node.M)
@@ -459,7 +459,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Setloop:
-                case RegexNode.Setloopgreedy:
+                case RegexNode.Setloopatomic:
                 case RegexNode.Setlazy:
                     {
                         int stringCode = StringCode(node.Str!);
