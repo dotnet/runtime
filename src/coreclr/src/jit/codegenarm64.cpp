@@ -1526,7 +1526,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
         {
-            instGen(INS_bkpt); // This should never get executed
+            instGen(INS_BREAKPOINT); // This should never get executed
         }
     }
     else

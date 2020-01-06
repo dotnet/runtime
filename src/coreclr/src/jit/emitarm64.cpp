@@ -3368,7 +3368,10 @@ void emitter::emitIns(instruction ins)
     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
     insFormat  fmt = emitInsFormat(ins);
 
-    assert(fmt == IF_SN_0A);
+    if (ins != INS_BREAKPOINT)
+    {
+        assert(fmt == IF_SN_0A);
+    }
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -12555,7 +12558,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SN_0A: // bkpt, nop
+        case IF_SN_0A: // bkpt, brk, nop
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_ZERO;
             break;
