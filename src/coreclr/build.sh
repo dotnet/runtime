@@ -71,29 +71,6 @@ check_prereqs()
     if [[ $(version $cmake_version) -lt $(version 3.14.0) ]]; then
         echo "Please install CMake 3.14 or newer from http://www.cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
     fi
-
-    # Minimum required version of clang is version 4.0 for arm/armel cross build
-    if [[ $__CrossBuild == 1 && $__GccBuild == 0 &&  ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") ]]; then
-        if ! [[ "$__ClangMajorVersion" -ge "4" ]]; then
-            echo "Please install clang4.0 or latest for arm/armel cross build"; exit 1;
-        fi
-    fi
-
-    # Check for clang
-    if [[ $__GccBuild == 0 ]]; then
-        __ClangCombinedDottedVersion=$__ClangMajorVersion;
-        if [[ "$__ClangMinorVersion" != "" ]]; then
-            __ClangCombinedDottedVersion=$__ClangCombinedDottedVersion.$__ClangMinorVersion
-        fi
-        hash clang-$__ClangCombinedDottedVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null || hash clang 2>/dev/null || { echo >&2 "Please install clang-$__ClangMajorVersion.$__ClangMinorVersion before running this script"; exit 1; }
-    else
-        __GccCombinedDottedVersion=$__GccMajorVersion;
-        if [[ "$__GccMinorVersion" != "" ]]; then
-            __GccCombinedDottedVersion=$__GccCombinedDottedVersion.$__GccMinorVersion
-        fi
-        hash gcc-$__GccCombinedDottedVersion 2>/dev/null ||  hash gcc$__GccMajorVersion$__GccMinorVersion 2>/dev/null || hash gcc 2>/dev/null || { echo >&2 "Please install gcc-$__GccMajorVersion.$__GccMinorVersion before running this script"; exit 1; }
-    fi
-
 }
 
 restore_optdata()
@@ -215,23 +192,16 @@ build_native()
 
         # Regenerate the CMake solution
 
-        scriptDir="$__ProjectRoot/src/pal/tools"
-        if [[ $__GccBuild == 0 ]]; then
-            echo "Invoking \"$scriptDir/find-clang.sh\" $__ClangMajorVersion \"$__ClangMinorVersion\""
-            source "$scriptDir/find-clang.sh" $__ClangMajorVersion "$__ClangMinorVersion"
-            if [[ $__StaticAnalyzer == 1 ]]; then
-                scan_build=scan-build
-            fi
-        else
-            echo "Invoking \"$scriptDir/find-gcc.sh\" \"$__GccMajorVersion\" \"$__GccMinorVersion\""
-            source "$scriptDir/find-gcc.sh" "$__GccMajorVersion" "$__GccMinorVersion"
+        if [ "$__StaticAnalyzer" = 1 ]; then
+            scan_build=scan-build
         fi
-
         if [[ -n "$__CodeCoverage" ]]; then
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
 
-        nextCommand="\"$scriptDir/gen-buildsys.sh\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
+        commonDir="$__RepoRootDir/eng/common"
+        __cmakeargs="$__cmakeargs -DCLR_COMMON_DIR=\"$commonDir\""
+        nextCommand="\"$commonDir/cross/gen-buildsys.sh\" \"$__ProjectRoot\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -588,16 +558,14 @@ __IgnoreWarnings=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __BuildManagedTools=1
-__ClangMajorVersion=0
-__ClangMinorVersion=0
+__Compiler=clang
+__CompilerMajorVersion=
+__CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0
 __CrossgenOnly=0
 __DistroRid=""
-__GccBuild=0
-__GccMajorVersion=0
-__GccMinorVersion=0
 __IbcOptDataPath=""
 __IbcTuning=""
 __MSBCleanBuildArgs=

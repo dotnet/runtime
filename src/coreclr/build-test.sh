@@ -493,20 +493,13 @@ build_native_projects()
             fi
         fi
 
-        scriptDir="$__ProjectRoot/src/pal/tools"
-        if [[ $__GccBuild == 0 ]]; then
-            echo "Invoking \"$scriptDir/find-clang.sh\" $__ClangMajorVersion \"$__ClangMinorVersion\""
-            source "$scriptDir/find-clang.sh" $__ClangMajorVersion "$__ClangMinorVersion"
-        else
-            echo "Invoking \"$scriptDir/find-gcc.sh\" \"$__GccMajorVersion\" \"$__GccMinorVersion\""
-            source "$scriptDir/find-gcc.sh" "$__GccMajorVersion" "$__GccMinorVersion"
-        fi
-
         if [[ -n "$__CodeCoverage" ]]; then
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
 
-        nextCommand="\"$scriptDir/gen-buildsys.sh\" \"$__TestDir\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $extraCmakeArguments $__cmakeargs"
+        commonDir="$__RepoRootDir/eng/common"
+        __cmakeargs="$__cmakeargs -DCLR_COMMON_DIR=\"$commonDir\""
+        nextCommand="\"$commonDir/cross/gen-buildsys.sh\" \"$__TestDir\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType $generator $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -614,8 +607,9 @@ __IncludeTests=INCLUDE_TESTS
 export __ProjectDir="$__ProjectRoot"
 __BuildTestWrappers=1
 __BuildTestWrappersOnly=
-__ClangMajorVersion=0
-__ClangMinorVersion=0
+__Compiler=clang
+__CompilerMajorVersion=
+__CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
@@ -625,9 +619,6 @@ __DistroRid=""
 __DoCrossgen=0
 __DoCrossgen2=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
-__GccBuild=0
-__GccMajorVersion=0
-__GccMinorVersion=0
 __GenerateLayoutOnly=
 __GenerateTestHostOnly=
 __MSBCleanBuildArgs=

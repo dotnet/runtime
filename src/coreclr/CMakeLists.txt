@@ -115,7 +115,7 @@ endif(WIN32)
 # Configure compiler settings for environment
 #----------------------------------------------------
 include(configurecompiler.cmake)
-include(configuretools.cmake)
+include(${CLR_COMMON_DIR}/configuretools.cmake)
 
 #----------------------------------------------------
 # Cross target Component build specific configuration
