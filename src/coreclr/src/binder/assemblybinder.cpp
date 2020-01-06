@@ -1310,7 +1310,11 @@ Retry:
                         false, // excludeAppPaths
                         &bindResult);
 
-        tracer.TraceBindResult(bindResult);
+        // Trace result if we will not be doing an MVID comparison below. Tracing in that case happens
+        // after the comparison such that the result of the comparison can be included
+        if (hr != S_OK || !bindResult.HaveResult())
+            tracer.TraceBindResult(bindResult);
+
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
         {
             IF_FAIL_GO(CreateImageAssembly(pIMetaDataAssemblyImport,
@@ -1341,14 +1345,16 @@ Retry:
                 // load.
                 IF_FAIL_GO(bindResult.GetAsAssembly()->GetMVID(&boundMVID));
 
-                if (incomingMVID != boundMVID)
+                bool mvidMismatch = incomingMVID != boundMVID;
+                tracer.TraceBindResult(bindResult, mvidMismatch);
+                if (mvidMismatch)
                 {
                     // MVIDs do not match, so fail the load.
                     IF_FAIL_GO(COR_E_FILELOAD);
                 }
 
                 // MVIDs match - request came in for the same assembly that was previously loaded.
-                // Let is through...
+                // Let it through...
             }
         }
 

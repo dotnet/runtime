@@ -288,21 +288,27 @@ namespace BinderTracing
 
     // This function simply traces out the two stages represented by the bind result.
     // It does not change the stage/assembly of the ResolutionAttemptedOperation class instance.
-    void ResolutionAttemptedOperation::TraceBindResult(const BindResult &bindResult)
+    void ResolutionAttemptedOperation::TraceBindResult(const BindResult &bindResult, bool mvidMismatch)
     {
         if (!m_tracingEnabled)
             return;
 
-        const BindResult::AttemptResult *attempt = bindResult.GetAttempt(true /*foundInContext*/);
-        if (attempt != nullptr)
-            TraceStage(Stage::FindInLoadContext, attempt->HResult, attempt->Assembly);
+        // Use the error message that would be reported in the file load exception
+        StackSString errorMsg;
+        if (mvidMismatch)
+            errorMsg.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
 
-        attempt = bindResult.GetAttempt(false /*foundInContext*/);
-        if (attempt != nullptr)
-            TraceStage(Stage::ApplicationAssemblies, attempt->HResult, attempt->Assembly);
+        const BindResult::AttemptResult *inContextAttempt = bindResult.GetAttempt(true /*foundInContext*/);
+        const BindResult::AttemptResult *appAssembliesAttempt = bindResult.GetAttempt(false /*foundInContext*/);
+
+        if (inContextAttempt != nullptr)
+            TraceStage(Stage::FindInLoadContext, inContextAttempt->HResult, inContextAttempt->Assembly, mvidMismatch && appAssembliesAttempt == nullptr ? errorMsg.GetUnicode() : nullptr);
+
+        if (appAssembliesAttempt != nullptr)
+            TraceStage(Stage::ApplicationAssemblies, appAssembliesAttempt->HResult, appAssembliesAttempt->Assembly, mvidMismatch ? errorMsg.GetUnicode() : nullptr);
     }
 
-    void ResolutionAttemptedOperation::TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly)
+    void ResolutionAttemptedOperation::TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly, const WCHAR *customError)
     {
         if (!m_tracingEnabled || stage == Stage::NotYetStarted)
             return;
@@ -317,7 +323,12 @@ namespace BinderTracing
 
         Result result;
         StackSString errorMsg;
-        if (!m_exceptionMessage.IsEmpty())
+        if (customError != nullptr)
+        {
+            errorMsg.Set(customError);
+            result = Result::Failure;
+        }
+        else if (!m_exceptionMessage.IsEmpty())
         {
             errorMsg = m_exceptionMessage;
             result = Result::Exception;
