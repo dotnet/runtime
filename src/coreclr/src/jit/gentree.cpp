@@ -15055,7 +15055,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         {
             if (varTypeIsStruct(lclTyp))
             {
-                result = impAssignStructPtr(result, assg, structType, impAssignPlace::s_SpillAll);
+                result = impAssignStructPtr(result, assg, structType);
             }
             else
             {
