@@ -16,6 +16,7 @@ namespace System.Text.Json
         private int _index;
 
         private const int MinimumBufferSize = 256;
+        private const int MaxByteArrayLength = 0x7FFFFFC7;
 
         public PooledByteBufferWriter(int initialCapacity)
         {
@@ -140,7 +141,7 @@ namespace System.Text.Json
 
                 int newSize = _rentedBuffer.Length + growBy;
 
-                if ((uint)newSize > int.MaxValue)
+                if ((uint)newSize > MaxByteArrayLength)
                 {
                     throw new JsonException();
                 }
