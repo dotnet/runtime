@@ -315,7 +315,7 @@ namespace System.Text.Json.Serialization.Tests
                 temp = temp2;
             }
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(temp, typeof(CustomClassToExceedMaxBufferSize)));
+            Assert.Throws<OutOfMemoryException>(() => JsonSerializer.Serialize(temp, typeof(CustomClassToExceedMaxBufferSize)));
         }
     }
 }
