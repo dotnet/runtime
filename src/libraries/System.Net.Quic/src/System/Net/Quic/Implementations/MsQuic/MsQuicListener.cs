@@ -103,8 +103,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
-                MsQuicApi.Api._listenerStopDelegate(_ptr);
-                MsQuicApi.Api._listenerCloseDelegate(_ptr);
+                MsQuicApi.Api.ListenerStopDelegate(_ptr);
+                MsQuicApi.Api.ListenerCloseDelegate(_ptr);
             }
 
             _ptr = IntPtr.Zero;
@@ -122,7 +122,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
 
-            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api._listenerStartDelegate(
+            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.ListenerStartDelegate(
                 _ptr,
                 ref address));
 
@@ -133,7 +133,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            MsQuicApi.Api._listenerStopDelegate(_ptr);
+            MsQuicApi.Api.ListenerStopDelegate(_ptr);
         }
 
         private unsafe void SetListenPort()
@@ -192,7 +192,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             _handle = GCHandle.Alloc(this);
             _listenerDelegate = new ListenerCallbackDelegate(NativeCallbackHandler);
-            MsQuicApi.Api._setCallbackHandlerDelegate(
+            MsQuicApi.Api.SetCallbackHandlerDelegate(
                 _ptr,
                 _listenerDelegate,
                 GCHandle.ToIntPtr(_handle));

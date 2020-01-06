@@ -29,46 +29,28 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         // TODO return better error messages here.
         public static string GetError(uint status)
         {
-            switch (status)
+            return status switch
             {
-                case Success:
-                    return "SUCCESS";
-                case Pending:
-                    return "PENDING";
-                case Continue:
-                    return "CONTINUE";
-                case OutOfMemory:
-                    return "OUT_OF_MEMORY";
-                case InvalidParameter:
-                    return "INVALID_PARAMETER";
-                case InvalidState:
-                    return "INVALID_STATE";
-                case NotSupported:
-                    return "NOT_SUPPORTED";
-                case NotFound:
-                    return "NOT_FOUND";
-                case BufferTooSmall:
-                    return "BUFFER_TOO_SMALL";
-                case HandshakeFailure:
-                    return "HANDSHAKE_FAILURE";
-                case Aborted:
-                    return "ABORTED";
-                case AddressInUse:
-                    return "ADDRESS_IN_USE";
-                case ConnectionTimeout:
-                    return "CONNECTION_TIMEOUT";
-                case ConnectionIdle:
-                    return "CONNECTION_IDLE";
-                case InternalError:
-                    return "INTERNAL_ERROR";
-                case ServerBusy:
-                    return "SERVER_BUSY";
-                case ProtocolError:
-                    return "PROTOCOL_ERROR";
-                case VerNegError:
-                    return "VER_NEG_ERROR";
-            }
-            return status.ToString();
+                Success => "SUCCESS",
+                Pending => "PENDING",
+                Continue => "CONTINUE",
+                OutOfMemory => "OUT_OF_MEMORY",
+                InvalidParameter => "INVALID_PARAMETER",
+                InvalidState => "INVALID_STATE",
+                NotSupported => "NOT_SUPPORTED",
+                NotFound => "NOT_FOUND",
+                BufferTooSmall => "BUFFER_TOO_SMALL",
+                HandshakeFailure => "HANDSHAKE_FAILURE",
+                Aborted => "ABORTED",
+                AddressInUse => "ADDRESS_IN_USE",
+                ConnectionTimeout => "CONNECTION_TIMEOUT",
+                ConnectionIdle => "CONNECTION_IDLE",
+                InternalError => "INTERNAL_ERROR",
+                ServerBusy => "SERVER_BUSY",
+                ProtocolError => "PROTOCOL_ERROR",
+                VerNegError => "VER_NEG_ERROR",
+                _ => status.ToString()
+            };
         }
     }
 }

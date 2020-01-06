@@ -62,6 +62,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private List<QuicBuffer> _receiveQuicBuffers = new List<QuicBuffer>();
 
+        // TODO consider using Interlocked.Exchange instead of a sync if we can avoid it.
         private object _sync = new object();
 
         // Creates a new MsQuicStream
@@ -266,7 +267,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _readState = ReadState.Aborted;
             }
 
-            MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
+            MsQuicApi.Api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -341,11 +342,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
+            CleanupSendState();
+
             if (_ptr != IntPtr.Zero)
             {
                 // TODO resolve graceful vs abortive dispose here. Will file a separate issue.
                 //MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
-                MsQuicApi.Api._streamCloseDelegate?.Invoke(_ptr);
+                MsQuicApi.Api.StreamCloseDelegate?.Invoke(_ptr);
             }
 
             _handle.Free();
@@ -376,11 +379,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
+            CleanupSendState();
+
             if (_ptr != IntPtr.Zero)
             {
                 // TODO resolve graceful vs abortive dispose here. Will file a separate issue.
                 //MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT, 1);
-                MsQuicApi.Api._streamCloseDelegate?.Invoke(_ptr);
+                MsQuicApi.Api.StreamCloseDelegate?.Invoke(_ptr);
             }
 
             _handle.Free();
@@ -392,7 +397,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void EnableReceive()
         {
-            MsQuicApi.Api._streamReceiveSetEnabledDelegate(_ptr, enabled: true);
+            MsQuicApi.Api.StreamReceiveSetEnabledDelegate(_ptr, enabled: true);
         }
 
         internal static uint NativeCallbackHandler(
@@ -689,7 +694,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void CleanupSendState()
         {
-            _sendHandle.Free();
+            if (_sendHandle.IsAllocated)
+            {
+                _sendHandle.Free();
+            }
+            // Callings dispose twice on a memory handle should be okay
             _bufferArrays[0].Dispose();
         }
 
@@ -698,7 +707,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _handle = GCHandle.Alloc(this);
 
             _callback = new StreamCallbackDelegate(NativeCallbackHandler);
-            MsQuicApi.Api._setCallbackHandlerDelegate(
+            MsQuicApi.Api.SetCallbackHandlerDelegate(
                 _ptr,
                 _callback,
                 GCHandle.ToIntPtr(_handle));
@@ -714,7 +723,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if ((flags & QUIC_SEND_FLAG.FIN) == QUIC_SEND_FLAG.FIN)
                 {
                     // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
-                    MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
+                    MsQuicApi.Api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
                 }
                 return default;
             }
@@ -729,7 +738,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             var quicBufferPointer = (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(_sendQuicBuffers, 0);
 
-            uint status = MsQuicApi.Api._streamSendDelegate(
+            uint status = MsQuicApi.Api.StreamSendDelegate(
                 _ptr,
                 quicBufferPointer,
                 bufferCount: 1,
@@ -747,7 +756,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private ValueTask<uint> StartWritesAsync()
         {
-            uint status = MsQuicApi.Api._streamStartDelegate(
+            uint status = MsQuicApi.Api.StreamStartDelegate(
               _ptr,
               (uint)QUIC_STREAM_START_FLAG.ASYNC);
 
@@ -757,7 +766,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void ReceiveComplete(int bufferLength)
         {
-            uint status = MsQuicApi.Api._streamReceiveCompleteDelegate(_ptr, (ulong)bufferLength);
+            uint status = MsQuicApi.Api.StreamReceiveCompleteDelegate(_ptr, (ulong)bufferLength);
             MsQuicStatusException.ThrowIfFailed(status);
         }
 

@@ -274,7 +274,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             MsQuicStatusException.ThrowIfFailed(
-                MsQuicApi.Api._connectionStartDelegate(
+                MsQuicApi.Api.ConnectionStartDelegate(
                 _ptr,
                 (ushort)_remoteEndPoint.AddressFamily,
                 _remoteEndPoint.Address.ToString(),
@@ -290,7 +290,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             IntPtr streamPtr = IntPtr.Zero;
             MsQuicStatusException.ThrowIfFailed(
-                MsQuicApi.Api._streamOpenDelegate(
+                MsQuicApi.Api.StreamOpenDelegate(
                 _ptr,
                 (uint)flags,
                 MsQuicStream.NativeCallbackHandler,
@@ -307,7 +307,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             _handle = GCHandle.Alloc(this);
             _connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
-            MsQuicApi.Api._setCallbackHandlerDelegate(
+            MsQuicApi.Api.SetCallbackHandlerDelegate(
                 _ptr,
                 _connectionDelegate,
                 GCHandle.ToIntPtr(_handle));
@@ -319,7 +319,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            uint status = MsQuicApi.Api._connectionShutdownDelegate(
+            uint status = MsQuicApi.Api.ConnectionShutdownDelegate(
                 _ptr,
                 (uint)Flags,
                 ErrorCode);
@@ -361,7 +361,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_ptr != IntPtr.Zero)
             {
-                MsQuicApi.Api._connectionCloseDelegate?.Invoke(_ptr);
+                MsQuicApi.Api.ConnectionCloseDelegate?.Invoke(_ptr);
             }
 
             _ptr = IntPtr.Zero;

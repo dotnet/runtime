@@ -23,7 +23,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     options.MaxUnidirectionalStreams);
             }
 
-            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api._connectionOpenDelegate(
+            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.ConnectionOpenDelegate(
                 _nativeObjPtr,
                 MsQuicConnection.NativeCallbackHandler,
                 IntPtr.Zero,
@@ -50,7 +50,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                                     options.MaxUnidirectionalStreams);
             }
 
-            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api._listenerOpenDelegate(
+            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.ListenerOpenDelegate(
                 _nativeObjPtr,
                 MsQuicListener.NativeCallbackHandler,
                 IntPtr.Zero,
@@ -64,7 +64,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
             ushort ErrorCode)
         {
-            MsQuicApi.Api._sessionShutdownDelegate(
+            MsQuicApi.Api.SessionShutdownDelegate(
                 _nativeObjPtr,
                 (uint)Flags,
                 ErrorCode);
@@ -140,7 +140,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return;
             }
 
-            MsQuicApi.Api._sessionCloseDelegate?.Invoke(_nativeObjPtr);
+            MsQuicApi.Api.SessionCloseDelegate?.Invoke(_nativeObjPtr);
             _nativeObjPtr = IntPtr.Zero;
 
             _disposed = true;

@@ -30,7 +30,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return;
             }
 
-            _registration._secConfigDeleteDelegate?.Invoke(NativeObjPtr);
+            _registration.SecConfigDeleteDelegate?.Invoke(NativeObjPtr);
             NativeObjPtr = IntPtr.Zero;
             _disposed = true;
         }
