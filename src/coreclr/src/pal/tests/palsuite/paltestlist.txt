@@ -106,7 +106,6 @@ c_runtime/isupper/test1/paltest_isupper_test1
 c_runtime/iswdigit/test1/paltest_iswdigit_test1
 c_runtime/iswspace/test1/paltest_iswspace_test1
 c_runtime/iswupper/test1/paltest_iswupper_test1
-c_runtime/iswxdigit/test1/paltest_iswxdigit_test1
 c_runtime/isxdigit/test1/paltest_isxdigit_test1
 c_runtime/llabs/test1/paltest_llabs_test1
 c_runtime/log/test1/paltest_log_test1
@@ -524,7 +523,6 @@ file_io/CopyFileW/test3/paltest_copyfilew_test3
 file_io/DeleteFileA/test1/paltest_deletefilea_test1
 file_io/DeleteFileW/test1/paltest_deletefilew_test1
 file_io/errorpathnotfound/test2/paltest_errorpathnotfound_test2
-file_io/errorpathnotfound/test3/paltest_errorpathnotfound_test3
 file_io/FILECanonicalizePath/paltest_filecanonicalizepath_test1
 file_io/FindClose/test1/paltest_findclose_test1
 file_io/FindFirstFileA/test1/paltest_findfirstfilea_test1
