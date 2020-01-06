@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "iterator.h"
 #include "functional.h"
-#include "utility.h"
+#include "clr_std/utility"
 
 namespace jitstd
 {
@@ -261,7 +261,7 @@ private:
 
         template <class... Args>
         Node(Args&&... args)
-            : m_value(jitstd::forward<Args>(args)...)
+            : m_value(std::forward<Args>(args)...)
         {
         }
     };
@@ -482,7 +482,7 @@ template <typename... Args>
 typename list<T, Allocator>::iterator
     list<T, Allocator>::emplace(iterator position, Args&&... args)
 {
-    Node* pNewNode = new (m_nodeAllocator.allocate(1), placement_t()) Node(jitstd::forward<Args>(args)...);
+    Node* pNewNode = new (m_nodeAllocator.allocate(1), placement_t()) Node(std::forward<Args>(args)...);
     insert_new_node_helper(position.m_pNode, pNewNode);
     return iterator(pNewNode);
 }
@@ -611,7 +611,7 @@ template <typename T, typename Allocator>
 template <typename... Args>
 void list<T, Allocator>::emplace_back(Args&&... args)
 {
-    emplace(end(), jitstd::forward<Args>(args)...);
+    emplace(end(), std::forward<Args>(args)...);
 }
 
 template <typename T, typename Allocator>
@@ -624,7 +624,7 @@ template <typename T, typename Allocator>
 template <typename... Args>
 void list<T, Allocator>::emplace_front(Args&&... args)
 {
-    emplace(begin(), jitstd::forward<Args>(args)...);
+    emplace(begin(), std::forward<Args>(args)...);
 }
 
 template <typename T, typename Allocator>
@@ -705,9 +705,9 @@ void list<T, Allocator>::reverse()
 {
     for (Node* p = m_pHead; p != NULL; p = p->m_pNext)
     {
-        jitstd::swap(p->m_pPrev, p->m_pNext);
+        std::swap(p->m_pPrev, p->m_pNext);
     }
-    jitstd::swap(m_pHead, m_pTail);
+    std::swap(m_pHead, m_pTail);
 }
 
 template <typename T, typename Allocator>
@@ -757,11 +757,11 @@ void list<T, Allocator>::splice(iterator position, list& x, iterator first, iter
 template <typename T, typename Allocator>
 void list<T, Allocator>::swap(list<T, Allocator>& lst)
 {
-    jitstd::swap(lst.m_pHead, m_pHead);
-    jitstd::swap(lst.m_pTail, m_pTail);
-    jitstd::swap(lst.m_nSize, m_nSize);
-    jitstd::swap(lst.m_allocator, m_allocator);
-    jitstd::swap(lst.m_nodeAllocator, m_nodeAllocator);
+    std::swap(lst.m_pHead, m_pHead);
+    std::swap(lst.m_pTail, m_pTail);
+    std::swap(lst.m_nSize, m_nSize);
+    std::swap(lst.m_allocator, m_allocator);
+    std::swap(lst.m_nodeAllocator, m_nodeAllocator);
 }
 
 template <typename T, typename Allocator>
