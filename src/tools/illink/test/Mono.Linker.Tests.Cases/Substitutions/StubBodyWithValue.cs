@@ -19,6 +19,8 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 			TestMethod_8 ();
 			TestMethod_9 ();
 			TestMethod_10 ();
+			TestMethod_11 ();
+			TestMethod_12 ();
 		}
 
 		[Kept]
@@ -117,6 +119,26 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ret",
 			})]
 		static ulong TestMethod_10()
+		{
+			throw new NotImplementedException ();
+		}
+
+		[Kept]
+		[ExpectedInstructionSequence (new [] {
+				"ldc.i8",
+				"ret",
+			})]
+		static long TestMethod_11 ()
+		{
+			throw new NotImplementedException ();
+		}
+
+		[Kept]
+		[ExpectedInstructionSequence (new [] {
+				"ldc.i4",
+				"ret",
+			})]
+		static uint TestMethod_12 ()
 		{
 			throw new NotImplementedException ();
 		}

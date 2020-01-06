@@ -184,11 +184,17 @@ namespace Mono.Linker.Steps
 				return true;
 
 			case MetadataType.Int32:
-			case MetadataType.UInt32:
 				if (!int.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int iresult))
 					break;
 
 				result = iresult;
+				return true;
+
+			case MetadataType.UInt32:
+				if (!uint.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint uresult))
+					break;
+
+				result = (int)uresult;
 				return true;
 
 			case MetadataType.Double:
@@ -206,11 +212,17 @@ namespace Mono.Linker.Steps
 				return true;
 
 			case MetadataType.Int64:
-			case MetadataType.UInt64:
 				if (!long.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long lresult))
 					break;
 
 				result = lresult;
+				return true;
+
+			case MetadataType.UInt64:
+				if (!ulong.TryParse (value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong ulresult))
+					break;
+
+				result = (long)ulresult;
 				return true;
 
 			case MetadataType.Char:
