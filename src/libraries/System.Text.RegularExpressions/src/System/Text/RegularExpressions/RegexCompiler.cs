@@ -4142,8 +4142,10 @@ namespace System.Text.RegularExpressions
                 for (int i = 0; i < 128; i++)
                 {
                     char c = (char)i;
-                    if (RegexCharClass.CharInClass(c, state.charClass) ||
-                        (state.invariant && char.IsUpper(c) && RegexCharClass.CharInClass(char.ToLowerInvariant(c), state.charClass)))
+                    bool isSet = state.invariant ?
+                        RegexCharClass.CharInClass(char.ToLowerInvariant(c), state.charClass) :
+                        RegexCharClass.CharInClass(c, state.charClass);
+                    if (isSet)
                     {
                         dest[i >> 4] |= (char)(1 << (i & 0xF));
                     }
