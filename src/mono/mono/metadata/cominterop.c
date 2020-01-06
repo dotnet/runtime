@@ -267,7 +267,7 @@ cominterop_method_signature (MonoMethod* method)
 	MonoMethodSignature *res;
 	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
-	gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
+	gboolean const preserve_sig = (method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG) != 0;
 	int sigsize;
 	int i;
 	int param_count = sig->param_count + 1; // convert this arg into IntPtr arg
@@ -1098,7 +1098,7 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 			int retval = 0;
 			int ptr_this;
 			int i;
-			gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
+			gboolean const preserve_sig = (method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG) != 0;
 
 			// add local variables
 			ptr_this = mono_mb_add_local (mb, mono_get_int_type ());
@@ -2201,7 +2201,7 @@ cominterop_get_ccw_checked (MonoObjectHandle object, MonoClass* itf, MonoError *
 			MonoMethod *method = m_class_get_methods (iface) [i];
 			MonoMethodSignature* sig_adjusted;
 			MonoMethodSignature* sig = mono_method_signature_internal (method);
-			gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
+			gboolean const preserve_sig = (method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG) != 0;
 
 			mb = mono_mb_new (iface, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 			adjust_method = cominterop_get_managed_wrapper_adjusted (method);
