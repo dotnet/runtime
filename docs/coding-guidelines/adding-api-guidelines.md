@@ -68,7 +68,7 @@ If your new API or the APIs it calls throw any exceptions, those need to be manu
 After your change is merged, we will eventually port them to the dotnet-api-docs repo, where we will review them for language and proper style (See the [Docs contributing guide](https://github.com/dotnet/docs/blob/master/CONTRIBUTING.md) for more information).
 
 Once the dotnet-api-docs change is merged, your comments will start showing up in the official API documentation at http://docs.microsoft.com/, and later it will appear in IntelliSense in Visual Studio and Visual Studio Code.
-
+Once the documentation is official, any subsequent updates to it must be made directly in https://github.com/dotnet/dotnet-api-docs/. It's fine to make updates to the triple slash comments later, they just won't automatically flow into the official docs.
 
 ## FAQ
 _**<a name="isnetstandard">Is your API part of netstandard?</a>**_
