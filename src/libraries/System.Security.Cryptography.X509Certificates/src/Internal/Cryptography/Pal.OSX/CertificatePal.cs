@@ -42,12 +42,5 @@ namespace Internal.Cryptography.Pal
         {
             return AppleCertificatePal.FromFile(fileName, password, keyStorageFlags);
         }
-
-        public bool GetPolicyData(out byte[] ApplicationCertPoliciesData, out byte[] CertPoliciesData, out byte[] CertPolicyMappingsData,
-                                  out byte[] CertPolicyConstraintsData, out byte[] EnhancedKeyUsageData, out byte[] InhibitAnyPolicyExtensionData)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
     }
 }
