@@ -5483,6 +5483,18 @@ bool GenTree::OperMayThrow(Compiler* comp)
         case GT_ARR_ELEM:
             return comp->fgAddrCouldBeNull(this->AsArrElem()->gtArrObj);
 
+        case GT_FIELD:
+        {
+            GenTree* fldObj = this->AsField()->gtFldObj;
+
+            if (fldObj != nullptr)
+            {
+                return comp->fgAddrCouldBeNull(fldObj);
+            }
+
+            return false;
+        }
+
         case GT_ARR_BOUNDS_CHECK:
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
