@@ -4287,8 +4287,6 @@ PALIMPORT char * __cdecl _strdup(const char *);
 PALIMPORT PAL_NORETURN void __cdecl exit(int);
 int __cdecl atexit(void (__cdecl *function)(void));
 
-PALIMPORT char * __cdecl _fullpath(char *, const char *, size_t);
-
 #ifndef PAL_STDCPP_COMPAT
 
 PALIMPORT DLLEXPORT void __cdecl qsort(void *, size_t, size_t, int(__cdecl *)(const void *, const void *));

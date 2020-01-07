@@ -300,6 +300,8 @@ CompareFileTime(
         IN CONST FILETIME *lpFileTime1,
         IN CONST FILETIME *lpFileTime2);
 
+PALIMPORT char * __cdecl _fullpath(char *, const char *, size_t);
+
 #ifdef  __cplusplus
 }
 #endif

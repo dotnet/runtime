@@ -144,7 +144,6 @@ add_subdirectory(_alloca)
 add_subdirectory(_fdopen)
 add_subdirectory(_finite)
 add_subdirectory(_finitef)
-add_subdirectory(_fullpath)
 
 # TODO: make this test compile
 # add_subdirectory(_gcvt)
