@@ -9588,6 +9588,10 @@ GenTree* Compiler::fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE cl
             case GT_FIELD:
             case GT_ARR_ELEM:
                 addr = gtNewOperNode(GT_ADDR, TYP_BYREF, tree);
+                if (tree->gtOper == GT_LCL_VAR)
+                {
+                    lvaSetVarDoNotEnregister(tree->AsLclVarCommon()->GetLclNum() DEBUGARG(DNER_IsStruct));
+                }
                 break;
             case GT_INDEX_ADDR:
                 addr = tree;
