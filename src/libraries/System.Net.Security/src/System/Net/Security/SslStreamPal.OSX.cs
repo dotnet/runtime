@@ -38,9 +38,10 @@ namespace System.Net.Security
             ref SafeDeleteSslContext context,
             byte[] inputBuffer, int offset, int count,
             ref byte[] outputBuffer,
+            ref int size,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, ref size, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
@@ -49,9 +50,10 @@ namespace System.Net.Security
             string targetName,
             byte[] inputBuffer, int offset, int count,
             ref byte[] outputBuffer,
+            ref int size,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, ref size, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(
@@ -236,6 +238,7 @@ namespace System.Net.Security
             ref SafeDeleteSslContext context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[] outputBuffer,
+            ref int size,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(!credential.IsInvalid);
@@ -275,6 +278,8 @@ namespace System.Net.Security
                 }
 
                 outputBuffer = sslContext.ReadPendingWrites();
+                size = outputBuffer == null ? 0 : outputBuffer.Length;
+
                 return status;
             }
             catch (Exception exc)
