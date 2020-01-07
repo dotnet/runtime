@@ -129,9 +129,11 @@ namespace System.Diagnostics.Tests
         {
             using (var cts = new CancellationTokenSource(milliseconds))
             {
+                var token = cts.Token;
                 var process = Process.GetCurrentProcess();
                 process.EnableRaisingEvents = true;
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.WaitForExitAsync(cts.Token));
+                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.WaitForExitAsync(token));
+                Assert.Equal(token, ex.CancellationToken);
                 Assert.False(process.HasExited);
             }
         }
@@ -166,9 +168,11 @@ namespace System.Diagnostics.Tests
             // Verify we can try to wait for the process to exit multiple times
             using (var cts = new CancellationTokenSource(0))
             {
+                var token = cts.Token;
                 for (var i = 0; i < 2; i++)
                 {
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(cts.Token));
+                    var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(token));
+                    Assert.Equal(token, ex.CancellationToken);
                     Assert.False(p.HasExited);
                 }
             }
@@ -307,7 +311,9 @@ namespace System.Diagnostics.Tests
 
             using (var cts = new CancellationTokenSource(0))
             {
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(cts.Token));
+                var token = cts.Token;
+                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(token));
+                Assert.Equal(token, ex.CancellationToken);
                 Assert.False(p.HasExited);
             }
             p.Kill();

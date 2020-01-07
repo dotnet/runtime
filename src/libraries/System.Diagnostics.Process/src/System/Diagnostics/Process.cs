@@ -1350,7 +1350,7 @@ namespace System.Diagnostics
             if (!Associated) { throw new InvalidOperationException(SR.NoAssociatedProcess); }
             if (!EnableRaisingEvents) { throw new InvalidOperationException(SR.EnableRaisingEventsRequired); }
 
-            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSourceWithCancellation<object>();
 
             EventHandler handler = (s, e) => tcs.TrySetResult(null);
             Exited += handler;
@@ -1363,10 +1363,7 @@ namespace System.Diagnostics
                     return;
                 }
 
-                using (cancellationToken.Register(() => tcs.TrySetCanceled()))
-                {
-                    await tcs.Task.ConfigureAwait(false);
-                }
+                await tcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
             }
             finally
             {
