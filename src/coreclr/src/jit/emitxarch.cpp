@@ -14353,6 +14353,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_movdqa:
         case INS_movdqu:
+        case INS_movaps:
+        case INS_movups:
+        case INS_movapd:
+        case INS_movupd:
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 // ins   reg, reg
@@ -14535,28 +14539,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_cvtss2sd:
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency += PERFSCORE_LATENCY_5C;
-            break;
-
-        case INS_movaps:
-        case INS_movups:
-        case INS_movapd:
-        case INS_movupd:
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
-                result.insLatency    = PERFSCORE_LATENCY_1C;
-            }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += PERFSCORE_LATENCY_2C;
-            }
-            else
-            {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += PERFSCORE_LATENCY_3C;
-            }
             break;
 
         case INS_paddb:
