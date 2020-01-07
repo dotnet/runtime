@@ -212,27 +212,23 @@ int exe_start(const int argc, const pal::char_t* argv[])
         trace::info(_X("Dotnet path: [%s]"), dotnet_root.c_str());
         trace::info(_X("App path: [%s]"), app_path.c_str());
 
-        hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
-
         {
-            propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
+            auto custom_error_writer = pal::get_symbol(fxr, "hostfxr_set_error_writer");
+
+            if (custom_error_writer)
+            {
+                hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(custom_error_writer);
+                propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
+            }
 
             rc = main_fn_v2(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
 
-            if (rc == StatusCode::FrameworkMissingFailure)
+            if (rc == StatusCode::FrameworkMissingFailure && !custom_error_writer)
             {
-                pal::string_t ver = get_directory(fxr_path);
-                remove_trailing_dir_seperator(&ver);
-
-                fx_ver_t fx_ver;
-                fx_ver_t::parse(get_filename(ver), &fx_ver, false);
-
-                if (fx_ver.get_major() < 3)
-                {
-                    pal::string_t url = get_download_url(nullptr, nullptr);
-                    trace::error(_X("Installing the latest runtime might help resolve this problem."));
-                    trace::error(_X("  - %s"), url.c_str());
-                }
+                pal::string_t url = get_download_url(nullptr, nullptr);
+                trace::error(_X("  _ There is no available runtime to run this application.\n"));
+                trace::error(_X("  _ Installing the latest runtime might help resolve this problem.\n"));
+                trace::error(_X("  - %s"), url.c_str());
             }
         }
     }
