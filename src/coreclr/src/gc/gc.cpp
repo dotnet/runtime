@@ -15594,7 +15594,14 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             // where foreground GCs are asking for a compacting full GC right away
             // and not getting it.
             dprintf (GTC_LOG, ("full GC induced, not reducing gen"));
-            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_user_requested);
+            if (initial_gen == max_generation)
+            {
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_pm_induced_fullgc_p);
+            }
+            else
+            {
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_pm_alloc_loh);
+            }
             *blocking_collection_p = TRUE;
         }
         else if (should_expand_in_full_gc || joined_last_gc_before_oom)
@@ -15627,7 +15634,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 
         if (joined_last_gc_before_oom)
         {
-            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_last_gc_oom);
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_before_oom);
             full_compact_gc_p = true;
         }
         else if ((current_total_committed * 10) >= (heap_hard_limit * 9))
@@ -15638,7 +15645,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             if ((loh_frag * 8) >= heap_hard_limit)
             {
                 dprintf (GTC_LOG, ("loh frag: %Id > 1/8 of limit %Id", loh_frag, (heap_hard_limit / 8)));
-                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_heap_limit_fragmented);
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_frag);
                 full_compact_gc_p = true;
             }
             else
@@ -15646,7 +15653,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                 // If there's not much fragmentation but it looks like it'll be productive to
                 // collect LOH, do that.
                 size_t est_loh_reclaim = get_total_gen_estimated_reclaim (max_generation + 1);
-                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_heap_limit_productive);
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
                 full_compact_gc_p = ((est_loh_reclaim * 8) >= heap_hard_limit);
                 dprintf (GTC_LOG, ("loh est reclaim: %Id, 1/8 of limit %Id", est_loh_reclaim, (heap_hard_limit / 8)));
             }
@@ -15664,6 +15671,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 #ifdef BGC_SERVO_TUNING
     if (bgc_tuning::should_trigger_ngc2())
     {
+        gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_ngc);
         n = max_generation;
         *blocking_collection_p = TRUE;
     }
@@ -18169,10 +18177,9 @@ void gc_heap::garbage_collect (int n)
         {
             keep_bgc_threads_p = TRUE;
             c_write (settings.concurrent, TRUE);
+            memset (&bgc_data_global, 0, sizeof(bgc_data_global));
+            memcpy (&bgc_data_global, &gc_data_global, sizeof(gc_data_global));
         }
-
-        memset(&bgc_data_global, 0, sizeof(bgc_data_global));
-        memcpy(&bgc_data_global, &gc_data_global, sizeof(gc_data_global));
 
 #endif //BACKGROUND_GC
 
