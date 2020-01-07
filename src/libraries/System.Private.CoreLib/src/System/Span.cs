@@ -53,7 +53,7 @@ namespace System
             if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
-            _pointer = new ByReference<T>(ref MemoryMarshal.GetRawArrayData(array));
+            _pointer = new ByReference<T>(ref MemoryMarshal.GetArrayDataReference(array));
             _length = array.Length;
         }
 
@@ -90,7 +90,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #endif
 
-            _pointer = new ByReference<T>(ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(array), start));
+            _pointer = new ByReference<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), start));
             _length = length;
         }
 
@@ -473,7 +473,7 @@ namespace System
                 return Array.Empty<T>();
 
             var destination = new T[_length];
-            Buffer.Memmove(ref MemoryMarshal.GetRawArrayData(destination), ref _pointer.Value, (nuint)_length);
+            Buffer.Memmove(ref MemoryMarshal.GetArrayDataReference(destination), ref _pointer.Value, (nuint)_length);
             return destination;
         }
     }

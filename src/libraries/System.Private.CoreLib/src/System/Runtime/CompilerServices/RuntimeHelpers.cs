@@ -38,8 +38,8 @@ namespace System.Runtime.CompilerServices
 
                 var dest = new T[length];
                 Buffer.Memmove(
-                    ref MemoryMarshal.GetRawArrayData(dest),
-                    ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(array), offset),
+                    ref MemoryMarshal.GetArrayDataReference(dest),
+                    ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), offset),
                     (uint)length);
                 return dest;
             }

@@ -743,7 +743,7 @@ DEFINE_METHOD(UNSAFE,               PTR_WRITE_UNALIGNED,    WriteUnaligned, GM_P
 DEFINE_METHOD(UNSAFE,               SKIPINIT,               SkipInit, GM_RefT_RetVoid)
 
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
-DEFINE_METHOD(MEMORY_MARSHAL,       GET_RAW_ARRAY_DATA,     GetRawArrayData, NoSig)
+DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE, GetArrayDataReference, NoSig)
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)

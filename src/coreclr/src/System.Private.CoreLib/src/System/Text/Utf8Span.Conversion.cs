@@ -81,7 +81,7 @@ namespace System.Text
                 Debug.Assert(pbUtf8Invalid == pbUtf8 + this.Length, "Invalid UTF-8 data seen in buffer.");
 
                 char[] asUtf16 = new char[this.Length + utf16CodeUnitCountAdjustment];
-                fixed (char* pbUtf16 = &MemoryMarshal.GetRawArrayData(asUtf16))
+                fixed (char* pbUtf16 = &MemoryMarshal.GetArrayDataReference(asUtf16))
                 {
                     OperationStatus status = Utf8Utility.TranscodeToUtf16(pbUtf8, this.Length, pbUtf16, asUtf16.Length, out byte* pbUtf8End, out char* pchUtf16End);
                     Debug.Assert(status == OperationStatus.Done, "The buffer changed out from under us unexpectedly?");

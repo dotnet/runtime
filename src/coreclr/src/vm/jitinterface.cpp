@@ -7203,7 +7203,7 @@ bool getILIntrinsicImplementationForMemoryMarshal(MethodDesc * ftn,
 
     mdMethodDef tk = ftn->GetMemberDef();
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_RAW_ARRAY_DATA)->GetMemberDef())
+    if (tk == MscorlibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE)->GetMemberDef())
     {
         mdToken tokRawSzArrayData = MscorlibBinder::GetField(FIELD__RAW_ARRAY_DATA__DATA)->GetMemberDef();
 

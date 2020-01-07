@@ -18,7 +18,7 @@ namespace Internal.IL.Stubs
             Debug.Assert(((MetadataType)method.OwningType).Name == "MemoryMarshal");
             string methodName = method.Name;
 
-            if (methodName == "GetRawArrayData")
+            if (methodName == "GetArrayDataReference")
             {
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();

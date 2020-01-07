@@ -14,14 +14,14 @@ namespace System.Runtime.InteropServices
         /// Returns a reference to the 0th element of <paramref name="array"/>. If the array is empty, returns a reference to where the 0th element
         /// would have been stored. Such a reference may be used for pinning but must never be dereferenced.
         /// </summary>
-        /// <exception cref="NullReferenceException">If <paramref name="array"/> is <see langword="null"/>.</exception>
+        /// <exception cref="NullReferenceException"><paramref name="array"/> is <see langword="null"/>.</exception>
         /// <remarks>
         /// This method does not perform array variance checks. The caller must manually perform any array variance checks
         /// if the caller wishes to write to the returned reference.
         /// </remarks>
         [Intrinsic]
         [NonVersionable]
-        public static ref T GetRawArrayData<T>(T[] array) =>
+        public static ref T GetArrayDataReference<T>(T[] array) =>
             ref Unsafe.As<byte, T>(ref Unsafe.As<RawArrayData>(array).Data);
     }
 }

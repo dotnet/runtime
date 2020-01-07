@@ -1116,7 +1116,7 @@ namespace System
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(Unsafe.As<byte[]>(array)), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), startIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1124,7 +1124,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(char))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(Unsafe.As<char[]>(array)), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<char[]>(array)), startIndex),
                         Unsafe.As<T, char>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1132,7 +1132,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(Unsafe.As<int[]>(array)), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
                         Unsafe.As<T, int>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1140,7 +1140,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(Unsafe.As<long[]>(array)), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
                         Unsafe.As<T, long>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1364,7 +1364,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(Unsafe.As<byte[]>(array)), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), endIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
 
@@ -1374,7 +1374,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(Unsafe.As<char[]>(array)), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<char[]>(array)), endIndex),
                         Unsafe.As<T, char>(ref value),
                         count);
 
@@ -1384,7 +1384,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(Unsafe.As<int[]>(array)), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), endIndex),
                         Unsafe.As<T, int>(ref value),
                         count);
 
@@ -1394,7 +1394,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(Unsafe.As<long[]>(array)), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), endIndex),
                         Unsafe.As<T, long>(ref value),
                         count);
 
@@ -1516,7 +1516,7 @@ namespace System
             if (length <= 1)
                 return;
 
-            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(array), index);
+            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
             ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
             do
             {
@@ -1722,7 +1722,7 @@ namespace System
 
             if (array.Length > 1)
             {
-                var span = new Span<T>(ref MemoryMarshal.GetRawArrayData(array), array.Length);
+                var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
                 ArraySortHelper<T>.Default.Sort(span, null);
             }
         }
@@ -1771,7 +1771,7 @@ namespace System
 
             if (length > 1)
             {
-                var span = new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(array), index), length);
+                var span = new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index), length);
                 ArraySortHelper<T>.Default.Sort(span, comparer);
             }
         }
@@ -1795,8 +1795,8 @@ namespace System
                     return;
                 }
 
-                var spanKeys = new Span<TKey>(ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(keys), index), length);
-                var spanItems = new Span<TValue>(ref Unsafe.Add(ref MemoryMarshal.GetRawArrayData(items), index), length);
+                var spanKeys = new Span<TKey>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(keys), index), length);
+                var spanItems = new Span<TValue>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(items), index), length);
                 ArraySortHelper<TKey, TValue>.Default.Sort(spanKeys, spanItems, comparer);
             }
         }
@@ -1813,7 +1813,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
 
-            var span = new Span<T>(ref MemoryMarshal.GetRawArrayData(array), array.Length);
+            var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
             ArraySortHelper<T>.Sort(span, comparison);
         }
 
