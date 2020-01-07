@@ -21,7 +21,11 @@
 *.in text eol=lf
 *.sh text eol=lf
 
-*.cs text=auto diff=csharp 
+# Likewise, force cmd and batch scripts to always use crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.cs text=auto diff=csharp
 *.vb text=auto
 *.resx text=auto
 *.c text=auto
