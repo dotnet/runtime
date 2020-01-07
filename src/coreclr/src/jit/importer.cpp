@@ -3636,8 +3636,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     // Optimize `ldstr + String::get_Length()` to CNS_INT
                     // e.g. "Hello".Length => 5
-                    int len = info.compCompHnd->getStringLength(
-                        op1->AsStrCon()->gtScpHnd, op1->AsStrCon()->gtSconCPX);
+                    int len = info.compCompHnd->getStringLength(op1->AsStrCon()->gtScpHnd, op1->AsStrCon()->gtSconCPX);
                     if (len >= 0)
                     {
                         retNode = gtNewIconNode(len);
