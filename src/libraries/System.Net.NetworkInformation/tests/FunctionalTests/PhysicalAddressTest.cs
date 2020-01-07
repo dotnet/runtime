@@ -162,7 +162,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             PhysicalAddress parsedAddress = PhysicalAddress.Parse(string.Empty);
             byte[] addressBytes = parsedAddress.GetAddressBytes();
-            Assert.Equal(0, addressBytes.Length);
+            Assert.Empty(addressBytes);
         }
 
         [Theory]
@@ -186,7 +186,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             Assert.True(PhysicalAddress.TryParse(string.Empty, out PhysicalAddress parsedAddress));
             byte[] addressBytes = parsedAddress.GetAddressBytes();
-            Assert.Equal(0, addressBytes.Length);
+            Assert.Empty(addressBytes);
         }
 
         [Theory]
@@ -203,7 +203,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             PhysicalAddress parsedAddress = PhysicalAddress.Parse(new ReadOnlySpan<char>());
             byte[] addressBytes = parsedAddress.GetAddressBytes();
-            Assert.Equal(0, addressBytes.Length);
+            Assert.Empty(addressBytes);
         }
 
         [Theory]
@@ -220,7 +220,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             Assert.True(PhysicalAddress.TryParse(new ReadOnlySpan<char>(), out PhysicalAddress parsedAddress));
             byte[] addressBytes = parsedAddress.GetAddressBytes();
-            Assert.Equal(0, addressBytes.Length);
+            Assert.Empty(addressBytes);
         }
 
         [Theory]
