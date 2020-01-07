@@ -42,6 +42,9 @@ typedef struct {
 	char *dump_prefix;
 	gboolean accounting;
 	gboolean scc_precise_merge; // Used by Tarjan
+	// Disables reporting SCCs with no bridge objects on tarjan. Used when comparing outputs
+	// of two bridge processors, in order to keep consistency.
+	gboolean disable_non_bridge_scc;
 } SgenBridgeProcessorConfig;
 
 typedef struct {

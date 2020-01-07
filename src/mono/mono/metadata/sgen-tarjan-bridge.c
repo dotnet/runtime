@@ -138,6 +138,10 @@ typedef struct _ScanData {
 	mword lock_word;
 
 	ColorData *color;
+	// If this object isn't the scc root, we still need to store the xref colors on it, after computing
+	// low index, so we can add them to the scc that this object is part of.
+	DynPtrArray xrefs;
+
 	// Tarjan algorithm index (order visited)
 	int index;
 	// Tarjan index of lowest-index object known reachable from here
@@ -150,11 +154,16 @@ typedef struct _ScanData {
 	unsigned obj_state : 2;
 } ScanData;
 
+// If true, disable an optimization where sometimes SCC nodes don't contain any bridge objects, in order to reduce total xrefs.
+static gboolean disable_non_bridge_scc;
+
 /* Should color be made visible to client even though it has no bridges?
  * True if we predict the number of reduced edges to be enough to justify the extra node.
  */
 static gboolean
 bridgeless_color_is_heavy (ColorData *data) {
+	if (disable_non_bridge_scc)
+		return FALSE;
 	int fanin = data->incoming_colors;
 	int fanout = dyn_array_ptr_size (&data->other_colors);
 	return fanin > HEAVY_REFS_MIN && fanout > HEAVY_REFS_MIN
@@ -553,6 +562,18 @@ find_in_cache (int *insert_index)
 	return NULL;
 }
 
+// Populate other_colors for a give color (other_colors represent the xrefs for this color)
+static void
+add_other_colors (ColorData *color, DynPtrArray *other_colors)
+{
+	for (int i = 0; i < dyn_array_ptr_size (other_colors); ++i) {
+		ColorData *points_to = (ColorData *)dyn_array_ptr_get (other_colors, i);
+		dyn_array_ptr_add (&color->other_colors, points_to);
+		// Inform targets
+		points_to->incoming_colors = MIN (points_to->incoming_colors + 1, INCOMING_COLORS_MAX);
+	}
+}
+
 // A color is needed for an SCC. If the SCC has bridges, the color MUST be newly allocated.
 // If the SCC lacks bridges, the allocator MAY use the cache to merge it with an existing one.
 static ColorData*
@@ -569,13 +590,8 @@ new_color (gboolean has_bridges)
 
 	cd = alloc_color_data ();
 	cd->api_index = -1;
-	dyn_array_ptr_set_all (&cd->other_colors, &color_merge_array);
 
-	// Inform targets
-	for (int i = 0; i < dyn_array_ptr_size (&color_merge_array); ++i) {
-		ColorData *points_to = (ColorData *)dyn_array_ptr_get (&color_merge_array, i);
-		points_to->incoming_colors = MIN (points_to->incoming_colors + 1, INCOMING_COLORS_MAX);
-	}
+	add_other_colors (cd, &color_merge_array);
 
 	/* if cacheSlot >= 0, it means we prepared a given slot to receive the new color */
 	if (cacheSlot >= 0)
@@ -683,7 +699,7 @@ compute_low_index (ScanData *data, GCObject *obj)
 	other = find_data (obj);
 
 #if DUMP_GRAPH
-	printf ("\tcompute low %p ->%p (%s) %p (%d / %d)\n", data->obj, obj, safe_name_bridge (obj), other, other ? other->index : -2, other ? other->low_index : -2);
+	printf ("\tcompute low %p ->%p (%s) %p (%d / %d, color %p)\n", data->obj, obj, safe_name_bridge (obj), other, other ? other->index : -2, other ? other->low_index : -2, other->color);
 #endif
 	if (!other)
 		return;
@@ -698,8 +714,15 @@ compute_low_index (ScanData *data, GCObject *obj)
 		return;
 
 	cd = other->color;
+
+	// The scc for the referenced object was already created, meaning this is an xref.
+	// Add it to the color merge array so we can handle it later when creating the scc
+	// for the current object (data)
 	if (!cd->visited) {
 		color_merge_array_hash += mix_hash ((uintptr_t) other->color);
+#if DUMP_GRAPH
+		printf ("\t\tadd color %p to color_merge_array\n", other->color);
+#endif
 		dyn_array_ptr_add (&color_merge_array, other->color);
 		cd->visited = TRUE;
 	}
@@ -760,27 +783,21 @@ create_scc (ScanData *data)
 			break;
 	}
 
-#if DUMP_GRAPH
-	printf ("|SCC rooted in %s (%p) has bridge %d\n", safe_name_bridge (data->obj), data->obj, found_bridge);
-	printf ("\tpoints-to-colors: ");
-	for (int i = 0; i < dyn_array_ptr_size (&color_merge_array); ++i)
-		printf ("%p ", dyn_array_ptr_get (&color_merge_array, i));
-	printf ("\n");
-
-	printf ("loop stack: ");
-	for (int i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
-		ScanData *other = dyn_array_ptr_get (&loop_stack, i);
-		printf ("(%d/%d)", other->index, other->low_index);
-	}
-	printf ("\n");
-#endif
-
 	if (found_bridge) {
 		color_data = new_color (TRUE);
 		++num_colors_with_bridges;
 	} else {
 		color_data = reduce_color ();
 	}
+#if DUMP_GRAPH
+	printf ("|SCC %p rooted in %s (%p) has bridge %d\n", color_data, safe_name_bridge (data->obj), data->obj, found_bridge);
+	printf ("\tloop stack: ");
+	for (int i = 0; i < dyn_array_ptr_size (&loop_stack); ++i) {
+		ScanData *other = dyn_array_ptr_get (&loop_stack, i);
+		printf ("(%d/%d)", other->index, other->low_index);
+	}
+	printf ("\n");
+#endif
 
 	while (dyn_array_ptr_size (&loop_stack) > 0) {
 		ScanData *other = (ScanData *)dyn_array_ptr_pop (&loop_stack);
@@ -803,6 +820,12 @@ create_scc (ScanData *data)
 		if (other->is_bridge)
 			dyn_array_ptr_add (&color_data->bridges, other->obj);
 
+		// Maybe we should make sure we are not adding duplicates here. It is not really a problem
+		// since we will get rid of duplicates before submitting the SCCs to the client in gather_xrefs
+		if (color_data)
+			add_other_colors (color_data, &other->xrefs);
+		dyn_array_ptr_uninit (&other->xrefs);
+
 		if (other == data) {
 			found = TRUE;
 			break;
@@ -810,13 +833,12 @@ create_scc (ScanData *data)
 	}
 	g_assert (found);
 
-	for (i = 0; i < dyn_array_ptr_size (&color_merge_array); ++i) {
-		ColorData *cd  = (ColorData *)dyn_array_ptr_get (&color_merge_array, i);
-		g_assert (cd->visited);
-		cd->visited = FALSE;
-	}
-	color_merge_array_empty ();
-	found_bridge = FALSE;
+#if DUMP_GRAPH
+	printf ("\tpoints-to-colors: ");
+	for (int i = 0; i < dyn_array_ptr_size (&color_data->other_colors); i++)
+		printf ("%p ", dyn_array_ptr_get (&color_data->other_colors, i));
+	printf ("\n");
+#endif
 }
 
 static void
@@ -840,8 +862,8 @@ dfs (void)
 		 * We start scanning from A and push C before B. So, after the first iteration, the scan stack will have: A C B.
 		 * We then visit B, which will find C in its initial state and push again.
 		 * Finally after finish with C and B, the stack will be left with "A C" and at this point C should be ignored.
-         *
-         * The above explains FINISHED_ON_STACK, to explain FINISHED_OFF_STACK, consider if the root was D, which pointed
+		 *
+		 * The above explains FINISHED_ON_STACK, to explain FINISHED_OFF_STACK, consider if the root was D, which pointed
 		 * to A and C. A is processed first, leaving C on stack after that in the mentioned state.
 		 */
 		if (data->state == FINISHED_ON_STACK || data->state == FINISHED_OFF_STACK)
@@ -856,9 +878,6 @@ dfs (void)
 			dyn_array_ptr_push (&scan_stack, data);
 			dyn_array_ptr_push (&loop_stack, data);
 
-#if DUMP_GRAPH
-			printf ("+scanning %s (%p) index %d color %p\n", safe_name_bridge (data->obj), data->obj, data->index, data->color);
-#endif
 			/*push all refs */
 			push_all (data);
 		} else {
@@ -876,8 +895,21 @@ dfs (void)
 			printf ("-finished %s (%p) index %d low-index %d color %p\n", safe_name_bridge (data->obj), data->obj, data->index, data->low_index, data->color);
 #endif
 			//SCC root
-			if (data->index == data->low_index)
+			if (data->index == data->low_index) {
 				create_scc (data);
+			} else {
+				// We need to clear colo_merge_array from all xrefs. We flush them to the current color
+				// and will add them to the scc when we reach the root of the scc.
+				g_assert (dyn_array_ptr_size (&data->xrefs) == 0);
+				dyn_array_ptr_set_all (&data->xrefs, &color_merge_array);
+			}
+			// We populated color_merge_array while scanning the object with each neighbor color. Clear it now
+			for (int i = 0; i < dyn_array_ptr_size (&color_merge_array); i++) {
+				ColorData *cd  = (ColorData *)dyn_array_ptr_get (&color_merge_array, i);
+				g_assert (cd->visited);
+				cd->visited = FALSE;
+			}
+			color_merge_array_empty ();
 		}
 	}
 }
@@ -1213,6 +1245,8 @@ set_config (const SgenBridgeProcessorConfig *config)
 		hash_perturb = 0;
 		scc_precise_merge = TRUE;
 	}
+	if (config->disable_non_bridge_scc)
+		disable_non_bridge_scc = TRUE;
 }
 
 void
