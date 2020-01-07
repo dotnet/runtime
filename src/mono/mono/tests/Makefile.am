@@ -3189,7 +3189,7 @@ coreclr-gcstress:
 # Tests for the Mono lldb plugin
 EXTRA_DIST += test_lldb.py test-lldb.cs
 test-lldb: test-lldb.exe
-	python test_lldb.py $(JITTEST_PROG)
+	$(PYTHON) test_lldb.py $(JITTEST_PROG)
 
 if !ENABLE_MSVC_ONLY
 
