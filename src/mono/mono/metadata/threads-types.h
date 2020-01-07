@@ -342,12 +342,13 @@ typedef enum {
     MonoSetThreadNameFlag_Permanent = 0x0001,
     MonoSetThreadNameFlag_Reset     = 0x0002,
     MonoSetThreadNameFlag_Constant  = 0x0004,
+    MonoSetThreadNameFlag_RepeatedlyButOptimized = 0x0008,
 } MonoSetThreadNameFlags;
 
 G_ENUM_FUNCTIONS (MonoSetThreadNameFlags)
 
 MONO_PROFILER_API
-gsize
+void
 mono_thread_set_name (MonoInternalThread *thread,
 		      const char* name8, size_t name8_length, const gunichar2* name16,
 		      MonoSetThreadNameFlags flags, MonoError *error);

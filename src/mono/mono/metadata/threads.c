@@ -1751,11 +1751,7 @@ void
 mono_thread_name_cleanup (MonoThreadName* name)
 {
 	MonoThreadName const old_name = *name;
-	// Do not reset generation.
-	name->chars = 0;
-	name->length = 0;
-	name->free = 0;
-	//memset (name, 0, sizeof (*name));
+	memset (name, 0, sizeof (*name));
 	if (old_name.free)
 		g_free (old_name.chars);
 }
@@ -1939,16 +1935,24 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle thr
 //  - name16 only used on Windows.
 //  - name8 is either constant, or g_free'able -- this function always takes ownership and never copies.
 //
-gsize
+void
 mono_thread_set_name (MonoInternalThread *this_obj,
 		      const char* name8, size_t name8_length, const gunichar2* name16,
 		      MonoSetThreadNameFlags flags, MonoError *error)
 {
-	MonoNativeThreadId tid = 0;
+	// A special case for the threadpool worker.
+	// It sets the name repeatedly, in case it has changed, per-spec,
+	// and if not done carefully, this can be a performance problem.
+	//
+	// This is racy but ok. The name will always be valid (or absent).
+	// In an unusual race, the name might briefly not revert to what the spec requires.
+	//
+	if ((flags & MonoSetThreadNameFlag_RepeatedlyButOptimized) && name8 == this_obj->name.chars) {
+		// Length is presumed to match.
+		return;
+	}
 
-	// A counter to optimize redundant sets.
-	// It is not exactly thread safe but no use of it could be.
-	gsize name_generation;
+	MonoNativeThreadId tid = 0;
 
 	const gboolean constant = !!(flags & MonoSetThreadNameFlag_Constant);
 
@@ -1957,8 +1961,6 @@ mono_thread_set_name (MonoInternalThread *this_obj,
 #endif
 
 	LOCK_THREAD (this_obj);
-
-	name_generation = this_obj->name.generation;
 
 	if (flags & MonoSetThreadNameFlag_Reset) {
 		this_obj->flags &= ~MONO_THREAD_FLAG_NAME_SET;
@@ -1970,10 +1972,8 @@ mono_thread_set_name (MonoInternalThread *this_obj,
 
 		if (!constant)
 			g_free ((char*)name8);
-		return name_generation;
+		return;
 	}
-
-	name_generation = ++this_obj->name.generation;
 
 	mono_thread_name_cleanup (&this_obj->name);
 
@@ -1998,9 +1998,6 @@ mono_thread_set_name (MonoInternalThread *this_obj,
 	mono_thread_set_name_windows (this_obj->native_handle, name16);
 
 	mono_free (0); // FIXME keep mono-publib.c in use and its functions exported
-
-	return name_generation;
-
 }
 
 void 
