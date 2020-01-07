@@ -9835,7 +9835,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         }
 
 #if LOCAL_ASSERTION_PROP
-        // Kill everything about destLclNum (and its field locals)
+        // Kill everything about modifiedLclNum (and its field locals)
         if ((modifiedLclNum != BAD_VAR_NUM) && optLocalAssertionProp)
         {
             if (optAssertionCount > 0)
