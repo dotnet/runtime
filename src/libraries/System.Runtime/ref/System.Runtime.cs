@@ -3104,13 +3104,13 @@ namespace System
         public object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Globalization.CultureInfo? culture) { throw null; }
         public abstract object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters);
         protected abstract bool IsArrayImpl();
-        public virtual bool IsAssignableFrom(System.Type? c) { throw null; }
+        public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? c) { throw null; }
         protected abstract bool IsByRefImpl();
         protected abstract bool IsCOMObjectImpl();
         protected virtual bool IsContextfulImpl() { throw null; }
         public virtual bool IsEnumDefined(object value) { throw null; }
-        public virtual bool IsEquivalentTo(System.Type? other) { throw null; }
-        public virtual bool IsInstanceOfType(object? o) { throw null; }
+        public virtual bool IsEquivalentTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? other) { throw null; }
+        public virtual bool IsInstanceOfType([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? o) { throw null; }
         protected virtual bool IsMarshalByRefImpl() { throw null; }
         protected abstract bool IsPointerImpl();
         protected abstract bool IsPrimitiveImpl();
@@ -3463,7 +3463,7 @@ namespace System
         [System.ObsoleteAttribute("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected virtual bool IsReservedCharacter(char character) { throw null; }
         public bool IsWellFormedOriginalString() { throw null; }
-        public static bool IsWellFormedUriString(string? uriString, System.UriKind uriKind) { throw null; }
+        public static bool IsWellFormedUriString([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? uriString, System.UriKind uriKind) { throw null; }
         [System.ObsoleteAttribute("The method has been deprecated. Please use MakeRelativeUri(Uri uri). https://go.microsoft.com/fwlink/?linkid=14202")]
         public string MakeRelative(System.Uri toUri) { throw null; }
         public System.Uri MakeRelativeUri(System.Uri uri) { throw null; }
@@ -6440,7 +6440,7 @@ namespace System.Reflection
         protected override bool HasElementTypeImpl() { throw null; }
         public override object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters) { throw null; }
         protected override bool IsArrayImpl() { throw null; }
-        public override bool IsAssignableFrom(System.Reflection.TypeInfo? typeInfo) { throw null; }
+        public override bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
         protected override bool IsByRefImpl() { throw null; }
         protected override bool IsCOMObjectImpl() { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
@@ -6468,7 +6468,7 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.MethodInfo> GetDeclaredMethods(string name) { throw null; }
         public virtual System.Reflection.TypeInfo? GetDeclaredNestedType(string name) { throw null; }
         public virtual System.Reflection.PropertyInfo? GetDeclaredProperty(string name) { throw null; }
-        public virtual bool IsAssignableFrom(System.Reflection.TypeInfo? typeInfo) { throw null; }
+        public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
         System.Reflection.TypeInfo System.Reflection.IReflectableType.GetTypeInfo() { throw null; }
     }
 }
