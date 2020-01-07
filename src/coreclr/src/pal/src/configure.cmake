@@ -127,6 +127,8 @@ check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 check_function_exists(pipe2 HAVE_PIPE2)
 
+check_symbol_exists(SYS_getrandom sys/syscall.h HAVE_SYS_GETRANDOM)
+
 check_cxx_source_compiles("
 #include <pthread_np.h>
 int main(int argc, char **argv) {
