@@ -1352,12 +1352,8 @@ namespace System.Diagnostics
 
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            void ExitedHandler(object sender, EventArgs e)
-            {
-                tcs.TrySetResult(null);
-            }
-
-            Exited += ExitedHandler;
+            EventHandler handler = (s, e) => tcs.TrySetResult(null);
+            Exited += handler;
 
             try
             {
@@ -1374,7 +1370,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                Exited -= ExitedHandler;
+                Exited -= handler;
             }
         }
 
