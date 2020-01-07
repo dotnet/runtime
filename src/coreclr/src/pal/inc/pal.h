@@ -109,12 +109,6 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 
 /******************* ABI-specific glue *******************************/
 
-#ifdef __APPLE__
-// Both PowerPC, i386 and x86_64 on Mac OS X use 16-byte alignment.
-#define STACK_ALIGN_BITS             4
-#define STACK_ALIGN_REQ             (1 << STACK_ALIGN_BITS)
-#endif
-
 #define MAX_PATH 260
 #define _MAX_PATH 260
 #define _MAX_DRIVE  3   /* max. length of drive component */
