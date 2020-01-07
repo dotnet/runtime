@@ -302,6 +302,15 @@ CompareFileTime(
 
 PALIMPORT char * __cdecl _fullpath(char *, const char *, size_t);
 
+/*  These are from the <FCNTL.H> file in windows.
+    They are needed for _open_osfhandle.*/
+#define _O_RDONLY   0x0000
+#define _O_APPEND   0x0008
+#define _O_TEXT     0x4000
+#define _O_BINARY   0x8000
+
+PALIMPORT int __cdecl _open_osfhandle(INT_PTR, int);
+
 #ifdef  __cplusplus
 }
 #endif

@@ -351,8 +351,6 @@ c_runtime/_itow/test1/paltest_itow_test1
 c_runtime/_mbsdec/test1/paltest_mbsdec_test1
 c_runtime/_mbsinc/test1/paltest_mbsinc_test1
 c_runtime/_mbsninc/test1/paltest_mbsninc_test1
-c_runtime/_open_osfhandle/test1/paltest_open_osfhandle_test1
-c_runtime/_open_osfhandle/test2/paltest_open_osfhandle_test2
 c_runtime/_putenv/test1/paltest_putenv_test1
 c_runtime/_putenv/test2/paltest_putenv_test2
 c_runtime/_putenv/test3/paltest_putenv_test3

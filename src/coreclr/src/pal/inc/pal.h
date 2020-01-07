@@ -4297,7 +4297,6 @@ PALIMPORT time_t __cdecl time(time_t *);
 
 #endif // !PAL_STDCPP_COMPAT
 
-PALIMPORT int __cdecl _open_osfhandle(INT_PTR, int);
 PALIMPORT DLLEXPORT int __cdecl _open(const char *szPath, int nFlags, ...);
 PALIMPORT DLLEXPORT size_t __cdecl _pread(int fd, void *buf, size_t nbytes, ULONG64 offset);
 PALIMPORT DLLEXPORT int __cdecl _close(int);
@@ -4961,13 +4960,6 @@ public:
 #define EXCEPTION_INVALID_HANDLE            STATUS_INVALID_HANDLE
 
 #define CONTROL_C_EXIT                      STATUS_CONTROL_C_EXIT
-
-/*  These are from the <FCNTL.H> file in windows.
-    They are needed for _open_osfhandle.*/
-#define _O_RDONLY   0x0000
-#define _O_APPEND   0x0008
-#define _O_TEXT     0x4000
-#define _O_BINARY   0x8000
 
 /******************* HRESULT types ****************************************/
 
