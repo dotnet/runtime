@@ -44,7 +44,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-
         [ActiveIssue(16945)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
