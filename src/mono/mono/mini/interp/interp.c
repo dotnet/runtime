@@ -7505,6 +7505,28 @@ interp_print_op_count (void)
 #endif
 
 static void
+interp_set_optimizations (guint32 opts)
+{
+	mono_interp_opt = opts;
+}
+
+static void
+invalidate_transform (gpointer imethod_)
+{
+	InterpMethod *imethod = (InterpMethod *) imethod_;
+	imethod->transformed = FALSE;
+}
+
+static void
+interp_invalidate_transformed (MonoDomain *domain)
+{
+	MonoJitDomainInfo *info = domain_jit_info (domain);
+	mono_domain_jit_code_hash_lock (domain);
+	mono_internal_hash_table_apply (&info->interp_code_hash, invalidate_transform);
+	mono_domain_jit_code_hash_unlock (domain);
+}
+
+static void
 interp_cleanup (void)
 {
 #if COUNT_OPS

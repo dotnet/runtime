@@ -106,6 +106,18 @@ mono_internal_hash_table_insert (MonoInternalHashTable *table,
 	resize_if_needed (table);
 }
 
+void
+mono_internal_hash_table_apply (MonoInternalHashTable *table, MonoInternalHashApplyFunc func)
+{
+	for (gint i = 0; i < table->size; i++) {
+		gpointer head = table->table [i];
+		while (head) {
+			func (head);
+			head = *(table->next_value (head));
+		}
+	}
+}
+
 gboolean
 mono_internal_hash_table_remove (MonoInternalHashTable *table, gpointer key)
 {

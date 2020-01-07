@@ -89,6 +89,16 @@ stub_stop_single_stepping (void)
 }
 
 static void
+stub_set_optimizations (guint32 i)
+{
+}
+
+static void
+stub_invalidate_transformed (MonoDomain *domain)
+{
+}
+
+static void
 stub_cleanup (void)
 {
 }
