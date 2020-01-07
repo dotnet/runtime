@@ -3534,6 +3534,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	/* hack - redirect certain string constructors to CreateString */
 	if (piinfo->addr == ves_icall_System_String_ctor_RedirectToCreateString) {
+		MonoMethod *m;
+
 		g_assert (!pinvoke);
 		g_assert (method->string_ctor);
 		g_assert (sig->hasthis);
@@ -3543,35 +3545,60 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		csig->ret = string_type;
 		csig->pinvoke = 0;
 
+		res = NULL;
+#ifdef ENABLE_NETCORE
 		iter = NULL;
-		while ((res = mono_class_get_methods (mono_defaults.string_class, &iter))) {
-			if (!strcmp ("CreateString", res->name) &&
-				mono_metadata_signature_equal (csig, mono_method_signature_internal (res))) {
-				WrapperInfo *info;
+		while ((m = mono_class_get_methods (mono_defaults.string_class, &iter))) {
+			/*
+			 * Find the corresponding String::Ctor () method which has the same signature but its static
+			 * and returns a string.
+			 */
+			if (!strcmp ("Ctor", m->name)) {
+				int i;
 
-				g_assert (!(res->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
-				g_assert (!(res->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
-
-				/* create a wrapper to preserve .ctor in stack trace */
-				mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_MANAGED);
-
-				get_marshal_cb ()->emit_create_string_hack (mb, csig, res);
-
-				info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_STRING_CTOR);
-				info->d.string_ctor.method = method;
-
-				/* use native_wrapper_cache because internal calls are looked up there */
-				res = mono_mb_create_and_cache_full (cache, method, mb, csig,
-													 csig->param_count + 1, info, NULL);
-				mono_mb_free (mb);
-
-				return res;
+				MonoMethodSignature *rsig = mono_method_signature_internal (m);
+				if (csig->param_count == rsig->param_count) {
+					for (i = 0; i < csig->param_count; ++i)
+						if (!mono_metadata_type_equal (csig->params [i], rsig->params [i]))
+							break;
+					if (i == csig->param_count) {
+						res = m;
+						break;
+					}
+				}
 			}
 		}
+#else
+		iter = NULL;
+		while ((m = mono_class_get_methods (mono_defaults.string_class, &iter))) {
+			if (!strcmp ("CreateString", m->name) &&
+				mono_metadata_signature_equal (csig, mono_method_signature_internal (m))) {
+				res = m;
+				break;
+			}
+		}
+#endif
+		g_assert (res);
 
-		/* exception will be thrown */
-		piinfo->addr = NULL;
-		g_warning ("cannot find CreateString for .ctor");
+		WrapperInfo *info;
+
+		g_assert (!(res->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
+		g_assert (!(res->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
+
+		/* create a wrapper to preserve .ctor in stack trace */
+		mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_MANAGED);
+
+		get_marshal_cb ()->emit_create_string_hack (mb, csig, res);
+
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_STRING_CTOR);
+		info->d.string_ctor.method = method;
+
+		/* use native_wrapper_cache because internal calls are looked up there */
+		res = mono_mb_create_and_cache_full (cache, method, mb, csig,
+											 csig->param_count + 1, info, NULL);
+		mono_mb_free (mb);
+
+		return res;
 	}
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);

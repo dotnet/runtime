@@ -140,55 +140,5 @@ namespace System
 		}
 
 		#endregion
-
-		// Certain constructors are redirected to CreateString methods with
-		// matching argument list. The this pointer should not be used.
-		//
-		// TODO: Update runtime to call Ctor directly
-
-		unsafe String CreateString (sbyte* value)
-		{
-			return Ctor (value);
-		}
-
-		unsafe String CreateString (sbyte* value, int startIndex, int length)
-		{
-			return Ctor (value, startIndex, length);
-		}
-
-		unsafe String CreateString (char* value)
-		{
-			return Ctor (value);
-		}
-
-		unsafe String CreateString (char* value, int startIndex, int length)
-		{
-			return Ctor (value, startIndex, length);
-		}
-
-		String CreateString (char[] val, int startIndex, int length)
-		{
-			return Ctor (val, startIndex, length);
-		}
-
-		String CreateString (char [] val)
-		{
-			return Ctor (val);
-		}
-
-		String CreateString (char c, int count)
-		{
-			return Ctor (c, count);
-		}
-
-		unsafe String CreateString (sbyte* value, int startIndex, int length, System.Text.Encoding enc)
-		{
-			return Ctor (value, startIndex, length, enc);
-		}
-
-		String CreateString (ReadOnlySpan<char> value)
-		{
-			return Ctor (value);
-		}
 	}
 }

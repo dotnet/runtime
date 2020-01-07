@@ -6332,7 +6332,12 @@ static void
 emit_create_string_hack_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res)
 {
 	int i;
+
+#ifdef ENABLE_NETCORE
+	g_assert (!mono_method_signature_internal (res)->hasthis);
+#else
 	mono_mb_emit_byte (mb, CEE_LDARG_0);
+#endif
 	for (i = 1; i <= csig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i);
 	mono_mb_emit_managed_call (mb, res, NULL);

@@ -401,7 +401,7 @@
 			<method name="memcpy_aligned_8" />
 
 			<!-- marshal.c: mono_marshal_get_native_wrapper -->
-			<method name="CreateString"/>
+			<method name="Ctor"/>
 		</type>
 
 		<!-- socket-io.c: created/raised several time -->
