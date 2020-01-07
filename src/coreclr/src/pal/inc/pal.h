@@ -3930,7 +3930,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define malloc        PAL_malloc
 #define free          PAL_free
 #define _strdup       PAL__strdup
-#define _getcwd       PAL__getcwd
 #define _open         PAL__open
 #define _pread        PAL__pread
 #define _close        PAL__close
