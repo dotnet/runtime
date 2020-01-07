@@ -629,6 +629,8 @@ public:
                       unsigned metaTOK);
     BOOL isValidStringRef(CORINFO_MODULE_HANDLE module,
                           unsigned metaTOK);
+    int getStringLength(CORINFO_MODULE_HANDLE module,
+                        unsigned metaTOK);
 
 
     // ICorMethodInfo

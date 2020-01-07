@@ -255,6 +255,10 @@ BOOL isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
                       unsigned              metaTOK /* IN  */
                       );
 
+int getStringLength(CORINFO_MODULE_HANDLE module, /* IN  */
+                    unsigned              metaTOK /* IN  */
+                    );
+
 BOOL shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope);
 
 /**********************************************************************************/

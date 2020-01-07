@@ -367,6 +367,16 @@ BOOL WrapICorJitInfo::isValidStringRef(
     return temp;
 }
 
+int WrapICorJitInfo::getStringLength(
+            CORINFO_MODULE_HANDLE       module,     /* IN  */
+            unsigned                    metaTOK     /* IN  */)
+{
+    API_ENTER(getStringLength);
+    int temp = wrapHnd->getStringLength(module, metaTOK);
+    API_LEAVE(getStringLength);
+    return temp;
+}
+
 BOOL WrapICorJitInfo::shouldEnforceCallvirtRestriction(
             CORINFO_MODULE_HANDLE   scope)
 {

@@ -340,6 +340,13 @@ BOOL interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return original_ICorJitInfo->isValidStringRef(module, metaTOK);
 }
 
+int interceptor_ICJI::getStringLength(CORINFO_MODULE_HANDLE module, /* IN  */
+                                      unsigned              metaTOK /* IN  */
+                                      )
+{
+    return original_ICorJitInfo->getStringLength(module, metaTOK);
+}
+
 BOOL interceptor_ICJI::shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
 {
     return original_ICorJitInfo->shouldEnforceCallvirtRestriction(scope);

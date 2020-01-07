@@ -700,6 +700,10 @@ public:
             CORINFO_MODULE_HANDLE       module,
             mdToken                    metaTOK);
 
+    int getStringLength (
+            CORINFO_MODULE_HANDLE       module,
+            mdToken                    metaTOK);
+
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
 
