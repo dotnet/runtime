@@ -369,6 +369,8 @@ namespace Internal.JitInterface
         delegate uint __getExpectedTargetArchitecture(IntPtr _this, IntPtr* ppException);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getJitFlags(IntPtr _this, IntPtr* ppException, ref CORJIT_FLAGS flags, uint sizeInBytes);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        delegate int __getStringLength(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK);
 
         static uint _getMethodAttribs(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn)
         {
@@ -2830,11 +2832,25 @@ namespace Internal.JitInterface
             }
         }
 
+        static int _getStringLength(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getStringLength(module, metaTOK);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default(int);
+            }
+        }
+
 
         static IntPtr GetUnmanagedCallbacks(out Object keepAlive)
         {
-            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 179);
-            Object[] delegates = new Object[179];
+            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 180);
+            Object[] delegates = new Object[180];
 
             var d0 = new __getMethodAttribs(_getMethodAttribs);
             callbacks[0] = Marshal.GetFunctionPointerForDelegate(d0);
@@ -3373,6 +3389,9 @@ namespace Internal.JitInterface
             var d178 = new __getJitFlags(_getJitFlags);
             callbacks[178] = Marshal.GetFunctionPointerForDelegate(d178);
             delegates[178] = d178;
+            var d179 = new __getStringLength(_getStringLength);
+            callbacks[179] = Marshal.GetFunctionPointerForDelegate(d179);
+            delegates[179] = d179;
 
             keepAlive = delegates;
             return (IntPtr)callbacks;

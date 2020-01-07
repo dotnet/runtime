@@ -189,6 +189,7 @@ struct JitInterfaceCallbacks
     void (* getModuleNativeEntryPointRange)(void * thisHandle, CorInfoException** ppException, void** pStart, void** pEnd);
     unsigned int (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoException** ppException);
     unsigned int (* getJitFlags)(void * thisHandle, CorInfoException** ppException, void* flags, unsigned int sizeInBytes);
+    int (* getStringLength)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK);
 
 };
 
@@ -1724,6 +1725,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         unsigned int _ret = _callbacks->getJitFlags(_thisHandle, &pException, flags, sizeInBytes);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int getStringLength(void* module, unsigned metaTOK)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->getStringLength(_thisHandle, &pException, module, metaTOK);
         if (pException != nullptr)
             throw pException;
         return _ret;
