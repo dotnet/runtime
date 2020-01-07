@@ -131,11 +131,7 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 //  Note that the named locale APIs (eg CompareStringExEx) are recommended.
 //
 
-#define LANG_CHINESE                     0x04
 #define LANG_ENGLISH                     0x09
-#define LANG_JAPANESE                    0x11
-#define LANG_KOREAN                      0x12
-#define LANG_THAI                        0x1e
 
 /******************* Compiler-specific glue *******************************/
 #ifndef THROW_DECL
