@@ -13838,6 +13838,22 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
             if (op1->gtOper == GT_CNS_STR || op2->gtOper == GT_CNS_STR)
             {
+                if (op1->IsIntegralConst(0) || op2->IsIntegralConst(0))
+                {
+                    // Constant strings cannot be null.
+                    if (tree->OperIs(GT_EQ))
+                    {
+                        i1 = 0;
+                        goto FOLD_COND;
+                    }
+                    else if (tree->OperIs(GT_NE) ||
+                             (tree->OperIs(GT_GT) && tree->IsUnsigned() && op2->IsIntegralConst(0)))
+                    {
+                        i1 = 1;
+                        goto FOLD_COND;
+                    }
+                }
+
                 return tree;
             }
 
