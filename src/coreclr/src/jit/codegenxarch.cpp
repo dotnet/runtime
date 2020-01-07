@@ -909,6 +909,18 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     regNumber op1reg = op1->isUsedFromReg() ? op1->GetRegNum() : REG_NA;
     regNumber op2reg = op2->isUsedFromReg() ? op2->GetRegNum() : REG_NA;
 
+    if (varTypeIsFloating(treeNode->TypeGet()))
+    {
+        // floating-point addition, subtraction, multiplication, and division
+        // all have RMW semantics if VEX support is not available
+
+        bool isRMW = !compiler->canUseVexEncoding();
+        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW);
+
+        genProduceReg(treeNode);
+        return;
+    }
+
     GenTree* dst;
     GenTree* src;
 
