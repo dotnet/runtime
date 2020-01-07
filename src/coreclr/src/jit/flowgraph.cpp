@@ -8551,6 +8551,11 @@ private:
                 comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, true);
                 returnLocalDsc.lvIsMultiRegRet = true;
             }
+            else if (comp->compMethodReturnsSingleRegVector())
+            {
+                returnLocalDsc.lvType = TYP_STRUCT;
+                comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, true);
+            }
             else
             {
                 assert(!"unreached");

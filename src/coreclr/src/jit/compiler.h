@@ -8926,6 +8926,16 @@ public:
 #endif // !TARGET_AMD64
     }
 
+    // Returns true if WINDOWS && AMD64 && Vector128<T>
+    bool compMethodReturnsSingleRegVector()
+    {
+#if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
+        return info.compRetNativeType == TYP_SIMD16;
+#else
+        return false;
+#endif
+    }
+
     // Returns true if the method returns a value in more than one return register
     // TODO-ARM-Bug: Deal with multi-register genReturnLocaled structs?
     // TODO-ARM64: Does this apply for ARM64 too?
@@ -8954,7 +8964,7 @@ public:
     bool compMethodHasRetVal()
     {
         return compMethodReturnsNativeScalarType() || compMethodReturnsRetBufAddr() ||
-               compMethodReturnsMultiRegRetType();
+               compMethodReturnsMultiRegRetType() || compMethodReturnsSingleRegVector();
     }
 
     // Returns true if the method requires a PInvoke prolog and epilog
