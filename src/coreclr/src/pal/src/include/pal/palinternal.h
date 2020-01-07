@@ -355,7 +355,6 @@ function_name() to call the system's implementation
    types could be mapped to the C runtime and socket implementation of the
    native OS */
 #undef exit
-#undef atexit
 #undef div
 #undef div_t
 #undef memcpy

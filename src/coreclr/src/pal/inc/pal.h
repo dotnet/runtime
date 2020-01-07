@@ -3858,7 +3858,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    defines */
 #ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
-#define atexit        PAL_atexit
 #define printf        PAL_printf
 #define vprintf       PAL_vprintf
 #define wprintf       PAL_wprintf
@@ -4265,7 +4264,6 @@ PALIMPORT char * __cdecl _strdup(const char *);
 #endif // !PAL_STDCPP_COMPAT
 
 PALIMPORT PAL_NORETURN void __cdecl exit(int);
-int __cdecl atexit(void (__cdecl *function)(void));
 
 #ifndef PAL_STDCPP_COMPAT
 
