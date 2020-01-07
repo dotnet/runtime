@@ -41,7 +41,7 @@ namespace System.Text.Json
 
                 if (options.ReferenceHandling.ShouldWritePreservedReferences())
                 {
-                    if (WriteReferenceEnumerable(ref state, writer, options, enumerable))
+                    if (WriteReference(ref state, writer, options, ClassType.Enumerable, enumerable))
                     {
                         return WriteEndArray(ref state);
                     }
@@ -86,7 +86,7 @@ namespace System.Text.Json
             writer.WriteEndArray();
 
             // Used for ReferenceHandling.Preserve
-            if (state.Current.WriteWrappingBraceOnEndCollection)
+            if (state.Current.WriteWrappingBraceOnEndPreservedArray)
             {
                 writer.WriteEndObject();
             }
@@ -106,31 +106,6 @@ namespace System.Text.Json
             }
 
             return true;
-        }
-
-
-        private static bool WriteReferenceEnumerable(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, IEnumerable enumerable)
-        {
-            ResolvedReferenceHandling handling = state.PreserveReference(enumerable, out string referenceId);
-
-            if (handling == ResolvedReferenceHandling.IsReference)
-            {
-                // Object written before, write { "$ref": "#" } and finish.
-                state.Current.WriteReferenceObject(writer, options, referenceId);
-                return true;
-            }
-            else if (handling == ResolvedReferenceHandling.Preserve)
-            {
-                // Reference-type array, write as object and append $id and $values, at the end it write EndObject token using WriteWrappingBraceOnEndCollection.
-                state.Current.WritePreservedObjectOrArrayStart(ClassType.Enumerable, writer, options, referenceId);
-            }
-            else
-            {
-                // Value type or Immutable, fallback on regular Write method.
-                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
-            }
-
-            return false;
         }
     }
 }

@@ -12,13 +12,18 @@ namespace System.Text.Json
         private Dictionary<string, object> _keyObjectMap;
         private Dictionary<object, string> _objectKeyMap;
 
-        public DefaultReferenceResolver()
+        public DefaultReferenceResolver(bool isWrite)
         {
-            _keyObjectMap = new Dictionary<string, object>();
-            _objectKeyMap = new Dictionary<object, string>(ReferenceEqualsEqualityComparer<object>.Comparer);
+            if (isWrite)
+            {
+                _objectKeyMap = new Dictionary<object, string>(ReferenceEqualsEqualityComparer<object>.Comparer);
+            }
+            else
+            {
+                _keyObjectMap = new Dictionary<string, object>();
+            }
         }
 
-        // Used on deserialization.
         public void AddReference(string key, object value)
         {
             if (_keyObjectMap.ContainsKey(key))
@@ -29,10 +34,10 @@ namespace System.Text.Json
             _keyObjectMap[key] = value;
         }
 
-        // Used on serialization.
-        public string GetReference(object value)
+        public string GetOrAddReference(object value, out bool alreadyExists)
         {
-            if (!_objectKeyMap.TryGetValue(value, out string key))
+            alreadyExists = _objectKeyMap.TryGetValue(value, out string key);
+            if (!alreadyExists)
             {
                 key = (++_referenceCount).ToString();
                 _objectKeyMap.Add(value, key);
@@ -41,18 +46,11 @@ namespace System.Text.Json
             return key;
         }
 
-        // Used on serialization.
-        public bool IsReferenced(object value)
-        {
-            return _objectKeyMap.ContainsKey(value);
-        }
-
-        // Used on deserialization.
         public object ResolveReference(string key)
         {
             if (!_keyObjectMap.TryGetValue(key, out object value))
             {
-                ThrowHelper.ThrowJsonException_MetadataReferenceNotFound();
+                ThrowHelper.ThrowJsonException_MetadataReferenceNotFound(key);
             }
 
             return value;

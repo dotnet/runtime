@@ -139,5 +139,30 @@ namespace System.Text.Json
 
             writer.Flush();
         }
+
+        private static bool WriteReference(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, ClassType classType, object currentValue)
+        {
+            ResolvedReferenceHandling handling = state.GetResolvedReferenceHandling(currentValue, out string referenceId);
+
+            if (handling == ResolvedReferenceHandling.IsReference)
+            {
+                // Object written before, write { "$ref": "#" } and finish.
+                state.Current.WriteReferenceObject(writer, options, referenceId);
+                return true;
+            }
+            else if (handling == ResolvedReferenceHandling.Preserve)
+            {
+                // New object reference, write start and append $id.
+                // OR New array reference, write as object and append $id and $values; at the end writes EndObject token using WriteWrappingBraceOnEndCollection.
+                state.Current.WritePreservedObjectOrArrayStart(classType, writer, options, referenceId);
+            }
+            else
+            {
+                // Value type, fallback on regular Write method.
+                state.Current.WriteObjectOrArrayStart(classType, writer, options);
+            }
+
+            return false;
+        }
     }
 }

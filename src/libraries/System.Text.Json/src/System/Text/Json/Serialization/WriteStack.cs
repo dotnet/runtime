@@ -16,6 +16,17 @@ namespace System.Text.Json
         private int _index;
 
         private DefaultReferenceResolver _referenceResolver;
+        private DefaultReferenceResolver ReferenceResolver
+        {
+            get {
+                if (_referenceResolver == null)
+                {
+                    _referenceResolver = new DefaultReferenceResolver(true);
+                }
+
+                return _referenceResolver;
+            }
+        }
 
         public void Push()
         {
@@ -108,7 +119,7 @@ namespace System.Text.Json
             }
         }
 
-        internal ResolvedReferenceHandling PreserveReference(object value, out string referenceId)
+        internal ResolvedReferenceHandling GetResolvedReferenceHandling(object value, out string referenceId)
         {
             // Avoid emitting metadata to value types.
             Type currentType = Current.JsonPropertyInfo?.DeclaredPropertyType ?? Current.JsonClassInfo.Type;
@@ -118,7 +129,7 @@ namespace System.Text.Json
                 return ResolvedReferenceHandling.None;
             }
 
-            if (GetPreservedReference(value, out referenceId))
+            if (ReferenceAlreadyExists(value, out referenceId))
             {
                 return ResolvedReferenceHandling.IsReference;
             }
@@ -126,18 +137,10 @@ namespace System.Text.Json
             return ResolvedReferenceHandling.Preserve;
         }
 
-        // true if reference already exists; otherwise, false;
-        public bool GetPreservedReference(object value, out string id)
+        private bool ReferenceAlreadyExists(object value, out string id)
         {
-            if (_referenceResolver == null)
-            {
-                _referenceResolver = new DefaultReferenceResolver();
-            }
-
-            bool handling = _referenceResolver.IsReferenced(value);
-            id = _referenceResolver.GetReference(value);
-
-            return handling;
+            id = ReferenceResolver.GetOrAddReference(value, out bool alreadyExists);
+            return alreadyExists;
         }
     }
 }

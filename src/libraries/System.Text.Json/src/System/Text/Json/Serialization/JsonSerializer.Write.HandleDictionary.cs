@@ -45,7 +45,7 @@ namespace System.Text.Json
                 {
                     if (options.ReferenceHandling.ShouldWritePreservedReferences())
                     {
-                        if (WriteReferenceDictionary(ref state, writer, options, enumerable))
+                        if (WriteReference(ref state, writer, options, ClassType.Dictionary, enumerable))
                         {
                             return WriteEndDictionary(ref state);
                         }
@@ -130,31 +130,6 @@ namespace System.Text.Json
             }
 
             return true;
-        }
-
-        private static bool WriteReferenceDictionary(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, IEnumerable enumerable)
-        {
-            ResolvedReferenceHandling handling = state.PreserveReference(enumerable, out string referenceId);
-
-            if (handling == ResolvedReferenceHandling.IsReference)
-            {
-                // Object written before, write { "$ref": "#" } and finish.
-                state.Current.WriteReferenceObject(writer, options, referenceId);
-                return true;
-            }
-            else if (handling == ResolvedReferenceHandling.Preserve)
-            {
-                // Object reference, write start and append $id.
-                state.Current.WritePreservedObjectOrArrayStart(ClassType.Dictionary, writer, options, referenceId);
-            }
-            else
-            {
-                // Value type, fallback on regular Write method.
-                // Is this even reachable for Dictionaries?
-                state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
-            }
-
-            return false;
         }
 
         internal static void WriteDictionary<TProperty>(

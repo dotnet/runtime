@@ -18,7 +18,7 @@ namespace System.Text.Json
 
             if (metadata == MetadataPropertyName.Id)
             {
-                state.AddReference(key, GetValueToPreserve(ref state));
+                state.ReferenceResolver.AddReference(key, GetValueToPreserve(ref state));
             }
             else if (metadata == MetadataPropertyName.Ref)
             {
@@ -92,7 +92,7 @@ namespace System.Text.Json
 
         private static void HandleReference(ref ReadStack state)
         {
-            object referenceValue = state.ResolveReference(state.Current.ReferenceId);
+            object referenceValue = state.ReferenceResolver.ResolveReference(state.Current.ReferenceId);
             if (state.Current.IsProcessingProperty(ClassType.Dictionary))
             {
                 ApplyObjectToEnumerable(referenceValue, ref state, setPropertyDirectly: true);
@@ -107,25 +107,16 @@ namespace System.Text.Json
             state.Current.ShouldHandleReference = false;
         }
 
-        internal static void SetAsPreserved(ref ReadStackFrame frame)
+        internal static void MarkAsPreserved(ref ReadStackFrame frame)
         {
-            //bool alreadyPreserving;
             if (frame.IsProcessingProperty(ClassType.Dictionary))
             {
-                //alreadyPreserving = frame.DictionaryPropertyIsPreserved;
                 frame.DictionaryPropertyIsPreserved = true;
             }
             else
             {
-                //alreadyPreserving = frame.IsPreserved;
                 frame.IsPreserved = true;
             }
-
-            // Unreachable, if more than one $id, error "$id must be the first property" will pop-up.
-            //if (alreadyPreserving)
-            //{
-            //    throw new JsonException("Object already defines a reference identifier.");
-            //}
         }
     }
 

@@ -266,9 +266,9 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataReferenceNotFound()
+        public static void ThrowJsonException_MetadataReferenceNotFound(string id)
         {
-            throw new JsonException(SR.MetadataReferenceNotFound);
+            throw new JsonException(SR.Format(SR.MetadataReferenceNotFound, id));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

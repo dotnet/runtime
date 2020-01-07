@@ -28,7 +28,7 @@ namespace System.Text.Json
         public bool StartObjectWritten;
         public bool MoveToNextProperty;
 
-        public bool WriteWrappingBraceOnEndCollection;
+        public bool WriteWrappingBraceOnEndPreservedArray;
 
         // The current property.
         public int PropertyEnumeratorIndex;
@@ -118,7 +118,7 @@ namespace System.Text.Json
                     writer.WriteString("$id", referenceId);
                     writer.WritePropertyName("$values");
                     writer.WriteStartArray();
-                    WriteWrappingBraceOnEndCollection = true;
+                    WriteWrappingBraceOnEndPreservedArray = true;
                 }
             }
         }
@@ -128,8 +128,8 @@ namespace System.Text.Json
             if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
             {
                 writer.WriteStartObject(propertyName);
-                StartObjectWritten = true;
                 writer.WriteString("$id", referenceId);
+                StartObjectWritten = true;
             }
             else
             {
@@ -138,7 +138,7 @@ namespace System.Text.Json
                 writer.WriteString("$id", referenceId);
                 writer.WritePropertyName("$values");
                 writer.WriteStartArray();
-                WriteWrappingBraceOnEndCollection = true;
+                WriteWrappingBraceOnEndPreservedArray = true;
             }
         }
 

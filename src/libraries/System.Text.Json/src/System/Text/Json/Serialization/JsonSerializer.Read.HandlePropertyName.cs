@@ -179,13 +179,14 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty();
                 }
 
-                SetAsPreserved(ref state.Current);
+                MarkAsPreserved(ref state.Current);
                 state.Current.ReadMetadataValue = true;
             }
             else if (metadata == MetadataPropertyName.Ref)
             {
                 if (state.Current.KeyName != null || isPreserved)
                 {
+                    state.Current.KeyName = null;
                     ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
                 }
 
@@ -217,7 +218,7 @@ namespace System.Text.Json
                 state.Current.JsonPropertyInfo = info;
 
                 state.Current.ReadMetadataValue = true;
-                SetAsPreserved(ref state.Current);
+                MarkAsPreserved(ref state.Current);
             }
             else if (meta == MetadataPropertyName.Values)
             {

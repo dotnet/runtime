@@ -31,7 +31,7 @@ namespace System.Text.Json
                 {
                     if (options.ReferenceHandling.ShouldReadPreservedReferences())
                     {
-                        HandlePreservedArray(ref state, options);
+                        HandleStartPreservedArray(ref state, options);
                     }
                     else
                     {
@@ -139,7 +139,7 @@ namespace System.Text.Json
             return value;
         }
 
-        private static void HandlePreservedArray(ref ReadStack state, JsonSerializerOptions options)
+        private static void HandleStartPreservedArray(ref ReadStack state, JsonSerializerOptions options)
         {
             // Check we are not parsing into immutable or array.
             if (state.Current.JsonPropertyInfo.EnumerableConverter != null)

@@ -30,7 +30,7 @@ namespace System.Text.Json
 
                 if (options.ReferenceHandling.ShouldWritePreservedReferences())
                 {
-                    if (WriteReferenceObject(ref state, writer, options))
+                    if (WriteReference(ref state, writer, options, ClassType.Object, state.Current.CurrentValue))
                     {
                         return WriteEndObject(ref state);
                     }
@@ -163,30 +163,6 @@ namespace System.Text.Json
 
                 state.Current.MoveToNextProperty = true;
             }
-        }
-
-        private static bool WriteReferenceObject(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options)
-        {
-            ResolvedReferenceHandling handling = state.PreserveReference(state.Current.CurrentValue, out string referenceId);
-
-            if (handling == ResolvedReferenceHandling.IsReference)
-            {
-                // Object written before, write { "$ref": "#" } and finish.
-                state.Current.WriteReferenceObject(writer, options, referenceId);
-                return true;
-            }
-            else if (handling == ResolvedReferenceHandling.Preserve)
-            {
-                // Object reference, write start and append $id.
-                state.Current.WritePreservedObjectOrArrayStart(ClassType.Object, writer, options, referenceId);
-            }
-            else
-            {
-                // Value type, fallback on regular Write method.
-                state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
-            }
-
-            return false;
         }
     }
 }

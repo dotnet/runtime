@@ -19,25 +19,17 @@ namespace System.Text.Json
         private List<ReadStackFrame> _previous;
         public int _index;
         private DefaultReferenceResolver _referenceResolver;
-
-        public void AddReference(string key, object value)
+        public DefaultReferenceResolver ReferenceResolver
         {
-            if (_referenceResolver == null)
+            get
             {
-                _referenceResolver = new DefaultReferenceResolver();
+                if (_referenceResolver == null)
+                {
+                    _referenceResolver = new DefaultReferenceResolver(false);
+                }
+
+                return _referenceResolver;
             }
-
-            _referenceResolver.AddReference(key, value);
-        }
-
-        public object ResolveReference(string key)
-        {
-            if (_referenceResolver == null)
-            {
-                _referenceResolver = new DefaultReferenceResolver();
-            }
-
-            return _referenceResolver.ResolveReference(key);
         }
 
         public void Push()

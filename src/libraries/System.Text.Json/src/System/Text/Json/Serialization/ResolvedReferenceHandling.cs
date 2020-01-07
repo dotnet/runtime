@@ -7,7 +7,7 @@ namespace System.Text.Json
     //Consider adding WriteReference value to use that instead of output param writeAsReference in ReferenceHandlingStrategy.
     internal enum ResolvedReferenceHandling
     {
-        // Indicates that the JSON object/array will be written with metadata ($id) to idntify it in further hits.
+        // Indicates that the JSON object/array will be written with metadata ($id) to identify it in further hits.
         Preserve,
 
         // Indicates that the JSON object/array has been previously serialized somewhere in the payload and now we will only write a pointer ($ref) to it.

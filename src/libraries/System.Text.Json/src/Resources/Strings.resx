@@ -448,7 +448,7 @@
     <value>This JsonElement instance was not built from a JsonNode and is immutable.</value>
   </data>
   <data name="MetadataCannotParsePreservedObjectToImmutable" xml:space="preserve">
-    <value>Cannot parse preserved object to Array or Immutable. Type {0}.</value>
+    <value>Cannot parse preserved object to Array or Immutable. Type '{0}'.</value>
   </data>
   <data name="MetadataDuplicateIdFound" xml:space="preserve">
     <value>Duplicated identifier '{0}' found while reading preserved object.</value>
@@ -457,7 +457,7 @@
     <value>The metadata property $id must be the first property in the JSON object.</value>
   </data>
   <data name="MetadataInvalidReferenceToValueType" xml:space="preserve">
-    <value>Invalid reference to value type {0}.</value>
+    <value>Invalid reference to value type '{0}'.</value>
   </data>
   <data name="MetadataInvalidTokenAfterValues" xml:space="preserve">
     <value>Invalid token after $values metadata property.</value>
@@ -480,7 +480,7 @@
     <value>Reference objects must not contain other properties except for $ref.</value>
   </data>
   <data name="MetadataReferenceNotFound" xml:space="preserve">
-    <value>Reference not found.</value>
+    <value>Reference '{0}' not found.</value>
   </data>
   <data name="MetadataValueWasNotString" xml:space="preserve">
     <value>Value for metadata properties $id and $ref must be of type string.</value>

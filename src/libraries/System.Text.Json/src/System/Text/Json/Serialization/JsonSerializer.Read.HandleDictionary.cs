@@ -53,6 +53,7 @@ namespace System.Text.Json
 
                     state.Current.ReturnValue = classInfo.CreateObject();
                 }
+                // Preserved Array within the dictionary.
                 else if (options.ReferenceHandling.ShouldReadPreservedReferences() && state.Current.IsProcessingEnumerable())
                 {
                     Type preservedObjType = state.Current.JsonClassInfo.PolicyProperty.GetJsonPreservedReferenceType();
