@@ -2053,27 +2053,34 @@ ptrdiff_t round_down (ptrdiff_t add, int pitch)
 #error if GROWABLE_SEG_MAPPING_TABLE is defined, SEG_MAPPING_TABLE must be defined
 #endif
 
+// Returns true if moving an object from old_loc to new_loc respects large (double) alignment.
+// old_loc and new_loc are expected to be aligned by DATA_ALIGNMENT.
 inline
-BOOL same_large_alignment_p (uint8_t* p1, uint8_t* p2)
+BOOL same_large_alignment_p (uint8_t* old_loc, uint8_t* new_loc)
 {
 #ifdef RESPECT_LARGE_ALIGNMENT
-    return ((((size_t)p1 ^ (size_t)p2) & 7) == 0);
-#else
-    UNREFERENCED_PARAMETER(p1);
-    UNREFERENCED_PARAMETER(p2);
+    return ((((size_t)old_loc ^ (size_t)new_loc) & DATA_ALIGNMENT) == 0) || (old_loc == 0);
+#else // RESPECT_LARGE_ALIGNMENT
+    UNREFERENCED_PARAMETER(old_loc);
+    UNREFERENCED_PARAMETER(new_loc);
     return TRUE;
-#endif //RESPECT_LARGE_ALIGNMENT
+#endif // RESPECT_LARGE_ALIGNMENT
 }
 
+// Returns the padding size required to respect large (double) alignment.
 inline
 size_t switch_alignment_size (BOOL already_padded_p)
 {
+#ifdef RESPECT_LARGE_ALIGNMENT
     if (already_padded_p)
         return DATA_ALIGNMENT;
     else
-        return (Align (min_obj_size) +((Align (min_obj_size)&DATA_ALIGNMENT)^DATA_ALIGNMENT));
+        return Align (min_obj_size) | DATA_ALIGNMENT;
+#else // RESPECT_LARGE_ALIGNMENT
+    assert (0);
+    return 0;
+#endif // RESPECT_LARGE_ALIGNMENT
 }
-
 
 #ifdef FEATURE_STRUCTALIGN
 void set_node_aligninfo (uint8_t *node, int requiredAlignment, ptrdiff_t pad);
@@ -9423,17 +9430,14 @@ retry:
             size_t free_space_size = 0;
             pad = 0;
 
-            BOOL realign_padding_p = FALSE;
-
             if (bucket_free_space[i].is_plug)
             {
                 mark* m = (mark*)(bucket_free_space[i].start);
                 uint8_t* plug_free_space_start = pinned_plug (m) - pinned_len (m);
 
-                if (!((old_loc == 0) || same_large_alignment_p (old_loc, plug_free_space_start)))
+                if (!same_large_alignment_p (old_loc, plug_free_space_start))
                 {
-                    pad += switch_alignment_size (FALSE);
-                    realign_padding_p = TRUE;
+                    pad = switch_alignment_size (FALSE);
                 }
 
                 plug_size = saved_plug_size + pad;
@@ -9459,7 +9463,7 @@ retry:
                                 index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
-                    if (realign_padding_p)
+                    if (pad != 0)
                     {
                         set_node_realigned (old_loc);
                     }
@@ -9472,10 +9476,9 @@ retry:
                 heap_segment* seg = (heap_segment*)(bucket_free_space[i].start);
                 free_space_size = heap_segment_committed (seg) - heap_segment_plan_allocated (seg);
 
-                if (!((old_loc == 0) || same_large_alignment_p (old_loc, heap_segment_plan_allocated (seg))))
+                if (!same_large_alignment_p (old_loc, heap_segment_plan_allocated (seg)))
                 {
                     pad = switch_alignment_size (FALSE);
-                    realign_padding_p = TRUE;
                 }
 
                 plug_size = saved_plug_size + pad;
@@ -9497,7 +9500,7 @@ retry:
                                 index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
-                    if (realign_padding_p)
+                    if (pad != 0)
                         set_node_realigned (old_loc);
 
                     can_fit = TRUE;
@@ -9516,15 +9519,10 @@ retry:
             chosen_power2 = 1;
             goto retry;
         }
-        else
-        {
-            if (pad)
-            {
-                new_address += pad;
-            }
-            assert ((chosen_power2 && (i == 0)) ||
-                    ((!chosen_power2) && (i < free_space_count)));
-        }
+
+        new_address += pad;
+        assert ((chosen_power2 && (i == 0)) ||
+                ((!chosen_power2) && (i < free_space_count)));
 
         int new_bucket_power2 = index_of_highest_set_bit (new_free_space_size);
 
@@ -11557,8 +11555,8 @@ BOOL gc_heap::size_fit_p (size_t size REQD_ALIGN_AND_OFFSET_DCL, uint8_t* alloc_
     }
 #endif //SHORT_PLUGS
 
-    if (!((old_loc == 0) || same_large_alignment_p (old_loc, alloc_pointer)))
-        size = size + switch_alignment_size (already_padded);
+    if (!same_large_alignment_p (old_loc, alloc_pointer))
+        size += switch_alignment_size (already_padded);
 
 #ifdef FEATURE_STRUCTALIGN
     alloc_pointer = StructAlign(alloc_pointer, requiredAlignment, alignmentOffset);
@@ -11653,15 +11651,18 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
 inline
 int gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* allocated, uint8_t* old_loc, size_t size, BOOL pad_front_p  REQD_ALIGN_AND_OFFSET_DCL)
 {
+    BOOL already_padded = FALSE;
 #ifdef SHORT_PLUGS
     if ((old_loc != 0) && pad_front_p)
     {
         allocated = allocated + Align (min_obj_size);
+        already_padded = TRUE;
     }
 #endif //SHORT_PLUGS
 
-    if (!((old_loc == 0) || same_large_alignment_p (old_loc, allocated)))
-        size = size + switch_alignment_size (FALSE);
+    if (!same_large_alignment_p (old_loc, allocated))
+        size += switch_alignment_size (already_padded);
+
 #ifdef FEATURE_STRUCTALIGN
     size_t pad = ComputeStructAlignPad(allocated, requiredAlignment, alignmentOffset);
     return grow_heap_segment (seg, allocated + pad + size);
@@ -14929,13 +14930,13 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
             pad += pad1;
         }
 #else // FEATURE_STRUCTALIGN
-        if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
+        if (!same_large_alignment_p (old_loc, result + pad))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
+            pad += switch_alignment_size (pad != 0);
             set_node_realigned (old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
-                         (size_t)old_loc, (size_t)(result+pad)));
-            assert (same_large_alignment_p (result + pad, old_loc));
+                         (size_t)old_loc, (size_t)(result + pad)));
+            assert (same_large_alignment_p (old_loc, result + pad));
         }
 #endif // FEATURE_STRUCTALIGN
         dprintf (3, ("Allocate %Id bytes", size));
@@ -15026,7 +15027,6 @@ uint8_t* gc_heap::allocate_in_expanded_heap (generation* gen,
                                           int active_new_gen_number
                                           REQD_ALIGN_AND_OFFSET_DCL)
 {
-    UNREFERENCED_PARAMETER(active_new_gen_number);
     dprintf (3, ("aie: P: %Ix, size: %Ix", old_loc, size));
 
     size = Align (size);
@@ -15184,13 +15184,13 @@ allocate_in_free:
             adjacentp = FALSE;
         }
 #else // FEATURE_STRUCTALIGN
-        if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
+        if (!same_large_alignment_p (old_loc, result + pad))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
+            pad += switch_alignment_size (pad != 0);
             set_node_realigned (old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
-                         (size_t)old_loc, (size_t)(result+pad)));
-            assert (same_large_alignment_p (result + pad, old_loc));
+                         (size_t)old_loc, (size_t)(result + pad)));
+            assert (same_large_alignment_p (old_loc, result + pad));
             adjacentp = FALSE;
         }
 #endif // FEATURE_STRUCTALIGN
@@ -15411,7 +15411,6 @@ retry:
             if (dist == 0)
             {
                 dprintf (3, ("old alloc: %Ix, same as new alloc, not padding", old_loc));
-                pad = 0;
             }
             else
             {
@@ -15436,13 +15435,13 @@ retry:
             pad += pad1;
         }
 #else // FEATURE_STRUCTALIGN
-        if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
+        if (!same_large_alignment_p (old_loc, result + pad))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
-            set_node_realigned(old_loc);
+            pad += switch_alignment_size (pad != 0);
+            set_node_realigned (old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
-                         (size_t)old_loc, (size_t)(result+pad)));
-            assert (same_large_alignment_p (result + pad, old_loc));
+                         (size_t)old_loc, (size_t)(result + pad)));
+            assert (same_large_alignment_p (old_loc, result + pad));
         }
 #endif // FEATURE_STRUCTALIGN
 
@@ -15492,16 +15491,6 @@ retry:
         assert (result + pad);
         return result + pad;
     }
-}
-
-inline int power (int x, int y)
-{
-    int z = 1;
-    for (int i = 0; i < y; i++)
-    {
-        z = z*x;
-    }
-    return z;
 }
 
 int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
