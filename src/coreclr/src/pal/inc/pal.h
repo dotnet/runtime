@@ -546,25 +546,6 @@ PALAPI
 PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
-PALIMPORT
-LPSTR
-PALAPI
-CharNextA(
-            IN LPCSTR lpsz);
-
-PALIMPORT
-LPSTR
-PALAPI
-CharNextExA(
-        IN WORD CodePage,
-        IN LPCSTR lpCurrentChar,
-        IN DWORD dwFlags);
-
-#ifndef UNICODE
-#define CharNext CharNextA
-#define CharNextEx CharNextExA
-#endif
-
 
 #define MB_OK                   0x00000000L
 #define MB_OKCANCEL             0x00000001L
@@ -767,31 +748,6 @@ MoveFileExW(
 #define MoveFileEx MoveFileExA
 #endif
 
-PALIMPORT
-BOOL
-PALAPI
-CreateDirectoryW(
-         IN LPCWSTR lpPathName,
-         IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
-
-#ifdef UNICODE
-#define CreateDirectory CreateDirectoryW
-#else
-#define CreateDirectory CreateDirectoryA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-RemoveDirectoryW(
-         IN LPCWSTR lpPathName);
-
-#ifdef UNICODE
-#define RemoveDirectory RemoveDirectoryW
-#else
-#define RemoveDirectory RemoveDirectoryA
-#endif
-
 typedef struct _BY_HANDLE_FILE_INFORMATION {
     DWORD dwFileAttributes;
     FILETIME ftCreationTime;
@@ -923,19 +879,6 @@ GetFileAttributesExW(
 #define GetFileAttributesEx GetFileAttributesExW
 #endif
 
-PALIMPORT
-BOOL
-PALAPI
-SetFileAttributesW(
-           IN LPCWSTR lpFileName,
-           IN DWORD dwFileAttributes);
-
-#ifdef UNICODE
-#define SetFileAttributes SetFileAttributesW
-#else
-#define SetFileAttributes SetFileAttributesA
-#endif
-
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
     ULONG_PTR InternalHigh;
@@ -1012,20 +955,6 @@ PALAPI GetFileSizeEx(
         OUT  PLARGE_INTEGER lpFileSize);
 
 PALIMPORT
-BOOL
-PALAPI
-GetFileInformationByHandle(
-        IN HANDLE hFile,
-        OUT BY_HANDLE_FILE_INFORMATION* lpFileInformation);
-
-PALIMPORT
-LONG
-PALAPI
-CompareFileTime(
-        IN CONST FILETIME *lpFileTime1,
-        IN CONST FILETIME *lpFileTime2);
-
-PALIMPORT
 VOID
 PALAPI
 GetSystemTimeAsFileTime(
@@ -1084,31 +1013,6 @@ GetFullPathNameW(
 #endif
 
 PALIMPORT
-DWORD
-PALAPI
-GetLongPathNameW(
-         IN LPCWSTR lpszShortPath,
-                 OUT LPWSTR lpszLongPath,
-         IN DWORD cchBuffer);
-
-#ifdef UNICODE
-#define GetLongPathName GetLongPathNameW
-#endif
-
-PALIMPORT
-DWORD
-PALAPI
-GetShortPathNameW(
-         IN LPCWSTR lpszLongPath,
-                 OUT LPWSTR lpszShortPath,
-         IN DWORD cchBuffer);
-
-#ifdef UNICODE
-#define GetShortPathName GetShortPathNameW
-#endif
-
-
-PALIMPORT
 UINT
 PALAPI
 GetTempFileNameW(
@@ -1155,19 +1059,6 @@ GetCurrentDirectoryW(
 #define GetCurrentDirectory GetCurrentDirectoryW
 #else
 #define GetCurrentDirectory GetCurrentDirectoryA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-SetCurrentDirectoryW(
-            IN LPCWSTR lpPathName);
-
-
-#ifdef UNICODE
-#define SetCurrentDirectory SetCurrentDirectoryW
-#else
-#define SetCurrentDirectory SetCurrentDirectoryA
 #endif
 
 PALIMPORT

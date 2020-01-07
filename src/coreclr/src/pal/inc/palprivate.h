@@ -32,18 +32,6 @@ CreateFileA(
         IN HANDLE hTemplateFile);
 
 PALIMPORT
-DWORD
-PALAPI
-SearchPathA(
-    IN LPCSTR lpPath,
-    IN LPCSTR lpFileName,
-    IN LPCSTR lpExtension,
-    IN DWORD nBufferLength,
-    OUT LPSTR lpBuffer,
-    OUT LPSTR *lpFilePart
-    );
-
-PALIMPORT
 BOOL
 PALAPI
 CopyFileA(
@@ -74,6 +62,13 @@ CreateDirectoryA(
          IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
 
 PALIMPORT
+BOOL
+PALAPI
+CreateDirectoryW(
+         IN LPCWSTR lpPathName,
+         IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
+
+PALIMPORT
 HANDLE
 PALAPI
 FindFirstFileA(
@@ -98,6 +93,13 @@ BOOL
 PALAPI
 SetFileAttributesA(
            IN LPCSTR lpFileName,
+           IN DWORD dwFileAttributes);
+
+PALIMPORT
+BOOL
+PALAPI
+SetFileAttributesW(
+           IN LPCWSTR lpFileName,
            IN DWORD dwFileAttributes);
 
 PALIMPORT
@@ -131,6 +133,12 @@ PALAPI
 GetCurrentDirectoryA(
              IN DWORD nBufferLength,
              OUT LPSTR lpBuffer);
+
+PALIMPORT
+BOOL
+PALAPI
+SetCurrentDirectoryW(
+            IN LPCWSTR lpPathName);
 
 PALIMPORT
 BOOL
@@ -275,9 +283,22 @@ RemoveDirectoryA(
 PALIMPORT
 BOOL
 PALAPI
+RemoveDirectoryW(
+                 IN LPCWSTR lpPathName);
+
+PALIMPORT
+BOOL
+PALAPI
 PAL_GetPALDirectoryA(
     OUT LPSTR lpDirectoryName,
     IN UINT* cchDirectoryName);
+
+PALIMPORT
+LONG
+PALAPI
+CompareFileTime(
+        IN CONST FILETIME *lpFileTime1,
+        IN CONST FILETIME *lpFileTime2);
 
 #ifdef  __cplusplus
 }
