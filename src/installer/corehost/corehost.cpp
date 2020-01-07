@@ -212,22 +212,26 @@ int exe_start(const int argc, const pal::char_t* argv[])
         trace::info(_X("Dotnet path: [%s]"), dotnet_root.c_str());
         trace::info(_X("App path: [%s]"), app_path.c_str());
 
+        hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
         {
-            auto custom_error_writer = pal::get_symbol(fxr, "hostfxr_set_error_writer");
-
-            if (custom_error_writer)
+            if (set_error_writer_fn)
             {
-                hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(custom_error_writer);
                 propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
             }
 
             rc = main_fn_v2(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
 
-            if (rc == StatusCode::FrameworkMissingFailure && !custom_error_writer)
+            if (rc == StatusCode::FrameworkMissingFailure && !set_error_writer_fn)
             {
-                pal::string_t url = get_download_url(nullptr, nullptr);
-                trace::error(_X("  _ There is no available runtime to run this application.\n"));
-                trace::error(_X("  _ Installing the latest runtime might help resolve this problem.\n"));
+                pal::string_t missing_fw = L"Microsoft.NETCore.App";
+                pal::string_t fw_ver = _STRINGIFY(CUREXE_PKG_VER);
+                pal::string_t url = get_download_url(missing_fw.c_str(), fw_ver.c_str());
+
+                trace::error(_X("The framework '%s', version '%s' was not found."), missing_fw.c_str(), fw_ver.c_str());
+                trace::error(_X(""));
+                trace::error(_X("You can resolve the problem by installing the specified framework and/or SDK."));
+                trace::error(_X(""));
+                trace::error(_X("The specified framework can be found at:"));
                 trace::error(_X("  - %s"), url.c_str());
             }
         }

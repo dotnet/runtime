@@ -76,17 +76,11 @@ namespace
             while (std::getline(ss, line, _X('\n'))){
                 const pal::string_t prefix = _X("The framework '");
                 const pal::string_t suffix = _X("' was not found.");
-                const pal::string_t custom_message_prefix = _X("  _ ");
                 const pal::string_t url_prefix = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
                 if (starts_with(line, prefix, true) && ends_with(line, suffix, true))
                 {
                     dialogMsg.append(line);
                     dialogMsg.append(_X("\n\n"));
-                }
-                else if (starts_with(line, custom_message_prefix, true))
-                {
-                    size_t offset = custom_message_prefix.length();
-                    dialogMsg.append(line.substr(offset));
                 }
                 else if (starts_with(line, url_prefix, true))
                 {
