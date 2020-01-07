@@ -214,10 +214,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
         hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
         {
-            if (set_error_writer_fn)
-            {
-                propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
-            }
+            propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
 
             rc = main_fn_v2(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
 
