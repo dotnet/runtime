@@ -680,7 +680,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             // Check for SIMD intrinsics
             DefType owningDefType = method.OwningType as DefType;
-            if (owningDefType != null && VectorFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+            if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
             {
                 throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
             }
