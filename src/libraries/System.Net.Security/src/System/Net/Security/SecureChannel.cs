@@ -1282,7 +1282,6 @@ namespace System.Net.Security
         internal SecurityStatusPal Status;
         internal int Size;
         private byte[] _payload;
-        //internal byte[] Payload;
 
         internal byte[] Payload
         {
