@@ -134,6 +134,9 @@ MonoAssembly*          mono_assembly_request_byname (MonoAssemblyName *aname,
 gboolean
 mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointer wanted_name);
 
+gboolean
+mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
+
 MonoAssembly*
 mono_assembly_binding_applies_to_image (MonoAssemblyLoadContext *alc, MonoImage* image, MonoImageOpenStatus *status);
 

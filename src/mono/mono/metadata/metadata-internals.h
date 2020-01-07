@@ -907,6 +907,8 @@ mono_image_load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo);
 
 const char*
 mono_metadata_string_heap_checked (MonoImage *meta, uint32_t table_index, MonoError *error);
+const char *
+mono_metadata_blob_heap_null_ok (MonoImage *meta, guint32 index);
 const char*
 mono_metadata_blob_heap_checked (MonoImage *meta, uint32_t table_index, MonoError *error);
 gboolean
@@ -1143,10 +1145,10 @@ void
 mono_ginst_get_desc (GString *str, MonoGenericInst *ginst);
 
 void
-mono_loader_set_strict_strong_names (gboolean enabled);
+mono_loader_set_strict_assembly_name_check (gboolean enabled);
 
 gboolean
-mono_loader_get_strict_strong_names (void);
+mono_loader_get_strict_assembly_name_check (void);
 
 gboolean
 mono_type_in_image (MonoType *type, MonoImage *image);

@@ -135,6 +135,9 @@ void
 mono_llvm_set_call_noalias_ret (LLVMValueRef wrapped_calli);
 
 void
+mono_llvm_set_alignment_ret (LLVMValueRef val, int alignment);
+
+void
 mono_llvm_add_func_attr (LLVMValueRef func, AttrKind kind);
 
 void

@@ -1945,7 +1945,7 @@ _mono_reflection_get_type_from_info (MonoAssemblyLoadContext *alc, MonoTypeNameP
 
 	if (info->assembly.name) {
 		MonoAssembly *assembly = mono_assembly_loaded_internal (alc, &info->assembly, FALSE);
-		if (!assembly && image && image->assembly && mono_assembly_names_equal (&info->assembly, &image->assembly->aname))
+		if (!assembly && image && image->assembly && mono_assembly_check_name_match (&info->assembly, &image->assembly->aname))
 			/* 
 			 * This could happen in the AOT compiler case when the search hook is not
 			 * installed.

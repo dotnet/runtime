@@ -5,6 +5,7 @@
 		<!-- domain.c: mono_defaults.appdomain_class -->
 		<type fullname="Mono.MonoDomain">
 			<field name="_mono_app_domain"/>
+			<field name="UnhandledException"/>
 		</type>
 
 		<!-- appdomain.c: mono_runtime_init -->
@@ -23,8 +24,12 @@
 		  <method name="MonoResolveUsingResolveSatelliteAssembly" />
 		  <!-- appdomain.c: mono_try_assembly_resolve_handle () -->
 		  <method name="OnAssemblyResolve"/>
+		  <!-- appdomain.c: mono_domain_fire_assembly_load_event () -->
+		  <method name="OnAssemblyLoad"/>
 		  <!-- native-library.c: netcore_resolve_with_load () -->
 		  <method name="MonoResolveUnmanagedDll"/>
+		  <!-- native-library.c: netcore_resolve_with_resolving_event () -->
+		  <method name="MonoResolveUnmanagedDllUsingEvent"/>
 		  <!-- appdomain.c: mono_domain_fire_assembly_load_event -->
 		  <method name="OnAssemblyLoad"/>
 		</type>
@@ -138,10 +143,6 @@
 		<type fullname="System.Diagnostics.StackFrame" preserve="fields" >
 			<!-- threads.c mono_object_new_checked in mono_threads_get_thread_dump -->
 			<method signature="System.Void .ctor()" />
-		</type>
-
-		<!-- domain.c: mono_defaults.threadabortexception_class -->
-		<type fullname="System.Threading.ThreadAbortException">
 		</type>
 
 		<!-- debugger-agent.c: create_event_list -->
@@ -603,43 +604,38 @@
 			<method signature="System.Void .ctor(System.String)" />
 		</type>
 
-		<type fullname="System.Reflection.Emit.AssemblyBuilder" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.ConstructorBuilder" preserve="fields" feature="sre"/>
-		<type fullname="System.Reflection.Emit.DynamicMethod" preserve="fields" feature="sre" />
+		<type fullname="System.Reflection.Emit.AssemblyBuilder" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.ConstructorBuilder" preserve="fields" required="false" feature="sre"/>
+		<type fullname="System.Reflection.Emit.DynamicMethod" preserve="fields" required="false" feature="sre" />
 		<!-- mono_dynamic_image_register_token -->
-		<type fullname="System.Reflection.Emit.EnumBuilder" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.EventBuilder" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.FieldBuilder" preserve="fields" feature="sre" />
-		<type
-		  fullname="System.Reflection.Emit.GenericTypeParameterBuilder" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.ILExceptionBlock" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.ILExceptionInfo" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.ILGenerator" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.MethodBuilder" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.ModuleBuilder" preserve="fields" feature="sre">
-			<method name="Mono_GetGuid" feature="sre" />
-		</type>
-		<type fullname="System.Reflection.Emit.MonoResource" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.MonoWin32Resource" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.ParameterBuilder" preserve="nothing" feature="sre" />
-		<type fullname="System.Reflection.Emit.PropertyBuilder" preserve="nothing" feature="sre" />
-		<type fullname="System.Reflection.Emit.SignatureHelper" preserve="nothing" feature="sre" />
-		<type fullname="System.Reflection.Emit.TypeBuilder" preserve="fields" feature="sre">
+		<type fullname="System.Reflection.Emit.EnumBuilder" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.EventBuilder" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.FieldBuilder" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.GenericTypeParameterBuilder" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.ILExceptionBlock" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.ILExceptionInfo" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.ILGenerator" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.MethodBuilder" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.ModuleBuilder" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.ParameterBuilder" preserve="nothing" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.PropertyBuilder" preserve="nothing" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.SignatureHelper" preserve="nothing" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.TypeBuilder" preserve="fields" required="false" feature="sre">
 			<method name="SetCharSet" feature="sre" />
 			<!-- reflection.c mono_reflection_call_is_assignable_to () -->
 			<method name="IsAssignableTo" feature="sre" />
 		</type>
-		<type fullname="System.Reflection.Emit.UnmanagedMarshal" preserve="fields" feature="sre" >
+		<type fullname="System.Reflection.Emit.UnmanagedMarshal" preserve="fields" required="false" feature="sre" >
 			<method name="DefineCustom" feature="sre" />
 			<method name="DefineLPArrayInternal" feature="sre" />
 		</type>
-		<type fullname="System.Reflection.Emit.ArrayType" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.ByRefType" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.PointerType" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.FieldOnTypeBuilderInst" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.MethodOnTypeBuilderInst" preserve="fields" feature="sre" />
-		<type fullname="System.Reflection.Emit.ConstructorOnTypeBuilderInst" preserve="fields" feature="sre" />
+		<type fullname="System.Reflection.Emit.ArrayType" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.ByRefType" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.PointerType" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.FieldOnTypeBuilderInst" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.MethodOnTypeBuilderInst" preserve="fields" required="false" feature="sre" />
+		<type fullname="System.Reflection.Emit.ConstructorOnTypeBuilderInst" preserve="fields" required="false" feature="sre" />
 
 		<!-- exception.c: mono_get_exception_runtime_wrapped () -->
 		<type fullname="System.Runtime.CompilerServices.RuntimeWrappedException">

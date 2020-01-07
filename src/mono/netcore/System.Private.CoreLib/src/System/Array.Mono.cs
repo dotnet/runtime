@@ -28,14 +28,8 @@ namespace System
 		}
 
 		public int Length {
-			get {
-				int length = GetLength (0);
-
-				for (int i = 1; i < Rank; i++) {
-					length *= GetLength (i);
-				}
-				return length;
-			}
+			[Intrinsic]
+			get => Length;
 		}
 
 		public long LongLength {
@@ -50,9 +44,8 @@ namespace System
 		}
 
 		public int Rank {
-			get {
-				return GetRank ();
-			}
+			[Intrinsic]
+			get => Rank;
 		}
 
 		public static unsafe void Clear (Array array, int index, int length)
@@ -455,6 +448,7 @@ namespace System
 		[MethodImpl (MethodImplOptions.AggressiveInlining)]
 		internal ref byte GetRawSzArrayData ()
 		{
+			// TODO: Missing intrinsic in interpreter
 			return ref Unsafe.As<RawData>(this).Data;
 		}
 
@@ -462,27 +456,20 @@ namespace System
 		[MethodImpl (MethodImplOptions.AggressiveInlining)]
 		internal ref byte GetRawArrayData ()
 		{
+			// TODO: Missing intrinsic in interpreter
 			return ref Unsafe.As<RawData>(this).Data;
 		}
 
 		[Intrinsic]
-		internal int GetElementSize ()
-		{
-			ThrowHelper.ThrowNotSupportedException ();
-			return 0;
-		}
+		internal int GetElementSize () => GetElementSize ();
 
 		[Intrinsic]
-		public bool IsPrimitive ()
-		{
-			ThrowHelper.ThrowNotSupportedException ();
-			return false;
-		}
+		public bool IsPrimitive () => IsPrimitive ();
 
-		[MethodImpl(MethodImplOptions.InternalCall)]
+		[MethodImpl (MethodImplOptions.InternalCall)]
 		internal extern CorElementType GetCorElementTypeOfElementType();
 
-		[MethodImpl(MethodImplOptions.InternalCall)]
+		[MethodImpl (MethodImplOptions.InternalCall)]
 		extern bool IsValueOfElementType(object value);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -491,9 +478,7 @@ namespace System
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		internal extern static bool FastCopy (Array source, int source_idx, Array dest, int dest_idx, int length);
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern int GetRank ();
-
+		[Intrinsic] // when dimension is `0` constant
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		public extern int GetLength (int dimension);
 
@@ -519,14 +504,14 @@ namespace System
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static void SetGenericValue_icall<T> (ref Array self, int pos, ref T value);
 
-		// This is a special case in the runtime.
+		[Intrinsic]
 		void GetGenericValueImpl<T> (int pos, out T value)
 		{
 			var self = this;
 			GetGenericValue_icall (ref self, pos, out value);
 		}
 
-		// This is a special case in the runtime.
+		[Intrinsic]
 		void SetGenericValueImpl<T> (int pos, ref T value)
 		{
 			var self = this;

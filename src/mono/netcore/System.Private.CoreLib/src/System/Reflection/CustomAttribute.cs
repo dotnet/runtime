@@ -53,7 +53,7 @@ namespace System.Reflection
 		}
 	
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		internal static extern object[] GetCustomAttributesInternal (ICustomAttributeProvider obj, Type attributeType, bool pseudoAttrs);
+		internal static extern Attribute[] GetCustomAttributesInternal (ICustomAttributeProvider obj, Type attributeType, bool pseudoAttrs);
 
 		internal static object[] GetPseudoCustomAttributes (ICustomAttributeProvider obj, Type attributeType) {
 			object[] pseudoAttrs = null;
@@ -120,7 +120,7 @@ namespace System.Reflection
 			if (!inheritedOnly) {
 				object[] pseudoAttrs = GetPseudoCustomAttributes (obj, attributeType);
 				if (pseudoAttrs != null) {
-					object[] res = new object [attrs.Length + pseudoAttrs.Length];
+					object[] res = new Attribute [attrs.Length + pseudoAttrs.Length];
 					System.Array.Copy (attrs, res, attrs.Length);
 					System.Array.Copy (pseudoAttrs, 0, res, attrs.Length, pseudoAttrs.Length);
 					return res;
@@ -135,12 +135,15 @@ namespace System.Reflection
 			if (obj == null)
 				throw new ArgumentNullException (nameof (obj));
 			if (attributeType == null)
-				throw new ArgumentNullException (nameof (attributeType));	
+				throw new ArgumentNullException (nameof (attributeType));
+			if (!attributeType.IsSubclassOf (typeof (Attribute)) && attributeType != typeof (Attribute)&& attributeType != typeof (CustomAttribute) && attributeType != typeof (System.Object))
+				throw new ArgumentException (SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
 			if (attributeType == typeof (CustomAttribute))
 				attributeType = null;
-
 			if (attributeType == typeof (Attribute))
+				attributeType = null;
+			if (attributeType == typeof (System.Object))
 				attributeType = null;
 
 			object[] r;
@@ -505,7 +508,9 @@ namespace System.Reflection
 		internal static bool IsDefined (ICustomAttributeProvider obj, Type attributeType, bool inherit)
 		{
 			if (attributeType == null)
-				throw new ArgumentNullException ("attributeType");
+				throw new ArgumentNullException (nameof (attributeType));
+			if (!attributeType.IsSubclassOf (typeof (Attribute)) && attributeType != typeof (Attribute))
+				throw new ArgumentException (SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
 			AttributeUsageAttribute usage = null;
 			do {

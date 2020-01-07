@@ -28,6 +28,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/mono-debug.h>
@@ -393,8 +394,6 @@ static MonoAssembly*
 prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly);
 
 /* Assembly name matching */
-static gboolean
-exact_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
 static gboolean
 framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
 
@@ -1269,6 +1268,10 @@ assemblyref_public_tok_checked (MonoImage *image, guint32 key_index, guint32 fla
 
 	public_tok = mono_metadata_blob_heap_checked (image, key_index, error);
 	return_val_if_nok (error, NULL);
+	if (!public_tok) {
+		mono_error_set_bad_image (error, image, "expected public key token (index = %d) in assembly reference, but the Blob heap is NULL", key_index);
+		return NULL;
+	}
 	len = mono_metadata_decode_blob_size (public_tok, &public_tok);
 
 	if (flags & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG) {
@@ -1478,10 +1481,18 @@ mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *an
 	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 
 	mono_metadata_decode_row (t, index, cols, MONO_ASSEMBLYREF_SIZE);
-		
-	hash = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
-	aname->hash_len = mono_metadata_decode_blob_size (hash, &hash);
-	aname->hash_value = hash;
+
+	// ECMA-335: II.22.5 - AssemblyRef
+	// HashValue can be null or non-null.  If non-null it's an index into the blob heap
+	// Sometimes ILasm can create an image without a Blob heap.
+	hash = mono_metadata_blob_heap_null_ok (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
+	if (hash) {
+		aname->hash_len = mono_metadata_decode_blob_size (hash, &hash);
+		aname->hash_value = hash;
+	} else {
+		aname->hash_len = 0;
+		aname->hash_value = NULL;
+	}
 	aname->name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
 	aname->culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]);
 	aname->flags = cols [MONO_ASSEMBLYREF_FLAGS];
@@ -1697,7 +1708,7 @@ leave:
 #endif /* ENABLE_NETCORE */
 
 /**
- * mono_assembly_get_assemblyref:
+ * mono_assembly_get_assemblyref_checked:
  * \param image pointer to the \c MonoImage to extract the information from.
  * \param index index to the assembly reference in the image.
  * \param aname pointer to a \c MonoAssemblyName that will hold the returned value.
@@ -1719,10 +1730,18 @@ mono_assembly_get_assemblyref_checked (MonoImage *image, int index, MonoAssembly
 	if (!mono_metadata_decode_row_checked (image, t, index, cols, MONO_ASSEMBLYREF_SIZE, error))
 		return FALSE;
 
+	// ECMA-335: II.22.5 - AssemblyRef
+	// HashValue can be null or non-null.  If non-null it's an index into the blob heap
+	// Sometimes ILasm can create an image without a Blob heap.
 	hash = mono_metadata_blob_heap_checked (image, cols [MONO_ASSEMBLYREF_HASH_VALUE], error);
 	return_val_if_nok (error, FALSE);
-	aname->hash_len = mono_metadata_decode_blob_size (hash, &hash);
-	aname->hash_value = hash;
+	if (hash) {
+		aname->hash_len = mono_metadata_decode_blob_size (hash, &hash);
+		aname->hash_value = hash;
+	} else {
+		aname->hash_len = 0;
+		aname->hash_value = NULL;
+	}
 	aname->name = mono_metadata_string_heap_checked (image, cols [MONO_ASSEMBLYREF_NAME], error);
 	return_val_if_nok (error, FALSE);
 	aname->culture = mono_metadata_string_heap_checked (image, cols [MONO_ASSEMBLYREF_CULTURE], error);
@@ -1769,7 +1788,15 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	if (reference)
 		return;
 
-	mono_assembly_get_assemblyref (image, index, &aname);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Requesting loading reference %d (of %d) of %s", index, image->nreferences, image->name);
+
+	ERROR_DECL (local_error);
+	mono_assembly_get_assemblyref_checked (image, index, &aname, local_error);
+	if (!is_ok (local_error)) {
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY, "Decoding assembly reference %d (of %d) of %s failed due to: %s", index, image->nreferences, image->name, mono_error_get_message (local_error));
+		mono_error_cleanup (local_error);
+		goto commit_reference;
+	}
 
 	if (image->assembly) {
 		if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
@@ -1839,6 +1866,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 
 	}
 
+commit_reference:
 	mono_assemblies_lock ();
 	if (reference == NULL) {
 		/* Flag as not found */
@@ -2592,7 +2620,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 		 * predicate.  It could be that we previously loaded a
 		 * different version that happens to have the filename that
 		 * we're currently probing. */
-		if (mono_loader_get_strict_strong_names () &&
+		if (mono_loader_get_strict_assembly_name_check () &&
 		    load_req.predicate && !load_req.predicate (image->assembly, load_req.predicate_ud)) {
 			mono_image_close (image);
 			g_free (fname);
@@ -4526,7 +4554,9 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 		g_free (s);
 	}
 
-
+#ifdef ENABLE_NETCORE
+	return mono_assembly_check_name_match (wanted_name, candidate_name);
+#else
 	/* Wanted name has no token, not strongly named: always matches. */
 	if (0 == wanted_name->public_key_token [0]) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: wanted has no token, returning TRUE");
@@ -4539,19 +4569,20 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 		return FALSE;
 	}
 
-	return exact_sn_match (wanted_name, candidate_name) ||
+	return mono_assembly_check_name_match (wanted_name, candidate_name) ||
 		framework_assembly_sn_match (wanted_name, candidate_name);
+#endif
 }
 
 gboolean
-exact_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
+mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
 {
 #if ENABLE_NETCORE
 	gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_VERSION | MONO_ANAME_EQ_IGNORE_PUBKEY);
 	if (result && assembly_names_compare_versions (wanted_name, candidate_name, -1) > 0)
 		result = FALSE;
 #else
-	gboolean result = mono_assembly_names_equal (wanted_name, candidate_name);
+	gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_NONE);
 #endif
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s",
@@ -4664,12 +4695,10 @@ mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname,
 
 	MonoAssemblyCandidatePredicate predicate = NULL;
 	void* predicate_ud = NULL;
-#if !defined(DISABLE_DESKTOP_LOADER)
-	if (G_LIKELY (mono_loader_get_strict_strong_names ())) {
+	if (mono_loader_get_strict_assembly_name_check ()) {
 		predicate = &mono_assembly_candidate_predicate_sn_same_name;
 		predicate_ud = aname;
 	}
-#endif
 
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare_open (&req, asmctx, alc);

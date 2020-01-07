@@ -14,9 +14,9 @@ namespace System.Runtime.CompilerServices
 			InitializeArray (array, fldHandle.Value);
 		}
 
-		public static extern int OffsetToStringData {
-			[MethodImpl (MethodImplOptions.InternalCall)]
-			get;
+		public static int OffsetToStringData {
+			[Intrinsic]
+			get => OffsetToStringData;
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -100,26 +100,18 @@ namespace System.Runtime.CompilerServices
 		}
 
 		[Intrinsic]
-		public static bool IsReferenceOrContainsReferences<T> ()
-		{
-			return !typeof (T).IsValueType || RuntimeTypeHandle.HasReferences ((typeof (T) as RuntimeType));
-		}
+		public static bool IsReferenceOrContainsReferences<T> () => IsReferenceOrContainsReferences<T> ();
 
 		[Intrinsic]
-		internal static bool IsBitwiseEquatable<T> ()
-		{
-			throw new NotImplementedException ();
-		}
+		internal static bool IsBitwiseEquatable<T> () => IsBitwiseEquatable<T> ();
 
 		[Intrinsic]
-		internal static bool ObjectHasComponentSize (object obj)
-		{
-			throw new NotImplementedException ();
-		}
+		internal static bool ObjectHasComponentSize (object obj) => ObjectHasComponentSize (obj);
 
 		[Intrinsic]
 		internal static bool ObjectHasReferences (object obj)
 		{
+			// TODO: Missing intrinsic in interpreter
 			return RuntimeTypeHandle.HasReferences (obj.GetType () as RuntimeType);
 		}
 

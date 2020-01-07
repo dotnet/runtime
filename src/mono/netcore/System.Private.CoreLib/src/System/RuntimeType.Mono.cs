@@ -2502,8 +2502,7 @@ namespace System
 
 		public override bool IsSZArray {
 			get {
-				// TODO: intrinsic
-				return IsArray && ReferenceEquals (this, GetElementType ().MakeArrayType ());
+				return RuntimeTypeHandle.IsSzArray (this);
 			}
 		}
 
