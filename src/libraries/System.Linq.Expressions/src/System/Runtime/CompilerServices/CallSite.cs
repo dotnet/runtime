@@ -392,6 +392,7 @@ namespace System.Runtime.CompilerServices
             return supported;
         }
 #endif
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private T CreateCustomUpdateDelegate(MethodInfo invoke)
         {
@@ -475,7 +476,7 @@ namespace System.Runtime.CompilerServices
                     Expression.Assign(result!, invokeRule),
                     Expression.IfThen(
                         getMatch,
-                        Expression.Block(onMatch, Expression.Return(@return, result!))
+                        Expression.Block(onMatch, Expression.Return(@return, result))
                     )
                 );
             }
@@ -575,7 +576,7 @@ namespace System.Runtime.CompilerServices
                     Expression.Assign(result!, invokeRule),
                     Expression.IfThen(
                         getMatch,
-                        Expression.Return(@return, result!)
+                        Expression.Return(@return, result)
                     )
                 );
             }
