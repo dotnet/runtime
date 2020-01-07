@@ -283,14 +283,14 @@ internal static partial class Interop
                 }
             }
 
-            sendCount = Crypto.BioCtrlPending(context.OutputBio);
-            if (sendCount > 0)
+            int pendingCount = Crypto.BioCtrlPending(context.OutputBio);
+            if (pendingCount > 0)
             {
-                sendBuf = new byte[sendCount];
+                sendBuf = ArrayPool<byte>.Shared.Rent(pendingCount);
 
                 try
                 {
-                    sendCount = BioRead(context.OutputBio, sendBuf, sendCount);
+                    sendCount = BioRead(context.OutputBio, sendBuf, pendingCount);
                 }
                 catch (Exception) when (handshakeException != null)
                 {
@@ -300,6 +300,7 @@ internal static partial class Interop
                 {
                     if (sendCount <= 0)
                     {
+                        ArrayPool<byte>.Shared.Return(sendBuf);
                         // Make sure we clear out the error that is stored in the queue
                         Crypto.ErrClearError();
                         sendBuf = null;

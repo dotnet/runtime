@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
@@ -22,21 +23,22 @@ namespace System.Net.Security
 
         internal const bool StartMutualAuthAsAnonymous = false;
         internal const bool CanEncryptEmptyMessage = false;
+        internal const bool RentsBufferForHanshake = true;
 
         public static void VerifyPackageInfo()
         {
         }
 
         public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteSslContext context,
-            byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+            byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, ref int size, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, ref size, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteSslContext context, string targetName,
-            byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+            byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, ref int size, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, ref size, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
@@ -100,12 +102,12 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteSslContext context,
-            ReadOnlySpan<byte> inputBuffer, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+            ReadOnlySpan<byte> inputBuffer, ref byte[] outputBuffer, ref int outputSize, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(!credential.IsInvalid);
 
             byte[] output = null;
-            int outputSize = 0;
+            int size = 0;
 
             try
             {
@@ -114,7 +116,7 @@ namespace System.Net.Security
                     context = new SafeDeleteSslContext(credential as SafeFreeSslCredentials, sslAuthenticationOptions);
                 }
 
-                bool done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
+                bool done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out size);
 
                 // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
                 // If it was, then that indicates ALPN failed, send failure.
@@ -126,22 +128,17 @@ namespace System.Net.Security
                     return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
                 }
 
-                outputBuffer =
-                    outputSize == 0 ? null :
-                    outputSize == output.Length ? output :
-                    new Span<byte>(output, 0, outputSize).ToArray();
-
                 return new SecurityStatusPal(done ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded);
             }
             catch (Exception exc)
             {
-                // Even if handshake failed we may have Alert to sent.
-                if (outputSize > 0)
-                {
-                    outputBuffer = outputSize == output.Length ? output : new Span<byte>(output, 0, outputSize).ToArray();
-                }
-
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
+            }
+            finally
+            {
+                // Even if handshake failed we may have Alert to sent.
+                outputBuffer = size == 0 ? null : output;
+                outputSize = size;
             }
         }
 

@@ -243,6 +243,8 @@ namespace System.Net.Security
         private Task ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
         {
             Task result = null;
+            ProtocolToken message = null;
+
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, isApm ? "BeginAuthenticate" :  "Authenticate", "authenticate"));
@@ -257,7 +259,8 @@ namespace System.Net.Security
 
                 if (isAsync)
                 {
-                    result = ForceAuthenticationAsync(_context.IsServer, null, cancellationToken);
+                    message = new ProtocolToken(null, 0, default);
+                    result = ForceAuthenticationAsync(_context.IsServer, null, cancellationToken, message);
                 }
                 else
                 {
@@ -278,6 +281,7 @@ namespace System.Net.Security
             {
                 // Operation has completed.
                 _nestedAuth = 0;
+                message?.Reset();
             }
 
             return result;
@@ -344,31 +348,37 @@ namespace System.Net.Security
             }
         }
 
-        internal async Task ForceAuthenticationAsync(bool receiveFirst, byte[] buffer, CancellationToken cancellationToken)
+        internal async Task ForceAuthenticationAsync(bool receiveFirst, byte[] buffer, CancellationToken cancellationToken, ProtocolToken message = null)
         {
             _framing = Framing.Unknown;
-            ProtocolToken message;
             SslReadAsync adapter = new SslReadAsync(this, cancellationToken);
 
             if (!receiveFirst)
             {
-                message = _context.NextMessage(buffer, 0, (buffer == null ? 0 : buffer.Length));
+                message = _context.NextMessage(buffer, 0, (buffer == null ? 0 : buffer.Length), message);
+
+                if (message.Size > 0)
+                {
+                    await InnerStream.WriteAsync(message.Payload, 0, message.Size, cancellationToken).ConfigureAwait(false);
+                    message.Reset();
+                }
+
                 if (message.Failed)
                 {
                     // tracing done in NextMessage()
                     throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                 }
-
-                await InnerStream.WriteAsync(message.Payload, cancellationToken).ConfigureAwait(false);
             }
 
             do
             {
-                message  = await ReceiveBlobAsync(adapter, buffer, cancellationToken).ConfigureAwait(false);
+                message = await ReceiveBlobAsync(adapter, buffer, message, cancellationToken).ConfigureAwait(false);
                 if (message.Size > 0)
                 {
                     // If there is message send it out even if call failed. It may contain TLS Alert.
-                    await InnerStream.WriteAsync(message.Payload, cancellationToken).ConfigureAwait(false);
+                    //Console.WriteLine("Writing second {0} bytes of data {1}", message.Size, _context.GetHashCode());
+                    await InnerStream.WriteAsync(message.Payload, 0, message.Size, cancellationToken).ConfigureAwait(false);
+                    message.Reset();
                 }
 
                 if (message.Failed)
@@ -495,7 +505,7 @@ namespace System.Net.Security
             SendBlob(buffer, readBytes + restBytes);
         }
 
-        private async ValueTask<ProtocolToken> ReceiveBlobAsync(SslReadAsync adapter, byte[] buffer, CancellationToken cancellationToken)
+        private async ValueTask<ProtocolToken> ReceiveBlobAsync(SslReadAsync adapter, byte[] buffer, ProtocolToken message, CancellationToken cancellationToken)
         {
             ResetReadBuffer();
             int readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
@@ -527,10 +537,10 @@ namespace System.Net.Security
                 }
             }
 
-            ProtocolToken token = _context.NextMessage(_internalBuffer, _internalOffset, frameSize);
+            message = _context.NextMessage(_internalBuffer, _internalOffset, frameSize, message);
             ConsumeBufferedBytes(frameSize);
 
-            return token;
+            return message;
         }
 
         //
@@ -798,8 +808,7 @@ namespace System.Net.Security
             {
                 // Re-handshake status is not supported.
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
-                ProtocolToken message = new ProtocolToken(null, status);
-                return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, message.GetException()))));
+                return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status)))));
             }
 
             ValueTask t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
@@ -948,11 +957,10 @@ namespace System.Net.Security
                             _decryptedBytesCount = 0;
                         }
 
-                        ProtocolToken message = new ProtocolToken(null, status);
                         if (NetEventSource.IsEnabled)
-                            NetEventSource.Info(null, $"***Processing an error Status = {message.Status}");
+                            NetEventSource.Info(null, $"***Processing an error Status = {status}");
 
-                        if (message.Renegotiate)
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
                             if (!_sslAuthenticationOptions.AllowRenegotiation)
                             {
@@ -965,12 +973,12 @@ namespace System.Net.Security
                             continue;
                         }
 
-                        if (message.CloseConnection)
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired)
                         {
                             return 0;
                         }
 
-                        throw new IOException(SR.net_io_decrypt, message.GetException());
+                        throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
                     }
                 }
             }

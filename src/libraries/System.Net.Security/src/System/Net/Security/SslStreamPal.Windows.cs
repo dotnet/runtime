@@ -35,6 +35,7 @@ namespace System.Net.Security
 
         internal const bool StartMutualAuthAsAnonymous = true;
         internal const bool CanEncryptEmptyMessage = true;
+        internal const bool RentsBufferForHanshake = false;
 
         public static void VerifyPackageInfo()
         {

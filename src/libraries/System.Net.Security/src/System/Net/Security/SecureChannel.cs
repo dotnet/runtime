@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -718,35 +719,45 @@ namespace System.Net.Security
         }
 
         //
-        internal ProtocolToken NextMessage(byte[] incoming, int offset, int count)
+        internal ProtocolToken NextMessage(byte[] incoming, int offset, int count, ProtocolToken message = null)
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
 
-            byte[] nextmsg = null;
-            SecurityStatusPal status = GenerateToken(incoming, offset, count, ref nextmsg);
-
+            byte[] output = null;
+            int outputSize = 0;
+            SecurityStatusPal status = GenerateToken(incoming, offset, count, ref output, ref outputSize);
             if (!_sslAuthenticationOptions.IsServer && status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
             {
                 if (NetEventSource.IsEnabled)
                     NetEventSource.Info(this, "NextMessage() returned SecurityStatusPal.CredentialsNeeded");
 
                 SetRefreshCredentialNeeded();
-                status = GenerateToken(incoming, offset, count, ref nextmsg);
+                status = GenerateToken(incoming, offset, count, ref output, ref outputSize);
             }
 
-            ProtocolToken token = new ProtocolToken(nextmsg, status);
+            if (message == null)
+            {
+                 message = new ProtocolToken(output, outputSize, status);
+            }
+            else
+            {
+               message.Status = status;
+               message.Payload = output;
+               message.Size = output == null ? 0 : outputSize;
+            }
 
             if (NetEventSource.IsEnabled)
             {
-                if (token.Failed)
+                if (message.Failed)
                 {
-                    NetEventSource.Error(this, $"Authentication failed. Status: {status.ToString()}, Exception message: {token.GetException().Message}");
+                    NetEventSource.Error(this, $"Authentication failed. Status: {status.ToString()}, Exception message: {message.GetException().Message}");
                 }
 
-                NetEventSource.Exit(this, token);
+                NetEventSource.Exit(this, message);
             }
-            return token;
+
+            return message;
         }
 
         /*++
@@ -764,7 +775,7 @@ namespace System.Net.Security
             Return:
                 status - error information
         --*/
-        private SecurityStatusPal GenerateToken(byte[] input, int offset, int count, ref byte[] output)
+        private SecurityStatusPal GenerateToken(byte[] input, int offset, int count, ref byte[] output, ref int size)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"_refreshCredentialNeeded = {_refreshCredentialNeeded}");
 
@@ -780,7 +791,7 @@ namespace System.Net.Security
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            byte[] result = Array.Empty<byte>();
+            byte[] result = null;
             SecurityStatusPal status = default;
             bool cachedCreds = false;
             byte[] thumbPrint = null;
@@ -808,6 +819,7 @@ namespace System.Net.Security
                                       ref _securityContext,
                                       input, offset, count,
                                       ref result,
+                                      ref size,
                                       _sslAuthenticationOptions);
                     }
                     else
@@ -818,6 +830,7 @@ namespace System.Net.Security
                                        _sslAuthenticationOptions.TargetHost,
                                        input, offset, count,
                                        ref result,
+                                       ref size,
                                        _sslAuthenticationOptions);
                     }
                 } while (cachedCreds && _credentialsHandle == null);
@@ -1153,11 +1166,12 @@ namespace System.Net.Security
         private ProtocolToken GenerateAlertToken()
         {
             byte[] nextmsg = null;
+            int size = 0;
 
             SecurityStatusPal status;
-            status = GenerateToken(null, 0, 0, ref nextmsg);
+            status = GenerateToken(null, 0, 0, ref nextmsg, ref size);
 
-            ProtocolToken token = new ProtocolToken(nextmsg, status);
+            ProtocolToken token = new ProtocolToken(nextmsg, size, status);
 
             return token;
         }
@@ -1263,11 +1277,31 @@ namespace System.Net.Security
     }
 
     // ProtocolToken - used to process and handle the return codes from the SSPI wrapper
-    internal class ProtocolToken
+    internal class ProtocolToken : IDisposable
     {
         internal SecurityStatusPal Status;
-        internal byte[] Payload;
         internal int Size;
+        private byte[] _payload;
+        //internal byte[] Payload;
+
+        internal byte[] Payload
+        {
+            get
+            {
+               return _payload;
+            }
+
+            set
+            {
+                if (SslStreamPal.RentsBufferForHanshake && _payload != null)
+                {
+                    ArrayPool<byte>.Shared.Return(_payload);
+                }
+
+                _payload = value;
+                Size = _payload == null ? 0 : _payload.Length;
+            }
+        }
 
         internal bool Failed
         {
@@ -1301,11 +1335,22 @@ namespace System.Net.Security
             }
         }
 
-        internal ProtocolToken(byte[] data, SecurityStatusPal status)
+        internal ProtocolToken(byte[] data, int size, SecurityStatusPal status)
         {
             Status = status;
-            Payload = data;
-            Size = data != null ? data.Length : 0;
+            _payload = data;
+            Size = size;
+        }
+
+        internal void Reset()
+        {
+            if (SslStreamPal.RentsBufferForHanshake && _payload != null)
+            {
+                ArrayPool<byte>.Shared.Return(_payload);
+                _payload = null;
+            }
+
+            Size = 0;
         }
 
         internal Exception GetException()
@@ -1314,6 +1359,20 @@ namespace System.Net.Security
             // a Handshake message up, and we only have a Warning message.
             return Done ? null : SslStreamPal.GetException(Status);
         }
+
+        internal void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Reset();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
 
 #if TRACE_VERBOSE
         public override string ToString()
