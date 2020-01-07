@@ -284,6 +284,7 @@ namespace System.Net.Security
             }
             catch (Exception exc)
             {
+                size = 0;
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
             }
         }

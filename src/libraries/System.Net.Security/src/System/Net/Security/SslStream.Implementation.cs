@@ -376,7 +376,6 @@ namespace System.Net.Security
                 if (message.Size > 0)
                 {
                     // If there is message send it out even if call failed. It may contain TLS Alert.
-                    //Console.WriteLine("Writing second {0} bytes of data {1}", message.Size, _context.GetHashCode());
                     await InnerStream.WriteAsync(message.Payload, 0, message.Size, cancellationToken).ConfigureAwait(false);
                     message.Reset();
                 }
