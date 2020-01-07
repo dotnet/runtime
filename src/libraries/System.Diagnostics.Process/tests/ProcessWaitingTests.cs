@@ -95,7 +95,7 @@ namespace System.Diagnostics.Tests
         public async Task MultipleProcesses_ParallelStartKillWaitAsync()
         {
             const int Tasks = 4, ItersPerTask = 10;
-            Action work = async () =>
+            Func<Task> work = async () =>
             {
                 for (int i = 0; i < ItersPerTask; i++)
                 {
