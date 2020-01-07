@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # This tool is used to generate the cpu-<ARCH>.h files used by the JIT. The input is the
