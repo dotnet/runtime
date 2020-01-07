@@ -2241,6 +2241,14 @@ public class Tests
 		var res = (Nullable<int>)iface.AMethod<Nullable<int>> ();
 		return res == 42 ? 0 : 1;
 	}
+
+#if !__MonoCS__
+	public static int test_0_gsharedvt_out_dim () {
+		var c = new Outer<object>();
+		c.prop = new H ();
+		return (c.Foo () == "abcd") ? 0 : 1;
+	}
+#endif
 }
 
 // #13191
@@ -2286,6 +2294,29 @@ internal struct SparseArrayBuilder<T>
 
 	public ArrayBuilder<Marker> Markers => _markers;
 }
+
+// #18276
+#if !__MonoCS__
+public class Outer<Q> {
+	public interface ID {
+		string Foo () {
+			return null;
+		}
+	}
+
+	public ID prop;
+
+	public string Foo () {
+		return prop?.Foo();
+	}
+}
+
+public class H : Outer<object>.ID {
+	string Outer<object>.ID.Foo () {
+		return "abcd";
+	}
+}
+#endif
 
 #if !__MOBILE__
 public class GSharedTests : Tests {

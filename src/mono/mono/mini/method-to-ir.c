@@ -7632,16 +7632,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						imt_arg = emit_get_rgctx_method (cfg, context_used,
 														 cmethod, MONO_RGCTX_INFO_METHOD);
 						g_assert (imt_arg);
-						/* This is not needed, as the trampoline code will pass one, and it might be passed in the same reg as the imt arg */
-						vtable_arg = NULL;
 					} else if (mono_class_is_interface (cmethod->klass) && !imt_arg) {
 						/* This can happen when we call a fully instantiated iface method */
 						g_assert (will_have_imt_arg);
 						imt_arg = emit_get_rgctx_method (cfg, context_used,
 														 cmethod, MONO_RGCTX_INFO_METHOD);
 						g_assert (imt_arg);
-						vtable_arg = NULL;
 					}
+					/* This is not needed, as the trampoline code will pass one, and it might be passed in the same reg as the imt arg */
+					vtable_arg = NULL;
 				}
 
 				if ((m_class_get_parent (cmethod->klass) == mono_defaults.multicastdelegate_class) && (!strcmp (cmethod->name, "Invoke")))
