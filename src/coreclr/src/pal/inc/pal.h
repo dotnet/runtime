@@ -3970,13 +3970,6 @@ typedef unsigned int wint_t;
 
 #ifndef PAL_STDCPP_COMPAT
 
-typedef struct {
-    int quot;
-    int rem;
-} div_t;
-
-PALIMPORT div_t div(int numer, int denom);
-
 #if defined(_DEBUG)
 
 /*++
