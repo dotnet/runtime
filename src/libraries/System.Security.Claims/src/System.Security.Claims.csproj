@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Security.Claims</AssemblyName>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Security\Claims\Claim.cs" />

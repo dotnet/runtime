@@ -9,8 +9,8 @@ namespace System.Security.Principal
 {
     public class GenericIdentity : ClaimsIdentity
     {
-        private readonly string m_name;
-        private readonly string m_type;
+        private readonly string m_name = null!;  // Init-ed in parameterized constructors
+        private readonly string m_type = null!;
 
         public GenericIdentity(string name)
         {
@@ -56,7 +56,7 @@ namespace System.Security.Principal
             return new GenericIdentity(this);
         }
 
-        public override IEnumerable<Claim> Claims
+        public override IEnumerable<Claim?> Claims
         {
             get
             {
