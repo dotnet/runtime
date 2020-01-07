@@ -3675,26 +3675,6 @@ RtlCaptureContext(
 );
 
 PALIMPORT
-UINT
-PALAPI
-GetWriteWatch(
-  IN DWORD dwFlags,
-  IN PVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize,
-  OUT PVOID *lpAddresses,
-  IN OUT PULONG_PTR lpdwCount,
-  OUT PULONG lpdwGranularity
-);
-
-PALIMPORT
-UINT
-PALAPI
-ResetWriteWatch(
-  IN LPVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize
-);
-
-PALIMPORT
 VOID
 PALAPI
 FlushProcessWriteBuffers();
