@@ -8,6 +8,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicStatusCodes
     {
+        internal const uint Success = 0;
         internal const uint Pending = unchecked((uint)-2);
         internal const uint Continue = unchecked((uint)-1);
         internal const uint OutOfMemory = 12;
