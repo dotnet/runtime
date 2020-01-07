@@ -8,15 +8,18 @@ namespace System.Threading
 {
 	public static class Monitor
 	{
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		public static extern void Enter (object obj);
+		[Intrinsic]
+		[MethodImplAttribute (MethodImplOptions.InternalCall)] // Interpreter is missing this intrinsic
+		public static void Enter (object obj) => Enter (obj);
 
+		[Intrinsic]
 		public static void Enter (object obj, ref bool lockTaken)
 		{
+			// TODO: Interpreter is missing this intrinsic
 			if (lockTaken)
 				throw new ArgumentException (SR.Argument_MustBeFalse, nameof (lockTaken));
 
-			ReliableEnter (obj, ref lockTaken);
+			ReliableEnterTimeout (obj, (int) Timeout.Infinite, ref lockTaken);
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -159,11 +162,6 @@ namespace System.Threading
 			try_enter_with_atomic_var (obj, timeout, true, ref lockTaken);
 		}
 
-		static void ReliableEnter (object obj, ref bool lockTaken)
-		{
-			ReliableEnterTimeout (obj, (int) Timeout.Infinite, ref lockTaken);
-		}
-
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static bool Monitor_test_owner (object obj);
 
@@ -172,8 +170,7 @@ namespace System.Threading
 			return Monitor_test_owner (obj);
 		}
 		
-		public extern static long LockContentionCount
-		{
+		public extern static long LockContentionCount {
 			[MethodImplAttribute (MethodImplOptions.InternalCall)]
 			get;
 		}

@@ -1499,7 +1499,6 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObjectHandle obj_handle, gu
 	return mono_monitor_wait (obj_handle, ms, TRUE, error);
 }
 #endif
-
 void
 ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObjectHandle obj, MonoError* error)
 {

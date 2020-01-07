@@ -12,17 +12,15 @@ namespace System
 		[Intrinsic]
 		public static readonly String Empty;
 
-		public int Length => _stringLength;
+		public int Length {
+			[Intrinsic]
+			get => _stringLength;
+		}
 
 		[IndexerName ("Chars")]
 		public char this [int index] {
 			[Intrinsic]
-			get {
-				if ((uint)index >= _stringLength)
-					ThrowHelper.ThrowIndexOutOfRangeException ();
-
-				return Unsafe.Add (ref _firstChar, index);
-			}
+			get => this [index];
 		}
 
 		public static String Intern (String str)

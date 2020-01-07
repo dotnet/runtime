@@ -8,14 +8,14 @@ namespace System
 {
 	partial class Object
 	{
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		public extern Type GetType ();
+		[Intrinsic]
+		public Type GetType () => GetType ();
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		protected extern object MemberwiseClone ();
 
 		[Intrinsic]
-		internal ref byte GetRawData () => throw new NotImplementedException ();
+		internal ref byte GetRawData () => ref GetRawData ();
 
 		internal object CloneInternal () => MemberwiseClone ();
 	}

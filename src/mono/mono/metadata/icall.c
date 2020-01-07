@@ -944,7 +944,6 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionTypeHandle type, MonoAr
 
 	return mono_array_new_full_handle (MONO_HANDLE_DOMAIN (type), aklass, sizes, lower_bounds, error);
 }
-#endif
 
 gint32
 ves_icall_System_Array_GetRank (MonoObjectHandle arr, MonoError *error)
@@ -955,6 +954,7 @@ ves_icall_System_Array_GetRank (MonoObjectHandle arr, MonoError *error)
 
 	return result;
 }
+#endif
 
 #ifdef ENABLE_NETCORE
 gint32
@@ -996,6 +996,7 @@ ves_icall_System_Array_GetLength (MonoArrayHandle arr, gint32 dimension, MonoErr
 	return (gint32)length;
 }
 
+#ifndef ENABLE_NETCORE
 gint64
 ves_icall_System_Array_GetLongLength (MonoArrayHandle arr, gint32 dimension, MonoError *error)
 {
@@ -1003,6 +1004,7 @@ ves_icall_System_Array_GetLongLength (MonoArrayHandle arr, gint32 dimension, Mon
 
 	return (gint64)mono_array_get_length (arr, dimension, error);
 }
+#endif
 
 gint32
 ves_icall_System_Array_GetLowerBound (MonoArrayHandle arr, gint32 dimension, MonoError *error)
@@ -1640,6 +1642,7 @@ ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle t
 	}
 }
 
+#ifndef ENABLE_NETCORE
 MonoReflectionTypeHandle
 ves_icall_System_Object_GetType (MonoObjectHandle obj, MonoError *error)
 {
@@ -1661,6 +1664,7 @@ ves_icall_System_Object_GetType (MonoObjectHandle obj, MonoError *error)
 #endif
 		return mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
 }
+#endif
 
 static gboolean
 get_executing (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)

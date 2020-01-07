@@ -320,8 +320,10 @@ namespace System.Threading
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		extern static void SleepInternal (int millisecondsTimeout, bool allowInterruption);
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static void SpinWait_nop ();
+		[Intrinsic]
+		static void SpinWait_nop ()
+		{
+		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static Thread CreateInternal ();

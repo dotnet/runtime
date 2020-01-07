@@ -124,14 +124,12 @@ namespace System
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		static extern Type internal_from_handle (IntPtr handle);
 
-		public static bool operator == (Type? left, Type? right)
-		{
-			return object.ReferenceEquals (left, right);
-		}
+		[Intrinsic]
+		public static bool operator == (Type? left, Type? right) => left == right;
 
 		public static bool operator != (Type? left, Type? right)
 		{
-			return !object.ReferenceEquals (left, right);
+			return !(left == right);
 		}
 	}
 }

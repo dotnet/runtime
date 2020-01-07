@@ -15,6 +15,7 @@ namespace System.Diagnostics
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static bool IsAttached_internal ();
 
+		[Intrinsic]
 		public static void Break ()
 		{
 			// The JIT inserts a breakpoint on the caller.
