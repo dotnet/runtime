@@ -236,35 +236,48 @@ namespace Internal.Cryptography.Pal
             ISet<string> ekus = null;
             CertificatePolicy policy = new CertificatePolicy();
 
-            foreach (X509Extension extension in cert.Extensions)
-            {
-                switch (extension.Oid.Value)
-                {
-                    case Oids.ApplicationCertPolicies:
-                        applicationCertPolicies = ReadCertPolicyExtension(extension);
-                        break;
-                    case Oids.CertPolicies:
-                        policy.DeclaredCertificatePolicies = ReadCertPolicyExtension(extension);
-                        break;
-                    case Oids.CertPolicyMappings:
-                        policy.PolicyMapping = ReadCertPolicyMappingsExtension(extension);
-                        break;
-                    case Oids.CertPolicyConstraints:
-                        ReadCertPolicyConstraintsExtension(extension, policy);
-                        break;
-                    case Oids.EnhancedKeyUsage:
-                        if (applicationCertPolicies == null)
-                        {
-                            // No reason to do this if the applicationCertPolicies was already read
-                            ekus = ReadExtendedKeyUsageExtension(extension);
-                        }
+            byte[] ApplicationCertPoliciesData;
+            byte[] CertPoliciesData;
+            byte[] CertPolicyMappingsData;
+            byte[] CertPolicyConstraintsData;
+            byte[] EnhancedKeyUsageData;
+            byte[] InhibitAnyPolicyExtensionData;
 
-                        break;
-                    case Oids.InhibitAnyPolicyExtension:
-                        policy.InhibitAnyDepth = ReadInhibitAnyPolicyExtension(extension);
-                        break;
-                }
+
+            cert.Pal.GetPolicyData(out ApplicationCertPoliciesData, out CertPoliciesData,
+                out CertPolicyMappingsData, out CertPolicyConstraintsData, out EnhancedKeyUsageData, out InhibitAnyPolicyExtensionData);
+
+            if (ApplicationCertPoliciesData != null)
+            {
+                applicationCertPolicies = ReadCertPolicyExtension(ApplicationCertPoliciesData);
             }
+
+            if (CertPoliciesData != null)
+            {
+                policy.DeclaredCertificatePolicies = ReadCertPolicyExtension(CertPoliciesData);
+            }
+
+            if (CertPolicyMappingsData != null)
+            {
+                policy.PolicyMapping = ReadCertPolicyMappingsExtension(CertPolicyMappingsData);
+            }
+
+            if (CertPolicyConstraintsData != null)
+            {
+                ReadCertPolicyConstraintsExtension(CertPolicyConstraintsData, policy);
+            }
+
+            if (EnhancedKeyUsageData != null && applicationCertPolicies == null)
+            {
+                // No reason to do this if the applicationCertPolicies was already read
+                ekus = ReadExtendedKeyUsageExtension(EnhancedKeyUsageData);
+            }
+
+            if (InhibitAnyPolicyExtensionData != null)
+            {
+                policy.InhibitAnyDepth = ReadInhibitAnyPolicyExtension(InhibitAnyPolicyExtensionData);
+            }
+
 
             policy.DeclaredApplicationPolicies = applicationCertPolicies ?? ekus;
 
@@ -287,41 +300,46 @@ namespace Internal.Cryptography.Pal
             return declaredPolicies.Remove(Oids.AnyCertPolicy);
         }
 
-        private static int ReadInhibitAnyPolicyExtension(X509Extension extension)
+        private static int ReadInhibitAnyPolicyExtension(byte[] rawData)
         {
-            AsnReader reader = new AsnReader(extension.RawData, AsnEncodingRules.DER);
+            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
             int inhibitAnyPolicy;
             reader.TryReadInt32(out inhibitAnyPolicy);
             reader.ThrowIfNotEmpty();
             return inhibitAnyPolicy;
         }
 
-        private static void ReadCertPolicyConstraintsExtension(X509Extension extension, CertificatePolicy policy)
+        private static void ReadCertPolicyConstraintsExtension(byte[] rawData, CertificatePolicy policy)
         {
             PolicyConstraintsAsn constraints = PolicyConstraintsAsn.Decode(
-                extension.RawData,
+                rawData,
                 AsnEncodingRules.DER);
 
             policy.RequireExplicitPolicyDepth = constraints.RequireExplicitPolicyDepth;
             policy.InhibitMappingDepth = constraints.InhibitMappingDepth;
         }
 
-        private static ISet<string> ReadExtendedKeyUsageExtension(X509Extension extension)
+        private static ISet<string> ReadExtendedKeyUsageExtension(byte[] rawData)
         {
-            X509EnhancedKeyUsageExtension ekusExtension = (X509EnhancedKeyUsageExtension)extension;
             HashSet<string> oids = new HashSet<string>();
 
-            foreach (Oid oid in ekusExtension.EnhancedKeyUsages)
+            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.BER);
+            AsnReader sequenceReader = reader.ReadSequence();
+            reader.ThrowIfNotEmpty();
+
+            //OidCollection usages
+            while (sequenceReader.HasData)
             {
+                Oid oid = sequenceReader.ReadObjectIdentifier();
                 oids.Add(oid.Value);
             }
 
             return oids;
         }
 
-        internal static ISet<string> ReadCertPolicyExtension(X509Extension extension)
+        internal static ISet<string> ReadCertPolicyExtension(byte[] rawData)
         {
-            AsnReader reader = new AsnReader(extension.RawData, AsnEncodingRules.DER);
+            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
             AsnReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 
@@ -341,9 +359,9 @@ namespace Internal.Cryptography.Pal
             return policies;
         }
 
-        private static List<CertificatePolicyMappingAsn> ReadCertPolicyMappingsExtension(X509Extension extension)
+        private static List<CertificatePolicyMappingAsn> ReadCertPolicyMappingsExtension(byte[] rawData)
         {
-            AsnReader reader = new AsnReader(extension.RawData, AsnEncodingRules.DER);
+            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
             AsnReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 

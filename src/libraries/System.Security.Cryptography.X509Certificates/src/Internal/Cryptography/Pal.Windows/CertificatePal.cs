@@ -360,6 +360,14 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public bool GetPolicyData(out byte[] ApplicationCertPoliciesData, out byte[] CertPoliciesData, out byte[] CertPo
+        licyMappingsData,
+                                   out byte[] CertPolicyConstraintsData, out byte[] EnhancedKeyUsageData, out byte[] InhibitAnyP
+                                   olicyExtensionData)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public IEnumerable<X509Extension> Extensions
         {
             get

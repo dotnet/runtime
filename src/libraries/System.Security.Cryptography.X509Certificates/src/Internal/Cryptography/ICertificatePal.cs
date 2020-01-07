@@ -27,5 +27,7 @@ namespace Internal.Cryptography
         ICertificatePal CopyWithPrivateKey(DSA privateKey);
         ICertificatePal CopyWithPrivateKey(ECDsa privateKey);
         ICertificatePal CopyWithPrivateKey(RSA privateKey);
+        bool GetPolicyData(out byte[] ApplicationCertPoliciesData, out byte[] CertPoliciesData, out byte[] CertPolicyMappingsData,
+                           out byte[] CertPolicyConstraintsData, out byte[] EnhancedKeyUsageData, out byte[] InhibitAnyPolicyExtensionData);
     }
 }

@@ -203,7 +203,7 @@ namespace Internal.Cryptography.Pal
                         return false;
                     }
 
-                    ISet<string> policyOids = CertificatePolicyChain.ReadCertPolicyExtension(ext);
+                    ISet<string> policyOids = CertificatePolicyChain.ReadCertPolicyExtension(ext.RawData);
                     return policyOids.Contains(oidValue);
                 });
         }
