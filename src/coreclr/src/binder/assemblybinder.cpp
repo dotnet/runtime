@@ -1296,6 +1296,7 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
 
     // Attempt the actual bind (eventually more than once)
 Retry:
+    bool mvidMismatch = false;
     {
         // Lock the application context
         CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
@@ -1309,11 +1310,6 @@ Retry:
                         true,  // skipVersionCompatibilityCheck
                         false, // excludeAppPaths
                         &bindResult);
-
-        // Trace result if we will not be doing an MVID comparison below. Tracing in that case happens
-        // after the comparison such that the result of the comparison can be included
-        if (hr != S_OK || !bindResult.HaveResult())
-            tracer.TraceBindResult(bindResult);
 
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
         {
@@ -1345,8 +1341,7 @@ Retry:
                 // load.
                 IF_FAIL_GO(bindResult.GetAsAssembly()->GetMVID(&boundMVID));
 
-                bool mvidMismatch = incomingMVID != boundMVID;
-                tracer.TraceBindResult(bindResult, mvidMismatch);
+                mvidMismatch = incomingMVID != boundMVID;
                 if (mvidMismatch)
                 {
                     // MVIDs do not match, so fail the load.
@@ -1375,6 +1370,8 @@ Retry:
 
         if (hr == S_FALSE)
         {
+            tracer.TraceBindResult(bindResult);
+
             // Another bind interfered. We need to retry entire bind.
             // This by design loops as long as needed because by construction we eventually
             // will succeed or fail the bind.
@@ -1388,6 +1385,7 @@ Retry:
     }
 
 Exit:
+    tracer.TraceBindResult(bindResult, mvidMismatch);
     return hr;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

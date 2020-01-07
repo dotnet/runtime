@@ -302,10 +302,17 @@ namespace BinderTracing
         const BindResult::AttemptResult *appAssembliesAttempt = bindResult.GetAttempt(false /*foundInContext*/);
 
         if (inContextAttempt != nullptr)
-            TraceStage(Stage::FindInLoadContext, inContextAttempt->HResult, inContextAttempt->Assembly, mvidMismatch && appAssembliesAttempt == nullptr ? errorMsg.GetUnicode() : nullptr);
+        {
+            // If there the attempt HR represents a success, but the tracked HR represents a failure (e.g. from further validation), report the failed HR
+            bool isLastAttempt = appAssembliesAttempt == nullptr;
+            TraceStage(Stage::FindInLoadContext,
+                isLastAttempt && FAILED(m_hr) && SUCCEEDED(inContextAttempt->HResult) ? m_hr : inContextAttempt->HResult,
+                inContextAttempt->Assembly,
+                mvidMismatch && isLastAttempt ? errorMsg.GetUnicode() : nullptr);
+        }
 
         if (appAssembliesAttempt != nullptr)
-            TraceStage(Stage::ApplicationAssemblies, appAssembliesAttempt->HResult, appAssembliesAttempt->Assembly, mvidMismatch ? errorMsg.GetUnicode() : nullptr);
+            TraceStage(Stage::ApplicationAssemblies, FAILED(m_hr) && SUCCEEDED(appAssembliesAttempt->HResult) ? m_hr : appAssembliesAttempt->HResult, appAssembliesAttempt->Assembly, mvidMismatch ? errorMsg.GetUnicode() : nullptr);
     }
 
     void ResolutionAttemptedOperation::TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly, const WCHAR *customError)
