@@ -37,10 +37,7 @@ namespace System.Diagnostics.Tests
             {
                 using (var cts = new CancellationTokenSource(WaitInMS))
                 {
-                    var task = p.WaitForExitAsync(cts.Token);
-                    await task;
-                    Assert.True(task.IsCompletedSuccessfully);
-                    Assert.False(task.IsCanceled);
+                    await p.WaitForExitAsync(cts.Token);
                     Assert.True(p.HasExited);
                 }
             }
@@ -71,10 +68,7 @@ namespace System.Diagnostics.Tests
                 p.Kill();
                 using (var cts = new CancellationTokenSource(WaitInMS))
                 {
-                    var task = p.WaitForExitAsync(cts.Token);
-                    await task;
-                    Assert.True(task.IsCompletedSuccessfully);
-                    Assert.False(task.IsCanceled);
+                    await p.WaitForExitAsync(cts.Token);
                     Assert.True(p.HasExited);
                 }
             }
@@ -111,10 +105,7 @@ namespace System.Diagnostics.Tests
                     p.Kill();
                     using (var cts = new CancellationTokenSource(WaitInMS))
                     {
-                        var task = p.WaitForExitAsync(cts.Token);
-                        await task;
-                        Assert.True(task.IsCompletedSuccessfully);
-                        Assert.False(task.IsCanceled);
+                        await p.WaitForExitAsync(cts.Token);
                         Assert.True(p.HasExited);
                     }
                 }
@@ -140,10 +131,7 @@ namespace System.Diagnostics.Tests
             {
                 var process = Process.GetCurrentProcess();
                 process.EnableRaisingEvents = true;
-                var task = process.WaitForExitAsync(cts.Token);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
-                Assert.False(task.IsCompletedSuccessfully);
-                Assert.True(task.IsCanceled);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.WaitForExitAsync(cts.Token));
                 Assert.False(process.HasExited);
             }
         }
@@ -180,10 +168,7 @@ namespace System.Diagnostics.Tests
             {
                 for (var i = 0; i < 2; i++)
                 {
-                    var task = p.WaitForExitAsync(cts.Token);
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
-                    Assert.False(task.IsCompletedSuccessfully);
-                    Assert.True(task.IsCanceled);
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(cts.Token));
                     Assert.False(p.HasExited);
                 }
             }
@@ -199,18 +184,12 @@ namespace System.Diagnostics.Tests
 
             using (var cts = new CancellationTokenSource(WaitInMS))
             {
-                var task = p.WaitForExitAsync(cts.Token);
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await p.WaitForExitAsync(cts.Token);
                 Assert.True(p.HasExited);
             }
             using (var cts = new CancellationTokenSource(0))
             {
-                var task = p.WaitForExitAsync(cts.Token);
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await p.WaitForExitAsync(cts.Token);
                 Assert.True(p.HasExited);
             }
         }
@@ -266,18 +245,12 @@ namespace System.Diagnostics.Tests
 
             using (var cts = new CancellationTokenSource(0))
             {
-                var task = p.WaitForExitAsync(cts.Token);
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await p.WaitForExitAsync(cts.Token);
                 Assert.True(p.HasExited);
             }
 
             {
-                var task = p.WaitForExitAsync();
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await p.WaitForExitAsync();
                 Assert.True(p.HasExited);
             }
         }
@@ -334,19 +307,13 @@ namespace System.Diagnostics.Tests
 
             using (var cts = new CancellationTokenSource(0))
             {
-                var task = p.WaitForExitAsync(cts.Token);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
-                Assert.False(task.IsCompletedSuccessfully);
-                Assert.True(task.IsCanceled);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(cts.Token));
                 Assert.False(p.HasExited);
             }
             p.Kill();
             using (var cts = new CancellationTokenSource(WaitInMS))
             {
-                var task = p.WaitForExitAsync(cts.Token);
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await p.WaitForExitAsync(cts.Token);
                 Assert.True(p.HasExited);
             }
 
@@ -354,10 +321,7 @@ namespace System.Diagnostics.Tests
             {
                 foreach (Process copy in copies)
                 {
-                    var task = copy.WaitForExitAsync(cts.Token);
-                    await task;
-                    Assert.True(task.IsCompletedSuccessfully);
-                    Assert.False(task.IsCanceled);
+                    await copy.WaitForExitAsync(cts.Token);
                     Assert.True(copy.HasExited);
                 }
             }
@@ -403,10 +367,7 @@ namespace System.Diagnostics.Tests
                 Console.WriteLine("Signal");
                 using (var cts = new CancellationTokenSource(WaitInMS))
                 {
-                    var task = peer.WaitForExitAsync(cts.Token);
-                    await task;
-                    Assert.True(task.IsCompletedSuccessfully);
-                    Assert.False(task.IsCanceled);
+                    await peer.WaitForExitAsync(cts.Token);
                     Assert.True(peer.HasExited);
                 }
                 return RemoteExecutor.SuccessExitCode;
@@ -421,18 +382,12 @@ namespace System.Diagnostics.Tests
             child1.Kill();
             using (var cts = new CancellationTokenSource(WaitInMS))
             {
-                var task = child1.WaitForExitAsync(cts.Token);
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await child1.WaitForExitAsync(cts.Token);
                 Assert.True(child1.HasExited);
             }
             using (var cts = new CancellationTokenSource(WaitInMS))
             {
-                var task = child2.WaitForExitAsync(cts.Token);
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await child2.WaitForExitAsync(cts.Token);
                 Assert.True(child2.HasExited);
             }
 
@@ -528,10 +483,7 @@ namespace System.Diagnostics.Tests
 
             using (var cts = new CancellationTokenSource(timeout))
             {
-                var task = p.WaitForExitAsync(cts.Token);
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await p.WaitForExitAsync(cts.Token);
                 Assert.True(p.HasExited, "Process has not exited");
             }
             Assert.Equal(RemotelyInvokable.SuccessExitCode, p.ExitCode);
@@ -578,10 +530,7 @@ namespace System.Diagnostics.Tests
                         child3.Start();
                         using (var cts = new CancellationTokenSource(WaitInMS))
                         {
-                            var task = child3.WaitForExitAsync(cts.Token);
-                            await task;
-                            Assert.True(task.IsCompletedSuccessfully);
-                            Assert.False(task.IsCanceled);
+                            await child3.WaitForExitAsync(cts.Token);
                             Assert.True(child3.HasExited);
                         }
 
@@ -591,10 +540,7 @@ namespace System.Diagnostics.Tests
                     child2.Start();
                     using (var cts = new CancellationTokenSource(WaitInMS))
                     {
-                        var task = child2.WaitForExitAsync(cts.Token);
-                        await task;
-                        Assert.True(task.IsCompletedSuccessfully);
-                        Assert.False(task.IsCanceled);
+                        await child2.WaitForExitAsync(cts.Token);
                         Assert.True(child2.HasExited);
                     }
 
@@ -604,10 +550,7 @@ namespace System.Diagnostics.Tests
                 child1.Start();
                 using (var cts = new CancellationTokenSource(WaitInMS))
                 {
-                    var task = child1.WaitForExitAsync(cts.Token);
-                    await task;
-                    Assert.True(task.IsCompletedSuccessfully);
-                    Assert.False(task.IsCanceled);
+                    await child1.WaitForExitAsync(cts.Token);
                     Assert.True(child1.HasExited);
                 }
 
@@ -617,10 +560,7 @@ namespace System.Diagnostics.Tests
             root.Start();
             using (var cts = new CancellationTokenSource(WaitInMS))
             {
-                var task = root.WaitForExitAsync(cts.Token);
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await root.WaitForExitAsync(cts.Token);
                 Assert.True(root.HasExited);
             }
             Assert.Equal(RemoteExecutor.SuccessExitCode, root.ExitCode);
@@ -643,10 +583,7 @@ namespace System.Diagnostics.Tests
             child.Start();
             using (var cts = new CancellationTokenSource(WaitInMS))
             {
-                var task = child.WaitForExitAsync(cts.Token);
-                await task;
-                Assert.True(task.IsCompletedSuccessfully);
-                Assert.False(task.IsCanceled);
+                await child.WaitForExitAsync(cts.Token);
                 Assert.True(child.HasExited);
             }
             Assert.NotEqual(RemoteExecutor.SuccessExitCode, child.ExitCode);
