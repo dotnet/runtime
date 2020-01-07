@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent);$(NetFrameworkCurrent);</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent);</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(CommonTestPath)Data\TinyAssembly.dll">
