@@ -26,7 +26,7 @@ dotnet run -- "path_to_UnicodeData.txt" ../../src/System/Text/Unicode/UnicodeHel
 dotnet run -- "path_to_Blocks.txt" ../../src/System/Text/Unicode/UnicodeRanges.generated.cs ../../tests/UnicodeRangesTests.generated.cs
 ```
 
-4. Update the __ref__ APIs to reflect any new `UnicodeRanges` static properties which were added in the previous step, otherwise the unit test project will not be able to reference them. See https://github.com/dotnet/runtime/blob/master/docs/libraries/coding-guidelines/updating-ref-source.md for instructions on how to update the reference assemblies.
+4. Update the __ref__ APIs to reflect any new `UnicodeRanges` static properties which were added in the previous step, otherwise the unit test project will not be able to reference them. See https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/updating-ref-source.md for instructions on how to update the reference assemblies.
 
 5. Update the __src/System.Text.Encodings.Web/tests/System.Text.Encodings.Web.Tests.csproj__ file to reference the new file that you dropped into the __src/Common/tests/data__ folder in the first step above. Open the .csproj file in a text editor, and replace both the `<EmbeddedResource>` and the `<LogicalName>` elements at the end of the document to reference the new file name.
 
