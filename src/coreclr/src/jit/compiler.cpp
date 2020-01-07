@@ -4894,14 +4894,19 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
+    // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
+    //
     // Do we have a matched VM? Or are we "abusing" the VM to help us do JIT work (such as using an x86 native VM
     // with an ARM-targeting "altjit").
+    // Match CPU/ABI for compMatchedVM
     info.compMatchedVM = IMAGE_FILE_MACHINE_TARGET == info.compCompHnd->getExpectedTargetArchitecture();
 
-#if (defined(_TARGET_UNIX_) && !defined(_HOST_UNIX_)) || (!defined(_TARGET_UNIX_) && defined(_HOST_UNIX_))
-    // The host and target platforms don't match. This info isn't handled by the existing
-    // getExpectedTargetArchitecture() JIT-EE interface method.
-    info.compMatchedVM = false;
+    // Match OS for compMatchedVM
+    CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
+#ifdef _TARGET_UNIX_
+    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
+#else
+    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
 #endif
 
     // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target

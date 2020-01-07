@@ -10324,7 +10324,11 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
 
+#ifdef FEATURE_PAL
+    pEEInfoOut->osType = CORINFO_UNIX;
+#else
     pEEInfoOut->osType = CORINFO_WINNT;
+#endif
 
     // hardcode OS version to 0.0.0. These fields can be removed from JITEE interface
     pEEInfoOut->osMajor = 0;
