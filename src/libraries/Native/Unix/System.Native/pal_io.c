@@ -1188,6 +1188,94 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
     return 0;
 }
 
+#if HAVE_CLONEFILE
+enum CloneFileResult
+{
+    CLONEFILE_SUCCESS,
+    CLONEFILE_TRY_READ_WRITE,
+    CLONEFILE_ERROR
+};
+
+static enum CloneFileResult CopyFile_CloneFile(const char* srcPath, const char* destPath, bool destinationExists)
+{
+    int ret;
+
+    if (destinationExists)
+    {
+        // We need to unlink the destination file first but we need to check
+        // permission first to ensure we don't try to unlink a read-only file.
+        if (access(destPath, W_OK) != 0)
+        {
+            return CLONEFILE_TRY_READ_WRITE;
+        }
+
+        if (unlink(destPath) < 0)
+        {
+            return CLONEFILE_TRY_READ_WRITE;
+        }
+    }
+
+    while ((ret = clonefile(srcPath, destPath, 0)) < 0 && errno == EINTR);
+    if (ret == 0)
+    {
+        return CLONEFILE_SUCCESS;
+    }
+    switch (errno)
+    {
+        case EEXIST:
+            // EEXIST can happen due to race condition between the
+            // access/unlink clonefile() here.  The file could be
+            // (re-)created from another thread or process before we have a
+            // chance to call clonefile.  Handle it by falling back to the
+            // slow path.
+        case ENOTSUP:
+        case EXDEV:
+            return CLONEFILE_TRY_READ_WRITE;
+        default:
+            return CLONEFILE_ERROR;
+    }
+}
+#endif // HAVE_CLONEFILE
+
+#if HAVE_SENDFILE_4
+static bool CopyFile_SendFile4(int inFd, int outFd, const struct stat_ *sourceStat)
+{
+    // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
+    // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
+    // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
+    off_t size = sourceStat->st_size;
+
+    // Note that per man page for large files, you have to iterate until the
+    // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
+    while (size)
+    {
+        ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
+
+        if (sent < 0)
+        {
+            if (errno != EINVAL && errno != ENOSYS)
+            {
+                int tmpErrno = errno;
+                close(outFd);
+                errno = tmpErrno;
+            }
+
+            // sendfile couldn't be used. This could happen if we're on an
+            // old kernel, for example, where sendfile could only be used
+            // with sockets and not regular files.
+            return false;
+        }
+        else
+        {
+            assert(sent <= size);
+            size -= (size_t)sent;
+        }
+    }
+
+    return true;
+}
+#endif // HAVE_SENDFILE_4
+
 int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite)
 {
     int inFd = ToFileDescriptor(sourceFd);
@@ -1220,32 +1308,17 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
             errno = EBUSY;
             return -1;
         }
-
-#if HAVE_CLONEFILE
-        // For clonefile we need to unlink the destination file first but we need to
-        // check permission first to ensure we don't try to unlink read-only file.
-        if (access(destPath, W_OK) != 0)
-        {
-            return -1;
-        }
-        
-        ret = unlink(destPath);
-        if (ret != 0)
-        {
-            return ret;
-        }
-#endif
     }
 
 #if HAVE_CLONEFILE
-    while ((ret = clonefile(srcPath, destPath, 0)) < 0 && errno == EINTR);
-    // EEXIST can happen due to race condition between the stat/unlink above
-    // and the clonefile here. The file could be (re-)created from another
-    // thread or process before we have a chance to call clonefile. Handle
-    // it by falling back to the slow path.
-    if (ret == 0 || (errno != ENOTSUP && errno != EXDEV && errno != EEXIST))
+    switch (CopyFile_CloneFile(srcPath, destPath, ret == 0))
     {
-        return ret;
+        case CLONEFILE_SUCCESS:
+            return 0;
+        case CLONEFILE_ERROR:
+            return -1;
+        case CLONEFILE_TRY_READ_WRITE:
+            break;
     }
 #else
     // Unused variable
@@ -1268,47 +1341,10 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
     // Get the stats on the source file.
     bool copied = false;
 
-    // If sendfile is available (Linux), try to use it, as the whole copy
-    // can be performed in the kernel, without lots of unnecessary copying.
 #if HAVE_SENDFILE_4
-
-    // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
-    // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
-    // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
-    uint64_t size = (uint64_t)sourceStat.st_size;
-
-    // Note that per man page for large files, you have to iterate until the
-    // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
-    while (size > 0)
-    {
-        ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
-        if (sent < 0)
-        {
-            if (errno != EINVAL && errno != ENOSYS)
-            {
-                tmpErrno = errno;
-                close(outFd);
-                errno = tmpErrno;
-                return -1;
-            }
-            else
-            {
-                break;
-            }
-        }
-        else
-        {
-            assert((size_t)sent <= size);
-            size -= (size_t)sent;
-        }
-    }
-    if (size == 0)
-    {
-        copied = true;
-    }
-    // sendfile couldn't be used; fall back to a manual copy below. This could happen
-    // if we're on an old kernel, for example, where sendfile could only be used
-    // with sockets and not regular files.
+    // If sendfile(2) is available (Linux), try to use it, as the whole copy
+    // can be performed in the kernel, without lots of unnecessary copying.
+    copied = copied || CopyFile_SendFile4(inFd, outFd, &sourceStat);
 #endif // HAVE_SENDFILE_4
 
     // Manually read all data from the source and write it to the destination.
