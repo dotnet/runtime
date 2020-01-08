@@ -7,13 +7,11 @@
 
 namespace System.Reflection.Metadata
 {
-
 #if !NETSTANDARD1_1
     public readonly partial struct AssemblyDefinition
     {
         public System.Reflection.AssemblyName GetAssemblyName() { throw null; }
     }
-
     public readonly partial struct AssemblyReference
     {
         public System.Reflection.AssemblyName GetAssemblyName() { throw null; }
@@ -23,5 +21,4 @@ namespace System.Reflection.Metadata
         protected ImageFormatLimitationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 #endif
-
 }
