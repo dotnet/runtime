@@ -101,7 +101,7 @@ public class ProcessRunner : IDisposable
     /// </summary>
     private int _state;
 
-    private TextWriter _logWriter;
+    private volatile TextWriter _logWriter;
 
     private CancellationTokenSource _cancellationTokenSource;
 
@@ -252,37 +252,38 @@ public class ProcessRunner : IDisposable
         }
     }
 
-    private void StandardOutputEventHandler(object sender, DataReceivedEventArgs eventArgs)
+    private void WriteLog(string message)
     {
-        string data = eventArgs?.Data;
         TextWriter logWriter = _logWriter;
-        if (!string.IsNullOrEmpty(data) && logWriter != null)
+
+        if (logWriter != null)
         {
             lock (logWriter)
             {
                 if (_logWriter != null)
                 {
-                    // The logWriter was not disposed yet
-                    logWriter.WriteLine(data);
+                    // The logWriter was not destroyed yet
+                    _logWriter.WriteLine(message);
                 }
             }
+        }
+    }
+
+    private void StandardOutputEventHandler(object sender, DataReceivedEventArgs eventArgs)
+    {
+        string data = eventArgs?.Data;
+        if (!string.IsNullOrEmpty(data))
+        {
+            WriteLog(data);
         }
     }
 
     private void StandardErrorEventHandler(object sender, DataReceivedEventArgs eventArgs)
     {
         string data = eventArgs?.Data;
-        TextWriter logWriter = _logWriter;
-        if (!string.IsNullOrEmpty(data) && logWriter != null)
+        if (!string.IsNullOrEmpty(data))
         {
-            lock (logWriter)
-            {
-                if (_logWriter != null)
-                {
-                    // The logWriter was not disposed yet
-                    logWriter.WriteLine(data);
-                }
-            }
+            WriteLog(data);
         }
     }
 
@@ -310,10 +311,7 @@ public class ProcessRunner : IDisposable
         }
         _processInfo.ExitCode = (_processInfo.TimedOut ? TimeoutExitCode : _process.ExitCode);
         _processInfo.Succeeded = (!_processInfo.TimedOut && _processInfo.ExitCode == _processInfo.Parameters.ExpectedExitCode);
-        lock (_logWriter)
-        {
-            _logWriter.WriteLine(">>>>");
-        }
+        WriteLog(">>>>");
 
         if (!_processInfo.Succeeded)
         {
@@ -326,10 +324,7 @@ public class ProcessRunner : IDisposable
         {
             string successMessage = linePrefix + $"succeeded in {_processInfo.DurationMilliseconds} msecs";
 
-            lock (_logWriter)
-            {
-                _logWriter.WriteLine(successMessage);
-            }
+            WriteLog(successMessage);
 
             Console.WriteLine(successMessage + $": {processSpec}");
             _processInfo.Succeeded = true;
@@ -351,10 +346,7 @@ public class ProcessRunner : IDisposable
                 failureMessage += $", expected {_processInfo.Parameters.ExpectedExitCode}";
             }
 
-            lock (_logWriter)
-            {
-                _logWriter.WriteLine(failureMessage);
-            }
+            WriteLog(failureMessage);
 
             Console.Error.WriteLine(failureMessage + $": {processSpec}");
         }
