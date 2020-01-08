@@ -30,7 +30,6 @@ namespace System.Diagnostics.Tests
             const int Iters = 10;
             Process[] processes = Enumerable.Range(0, Iters).Select(_ => CreateProcessLong()).ToArray();
 
-            foreach (Process p in processes) p.EnableRaisingEvents = true;
             foreach (Process p in processes) p.Start();
             foreach (Process p in processes) p.Kill();
             foreach (Process p in processes)
@@ -63,7 +62,6 @@ namespace System.Diagnostics.Tests
             for (int i = 0; i < Iters; i++)
             {
                 Process p = CreateProcessLong();
-                p.EnableRaisingEvents = true;
                 p.Start();
                 p.Kill();
                 using (var cts = new CancellationTokenSource(WaitInMS))
@@ -100,7 +98,6 @@ namespace System.Diagnostics.Tests
                 for (int i = 0; i < ItersPerTask; i++)
                 {
                     Process p = CreateProcessLong();
-                    p.EnableRaisingEvents = true;
                     p.Start();
                     p.Kill();
                     using (var cts = new CancellationTokenSource(WaitInMS))
@@ -131,7 +128,6 @@ namespace System.Diagnostics.Tests
             {
                 var token = cts.Token;
                 var process = Process.GetCurrentProcess();
-                process.EnableRaisingEvents = true;
                 var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.WaitForExitAsync(token));
                 Assert.Equal(token, ex.CancellationToken);
                 Assert.False(process.HasExited);
@@ -162,7 +158,6 @@ namespace System.Diagnostics.Tests
         public async Task SingleProcess_TryWaitAsyncMultipleTimesBeforeCompleting()
         {
             Process p = CreateProcessLong();
-            p.EnableRaisingEvents = true;
             p.Start();
 
             // Verify we can try to wait for the process to exit multiple times
@@ -299,15 +294,9 @@ namespace System.Diagnostics.Tests
         public async Task SingleProcess_CopiesShareExitAsyncInformation()
         {
             Process p = CreateProcessLong();
-            p.EnableRaisingEvents = true;
             p.Start();
 
-            Process[] copies = Enumerable.Range(0, 3).Select(_ =>
-            {
-                var copy = Process.GetProcessById(p.Id);
-                copy.EnableRaisingEvents = true;
-                return copy;
-            }).ToArray();
+            Process[] copies = Enumerable.Range(0, 3).Select(_ => Process.GetProcessById(p.Id)).ToArray();
 
             using (var cts = new CancellationTokenSource(0))
             {
@@ -363,13 +352,11 @@ namespace System.Diagnostics.Tests
         public async Task WaitAsyncForPeerProcess()
         {
             Process child1 = CreateProcessLong();
-            child1.EnableRaisingEvents = true;
             child1.Start();
 
             Process child2 = CreateProcess(async peerId =>
             {
                 Process peer = Process.GetProcessById(int.Parse(peerId));
-                peer.EnableRaisingEvents = true;
                 Console.WriteLine("Signal");
                 using (var cts = new CancellationTokenSource(WaitInMS))
                 {
@@ -379,7 +366,6 @@ namespace System.Diagnostics.Tests
                 return RemoteExecutor.SuccessExitCode;
             }, child1.Id.ToString());
             child2.StartInfo.RedirectStandardOutput = true;
-            child2.EnableRaisingEvents = true;
             child2.Start();
             char[] output = new char[6];
             child2.StandardOutput.Read(output, 0, output.Length);
@@ -471,7 +457,6 @@ namespace System.Diagnostics.Tests
                 }
             };
 
-            p.EnableRaisingEvents = true;
             p.Start();
             p.BeginOutputReadLine();
 
@@ -532,7 +517,6 @@ namespace System.Diagnostics.Tests
                     Process child2 = CreateProcess(async () =>
                     {
                         Process child3 = CreateProcess(() => RemoteExecutor.SuccessExitCode);
-                        child3.EnableRaisingEvents = true;
                         child3.Start();
                         using (var cts = new CancellationTokenSource(WaitInMS))
                         {
@@ -542,7 +526,6 @@ namespace System.Diagnostics.Tests
 
                         return child3.ExitCode;
                     });
-                    child2.EnableRaisingEvents = true;
                     child2.Start();
                     using (var cts = new CancellationTokenSource(WaitInMS))
                     {
@@ -552,7 +535,6 @@ namespace System.Diagnostics.Tests
 
                     return child2.ExitCode;
                 });
-                child1.EnableRaisingEvents = true;
                 child1.Start();
                 using (var cts = new CancellationTokenSource(WaitInMS))
                 {
@@ -562,7 +544,6 @@ namespace System.Diagnostics.Tests
 
                 return child1.ExitCode;
             });
-            root.EnableRaisingEvents = true;
             root.Start();
             using (var cts = new CancellationTokenSource(WaitInMS))
             {
@@ -585,7 +566,6 @@ namespace System.Diagnostics.Tests
         public async Task WaitAsyncForSelfTerminatingChild()
         {
             Process child = CreateProcessPortable(RemotelyInvokable.SelfTerminate);
-            child.EnableRaisingEvents = true;
             child.Start();
             using (var cts = new CancellationTokenSource(WaitInMS))
             {
@@ -614,12 +594,6 @@ namespace System.Diagnostics.Tests
         {
             var process = new Process();
             await Assert.ThrowsAsync<InvalidOperationException>(() => process.WaitForExitAsync());
-        }
-
-        [Fact]
-        public async Task WaitForExitAsync_NotEnabledRaisingEvents_ThrowsInvalidOperationException()
-        {
-            await Assert.ThrowsAsync<InvalidOperationException>(() => Process.GetCurrentProcess().WaitForExitAsync());
         }
     }
 }
