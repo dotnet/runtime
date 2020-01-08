@@ -119,10 +119,10 @@ namespace System.Text.Json
             }
         }
 
-        internal ResolvedReferenceHandling GetResolvedReferenceHandling(object value, out string referenceId)
+        internal ResolvedReferenceHandling GetResolvedReferenceHandling(object value, out string? referenceId)
         {
             // Avoid emitting metadata to value types.
-            Type currentType = Current.JsonPropertyInfo?.DeclaredPropertyType ?? Current.JsonClassInfo.Type;
+            Type currentType = Current.JsonPropertyInfo?.DeclaredPropertyType ?? Current.JsonClassInfo!.Type;
             if (currentType.IsValueType)
             {
                 referenceId = default;

@@ -140,19 +140,19 @@ namespace System.Text.Json
 
         private static bool WriteReference(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, ClassType classType, object currentValue)
         {
-            ResolvedReferenceHandling handling = state.GetResolvedReferenceHandling(currentValue, out string referenceId);
+            ResolvedReferenceHandling handling = state.GetResolvedReferenceHandling(currentValue, out string? referenceId);
 
             if (handling == ResolvedReferenceHandling.IsReference)
             {
                 // Object written before, write { "$ref": "#" } and finish.
-                state.Current.WriteReferenceObject(writer, options, referenceId);
+                state.Current.WriteReferenceObject(writer, options, referenceId!);
                 return true;
             }
             else if (handling == ResolvedReferenceHandling.Preserve)
             {
                 // New object reference, write start and append $id.
                 // OR New array reference, write as object and append $id and $values; at the end writes EndObject token using WriteWrappingBraceOnEndCollection.
-                state.Current.WritePreservedObjectOrArrayStart(classType, writer, options, referenceId);
+                state.Current.WritePreservedObjectOrArrayStart(classType, writer, options, referenceId!);
             }
             else
             {

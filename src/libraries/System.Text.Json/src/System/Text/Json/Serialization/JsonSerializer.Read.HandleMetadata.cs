@@ -14,11 +14,11 @@ namespace System.Text.Json
             }
 
             MetadataPropertyName metadata = state.Current.MetadataProperty;
-            string key = reader.GetString();
+            string key = reader.GetString()!;
 
             if (metadata == MetadataPropertyName.Id)
             {
-                state.ReferenceResolver.AddReference(key, GetValueToPreserve(ref state));
+                state.ReferenceResolver.AddReference(key!, GetValueToPreserve(ref state));
             }
             else if (metadata == MetadataPropertyName.Ref)
             {
@@ -30,7 +30,8 @@ namespace System.Text.Json
 
         private static object GetValueToPreserve(ref ReadStack state)
         {
-            return state.Current.IsProcessingProperty(ClassType.Dictionary) ? state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) : state.Current.ReturnValue;
+            return state.Current.IsProcessingProperty(ClassType.Dictionary) ?
+                state.Current.JsonPropertyInfo!.GetValueAsObject(state.Current.ReturnValue)! : state.Current.ReturnValue!;
         }
 
         internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader)

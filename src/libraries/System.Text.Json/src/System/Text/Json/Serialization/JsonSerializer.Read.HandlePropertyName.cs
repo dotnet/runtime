@@ -73,10 +73,10 @@ namespace System.Text.Json
                 propertyName = GetUnescapedString(propertyName, idx);
             }
 
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo!.GetProperty(propertyName, ref state.Current);
             if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
             {
-                JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
+                JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo!.DataExtensionProperty;
                 if (dataExtProperty == null)
                 {
                     state.Current.JsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
@@ -170,7 +170,7 @@ namespace System.Text.Json
                 // Check we are not parsing into immutable.
                 if (state.Current.TempDictionaryValues != null)
                 {
-                    ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(state.Current.JsonPropertyInfo.DeclaredPropertyType);
+                    ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(state.Current.JsonPropertyInfo!.DeclaredPropertyType);
                 }
 
                 if (state.Current.KeyName != null || isPreserved)
@@ -201,7 +201,7 @@ namespace System.Text.Json
             {
                 if (state.Current.IsPreservedArray)
                 {
-                    ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(state.Current.JsonClassInfo.PropertyCache["Values"].DeclaredPropertyType);
+                    ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(state.Current.JsonClassInfo!.PropertyCache!["Values"].DeclaredPropertyType);
                 }
                 // Regular property, call main logic for HandlePropertyName.
                 HandlePropertyNameDefault(propertyName, ref state, ref reader, options);
@@ -224,7 +224,7 @@ namespace System.Text.Json
             {
                 // Preserved JSON arrays are wrapped into JsonPreservedReference<T> where T is the original type of the enumerable
                 // and Values is the actual enumerable instance being preserved.
-                JsonPropertyInfo info = state.Current.JsonClassInfo.PropertyCache["Values"];
+                JsonPropertyInfo info = state.Current.JsonClassInfo!.PropertyCache!["Values"];
                 info.JsonPropertyName = propertyName.ToArray();
                 state.Current.JsonPropertyInfo = info;
 
@@ -235,7 +235,7 @@ namespace System.Text.Json
             }
             else // $ref case
             {
-                if (state.Current.JsonClassInfo.Type.IsValueType)
+                if (state.Current.JsonClassInfo!.Type.IsValueType)
                 {
                     ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(state.Current.JsonClassInfo.Type);
                 }

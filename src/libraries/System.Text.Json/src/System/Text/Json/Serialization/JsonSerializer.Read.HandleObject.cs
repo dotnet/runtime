@@ -9,7 +9,9 @@ namespace System.Text.Json
 {
     internal class JsonPreservedReference<T>
     {
+        #nullable disable
         public T Values { get; set; }
+        #nullable enable
     }
 
     public static partial class JsonSerializer
@@ -85,10 +87,10 @@ namespace System.Text.Json
                 // Nested preserved array within another preserved array.
                 Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
 
-                Type preservedObjType = state.Current.JsonPropertyInfo.GetJsonPreservedReferenceType();
+                Type preservedObjType = state.Current.JsonPropertyInfo!.GetJsonPreservedReferenceType();
                 // Re-Initialize the current frame.
                 state.Current.Initialize(preservedObjType, options);
-                state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();
+                state.Current.ReturnValue = state.Current.JsonClassInfo!.CreateObject!();
                 state.Current.IsPreservedArray = true;
                 state.Current.IsNestedPreservedArray = true;
             }
@@ -142,21 +144,21 @@ namespace System.Text.Json
         {
             // Preserved JSON arrays are wrapped into JsonPreservedReference<T> where T is the original type of the enumerable
             // and Values is the actual enumerable instance being preserved.
-            JsonPropertyInfo info = state.Current.JsonClassInfo.PropertyCache["Values"];
-            object value = info.GetValueAsObject(state.Current.ReturnValue);
+            JsonPropertyInfo info = state.Current.JsonClassInfo!.PropertyCache!["Values"];
+            object? value = info.GetValueAsObject(state.Current.ReturnValue);
 
             if (value == null)
             {
                 ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(info.DeclaredPropertyType);
             }
 
-            return value;
+            return value!;
         }
 
         private static void HandleStartPreservedArray(ref ReadStack state, JsonSerializerOptions options)
         {
             // Check we are not parsing into immutable or array.
-            if (state.Current.JsonPropertyInfo.EnumerableConverter != null)
+            if (state.Current.JsonPropertyInfo!.EnumerableConverter != null)
             {
                 ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(state.Current.JsonPropertyInfo.DeclaredPropertyType);
             }

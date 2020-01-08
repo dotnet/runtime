@@ -56,10 +56,10 @@ namespace System.Text.Json
                 // Preserved Array within the dictionary.
                 else if (options.ReferenceHandling.ShouldReadPreservedReferences() && state.Current.IsProcessingEnumerable())
                 {
-                    Type preservedObjType = state.Current.JsonClassInfo.PolicyProperty.GetJsonPreservedReferenceType();
+                    Type preservedObjType = state.Current.JsonClassInfo.PolicyProperty!.GetJsonPreservedReferenceType();
                     // Re-Initialize the current frame.
                     state.Current.Initialize(preservedObjType, options);
-                    state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();
+                    state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject!();
                     state.Current.IsPreservedArray = true;
                 }
                 else

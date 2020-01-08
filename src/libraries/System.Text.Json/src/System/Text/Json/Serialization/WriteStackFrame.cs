@@ -95,7 +95,7 @@ namespace System.Text.Json
         {
             if (JsonPropertyInfo?.EscapedName.HasValue == true)
             {
-                WritePreservedObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName.Value, writer, referenceId);
+                WritePreservedObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName!.Value, writer, referenceId);
             }
             else if (KeyName != null)
             {
@@ -146,7 +146,7 @@ namespace System.Text.Json
         {
             if (JsonPropertyInfo?.EscapedName.HasValue == true)
             {
-                WriteReferenceObject(JsonPropertyInfo.EscapedName.Value, writer, referenceId);
+                WriteReferenceObject(JsonPropertyInfo.EscapedName!.Value, writer, referenceId);
             }
             else if (KeyName != null)
             {
