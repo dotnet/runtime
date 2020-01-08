@@ -1710,7 +1710,7 @@ public:
 #ifdef _TARGET_64BIT_
                 enregCount++;
 #else
-                enregCount += genTypeStSz(varTyp);   // on 32-bit targets longs use two registers
+                enregCount += genTypeStSz(varTyp); // on 32-bit targets longs use two registers
 #endif
             }
 
@@ -2276,8 +2276,8 @@ public:
                         printf("Conservative CSE Promotion (%u < %u)\n", cseRefCnt, moderateRefCnt);
                     }
 #endif
-                    cse_def_cost   = 2;
-                    cse_use_cost   = 3;
+                    cse_def_cost = 2;
+                    cse_use_cost = 3;
                 }
 
                 // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
