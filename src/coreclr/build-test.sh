@@ -80,8 +80,6 @@ generate_layout()
     # Set up the directory for MSBuild debug logs.
     export MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
 
-    __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
-
     # =========================================================================================
     # ===
     # === Restore product binaries from packages
@@ -289,8 +287,6 @@ build_Tests()
 
     # Set up the directory for MSBuild debug logs.
     export MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
-
-    __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
 
     # =========================================================================================
     # ===

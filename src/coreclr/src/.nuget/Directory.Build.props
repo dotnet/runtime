@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project>
 
   <!-- Packaging projects (.pkgproj) are non-SDK-style, so they need to directly import Directory.Build.props -->
-  <Import Project="../Directory.Build.props" />
+  <Import Project="..\Directory.Build.props" />
   <Import Project="packaging.props" />
 
   <PropertyGroup>
@@ -21,9 +20,6 @@
     <OSRid Condition="'$(OSRid)' == ''">win10</OSRid>
 
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(_archRidIndex)' != '0'">$(_parseDistroRid.SubString($(_archRidIndex)))</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(Platform)' != ''">$(Platform)</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == ''">$(BuildArch)</ArchGroup>
-
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
     <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Android;Linux;FreeBSD</SupportedPackageOSGroups>

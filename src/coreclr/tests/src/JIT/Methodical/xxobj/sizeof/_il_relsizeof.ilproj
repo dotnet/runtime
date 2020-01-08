@@ -8,7 +8,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Condition="'$(BuildArch)' == 'x86'" Include="sizeof.il" />
-    <Compile Condition="'$(BuildArch)' != 'x86'" Include="64sizeof.il" />
+    <Compile Condition="'$(ArchGroup)' == 'x86'" Include="sizeof.il" />
+    <Compile Condition="'$(ArchGroup)' != 'x86'" Include="64sizeof.il" />
   </ItemGroup>
 </Project>

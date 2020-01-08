@@ -7,6 +7,7 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <IsShipping>false</IsShipping>
     <AltJitArch>$(__AltJitArch)</AltJitArch>
+    <DefineConstants>$(DefineConstants);XUNIT_PERF</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -26,26 +27,6 @@
 
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(TestWorkingIntermediateDir)', '$(BuildProjectRelativeDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-  </PropertyGroup>
-
-  <!-- Setup Default symbol and optimization for Configuration -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
-    <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
-    <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-    <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
-    <DefineConstants>$(DefineConstants);TRACE;XUNIT_PERF</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Checked'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-    <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
-    <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)' == 'true'">

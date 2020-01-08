@@ -20,10 +20,10 @@
 
   <!-- Required debug vcruntime and UCRT dlls -->
   <ItemGroup
-    Condition="'$(TargetsWindows)' == 'true' And ('$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
+    Condition="'$(TargetsWindows)' == 'true' And ('$(ConfigurationGroup)' == 'Debug' Or '$(ConfigurationGroup)' == 'Checked') And '$(CopyDebugCRTDllsToOutputDirectory)' == 'true'" >
 
-    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(Platform)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(Platform)/Microsoft.VC*.DebugCRT/msvcp*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
-    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(Platform)/ucrtbased.dll" CopyToOutputDirectory="Always" />
+    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(ArchGroup)/Microsoft.VC*.DebugCRT/vcruntime*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
+    <None Include="$(VCToolsRedistDir)onecore/debug_nonredist/$(ArchGroup)/Microsoft.VC*.DebugCRT/msvcp*d.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" />
+    <None Include="$(ExtensionSdkDir)/Microsoft.UniversalCRT.Debug/$(UCRTVersion)/Redist/Debug/$(ArchGroup)/ucrtbased.dll" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>

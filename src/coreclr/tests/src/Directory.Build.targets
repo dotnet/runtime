@@ -53,14 +53,7 @@
     <_CLRTestNeedsProjectToRun Condition=" '$(_CLRTestNeedsToRun)' and '!$(_CLRTestBuildsExecutable)' ">true</_CLRTestNeedsProjectToRun>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- Since bug in Roslyn for Linux empty DebugType property leads to build failure. See issue Roslyn@20343 -->
-    <DebugType Condition="'$(RunningOnUnix)' == 'true' ">None</DebugType>
-  </PropertyGroup>
-
-  <!--
-  If it needs ProjectToRun, turn the project into a ProjectReference so it gets built
-  -->
+  <!-- If it needs ProjectToRun, turn the project into a ProjectReference so it gets built -->
   <ItemGroup Condition=" $(_CLRTestNeedsProjectToRun) ">
     <ProjectReference Include="$(CLRTestProjectToRun)">
       <Private>false</Private>
@@ -176,7 +169,7 @@
           BeforeTargets="Build" >
      <ItemGroup Condition="'@(NativeProjectReferenceNormalized)' != ''">
         <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(NativeTestIntermediatesDir)\src\))" Condition="'$(RunningOnUnix)' == 'true'" />
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(NativeTestIntermediatesDir)\src\))$(Configuration)\" Condition="'$(RunningOnUnix)' != 'true'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(NativeTestIntermediatesDir)\src\))$(ConfigurationGroup)\" Condition="'$(RunningOnUnix)' != 'true'" />
      </ItemGroup>
 
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
@@ -223,7 +216,6 @@
     <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
-    <TargetArchitecture>$(BuildArch)</TargetArchitecture>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
 

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(BuildArch)' == 'x86'">
+  <PropertyGroup Condition="'$(ArchGroup)' == 'x86'">
     <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>

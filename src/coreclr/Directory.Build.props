@@ -1,51 +1,73 @@
 <Project>
 
-  <PropertyGroup>
-    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
-  </PropertyGroup>
-
   <Import Project="..\..\Directory.Build.props" />
 
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
-    <BuildArch Condition="'$(BuildArch)' == ''">$(__BuildArch)</BuildArch>
-    <BuildArch Condition="'$(BuildArch)' == ''">x64</BuildArch>
-    <BuildArch Condition="'$(BuildArch)' == 'amd64'">x64</BuildArch>
-    <!-- TODO: converge on one property and remove these extra lines. -->
-    <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(BuildArch)</TargetArchitecture>
+    <ArchGroup Condition="'$(__BuildArch)' != ''">$(__BuildArch)</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == 'amd64'">x64</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == 'armel'">arm</ArchGroup>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(ArchGroup)</TargetArchitecture>
 
-    <BuildType Condition="'$(BuildType)' == ''">$(__BuildType)</BuildType>
-    <BuildType Condition="'$(BuildType)' == ''">$(Configuration)</BuildType>
-    <BuildType Condition="'$(BuildType)' == '' or '$(BuildType)' == 'debug'">Debug</BuildType>
-    <BuildType Condition="'$(BuildType)' == 'release'">Release</BuildType>
-    <BuildType Condition="'$(BuildType)' == 'checked'">Checked</BuildType>
-    <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
-
-    <OSGroup Condition="'$(OSGroup)' == ''">$(__BuildOS)</OSGroup>
+    <OSGroup Condition="'$(__BuildOS)' != ''">$(__BuildOS)</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">AnyOS</OSGroup>
-
-    <OSPlatformConfig>$(OSGroup).$(BuildArch).$(BuildType)</OSPlatformConfig>
   </PropertyGroup>
 
-    <!-- Paths need to be defined before the Arcade SDK is imported. -->
+  <!--
+    If Configuration is empty that means we are not being built in VS and so folks need to explicitly pass the different
+    values for $(ConfigurationGroup) or $(OSGroup) or accept the defaults for them.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == ''">
+    <ConfigurationGroup Condition="'$(__BuildType)' != ''">$(__BuildType)</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == '' or '$(ConfigurationGroup)' == 'debug'">Debug</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == 'release'">Release</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == 'checked'">Checked</ConfigurationGroup>
+    <Configuration>$(ConfigurationGroup)</Configuration>
+  </PropertyGroup>
+
+  <!--
+    If Configuration is set then someone explicitly passed it in or we building from VS. In either case
+    default $(ConfigurationGroup) or $(OSGroup) from the Configuration if they aren't
+    already explicitly set.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' != ''">
+    <ConfigurationGroup Condition="'$(__BuildType)' != ''">$(__BuildType)</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == '' and $(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == '' and $(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == '' and $(Configuration.EndsWith('Checked'))">Checked</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
+
+    <OSGroup Condition="$(Configuration.StartsWith('Windows'))">Windows_NT</OSGroup>
+    <OSGroup Condition="$(Configuration.StartsWith('Unix'))">Unix</OSGroup>
+    <OSGroup Condition="$(Configuration.StartsWith('Linux'))">Linux</OSGroup>
+    <OSGroup Condition="$(Configuration.StartsWith('OSX'))">OSX</OSGroup>
+    <OSGroup Condition="$(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
+    <OSGroup Condition="$(Configuration.StartsWith('NetBSD'))">NetBSD</OSGroup>
+  </PropertyGroup>
+
+  <!-- Setup Default symbol and optimization for Configuration -->
   <PropertyGroup>
-    <BinDir>$(ArtifactsBinDir)coreclr\$(OSPlatformConfig)\</BinDir>
-    <SourceDir>$(MSBuildThisFileDirectory)src\</SourceDir>
-    <PackagesBinDir>$(BinDir).nuget\</PackagesBinDir>
-
-    <BaseRootOutputPath>$(BinDir)</BaseRootOutputPath>
-    <BaseOutputPath>$(BaseRootOutputPath)$(MSBuildProjectName)\</BaseOutputPath>
-    <BaseRootIntermediateOutputPath>$(ArtifactsObjDir)coreclr\$(OSPlatformConfig)\</BaseRootIntermediateOutputPath>
-    <BaseIntermediateOutputPath>$(BaseRootIntermediateOutputPath)$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <!-- Ensure a portable PDB is emitted. A PDB is needed for crossgen. -->
+    <DebugType>Portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
+    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Checked'">
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Release'">
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
   </PropertyGroup>
 
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-  
-  <!-- Setup properties per BuildOS -->
+   <!-- Setup properties per OS -->
   <Choose>
     <When Condition="'$(OSGroup)' == 'AnyOS'">
       <PropertyGroup>
@@ -57,28 +79,28 @@
              TargetsWindows property may already be set. Only set the property if
              it is not already defined -->
         <TargetsWindows Condition="'$(TargetsWindows)' == ''">true</TargetsWindows>
-        <TestNugetRuntimeId>win-$(BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>win-$(ArchGroup)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)' == 'Linux'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
-        <TestNugetRuntimeId>ubuntu.14.04-$(BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(ArchGroup)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)' == 'OSX'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
-        <TestNugetRuntimeId>osx.10.12-$(BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>osx.10.12-$(ArchGroup)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)' == 'FreeBSD'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsFreeBSD>true</TargetsFreeBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-$(BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(ArchGroup)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <Otherwise>
@@ -97,9 +119,24 @@
     <TargetRid Condition="'$(TargetRid)' == ''">$(TestNugetRuntimeId)</TargetRid>
 
     <!-- Folder for cross target components -->
-    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm64'">x64</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(ArchGroup)' == 'arm64'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(ArchGroup)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(ArchGroup)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OSPlatformConfig>$(OSGroup).$(ArchGroup).$(ConfigurationGroup)</OSPlatformConfig>
+
+    <BinDir>$(ArtifactsBinDir)coreclr\$(OSPlatformConfig)\</BinDir>
+    <SourceDir>$(MSBuildThisFileDirectory)src\</SourceDir>
+    <PackagesBinDir>$(BinDir).nuget\</PackagesBinDir>
+
+    <BaseRootOutputPath>$(BinDir)</BaseRootOutputPath>
+    <BaseOutputPath>$(BaseRootOutputPath)$(MSBuildProjectName)\</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)</OutputPath>
+    <BaseRootIntermediateOutputPath>$(ArtifactsObjDir)coreclr\$(OSPlatformConfig)\</BaseRootIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(BaseRootIntermediateOutputPath)$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
   </PropertyGroup>
 
   <!--
@@ -115,8 +152,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Set the kind of PDB to Portable -->
-    <DebugType>Portable</DebugType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <CL_MPCount>$(NumberOfCores)</CL_MPCount>
     <!-- Enables Strict mode for Roslyn compiler -->
@@ -127,5 +162,7 @@
     <Copyright>$(CopyrightNetFoundation)</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)clr.featuredefines.props" />
 
 </Project>

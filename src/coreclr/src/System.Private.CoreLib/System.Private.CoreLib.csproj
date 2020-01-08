@@ -6,10 +6,9 @@
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework Condition="'$(BuildingInsideVisualStudio)' == 'true'">netcoreapp3.0</TargetFramework>
 
-    <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
-    <DebugType>Portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
@@ -31,9 +30,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
-    <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -51,8 +47,7 @@
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <Nullable>enable</Nullable>
 
-    <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
-    <DefineConstants>CORECLR;NETCOREAPP</DefineConstants>
+    <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
@@ -65,33 +60,24 @@
   </PropertyGroup>
 
   <!-- Platform specific properties -->
-  <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <PlatformTarget>x64</PlatformTarget>
+  <PropertyGroup Condition="'$(ArchGroup)' == 'x64'">
     <Prefer32Bit>false</Prefer32Bit>
     <DefineConstants>BIT64;AMD64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <PlatformTarget>x86</PlatformTarget>
+  <PropertyGroup Condition="'$(ArchGroup)' == 'x86'">
     <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <PlatformTarget>arm</PlatformTarget>
+  <PropertyGroup Condition="'$(ArchGroup)' == 'arm'">
     <DefineConstants>BIT32;ARM;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+  <PropertyGroup Condition="'$(ArchGroup)' == 'arm64'">
     <DefineConstants>BIT64;ARM64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
-    <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
-    <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
-    <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'x64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug' or '$(ConfigurationGroup)' == 'Checked'">
+    <DefineConstants>$(DefineConstants);_LOGGING</DefineConstants>
+    <DefineConstants Condition="'$(ArchGroup)' == 'x86' or '$(ArchGroup)' == 'x64'">$(DefineConstants);CODE_ANALYSIS</DefineConstants>
   </PropertyGroup>
 
   <!-- Assembly attributes -->
@@ -318,8 +304,8 @@
     <Compile Include="### Build from the command line once to generate NativeRuntimeEventSource.cs ###"
             Condition="'$(FeaturePerfTracing)' == 'true' and
                        '$(BuildingInsideVisualStudio)' == 'true' and
-                       !Exists('$(ArtifactsObjDir)coreclr\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs')"/>
-    <Compile Include="$(ArtifactsObjDir)coreclr\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+                       !Exists('$(ArtifactsObjDir)coreclr\Eventing\$(ArchGroup)\$(ConfigurationGroup)\NativeRuntimeEventSource.cs')"/>
+    <Compile Include="$(ArtifactsObjDir)coreclr\Eventing\$(ArchGroup)\$(ConfigurationGroup)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
       <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.cs</Link>
     </Compile>
   </ItemGroup>

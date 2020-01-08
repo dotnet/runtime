@@ -2,8 +2,6 @@
 
   <Import Project="..\..\Directory.Build.targets" />
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-
   <PropertyGroup>
     <!-- SDK sets product to assembly but we want it to be our product name -->
     <Product>Microsoft%AE .NET Core</Product>
@@ -12,7 +10,5 @@
     <InformationalVersion>$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(VersionSuffix)' != ''">$(InformationalVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
-
-    <Import Project="$(MSBuildThisFileDirectory)clr.featuredefines.props" />
 
 </Project>

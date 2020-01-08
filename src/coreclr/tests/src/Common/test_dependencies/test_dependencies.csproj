@@ -7,7 +7,6 @@
     <DisableRarCache>true</DisableRarCache>
     <DisablePackageAssetsCache>true</DisablePackageAssetsCache>
     <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
-    <TargetArchitecture>$(BuildArch)</TargetArchitecture>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
     <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
@@ -20,7 +19,7 @@
 
   <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(TargetsWindows)' == 'true'">
     <ItemGroup>
-      <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
+      <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(ArchGroup)\*.dll" />
     </ItemGroup>
   </Target>
 

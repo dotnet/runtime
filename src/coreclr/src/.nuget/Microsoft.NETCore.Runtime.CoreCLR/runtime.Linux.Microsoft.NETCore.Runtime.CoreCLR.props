@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <_PlatformDoesNotSupportCreatedump Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportCreatedump>
+    <_PlatformDoesNotSupportCreatedump Condition="'$(ArchGroup)' == 'x86'">true</_PlatformDoesNotSupportCreatedump>
     <_PlatformDoesNotSupportCreatedump Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportCreatedump>
     <_PlatformDoesNotSupportEventTrace Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportEventTrace>
-    <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportEventTrace>
+    <_PlatformDoesNotSupportEventTrace Condition="'$(ArchGroup)' == 'x86'">true</_PlatformDoesNotSupportEventTrace>
   </PropertyGroup>
   <ItemGroup>
     <NativeBinary Include="$(BinDir)libcoreclr.so" />

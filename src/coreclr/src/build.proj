@@ -2,7 +2,7 @@
 
   <!-- List the projects that need to be restored only -->
  <ItemGroup Condition="'$(IncludeRestoreOnlyProjects)' == 'true'">
-    <ProjectReference Condition="'$(BuildType)'=='Release'" Include="$(SourceDir).nuget/optdata/optdata.csproj" />
+    <ProjectReference Condition="'$(ConfigurationGroup)' == 'Release'" Include="$(SourceDir).nuget/optdata/optdata.csproj" />
  </ItemGroup>
 
   <!-- List the projects that need to be built -->
@@ -17,17 +17,17 @@
        The api-*xstate.dll binary needs to be signed. -->
   <Target Name="CopyUcrtFiles" AfterTargets="Build">
     <ItemGroup>
-      <UcrtFilesToCopy Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
+      <UcrtFilesToCopy Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(ArchGroup)\*.dll" />
     </ItemGroup>
 
-    <Copy Condition="'$(BuildType)'=='Release' AND '$(BuildArch)' != 'arm64'"
+    <Copy Condition="'$(ConfigurationGroup)' == 'Release' and '$(ArchGroup)' != 'arm64'"
         SourceFiles="@(UcrtFilesToCopy)"
-        DestinationFolder="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)" />
+        DestinationFolder="$(BinDir)Redist\ucrt\DLLs\$(ArchGroup)" />
   </Target>
 
   <PropertyGroup>
     <RunEnforcePGO Condition="$(__EnforcePgo) == '1'">true</RunEnforcePGO>
-    <RunEnforcePGO Condition="$(BuildArch) == 'arm' OR $(BuildArch) == 'arm64'">false</RunEnforcePGO>
+    <RunEnforcePGO Condition="'$(ArchGroup)' == 'arm' or '$(ArchGroup)' == 'arm64'">false</RunEnforcePGO>
   </PropertyGroup>
 
   <Target Name="EnforcePGO" Condition="$(RunEnforcePGO) == 'true'" AfterTargets="Build">
