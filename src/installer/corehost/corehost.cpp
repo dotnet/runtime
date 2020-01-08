@@ -220,15 +220,11 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
             if (rc == StatusCode::FrameworkMissingFailure && !set_error_writer_fn)
             {
-                pal::string_t missing_fw = L"Microsoft.NETCore.App";
-                pal::string_t fw_ver = _STRINGIFY(CUREXE_PKG_VER);
-                pal::string_t url = get_download_url(missing_fw.c_str(), fw_ver.c_str());
-
-                trace::error(_X("The framework '%s', version '%s' was not found."), missing_fw.c_str(), fw_ver.c_str());
+                fx_ver_t apphost_ver;
+                fx_ver_t::parse(get_filename(_STRINGIFY(CUREXE_PKG_VER)), &apphost_ver, false);
+                pal::string_t url = get_download_url();
+                trace::error(_X("  _ This application seems to require at least .NET Core %d.%d."), apphost_ver.get_major(), apphost_ver.get_minor());
                 trace::error(_X(""));
-                trace::error(_X("You can resolve the problem by installing the specified framework and/or SDK."));
-                trace::error(_X(""));
-                trace::error(_X("The specified framework can be found at:"));
                 trace::error(_X("  - %s"), url.c_str());
             }
         }
