@@ -310,7 +310,10 @@ public class ProcessRunner : IDisposable
         }
         _processInfo.ExitCode = (_processInfo.TimedOut ? TimeoutExitCode : _process.ExitCode);
         _processInfo.Succeeded = (!_processInfo.TimedOut && _processInfo.ExitCode == _processInfo.Parameters.ExpectedExitCode);
-        _logWriter.WriteLine(">>>>");
+        lock (_logWriter)
+        {
+            _logWriter.WriteLine(">>>>");
+        }
 
         if (!_processInfo.Succeeded)
         {
@@ -323,7 +326,11 @@ public class ProcessRunner : IDisposable
         {
             string successMessage = linePrefix + $"succeeded in {_processInfo.DurationMilliseconds} msecs";
 
-            _logWriter.WriteLine(successMessage);
+            lock (_logWriter)
+            {
+                _logWriter.WriteLine(successMessage);
+            }
+
             Console.WriteLine(successMessage + $": {processSpec}");
             _processInfo.Succeeded = true;
         }
@@ -343,7 +350,12 @@ public class ProcessRunner : IDisposable
                 }
                 failureMessage += $", expected {_processInfo.Parameters.ExpectedExitCode}";
             }
-            _logWriter.WriteLine(failureMessage);
+
+            lock (_logWriter)
+            {
+                _logWriter.WriteLine(failureMessage);
+            }
+
             Console.Error.WriteLine(failureMessage + $": {processSpec}");
         }
 
@@ -351,7 +363,10 @@ public class ProcessRunner : IDisposable
 
         _processInfo.Finished = true;
 
-        _logWriter.Flush();
+        lock (_logWriter)
+        {
+            _logWriter.Flush();
+        }
 
         CleanupLogWriter();
 
