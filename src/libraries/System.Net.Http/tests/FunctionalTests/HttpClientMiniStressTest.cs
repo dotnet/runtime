@@ -66,7 +66,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     byte[] postData = new byte[numBytes];
-                    while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false)));
+                    while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false))) ;
                     Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
 
                     await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);

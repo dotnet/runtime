@@ -41,6 +41,7 @@ namespace System.Net.Http
         internal TimeSpan _pooledConnectionIdleTimeout = HttpHandlerDefaults.DefaultPooledConnectionIdleTimeout;
         internal TimeSpan _expect100ContinueTimeout = HttpHandlerDefaults.DefaultExpect100ContinueTimeout;
         internal TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
+        internal ConnectCallback _connectCallback;
 
         internal Version _maxHttpVersion;
 
@@ -94,6 +95,7 @@ namespace System.Net.Http
                 _useCookies = _useCookies,
                 _useProxy = _useProxy,
                 _allowUnencryptedHttp2 = _allowUnencryptedHttp2,
+                _connectCallback = _connectCallback,
             };
         }
 

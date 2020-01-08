@@ -29,6 +29,7 @@ namespace System.Net.Http
         private readonly int _port;
         private readonly Uri _proxyUri;
         internal readonly byte[] _encodedAuthorityHostHeader;
+        private readonly ConnectCallback _connectCallback;
 
         /// <summary>List of idle connections stored in the pool.</summary>
         private readonly List<CachedConnection> _idleConnections = new List<CachedConnection>();
@@ -68,6 +69,7 @@ namespace System.Net.Http
             _port = port;
             _proxyUri = proxyUri;
             _maxConnections = maxConnections;
+            _connectCallback = poolManager.Settings._connectCallback ?? ConnectHelper.ConnectAsync;
 
             _http2Enabled = (_poolManager.Settings._maxHttpVersion == HttpVersion.Version20);
 
@@ -622,11 +624,11 @@ namespace System.Net.Http
                     case HttpConnectionKind.Http:
                     case HttpConnectionKind.Https:
                     case HttpConnectionKind.ProxyConnect:
-                        stream = await ConnectHelper.ConnectAsync(_host, _port, cancellationToken).ConfigureAwait(false);
+                        stream = await _connectCallback(_host, _port, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.Proxy:
-                        stream = await ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken).ConfigureAwait(false);
+                        stream = await _connectCallback(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.ProxyTunnel:

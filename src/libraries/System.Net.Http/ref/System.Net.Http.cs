@@ -21,6 +21,7 @@ namespace System.Net.Http
         Manual = 0,
         Automatic = 1,
     }
+    public delegate System.Threading.Tasks.ValueTask<System.IO.Stream> ConnectCallback(string host, int port, System.Threading.CancellationToken cancellationToken);
     public abstract partial class DelegatingHandler : System.Net.Http.HttpMessageHandler
     {
         protected DelegatingHandler() { }
@@ -264,6 +265,7 @@ namespace System.Net.Http
         public SocketsHttpHandler() { }
         public bool AllowAutoRedirect { get { throw null; } set { } }
         public System.Net.DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
+        public ConnectCallback ConnectCallback { get { throw null; } set { } }
         public System.TimeSpan ConnectTimeout { get { throw null; } set { } }
         public System.Net.CookieContainer CookieContainer { get { throw null; } set { } }
         public System.Net.ICredentials Credentials { get { throw null; } set { } }

@@ -238,6 +238,16 @@ namespace System.Net.Http
             }
         }
 
+        public ConnectCallback ConnectCallback
+        {
+            get => _settings._connectCallback;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._connectCallback = value;
+            }
+        }
+
         public TimeSpan ConnectTimeout
         {
             get => _settings._connectTimeout;
