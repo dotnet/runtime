@@ -102,16 +102,20 @@ private:
         PCODE ip;
         // TRUE if this element represents the last frame of the foreign
         // exception stack trace.
-        BOOL			fIsLastFrameFromForeignStackTrace;
+        BOOL fIsLastFrameFromForeignStackTrace;
+        // TRUE if the dwOffset (native offset) needs to be adjusted back to the
+        // calling or throwing instruction.
+        BOOL fAdjustOffset;
 
         // Initialization done under TSL.
         // This is used when first collecting the stack frame data.
         void InitPass1(
             DWORD dwNativeOffset,
             MethodDesc *pFunc,
-            PCODE ip
-            , BOOL			fIsLastFrameFromForeignStackTrace = FALSE
-			);
+            PCODE ip,
+            BOOL fIsLastFrameFromForeignStackTrace = FALSE,
+            BOOL fAdjustOffset = FALSE
+        );
 
         // Initialization done outside the TSL.
         // This will init the dwILOffset field (and potentially anything else
@@ -131,7 +135,7 @@ public:
         DebugStackTraceElement* pElements;
         THREADBASEREF   TargetThread;
         AppDomain *pDomain;
-        BOOL	fDoWeHaveAnyFramesFromForeignStackTrace;
+        BOOL fDoWeHaveAnyFramesFromForeignStackTrace;
 
 
         GetStackFramesData() :  skip(0),

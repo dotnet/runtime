@@ -30,6 +30,9 @@ struct StackTraceElement
     // TRUE if this element represents the last frame of the foreign
     // exception stack trace.
     BOOL			fIsLastFrameFromForeignStackTrace;
+    // TRUE if the ip needs to be adjusted back to the calling or
+    // throwing instruction.
+    BOOL            fAdjustOffset;
 
     bool operator==(StackTraceElement const & rhs) const
     {
