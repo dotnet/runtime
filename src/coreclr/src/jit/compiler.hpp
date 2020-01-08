@@ -2738,10 +2738,6 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
         BasicBlock* leaveBlk = block->bbNext;
         noway_assert(leaveBlk->bbJumpKind == BBJ_ALWAYS);
 
-        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
-        leaveBlk->bbRefs  = 0;
-        leaveBlk->bbPreds = nullptr;
-
 #if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
         // This function (fgConvertBBToThrowBB) can be called before the predecessor lists are created (e.g., in
         // fgMorph). The fgClearFinallyTargetBit() function to update the BBF_FINALLY_TARGET bit depends on these
@@ -2758,6 +2754,12 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
             fgNeedToAddFinallyTargetBits = true;
         }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+
+        // leaveBlk is now unreachable, so scrub the pred lists.
+        // Note this must happen after resetting finally target bits.
+        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+        leaveBlk->bbRefs  = 0;
+        leaveBlk->bbPreds = nullptr;
     }
 
     // Scrub this block from the pred lists of any successors
