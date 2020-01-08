@@ -6,6 +6,7 @@
 // while consuming input.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -1362,6 +1363,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
+        [ExcludeFromCodeCoverage]
         internal override void DumpState()
         {
             base.DumpState();

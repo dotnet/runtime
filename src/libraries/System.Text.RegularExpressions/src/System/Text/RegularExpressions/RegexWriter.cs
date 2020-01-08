@@ -130,12 +130,12 @@ namespace System.Text.RegularExpressions
 
             RegexPrefix? fcPrefix = RegexFCD.FirstChars(tree);
             RegexPrefix prefix = RegexFCD.Prefix(tree);
-            bool rtl = ((tree.Options & RegexOptions.RightToLeft) != 0);
+            bool rtl = (tree.Options & RegexOptions.RightToLeft) != 0;
 
             CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
             RegexBoyerMoore? bmPrefix = null;
-            if (prefix.Prefix.Length > 0)
+            if (prefix.Prefix.Length > 1) // if it's == 1, we're better off using fcPrefix
             {
                 bmPrefix = new RegexBoyerMoore(prefix.Prefix, prefix.CaseInsensitive, rtl, culture);
             }

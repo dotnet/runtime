@@ -41,6 +41,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -943,6 +944,7 @@ namespace System.Text.RegularExpressions
             "Oneloopatomic", "Notoneloopatomic", "Setloopatomic",
         };
 
+        [ExcludeFromCodeCoverage]
         public string Description()
         {
             StringBuilder argSb = new StringBuilder();
@@ -1014,6 +1016,7 @@ namespace System.Text.RegularExpressions
             return argSb.ToString();
         }
 
+        [ExcludeFromCodeCoverage]
         public void Dump()
         {
             List<int> stack = new List<int>();

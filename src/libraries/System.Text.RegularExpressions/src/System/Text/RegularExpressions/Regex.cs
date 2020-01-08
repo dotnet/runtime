@@ -461,6 +461,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// True if the regex has debugging enabled
         /// </summary>
+        [ExcludeFromCodeCoverage]
         internal bool Debug => (roptions & RegexOptions.Debug) != 0;
 #endif
     }

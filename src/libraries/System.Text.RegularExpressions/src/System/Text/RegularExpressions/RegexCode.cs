@@ -16,8 +16,8 @@
 // Strings and sets are indices into a string table.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -241,6 +241,7 @@ namespace System.Text.RegularExpressions
             "Oneloopatomic", "Notoneloopatomic", "Setloopatomic"
         };
 
+        [ExcludeFromCodeCoverage]
         private static string OperatorDescription(int Opcode)
         {
             bool isCi = ((Opcode & Ci) != 0);
@@ -256,6 +257,7 @@ namespace System.Text.RegularExpressions
                 (isBack2 ? "-Back2" : "");
         }
 
+        [ExcludeFromCodeCoverage]
         public string OpcodeDescription(int offset)
         {
             StringBuilder sb = new StringBuilder();
@@ -367,6 +369,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
+        [ExcludeFromCodeCoverage]
         public void Dump()
         {
             int i;

@@ -13,6 +13,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -226,6 +227,7 @@ namespace System.Text.RegularExpressions
             };
 
 #if DEBUG
+        [ExcludeFromCodeCoverage]
         public static string AnchorDescription(int anchors)
         {
             StringBuilder sb = new StringBuilder();
