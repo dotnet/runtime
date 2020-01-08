@@ -5676,6 +5676,7 @@ void LinearScan::allocateRegisters()
             }
         }
 
+        bool allocateReg = true;
         if (assignedRegister != REG_NA)
         {
             RegRecord* physRegRecord = getRegisterRecord(assignedRegister);
@@ -5693,6 +5694,13 @@ void LinearScan::allocateRegisters()
                 assignedRegister            = REG_NA;
                 setIntervalAsSplit(currentInterval);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_MOVE_REG, currentInterval, assignedRegister));
+            }
+            else if (currentRefPosition->RegOptional() && currentRefPosition->lastUse &&
+                     (previousRefPosition != nullptr) && previousRefPosition->spillAfter)
+            {
+                allocateReg      = false;
+                assignedRegister = REG_NA;
+                unassignPhysReg(physRegRecord, previousRefPosition);
             }
             else if ((genRegMask(assignedRegister) & currentRefPosition->registerAssignment) != 0)
             {
@@ -5763,9 +5771,7 @@ void LinearScan::allocateRegisters()
 
         if (assignedRegister == REG_NA)
         {
-            bool allocateReg = true;
-
-            if (currentRefPosition->RegOptional())
+            if (allocateReg && currentRefPosition->RegOptional())
             {
                 // We can avoid allocating a register if it is a the last use requiring a reload.
                 if (currentRefPosition->lastUse && currentRefPosition->reload)
