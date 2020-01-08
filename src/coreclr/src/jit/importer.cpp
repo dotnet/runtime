@@ -3632,7 +3632,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1 = impPopStack().val;
             if (opts.OptimizationEnabled())
             {
-                if (op1->OperIs(GT_CNS_STR))
+                if (!opts.IsReadyToRun() && op1->OperIs(GT_CNS_STR))
                 {
                     // Optimize `ldstr + String::get_Length()` to CNS_INT
                     // e.g. "Hello".Length => 5
