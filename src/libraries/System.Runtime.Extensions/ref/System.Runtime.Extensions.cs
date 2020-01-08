@@ -225,7 +225,7 @@ namespace System
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length) { throw null; }
         public static byte[] FromBase64String(string s) { throw null; }
         public static System.TypeCode GetTypeCode(object? value) { throw null; }
-        public static bool IsDBNull(object? value) { throw null; }
+        public static bool IsDBNull([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? value) { throw null; }
         public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut) { throw null; }
         public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, System.Base64FormattingOptions options) { throw null; }
         public static string ToBase64String(byte[] inArray) { throw null; }
@@ -1453,7 +1453,7 @@ namespace System.IO
         public static bool IsPathFullyQualified(System.ReadOnlySpan<char> path) { throw null; }
         public static bool IsPathFullyQualified(string path) { throw null; }
         public static bool IsPathRooted(System.ReadOnlySpan<char> path) { throw null; }
-        public static bool IsPathRooted(string? path) { throw null; }
+        public static bool IsPathRooted([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? path) { throw null; }
         public static string Join(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2) { throw null; }
         public static string Join(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3) { throw null; }
         public static string Join(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3, System.ReadOnlySpan<char> path4) { throw null; }
