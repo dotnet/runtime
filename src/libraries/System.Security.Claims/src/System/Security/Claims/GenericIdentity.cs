@@ -56,7 +56,7 @@ namespace System.Security.Principal
             return new GenericIdentity(this);
         }
 
-        public override IEnumerable<Claim?> Claims
+        public override IEnumerable<Claim> Claims
         {
             get
             {

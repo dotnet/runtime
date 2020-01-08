@@ -33,7 +33,7 @@ namespace System.Security.Claims
         private object? _bootstrapContext;
         private List<List<Claim>>? _externalClaims;
         private string? _label;
-        private readonly List<Claim?> _instanceClaims = new List<Claim?>();
+        private readonly List<Claim> _instanceClaims = new List<Claim>();
         private string _nameClaimType = DefaultNameClaimType;
         private string _roleClaimType = DefaultRoleClaimType;
 
@@ -301,7 +301,7 @@ namespace System.Security.Claims
         /// Gets the claims as <see cref="IEnumerable{Claim}"/>, associated with this <see cref="ClaimsIdentity"/>.
         /// </summary>
         /// <remarks>May contain nulls.</remarks>
-        public virtual IEnumerable<Claim?> Claims
+        public virtual IEnumerable<Claim> Claims
         {
             get
             {
@@ -314,7 +314,7 @@ namespace System.Security.Claims
             }
         }
 
-        private IEnumerable<Claim?> CombinedClaimsIterator()
+        private IEnumerable<Claim> CombinedClaimsIterator()
         {
             for (int i = 0; i < _instanceClaims.Count; i++)
             {
@@ -441,14 +441,14 @@ namespace System.Security.Claims
         /// <param name="claims">Enumeration of claims to add.</param>
         /// <remarks>Each claim is examined and if <see cref="Claim.Subject"/> != this, then Claim.Clone(this) is called before the claim is added.</remarks>
         /// <exception cref="ArgumentNullException">if 'claims' is null.</exception>
-        public virtual void AddClaims(IEnumerable<Claim> claims)
+        public virtual void AddClaims(IEnumerable<Claim?> claims)
         {
             if (claims == null)
             {
                 throw new ArgumentNullException(nameof(claims));
             }
 
-            foreach (Claim claim in claims)
+            foreach (Claim? claim in claims)
             {
                 if (claim == null)
                 {
@@ -558,14 +558,14 @@ namespace System.Security.Claims
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual IEnumerable<Claim?> FindAll(Predicate<Claim?> match)
+        public virtual IEnumerable<Claim> FindAll(Predicate<Claim> match)
         {
             if (match == null)
             {
                 throw new ArgumentNullException(nameof(match));
             }
 
-            foreach (Claim? claim in Claims)
+            foreach (Claim claim in Claims)
             {
                 if (match(claim))
                 {
@@ -588,7 +588,7 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(type));
             }
 
-            foreach (Claim? claim in Claims)
+            foreach (Claim claim in Claims)
             {
                 if (claim != null)
                 {
@@ -606,14 +606,14 @@ namespace System.Security.Claims
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual Claim? FindFirst(Predicate<Claim?> match)
+        public virtual Claim? FindFirst(Predicate<Claim> match)
         {
             if (match == null)
             {
                 throw new ArgumentNullException(nameof(match));
             }
 
-            foreach (Claim? claim in Claims)
+            foreach (Claim claim in Claims)
             {
                 if (match(claim))
                 {
@@ -638,7 +638,7 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(type));
             }
 
-            foreach (Claim? claim in Claims)
+            foreach (Claim claim in Claims)
             {
                 if (claim != null)
                 {
@@ -658,14 +658,14 @@ namespace System.Security.Claims
         /// <param name="match">The function that performs the matching logic.</param>
         /// <returns>true if a claim is found, false otherwise.</returns>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual bool HasClaim(Predicate<Claim?> match)
+        public virtual bool HasClaim(Predicate<Claim> match)
         {
             if (match == null)
             {
                 throw new ArgumentNullException(nameof(match));
             }
 
-            foreach (Claim? claim in Claims)
+            foreach (Claim claim in Claims)
             {
                 if (match(claim))
                 {
@@ -697,7 +697,7 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(value));
             }
 
-            foreach (Claim? claim in Claims)
+            foreach (Claim claim in Claims)
             {
                 if (claim != null
                         && string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase)

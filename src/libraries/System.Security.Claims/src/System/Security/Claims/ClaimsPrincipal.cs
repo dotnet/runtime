@@ -225,13 +225,13 @@ namespace System.Security.Claims
         /// <summary>
         /// Gets the claims as <see cref="IEnumerable{Claim}"/>, associated with this <see cref="ClaimsPrincipal"/> by enumerating all <see cref="Identities"/>.
         /// </summary>
-        public virtual IEnumerable<Claim?> Claims
+        public virtual IEnumerable<Claim> Claims
         {
             get
             {
                 foreach (ClaimsIdentity identity in Identities)
                 {
-                    foreach (Claim? claim in identity.Claims)
+                    foreach (Claim claim in identity.Claims)
                     {
                         yield return claim;
                     }
@@ -298,7 +298,7 @@ namespace System.Security.Claims
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
         /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindAll(string)"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual IEnumerable<Claim?> FindAll(Predicate<Claim?> match)
+        public virtual IEnumerable<Claim> FindAll(Predicate<Claim> match)
         {
             if (match == null)
             {
@@ -309,7 +309,7 @@ namespace System.Security.Claims
             {
                 if (identity != null)
                 {
-                    foreach (Claim? claim in identity.FindAll(match))
+                    foreach (Claim claim in identity.FindAll(match))
                     {
                         yield return claim;
                     }
@@ -350,7 +350,7 @@ namespace System.Security.Claims
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
         /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindFirst(string)"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual Claim? FindFirst(Predicate<Claim?> match)
+        public virtual Claim? FindFirst(Predicate<Claim> match)
         {
             if (match == null)
             {
@@ -412,7 +412,7 @@ namespace System.Security.Claims
         /// <returns>true if a claim is found, false otherwise.</returns>
         /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.HasClaim(string, string)"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual bool HasClaim(Predicate<Claim?> match)
+        public virtual bool HasClaim(Predicate<Claim> match)
         {
             if (match == null)
             {
