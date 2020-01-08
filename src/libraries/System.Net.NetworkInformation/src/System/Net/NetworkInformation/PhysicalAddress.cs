@@ -121,7 +121,7 @@ namespace System.Net.NetworkInformation
                 return true;
             }
 
-            return TryParse(address, out value);
+            return TryParse(address.AsSpan(), out value);
         }
 
         public static bool TryParse(ReadOnlySpan<char> address, out PhysicalAddress value)
