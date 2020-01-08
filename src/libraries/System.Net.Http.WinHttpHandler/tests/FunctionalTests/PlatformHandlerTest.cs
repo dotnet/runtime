@@ -161,43 +161,31 @@ namespace System.Net.Http.Functional.Tests
         protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
     }
 
-    /*// Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpRetryProtocolTests : HttpRetryProtocolTests
     {
         public PlatformHandler_HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandlerTest_Cookies : HttpClientHandlerTest_Cookies
     {
         public PlatformHandlerTest_Cookies(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
         public PlatformHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         public PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Cancellation_Test
     {
         public PlatformHandler_HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
         public PlatformHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
@@ -205,18 +193,14 @@ namespace System.Net.Http.Functional.Tests
 
     // Enable this to run HTTP2 tests on platform handler
 #if PLATFORM_HANDLER_HTTP2_TESTS
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     public sealed class PlatformHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
     }
     
-    // Test only WinHttpHandler since the CurlHandler was removed
-    [ActiveIssue(339)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class PlatformHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {
         protected override bool UseHttp2LoopbackServer => true;
     }
-#endif*/
+#endif
 }

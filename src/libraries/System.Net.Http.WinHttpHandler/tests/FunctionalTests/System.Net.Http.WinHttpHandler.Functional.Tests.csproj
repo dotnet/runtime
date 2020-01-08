@@ -44,6 +44,9 @@
     <Compile Include="$(CommonTestPath)System\Net\TestWebProxies.cs">
       <Link>Common\System\Net\TestWebProxies.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\ByteAtATimeContent.cs">
+      <Link>Common\System\Net\Http\ByteAtATimeContent.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs">
       <Link>Common\System\Net\Http\ChannelBindingAwareContent.cs</Link>
     </Compile>
@@ -89,11 +92,20 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Asynchrony.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.Asynchrony.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Authentication.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.Authentication.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.AutoRedirect.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.AutoRedirect.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Cancellation.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.Cancellation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ClientCertificates.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.ClientCertificates.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Cookies.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.Cookies.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Decompression.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.Decompression.cs</Link>
@@ -103,6 +115,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.MaxConnectionsPerServer.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.MaxConnectionsPerServer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.MaxResponseHeadersLength.cs">
+      <Link>Common\System\Net\Http\HttpClientHandlerTest.MaxResponseHeadersLength.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Proxy.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.Proxy.cs</Link>
@@ -121,6 +136,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs">
       <Link>Common\System\Net\Http\HttpClientEKUTest.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpRetryProtocolTests.cs">
+      <Link>Common\System\Net\Http\HttpRetryProtocolTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\IdnaProtocolTests.cs">
       <Link>Common\System\Net\Http\IdnaProtocolTests.cs</Link>

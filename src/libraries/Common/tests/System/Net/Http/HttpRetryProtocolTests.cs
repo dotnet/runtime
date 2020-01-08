@@ -22,6 +22,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_RetryOnConnectionClosed_Success()
         {
+            if (IsWinHttpHandler)
+            {
+                // WinHttpHandler does not support Expect: 100-continue.
+                return;
+            }
+
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -58,6 +64,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncExpect100Continue_FailsAfterContentSendStarted_Throws()
         {
+            if (IsWinHttpHandler)
+            {
+                // WinHttpHandler does not support Expect: 100-continue.
+                return;
+            }
+
             var contentSending = new TaskCompletionSource<bool>();
             var connectionClosed = new TaskCompletionSource<bool>();
 

@@ -13,6 +13,10 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+#endif
+
     public abstract class HttpClientHandlerTest_Cookies : HttpClientHandlerTestBase
     {
         private const string s_cookieName = "ABC";
@@ -67,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     HttpClientHandler handler = CreateHttpClientHandler();
                     handler.CookieContainer = CreateSingleCookieContainer(uri, cookieName, cookieValue);
-                    handler.UseCookies = useCookies;
+                    SetUseCookies(handler, useCookies);
 
                     using (HttpClient client = CreateHttpClient(handler))
                     {
@@ -326,7 +330,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.UseCookies = useCookies;
+                SetUseCookies(handler, useCookies);
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
@@ -526,10 +530,17 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsyncWithBasicAuth_ReceiveSetCookie_CookieSent()
         {
+            if (IsWinHttpHandler)
+            {
+                // Issue #26986
+                // WinHttpHandler does not process the cookie.
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.Credentials = new NetworkCredential("user", "pass");
+                SetCredentials(handler, new NetworkCredential("user", "pass"));
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {

@@ -2420,6 +2420,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
+            // SocketsHttpHandler treats 0.0 as a bad version, and throws.
+            if (!IsWinHttpHandler)
+            {
+                return;
+            }
+
             // The default value for HttpRequestMessage.Version is Version(1,1).
             // So, we need to set something different (0,0), to test the "unknown" version.
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0, 0));
