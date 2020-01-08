@@ -340,8 +340,8 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 var_types baseType = comp->getBaseTypeOfSIMDLocal(location);
                 if (baseType != TYP_UNKNOWN)
                 {
-                    GenTreeSIMD* simdTree = new (comp, GT_SIMD)
-                        GenTreeSIMD(simdType, initVal, SIMDIntrinsicInit, baseType, genTypeSize(simdType));
+                    GenTreeSIMD* simdTree =
+                        comp->gtNewSIMDNode(simdType, SIMDIntrinsicInit, baseType, genTypeSize(simdType), initVal);
                     assignment->AsOp()->gtOp2 = simdTree;
                     value                     = simdTree;
                     initVal->gtNext           = simdTree;
@@ -776,9 +776,17 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             {
                 // Rewrite this as an explicit load.
                 JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
-                unsigned int baseTypeSize = genTypeSize(simdNode->gtSIMDBaseType);
-                GenTree*     address = new (comp, GT_LEA) GenTreeAddrMode(TYP_BYREF, simdNode->gtOp1, simdNode->gtOp2,
-                                                                      baseTypeSize, OFFSETOF__CORINFO_Array__data);
+                assert(simdNode->IsUnary() || simdNode->IsBinary());
+
+                GenTreeAddrMode* address = new (comp, GT_LEA)
+                    GenTreeAddrMode(TYP_BYREF, simdNode->GetOp(0), nullptr, 0, OFFSETOF__CORINFO_Array__data);
+
+                if (simdNode->IsBinary())
+                {
+                    address->SetIndex(simdNode->GetOp(1));
+                    address->SetScale(genTypeSize(simdNode->gtSIMDBaseType));
+                }
+
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
 
                 BlockRange().InsertBefore(simdNode, address, ind);
@@ -794,16 +802,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 // of a different width.  If that assumption changes, we will EITHER have to make these type
                 // transformations during importation, and plumb the types all the way through the JIT,
                 // OR add a lot of special handling here.
-                GenTree* op1 = simdNode->gtGetOp1();
-                if (op1 != nullptr && op1->gtType == TYP_STRUCT)
+                for (GenTreeSIMD::Use& use : simdNode->Uses())
                 {
-                    op1->gtType = simdType;
-                }
-
-                GenTree* op2 = simdNode->gtGetOp2IfPresent();
-                if (op2 != nullptr && op2->gtType == TYP_STRUCT)
-                {
-                    op2->gtType = simdType;
+                    if (use.GetNode()->TypeGet() == TYP_STRUCT)
+                    {
+                        use.GetNode()->gtType = simdType;
+                    }
                 }
             }
         }

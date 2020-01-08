@@ -18777,6 +18777,23 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             }
             break;
 
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            if (tree->AsSIMD()->IsBinary() && tree->IsReverseOp())
+            {
+                fgSetTreeSeqHelper(tree->AsSIMD()->GetOp(1), isLIR);
+                fgSetTreeSeqHelper(tree->AsSIMD()->GetOp(0), isLIR);
+            }
+            else
+            {
+                for (GenTreeSIMD::Use& use : tree->AsSIMD()->Uses())
+                {
+                    fgSetTreeSeqHelper(use.GetNode(), isLIR);
+                }
+            }
+            break;
+#endif
+
         case GT_CMPXCHG:
             // Evaluate the trees left to right
             fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpLocation, isLIR);
@@ -19144,6 +19161,12 @@ GenTree* Compiler::fgGetFirstNode(GenTree* tree)
         {
             child = child->GetChild(1);
         }
+#ifdef FEATURE_SIMD
+        else if (child->OperIsSIMD() && child->AsSIMD()->IsBinary() && child->IsReverseOp())
+        {
+            child = child->GetChild(1);
+        }
+#endif
         else
         {
             child = child->GetChild(0);
@@ -21367,6 +21390,16 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     chkFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
                 }
                 break;
+
+#ifdef FEATURE_SIMD
+            case GT_SIMD:
+                for (GenTreeSIMD::Use& use : tree->AsSIMD()->Uses())
+                {
+                    fgDebugCheckFlags(use.GetNode());
+                    chkFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
+                }
+                break;
+#endif
 
             case GT_CMPXCHG:
 

@@ -795,9 +795,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
     bool buildUses = true;
 
-    GenTree* op1 = simdTree->gtGetOp1();
-    GenTree* op2 = simdTree->gtGetOp2();
-
     switch (simdTree->gtSIMDIntrinsicID)
     {
         case SIMDIntrinsicInit:
@@ -815,8 +812,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicGetItem:
         {
-            op1 = simdTree->gtGetOp1();
-            op2 = simdTree->gtGetOp2();
+            GenTree* op1 = simdTree->GetOp(0);
+            GenTree* op2 = simdTree->GetOp(1);
 
             // We have an object and an index, either of which may be contained.
             bool setOp2DelayFree = false;
@@ -874,41 +871,30 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicSetZ:
         case SIMDIntrinsicSetW:
         case SIMDIntrinsicNarrow:
-        {
             // Op1 will write to dst before Op2 is free
-            BuildUse(op1);
-            RefPosition* op2Use = BuildUse(op2);
-            setDelayFree(op2Use);
+            BuildUse(simdTree->GetOp(0));
+            setDelayFree(BuildUse(simdTree->GetOp(1)));
             srcCount  = 2;
             buildUses = false;
             break;
-        }
 
         case SIMDIntrinsicInitN:
-        {
-            var_types baseType = simdTree->gtSIMDBaseType;
-            srcCount           = (short)(simdTree->gtSIMDSize / genTypeSize(baseType));
+            srcCount = static_cast<int>(simdTree->GetNumOps());
+            assert(srcCount == static_cast<int>(simdTree->gtSIMDSize / genTypeSize(simdTree->gtSIMDBaseType)));
             if (varTypeIsFloating(simdTree->gtSIMDBaseType))
             {
                 // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
                 buildInternalFloatRegisterDefForNode(simdTree);
             }
 
-            int initCount = 0;
-            for (GenTree* list = op1; list != nullptr; list = list->gtGetOp2())
+            for (GenTreeSIMD::Use& use : simdTree->Uses())
             {
-                assert(list->OperGet() == GT_LIST);
-                GenTree* listItem = list->gtGetOp1();
-                assert(listItem->TypeGet() == baseType);
-                assert(!listItem->isContained());
-                BuildUse(listItem);
-                initCount++;
+                assert(use.GetNode()->TypeGet() == simdTree->gtSIMDBaseType);
+                assert(!use.GetNode()->isContained());
+                BuildUse(use.GetNode());
             }
-            assert(initCount == srcCount);
             buildUses = false;
-
             break;
-        }
 
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
@@ -957,12 +943,15 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     }
     if (buildUses)
     {
-        assert(!op1->OperIs(GT_LIST));
+        assert(simdTree->GetNumOps() <= 2);
         assert(srcCount == 0);
-        srcCount = BuildOperandUses(op1);
-        if ((op2 != nullptr) && !op2->isContained())
+
+        for (GenTreeSIMD::Use& use : simdTree->Uses())
         {
-            srcCount += BuildOperandUses(op2);
+            if (!use.GetNode()->isContained())
+            {
+                srcCount += BuildOperandUses(use.GetNode());
+            }
         }
     }
     assert(internalCount <= MaxInternalCount);

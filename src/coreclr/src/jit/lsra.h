@@ -1592,6 +1592,8 @@ private:
 
 #ifdef FEATURE_SIMD
     int BuildSIMD(GenTreeSIMD* tree);
+    int BuildSIMDUnaryRMWUses(GenTreeSIMD* node);
+    int BuildSIMDBinaryRMWUses(GenTreeSIMD* node);
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS

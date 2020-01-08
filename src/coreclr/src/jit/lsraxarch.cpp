@@ -1841,7 +1841,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 // BuildSIMD: Set the NodeInfo for a GT_SIMD tree.
 //
 // Arguments:
-//    tree       - The GT_SIMD node of interest
+//    simdTree - The GT_SIMD node of interest
 //
 // Return Value:
 //    The number of sources consumed by this node.
@@ -1864,9 +1864,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
                (simdTree->gtSIMDIntrinsicID == SIMDIntrinsicOpInEquality));
     }
     SetContainsAVXFlags(simdTree->gtSIMDSize);
-    GenTree* op1      = simdTree->gtGetOp1();
-    GenTree* op2      = simdTree->gtGetOp2();
-    int      srcCount = 0;
+
+    int srcCount = 0;
 
     switch (simdTree->gtSIMDIntrinsicID)
     {
@@ -1881,7 +1880,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(_TARGET_64BIT_)
-            if (op1->OperGet() == GT_LONG)
+            GenTree* op1 = simdTree->GetOp(0);
+            if (op1->OperIs(GT_LONG))
             {
                 assert(op1->isContained());
                 GenTree* op1lo = op1->gtGetOp1();
@@ -1913,25 +1913,18 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         break;
 
         case SIMDIntrinsicInitN:
-        {
-            var_types baseType = simdTree->gtSIMDBaseType;
-            srcCount           = (short)(simdTree->gtSIMDSize / genTypeSize(baseType));
+            srcCount = static_cast<int>(simdTree->GetNumOps());
+            assert(srcCount == static_cast<int>(simdTree->gtSIMDSize / genTypeSize(simdTree->gtSIMDBaseType)));
             // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
             buildInternalFloatRegisterDefForNode(simdTree);
-            int initCount = 0;
-            for (GenTree* list = op1; list != nullptr; list = list->gtGetOp2())
+            for (GenTreeSIMD::Use& use : simdTree->Uses())
             {
-                assert(list->OperGet() == GT_LIST);
-                GenTree* listItem = list->gtGetOp1();
-                assert(listItem->TypeGet() == baseType);
-                assert(!listItem->isContained());
-                BuildUse(listItem);
-                initCount++;
+                assert(use.GetNode()->TypeGet() == simdTree->gtSIMDBaseType);
+                assert(!use.GetNode()->isContained());
+                BuildUse(use.GetNode());
             }
-            assert(initCount == srcCount);
             buildUses = false;
-        }
-        break;
+            break;
 
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
@@ -1994,7 +1987,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicOpEquality:
         case SIMDIntrinsicOpInEquality:
-            if (simdTree->gtGetOp2()->isContained())
+            if (simdTree->GetOp(1)->isContained())
             {
                 // If the second operand is contained then ContainCheckSIMD has determined
                 // that PTEST can be used. We only need a single source register and no
@@ -2029,7 +2022,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             if (varTypeIsFloating(simdTree->gtSIMDBaseType))
             {
                 if ((compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported) ||
-                    (simdTree->gtGetOp1()->TypeGet() == TYP_SIMD32))
+                    (simdTree->GetOp(0)->TypeGet() == TYP_SIMD32))
                 {
                     buildInternalFloatRegisterDefForNode(simdTree);
                     setInternalRegsDelayFree = true;
@@ -2059,8 +2052,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // The result is baseType of SIMD struct.
             // op1 may be a contained memory op, but if so we will consume its address.
             // op2 may be a contained constant.
-            op1 = simdTree->gtGetOp1();
-            op2 = simdTree->gtGetOp2();
+            GenTree* op1 = simdTree->GetOp(0);
+            GenTree* op2 = simdTree->GetOp(1);
 
             if (!op1->isContained())
             {
@@ -2213,7 +2206,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
         case SIMDIntrinsicShuffleSSE2:
             // Second operand is an integer constant and marked as contained.
-            assert(simdTree->gtGetOp2()->isContainedIntOrIImmed());
+            assert(simdTree->GetOp(1)->isContainedIntOrIImmed());
             break;
 
         case SIMDIntrinsicGetX:
@@ -2233,11 +2226,18 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     }
     if (buildUses)
     {
-        assert(!op1->OperIs(GT_LIST));
         assert(srcCount == 0);
-        // This is overly conservative, but is here for zero diffs.
-        srcCount = BuildRMWUses(simdTree);
+
+        if (simdTree->IsUnary())
+        {
+            srcCount = BuildSIMDUnaryRMWUses(simdTree);
+        }
+        else
+        {
+            srcCount = BuildSIMDBinaryRMWUses(simdTree);
+        }
     }
+
     buildInternalRegisterUses();
     if (dstCount == 1)
     {
@@ -2247,6 +2247,125 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     {
         assert(dstCount == 0);
     }
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildSIMDUnaryRMWUses: Build uses for a RMW unary SIMD node.
+//
+// Arguments:
+//    node - The GT_SIMD node of interest
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+// Notes:
+//    SSE unary instructions (sqrtps, cvttps2dq etc.) aren't really RMW,
+//    they have "dst, src" forms even when the VEX encoding is not available.
+//    However, it seems that SIMDIntrinsicConvertToSingle with UINT base type
+//    could benefit from getting the same register for both destination and
+//    source because its rather complicated codegen expansion starts by copying
+//    the source to the destination register.
+//
+int LinearScan::BuildSIMDUnaryRMWUses(GenTreeSIMD* node)
+{
+    assert(node->IsUnary());
+
+    GenTree* op1 = node->GetOp(0);
+
+    if (op1->isContained())
+    {
+        return BuildOperandUses(op1);
+    }
+
+    tgtPrefUse = BuildUse(op1);
+    return 1;
+}
+
+//------------------------------------------------------------------------
+// BuildSIMDBinaryRMWUses: Build uses for a RMW binary SIMD node.
+//
+// Arguments:
+//    node - The GT_SIMD node of interest
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildSIMDBinaryRMWUses(GenTreeSIMD* node)
+{
+    assert(node->IsBinary());
+
+    GenTree* op1 = node->GetOp(0);
+    GenTree* op2 = node->GetOp(1);
+
+    // Determine which operand, if any, should be delayRegFree. Normally, this would be op2,
+    // but if we have a commutative operator codegen can swap the operands, avoiding the need
+    // for delayRegFree.
+    //
+    // TODO-XArch-CQ: This should not be necessary when VEX encoding is available, at least
+    // for those intrinsics that directly map to SSE/AVX instructions. Intrinsics that require
+    // custom codegen expansion may still neeed this.
+    //
+    // Also, this doesn't check if the intrinsic is really RMW:
+    //  - SIMDIntrinsicOpEquality/SIMDIntrinsicOpInEquality - they don't have a register def.
+    //  - SIMDIntrinsicShuffleSSE2 - the second operand is always a contained immediate so they're
+    //    really unary as far as the register allocator is concerned.
+    //  - SIMDIntrinsicGetItem - the second operand is always an integer but the first may be a float
+    //    and in that case delayRegFree is not needed. Either way, it's not a real RMW operation. It's
+    //    also the only binary SIMD intrinsic that can have a contained op1.
+
+    GenTree* delayUseOperand = op2;
+
+    if (node->isCommutativeSIMDIntrinsic())
+    {
+        if (op1->isContained())
+        {
+            delayUseOperand = op1;
+        }
+        else if (!op2->isContained() || op2->IsCnsIntOrI())
+        {
+            // If we have a commutative operator and op2 is not a memory op, we don't need
+            // to set delayRegFree on either operand because codegen can swap them.
+            delayUseOperand = nullptr;
+        }
+    }
+    else if (op1->isContained())
+    {
+        delayUseOperand = nullptr;
+    }
+
+    int srcCount = 0;
+
+    // Build first use
+    if (!op1->isContained())
+    {
+        tgtPrefUse = BuildUse(op1);
+        srcCount++;
+    }
+    else if (delayUseOperand == op1)
+    {
+        srcCount += BuildDelayFreeUses(op1);
+    }
+    else
+    {
+        srcCount += BuildOperandUses(op1);
+    }
+
+    // Build second use
+    if (node->isCommutativeSIMDIntrinsic() && !op2->isContained())
+    {
+        tgtPrefUse2 = BuildUse(op2);
+        srcCount++;
+    }
+    else if (delayUseOperand == op2)
+    {
+        srcCount += BuildDelayFreeUses(op2);
+    }
+    else
+    {
+        srcCount += BuildOperandUses(op2);
+    }
+
     return srcCount;
 }
 #endif // FEATURE_SIMD

@@ -689,16 +689,14 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
         int   constArgCount = 0;
         float constArgValues[4]{0, 0, 0, 0};
 
-        for (GenTreeArgList* list = simdNode->gtGetOp1()->AsArgList(); list != nullptr; list = list->Rest())
+        for (GenTreeSIMD::Use& use : simdNode->Uses())
         {
-            GenTree* arg = list->Current();
-
-            assert(arg->TypeGet() == simdNode->gtSIMDBaseType);
+            assert(use.GetNode()->TypeGet() == simdNode->gtSIMDBaseType);
             assert(argCount < _countof(constArgValues));
 
-            if (arg->IsCnsFltOrDbl())
+            if (use.GetNode()->IsCnsFltOrDbl())
             {
-                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                constArgValues[constArgCount] = static_cast<float>(use.GetNode()->AsDblCon()->gtDconVal);
                 constArgCount++;
             }
 
@@ -707,9 +705,9 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 
         if (constArgCount == argCount)
         {
-            for (GenTreeArgList* list = simdNode->gtGetOp1()->AsArgList(); list != nullptr; list = list->Rest())
+            for (GenTreeSIMD::Use& use : simdNode->Uses())
             {
-                BlockRange().Remove(list->Current());
+                BlockRange().Remove(use.GetNode());
             }
 
             CORINFO_FIELD_HANDLE hnd =
@@ -717,7 +715,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
             GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);
-            simdNode->gtOp1 = clsVarAddr;
+            simdNode->AsIndir()->Addr() = clsVarAddr;
             ContainCheckIndir(simdNode->AsIndir());
 
             return;
@@ -725,7 +723,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
     }
 
 #ifdef _TARGET_XARCH_
-    if ((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGetItem) && (simdNode->gtGetOp1()->OperGet() == GT_IND))
+    if ((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGetItem) && (simdNode->GetOp(0)->OperGet() == GT_IND))
     {
         // If SIMD vector is already in memory, we force its
         // addr to be evaluated into a reg.  This would allow
@@ -741,7 +739,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
         // Ideally, we should be able to lower GetItem intrinsic
         // into GT_IND(newAddr) where newAddr combines
         // the addr of SIMD vector with the given index.
-        simdNode->gtOp1->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
+        simdNode->GetOp(0)->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;
     }
     else if (simdNode->IsSIMDEqualityOrInequality())
     {
@@ -2440,7 +2438,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicInit:
         {
-            op1 = simdNode->AsOp()->gtOp1;
+            op1 = simdNode->GetOp(0);
 #ifndef _TARGET_64BIT_
             if (op1->OperGet() == GT_LONG)
             {
@@ -2476,7 +2474,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
-            CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
+            CheckImmedAndMakeContained(simdNode, simdNode->GetOp(1));
             break;
 
         case SIMDIntrinsicOpEquality:
@@ -2485,7 +2483,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             // against zero using ptest. We can safely do this optimization
             // for integral vectors but not for floating-point for the reason
             // that we have +0.0 and -0.0 and +0.0 == -0.0
-            op2 = simdNode->gtGetOp2();
+            op2 = simdNode->GetOp(1);
             if ((comp->getSIMDSupportLevel() >= SIMD_SSE4_Supported) && op2->IsIntegralConstVector(0))
             {
                 MakeSrcContained(simdNode, op2);
@@ -2498,8 +2496,8 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             //  - the source SIMD struct
             //  - index (which element to get)
             // The result is baseType of SIMD struct.
-            op1 = simdNode->AsOp()->gtOp1;
-            op2 = simdNode->AsOp()->gtOp2;
+            op1 = simdNode->GetOp(0);
+            op2 = simdNode->GetOp(1);
 
             if (op1->OperGet() == GT_IND)
             {
@@ -2522,8 +2520,8 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicShuffleSSE2:
             // Second operand is an integer constant and marked as contained.
-            assert(simdNode->AsOp()->gtOp2->IsCnsIntOrI());
-            MakeSrcContained(simdNode, simdNode->AsOp()->gtOp2);
+            assert(simdNode->GetOp(1)->IsCnsIntOrI());
+            MakeSrcContained(simdNode, simdNode->GetOp(1));
             break;
 
         default:

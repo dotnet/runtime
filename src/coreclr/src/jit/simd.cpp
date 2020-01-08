@@ -1133,7 +1133,7 @@ GenTreeSIMD* Compiler::impSIMDGetFixed(var_types simdType, var_types baseType, u
     GenTree* op1 = impSIMDPopStack(simdType, true);
 
     GenTree*     op2      = gtNewIconNode(index);
-    GenTreeSIMD* simdTree = gtNewSIMDNode(baseType, op1, op2, SIMDIntrinsicGetItem, baseType, simdSize);
+    GenTreeSIMD* simdTree = gtNewSIMDNode(baseType, SIMDIntrinsicGetItem, baseType, simdSize, op1, op2);
     return simdTree;
 }
 
@@ -1167,7 +1167,7 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
     // Shuffle is meant to swap the comparison results of low-32-bits and high 32-bits of respective long elements.
 
     // Compare vector<long> as if they were vector<int> and assign the result to a temp
-    GenTree* compResult = gtNewSIMDNode(simdType, *pOp1, *pOp2, SIMDIntrinsicEqual, TYP_INT, size);
+    GenTree* compResult = gtNewSIMDNode(simdType, SIMDIntrinsicEqual, TYP_INT, size, *pOp1, *pOp2);
     unsigned lclNum     = lvaGrabTemp(true DEBUGARG("SIMD Long =="));
     lvaSetStruct(lclNum, typeHnd, false);
     GenTree* tmp = gtNewLclvNode(lclNum, simdType);
@@ -1177,8 +1177,8 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
     // op2 = Shuffle(tmp, 0xB1)
     // IntrinsicId = BitwiseAnd
     *pOp1 = gtNewOperNode(GT_COMMA, simdType, asg, tmp);
-    *pOp2 = gtNewSIMDNode(simdType, gtNewLclvNode(lclNum, simdType), gtNewIconNode(SHUFFLE_ZWXY, TYP_INT),
-                          SIMDIntrinsicShuffleSSE2, TYP_INT, size);
+    *pOp2 = gtNewSIMDNode(simdType, SIMDIntrinsicShuffleSSE2, TYP_INT, size, gtNewLclvNode(lclNum, simdType),
+                          gtNewIconNode(SHUFFLE_ZWXY, TYP_INT));
     return SIMDIntrinsicBitwiseAnd;
 }
 
@@ -1255,23 +1255,23 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpGreaterThan(CORINFO_CLASS_HANDLE typeH
     assert(*pOp1 != nullptr && *pOp2 != nullptr);
 
     // v1GreaterThanv2Signed - signed 32-bit comparison
-    GenTree* v1GreaterThanv2Signed = gtNewSIMDNode(simdType, *pOp1, *pOp2, SIMDIntrinsicGreaterThan, TYP_INT, size);
+    GenTree* v1GreaterThanv2Signed = gtNewSIMDNode(simdType, SIMDIntrinsicGreaterThan, TYP_INT, size, *pOp1, *pOp2);
 
     // v1Equalsv2 - 32-bit equality
-    GenTree* v1Equalsv2 = gtNewSIMDNode(simdType, dupOp1, dupOp2, SIMDIntrinsicEqual, TYP_INT, size);
+    GenTree* v1Equalsv2 = gtNewSIMDNode(simdType, SIMDIntrinsicEqual, TYP_INT, size, dupOp1, dupOp2);
 
     // v1GreaterThanv2Unsigned - unsigned 32-bit comparison
     var_types       tempBaseType = TYP_UINT;
     SIMDIntrinsicID sid = impSIMDRelOp(SIMDIntrinsicGreaterThan, typeHnd, size, &tempBaseType, &dupDupOp1, &dupDupOp2);
-    GenTree*        v1GreaterThanv2Unsigned = gtNewSIMDNode(simdType, dupDupOp1, dupDupOp2, sid, tempBaseType, size);
+    GenTree*        v1GreaterThanv2Unsigned = gtNewSIMDNode(simdType, sid, tempBaseType, size, dupDupOp1, dupDupOp2);
 
-    GenTree* z = gtNewSIMDNode(simdType, v1GreaterThanv2Signed, gtNewIconNode(SHUFFLE_WWYY, TYP_INT),
-                               SIMDIntrinsicShuffleSSE2, TYP_FLOAT, size);
-    GenTree* t1 = gtNewSIMDNode(simdType, v1GreaterThanv2Unsigned, gtNewIconNode(SHUFFLE_ZZXX, TYP_INT),
-                                SIMDIntrinsicShuffleSSE2, TYP_FLOAT, size);
-    GenTree* u1 = gtNewSIMDNode(simdType, v1Equalsv2, gtNewIconNode(SHUFFLE_WWYY, TYP_INT), SIMDIntrinsicShuffleSSE2,
-                                TYP_FLOAT, size);
-    GenTree* w = gtNewSIMDNode(simdType, u1, t1, SIMDIntrinsicBitwiseAnd, TYP_INT, size);
+    GenTree* z = gtNewSIMDNode(simdType, SIMDIntrinsicShuffleSSE2, TYP_FLOAT, size, v1GreaterThanv2Signed,
+                               gtNewIconNode(SHUFFLE_WWYY, TYP_INT));
+    GenTree* t1 = gtNewSIMDNode(simdType, SIMDIntrinsicShuffleSSE2, TYP_FLOAT, size, v1GreaterThanv2Unsigned,
+                                gtNewIconNode(SHUFFLE_ZZXX, TYP_INT));
+    GenTree* u1 = gtNewSIMDNode(simdType, SIMDIntrinsicShuffleSSE2, TYP_FLOAT, size, v1Equalsv2,
+                                gtNewIconNode(SHUFFLE_WWYY, TYP_INT));
+    GenTree* w = gtNewSIMDNode(simdType, SIMDIntrinsicBitwiseAnd, TYP_INT, size, u1, t1);
 
     *pOp1 = z;
     *pOp2 = w;
@@ -1325,11 +1325,11 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpGreaterThanOrEqual(CORINFO_CLASS_HANDL
 
     // (a==b)
     SIMDIntrinsicID id = impSIMDLongRelOpEqual(typeHnd, size, pOp1, pOp2);
-    *pOp1              = gtNewSIMDNode(simdType, *pOp1, *pOp2, id, TYP_LONG, size);
+    *pOp1              = gtNewSIMDNode(simdType, id, TYP_LONG, size, *pOp1, *pOp2);
 
     // (a > b)
     id    = impSIMDLongRelOpGreaterThan(typeHnd, size, &dupOp1, &dupOp2);
-    *pOp2 = gtNewSIMDNode(simdType, dupOp1, dupOp2, id, TYP_LONG, size);
+    *pOp2 = gtNewSIMDNode(simdType, id, TYP_LONG, size, dupOp1, dupOp2);
 
     return SIMDIntrinsicBitwiseOr;
 }
@@ -1386,10 +1386,10 @@ SIMDIntrinsicID Compiler::impSIMDIntegralRelOpGreaterThanOrEqual(
     assert(*pOp1 != nullptr && *pOp2 != nullptr);
 
     // (a==b)
-    *pOp1 = gtNewSIMDNode(simdType, *pOp1, *pOp2, SIMDIntrinsicEqual, baseType, size);
+    *pOp1 = gtNewSIMDNode(simdType, SIMDIntrinsicEqual, baseType, size, *pOp1, *pOp2);
 
     // (a > b)
-    *pOp2 = gtNewSIMDNode(simdType, dupOp1, dupOp2, SIMDIntrinsicGreaterThan, baseType, size);
+    *pOp2 = gtNewSIMDNode(simdType, SIMDIntrinsicGreaterThan, baseType, size, dupOp1, dupOp2);
 
     return SIMDIntrinsicBitwiseOr;
 }
@@ -1540,7 +1540,7 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
                     initVal      = gtNewIconNode((ssize_t)constVal);
                 }
                 initVal->gtType      = tempBaseType;
-                GenTree* constVector = gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, tempBaseType, size);
+                GenTree* constVector = gtNewSIMDNode(simdType, SIMDIntrinsicInit, tempBaseType, size, initVal);
 
                 // Assign constVector to a temp, since we intend to use it more than once
                 // TODO-CQ: We have quite a few such constant vectors constructed during
@@ -1550,8 +1550,8 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
 
                 // op1 = op1 - constVector
                 // op2 = op2 - constVector
-                *pOp1 = gtNewSIMDNode(simdType, *pOp1, constVector, SIMDIntrinsicSub, baseType, size);
-                *pOp2 = gtNewSIMDNode(simdType, *pOp2, tmp, SIMDIntrinsicSub, baseType, size);
+                *pOp1 = gtNewSIMDNode(simdType, SIMDIntrinsicSub, baseType, size, *pOp1, constVector);
+                *pOp2 = gtNewSIMDNode(simdType, SIMDIntrinsicSub, baseType, size, *pOp2, tmp);
             }
 
             return impSIMDRelOp(intrinsicID, typeHnd, size, inOutBaseType, pOp1, pOp2);
@@ -1653,7 +1653,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
         var_types       relOpBaseType = baseType;
         SIMDIntrinsicID relOpIntrinsic =
             impSIMDRelOp(SIMDIntrinsicLessThan, typeHnd, size, &relOpBaseType, &bitVecOp1, &bitVecOp2);
-        GenTree* bitVec       = gtNewSIMDNode(simdType, bitVecOp1, bitVecOp2, relOpIntrinsic, relOpBaseType, size);
+        GenTree* bitVec       = gtNewSIMDNode(simdType, relOpIntrinsic, relOpBaseType, size, bitVecOp1, bitVecOp2);
         unsigned bitVecLclNum = lvaGrabTemp(true DEBUGARG("SIMD Abs bitVec"));
         lvaSetStruct(bitVecLclNum, typeHnd, false);
         GenTree* bitVecAssign = gtNewTempAssign(bitVecLclNum, bitVec);
@@ -1662,7 +1662,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
         // Construct condSelectOp1 = vector.Zero - v
         GenTree* subOp1 = gtNewLclvNode(vecZeroLclNum, vecZero->TypeGet());
         GenTree* subOp2 = gtNewLclvNode(op1LclNum, op1->TypeGet());
-        GenTree* negVec = gtNewSIMDNode(simdType, subOp1, subOp2, SIMDIntrinsicSub, baseType, size);
+        GenTree* negVec = gtNewSIMDNode(simdType, SIMDIntrinsicSub, baseType, size, subOp1, subOp2);
 
         // Construct ConditionalSelect(bitVec, vector.Zero - v, v)
         GenTree* vec = gtNewLclvNode(op1LclNum, op1->TypeGet());
@@ -1705,8 +1705,8 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
 
         assert(bitMask != nullptr);
         bitMask->gtType        = baseType;
-        GenTree* bitMaskVector = gtNewSIMDNode(simdType, bitMask, SIMDIntrinsicInit, baseType, size);
-        retVal                 = gtNewSIMDNode(simdType, op1, bitMaskVector, SIMDIntrinsicBitwiseAnd, baseType, size);
+        GenTree* bitMaskVector = gtNewSIMDNode(simdType, SIMDIntrinsicInit, baseType, size, bitMask);
+        retVal                 = gtNewSIMDNode(simdType, SIMDIntrinsicBitwiseAnd, baseType, size, op1, bitMaskVector);
     }
     else if (baseType == TYP_USHORT || baseType == TYP_UBYTE || baseType == TYP_UINT || baseType == TYP_ULONG)
     {
@@ -1718,7 +1718,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
         assert(getSIMDSupportLevel() >= SIMD_SSE4_Supported);
         assert(baseType != TYP_LONG);
 
-        retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
+        retVal = gtNewSIMDNode(simdType, SIMDIntrinsicAbs, baseType, size, op1);
     }
 #elif defined(_TARGET_ARM64_)
     if (varTypeIsUnsigned(baseType))
@@ -1728,7 +1728,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
     }
     else
     {
-        retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
+        retVal = gtNewSIMDNode(simdType, SIMDIntrinsicAbs, baseType, size, op1);
     }
 #else  // !defined(_TARGET_XARCH)_ && !defined(_TARGET_ARM64_)
     assert(!"Abs intrinsic on non-xarch target not implemented");
@@ -1776,17 +1776,17 @@ GenTree* Compiler::impSIMDSelect(
         asg = gtNewTempAssign(lclNum, op1);
     }
 
-    GenTree* andExpr = gtNewSIMDNode(simdType, op2, tmp, SIMDIntrinsicBitwiseAnd, baseType, size);
+    GenTree* andExpr = gtNewSIMDNode(simdType, SIMDIntrinsicBitwiseAnd, baseType, size, op2, tmp);
     GenTree* dupOp1  = gtCloneExpr(tmp);
     assert(dupOp1 != nullptr);
 #ifdef _TARGET_ARM64_
     // ARM64 implements SIMDIntrinsicBitwiseAndNot as Left & ~Right
-    GenTree* andNotExpr = gtNewSIMDNode(simdType, op3, dupOp1, SIMDIntrinsicBitwiseAndNot, baseType, size);
+    GenTree* andNotExpr = gtNewSIMDNode(simdType, SIMDIntrinsicBitwiseAndNot, baseType, size, op3, dupOp1);
 #else
     // XARCH implements SIMDIntrinsicBitwiseAndNot as ~Left & Right
-    GenTree* andNotExpr = gtNewSIMDNode(simdType, dupOp1, op3, SIMDIntrinsicBitwiseAndNot, baseType, size);
+    GenTree* andNotExpr = gtNewSIMDNode(simdType, SIMDIntrinsicBitwiseAndNot, baseType, size, dupOp1, op3);
 #endif
-    GenTree* simdTree = gtNewSIMDNode(simdType, andExpr, andNotExpr, SIMDIntrinsicBitwiseOr, baseType, size);
+    GenTree* simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicBitwiseOr, baseType, size, andExpr, andNotExpr);
 
     // If asg not null, create a GT_COMMA tree.
     if (asg != nullptr)
@@ -1853,7 +1853,7 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
          (baseType == TYP_BYTE || baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_USHORT)))
     {
         // SSE2 or SSE4.1 has direct support
-        simdTree = gtNewSIMDNode(simdType, op1, op2, intrinsicId, baseType, size);
+        simdTree = gtNewSIMDNode(simdType, intrinsicId, baseType, size, op1, op2);
     }
     else if (baseType == TYP_USHORT || baseType == TYP_BYTE)
     {
@@ -1879,7 +1879,7 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         }
 
         GenTree* initVal     = gtNewIconNode(constVal);
-        GenTree* constVector = gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, TYP_INT, size);
+        GenTree* constVector = gtNewSIMDNode(simdType, SIMDIntrinsicInit, TYP_INT, size, initVal);
 
         // Assign constVector to a temp, since we intend to use it more than once
         // TODO-CQ: We have quite a few such constant vectors constructed during
@@ -1889,15 +1889,15 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
 
         // op1 = op1 - constVector
         // op2 = op2 - constVector
-        op1 = gtNewSIMDNode(simdType, op1, constVector, operIntrinsic, baseType, size);
-        op2 = gtNewSIMDNode(simdType, op2, tmp, operIntrinsic, baseType, size);
+        op1 = gtNewSIMDNode(simdType, operIntrinsic, baseType, size, op1, constVector);
+        op2 = gtNewSIMDNode(simdType, operIntrinsic, baseType, size, op2, tmp);
 
         // compute min/max of op1 and op2 considering them as if minMaxOperBaseType
-        simdTree = gtNewSIMDNode(simdType, op1, op2, intrinsicId, minMaxOperBaseType, size);
+        simdTree = gtNewSIMDNode(simdType, intrinsicId, minMaxOperBaseType, size, op1, op2);
 
         // re-adjust the value by adding or subtracting constVector
         tmp      = gtNewLclvNode(tmp->AsLclVarCommon()->GetLclNum(), tmp->TypeGet());
-        simdTree = gtNewSIMDNode(simdType, simdTree, tmp, adjustIntrinsic, baseType, size);
+        simdTree = gtNewSIMDNode(simdType, adjustIntrinsic, baseType, size, simdTree, tmp);
     }
 #elif defined(_TARGET_ARM64_)
     // Arm64 has direct support for all types except int64/uint64
@@ -1909,7 +1909,7 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
     //       Min/Max(op1, op2) = Select(compResult, op1, op2)
     if (baseType != TYP_ULONG && baseType != TYP_LONG)
     {
-        simdTree = gtNewSIMDNode(simdType, op1, op2, intrinsicId, baseType, size);
+        simdTree = gtNewSIMDNode(simdType, intrinsicId, baseType, size, op1, op2);
     }
 #endif
     else
@@ -1956,7 +1956,7 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         assert(dupOp1 != nullptr);
         assert(dupOp2 != nullptr);
         relOpIntrinsic            = impSIMDRelOp(relOpIntrinsic, typeHnd, size, &relOpBaseType, &dupOp1, &dupOp2);
-        GenTree* compResult       = gtNewSIMDNode(simdType, dupOp1, dupOp2, relOpIntrinsic, relOpBaseType, size);
+        GenTree* compResult       = gtNewSIMDNode(simdType, relOpIntrinsic, relOpBaseType, size, dupOp1, dupOp2);
         unsigned compResultLclNum = lvaGrabTemp(true DEBUGARG("SIMD Min/Max"));
         lvaSetStruct(compResultLclNum, typeHnd, false);
         GenTree* compResultAssign = gtNewTempAssign(compResultLclNum, compResult);
@@ -2472,95 +2472,31 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         {
             // Equivalent to (Vector<T>) new Vector<int>(0xffffffff);
             GenTree* initVal = gtNewIconNode(0xffffffff, TYP_INT);
-            simdTree         = gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, TYP_INT, size);
+            simdTree         = gtNewSIMDNode(simdType, SIMDIntrinsicInit, TYP_INT, size, initVal);
             if (baseType != TYP_INT)
             {
                 // cast it to required baseType if different from TYP_INT
-                simdTree = gtNewSIMDNode(simdType, simdTree, nullptr, SIMDIntrinsicCast, baseType, size);
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicCast, baseType, size, simdTree);
             }
             retVal = simdTree;
         }
         break;
 
         case SIMDIntrinsicInit:
-        case SIMDIntrinsicInitN:
         {
             // SIMDIntrinsicInit:
             //    op2 - the initializer value
             //    op1 - byref of vector
-            //
-            // SIMDIntrinsicInitN
-            //    op2 - list of initializer values stitched into a list
-            //    op1 - byref of vector
-            bool initFromFirstArgIndir = false;
-            if (simdIntrinsicID == SIMDIntrinsicInit)
-            {
-                op2 = impSIMDPopStack(baseType);
-            }
-            else
-            {
-                assert(simdIntrinsicID == SIMDIntrinsicInitN);
-                assert(baseType == TYP_FLOAT);
-
-                unsigned initCount    = argCount - 1;
-                unsigned elementCount = getSIMDVectorLength(size, baseType);
-                noway_assert(initCount == elementCount);
-
-                // Build a GT_LIST with the N values.
-                // We must maintain left-to-right order of the args, but we will pop
-                // them off in reverse order (the Nth arg was pushed onto the stack last).
-
-                GenTree* list              = nullptr;
-                GenTree* firstArg          = nullptr;
-                GenTree* prevArg           = nullptr;
-                bool     areArgsContiguous = true;
-                for (unsigned i = 0; i < initCount; i++)
-                {
-                    GenTree* nextArg = impSIMDPopStack(baseType);
-                    if (areArgsContiguous)
-                    {
-                        GenTree* curArg = nextArg;
-                        firstArg        = curArg;
-
-                        if (prevArg != nullptr)
-                        {
-                            // Recall that we are popping the args off the stack in reverse order.
-                            areArgsContiguous = areArgumentsContiguous(curArg, prevArg);
-                        }
-                        prevArg = curArg;
-                    }
-
-                    list = new (this, GT_LIST) GenTreeOp(GT_LIST, baseType, nextArg, list);
-                }
-
-                if (areArgsContiguous && baseType == TYP_FLOAT)
-                {
-                    // Since Vector2, Vector3 and Vector4's arguments type are only float,
-                    // we intialize the vector from first argument address, only when
-                    // the baseType is TYP_FLOAT and the arguments are located contiguously in memory
-                    initFromFirstArgIndir = true;
-                    GenTree*  op2Address  = createAddressNodeForSIMDInit(firstArg, size);
-                    var_types simdType    = getSIMDTypeForSize(size);
-                    op2                   = gtNewOperNode(GT_IND, simdType, op2Address);
-                }
-                else
-                {
-                    op2 = list;
-                }
-            }
-
+            op2 = impSIMDPopStack(baseType);
             op1 = getOp1ForConstructor(opcode, newobjThis, clsHnd);
 
             assert(op1->TypeGet() == TYP_BYREF);
-            assert(genActualType(op2->TypeGet()) == genActualType(baseType) || initFromFirstArgIndir);
+            assert(genActualType(op2->TypeGet()) == genActualType(baseType));
 
             // For integral base types of size less than TYP_INT, expand the initializer
             // to fill size of TYP_INT bytes.
             if (varTypeIsSmallInt(baseType))
             {
-                // This case should occur only for Init intrinsic.
-                assert(simdIntrinsicID == SIMDIntrinsicInit);
-
                 unsigned baseSize = genTypeSize(baseType);
                 int      multiplier;
                 if (baseSize == 1)
@@ -2601,26 +2537,68 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 op2         = gtNewOperNode(GT_MUL, TYP_INT, t1, t2);
 
                 // Construct a vector of TYP_INT with the new initializer and cast it back to vector of baseType
-                simdTree = gtNewSIMDNode(simdType, op2, nullptr, simdIntrinsicID, TYP_INT, size);
-                simdTree = gtNewSIMDNode(simdType, simdTree, nullptr, SIMDIntrinsicCast, baseType, size);
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicInit, TYP_INT, size, op2);
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicCast, baseType, size, simdTree);
             }
             else
             {
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicInit, baseType, size, op2);
+            }
 
-                if (initFromFirstArgIndir)
+            copyBlkDst = op1;
+            doCopyBlk  = true;
+        }
+        break;
+
+        case SIMDIntrinsicInitN:
+        {
+            // SIMDIntrinsicInitN
+            //    op2 - list of initializer values stitched into a list
+            //    op1 - byref of vector
+            assert(baseType == TYP_FLOAT);
+
+            unsigned initCount    = argCount - 1;
+            unsigned elementCount = getSIMDVectorLength(size, baseType);
+            noway_assert(initCount == elementCount);
+
+            // We must maintain left-to-right order of the args, but we will pop
+            // them off in reverse order (the Nth arg was pushed onto the stack last).
+
+            GenTree* args[SIMD_INTRINSIC_MAX_PARAM_COUNT - 1];
+
+            bool areArgsContiguous = true;
+            for (unsigned i = 0; i < initCount; i++)
+            {
+                args[initCount - 1 - i] = impSIMDPopStack(baseType);
+
+                if (areArgsContiguous && (i > 0))
                 {
-                    simdTree = op2;
-                    if (op1->AsOp()->gtOp1->OperIsLocal())
-                    {
-                        // label the dst struct's lclvar is used for SIMD intrinsic,
-                        // so that this dst struct won't be promoted.
-                        setLclRelatedToSIMDIntrinsic(op1->AsOp()->gtOp1);
-                    }
+                    // Recall that we are popping the args off the stack in reverse order.
+                    areArgsContiguous = areArgumentsContiguous(args[initCount - 1 - i], args[initCount - 1 - i + 1]);
                 }
-                else
+            }
+
+            op1 = getOp1ForConstructor(opcode, newobjThis, clsHnd);
+            assert(op1->TypeGet() == TYP_BYREF);
+
+            if (areArgsContiguous)
+            {
+                // Since Vector2, Vector3 and Vector4's arguments type are only float,
+                // we intialize the vector from first argument address, only when
+                // the baseType is TYP_FLOAT and the arguments are located contiguously in memory
+                GenTree* op2Address = createAddressNodeForSIMDInit(args[0], size);
+                simdTree            = gtNewOperNode(GT_IND, simdType, op2Address);
+
+                if (op1->AsOp()->gtOp1->OperIsLocal())
                 {
-                    simdTree = gtNewSIMDNode(simdType, op2, nullptr, simdIntrinsicID, baseType, size);
+                    // label the dst struct's lclvar is used for SIMD intrinsic,
+                    // so that this dst struct won't be promoted.
+                    setLclRelatedToSIMDIntrinsic(op1->AsOp()->gtOp1);
                 }
+            }
+            else
+            {
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicInitN, baseType, size, initCount, args);
             }
 
             copyBlkDst = op1;
@@ -2745,8 +2723,15 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             if (simdIntrinsicID == SIMDIntrinsicInitArray || simdIntrinsicID == SIMDIntrinsicInitArrayX)
             {
-                op1        = getOp1ForConstructor(opcode, newobjThis, clsHnd);
-                simdTree   = gtNewSIMDNode(simdType, op2, op3, SIMDIntrinsicInitArray, baseType, size);
+                op1 = getOp1ForConstructor(opcode, newobjThis, clsHnd);
+                if (op3 == nullptr)
+                {
+                    simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicInitArray, baseType, size, op2);
+                }
+                else
+                {
+                    simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicInitArray, baseType, size, op2, op3);
+                }
                 copyBlkDst = op1;
                 doCopyBlk  = true;
             }
@@ -2808,11 +2793,11 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             simdTree = op2;
             if (op3 != nullptr)
             {
-                simdTree = gtNewSIMDNode(simdType, simdTree, op3, SIMDIntrinsicSetZ, baseType, size);
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicSetZ, baseType, size, simdTree, op3);
             }
             if (op4 != nullptr)
             {
-                simdTree = gtNewSIMDNode(simdType, simdTree, op4, SIMDIntrinsicSetW, baseType, size);
+                simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicSetW, baseType, size, simdTree, op4);
             }
 
             copyBlkDst = op1;
@@ -2829,7 +2814,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             assert(op1->TypeGet() == simdType);
             assert(op2->TypeGet() == simdType);
 
-            simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, SIMDIntrinsicOpEquality, baseType, size);
+            simdTree = gtNewSIMDNode(genActualType(callType), SIMDIntrinsicOpEquality, baseType, size, op1, op2);
             if (simdType == TYP_SIMD12)
             {
                 simdTree->gtFlags |= GTF_SIMD12_OP;
@@ -2844,7 +2829,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             // op2 is the second operand
             op2      = impSIMDPopStack(simdType);
             op1      = impSIMDPopStack(simdType, instMethod);
-            simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, SIMDIntrinsicOpInEquality, baseType, size);
+            simdTree = gtNewSIMDNode(genActualType(callType), SIMDIntrinsicOpInEquality, baseType, size, op1, op2);
             if (simdType == TYP_SIMD12)
             {
                 simdTree->gtFlags |= GTF_SIMD12_OP;
@@ -2863,7 +2848,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             op1 = impSIMDPopStack(simdType, instMethod);
 
             SIMDIntrinsicID intrinsicID = impSIMDRelOp(simdIntrinsicID, clsHnd, size, &baseType, &op1, &op2);
-            simdTree                    = gtNewSIMDNode(genActualType(callType), op1, op2, intrinsicID, baseType, size);
+            simdTree                    = gtNewSIMDNode(genActualType(callType), intrinsicID, baseType, size, op1, op2);
             retVal                      = simdTree;
         }
         break;
@@ -2936,7 +2921,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             }
 #endif // _TARGET_XARCH_
 
-            simdTree = gtNewSIMDNode(simdType, op1, op2, simdIntrinsicID, baseType, size);
+            simdTree = gtNewSIMDNode(simdType, simdIntrinsicID, baseType, size, op1, op2);
             retVal   = simdTree;
         }
         break;
@@ -3002,7 +2987,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             assert(op1->TypeGet() == simdType);
             assert(op2->TypeGet() == TYP_INT);
 
-            simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, simdIntrinsicID, baseType, size);
+            simdTree = gtNewSIMDNode(genActualType(callType), simdIntrinsicID, baseType, size, op1, op2);
             retVal   = simdTree;
         }
         break;
@@ -3023,7 +3008,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType, instMethod);
 
-            simdTree = gtNewSIMDNode(baseType, op1, op2, simdIntrinsicID, baseType, size);
+            simdTree = gtNewSIMDNode(baseType, simdIntrinsicID, baseType, size, op1, op2);
             if (simdType == TYP_SIMD12)
             {
                 simdTree->gtFlags |= GTF_SIMD12_OP;
@@ -3047,7 +3032,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             op1 = impSIMDPopStack(simdType);
 
-            retVal = gtNewSIMDNode(genActualType(callType), op1, nullptr, simdIntrinsicID, baseType, size);
+            retVal = gtNewSIMDNode(genActualType(callType), simdIntrinsicID, baseType, size, op1);
         }
         break;
 
@@ -3096,7 +3081,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             GenTree* src = gtCloneExpr(op1);
             assert(src != nullptr);
-            simdTree = gtNewSIMDNode(simdType, src, op2, simdIntrinsicID, baseType, size);
+            simdTree = gtNewSIMDNode(simdType, simdIntrinsicID, baseType, size, src, op2);
 
             copyBlkDst = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
             doCopyBlk  = true;
@@ -3111,7 +3096,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         {
             op1 = impSIMDPopStack(simdType, instMethod);
 
-            simdTree = gtNewSIMDNode(simdType, op1, nullptr, simdIntrinsicID, baseType, size);
+            simdTree = gtNewSIMDNode(simdType, simdIntrinsicID, baseType, size, op1);
             retVal   = simdTree;
         }
         break;
@@ -3121,7 +3106,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 #ifdef _TARGET_64BIT_
             op1 = impSIMDPopStack(simdType, instMethod);
 
-            simdTree = gtNewSIMDNode(simdType, op1, nullptr, simdIntrinsicID, baseType, size);
+            simdTree = gtNewSIMDNode(simdType, simdIntrinsicID, baseType, size, op1);
             retVal   = simdTree;
 #else
             JITDUMP("SIMD Conversion to Int64 is not supported on this platform\n");
@@ -3136,7 +3121,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType);
             // op1 and op2 are two input Vector<T>.
-            simdTree = gtNewSIMDNode(simdType, op1, op2, simdIntrinsicID, baseType, size);
+            simdTree = gtNewSIMDNode(simdType, simdIntrinsicID, baseType, size, op1, op2);
             retVal   = simdTree;
         }
         break;
@@ -3151,7 +3136,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             GenTree*             dupOp1    = fgInsertCommaFormTemp(&op1, op1Handle);
 
             // Widen the lower half and assign it to dstAddrLo.
-            simdTree = gtNewSIMDNode(simdType, op1, nullptr, SIMDIntrinsicWidenLo, baseType, size);
+            simdTree = gtNewSIMDNode(simdType, SIMDIntrinsicWidenLo, baseType, size, op1);
             // TODO-1stClassStructs: With the introduction of ClassLayout it would be preferrable to use
             // GT_OBJ instead of GT_BLK nodes to avoid losing information about the actual vector type.
             GenTree* loDest = new (this, GT_BLK)
@@ -3162,7 +3147,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             loAsg->gtFlags |= ((simdTree->gtFlags | dstAddrLo->gtFlags) & GTF_ALL_EFFECT);
 
             // Widen the upper half and assign it to dstAddrHi.
-            simdTree        = gtNewSIMDNode(simdType, dupOp1, nullptr, SIMDIntrinsicWidenHi, baseType, size);
+            simdTree        = gtNewSIMDNode(simdType, SIMDIntrinsicWidenHi, baseType, size, dupOp1);
             GenTree* hiDest = new (this, GT_BLK)
                 GenTreeBlk(GT_BLK, simdType, dstAddrHi, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
             GenTree* hiAsg = gtNewBlkOpNode(hiDest, simdTree,

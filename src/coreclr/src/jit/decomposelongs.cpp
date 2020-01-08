@@ -1701,17 +1701,17 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     assert(simdTree->gtSIMDIntrinsicID == SIMDIntrinsicGetItem);
     assert(varTypeIsLong(baseType));
     assert(varTypeIsLong(simdTree));
-    assert(varTypeIsSIMD(simdTree->AsOp()->gtOp1->gtType));
-    assert(simdTree->AsOp()->gtOp2->gtType == TYP_INT);
+    assert(varTypeIsSIMD(simdTree->GetOp(0)->TypeGet()));
+    assert(simdTree->GetOp(1)->TypeGet() == TYP_INT);
 
-    bool    indexIsConst = simdTree->AsOp()->gtOp2->IsCnsIntOrI();
+    bool    indexIsConst = simdTree->GetOp(1)->IsCnsIntOrI();
     ssize_t index        = 0;
     if (indexIsConst)
     {
-        index = simdTree->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+        index = simdTree->GetOp(1)->AsIntCon()->gtIconVal;
     }
 
-    GenTree* simdTmpVar    = RepresentOpAsLocalVar(simdTree->AsOp()->gtOp1, simdTree, &simdTree->AsOp()->gtOp1);
+    GenTree* simdTmpVar    = RepresentOpAsLocalVar(simdTree->GetOp(0), simdTree, &simdTree->GetUse(0).NodeRef());
     unsigned simdTmpVarNum = simdTmpVar->AsLclVarCommon()->GetLclNum();
     JITDUMP("[DecomposeSimdGetItem]: Saving op1 tree to a temp var:\n");
     DISPTREERANGE(Range(), simdTmpVar);
@@ -1721,7 +1721,7 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     unsigned indexTmpVarNum = 0;
     if (!indexIsConst)
     {
-        indexTmpVar    = RepresentOpAsLocalVar(simdTree->AsOp()->gtOp2, simdTree, &simdTree->AsOp()->gtOp2);
+        indexTmpVar    = RepresentOpAsLocalVar(simdTree->GetOp(1), simdTree, &simdTree->GetUse(1).NodeRef());
         indexTmpVarNum = indexTmpVar->AsLclVarCommon()->GetLclNum();
         JITDUMP("[DecomposeSimdGetItem]: Saving op2 tree to a temp var:\n");
         DISPTREERANGE(Range(), indexTmpVar);
@@ -1737,7 +1737,7 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     if (indexIsConst)
     {
         // Reuse the existing index constant node.
-        indexTimesTwo1 = simdTree->AsOp()->gtOp2;
+        indexTimesTwo1 = simdTree->GetOp(1);
         Range().Remove(indexTimesTwo1);
         indexTimesTwo1->AsIntCon()->gtIconVal = index * 2;
 
@@ -1752,13 +1752,13 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     }
 
     GenTree* loResult =
-        m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar1, indexTimesTwo1, SIMDIntrinsicGetItem, TYP_INT, simdSize);
+        m_compiler->gtNewSIMDNode(TYP_INT, SIMDIntrinsicGetItem, TYP_INT, simdSize, simdTmpVar1, indexTimesTwo1);
     Range().InsertBefore(simdTree, loResult);
 
     // Create:
     //      hiResult = GT_SIMD{get_item}[int](tmp_simd_var, index * 2 + 1)
 
-    GenTree* simdTmpVar2 = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTree->AsOp()->gtOp1->gtType);
+    GenTree* simdTmpVar2 = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTree->GetOp(0)->TypeGet());
     GenTree* indexTimesTwoPlusOne;
 
     if (indexIsConst)
@@ -1778,7 +1778,7 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     }
 
     GenTree* hiResult =
-        m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar2, indexTimesTwoPlusOne, SIMDIntrinsicGetItem, TYP_INT, simdSize);
+        m_compiler->gtNewSIMDNode(TYP_INT, SIMDIntrinsicGetItem, TYP_INT, simdSize, simdTmpVar2, indexTimesTwoPlusOne);
     Range().InsertBefore(simdTree, hiResult);
 
     // Done with the original tree; remove it.
