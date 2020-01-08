@@ -31,7 +31,7 @@ public class WindowsPrincipalTests
             Win32Exception win32Exception = new Win32Exception(ERROR_TRUSTED_RELATIONSHIP_FAILURE);
 
             // NetFx throws a plain SystemException which has the message built via FormatMessage.
-            // CoreFx throws a Win32Exception based on the error, which gets the same message value.
+            // Libraries throws a Win32Exception based on the error, which gets the same message value.
             Assert.Equal(win32Exception.Message, e.Message);
         }
     }

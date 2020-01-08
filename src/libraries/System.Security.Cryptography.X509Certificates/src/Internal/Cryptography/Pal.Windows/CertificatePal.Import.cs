@@ -232,7 +232,7 @@ namespace Internal.Cryptography.Pal
             // In the full .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
             // enable a native application compiled against CAPI to find that private key and interoperate with it.
             //
-            // For CoreFX this behavior is being retained.
+            // For Libraries this behavior is being retained.
             //
             // For .NET Native (UWP) the API used to delete the private key (if it wasn't added to a store) is not
             // allowed to be called if the key is stored in CAPI.  So for UWP force the key to be stored in the

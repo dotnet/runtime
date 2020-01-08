@@ -29,7 +29,7 @@ namespace Internal.Cryptography.Pal
                     return BuildDsaPublicKey(encodedKeyValue, encodedParameters);
             }
 
-            // NotSupportedException is what desktop and CoreFx-Windows throw in this situation.
+            // NotSupportedException is what desktop and Libraries-Windows throw in this situation.
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
 
