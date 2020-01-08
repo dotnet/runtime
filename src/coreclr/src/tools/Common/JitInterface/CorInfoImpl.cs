@@ -1162,10 +1162,14 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("isValidToken"); }
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidStringRef"); }
-        private int getStringLength(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
-        { throw new NotImplementedException("getStringLength"); }
         private bool shouldEnforceCallvirtRestriction(CORINFO_MODULE_STRUCT_* scope)
         { throw new NotImplementedException("shouldEnforceCallvirtRestriction"); }
+
+        private int getStringLength(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
+        {
+            // TODO: get length for string literal
+            return -1;
+        }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
         {
