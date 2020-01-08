@@ -207,7 +207,6 @@ namespace System.Text.RegularExpressions
         }
 #endif
 
-#if FEATURE_COMPILEAPIS
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
@@ -222,7 +221,6 @@ namespace System.Text.RegularExpressions
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
         }
-#endif // FEATURE_COMPILEAPIS
 
         /// <summary>
         /// Escapes a minimal set of metacharacters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and

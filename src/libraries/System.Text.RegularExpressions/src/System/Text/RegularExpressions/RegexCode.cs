@@ -16,6 +16,7 @@
 // Strings and sets are indices into a string table.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -75,7 +76,6 @@ namespace System.Text.RegularExpressions
         public const int Testref = 37;            //                          backtrack if ref undefined
         public const int Goto = 38;               //          jump            just go
 
-        public const int Prune = 39;              //                          prune it baby
         public const int Stop = 40;               //                          done!
 
         public const int ECMABoundary = 41;       //                          \b
@@ -196,7 +196,6 @@ namespace System.Text.RegularExpressions
                 case Lazybranch:
                 case Branchmark:
                 case Lazybranchmark:
-                case Prune:
                 case Set:
                     return 2;
 
@@ -223,39 +222,62 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        private static readonly string[] s_codeStr = new string[]
+        private static readonly Dictionary<int, string> s_codeStr = new Dictionary<int, string>()
         {
-            "Onerep", "Notonerep", "Setrep",
-            "Oneloop", "Notoneloop", "Setloop",
-            "Onelazy", "Notonelazy", "Setlazy",
-            "One", "Notone", "Set",
-            "Multi", "Ref",
-            "Bol", "Eol", "Boundary", "Nonboundary", "Beginning", "Start", "EndZ", "End",
-            "Nothing",
-            "Lazybranch", "Branchmark", "Lazybranchmark",
-            "Nullcount", "Setcount", "Branchcount", "Lazybranchcount",
-            "Nullmark", "Setmark", "Capturemark", "Getmark",
-            "Setjump", "Backjump", "Forejump", "Testref", "Goto",
-            "Prune", "Stop",
-            "ECMABoundary", "NonECMABoundary",
-            "Oneloopatomic", "Notoneloopatomic", "Setloopatomic"
+            { Onerep, nameof(Onerep) },
+            { Notonerep, nameof(Notonerep) },
+            { Setrep, nameof(Setrep) },
+            { Oneloop, nameof(Oneloop) },
+            { Notoneloop, nameof(Notoneloop) },
+            { Setloop, nameof(Setloop) },
+            { Onelazy, nameof(Onelazy) },
+            { Notonelazy, nameof(Notonelazy) },
+            { Setlazy, nameof(Setlazy) },
+            { One, nameof(One) },
+            { Notone, nameof(Notone) },
+            { Set, nameof(Set) },
+            { Multi, nameof(Multi) },
+            { Ref, nameof(Ref) },
+            { Bol, nameof(Bol) },
+            { Eol, nameof(Eol) },
+            { Boundary, nameof(Boundary) },
+            { Nonboundary, nameof(Nonboundary) },
+            { Beginning, nameof(Beginning) },
+            { Start, nameof(Start) },
+            { EndZ, nameof(EndZ) },
+            { End, nameof(End) },
+            { Nothing, nameof(Nothing) },
+            { Lazybranch, nameof(Lazybranch) },
+            { Branchmark, nameof(Branchmark) },
+            { Lazybranchmark, nameof(Lazybranchmark) },
+            { Nullcount, nameof(Nullcount) },
+            { Setcount, nameof(Setcount) },
+            { Branchcount, nameof(Branchcount) },
+            { Lazybranchcount, nameof(Lazybranchcount) },
+            { Nullmark, nameof(Nullmark) },
+            { Setmark, nameof(Setmark) },
+            { Capturemark, nameof(Capturemark) },
+            { Getmark, nameof(Getmark) },
+            { Setjump, nameof(Setjump) },
+            { Backjump, nameof(Backjump) },
+            { Forejump, nameof(Forejump) },
+            { Testref, nameof(Testref) },
+            { Goto, nameof(Goto) },
+            { Stop, nameof(Stop) },
+            { ECMABoundary, nameof(ECMABoundary) },
+            { NonECMABoundary, nameof(NonECMABoundary) },
+            { Oneloopatomic, nameof(Oneloopatomic) },
+            { Notoneloopatomic, nameof(Notoneloopatomic) },
+            { Setloopatomic, nameof(Setloopatomic) },
         };
 
         [ExcludeFromCodeCoverage]
-        private static string OperatorDescription(int Opcode)
-        {
-            bool isCi = ((Opcode & Ci) != 0);
-            bool isRtl = ((Opcode & Rtl) != 0);
-            bool isBack = ((Opcode & Back) != 0);
-            bool isBack2 = ((Opcode & Back2) != 0);
-
-            return
-                s_codeStr[Opcode & Mask] +
-                (isCi ? "-Ci" : "") +
-                (isRtl ? "-Rtl" : "") +
-                (isBack ? "-Back" : "") +
-                (isBack2 ? "-Back2" : "");
-        }
+        private static string OperatorDescription(int Opcode) =>
+            (s_codeStr.TryGetValue(Opcode & Mask, out string? codeStr) ? codeStr : "(unknown)") +
+            ((Opcode & Ci) != 0 ? "-Ci" : "") +
+            ((Opcode & Rtl) != 0 ? "-Rtl" : "") +
+            ((Opcode & Back) != 0 ? "-Back" : "") +
+            ((Opcode & Back2) != 0 ? "-Back2" : "");
 
         [ExcludeFromCodeCoverage]
         public string OpcodeDescription(int offset)

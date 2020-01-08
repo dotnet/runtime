@@ -926,22 +926,42 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        private static readonly string[] s_typeStr = new string[] {
-            "Onerep", "Notonerep", "Setrep",
-            "Oneloop", "Notoneloop", "Setloop",
-            "Onelazy", "Notonelazy", "Setlazy",
-            "One", "Notone", "Set",
-            "Multi", "Ref",
-            "Bol", "Eol", "Boundary", "Nonboundary",
-            "Beginning", "Start", "EndZ", "End",
-            "Nothing", "Empty",
-            "Alternate", "Concatenate",
-            "Loop", "Lazyloop",
-            "Capture", "Group", "Require", "Prevent", "Atomic",
-            "Testref", "Testgroup",
-            "", "", "", "", "", "",
-            "ECMABoundary", "NonECMABoundary",
-            "Oneloopatomic", "Notoneloopatomic", "Setloopatomic",
+        private static readonly Dictionary<int, string> s_typeStr = new Dictionary<int, string>()
+        {
+            { Oneloop, nameof(Oneloop) },
+            { Notoneloop, nameof(Notoneloop) },
+            { Setloop, nameof(Setloop) },
+            { Onelazy, nameof(Onelazy) },
+            { Notonelazy, nameof(Notonelazy) },
+            { Setlazy, nameof(Setlazy) },
+            { One, nameof(One) },
+            { Notone, nameof(Notone) },
+            { Set, nameof(Set) },
+            { Multi, nameof(Multi) },
+            { Ref, nameof(Ref) },
+            { Bol, nameof(Bol) },
+            { Eol, nameof(Eol) },
+            { Boundary, nameof(Boundary) },
+            { Nonboundary, nameof(Nonboundary) },
+            { ECMABoundary, nameof(ECMABoundary) },
+            { NonECMABoundary, nameof(NonECMABoundary) },
+            { Beginning, nameof(Beginning) },
+            { Start, nameof(Start) },
+            { EndZ, nameof(EndZ) },
+            { End, nameof(End) },
+            { Oneloopatomic, nameof(Oneloopatomic) },
+            { Notoneloopatomic, nameof(Notoneloopatomic) },
+            { Setloopatomic, nameof(Setloopatomic) },
+            { Nothing, nameof(Nothing) },
+            { Empty, nameof(Empty) },
+            { Lazyloop, nameof(Lazyloop) },
+            { Capture, nameof(Capture) },
+            { Oneloop, nameof(Group) },
+            { Oneloop, nameof(Require) },
+            { Oneloop, nameof(Prevent) },
+            { Oneloop, nameof(Atomic) },
+            { Oneloop, nameof(Testref) },
+            { Oneloop, nameof(Testgroup) },
         };
 
         [ExcludeFromCodeCoverage]
@@ -949,7 +969,7 @@ namespace System.Text.RegularExpressions
         {
             StringBuilder argSb = new StringBuilder();
 
-            argSb.Append(s_typeStr[Type]);
+            argSb.Append(s_typeStr.TryGetValue(Type, out string? typeStr) ? typeStr : "(unknown)");
 
             if ((Options & RegexOptions.ExplicitCapture) != 0)
                 argSb.Append("-C");
@@ -1049,5 +1069,5 @@ namespace System.Text.RegularExpressions
             }
         }
 #endif
-    }
+        }
 }
