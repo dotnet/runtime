@@ -1151,14 +1151,14 @@ int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
 }
 
 // Read all data from inFd and write it to outFd
-static int32_t CopyFile_ReadWrite(int inFd, int outFd)
+static bool CopyFile_ReadWrite(int inFd, int outFd)
 {
     // Allocate a buffer
     const int BufferLength = 80 * 1024 * sizeof(char);
     char* buffer = (char*)malloc(BufferLength);
     if (buffer == NULL)
     {
-        return -1;
+        return false;
     }
 
     // Repeatedly read from the source and write to the destination
@@ -1172,7 +1172,7 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
             int tmp = errno;
             free(buffer);
             errno = tmp;
-            return -1;
+            return false;
         }
         if (bytesRead == 0)
         {
@@ -1191,7 +1191,7 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
                 int tmp = errno;
                 free(buffer);
                 errno = tmp;
-                return -1;
+                return false;
             }
             assert(bytesWritten >= 0);
             bytesRead -= bytesWritten;
@@ -1200,7 +1200,7 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
     }
 
     free(buffer);
-    return 0;
+    return true;
 }
 
 #if HAVE_CLONEFILE
@@ -1294,6 +1294,39 @@ static bool CopyFile_SendFile4(int inFd, int outFd, const struct stat_ *sourceSt
     return true;
 }
 #endif // HAVE_SENDFILE_4
+
+static void CopyFileMetadata(int outFd, const struct stat_ *sourceStat)
+{
+    // Copy over metadata from the source file.  First copy the file times.
+    // If futimes nor futimes are available on this platform, file times
+    // will not be copied over.
+#if HAVE_FUTIMENS
+    // futimens is prefered because it has a higher resolution.
+    struct timespec origTimes[] = {
+        {
+            .tv_sec = (time_t)sourceStat->st_atime,
+            .tv_nsec = ST_ATIME_NSEC(sourceStat),
+        },
+        {
+            .tv_sec = (time_t)sourceStat->st_mtime,
+            .tv_nsec = ST_MTIME_NSEC(sourceStat),
+        }
+    };
+    while (futimens(outFd, origTimes) < 0 && errno == EINTR);
+#elif HAVE_FUTIMES
+    struct timeval origTimes[] = {
+        {
+            .tv_sec = sourceStat->st_atime,
+            .tv_usec = ST_ATIME_NSEC(sourceStat) / 1000,
+        },
+        {
+            .tv_sec = sourceStat->st_mtime,
+            .tv_usec = ST_MTIME_NSEC(sourceStat) / 1000,
+        }
+    };
+    while (futimes(outFd, origTimes) < 0 && errno == EINTR);
+#endif
+}
 
 #if defined(PAL_COPY_FILE_RANGE_SYSCALL)
 static bool CopyFile_CopyFileRange(int inFd, int outFd, const struct stat_ *sourceStat)
@@ -1407,40 +1440,22 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
     copied = copied || CopyFile_SendFile4(inFd, outFd, &sourceStat);
 #endif // HAVE_SENDFILE_4
 
-    // Manually read all data from the source and write it to the destination.
-    if (!copied && CopyFile_ReadWrite(inFd, outFd) != 0)
-    {
-        tmpErrno = errno;
-        close(outFd);
-        errno = tmpErrno;
-        return -1;
-    }
+    // If there are no better file copying methods, or the previous methods somehow failed, try
+    // an oldschool read/write loop before giving up.
+    // TODO: Distinguish between general I/O errors (where trying read/write wouldn't help anyway),
+    // and method-specific errors (where we should try again -- e.g. cross-volume copies).
+    copied = copied || CopyFile_ReadWrite(inFd, outFd);
 
-    // Now that the data from the file has been copied, copy over metadata
-    // from the source file.  First copy the file times.
-    // If futimes nor futimes are available on this platform, file times will
-    // not be copied over.
-#if HAVE_FUTIMENS
-    // futimens is prefered because it has a higher resolution.
-    struct timespec origTimes[2];
-    origTimes[0].tv_sec = (time_t)sourceStat.st_atime;
-    origTimes[0].tv_nsec = ST_ATIME_NSEC(&sourceStat);
-    origTimes[1].tv_sec = (time_t)sourceStat.st_mtime;
-    origTimes[1].tv_nsec = ST_MTIME_NSEC(&sourceStat);
-    while ((ret = futimens(outFd, origTimes)) < 0 && errno == EINTR);
-#elif HAVE_FUTIMES
-    struct timeval origTimes[2];
-    origTimes[0].tv_sec = sourceStat.st_atime;
-    origTimes[0].tv_usec = ST_ATIME_NSEC(&sourceStat) / 1000;
-    origTimes[1].tv_sec = sourceStat.st_mtime;
-    origTimes[1].tv_usec = ST_MTIME_NSEC(&sourceStat) / 1000;
-    while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
-#endif
+    if (copied)
+    {
+        CopyFileMetadata(outFd, &sourceStat);
+    }
 
     tmpErrno = errno;
     close(outFd);
     errno = tmpErrno;
-    return 0;
+
+    return copied ? 0 : -1;
 }
 
 intptr_t SystemNative_INotifyInit(void)
