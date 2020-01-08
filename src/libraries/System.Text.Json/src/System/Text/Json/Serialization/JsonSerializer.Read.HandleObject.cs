@@ -80,6 +80,18 @@ namespace System.Text.Json
 
                 state.Current.ReturnValue = classInfo.CreateObject();
             }
+            else if (state.Current.IsProcessingObject(ClassType.Enumerable))
+            {
+                // Nested preserved array within another preserved array.
+                Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
+
+                Type preservedObjType = state.Current.JsonPropertyInfo.GetJsonPreservedReferenceType();
+                // Re-Initialize the current frame.
+                state.Current.Initialize(preservedObjType, options);
+                state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();
+                state.Current.IsPreservedArray = true;
+                state.Current.IsNestedPreservedArray = true;
+            }
             else
             {
                 // Only dictionaries or objects are valid given the `StartObject` token.
@@ -116,8 +128,8 @@ namespace System.Text.Json
             }
             else
             {
-                // Set directly when handling preserved array
-                bool setPropertyDirectly = state.Current.IsPreservedArray;
+                // Set directly when handling non-nested preserved array
+                bool setPropertyDirectly = state.Current.IsPreservedArray && !state.Current.IsNestedPreservedArray;
                 state.Pop();
 
                 ApplyObjectToEnumerable(value, ref state, setPropertyDirectly);

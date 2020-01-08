@@ -40,6 +40,7 @@ namespace System.Text.Json
         // Preserve Reference
         public bool IsPreserved;
         public bool IsPreservedArray;
+        public bool IsNestedPreservedArray;
         public bool DictionaryPropertyIsPreserved;
         // maybe I can remove ShouldHandleReference if I use ReferenceId = null as false.
         public bool ShouldHandleReference;
@@ -173,8 +174,8 @@ namespace System.Text.Json
             PropertyRefCache = null;
             ReturnValue = null;
             IsPreserved = false;
-            DictionaryPropertyIsPreserved = false;
             IsPreservedArray = false;
+            IsNestedPreservedArray = false;
             EndObject();
         }
 
@@ -193,6 +194,7 @@ namespace System.Text.Json
             TempDictionaryValues = null;
             JsonPropertyName = null;
             KeyName = null;
+            DictionaryPropertyIsPreserved = false;
         }
 
         public static object CreateEnumerableValue(ref ReadStack state)

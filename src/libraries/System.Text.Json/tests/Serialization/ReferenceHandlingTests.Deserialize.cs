@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text.Json.Serialization;
@@ -173,6 +174,22 @@ namespace System.Text.Json.Tests
             Assert.Empty(employee.SubordinatesString);
             // reference to preserved array.
             Assert.Empty(employee.Manager.SubordinatesString);
+        }
+
+        [Fact] // Verify ReadStackFrame.DictionaryPropertyIsPreserved is being reset properly.
+        public static void DictionaryPropertyOneAfterAnother()
+        {
+            string json = @"{
+                ""$id"": ""1"",
+                ""Contacts"": {
+                    ""$id"": ""2""
+                },
+                ""Contacts2"": {
+                    ""$ref"": ""2""
+                }
+            }";
+
+            Employee employee = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
         }
         #endregion
 
@@ -411,6 +428,74 @@ namespace System.Text.Json.Tests
             Assert.Same(employees[0], employees[2]);
             Assert.Same(employees[1], employees[3]);
             Assert.Same(employees[4], employees[5]);
+        }
+
+        [Fact]
+        public static void ArrayWithNestedPreservedArray()
+        {
+            string json = @"{
+                ""$id"": ""1"",
+                ""$values"": [
+                    {
+                        ""$id"": ""2"",
+                        ""$values"": [ 1, 2, 3 ]
+                    }
+                ]
+            }";
+
+            List<List<int>> root = JsonSerializer.Deserialize<List<List<int>>>(json, _deserializeOptions);
+            Assert.Equal(1, root.Count);
+            Assert.Equal(3, root[0].Count);
+        }
+
+        [Fact]
+        public static void ArrayWithNestedPreservedArrayAndReference()
+        {
+            string json = @"{
+                ""$id"": ""1"",
+                ""$values"": [
+                    {
+                        ""$id"": ""2"",
+                        ""$values"": [ 1, 2, 3 ]
+                    },
+                    { ""$ref"": ""2"" }
+                ]
+            }";
+
+            List<List<int>> root = JsonSerializer.Deserialize<List<List<int>>>(json, _deserializeOptions);
+            Assert.Equal(2, root.Count);
+            Assert.Equal(3, root[0].Count);
+            Assert.Same(root[0], root[1]);
+        }
+
+        private class ListWrapper
+        {
+            public List<List<int>> NestedList { get; set; } = new List<List<int>> { new List<int> { 1 } };
+        }
+
+        [Fact]
+        public static void ArrayWithNestedPreservedArrayAndDefaultValues()
+        {
+            string json = @"{
+                ""$id"": ""1"",
+                ""NestedList"": {
+                    ""$id"": ""2"",
+                    ""$values"": [
+                        {
+                            ""$id"": ""3"",
+                            ""$values"": [
+                                1,
+                                2,
+                                3
+                            ]
+                        }
+                    ]
+                }
+            }";
+
+            ListWrapper root = JsonSerializer.Deserialize<ListWrapper>(json, _deserializeOptions);
+            Assert.Equal(1, root.NestedList.Count);
+            Assert.Equal(3, root.NestedList[0].Count);
         }
         #endregion
 
