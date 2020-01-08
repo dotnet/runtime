@@ -9,7 +9,7 @@ namespace System.Security.Principal
 {
     public class GenericIdentity : ClaimsIdentity
     {
-        private readonly string m_name = null!;  // Init-ed in parameterized constructors
+        private readonly string m_name = null!;  // Initialized in parameterized constructors
         private readonly string m_type = null!;
 
         public GenericIdentity(string name)
