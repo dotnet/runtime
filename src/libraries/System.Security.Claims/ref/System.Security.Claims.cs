@@ -53,7 +53,7 @@ namespace System.Security.Claims
         public System.Security.Claims.ClaimsIdentity? Actor { get { throw null; } set { } }
         public virtual string? AuthenticationType { get { throw null; } }
         public object? BootstrapContext { get { throw null; } set { } }
-        public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim?> Claims { get { throw null; } }
+        public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { get { throw null; } }
         protected virtual byte[]? CustomSerializationData { get { throw null; } }
         public virtual bool IsAuthenticated { get { throw null; } }
         public string? Label { get { throw null; } set { } }
@@ -61,7 +61,7 @@ namespace System.Security.Claims
         public string NameClaimType { get { throw null; } }
         public string RoleClaimType { get { throw null; } }
         public virtual void AddClaim(System.Security.Claims.Claim claim) { }
-        public virtual void AddClaims(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims) { }
+        public virtual void AddClaims(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim?> claims) { }
         public virtual System.Security.Claims.ClaimsIdentity Clone() { throw null; }
         protected virtual System.Security.Claims.Claim CreateClaim(System.IO.BinaryReader reader) { throw null; }
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> FindAll(System.Predicate<System.Security.Claims.Claim> match) { throw null; }
@@ -69,7 +69,7 @@ namespace System.Security.Claims
         public virtual System.Security.Claims.Claim? FindFirst(System.Predicate<System.Security.Claims.Claim> match) { throw null; }
         public virtual System.Security.Claims.Claim? FindFirst(string type) { throw null; }
         protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public virtual bool HasClaim(System.Predicate<System.Security.Claims.Claim?> match) { throw null; }
+        public virtual bool HasClaim(System.Predicate<System.Security.Claims.Claim> match) { throw null; }
         public virtual bool HasClaim(string type, string value) { throw null; }
         public virtual void RemoveClaim(System.Security.Claims.Claim? claim) { }
         public virtual bool TryRemoveClaim(System.Security.Claims.Claim? claim) { throw null; }
