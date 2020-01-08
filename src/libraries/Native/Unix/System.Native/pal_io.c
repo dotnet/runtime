@@ -51,6 +51,21 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 extern ssize_t  getline(char **, size_t *, FILE *);
 #endif
 
+#if defined(__linux__)
+# include <syscall.h>
+# if defined(__NR_copy_file_range)
+#   define PAL_COPY_FILE_RANGE_SYSCALL __NR_copy_file_range
+# elif defined(__x86_64__)
+#   define PAL_COPY_FILE_RANGE_SYSCALL 326
+# elif defined(__i386__)
+#   define PAL_COPY_FILE_RANGE_SYSCALL 377
+# elif defined(__arm__)
+#   define PAL_COPY_FILE_RANGE_SYSCALL 391
+# elif defined(__aarch64__)
+#   define PAL_COPY_FILE_RANGE_SYSCALL 285
+# endif // __NR_copy_file_range
+#endif // defined(__linux__)
+
 #if HAVE_STAT64
 #define stat_ stat64
 #define fstat_ fstat64
@@ -1276,6 +1291,40 @@ static bool CopyFile_SendFile4(int inFd, int outFd, const struct stat_ *sourceSt
 }
 #endif // HAVE_SENDFILE_4
 
+#if defined(PAL_COPY_FILE_RANGE_SYSCALL)
+static bool CopyFile_CopyFileRange(int inFd, int outFd, const struct stat_ *sourceStat)
+{
+    static bool sCopyFileRangeUnavailable = false;
+    off_t size = sourceStat->st_size;
+
+    if (sCopyFileRangeUnavailable)
+    {
+        return false;
+    }
+
+    while (size)
+    {
+        ssize_t copied = syscall(PAL_COPY_FILE_RANGE_SYSCALL, inFd, NULL, outFd, NULL, (size_t)size, 0);
+
+        if (size < 0)
+        {
+            if (errno == ENOSYS)
+            {
+                sCopyFileRangeUnavailable = true;
+            }
+
+            // No possible error codes other than ENOSYS can be handled here,
+            // so return false to try a legacy read(2)/write(2) copy.
+            return false;
+        }
+
+        size -= copied;
+    }
+
+    return true;
+}
+#endif // defined(PAL_COPY_FILE_RANGE_SYSCALL)
+
 int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite)
 {
     int inFd = ToFileDescriptor(sourceFd);
@@ -1340,6 +1389,13 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
 
     // Get the stats on the source file.
     bool copied = false;
+
+#if defined(PAL_COPY_FILE_RANGE_SYSCALL)
+    // If copy_file_range(2) is available (Linux), try to use it, as
+    // filesystems might implement better file copying strategies (e.g.
+    // CoW).
+    copied = CopyFile_CopyFileRange(inFd, outFd, &sourceStat);
+#endif // defined(PAL_COPY_FILE_RANGE_SYSCALL)
 
 #if HAVE_SENDFILE_4
     // If sendfile(2) is available (Linux), try to use it, as the whole copy
