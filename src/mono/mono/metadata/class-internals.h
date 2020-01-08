@@ -1547,6 +1547,13 @@ mono_class_has_default_constructor (MonoClass *klass, gboolean public_only);
 		}								\
 	}									\
 
+static inline gboolean
+m_field_get_offset (MonoClassField *field)
+{
+	g_assert (m_class_is_fields_inited (field->parent));
+	return field->offset;
+}
+
 // Enum and static storage for JIT icalls.
 #include "jit-icall-reg.h"
 
