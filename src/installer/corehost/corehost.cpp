@@ -218,8 +218,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
             rc = main_fn_v2(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
 
-#if defined(_WIN32) && defined(FEATURE_APPHOST)
-            if (rc == StatusCode::FrameworkMissingFailure && !set_error_writer_fn)
+            if (trace::get_error_writer() != nullptr && rc == StatusCode::FrameworkMissingFailure && !set_error_writer_fn)
             {
                 fx_ver_t apphost_ver;
                 fx_ver_t::parse(get_filename(_STRINGIFY(CUREXE_PKG_VER)), &apphost_ver, false);
@@ -228,7 +227,6 @@ int exe_start(const int argc, const pal::char_t* argv[])
                 trace::error(_X(""));
                 trace::error(_X("  - %s"), url.c_str());
             }
-#endif
         }
     }
     else
@@ -283,7 +281,6 @@ int main(const int argc, const pal::char_t* argv[])
     }
 
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
-    // Buffer errors to use them later.
     apphost::buffer_errors();
 #endif
 
