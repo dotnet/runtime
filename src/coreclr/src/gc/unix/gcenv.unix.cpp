@@ -209,7 +209,6 @@ void NUMASupportInitialize()
     }
     if (g_numaHandle != 0)
     {
-        dlsym(g_numaHandle, "numa_allocate_cpumask");
 #define PER_FUNCTION_BLOCK(fn) \
     fn##_ptr = (decltype(fn)*)dlsym(g_numaHandle, #fn); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from libnuma\n"); abort(); }
