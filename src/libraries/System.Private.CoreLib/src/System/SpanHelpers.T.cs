@@ -456,6 +456,9 @@ namespace System
 
         public static int LastIndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
+            // The optimized implementation should be used for these types
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
+
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
 
@@ -574,8 +577,8 @@ namespace System
 
         public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
+            // The optimized implementation should be used for byte
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || Unsafe.SizeOf<T>() != sizeof(byte));
 
             Debug.Assert(length >= 0);
 
@@ -680,8 +683,8 @@ namespace System
 
         public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
+            // The optimized implementation should be used for byte
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || Unsafe.SizeOf<T>() != sizeof(byte));
 
             Debug.Assert(length >= 0);
 
@@ -786,8 +789,8 @@ namespace System
 
         public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
+            // The optimized implementation should be used for byte
+            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || Unsafe.SizeOf<T>() != sizeof(byte));
 
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);

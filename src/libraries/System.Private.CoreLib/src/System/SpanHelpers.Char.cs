@@ -871,6 +871,40 @@ namespace System
             }
         }
 
+        public static int LastIndexOf(ref char searchSpace, int searchSpaceLength, ref char value, int valueLength)
+        {
+            Debug.Assert(searchSpaceLength >= 0);
+            Debug.Assert(valueLength >= 0);
+
+            if (valueLength == 0)
+                return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
+
+            char valueHead = value;
+            ref char valueTail = ref Unsafe.Add(ref value, 1);
+            int valueTailLength = valueLength - 1;
+
+            int index = 0;
+            while (true)
+            {
+                Debug.Assert(0 <= index && index <= searchSpaceLength); // Ensures no deceptive underflows in the computation of "remainingSearchSpaceLength".
+                int remainingSearchSpaceLength = searchSpaceLength - index - valueTailLength;
+                if (remainingSearchSpaceLength <= 0)
+                    break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
+
+                // Do a quick search for the first element of "value".
+                int relativeIndex = LastIndexOf(ref searchSpace, valueHead, remainingSearchSpaceLength);
+                if (relativeIndex == -1)
+                    break;
+
+                // Found the first element of "value". See if the tail matches.
+                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, relativeIndex + 1), ref valueTail, valueTailLength))
+                    return relativeIndex;  // The tail matched. Return a successful find.
+
+                index += remainingSearchSpaceLength - relativeIndex;
+            }
+            return -1;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int LastIndexOf(ref char searchSpace, char value, int length)
         {
