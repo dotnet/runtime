@@ -15194,22 +15194,30 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
     return result;
 }
 
-//*****************************************************************************
+//------------------------------------------------------------------------
+// fgMorphBlockStmt: morph a single statement in a block.
 //
-// Morphs a single statement in a block.
-// Can be called anytime, unlike fgMorphStmts() which should only be called once.
+// Arguments:
+//    block - block containing the statement
+//    stmt - statement to morph
+//    msg - string to identify caller in a dump
 //
-// Returns true  if 'stmt' was removed from the block.
-// Returns false if 'stmt' is still in the block (even if other statements were removed).
+// Returns:
+//    true if 'stmt' was removed from the block.
+//  s false if 'stmt' is still in the block (even if other statements were removed).
 //
-
+// Notes:
+//   Can be called anytime, unlike fgMorphStmts() which should only be called once.
+//
 bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg))
 {
     assert(block != nullptr);
     assert(stmt != nullptr);
 
-    compCurBB   = block;
-    compCurStmt = stmt;
+    // Reset some ambient state
+    fgRemoveRestOfBlock = false;
+    compCurBB           = block;
+    compCurStmt         = stmt;
 
     GenTree* morph = fgMorphTree(stmt->GetRootNode());
 
