@@ -108,12 +108,16 @@ namespace System
 
         private static ulong GenerateSeed()
         {
+            var bytes = stackalloc byte[sizeof(ulong)];
+#if NETCOREAPP || NETSTANDARD2_1
+            RandomNumberGenerator.Fill(bytes);
+#else
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
-                var bytes = new byte[sizeof(ulong)];
                 rng.GetBytes(bytes);
-                return BitConverter.ToUInt64(bytes, 0);
             }
+#endif
+            return BitConverter.ToUInt64(bytes, 0);
         }
     }
 }
