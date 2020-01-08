@@ -1,12 +1,11 @@
 variables:
+  - template: /eng/pipelines/common/variables.yml
   - name: buildScriptFileName
     value: libraries
   - name: sourcesRoot
     value: $(Build.SourcesDirectory)/src/libraries
   - name: pipelinesPath
     value: /eng/pipelines/libraries
-  - name: isOfficialBuild
-    value: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
   - name: isFullMatrix
     value: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
   - name: includeWindowsOuterloop

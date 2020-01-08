@@ -8,8 +8,8 @@ namespace System.Text.Json
     /// </summary>
     public struct JsonObjectEnumerator : IEnumerator<KeyValuePair<string, JsonNode>>
     {
-        private JsonObjectProperty _first;
-        private JsonObjectProperty _current;
+        private JsonObjectProperty? _first;
+        private JsonObjectProperty? _current;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonObjectEnumerator"/> class supporting an interation over provided JSON object.

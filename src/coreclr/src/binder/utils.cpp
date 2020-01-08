@@ -14,7 +14,7 @@
 
 #include "utils.hpp"
 
-#include "strongname.h"
+#include "strongnameinternal.h"
 #include "corpriv.h"
 
 namespace BINDER_SPACE
@@ -98,19 +98,15 @@ namespace BINDER_SPACE
         BYTE *pByteToken = NULL;
         DWORD dwTokenLen = 0;
 
-        if (!StrongNameTokenFromPublicKey(const_cast<BYTE *>(pByteKey),
-                                          dwKeyLen,
-                                          &pByteToken,
-                                          &dwTokenLen))
-        {
-            IF_FAIL_GO(StrongNameErrorInfo());
-        }
-        else
-        {
-            _ASSERTE(pByteToken != NULL);
-            publicKeyTokenBLOB.Set(pByteToken, dwTokenLen);
-            StrongNameFreeBuffer(pByteToken);
-        }
+        IF_FAIL_GO(StrongNameTokenFromPublicKey(
+            const_cast<BYTE*>(pByteKey),
+            dwKeyLen,
+            &pByteToken,
+            &dwTokenLen));
+
+        _ASSERTE(pByteToken != NULL);
+        publicKeyTokenBLOB.Set(pByteToken, dwTokenLen);
+        StrongNameFreeBuffer(pByteToken);
 
     Exit:
         return hr;

@@ -31,7 +31,6 @@
 #include "sha1.h"
 
 #include "eeconfig.h"
-#include "strongname.h"
 
 #include "ceefilegenwriter.h"
 #include "assemblynative.hpp"

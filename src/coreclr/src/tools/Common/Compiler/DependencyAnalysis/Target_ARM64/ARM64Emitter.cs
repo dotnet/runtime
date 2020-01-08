@@ -29,9 +29,30 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             throw new NotImplementedException();
         }
 
-        public void EmitMOV(Register regDst, int imm32)
+        public void EmitMOV(Register regDst, ushort imm16)
         {
-            throw new NotImplementedException();
+            Debug.Assert((uint)regDst <= 0x1f);
+            uint instruction = 0xd2800000u | ((uint)imm16 << 5) | (uint)regDst;
+            Builder.EmitUInt(instruction);
+        }
+
+        // ldr regDst, [PC + imm19]
+        public void EmitLDR(Register regDst, short offset)
+        {
+            Debug.Assert((uint)regDst <= 0x1f);
+            Debug.Assert((offset & 3) == 0);
+            // Sign-extend offset and take 19 bits
+            uint instruction = 0x58000000 | ((uint)((int)offset & 0x1ffffc) << 3) | (uint)regDst;
+            Builder.EmitUInt(instruction);
+        }
+
+        // ldr regDst, [regAddr]
+        public void EmitLDR(Register regDst, Register regAddr)
+        {
+            Debug.Assert((uint)regDst <= 0x1f);
+            Debug.Assert((uint)regAddr <= 0x1f);
+            uint instruction = 0xf9400000 | ((uint)regAddr << 5) | (uint)regDst;
+            Builder.EmitUInt(instruction);
         }
 
         public void EmitLEAQ(Register reg, ISymbolNode symbol, int delta = 0)
@@ -59,30 +80,16 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             if (symbol.RepresentsIndirectionCell)
             {
-                // xip0 register num is 0x10
+                // ldr x12, [PC+0xc]
+                EmitLDR(Register.X12, 0xc);
 
-                // ADRP xip0, [symbol (21bit ADRP thing)]
-                // 0x90000000 + (xip regnum)
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21);
-                Builder.EmitByte(0x10);
-                Builder.EmitByte(0x00);
-                Builder.EmitByte(0x00);
-                Builder.EmitByte(0x90);
+                // ldr x12, [x12]
+                EmitLDR(Register.X12, Register.X12);
 
-                // LDR xip0, [xip0 + 12bit LDR page offset reloc)]
-                // 0xF9400000 + ((xip0 regnum) << 5) + (xip regnum)
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L);
-                Builder.EmitByte(0x10);
-                Builder.EmitByte(0x02);
-                Builder.EmitByte(0x40);
-                Builder.EmitByte(0xF9);
+                // br x12
+                Builder.EmitUInt(0xd61f0180);
 
-                // BR xip0
-                // 0xD61F0000 + (xip0 regnum) << 5)
-                Builder.EmitByte(0x00);
-                Builder.EmitByte(0x02);
-                Builder.EmitByte(0x1F);
-                Builder.EmitByte(0xD6);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
             }
             else
             {

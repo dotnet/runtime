@@ -27,9 +27,6 @@ template<typename StringT>
 using ReverseCallback = void(__cdecl*)(StringT original, StringT* reversed);
 
 template<typename StringT>
-using ReverseCallback = void(__cdecl*)(StringT original, StringT* reversed);
-
-template<typename StringT>
 using ReverseCallbackReturned = StringT(__cdecl*)(StringT original);
 
 template<typename StringT>

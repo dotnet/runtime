@@ -17,16 +17,14 @@ namespace System.Text.Json
             Utf8JsonWriter writer,
             ref WriteStack state)
         {
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo!;
             if (state.Current.CollectionEnumerator == null)
             {
-                IEnumerable enumerable;
-
-                enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
+                IEnumerable? enumerable = (IEnumerable?)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
                 if (enumerable == null)
                 {
-                    if ((state.Current.JsonClassInfo.ClassType != ClassType.Object || // Write null dictionary values
-                        !state.Current.JsonPropertyInfo.IgnoreNullValues) && // Ignore ClassType.Object properties if IgnoreNullValues is true
+                    if ((state.Current.JsonClassInfo!.ClassType != ClassType.Object || // Write null dictionary values
+                        !jsonPropertyInfo.IgnoreNullValues) && // Ignore ClassType.Object properties if IgnoreNullValues is true
                         state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing) // Ignore null extension property (which is a dictionary)
                     {
                         // Write a null object or enumerable.
@@ -69,8 +67,8 @@ namespace System.Text.Json
                 Debug.Assert(state.Current.CollectionEnumerator.Current != null);
 
                 bool obtainedValues = false;
-                string key = default;
-                object value = default;
+                string? key = default;
+                object? value = default;
 
                 // Check for polymorphism.
                 if (elementClassInfo.ClassType == ClassType.Unknown)
@@ -82,7 +80,7 @@ namespace System.Text.Json
 
                 if (elementClassInfo.ClassType == ClassType.Value)
                 {
-                    elementClassInfo.PolicyProperty.WriteDictionary(ref state, writer);
+                    elementClassInfo.PolicyProperty!.WriteDictionary(ref state, writer);
                 }
                 else
                 {
@@ -93,7 +91,12 @@ namespace System.Text.Json
 
                     if (options.DictionaryKeyPolicy != null && state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
                     {
+                        Debug.Assert(key != null);
                         key = options.DictionaryKeyPolicy.ConvertName(key);
+                        if (key == null)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
+                        }
                     }
 
                     // An object or another enumerator requires a new stack frame.
@@ -156,12 +159,12 @@ namespace System.Text.Json
                 iDictionaryEnumerator.Key is string keyAsString)
             {
                 key = keyAsString;
-                value = (TProperty)iDictionaryEnumerator.Value;
+                value = (TProperty)iDictionaryEnumerator.Value!;
             }
             else
             {
                 throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
-                    current.JsonPropertyInfo.DeclaredPropertyType,
+                    current.JsonPropertyInfo!.DeclaredPropertyType,
                     current.JsonPropertyInfo.ParentClassType,
                     current.JsonPropertyInfo.PropertyInfo);
             }

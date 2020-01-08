@@ -646,8 +646,7 @@ void COMInterfaceMarshaler::IReferenceArrayUnbox(IUnknown **ppIncomingIP, OBJECT
     CONTRACTL_END;
 
     OBJECTREF unboxed = NULL;
-    // Remember all reference type array method tables are shared.
-    TypeHandle elementType = m_typeHandle.GetElementType();
+    TypeHandle elementType = m_typeHandle.GetArrayElementTypeHandle();
     _ASSERTE(elementType.AsMethodTable()->IsLegalNonArrayWinRTType());
 
     // Create a temporary RCW.  Call into managed.  Let managed query for a closed generic instantiation

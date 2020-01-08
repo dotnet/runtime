@@ -135,6 +135,8 @@ jobs:
           managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# WebAssembly
+
 - ${{ if containsValue(parameters.platforms, 'WebAssembly_wasm') }}:
   - template: xplat-setup.yml
     parameters:
@@ -229,6 +231,7 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Windows_NT
       archType: arm
+      platform: Windows_NT_arm
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}

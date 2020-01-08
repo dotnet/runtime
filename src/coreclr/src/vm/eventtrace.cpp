@@ -1743,12 +1743,6 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
 
     _ASSERTE(m_nBulkTypeValueCount < (int)_countof(m_rgBulkTypeValues));
 
-    if (!th.IsTypeDesc() && th.GetMethodTable()->IsArray())
-    {
-        _ASSERTE(!"BulkTypeEventLogger::LogSingleType called with MethodTable array");
-        return -1;
-    }
-
     BulkTypeValue * pVal = &m_rgBulkTypeValues[m_nBulkTypeValueCount];
 
     // Clear out pVal before filling it out (array elements can get reused if there
@@ -1781,7 +1775,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         if (pVal->fixedSizedData.CorElementType == ELEMENT_TYPE_ARRAY)
         {
             // Multidimensional arrays set the rank bits, SzArrays do not set the rank bits
-            unsigned rank = th.AsArray()->GetRank();
+            unsigned rank = th.GetRank();
             if (rank < kEtwTypeFlagsArrayRankMax)
             {
                 // Only ranks less than kEtwTypeFlagsArrayRankMax are supported. 
@@ -1796,7 +1790,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         fSucceeded = FALSE;
         EX_TRY
         {
-            pVal->rgTypeParameters.Append((ULONGLONG) th.AsArray()->GetArrayElementTypeHandle().AsTAddr());
+            pVal->rgTypeParameters.Append((ULONGLONG) th.GetArrayElementTypeHandle().AsTAddr());
             fSucceeded = TRUE;
         }
         EX_CATCH

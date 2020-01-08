@@ -4,7 +4,7 @@
     <TestDisableAppDomain>true</TestDisableAppDomain>
     <TestDisableParallelization>true</TestDisableParallelization>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs">

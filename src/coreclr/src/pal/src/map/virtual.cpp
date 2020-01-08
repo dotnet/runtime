@@ -2041,48 +2041,6 @@ size_t GetVirtualPageSize()
 }
 
 /*++
-Function:
-  GetWriteWatch
-
-See MSDN doc.
---*/
-UINT
-PALAPI
-GetWriteWatch(
-  IN DWORD dwFlags,
-  IN PVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize,
-  OUT PVOID *lpAddresses,
-  IN OUT PULONG_PTR lpdwCount,
-  OUT PULONG lpdwGranularity
-)
-{
-    // TODO: implement this method
-    *lpAddresses = NULL;
-    *lpdwCount = 0;
-    // Until it is implemented, return non-zero value as an indicator of failure
-    return 1;
-}
-
-/*++
-Function:
-  ResetWriteWatch
-
-See MSDN doc.
---*/
-UINT
-PALAPI
-ResetWriteWatch(
-  IN LPVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize
-)
-{
-    // TODO: implement this method
-    // Until it is implemented, return non-zero value as an indicator of failure
-    return 1;
-}
-
-/*++
 Function :
     ReserveMemoryFromExecutableAllocator
 

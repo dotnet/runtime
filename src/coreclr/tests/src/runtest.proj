@@ -8,7 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <DisabledTestDir Include="bin" />
     <DisabledTestDir Include="Common" />
+    <DisabledTestDir Include="Tests" />
+    <DisabledTestDir Include="TestWrappers" />
     <_SkipTestDir Include="@(DisabledTestDir)" />
   </ItemGroup>
 
@@ -90,7 +93,7 @@ $(_XunitEpilog)
         <![CDATA[
 <Project>
 
-  <Import Project="$(ProjectDir)dir.sdkbuild.props" />
+  <Import Project="$(TestProjectDir)dir.sdkbuild.props" />
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
@@ -104,7 +107,7 @@ $(_XunitEpilog)
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -363,16 +366,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Properties="Language=C#;TargetRid=$(TargetRid);RuntimeIdentifier=$(TargetRid)" />
   </Target>
 
-  <!--
-       Targets and properties for creating the testhost directory used to run corefx tests.
-   -->
-
-  <Target Name="CreateTestHost">
-    <MSBuild Projects="$(MSBuildThisFileDirectory)Common\CoreFX\CoreFX.csproj"
-             Targets="SetupTestingHost"
-             Properties="OutputPath=$(NETCoreAppTestSharedFrameworkPath)" />
-  </Target>
-
   <Target Name="Build">
 
     <!-- generate project.lock.json file corresponding to above json file -->
@@ -390,10 +383,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateTestOverlay"
              Condition=" '$(GenerateRuntimeLayout)'=='true' "/>
-
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateTestHost"
-             Condition=" '$(GenerateTestHost)'=='true' "/>
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
              Condition=" '$(RunTests)'=='true' "/>

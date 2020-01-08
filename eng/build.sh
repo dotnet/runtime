@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -ue
+
 source="${BASH_SOURCE[0]}"
 
 # resolve $source until the file is no longer a symlink
@@ -15,8 +17,8 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --subset                   Build a subset, print availabe subsets with -subset help"
-  echo "  --subsetCategory           Build a subsetCategory, print availabe subsetCategories with -subset help"
+  echo "  --subset                   Build a subset, print available subsets with -subset help"
+  echo "  --subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
   echo "  --os                       Build operating system: Windows_NT or Unix"
   echo "  --arch                     Build platform: x86, x64, arm or arm64"
   echo "  --configuration <value>    Build configuration: Debug or Release (short: -c)"
@@ -83,8 +85,14 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:ConfigurationGroup=$val -configuration $val"
       shift 2
       ;;
+      # This should be removed after we have finalized our ci build pipeline.
      -framework|-f)
       val="$(echo "$2" | awk '{print tolower($0)}')"
+      if [ "$val" == "netcoreapp" ]; then
+        val=netcoreapp5.0
+      elif [ "$val" == "netfx" ]; then
+        val=net472
+      fi
       arguments="$arguments /p:TargetGroup=$val"
       shift 2
       ;;
@@ -119,7 +127,7 @@ while [[ $# > 0 ]]; do
       ;;
       *)
       ea=$1
-      
+
       if [[ $checkedPossibleDirectoryToBuild == false ]] && [[ $subsetCategory == "libraries" ]]; then
         checkedPossibleDirectoryToBuild=true
 

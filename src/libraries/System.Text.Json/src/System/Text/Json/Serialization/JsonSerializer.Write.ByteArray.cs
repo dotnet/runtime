@@ -12,7 +12,7 @@ namespace System.Text.Json
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
-        public static byte[] SerializeToUtf8Bytes<TValue>(TValue value, JsonSerializerOptions options = null)
+        public static byte[] SerializeToUtf8Bytes<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             return WriteCoreBytes(value, typeof(TValue), options);
         }
@@ -24,7 +24,7 @@ namespace System.Text.Json
         /// <param name="value">The value to convert.</param>
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
-        public static byte[] SerializeToUtf8Bytes(object value, Type inputType, JsonSerializerOptions options = null)
+        public static byte[] SerializeToUtf8Bytes(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
             VerifyValueAndType(value, inputType);
             return WriteCoreBytes(value, inputType, options);

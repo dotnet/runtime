@@ -415,8 +415,7 @@ OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS 
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-    ArrayTypeDesc* arrayDesc = arrayType.AsArray();
-    MethodTable* pArrayMT = arrayDesc->GetMethodTable();
+    MethodTable* pArrayMT = arrayType.AsMethodTable();
 
     return AllocateSzArray(pArrayMT, cElements, flags, bAllocateInLargeHeap);
 }
@@ -560,18 +559,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     LogAlloc(totalSize, pArrayMT, orArray);
 #endif // _LOGALLOC
 
-#ifdef _DEBUG
-    // Ensure the typehandle has been interned prior to allocation.
-    // This is important for OOM reliability.
-    OBJECTREF objref = ObjectToOBJECTREF((Object *) orArray);
-    GCPROTECT_BEGIN(objref);
-
-    orArray->GetTypeHandle();
-
-    GCPROTECT_END();
-    orArray = (ArrayBase *) OBJECTREFToObject(objref);
-#endif
-
     // Notify the profiler of the allocation
     // do this after initializing bounds so callback has size information
     if (TrackAllocations() || bProfilerNotifyLargeAllocation)
@@ -615,8 +602,7 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, G
         WRAPPER_NO_CONTRACT;
     } CONTRACTL_END;
 
-    ArrayTypeDesc* arrayDesc = arrayType.AsArray();
-    MethodTable* pArrayMT = arrayDesc->GetMethodTable();
+    MethodTable* pArrayMT = arrayType.AsMethodTable();
 
     return AllocateArrayEx(pArrayMT, pArgs, dwNumArgs, flags, bAllocateInLargeHeap);
 }
@@ -793,18 +779,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     LogAlloc(totalSize, pArrayMT, orArray);
 #endif // _LOGALLOC
 
-#ifdef _DEBUG
-    // Ensure the typehandle has been interned prior to allocation.
-    // This is important for OOM reliability.
-    OBJECTREF objref = ObjectToOBJECTREF((Object *) orArray);
-    GCPROTECT_BEGIN(objref);
-
-    orArray->GetTypeHandle();
-
-    GCPROTECT_END();
-    orArray = (ArrayBase *) OBJECTREFToObject(objref);
-#endif
-
     if (kind == ELEMENT_TYPE_ARRAY)
     {
         INT32 *pCountsPtr      = (INT32 *) orArray->GetBoundsPtr();
@@ -897,9 +871,9 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
     {
         TypeHandle elemType = TypeHandle(MscorlibBinder::GetElementType(type));
         TypeHandle typHnd = ClassLoader::LoadArrayTypeThrowing(elemType, ELEMENT_TYPE_SZARRAY, 0);
-        g_pPredefinedArrayTypes[type] = typHnd.AsArray();
+        g_pPredefinedArrayTypes[type] = typHnd;
     }
-    return AllocateSzArray(g_pPredefinedArrayTypes[type]->GetMethodTable(), cElements);
+    return AllocateSzArray(g_pPredefinedArrayTypes[type].AsMethodTable(), cElements);
 }
 
 //
@@ -957,7 +931,7 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(elementType);
 
 #ifdef _DEBUG
-    _ASSERTE(arrayType.AsArray()->GetRank() == 1);
+    _ASSERTE(arrayType.GetRank() == 1);
     _ASSERTE(arrayType.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 #endif //_DEBUG
 

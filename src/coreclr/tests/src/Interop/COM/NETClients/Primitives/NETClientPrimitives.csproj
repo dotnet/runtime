@@ -23,9 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
-    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
-    <PackageReference Include="System.Drawing.Common">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

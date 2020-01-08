@@ -86,7 +86,7 @@ namespace System.Text.Json
 
             ClearHelper();
             ArrayPool<byte>.Shared.Return(_rentedBuffer);
-            _rentedBuffer = null;
+            _rentedBuffer = null!;
         }
 
         public void Advance(int count)

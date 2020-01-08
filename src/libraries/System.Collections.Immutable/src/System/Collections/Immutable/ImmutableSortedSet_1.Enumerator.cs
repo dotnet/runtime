@@ -37,7 +37,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The builder being enumerated, if applicable.
             /// </summary>
-            private readonly Builder _builder;
+            private readonly Builder? _builder;
 
             /// <summary>
             /// A unique ID for this instance of this enumerator.
@@ -66,12 +66,12 @@ namespace System.Collections.Immutable
             ///   clr!ArrayStoreCheck
             ///     clr!ObjIsInstanceOf
             /// </remarks>
-            private SecurePooledObject<Stack<RefAsValueType<Node>>> _stack;
+            private SecurePooledObject<Stack<RefAsValueType<Node>>>? _stack;
 
             /// <summary>
             /// The node currently selected.
             /// </summary>
-            private Node _current;
+            private Node? _current;
 
             /// <summary>
             /// The version of the builder (when applicable) that is being enumerated.
@@ -84,7 +84,7 @@ namespace System.Collections.Immutable
             /// <param name="root">The root of the set to be enumerated.</param>
             /// <param name="builder">The builder, if applicable.</param>
             /// <param name="reverse"><c>true</c> to enumerate the collection in reverse.</param>
-            internal Enumerator(Node root, Builder builder = null, bool reverse = false)
+            internal Enumerator(Node root, Builder? builder = null, bool reverse = false)
             {
                 Requires.NotNull(root, nameof(root));
 
@@ -129,7 +129,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The current element.
             /// </summary>
-            object System.Collections.IEnumerator.Current
+            object? System.Collections.IEnumerator.Current
             {
                 get { return this.Current; }
             }
@@ -139,13 +139,12 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Dispose()
             {
-                _root = null;
+                _root = null!;
                 _current = null;
-                Stack<RefAsValueType<Node>> stack;
-                if (_stack != null && _stack.TryUse(ref this, out stack))
+                if (_stack != null && _stack.TryUse(ref this, out Stack<RefAsValueType<Node>>? stack))
                 {
                     stack.ClearFastWhenEmpty();
-                    s_enumeratingStacks.TryAdd(this, _stack);
+                    s_enumeratingStacks.TryAdd(this, _stack!);
                     _stack = null;
                 }
             }
@@ -159,12 +158,12 @@ namespace System.Collections.Immutable
                 this.ThrowIfDisposed();
                 this.ThrowIfChanged();
 
-                var stack = _stack.Use(ref this);
+                var stack = _stack!.Use(ref this);
                 if (stack.Count > 0)
                 {
                     Node n = stack.Pop().Value;
                     _current = n;
-                    this.PushNext(_reverse ? n.Left : n.Right);
+                    this.PushNext(_reverse ? n.Left! : n.Right!);
                     return true;
                 }
                 else
@@ -183,7 +182,7 @@ namespace System.Collections.Immutable
 
                 _enumeratingBuilderVersion = _builder != null ? _builder.Version : -1;
                 _current = null;
-                var stack = _stack.Use(ref this);
+                var stack = _stack!.Use(ref this);
                 stack.ClearFastWhenEmpty();
                 this.PushNext(_root);
             }
@@ -224,11 +223,11 @@ namespace System.Collections.Immutable
             private void PushNext(Node node)
             {
                 Requires.NotNull(node, nameof(node));
-                var stack = _stack.Use(ref this);
+                var stack = _stack!.Use(ref this);
                 while (!node.IsEmpty)
                 {
                     stack.Push(new RefAsValueType<Node>(node));
-                    node = _reverse ? node.Right : node.Left;
+                    node = _reverse ? node.Right! : node.Left!;
                 }
             }
         }

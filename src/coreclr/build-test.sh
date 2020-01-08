@@ -132,16 +132,6 @@ generate_layout()
     fi
 }
 
-patch_corefx_libraries()
-{
-    echo "${__MsgPrefix}Patching CORE_ROOT: '${CORE_ROOT}' with CoreFX libaries from enlistment '${__LocalCoreFXPath} (${__LocalCoreFXConfig})"
-
-    patchCoreFXArguments=("-clr_core_root" "${CORE_ROOT}" "-fx_root" "${__LocalCoreFXPath}" "-arch" "${__BuildArch}" "-build_type" "${__LocalCoreFXConfig}")
-    scriptPath="$__ProjectDir/tests/scripts"
-    echo "python ${scriptPath}/patch-corefx.py ${patchCoreFXArguments[@]}"
-    $__Python "${scriptPath}/patch-corefx.py" "${patchCoreFXArguments[@]}"
-}
-
 precompile_coreroot_fx()
 {
     local overlayDir=$CORE_ROOT
@@ -165,27 +155,26 @@ precompile_coreroot_fx()
 
         mkdir ${outputDir}
 
-        skipCrossGenFiles+=('System.Private.CoreLib.dll')
-        skipCrossGenFiles+=('System.Runtime.Serialization.Formatters.dll')
         skipCrossGenFiles+=('Microsoft.CodeAnalysis.CSharp.dll')
         skipCrossGenFiles+=('Microsoft.CodeAnalysis.dll')
         skipCrossGenFiles+=('Microsoft.CodeAnalysis.VisualBasic.dll')
-        skipCrossGenFiles+=('CommandLine.dll')
 
-        for reference in ${overlayDir}/*.dll
-        do
+        for reference in ${overlayDir}/*.dll; do
             crossgen2References+=" -r:${reference}"
         done
     fi
 
     echo "${__MsgPrefix}Running ${compilerName} on framework assemblies in CORE_ROOT: '${CORE_ROOT}'"
 
-    filesToPrecompile=$(find -L $overlayDir -maxdepth 1 -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -type f)
-    for fileToPrecompile in ${filesToPrecompile}
-    do
+    local totalPrecompiled=0
+    local failedToPrecompile=0
+    declare -a failedAssemblies
+
+    filesToPrecompile=$(find -L $overlayDir -maxdepth 1 -iname Microsoft.\*.dll -o -iname System.\*.dll -type f)
+    for fileToPrecompile in ${filesToPrecompile}; do
         local filename=${fileToPrecompile}
         if is_skip_crossgen_test "$(basename $filename)"; then
-                continue
+            continue
         fi
 
         echo Precompiling $filename
@@ -203,20 +192,33 @@ precompile_coreroot_fx()
             if grep -q -e '0x80131018' $filename.stderr; then
                 printf "\n\t$filename is not a managed assembly.\n\n"
             else
-                echo Unable to precompile $filename.
+                echo Unable to precompile $filename, exit code is $exitCode.
                 cat $filename.stdout
                 cat $filename.stderr
-                exit $exitCode
+                failedAssemblies+=($(basename -- "$filename"))
+                failedToPrecompile=$((failedToPrecompile+1))
             fi
         else
             rm $filename.{stdout,stderr}
         fi
+
+        totalPrecompiled=$((totalPrecompiled+1))
+        echo Processed: $totalPrecompiled, failed $failedToPrecompile
     done
 
     if [[ $__DoCrossgen2 != 0 ]]; then
         # Copy the Crossgen-compiled assemblies back to CORE_ROOT
         mv -f ${outputDir}/* ${overlayDir}/
         rm -r ${outputDir}
+    fi
+
+    if [[ $failedToPrecompile != 0 ]]; then
+        echo Failed assemblies:
+        for assembly in "${failedAssemblies[@]}"; do
+            echo "  $assembly"
+        done
+
+        exit 1
     fi
 }
 
@@ -230,22 +232,6 @@ function is_skip_crossgen_test {
     done
     return 1
 }
-
-generate_testhost()
-{
-    echo "${__MsgPrefix}Generating test host..."
-
-    export TEST_HOST=$xUnitTestBinBase/testhost
-
-    if [ -d "${TEST_HOST}" ]; then
-        rm -rf $TEST_HOST
-    fi
-
-    mkdir -p $TEST_HOST
-
-    build_MSBuild_projects "Tests_Generate_TestHost" "${__ProjectDir}/tests/src/runtest.proj" "Creating test host" "/t:CreateTestHost"
-}
-
 
 build_Tests()
 {
@@ -371,10 +357,6 @@ build_Tests()
 
     if [ $__SkipGenerateLayout != 1 ]; then
         generate_layout
-
-        if [ ! -z "$__LocalCoreFXPath" ]; then
-            patch_corefx_libraries
-        fi
     fi
 }
 
@@ -523,20 +505,13 @@ build_native_projects()
             fi
         fi
 
-        scriptDir="$__ProjectRoot/src/pal/tools"
-        if [[ $__GccBuild == 0 ]]; then
-            echo "Invoking \"$scriptDir/find-clang.sh\" $__ClangMajorVersion \"$__ClangMinorVersion\""
-            source "$scriptDir/find-clang.sh" $__ClangMajorVersion "$__ClangMinorVersion"
-        else
-            echo "Invoking \"$scriptDir/find-gcc.sh\" \"$__GccMajorVersion\" \"$__GccMinorVersion\""
-            source "$scriptDir/find-gcc.sh" "$__GccMajorVersion" "$__GccMinorVersion"
-        fi
-
         if [[ -n "$__CodeCoverage" ]]; then
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
 
-        nextCommand="\"$scriptDir/gen-buildsys.sh\" \"$__TestDir\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $extraCmakeArguments $__cmakeargs"
+        engNativeDir="$__RepoRootDir/eng/native"
+        __cmakeargs="$__cmakeargs -DCLR_ENG_NATIVE_DIR=\"$engNativeDir\""
+        nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$__TestDir\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType $generator $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -574,10 +549,9 @@ usage_list=("-buildtestwrappersonly - only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-crossgen - Precompiles the framework managed assemblies in coreroot.")
 usage_list+=("-generatelayoutonly - only pull down dependencies and build coreroot.")
-usage_list+=("-generatetesthostonly - only pull down dependencies and build coreroot and the CoreFX testhost.")
 usage_list+=("-priority1 - include priority=1 tests in the build.")
 usage_list+=("-runtests - run tests after building them.")
-usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout or the CoreFX testhost.")
+usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiprestorepackages - skip package restore.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
@@ -630,14 +604,6 @@ handle_arguments() {
             __SkipGenerateLayout=1
             ;;
 
-        localcorefxpath=*|-localcorefxpath=*)
-            __LocalCoreFXPath=$(echo "$1" | cut -d'=' -f 2)
-            ;;
-
-        localcorefxconfig=*|-localcorefxconfig=*)
-            __LocalCoreFXConfig=$(echo "$1" | cut -d'=' -f 2)
-            ;;
-
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -653,8 +619,9 @@ __IncludeTests=INCLUDE_TESTS
 export __ProjectDir="$__ProjectRoot"
 __BuildTestWrappers=1
 __BuildTestWrappersOnly=
-__ClangMajorVersion=0
-__ClangMinorVersion=0
+__Compiler=clang
+__CompilerMajorVersion=
+__CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
@@ -663,10 +630,7 @@ __CrossBuild=0
 __DistroRid=""
 __DoCrossgen=0
 __DoCrossgen2=0
-__DotNetCli="$__ProjectDir/dotnet.sh"
-__GccBuild=0
-__GccMajorVersion=0
-__GccMinorVersion=0
+__DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __GenerateTestHostOnly=
 __MSBCleanBuildArgs=
@@ -684,7 +648,6 @@ __SkipRestore=""
 __SkipRestorePackages=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
-__LocalCoreFXPath=
 __LocalCoreFXConfig=${__BuildType}
 __UseNinja=0
 __VerboseBuild=0
@@ -754,9 +717,6 @@ elif [ ! -z "$__BuildTestWrappersOnly" ]; then
     build_test_wrappers
 else
     generate_layout
-    if [ ! -z "$__GenerateTestHostOnly" ]; then
-        generate_testhost
-    fi
 fi
 
 if [ $? -ne 0 ]; then
@@ -792,4 +752,3 @@ else
     echo "To run single test use the following command:"
     echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"
 fi
-

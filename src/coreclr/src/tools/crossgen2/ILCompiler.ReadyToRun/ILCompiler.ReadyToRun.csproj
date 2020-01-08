@@ -53,14 +53,10 @@
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
     <Compile Include="..\..\Common\Compiler\CoreRTNameMangler.cs" Link="Compiler\CoreRTNameMangler.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" Link="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" Link="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\BlobNode.cs" Link="Compiler\DependencyAnalysis\BlobNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodBodyNode.cs" Link="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodNode.cs" Link="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" Link="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
@@ -104,6 +100,10 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AttributePresenceFilterNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedFieldRvaNode.cs" />

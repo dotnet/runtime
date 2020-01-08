@@ -49,7 +49,6 @@ class TypeKey
             TADDR m_paramType;   // The element type (actually a TypeHandle, but we don't want its constructor
                                  // run on a C++ union)
             DWORD m_rank;        // Non-zero for ARRAY, 1 for SZARRAY, 0 for PTR or BYREF
-            BOOL m_isTemplateMethodTable; // TRUE if this key indexes the template method table for an array, rather than a type-desc
         } asParamType;
 
         // m_kind = FNPTR
@@ -64,7 +63,7 @@ class TypeKey
 public:
 
     // Constructor for BYREF/PTR/ARRAY/SZARRAY types
-    TypeKey(CorElementType etype, TypeHandle paramType, BOOL isTemplateMethodTable = FALSE, DWORD rank = 0)
+    TypeKey(CorElementType etype, TypeHandle paramType, DWORD rank = 0)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
@@ -75,7 +74,6 @@ public:
         m_kind = etype;
         u.asParamType.m_paramType = paramType.AsTAddr();
         u.asParamType.m_rank = rank;
-        u.asParamType.m_isTemplateMethodTable = isTemplateMethodTable;
     }
 
     // Constructor for instantiated types
@@ -117,13 +115,6 @@ public:
         SUPPORTS_DAC;
         PRECONDITION(CorTypeInfo::IsArray_NoThrow(m_kind));
         return u.asParamType.m_rank;
-    }
-
-    BOOL IsTemplateMethodTable() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return u.asParamType.m_isTemplateMethodTable;
     }
 
     TypeHandle GetElementType() const
@@ -249,8 +240,7 @@ public:
         else if (CorTypeInfo::IsModifier_NoThrow(pKey1->m_kind) || pKey1->m_kind == ELEMENT_TYPE_VALUETYPE)
         {
             return pKey1->u.asParamType.m_paramType == pKey2->u.asParamType.m_paramType
-                && pKey1->u.asParamType.m_rank == pKey2->u.asParamType.m_rank
-                && pKey1->u.asParamType.m_isTemplateMethodTable == pKey2->u.asParamType.m_isTemplateMethodTable;
+                && pKey1->u.asParamType.m_rank == pKey2->u.asParamType.m_rank;
         }
         else
         {

@@ -411,50 +411,6 @@ SearchPathWrapper(
 
 }
 
-BOOL
-CreateDirectoryWrapper(
-        _In_ LPCWSTR lpPathName,
-        _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BOOL ret   = FALSE;
-    DWORD lastError;
-
-    EX_TRY
-    {
-        LongPathString path(LongPathString::Literal, lpPathName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(path)))
-        {
-            ret = CreateDirectoryW(
-                    path.GetUnicode(),
-                    lpSecurityAttributes
-                    );
-        }
-
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
 DWORD
 GetModuleFileNameWrapper(
     _In_opt_ HMODULE hModule,

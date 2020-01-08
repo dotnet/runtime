@@ -74,10 +74,9 @@ namespace System.Text.Json
             }
 
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
-
             if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
             {
-                JsonPropertyInfo dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
+                JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
                 if (dataExtProperty == null)
                 {
                     state.Current.JsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
@@ -130,7 +129,7 @@ namespace System.Text.Json
             Debug.Assert(jsonPropertyInfo != null);
             Debug.Assert(state.Current.ReturnValue != null);
 
-            IDictionary extensionData = (IDictionary)jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
+            IDictionary? extensionData = (IDictionary?)jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
             if (extensionData == null)
             {
                 // Create the appropriate dictionary type. We already verified the types.
@@ -141,7 +140,8 @@ namespace System.Text.Json
                     jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(object) ||
                     jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(JsonElement));
 
-                extensionData = (IDictionary)jsonPropertyInfo.RuntimeClassInfo.CreateObject();
+                Debug.Assert(jsonPropertyInfo.RuntimeClassInfo.CreateObject != null);
+                extensionData = (IDictionary?)jsonPropertyInfo.RuntimeClassInfo.CreateObject();
                 jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, extensionData);
             }
 

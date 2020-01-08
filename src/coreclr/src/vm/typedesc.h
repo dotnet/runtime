@@ -107,9 +107,6 @@ public:
         return(GetInternalCorElementType() == ELEMENT_TYPE_PTR);
     }
 
-    // ARRAY, SZARRAY
-    BOOL IsArray();
-
     // VAR, MVAR
     BOOL IsGenericVariable();
 
@@ -119,7 +116,7 @@ public:
     // VALUETYPE
     BOOL IsNativeValueType();
 
-    // Is actually ParamTypeDesc (ARRAY, SZARRAY, BYREF, PTR)
+    // Is actually ParamTypeDesc (BYREF, PTR)
     BOOL HasTypeParam();
 
 #ifdef FEATURE_PREJIT
@@ -189,8 +186,7 @@ public:
     PTR_MethodTable  GetMethodTable();               // only meaningful for ParamTypeDesc
     TypeHandle GetTypeParam();                       // only meaningful for ParamTypeDesc
     Instantiation GetClassOrArrayInstantiation();    // only meaningful for ParamTypeDesc; see above
-
-    TypeHandle GetBaseTypeParam();                   // only allowed for ParamTypeDesc, helper method used to avoid recursion
+    TypeHandle GetRootTypeParam();                   // only allowed for ParamTypeDesc, helper method used to avoid recursion
 
     // Note that if the TypeDesc, e.g. a function pointer type, involves parts that may
     // come from either a SharedDomain or an AppDomain then special rules apply to GetDomain.
@@ -330,113 +326,6 @@ protected:
     RelativeFixupPointer<PTR_MethodTable> m_TemplateMT; // The shared method table, some variants do not use this field (it is null)
     TypeHandle      m_Arg;              // The type that is being modified
     LOADERHANDLE    m_hExposedClassObject;  // handle back to the internal reflection Type object
-};
-
-
-/*************************************************************************/
-/* An ArrayTypeDesc represents a Array of some pointer type. */
-
-class ArrayTypeDesc : public ParamTypeDesc
-{
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
-public:
-#ifndef DACCESS_COMPILE
-    ArrayTypeDesc(MethodTable* arrayMT) :
-        ParamTypeDesc(arrayMT->IsMultiDimArray() ? ELEMENT_TYPE_ARRAY : ELEMENT_TYPE_SZARRAY, arrayMT, arrayMT->GetArrayElementTypeHandle())
-#ifdef FEATURE_COMINTEROP
-      , m_pCCWTemplate(NULL)
-#endif // FEATURE_COMINTEROP
-    {
-        WRAPPER_NO_CONTRACT;
-        INDEBUG(Verify());
-    }
-
-    // placement new operator
-    void* operator new(size_t size, void* spot) {   return (spot); }
-
-#endif
-
-    TypeHandle GetArrayElementTypeHandle() {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        _ASSERTE(GetMethodTable()->GetArrayElementTypeHandle() == GetTypeParam());
-        return GetTypeParam();
-    }
-
-    unsigned GetRank() {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        if (GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
-            return 1;
-        else
-            return dac_cast<PTR_ArrayClass>(GetMethodTable()->GetClass())->GetRank();
-    }
-
-    MethodTable* GetMethodTable()
-    {
-        return GetTemplateMethodTableInternal();
-    }
-    
-    MethodTable* GetParent()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(!m_TemplateMT.IsNull());
-        _ASSERTE(GetMethodTable()->IsArray());
-        _ASSERTE(GetMethodTable()->ParentEquals(g_pArrayClass));
-
-        return g_pArrayClass;
-    }
-
-#ifdef FEATURE_COMINTEROP
-    ComCallWrapperTemplate *GetComCallWrapperTemplate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pCCWTemplate;
-    }
-
-    BOOL SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemplate)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        TypeHandle th(this);
-        g_IBCLogger.LogTypeMethodTableWriteableAccess(&th);
-
-        return (InterlockedCompareExchangeT(&m_pCCWTemplate, pTemplate, NULL) == NULL);
-    }
-#endif // FEATURE_COMINTEROP
-
-    INDEBUG(BOOL Verify();)
-
-#ifdef FEATURE_PREJIT
-    void Fixup(DataImage *image);
-#endif
-
-    PTR_MethodTable GetTemplateMethodTable() {
-        WRAPPER_NO_CONTRACT;
-        PTR_MethodTable ptrTemplateMT = GetTemplateMethodTableInternal();
-        _ASSERTE(ptrTemplateMT->IsArray());
-        return ptrTemplateMT;
-    }
-
-    TADDR GetTemplateMethodTableMaybeTagged() {
-        WRAPPER_NO_CONTRACT;
-        return m_TemplateMT.GetValueMaybeTagged(dac_cast<TADDR>(this) + offsetof(ArrayTypeDesc, m_TemplateMT));
-    }
-
-#ifdef FEATURE_COMINTEROP
-    ComCallWrapperTemplate *m_pCCWTemplate;
-#endif // FEATURE_COMINTEROP
 };
 
 /*************************************************************************/

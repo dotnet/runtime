@@ -853,7 +853,7 @@ namespace Internal.JitInterface
     public enum CORINFO_OS
     {
         CORINFO_WINNT,
-        CORINFO_PAL,
+        CORINFO_UNIX,
     }
 
     public enum CORINFO_RUNTIME_ABI
@@ -984,7 +984,7 @@ namespace Internal.JitInterface
     // thisTransform and constraint calls
     // ----------------------------------
     //
-    // For evertyhing besides "constrained." calls "thisTransform" is set to
+    // For everything besides "constrained." calls "thisTransform" is set to
     // CORINFO_NO_THIS_TRANSFORM.
     //
     // For "constrained." calls the EE attempts to resolve the call at compile
