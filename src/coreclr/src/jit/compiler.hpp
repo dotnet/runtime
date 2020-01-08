@@ -2731,12 +2731,32 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
 {
     JITDUMP("Converting " FMT_BB " to BBJ_THROW\n", block->bbNum);
 
-    // If we're converting a BBJ_CALLFINALLY block to a BBJ_THROW block,
+    // Ordering of the following operations matters.
+    // First, note if we are looking at the first block of a call always pair.
+    const bool isCallAlwaysPair = block->isBBCallAlwaysPair();
+
+    // Scrub this block from the pred lists of any successors
+    fgRemoveBlockAsPred(block);
+
+    // Update jump kind after the scrub.
+    block->bbJumpKind = BBJ_THROW;
+
+    // Any block with a throw is rare
+    block->bbSetRunRarely();
+
+    // If we've converted a BBJ_CALLFINALLY block to a BBJ_THROW block,
     // then mark the subsequent BBJ_ALWAYS block as unreferenced.
-    if (block->isBBCallAlwaysPair())
+    //
+    // Must do this after we update bbJumpKind of block.
+    if (isCallAlwaysPair)
     {
         BasicBlock* leaveBlk = block->bbNext;
         noway_assert(leaveBlk->bbJumpKind == BBJ_ALWAYS);
+
+        // leaveBlk is now unreachable, so scrub the pred lists.
+        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+        leaveBlk->bbRefs  = 0;
+        leaveBlk->bbPreds = nullptr;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
         // This function (fgConvertBBToThrowBB) can be called before the predecessor lists are created (e.g., in
@@ -2754,22 +2774,7 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
             fgNeedToAddFinallyTargetBits = true;
         }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
-
-        // leaveBlk is now unreachable, so scrub the pred lists.
-        // Note this must happen after resetting finally target bits.
-        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
-        leaveBlk->bbRefs  = 0;
-        leaveBlk->bbPreds = nullptr;
     }
-
-    // Scrub this block from the pred lists of any successors
-    fgRemoveBlockAsPred(block);
-
-    // Update jump kind after the scrub.
-    block->bbJumpKind = BBJ_THROW;
-
-    // Any block with a throw is rare
-    block->bbSetRunRarely();
 }
 
 /*****************************************************************************
