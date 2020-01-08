@@ -5,9 +5,9 @@
 ### .NET Runtime
 - An implementation of the Common Language Infrastructure [ECMA 335]
   - Supports multiple languages, including C#, F# and VB
-- Sources are mostly shared between the “desktop” version and the open-source coreclr implementation:
-    http://www.github.com/dotnet/coreclr
-- RyuJIT is the “next generation” just in time compiler for .NET
+- Sources are mostly shared between the "desktop" version and the open-source coreclr implementation:
+    http://www.github.com/dotnet/runtime/src/coreclr
+- RyuJIT is the "next generation" just in time compiler for .NET
 
 #### Notes
 For context, the .NET runtime has been around since about the turn of the millennium. It is a virtual machine that supports the execution of a number of languages, primarily C#, Visual Basic, and F#.
@@ -16,11 +16,11 @@ There have been a number of implementations of the CLI, the dominant one being i
 That implementation has served as the basis for a standalone implementation that is now available in open source.
 RyuJIT is the re-architected JIT for .NET.
 
-### Why “RyuJIT”?
+### Why "RyuJIT"?
 - Ryujin is a Japanese Sea Dragon
 
-We came up with the code name “RyuJIT” because our original code name had possible issues.
-We wanted something with “JIT” in the name, and the idea of a dragon came to mind because of the Dragon book that we all know and love.
+We came up with the code name "RyuJIT" because our original code name had possible issues.
+We wanted something with "JIT" in the name, and the idea of a dragon came to mind because of the Dragon book that we all know and love.
 So – we just adapted the name of the Japanese sea dragon, Ryujin.
 
 ### JIT History
@@ -44,14 +44,14 @@ The front-end has been extended to support SSA and value numbering, while the or
 - Enable a range of targets and scenarios.
 
 #### Notes
-First and foremost, the evolution of RyuJIT is constrained by the requirement to maintain compatibility with previous JITs. This is especially important for a just in time compiler that has such a huge installed base. We need to ensure that the behavior of existing programs will be preserved across updates. Sometimes this even means adding “quirks” to ensure that even invalid programs continue to behave the same way.
+First and foremost, the evolution of RyuJIT is constrained by the requirement to maintain compatibility with previous JITs. This is especially important for a just in time compiler that has such a huge installed base. We need to ensure that the behavior of existing programs will be preserved across updates. Sometimes this even means adding "quirks" to ensure that even invalid programs continue to behave the same way.
 Beyond that, the objective is to get the best possible performance with a minimum of compile time.
 Both the design of the RyuJIT IR, as well as constraints on the scope of optimizations, are aimed at keeping as close to a linear compile time as possible.
 Finally, while the original JIT was quite x86-oriented, we now have a broader set of platforms to support, as well as an ever-widening variety of application scenarios.
 
 ### Execution Environment & External Interface
 - RyuJIT provides just-in-time compilation for the .NET runtime (aka EE or VM or CLR)
-  - It is currently “single-tier” – no interpreter or higher-level optimizer, though multi-tier support is in the works
+  - It is currently "single-tier" – no interpreter or higher-level optimizer, though multi-tier support is in the works
 - ICorJitCompiler – this is the interface that the JIT compiler implements, and includes compileMethod (corjit.h)
 - ICorJitInfo – this is the interface that the EE implements to provide type & method info
   - Inherits from ICorDynamicInfo (corinfo.h)
@@ -67,7 +67,7 @@ The JIT and the VM each implement an interface that abstracts the dependencies t
 ![RyuJIT IR Overview](images/ryujit-high-level-overview.png)
 
 #### Notes
-This is the 10,000 foot view of RyuJIT. It takes in MSIL (aka CIL) in the form of byte codes, and the Importer phase transforms these to the intermediate representation used in the JIT. The IR operations are called “GenTrees”, as in “trees for code generation”. This format is preserved across the bulk of the JIT, with some changes in form and invariants along the way. Eventually, the code generator produces a low-level intermediate called InstrDescs, which simply capture the instruction encodings while the final mappings are done to produce the actual native code and associated tables.
+This is the 10,000 foot view of RyuJIT. It takes in MSIL (aka CIL) in the form of byte codes, and the Importer phase transforms these to the intermediate representation used in the JIT. The IR operations are called "GenTrees", as in "trees for code generation". This format is preserved across the bulk of the JIT, with some changes in form and invariants along the way. Eventually, the code generator produces a low-level intermediate called InstrDescs, which simply capture the instruction encodings while the final mappings are done to produce the actual native code and associated tables.
 
 ### RyuJIT Phases
 ![RyuJIT Phases](images/ryujit-phase-diagram.png)
@@ -110,8 +110,8 @@ The optimization phases of RyuJIT are based on liveness analysis, SSA and value 
 ### Back-end Phases of RyuJIT
 ![RyuJIT Backend Phases](images/ryujit-backend-phases.png)
 
-- Rationalization: eliminate “parental context” in trees
-  - Not really strictly “back-end” but required by back-end)
+- Rationalization: eliminate "parental context" in trees
+  - Not really strictly "back-end" but required by back-end)
 - Lowering: fully expose control flow and register requirements
 - Register allocation: Linear scan with splitting
 - Code Generation:
@@ -134,7 +134,7 @@ The next phase, Lowering, is responsible for fully exposing the control flow and
     - Evaluation order explicit via gtNext, gtPrev links
   - JIT must preserve side-effect ordering
   - Implicit single-def, single-use dataflow
-- Limit on the number of “tracked” variables
+- Limit on the number of "tracked" variables
   - SSA, liveness
 - Single (though modal) IR, with limited phase-oriented IR transformations
 - Historically oriented toward a small working set
@@ -150,7 +150,7 @@ The RyuJIT IR can be described at a high level as follows:
   - The `BasicBlock` also contains the dataflow information, when available.
 - `GenTree` nodes represent the operations and statement of the method being compiled.
   - It includes the type of the node, as well as value number, assertions, and register assignments when available.
-- `LclVarDsc` represents a local variable, argument or JIT-created temp. It has a `gtLclNum` which is the identifier usually associated with the variable in the JIT and its dumps. The `LclVarDsc` contains the type, use count, weighted use count, frame or register assignment etc. These are often referred to simply as “lclVars”. They can be tracked (`lvTracked`), in which case they participate in dataflow analysis, and have a different index (`lvVarIndex`) to allow for the use of dense bit vectors. Only non-address-taken lclVars participate in liveness analysis, though aliased variables can participate in value numbering.
+- `LclVarDsc` represents a local variable, argument or JIT-created temp. It has a `gtLclNum` which is the identifier usually associated with the variable in the JIT and its dumps. The `LclVarDsc` contains the type, use count, weighted use count, frame or register assignment etc. These are often referred to simply as "lclVars". They can be tracked (`lvTracked`), in which case they participate in dataflow analysis, and have a different index (`lvVarIndex`) to allow for the use of dense bit vectors. Only non-address-taken lclVars participate in liveness analysis, though aliased variables can participate in value numbering.
 
 ### GenTrees
 - A `BasicBlock` is a list of statements (`Statement`)
@@ -180,25 +180,25 @@ The initial construction of the IR ensures that any ordering dependencies are ob
 └──▌  = int
    └──▌  lclVar int V06
 ```
-From the example we’ll look at later: count = count + (bits & 1)
+From the example we'll look at later: count = count + (bits & 1)
 
 #### Notes
 This is the dump of an expression tree for a single statement. It takes a little while to get used to reading the expression tree dumps, which are printed with the children indented from the parent, and, for binary operators, with the first operand below the parent and the second operand above, at least in the front-end.
-This statement is extracted from the PopCount example we’re going to walk through later. V06 is the local variable with lclNum 6, which is the “count” variable in the source. V08 is the “bits” variable.
+This statement is extracted from the PopCount example we're going to walk through later. V06 is the local variable with lclNum 6, which is the "count" variable in the source. V08 is the "bits" variable.
 One thing to notice about this is that the context of the lclVar nodes is not clear without examining their parent. That is, two of the lclVar nodes here are uses, while the bottom one is a definition (it is the left-hand-side of the assignment above it).
 
 
 ### GenTrees Evolution
 - The IR is being evolved to improve the ability to analyze and reason about it
   - Ensure that expression tree edges reflect data flow from child to parent
-    - Eliminate GT_ASG: data flows from rhs to lhs “over” the parent (need parent context to determine whether a node is a use or a def)
+    - Eliminate GT_ASG: data flows from rhs to lhs "over" the parent (need parent context to determine whether a node is a use or a def)
     - Eliminate GT_ADDR: Need parent context to analyze child
     - Eliminate GT_COMMA: strictly an ordering constraint for op1 relative to op2 and parent
 - Over time we expect to Rationalize the IR during or immediately after the IR is imported from the MSIL byte codes.
 
 #### Notes
 The GenTrees IR is being evolved to address the context issue mentioned in the last slide.
-We would like to ensure that all data flows are from child to parent. Examples where this is currently violated are in the assignment, or GT_ASG node, where the data flows from the right hand side of the assignment “over” the parent assignment, to the value being defined on the left hand side. Similarly, the child of a GT_ADDR node may appear to be a use or a definition of the value, when instead its address is being taken.
+We would like to ensure that all data flows are from child to parent. Examples where this is currently violated are in the assignment, or GT_ASG node, where the data flows from the right hand side of the assignment "over" the parent assignment, to the value being defined on the left hand side. Similarly, the child of a GT_ADDR node may appear to be a use or a definition of the value, when instead its address is being taken.
 Finally, the comma node is inserted in the tree purely as an ordering constraint to enable a non-flow computation or store of a temporary variable, to be inserted in the midst of the evaluation of an expression.
 
 The Rationalizer phase, which transforms these constructs to a more rational form, is currently run just prior to the back-end, but over time we expect to move it much earlier.
@@ -264,8 +264,8 @@ There are a number of modalities in the RyuJIT IR, but one of the more significa
 #### Notes
 This example shows the evaluation of the IR from the importer, through the front-end and finally the backend.
 Initially, an array reference is imported as a GT_INDEX node, represented here by the double brackets, with the array object (V00) and the index (V03) as its children.
-In order to optimize this, we want to be able to expose the full addressing expression, as well as the bounds check. Note that the bounds check is inserted below a comma node. This allows this transformation to be made “in place”. Also, note that the execution order is generally “left to right” where the “left” node of a binary operator is actually shown below it in tree order.
-On the right hand side, you can see that the addressing expression has been transformed to a “load effective address”, and the array bounds check has been split.
+In order to optimize this, we want to be able to expose the full addressing expression, as well as the bounds check. Note that the bounds check is inserted below a comma node. This allows this transformation to be made "in place". Also, note that the execution order is generally "left to right" where the "left" node of a binary operator is actually shown below it in tree order.
+On the right hand side, you can see that the addressing expression has been transformed to a "load effective address", and the array bounds check has been split.
 In the backend, although the tree links are still shown, we dump the graphs in execution order, as that is the primary view of the IR in the backend.
 
 ### Dataflow
@@ -311,13 +311,13 @@ The size of the bitVector is the number of tracked variables, and can be changed
 - Static single assignment (SSA) form is constructed in a traditional manner.
   - The SSA names are recorded on the lclVar references.
   - Each lclVar has a table of its SSA names with their defining tree and BasicBlock
-- The JIT currently requires that the IR be maintained in conventional SSA form, as there is no “out of SSA” translation
+- The JIT currently requires that the IR be maintained in conventional SSA form, as there is no "out of SSA" translation
   - i.e. the operands of a phi node may not interefere
 
 #### Notes
 The SSA implementation constructs pruned SSA, using the liveness information.
-It doesn’t change the lclNum of the lclVar nodes, but simply annotates the node with the SSA name. That is, an SSA name can be considered to be the pair formed by the lclNum and the SSA name.
-The JIT has no “out of SSA” translation, so all optimizations must preserve conventional SSA form – that is they may not move references to an SSA name across a PHI node that references it.
+It doesn't change the lclNum of the lclVar nodes, but simply annotates the node with the SSA name. That is, an SSA name can be considered to be the pair formed by the lclNum and the SSA name.
+The JIT has no "out of SSA" translation, so all optimizations must preserve conventional SSA form – that is they may not move references to an SSA name across a PHI node that references it.
 
 ### Value Numbering
 - Value numbering utilizes SSA for lclVar values, but also performs value numbering of expression trees.
@@ -329,7 +329,7 @@ The JIT has no “out of SSA” translation, so all optimizations must preserve 
   - Value numbering traverses the trees, performing symbolic evaluation of many operations.
 
 #### Notes
-The RyuJIT value numbering implementation is somewhat unusual in that it takes advantage of the type safety of .NET by not invalidating the value number for heap-based field references by an arbitrary heap write, unless the write is to the same field. While this doesn’t give the full fidelity of alias-based analysis, it is quite effective.
+The RyuJIT value numbering implementation is somewhat unusual in that it takes advantage of the type safety of .NET by not invalidating the value number for heap-based field references by an arbitrary heap write, unless the write is to the same field. While this doesn't give the full fidelity of alias-based analysis, it is quite effective.
 This is done by tagging indirections with a chain of descriptors for the fields referenced at each level of indirection below the current node. In this way, each node has the full chain of fields that it references.
 Value numbering performs symbolic evaluation of many operations, and can therefore tag equivalent expressions with the same value number.
 This is used by all of the front-end optimizations.
@@ -342,7 +342,7 @@ This is used by all of the front-end optimizations.
   - It then imports the IL for the candidate, producing IR
     - This is inserted at the call site, if successful
 - This phase has been undergoing significant refactoring and enhancement:
-  - https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/inlining-plans.md
+  - https://github.com/dotnet/runtime/blob/master/docs/design/features/inlining-plans.md
 
 #### Notes
 The inliner re-invokes the importer for each method that is considered a suitable candidate. Along the way, it may determine that the method cannot, or should not, be inlined, at which case it abandons the constructed IR, and leaves the callsite as-is. Otherwise, it inserts the newly created IR at the callsite, adds the local variables of the called method to the callee, and fixes up the arguments and returns.
@@ -365,7 +365,7 @@ This phases has recently been significantly refactored, and enhancements are in 
 - Sets edge and block weights
   - Using profile information if available; otherwise heuristically set
 - Identifies and normalizes loops
-  - Transforms while loops to “do while”
+  - Transforms while loops to "do while"
   - Performs loop cloning and unrolling
   - Loops may be invalidated, but must be marked as such.
 
@@ -375,7 +375,7 @@ This phases has recently been significantly refactored, and enhancements are in 
 - Execution order within a statement is set by fgSetBlockOrder()
   - Canonical postorder traversal of the nodes
   - Execution order is made concrete by adding gtNext/gtPrev links
-  - Must also correspond with canonical order: “Left to right” except for binary operators with GTF_REVERSE_OPS flag
+  - Must also correspond with canonical order: "Left to right" except for binary operators with GTF_REVERSE_OPS flag
   - If op1 has no side-effects, a simple cost analysis is done to determine when to reverse the order of binary operands
   - A GTF_REVERSE_OPS flag on an assignment indicates that the rhs (op2) should be evaluated before the target address (if any) on the lhs (op1) is evaluated.
 
@@ -419,7 +419,7 @@ This is the same diagram as before, but with additional links to indicate execut
 - Traverses loops outer-to-inner, hoisting expressions that
   - Have not been marked GTF_DONT_CSE
   - Have no side-effects
-  - Don’t raise exceptions, OR occur before any side-effects
+  - Don't raise exceptions, OR occur before any side-effects
   - Have a valid value number and are invariant:
     - Constants
     - LclVars defined outside the loop
@@ -432,7 +432,7 @@ This is the same diagram as before, but with additional links to indicate execut
 ### CSE & Assertion Propagation
 - Common Subexpression Elimination
   - Redundant expressions are identified by value number
-  - If deemed profitable, they are evaluated to a new “temp” lclVar and then reused
+  - If deemed profitable, they are evaluated to a new "temp" lclVar and then reused
 - Assertion Propagation
   - Propagate properties such as constant values and non-nullness
 
@@ -522,8 +522,8 @@ This needs to be updated, as we no longer have embedded statements.
     - Switch statements
     - Block copies
   - Expose all register requirements
-    - Number of registers used, defined, and required for “internal use”
-  - Identify nodes that are “contained”
+    - Number of registers used, defined, and required for "internal use"
+  - Identify nodes that are "contained"
     - This includes constants and addressing modes
     - Code generation for these nodes is deferred to the parent node
 
@@ -588,7 +588,7 @@ This needs to be updated, as we no longer have embedded statements.
   - Update Gcinfo (live GC vars & safe points)
 
 ### Sample Feature
-- Add support for popcnt “intrinsic” to x86-64 RyuJIT:
+- Add support for popcnt "intrinsic" to x86-64 RyuJIT:
   - C# code:
 ```
 public static int PopCount(ulong bitVectorArg)
@@ -610,13 +610,13 @@ public static int PopCount(ulong bitVectorArg)
 The sample I'm going to walk through implements support for pop count (counting the number of '1' bits in a 64-bit value).
  
 We're going to start by assuming that we have a method with a known signature that implements PopCount.
-Here's the implementation we’re going to use. It simply takes the input value, and keeps anding with one, and then shifting right.
-We’re first going to simply recognize the name and signature, and replace the method call with a simple PopCnt IR node.
-Then, we’re going to add code to pattern match the loop.
+Here's the implementation we're going to use. It simply takes the input value, and keeps anding with one, and then shifting right.
+We're first going to simply recognize the name and signature, and replace the method call with a simple PopCnt IR node.
+Then, we're going to add code to pattern match the loop.
 Note that this is not necessarily the approach one would take, because the loop is quite an inefficient implementation - but the alternative (sequence of ands, ors and multiplies) creates a complex tree that would be problematic to recognize for our simple example.
 
 ### Sample Code
-- I’ve implemented this sample and checked it into my fork of the coreclr sources:
+- I've implemented this sample and checked it into my fork of the coreclr sources:
         https://github.com/caroleidt/coreclr/tree/PopCntSample
 - There are two commits
   - The first one does a simple name match of the PopCount method
@@ -636,11 +636,11 @@ set COMPlus_JitDumpFgPhase=OPT-CHK
 ![RyuJIT Flowgraph](images/ryujit-flowgraph.png)
 
 #### Notes
-The first thing we’re going to do is to take a look at the IR for the sample.
+The first thing we're going to do is to take a look at the IR for the sample.
 We have a simple Main method that reads in an unsigned long value, and calls the PopCount method.
 We set a bunch of environment variables to get some useful dumps.
-The first says that we’re want the dump for the method named “Main”. We are also going to set the Ascii option to zero, to get a slightly better tree dump.
-We also want to dump the flowgraph in dot format, to a file named Main.dot, and we want to do it after the range check optimization phase, since that’s where we’re eventually going to put our pattern matching code. The graph to the right is the result of running the dot file through graphviz.
+The first says that we're want the dump for the method named "Main". We are also going to set the Ascii option to zero, to get a slightly better tree dump.
+We also want to dump the flowgraph in dot format, to a file named Main.dot, and we want to do it after the range check optimization phase, since that's where we're eventually going to put our pattern matching code. The graph to the right is the result of running the dot file through graphviz.
 
 ### PopCnt Sample Overview
 I added/changed some foundational stuff:
@@ -669,7 +669,7 @@ Recognize "Intrinsic" (SampleStep1 shelveset)
 Add Pattern Recognition (SampleStep2 shelveset):
 - ifdef out the name recognition
 - Go back to jitdump1.out and look at IR just prior to optCloneLoops
-- Let's assume we're going to eventually add more than one instrinsic that implements a loop, so we’ll add a method that looks for simple loops we can turn into intrinsics.
+- Let's assume we're going to eventually add more than one instrinsic that implements a loop, so we'll add a method that looks for simple loops we can turn into intrinsics.
 - Unshelve SampleStep2:
 - Add optFindLoopIntrinsics() to compCompile after optOptimizeLoops()
 - compiler.h, compiler.cpp
@@ -677,7 +677,7 @@ Add Pattern Recognition (SampleStep2 shelveset):
 
 ### Reference
 - The RyuJIT Overview document is available here:
-        https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md
+        https://github.com/dotnet/runtime/blob/master/src/corDocumentation/botr/ryujit-overview.md
 
 ## Backup
 
