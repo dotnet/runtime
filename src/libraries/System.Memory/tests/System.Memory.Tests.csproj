@@ -200,6 +200,7 @@
     <Compile Include="MemoryMarshal\CastReadOnlySpan.cs" />
     <Compile Include="MemoryMarshal\CastSpan.cs" />
     <Compile Include="MemoryMarshal\CreateFromPinnedArray.cs" />
+    <Compile Include="MemoryMarshal\GetArrayDataReference.cs" />
     <Compile Include="MemoryMarshal\GetReference.cs" />
     <Compile Include="MemoryMarshal\TryGetArray.cs" />
     <Compile Include="MemoryMarshal\TryGetMemoryManager.cs" />

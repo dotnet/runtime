@@ -207,10 +207,6 @@ namespace System.Runtime.CompilerServices
             return rawSize;
         }
 
-        [Intrinsic]
-        internal static ref byte GetRawSzArrayData(this Array array) =>
-            ref Unsafe.As<RawArrayData>(array).Data;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ref byte GetRawArrayData(this Array array) =>
             // See comment on RawArrayData for details
