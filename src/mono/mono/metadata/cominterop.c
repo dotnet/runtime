@@ -1894,10 +1894,10 @@ ves_icall_System_ComObject_GetInterfaceInternal (MonoComObjectHandle obj, MonoRe
 }
 
 void
-ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxyHandle proxy, MonoError *error)
+ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxy *volatile* proxy_handle)
 {
 #ifndef DISABLE_COM
-	guint32 const gchandle = mono_gchandle_new_weakref_from_handle (MONO_HANDLE_CAST (MonoObject, proxy));
+	guint32 const gchandle = mono_gchandle_new_weakref_internal ((MonoObject*)*proxy_handle, FALSE);
 
 	mono_cominterop_lock ();
 	if (!rcw_hash)
@@ -1909,10 +1909,13 @@ ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropPr
 #endif
 }
 
-MonoComInteropProxyHandle
-ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoError *error)
+void
+ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoComInteropProxy *volatile* proxy_handle)
 {
+	*proxy_handle = NULL;
+
 #ifndef DISABLE_COM
+
 	gchandle_t gchandle = 0;
 
 	mono_cominterop_lock ();
@@ -1920,17 +1923,20 @@ ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoError *erro
 		gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (rcw_hash, pUnk));
 	mono_cominterop_unlock ();
 	if (!gchandle)
-		return MONO_HANDLE_NEW (MonoComInteropProxy, NULL);
+		return;
 
-	MonoComInteropProxyHandle const proxy = MONO_HANDLE_CAST (MonoComInteropProxy, mono_gchandle_get_target_handle (gchandle));
+	MonoComInteropProxy *proxy = (MonoComInteropProxy*)mono_gchandle_get_target_internal (gchandle);
+	// proxy_handle is assumed to be on the stack, so no barrier is needed.
+	*proxy_handle = proxy;
 	/* proxy is null means we need to free up old RCW */
-	if (MONO_HANDLE_IS_NULL (proxy)) {
+	if (!proxy) {
 		mono_gchandle_free_internal (gchandle);
 		g_hash_table_remove (rcw_hash, pUnk);
 	}
-	return proxy;
+
 #else
 	g_assert_not_reached ();
+
 #endif
 }
 

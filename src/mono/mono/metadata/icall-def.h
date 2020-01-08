@@ -129,8 +129,8 @@ NOHANDLES(ICALL(NATIVEMETHODS_11, "WaitForInputIdle", ves_icall_Microsoft_Win32_
 
 #ifndef DISABLE_COM
 ICALL_TYPE(COMPROX, "Mono.Interop.ComInteropProxy", COMPROX_1)
-HANDLES(COMPROX_1, "AddProxy", ves_icall_Mono_Interop_ComInteropProxy_AddProxy, void, 2, (gpointer,MonoComInteropProxy))
-HANDLES(COMPROX_2, "FindProxy", ves_icall_Mono_Interop_ComInteropProxy_FindProxy, MonoComInteropProxy, 1, (gpointer))
+NOHANDLES(ICALL(COMPROX_1, "AddProxy", ves_icall_Mono_Interop_ComInteropProxy_AddProxy))
+NOHANDLES(ICALL(COMPROX_2, "FindProxy", ves_icall_Mono_Interop_ComInteropProxy_FindProxy))
 #endif
 
 ICALL_TYPE(TLS_PROVIDER_FACTORY, "Mono.Net.Security.MonoTlsProviderFactory", TLS_PROVIDER_FACTORY_1)
