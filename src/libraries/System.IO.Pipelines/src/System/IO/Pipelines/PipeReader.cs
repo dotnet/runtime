@@ -178,9 +178,9 @@ namespace System.IO.Pipelines
         {
             while (true)
             {
-                SequencePosition consumed = default;
-
                 ReadResult result = await ReadAsync(cancellationToken).ConfigureAwait(false);
+                SequencePosition consumed = result.Buffer.Start;
+
                 try
                 {
                     ReadOnlySequence<byte> buffer = result.Buffer;
