@@ -2255,6 +2255,21 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_FIELD_OFFSET: {
 		MonoClassField *field = (MonoClassField *)data;
 
+		if (mono_class_field_is_special_static (field)) {
+			gpointer addr;
+
+			mono_class_vtable_checked (domain, klass, error);
+			mono_error_assert_ok (error);
+
+			/* Return the TLS offset */
+			g_assert (domain->special_static_fields);
+			mono_domain_lock (domain);
+			addr = g_hash_table_lookup (domain->special_static_fields, field);
+			mono_domain_unlock (domain);
+			g_assert (addr);
+			return (guint8*)addr + 1;
+		}
+
 		/* The value is offset by 1 */
 		if (m_class_is_valuetype (field->parent) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			return GUINT_TO_POINTER (field->offset - MONO_ABI_SIZEOF (MonoObject) + 1);

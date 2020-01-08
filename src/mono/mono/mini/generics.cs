@@ -1462,6 +1462,28 @@ class Tests
 		var t = FromResult<OneThing<int>>(new OneThing<int> {Item1 = 42});
 		return t.Item1;
 	}
+
+	class ThreadLocalClass<T> {
+		[ThreadStatic]
+		static T v;
+
+		public T Value {
+			[MethodImpl (MethodImplOptions.NoInlining)]
+			get {
+				return v;
+			}
+			[MethodImpl (MethodImplOptions.NoInlining)]
+			set {
+				v = value;
+			}
+		}
+	}
+
+	public static int test_0_tls_gshared () {
+		var c = new ThreadLocalClass<string> ();
+		c.Value = "FOO";
+		return c.Value == "FOO" ? 0 : 1;
+	}
 }
 
 #if !__MOBILE__

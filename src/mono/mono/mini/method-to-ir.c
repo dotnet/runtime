@@ -9385,7 +9385,8 @@ calli_end:
 				thread_ins = NULL;
 
 			/* Generate IR to compute the field address */
-			if (is_special_static && ((gsize)addr & 0x80000000) == 0 && thread_ins && !(cfg->opt & MONO_OPT_SHARED) && !context_used) {
+			if (is_special_static && ((gsize)addr & 0x80000000) == 0 && thread_ins && !(cfg->opt & MONO_OPT_SHARED) &&
+				!(context_used && cfg->gsharedvt && mini_is_gsharedvt_klass (klass))) {
 				/*
 				 * Fast access to TLS data
 				 * Inline version of get_thread_static_data () in
@@ -9394,17 +9395,20 @@ calli_end:
 				guint32 offset;
 				int idx, static_data_reg, array_reg, dreg;
 
-				if (context_used && cfg->gsharedvt && mini_is_gsharedvt_klass (klass))
-					GSHAREDVT_FAILURE (il_op);
-
 				static_data_reg = alloc_ireg (cfg);
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, MONO_STRUCT_OFFSET (MonoInternalThread, static_data));
 
-				if (cfg->compile_aot) {
+				if (cfg->compile_aot || context_used) {
 					int offset_reg, offset2_reg, idx_reg;
 
 					/* For TLS variables, this will return the TLS offset */
-					EMIT_NEW_SFLDACONST (cfg, ins, field);
+					if (context_used) {
+						MonoInst *addr_ins = emit_get_rgctx_field (cfg, context_used, field, MONO_RGCTX_INFO_FIELD_OFFSET);
+						/* The value is offset by 1 */
+						EMIT_NEW_BIALU_IMM (cfg, ins, OP_PSUB_IMM, addr_ins->dreg, addr_ins->dreg, 1);
+					} else {
+						EMIT_NEW_SFLDACONST (cfg, ins, field);
+					}
 					offset_reg = ins->dreg;
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset_reg, offset_reg, 0x7fffffff);
 					idx_reg = alloc_ireg (cfg);
