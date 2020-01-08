@@ -5576,7 +5576,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 		if (!obj) {
 			obj = mono_object_new_checked (mono_domain_get (), method->klass, error);
-			mono_error_assert_ok (error);
+			return_val_if_nok (error, NULL);
 			g_assert (obj); /*maybe we should raise a TLE instead?*/
 #ifndef DISABLE_REMOTING
 			if (mono_object_is_transparent_proxy (obj)) {
