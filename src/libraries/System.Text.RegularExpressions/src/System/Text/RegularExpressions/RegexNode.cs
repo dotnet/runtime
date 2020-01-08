@@ -69,6 +69,7 @@ namespace System.Text.RegularExpressions
 
         public const int Bol = RegexCode.Bol;                         //          ^
         public const int Eol = RegexCode.Eol;                         //          $
+        public const int AnyEol = RegexCode.AnyEol;                   //          $
         public const int Boundary = RegexCode.Boundary;               //          \b
         public const int Nonboundary = RegexCode.Nonboundary;         //          \B
         public const int ECMABoundary = RegexCode.ECMABoundary;       // \b
@@ -76,6 +77,7 @@ namespace System.Text.RegularExpressions
         public const int Beginning = RegexCode.Beginning;             //          \A
         public const int Start = RegexCode.Start;                     //          \G
         public const int EndZ = RegexCode.EndZ;                       //          \Z
+        public const int AnyEndZ = RegexCode.AnyEndZ;                 //          \Z
         public const int End = RegexCode.End;                         //          \z
 
         public const int Oneloopatomic = RegexCode.Oneloopatomic;        // c,n      (?> a*)
@@ -978,6 +980,7 @@ namespace System.Text.RegularExpressions
             if ((Options & RegexOptions.Singleline) != 0) argSb.Append("-S");
             if ((Options & RegexOptions.IgnorePatternWhitespace) != 0) argSb.Append("-X");
             if ((Options & RegexOptions.ECMAScript) != 0) argSb.Append("-E");
+            if ((Options & RegexOptions.AnyNewLine) != 0) argSb.Append("-A");
 
             switch (Type)
             {

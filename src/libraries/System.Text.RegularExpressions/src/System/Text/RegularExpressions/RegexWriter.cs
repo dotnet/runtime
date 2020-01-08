@@ -489,6 +489,7 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Nothing:
                 case RegexNode.Bol:
                 case RegexNode.Eol:
+                case RegexNode.AnyEol:
                 case RegexNode.Boundary:
                 case RegexNode.Nonboundary:
                 case RegexNode.ECMABoundary:
@@ -496,6 +497,7 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Beginning:
                 case RegexNode.Start:
                 case RegexNode.EndZ:
+                case RegexNode.AnyEndZ:
                 case RegexNode.End:
                     Emit(node.Type);
                     break;

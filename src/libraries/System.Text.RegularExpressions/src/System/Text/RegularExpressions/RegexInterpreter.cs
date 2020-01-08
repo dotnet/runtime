@@ -387,7 +387,8 @@ namespace System.Text.RegularExpressions
 
         protected override bool FindFirstChar()
         {
-            if (0 != (_code.Anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
+            if (0 != (_code.Anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ |
+                RegexFCD.AnyEndZ | RegexFCD.End)))
             {
                 if (!_code.RightToLeft)
                 {
@@ -397,7 +398,7 @@ namespace System.Text.RegularExpressions
                         runtextpos = runtextend;
                         return false;
                     }
-                    if (0 != (_code.Anchors & RegexFCD.EndZ) && runtextpos < runtextend - 1)
+                    if (0 != (_code.Anchors & (RegexFCD.EndZ | RegexFCD.AnyEndZ)) && runtextpos < runtextend - 1)
                     {
                         runtextpos = runtextend - 1;
                     }
@@ -411,6 +412,11 @@ namespace System.Text.RegularExpressions
                     if ((0 != (_code.Anchors & RegexFCD.End) && runtextpos < runtextend) ||
                         (0 != (_code.Anchors & RegexFCD.EndZ) && (runtextpos < runtextend - 1 ||
                                                                (runtextpos == runtextend - 1 && CharAt(runtextpos) != '\n'))) ||
+                        (0 != (_code.Anchors & RegexFCD.AnyEndZ) && (runtextpos < runtextend - 2 ||
+                                                                (runtextpos == runtextend - 2 && (CharAt(runtextpos) != '\r'
+                                                                    || CharAt(runtextpos+1) != '\n')) ||
+                                                                (runtextpos == runtextend - 1 && CharAt(runtextpos) != '\n'
+                                                                    && CharAt(runtextpos) != '\r'))) ||
                         (0 != (_code.Anchors & RegexFCD.Start) && runtextpos < runtextstart))
                     {
                         runtextpos = runtextbeg;
@@ -967,6 +973,12 @@ namespace System.Text.RegularExpressions
                         advance = 0;
                         continue;
 
+                    case RegexCode.AnyEol:
+                        if (Rightchars() > 0 && CharAt(Textpos()) != '\n' && CharAt(Textpos()) != '\r')
+                            break;
+                        advance = 0;
+                        continue;
+
                     case RegexCode.Boundary:
                         if (!IsBoundary(Textpos(), runtextbeg, runtextend))
                             break;
@@ -1005,6 +1017,17 @@ namespace System.Text.RegularExpressions
 
                     case RegexCode.EndZ:
                         if (Rightchars() > 1 || Rightchars() == 1 && CharAt(Textpos()) != '\n')
+                            break;
+                        advance = 0;
+                        continue;
+
+                    case RegexCode.AnyEndZ:
+                        int rightChars = Rightchars();
+                        if (rightChars > 2)
+                            break;
+                        if (rightChars == 1 && CharAt(Textpos()) != '\r' && CharAt(Textpos()) != '\n')
+                            break;
+                        if (rightChars == 2 && (CharAt(Textpos()) != '\r' || CharAt(Textpos() + 1) != '\n'))
                             break;
                         advance = 0;
                         continue;

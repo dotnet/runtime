@@ -22,5 +22,6 @@ namespace System.Text.RegularExpressions
 
         ECMAScript              = 0x0100, // "e"
         CultureInvariant        = 0x0200,
+        AnyNewLine              = 0x0400, // "a", Treat "$" as (?=\r\z|\n\z|\r\n\z|\z)
     }
 }

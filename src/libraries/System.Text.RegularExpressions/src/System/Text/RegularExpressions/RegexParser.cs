@@ -374,7 +374,10 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '$':
-                        AddUnitType(UseOptionM() ? RegexNode.Eol : RegexNode.EndZ);
+                        if (UseOptionA())
+                            AddUnitType(UseOptionM() ? RegexNode.AnyEol : RegexNode.AnyEndZ);
+                        else
+                            AddUnitType(UseOptionM() ? RegexNode.Eol : RegexNode.EndZ);
                         break;
 
                     case '.':
@@ -384,7 +387,18 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            AddUnitNotone('\n');
+                            if (UseOptionA())
+                            {
+                                // Allow everything from RegexCharClass.AnyClass except '\r' and '\n'
+                                RegexCharClass anyClass = RegexCharClass.Parse(RegexCharClass.AnyClass);
+                                RegexCharClass lecc = new RegexCharClass(); // line ending character class
+                                lecc.AddChar('\r');
+                                lecc.AddChar('\n');
+                                anyClass.AddSubtraction(lecc);
+                                AddUnitSet(anyClass.ToStringClass());
+                            }
+                            else
+                                AddUnitNotone('\n');
                         }
                         break;
 
@@ -1764,6 +1778,7 @@ namespace System.Text.RegularExpressions
                 'd' => RegexOptions.Debug,
 #endif
                 'e' => RegexOptions.ECMAScript,
+                'a' => RegexOptions.AnyNewLine,
                 _ => 0,
             };
         }
@@ -2037,6 +2052,12 @@ namespace System.Text.RegularExpressions
 
         /// <summary>True if E option enabling ECMAScript behavior is on.</summary>
         private bool UseOptionE() => (_options & RegexOptions.ECMAScript) != 0;
+
+        /// <summary>
+        /// True if A option altering meaning of $ to match both Windows'
+        /// Environment.NewLine and UNIX' Environment.NewLine is on.
+        /// </summary>
+        private bool UseOptionA() => (_options & RegexOptions.AnyNewLine) != 0;
 
         private const byte Q = 5;    // quantifier
         private const byte S = 4;    // ordinary stopper

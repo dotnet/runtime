@@ -876,7 +876,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            if ((_anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)) != 0)
+            if ((_anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.AnyEndZ | RegexFCD.End)) != 0)
             {
                 if (!_code!.RightToLeft)
                 {
@@ -908,7 +908,7 @@ namespace System.Text.RegularExpressions
                         MarkLabel(l1);
                     }
 
-                    if ((_anchors & RegexFCD.EndZ) != 0)
+                    if ((_anchors & (RegexFCD.EndZ | RegexFCD.AnyEndZ)) != 0)
                     {
                         Label l1 = DefineLabel();
                         Ldthisfld(s_runtextposField);
@@ -976,6 +976,60 @@ namespace System.Text.RegularExpressions
                         Ldc(0);
                         Ret();
                         MarkLabel(l2);
+                    }
+
+                    if ((_anchors & RegexFCD.AnyEndZ) != 0)
+                    {
+                        LocalBuilder diff = _temp1Local;
+                        Label l1 = DefineLabel();
+                        Label l2 = DefineLabel();
+                        Label l3 = DefineLabel();
+                        Ldthisfld(s_runtextendField);
+                        Ldthisfld(s_runtextposField);
+                        Sub();
+                        Stloc(diff);
+                        Ldloc(diff);
+                        Ldc(2);
+                        Bgt(l1);
+                        Ldloc(diff);
+                        Ldc(2);
+                        Blt(l2);
+                        Ldthisfld(s_runtextField);
+                        Ldthisfld(s_runtextposField);
+                        Callvirt(s_stringGetCharsMethod);
+                        Ldc('\r');
+                        Bne(l1);
+                        Ldthisfld(s_runtextField);
+                        Ldthisfld(s_runtextposField);
+                        Ldc(1);
+                        Add();
+                        Callvirt(s_stringGetCharsMethod);
+                        Ldc('\n');
+                        Bne(l1);
+                        Br(l3);
+
+                        MarkLabel(l2);
+                        Ldloc(diff);
+                        Ldc(1);
+                        Blt(l3);
+                        Ldthisfld(s_runtextField);
+                        Ldthisfld(s_runtextposField);
+                        Callvirt(s_stringGetCharsMethod);
+                        Ldc('\n');
+                        Beq(l3);
+                        Ldthisfld(s_runtextField);
+                        Ldthisfld(s_runtextposField);
+                        Callvirt(s_stringGetCharsMethod);
+                        Ldc('\r');
+                        Beq(l3);
+
+                        MarkLabel(l1);
+                        Ldthis();
+                        Ldthisfld(s_runtextbegField);
+                        Stfld(s_runtextposField);
+                        Ldc(0);
+                        Ret();
+                        MarkLabel(l3);
                     }
 
                     if ((_anchors & RegexFCD.Start) != 0)
@@ -3361,6 +3415,23 @@ namespace System.Text.RegularExpressions
                         break;
                     }
 
+                case RegexCode.AnyEol:
+                    //: if (Rightchars() > 0 && CharAt(Textpos()) != '\n' && CharAt(Textpos()) != '\r')
+                    //:     break Backward;
+                    {
+                        Label l1 = _labels![NextCodepos()];
+                        Ldloc(_runtextposLocal!);
+                        Ldloc(_runtextendLocal!);
+                        Bge(l1);
+                        Rightchar();
+                        Ldc('\n');
+                        Beq(l1);
+                        Rightchar();
+                        Ldc('\r');
+                        BneFar(_backtrack);
+                        break;
+                    }
+
                 case RegexCode.Boundary:
                 case RegexCode.Nonboundary:
                     //: if (!IsBoundary(Textpos(), _textbeg, _textend))
@@ -3430,6 +3501,52 @@ namespace System.Text.RegularExpressions
                     Ldc('\n');
                     BneFar(_backtrack);
                     break;
+
+                case RegexCode.AnyEndZ:
+                    //: if (rightChars > 2)
+                    //:    break Backward;
+                    //: if (rightChars == 1 && CharAt(Textpos()) != '\r' && CharAt(Textpos()) != '\n')
+                    //:    break Backward;
+                    //: if (rightChars == 2 && (CharAt(Textpos()) != '\r' || CharAt(Textpos()+1) != '\n'))
+                    //:    break Backward;
+                    {
+                        LocalBuilder diff = _temp1Local!;
+                        Label l1 = DefineLabel();
+
+                        Ldloc(_runtextendLocal!);
+                        Ldloc(_runtextposLocal!);
+                        Sub();
+                        Stloc(diff);
+                        Ldloc(diff);
+                        Ldc(2);
+                        BgtFar(_backtrack);
+                        Ldloc(diff);
+                        Ldc(2);
+                        Blt(l1);
+                        Rightchar();
+                        Ldc('\r');
+                        BneFar(_backtrack);
+                        Ldloc(_runtextLocal!);
+                        Ldloc(_runtextposLocal!);
+                        Ldc(1);
+                        Add();
+                        Callvirt(s_stringGetCharsMethod);
+                        Ldc('\n');
+                        BneFar(_backtrack);
+                        Br(_labels![NextCodepos()]);
+
+                        MarkLabel(l1);
+                        Ldloc(diff);
+                        Ldc(1);
+                        Blt(_labels![NextCodepos()]);
+                        Rightchar();
+                        Ldc('\n');
+                        Beq(_labels![NextCodepos()]);
+                        Rightchar();
+                        Ldc('\r');
+                        BneFar(_backtrack);
+                        break;
+                    }
 
                 case RegexCode.End:
                     //: if (Rightchars() > 0)

@@ -179,9 +179,38 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
+            yield return new object[]
+            {
+                "^line3$\nline4", "line1\nline2\nline3\nline4\nline3\nline4\n", RegexOptions.Multiline,
+                new CaptureData[]
+                {
+                    new CaptureData("line3\nline4", 12, 11),
+                    new CaptureData("line3\nline4", 24, 11),
+                }
+            };
+
+            yield return new object[]
+            {
+                "^line3$", "line1\nline2\nline3\r\nline4\nline3\nline4\n", RegexOptions.Multiline | RegexOptions.AnyNewLine,
+                new CaptureData[]
+                {
+                    new CaptureData("line3", 12, 5),
+                    new CaptureData("line3", 25, 5),
+                }
+            };
+
+            yield return new object[]
+            {
+                "line3$", "line1\nline2\nline3\r\nline4\nline3\r", RegexOptions.AnyNewLine,
+                new CaptureData[]
+                {
+                    new CaptureData("line3", 25, 5),
+                }
+            };
+
             if (!PlatformDetection.IsFullFramework) // missing fix in https://github.com/dotnet/runtime/pull/993
             {
-                yield return new object[]
+                yield return new object[]    
                 {
                     "[^]", "every", RegexOptions.ECMAScript,
                     new CaptureData[]
@@ -272,8 +301,8 @@ namespace System.Text.RegularExpressions.Tests
             // Options are invalid
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)(-1), TimeSpan.FromSeconds(1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x400));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x400, TimeSpan.FromSeconds(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x800));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x800, TimeSpan.FromSeconds(1)));
 
             // MatchTimeout is invalid
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => Regex.Matches("input", "pattern", RegexOptions.None, TimeSpan.Zero));

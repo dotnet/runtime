@@ -243,6 +243,7 @@ namespace System.Text.RegularExpressions
         RightToLeft = 64,
         ECMAScript = 256,
         CultureInvariant = 512,
+        AnyNewLine = 1024,
     }
     public abstract partial class RegexRunner
     {
