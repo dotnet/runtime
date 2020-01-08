@@ -1259,6 +1259,12 @@ static bool CopyFile_SendFile4(int inFd, int outFd, const struct stat_ *sourceSt
     // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
     // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
     off_t size = sourceStat->st_size;
+    static bool sSendFile4Unavailable = false;
+
+    if (sSendFile4Unavailable)
+    {
+        return false;
+    }
 
     // Note that per man page for large files, you have to iterate until the
     // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
@@ -1268,11 +1274,9 @@ static bool CopyFile_SendFile4(int inFd, int outFd, const struct stat_ *sourceSt
 
         if (sent < 0)
         {
-            if (errno != EINVAL && errno != ENOSYS)
+            if (errno == ENOSYS)
             {
-                int tmpErrno = errno;
-                close(outFd);
-                errno = tmpErrno;
+                sSendFile4Unavailable = true;
             }
 
             // sendfile couldn't be used. This could happen if we're on an
