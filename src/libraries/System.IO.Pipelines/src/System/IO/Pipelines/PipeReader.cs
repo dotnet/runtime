@@ -179,13 +179,12 @@ namespace System.IO.Pipelines
             while (true)
             {
                 ReadResult result = await ReadAsync(cancellationToken).ConfigureAwait(false);
-                SequencePosition consumed = result.Buffer.Start;
+                ReadOnlySequence<byte> buffer = result.Buffer;
+                SequencePosition position = buffer.Start;
+                SequencePosition consumed = position;
 
                 try
                 {
-                    ReadOnlySequence<byte> buffer = result.Buffer;
-                    SequencePosition position = buffer.Start;
-
                     if (result.IsCanceled)
                     {
                         ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
@@ -198,10 +197,8 @@ namespace System.IO.Pipelines
                         consumed = position;
                     }
 
-                    if (consumed.Equals(default))
-                    {
-                        consumed = buffer.End;
-                    }
+                    // The while loop completed succesfully, so we've consumed the entire buffer.
+                    consumed = buffer.End;
 
                     if (result.IsCompleted)
                     {
