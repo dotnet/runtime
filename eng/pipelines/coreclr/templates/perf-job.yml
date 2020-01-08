@@ -25,6 +25,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
