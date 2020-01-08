@@ -344,6 +344,14 @@ void BasicBlock::dspFlags()
     {
         printf("bwd ");
     }
+    if (bbFlags & BBF_BACKWARD_JUMP_TARGET)
+    {
+        printf("bwd-target ");
+    }
+    if (bbFlags & BBF_PATCHPOINT)
+    {
+        printf("ppoint ");
+    }
     if (bbFlags & BBF_RETLESS_CALL)
     {
         printf("retless ");

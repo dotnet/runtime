@@ -40,7 +40,17 @@ void DumpMap(int index, MethodContext* mc)
     DumpPrimToConsoleBare(mc, cmi.args.retType, (DWORDLONG)cmi.args.retTypeClass);
     printf(" %s(", methodName);
     DumpSigToConsoleBare(mc, &cmi.args);
-    printf(")\"\n");
+    printf(")\"");
+
+    // Todo: dump tier0/tier1/fullopt request
+
+    // Dump if this is an OSR request
+    if (cmi.osrInfo.patchpointInfo != nullptr)
+    {
+        printf(",Osr-%u", cmi.osrInfo.ilOffset);
+    }
+
+    printf("\n");
 }
 
 int verbDumpMap::DoWork(const char* nameOfInput)

@@ -2142,6 +2142,11 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
             printf("; ReadyToRun compilation\n");
         }
 
+        if (compiler->opts.IsOSR())
+        {
+            printf("; OSR variant for entry point 0x%x\n", compiler->info.compILEntry);
+        }
+
         if ((compiler->opts.compFlags & CLFLG_MAXOPT) == CLFLG_MAXOPT)
         {
             printf("; optimized code\n");
@@ -4474,6 +4479,12 @@ void CodeGen::genEnregisterIncomingStackArgs()
     }
 #endif
 
+    // OSR handles this specially
+    if (compiler->opts.IsOSR())
+    {
+        return;
+    }
+
     assert(compiler->compGeneratingProlog);
 
     unsigned varNum = 0;
@@ -4570,6 +4581,20 @@ void CodeGen::genCheckUseBlockInit()
         bool counted = false;
 
         if (varDsc->lvIsParam)
+        {
+            continue;
+        }
+
+        // Initialization of OSR locals must be handled specially
+        if (compiler->lvaIsOSRLocal(varNum))
+        {
+            varDsc->lvMustInit = 0;
+            continue;
+        }
+
+        // Likewise, initialization of the GS cookie is handled specially for OSR.
+        // Could do this for non-OSR too.. (likewise for the dummy)
+        if (compiler->opts.IsOSR() && varNum == compiler->lvaGSSecurityCookie)
         {
             continue;
         }
@@ -6478,6 +6503,87 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             inst_ST_RV(ins_Store(TYP_I_IMPL), tempThis, 0, genGetZeroReg(initReg, pInitRegZeroed), TYP_I_IMPL);
         }
     }
+
+    // Initialize args and locals for OSR. Note this may include promoted fields.
+    if (compiler->opts.IsOSR())
+    {
+        CORINFO_PATCHPOINT_INFO* patchpointInfo = compiler->info.compPatchpointInfo;
+
+        // basic sanity checks (make sure we're OSRing the right method)
+        assert(patchpointInfo->NumberOfLocals() == compiler->info.compLocalsCount);
+        assert(patchpointInfo->ILSize() == compiler->info.compILCodeSize);
+
+        const int      originalFrameSize = patchpointInfo->FpToSpDelta();
+        const unsigned patchpointInfoLen = patchpointInfo->NumberOfLocals();
+
+        for (unsigned varNum = 0; varNum < compiler->lvaCount; varNum++)
+        {
+            if (!compiler->lvaIsOSRLocal(varNum))
+            {
+                continue;
+            }
+
+            LclVarDsc* const varDsc = compiler->lvaGetDesc(varNum);
+
+            if (!varDsc->lvIsInReg())
+            {
+                JITDUMP("---OSR--- V%02u in memory\n", varNum);
+                continue;
+            }
+
+            if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+            {
+                JITDUMP("---OSR--- V%02u (reg) not live at entry\n", varNum);
+                continue;
+            }
+
+            int      fieldOffset = 0;
+            unsigned lclNum      = varNum;
+
+            if (varDsc->lvIsStructField)
+            {
+                lclNum = varDsc->lvParentLcl;
+                assert(lclNum < patchpointInfoLen);
+
+                fieldOffset = varDsc->lvFldOffset;
+                JITDUMP("---OSR--- V%02u is promoted field of V%02u at offset %d\n", varNum, lclNum, fieldOffset);
+            }
+
+            // Note we are always reading from the original frame here
+            const var_types lclTyp  = genActualType(varDsc->lvType);
+            const emitAttr  size    = emitTypeSize(lclTyp);
+            const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
+
+            // stkOffs is the original frame RBP-relative offset
+            // to the var.  We want either an RSP or RBP relative
+            // offset for the current frame.
+            //
+            // If using RSP, we need to add the SP-to-FP delta of
+            // this frame and the SP-to-FP delta of the original
+            // frame... that translates from this frame's RSP to
+            // the old frame RBP. We then add the original frame's
+            // RBP relative offset.
+            //
+            // If using RBP, we need to add the SP-to-FP delta of
+            // the original frame and then add the original
+            // frame's RBP relative offset.
+            int offset = originalFrameSize + stkOffs;
+
+            if (isFramePointerUsed())
+            {
+                offset += TARGET_POINTER_SIZE;
+            }
+            else
+            {
+                offset += genSPtoFPdelta();
+            }
+
+            JITDUMP("---OSR--- V%02u (reg) old rbp offset %d old frame %d this frame sp-fp %d new offset %d (%02xH)\n",
+                    varNum, stkOffs, originalFrameSize, genSPtoFPdelta(), offset, offset);
+
+            GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
+        }
+    }
 }
 
 /*-----------------------------------------------------------------------------
@@ -6491,6 +6597,12 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
 void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
 {
+    // For OSR the original method has set this up for us.
+    if (compiler->opts.IsOSR())
+    {
+        return;
+    }
+
     assert(compiler->compGeneratingProlog);
 
     bool reportArg = compiler->lvaReportParamTypeArg();
@@ -7145,6 +7257,19 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
+#if defined(TARGET_XARCH)
+    // For OSR there is a "phantom prolog" to account for the actions taken
+    // in the original frame that impact RBP and RSP on entry to the OSR method.
+    if (compiler->opts.IsOSR())
+    {
+        CORINFO_PATCHPOINT_INFO* patchpointInfo    = compiler->info.compPatchpointInfo;
+        const int                originalFrameSize = patchpointInfo->FpToSpDelta();
+
+        compiler->unwindPush(REG_FPBASE);
+        compiler->unwindAllocStack(originalFrameSize);
+    }
+#endif
+
 #ifdef DEBUG
 
     if (compiler->compJitHaltMethod())
@@ -7336,7 +7461,18 @@ void CodeGen::genFnProlog()
         }
     }
 
-    assert((genInitStkLclCnt > 0) == hasUntrLcl);
+    // With OSR we may have untracked locals that were initialized by the original method.
+    if (hasUntrLcl)
+    {
+        if (compiler->opts.IsOSR())
+        {
+            // todo: suitable assertion here
+        }
+        else
+        {
+            assert(genInitStkLclCnt > 0);
+        }
+    }
 
 #ifdef DEBUG
     if (verbose)
@@ -7442,7 +7578,9 @@ void CodeGen::genFnProlog()
     // This way, the varargs iterator will be able to retrieve the
     // call arguments properly since both the arg regs and the stack allocated
     // args will be contiguous.
-    if (compiler->info.compIsVarArgs)
+    //
+    // OSR methods can skip this, as the setup is done by the orignal method.
+    if (compiler->info.compIsVarArgs && !compiler->opts.IsOSR())
     {
         GetEmitter()->spillIntArgRegsToShadowSlots();
     }
@@ -7650,7 +7788,11 @@ void CodeGen::genFnProlog()
 #ifdef PROFILING_SUPPORTED
 
     // Insert a function entry callback for profiling, if requested.
-    genProfilingEnterCallback(initReg, &initRegZeroed);
+    // OSR methods aren't called, so don't have enter hooks.
+    if (!compiler->opts.IsOSR())
+    {
+        genProfilingEnterCallback(initReg, &initRegZeroed);
+    }
 
 #endif // PROFILING_SUPPORTED
 
@@ -7689,37 +7831,41 @@ void CodeGen::genFnProlog()
     // Update the arg initial register locations.
     compiler->lvaUpdateArgsWithInitialReg();
 
-    FOREACH_REGISTER_FILE(regState)
+    if (!compiler->opts.IsOSR())
     {
-        if (regState->rsCalleeRegArgMaskLiveIn)
+        // OSR handles this by moving the values from the original frame.
+        FOREACH_REGISTER_FILE(regState)
         {
-            // If we need an extra register to shuffle around the incoming registers
-            // we will use xtraReg (initReg) and set the xtraRegClobbered flag,
-            // if we don't need to use the xtraReg then this flag will stay false
-            //
-            regNumber xtraReg;
-            bool      xtraRegClobbered = false;
-
-            if (genRegMask(initReg) & RBM_ARG_REGS)
+            if (regState->rsCalleeRegArgMaskLiveIn)
             {
-                xtraReg = initReg;
-            }
-            else
-            {
-                xtraReg       = REG_SCRATCH;
-                initRegZeroed = false;
-            }
+                // If we need an extra register to shuffle around the incoming registers
+                // we will use xtraReg (initReg) and set the xtraRegClobbered flag,
+                // if we don't need to use the xtraReg then this flag will stay false
+                //
+                regNumber xtraReg;
+                bool      xtraRegClobbered = false;
 
-            genFnPrologCalleeRegArgs(xtraReg, &xtraRegClobbered, regState);
+                if (genRegMask(initReg) & RBM_ARG_REGS)
+                {
+                    xtraReg = initReg;
+                }
+                else
+                {
+                    xtraReg       = REG_SCRATCH;
+                    initRegZeroed = false;
+                }
 
-            if (xtraRegClobbered)
-            {
-                initRegZeroed = false;
+                genFnPrologCalleeRegArgs(xtraReg, &xtraRegClobbered, regState);
+
+                if (xtraRegClobbered)
+                {
+                    initRegZeroed = false;
+                }
             }
         }
     }
 
-    // Home the incoming arguments
+    // Home the incoming arguments.
     genEnregisterIncomingStackArgs();
 
     /* Initialize any must-init registers variables now */
@@ -8289,6 +8435,24 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         }
 
         genPopCalleeSavedRegisters();
+
+        // Extra OSR adjust to get to where RBP was saved by the original frame, and
+        // restore RBP.
+        //
+        // Note the other callee saves made in that frame are dead, the current method
+        // will save and restore what it needs.
+        if (compiler->opts.IsOSR())
+        {
+            CORINFO_PATCHPOINT_INFO* patchpointInfo    = compiler->info.compPatchpointInfo;
+            const int                originalFrameSize = patchpointInfo->FpToSpDelta();
+
+            // Use add since we know the SP-to-FP delta of the original method.
+            //
+            // If we ever allow the original method to have localloc this will
+            // need to change.
+            inst_RV_IV(INS_add, REG_SPBASE, originalFrameSize, EA_PTRSIZE);
+            inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
+        }
     }
     else
     {
@@ -8320,9 +8484,11 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
             if (compiler->compLocallocUsed)
             {
+                // OSR not yet ready for localloc
+                assert(!compiler->opts.IsOSR());
+
                 // ESP may be variable if a localloc was actually executed. Reset it.
                 //    lea esp, [ebp - compiler->compCalleeRegsPushed * REGSIZE_BYTES]
-
                 needLea = true;
             }
             else if (!regSet.rsRegsModified(RBM_CALLEE_SAVED))
@@ -8392,10 +8558,26 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         //
         // Pop the callee-saved registers (if any)
         //
-
         genPopCalleeSavedRegisters();
 
 #ifdef TARGET_AMD64
+        // Extra OSR adjust to get to where RBP was saved by the original frame.
+        //
+        // Note the other callee saves made in that frame are dead, the current method
+        // will save and restore what it needs.
+        if (compiler->opts.IsOSR())
+        {
+            CORINFO_PATCHPOINT_INFO* patchpointInfo    = compiler->info.compPatchpointInfo;
+            const int                originalFrameSize = patchpointInfo->FpToSpDelta();
+
+            // Use add since we know the SP-to-FP delta of the original method.
+            // We also need to skip over the slot where we pushed RBP.
+            //
+            // If we ever allow the original method to have localloc this will
+            // need to change.
+            inst_RV_IV(INS_add, REG_SPBASE, originalFrameSize + TARGET_POINTER_SIZE, EA_PTRSIZE);
+        }
+
         assert(!needMovEspEbp); // "mov esp, ebp" is not allowed in AMD64 epilogs
 #else  // !TARGET_AMD64
         if (needMovEspEbp)

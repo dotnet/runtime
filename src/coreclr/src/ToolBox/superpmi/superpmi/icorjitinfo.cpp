@@ -1003,6 +1003,14 @@ void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of inte
     freeArray(vars); // See note in recSetVars... we own destroying this array
 }
 
+// Provide patchpoint info for the method currently being jitted.
+void MyICJI::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
+{
+    jitInstance->mc->cr->AddCall("setPatchpointInfo");
+    jitInstance->mc->cr->recSetPatchpointInfo(patchpointInfo);
+    freeArray(patchpointInfo); // See note in recSetPatchpointInfo... we own destroying this array
+}
+
 /*-------------------------- Misc ---------------------------------------*/
 
 // Used to allocate memory that needs to handed to the EE.

@@ -561,6 +561,11 @@ void setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of interest
                                                   //      jit allocated with allocateArray, EE frees
              );
 
+// Provide patchpoint info for the method currently being jitted.
+void setPatchpointInfo(
+            CORINFO_PATCHPOINT_INFO* patchpointInfo
+            );
+
 /*-------------------------- Misc ---------------------------------------*/
 
 // Used to allocate memory that needs to handed to the EE.

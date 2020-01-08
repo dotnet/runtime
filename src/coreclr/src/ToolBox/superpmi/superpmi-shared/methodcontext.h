@@ -42,6 +42,11 @@ public:
         DWORDLONG scope;
         DWORD     token;
     };
+    struct Agnostic_CORINFO_OSR_INFO
+    {
+        DWORD     ilOffset;
+        DWORD     patchpointInfo_Index;
+    };
     struct Agnostic_CORINFO_METHOD_INFO
     {
         DWORDLONG                 ftn;
@@ -54,6 +59,7 @@ public:
         DWORD                     regionKind;
         Agnostic_CORINFO_SIG_INFO args;
         Agnostic_CORINFO_SIG_INFO locals;
+        Agnostic_CORINFO_OSR_INFO osrInfo;
     };
     struct Agnostic_CompileMethod
     {
@@ -1309,7 +1315,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 175
+// Highest packet number: 176
 // *************************************************************************************
 enum mcPackets
 {
@@ -1487,6 +1493,7 @@ enum mcPackets
     PacketCR_SetEHinfo                         = 128,
     PacketCR_SetMethodAttribs                  = 129,
     PacketCR_SetVars                           = 130,
+    PacketCR_SetPatchpointInfo                 = 176, // added 8/5/2019
     PacketCR_RecordCallSite                    = 146, // Added 10/28/2013 - to support indirect calls
 };
 

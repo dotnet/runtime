@@ -417,6 +417,9 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
 
+            methodInfo->osrInfo.ILOffset = 0;
+            methodInfo->osrInfo.PatchpointInfo = default(CORINFO_PATCHPOINT_INFO*);
+
             return methodIL;
         }
 

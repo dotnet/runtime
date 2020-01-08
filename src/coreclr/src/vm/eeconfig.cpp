@@ -339,6 +339,12 @@ HRESULT EEConfig::Init()
     tieredCompilation_CallCountingDelayMs = 0;
 #endif
 
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    dwOSR_Verbose = 0;
+    dwOSR_HitLimit = 10;
+    dwOSR_CounterBump = 5000;
+#endif
+
 #ifndef CROSSGEN_COMPILE
     backpatchEntryPointSlots = false;
 #endif
@@ -1238,6 +1244,14 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
     }
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    dwOSR_Verbose = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_Verbose);
+    dwOSR_HitLimit = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_HitLimit);
+    dwOSR_CounterBump = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_CounterBump);
+    dwOSR_LowId = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_LowId);
+    dwOSR_HighId = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_HighId);
 #endif
 
 #ifndef CROSSGEN_COMPILE

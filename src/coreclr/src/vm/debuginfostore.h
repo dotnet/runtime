@@ -83,6 +83,7 @@ public:
         IN ULONG            iOffsetMapping,
         IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
         IN ULONG            iNativeVarInfo,
+        IN CORINFO_PATCHPOINT_INFO * patchpointInfo,
         IN OUT SBuffer    * pDebugInfoBuffer,
         IN LoaderHeap     * pLoaderHeap
     );
@@ -96,6 +97,10 @@ public:
         OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
         OUT ULONG32                         *pcVars,
         OUT ICorDebugInfo::NativeVarInfo    **ppVars
+    );
+
+    static CORINFO_PATCHPOINT_INFO * RestorePatchpointInfo(
+        IN PTR_BYTE pDebugInfo
     );
 
 #ifdef DACCESS_COMPILE

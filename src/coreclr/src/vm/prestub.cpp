@@ -973,10 +973,13 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 
     // The profiler may have changed the code on the callback.  Need to
     // pick up the new code.
+    //
+    // (don't want this for OSR, need to see how it works)
     COR_ILMETHOD_DECODER ilDecoderTemp;
     COR_ILMETHOD_DECODER *pilHeader = GetAndVerifyILHeader(pConfig, &ilDecoderTemp);
     *pFlags = pConfig->GetJitCompilationFlags();
     PCODE pOtherCode = NULL;
+
     EX_TRY
     {
 #ifndef CROSSGEN_COMPILE
@@ -1345,6 +1348,14 @@ CORJIT_FLAGS VersionedPrepareCodeConfig::GetJitCompilationFlags()
     flags.Add(TieredCompilationManager::GetJitFlags(m_nativeCodeVersion));
 #endif
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    CORINFO_OSR_INFO * osrInfo = GetOSRInfo();
+    if (osrInfo->patchpointInfo != NULL)
+    {
+        flags.Add(CORJIT_FLAGS::CORJIT_FLAG_OSR);
+    }
+#endif
+
     return flags;
 }
 
@@ -1367,6 +1378,13 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
     }
     config->FinishConfiguration();
 }
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+CORINFO_OSR_INFO * VersionedPrepareCodeConfig::GetOSRInfo()
+{
+    return m_nativeCodeVersion.GetOSRInfo();
+}
+#endif
 
 #endif //FEATURE_CODE_VERSIONING
 

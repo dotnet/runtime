@@ -351,6 +351,9 @@ End
 Crst JitGenericHandleCache
 End
 
+Crst JitPatchpoint
+End
+
 Crst JitPerf
     Unordered
 End

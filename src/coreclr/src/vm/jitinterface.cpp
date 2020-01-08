@@ -7730,6 +7730,11 @@ getMethodInfoHelper(
         &methInfo->locals,
         ftn,
         true);
+
+    // Set these to default values. Will overwrite later if actually doing an OSR jit request.
+    methInfo->osrInfo.ilOffset = 0;
+    methInfo->osrInfo.patchpointInfo = NULL;
+
 } // getMethodInfoHelper
 
 //---------------------------------------------------------------------------------------
@@ -10943,6 +10948,27 @@ void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo
     EE_TO_JIT_TRANSITION();
 }
 
+void CEEJitInfo::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    // We receive ownership of the array
+    _ASSERTE(m_pPatchpointInfo == NULL);
+    m_pPatchpointInfo = patchpointInfo;
+#else
+    UNREACHABLE();
+#endif
+
+    EE_TO_JIT_TRANSITION();
+}
+
 void CEEJitInfo::CompressDebugInfo()
 {
     CONTRACTL {
@@ -10953,9 +10979,12 @@ void CEEJitInfo::CompressDebugInfo()
 
     // Don't track JIT info for DynamicMethods.
     if (m_pMethodBeingCompiled->IsDynamicMethod() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
+    {
+        _ASSERTE(m_pPatchpointInfo == NULL);
         return;
+    }
 
-    if (m_iOffsetMapping == 0 && m_iNativeVarInfo == 0)
+    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (m_pPatchpointInfo == NULL))
         return;
 
     JIT_TO_EE_TRANSITION();
@@ -10965,6 +10994,7 @@ void CEEJitInfo::CompressDebugInfo()
         PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
             m_pOffsetMapping, m_iOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
+            m_pPatchpointInfo,
             NULL,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
@@ -12102,7 +12132,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
                                                      info,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                                      nativeEntry,
-                                                     nativeSizeOfCode );
+                                                     nativeSizeOfCode);
 
 #ifdef FEATURE_STACK_SAMPLING
         if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND))
@@ -12645,6 +12675,14 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
     CORINFO_METHOD_INFO methodInfo;
 
     getMethodInfoHelper(ftn, ftnHnd, ILHeader, &methodInfo);
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
+    {
+        CORINFO_OSR_INFO *osrInfo = nativeCodeVersion.GetOSRInfo();
+        methodInfo.osrInfo = *osrInfo;
+    }
+#endif
 
     // If it's generic then we can only enter through an instantiated md (unless we're just verifying it)
     _ASSERTE(flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) || !ftn->IsGenericMethodDefinition());
@@ -13877,6 +13915,12 @@ void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
 }
 
 void CEEInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo *vars)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

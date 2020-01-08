@@ -50,8 +50,6 @@ void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
 
 bool NativeCodeVersion::operator==(const NativeCodeVersion & rhs) const { return m_pMethodDesc == rhs.m_pMethodDesc; }
 bool NativeCodeVersion::operator!=(const NativeCodeVersion & rhs) const { return !operator==(rhs); }
-
-
 #else // FEATURE_CODE_VERSIONING
 
 
@@ -80,7 +78,14 @@ NativeCodeVersionNode::NativeCodeVersionNode(
     m_gcCover(PTR_NULL),
 #endif
     m_flags(0)
-{}
+{
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    m_osrInfo.ilOffset = 0;
+    m_osrInfo.patchpointInfo = NULL;
+#endif
+
+}
 #endif
 
 #ifdef DEBUG
@@ -180,6 +185,26 @@ void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationT
 #endif
 
 #endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+CORINFO_OSR_INFO* NativeCodeVersionNode::GetOSRInfo()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return &m_osrInfo;
+}
+
+#ifndef DACCESS_COMPILE
+
+void NativeCodeVersionNode::SetOSRInfo(CORINFO_OSR_INFO * info)
+{
+    LIMITED_METHOD_CONTRACT;
+    m_osrInfo = *info;
+}
+
+#endif
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 #ifdef HAVE_GCCOVER
 
@@ -410,6 +435,39 @@ void NativeCodeVersion::SetOptimizationTier(OptimizationTier tier)
 #endif
 
 #endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+CORINFO_OSR_INFO * NativeCodeVersion::GetOSRInfo()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return AsNode()->GetOSRInfo();
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+#ifndef DACCESS_COMPILE
+void NativeCodeVersion::SetOSRInfo(CORINFO_OSR_INFO * info)
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        AsNode()->SetOSRInfo(info);
+    }
+    else
+    {
+        _ASSERTE(!"Cannot set OSR info here");
+    }
+}
+#endif
+
+#endif
+
 
 #ifdef HAVE_GCCOVER
 

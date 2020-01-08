@@ -104,6 +104,7 @@ struct JitInterfaceCallbacks
     void (* setBoundaries)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int cMap, void* pMap);
     void (* getVars)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int* cVars, void* vars, bool* extendOthers);
     void (* setVars)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int cVars, void* vars);
+    void (* setPatchpointInfo)(void * thisHandle, CorInfoException** ppException, void* patchpointInfo);
     void* (* allocateArray)(void * thisHandle, CorInfoException** ppException, size_t cBytes);
     void (* freeArray)(void * thisHandle, CorInfoException** ppException, void* array);
     void* (* getArgNext)(void * thisHandle, CorInfoException** ppException, void* args);
@@ -1012,6 +1013,14 @@ public:
     {
         CorInfoException* pException = nullptr;
         _callbacks->setVars(_thisHandle, &pException, ftn, cVars, vars);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual void setPatchpointInfo(void* patchpointInfo)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->setPatchpointInfo(_thisHandle, &pException, patchpointInfo);
         if (pException != nullptr)
             throw pException;
     }

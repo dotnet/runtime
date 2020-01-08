@@ -5096,6 +5096,426 @@ HCIMPL0(void, JIT_DebugLogLoopCloning)
 }
 HCIMPLEND
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+// Runtime state for a patchpoint.
+//
+// Patchpoint identity is currently the return address
+// of the helper call in the jitted code.
+//
+// Todo: handle cases where IP addresses get recycled
+struct PerPatchpointInfo
+{
+    PerPatchpointInfo() : 
+        m_osrMethodCode(0),
+        m_patchpointCount(0),
+        m_flags(0),
+        m_patchpointId(0)
+    {
+    }
+
+    enum 
+    {
+        patchpoint_triggered = 0x1,
+        patchpoint_invalid = 0x2
+    };
+
+    PCODE m_osrMethodCode;
+    LONG m_patchpointCount;
+    LONG m_flags;
+
+    int m_patchpointId;
+};
+
+typedef EEPtrHashTable JitPatchpointTable;
+JitPatchpointTable *g_pJitPatchpointTable = NULL;
+CrstStatic g_pJitPatchpointCrst;
+static int s_patchpointId = 0;
+static bool s_warnedLimitedRange = false;
+
+// Helper method to jit the OSR version of a method.
+//
+// Returns the address of the jitted code.
+// Returns NULL if osr method can't be created.
+static PCODE JitPatchpointWorker(void* ip, int ilOffset)
+{
+    PCODE osrVariant = NULL;
+
+    GCX_PREEMP();
+
+    // Find the method desc for this bit of code
+    EECodeInfo codeInfo((PCODE)ip);
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+
+    // Find the il method version corresponding to this version of the method
+    // and set up a new native code version for it.
+    ReJITID rejitId = ReJitManager::GetReJitId(pMD, codeInfo.GetStartAddress());
+    CodeVersionManager* codeVersionManager = pMD->GetCodeVersionManager();
+    NativeCodeVersion osrNativeCodeVersion;
+    {
+        // Request a new native version that is optimized.
+        CodeVersionManager::TableLockHolder lock(codeVersionManager);
+        ILCodeVersion ilCodeVersion = codeVersionManager->GetILCodeVersion(pMD, rejitId);
+        HRESULT hr = ilCodeVersion.AddNativeCodeVersion(pMD, NativeCodeVersion::OptimizationTier1, &osrNativeCodeVersion);
+        if (FAILED(hr))
+        {
+            // log ...
+            return NULL;
+        }
+    }
+
+    // Prepare info for the jit
+    CORINFO_OSR_INFO osrInfo;
+    osrInfo.ilOffset = ilOffset;
+
+    // Fetch the patchpoint info for the current method
+    EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
+    CodeHeader* codeHdr = jitMgr->GetCodeHeaderFromStartAddress(codeInfo.GetStartAddress());
+    PTR_BYTE debugInfo = codeHdr->GetDebugInfo();
+    CORINFO_PATCHPOINT_INFO* patchpointInfo = CompressDebugInfo::RestorePatchpointInfo(debugInfo);
+    osrInfo.patchpointInfo = patchpointInfo;
+
+    if (osrInfo.patchpointInfo == NULL)
+    {
+        // log ...
+        return NULL;
+    }
+    osrNativeCodeVersion.SetOSRInfo(&osrInfo);
+
+    // Invoke the jit to compile the OSR version
+    PrepareCodeConfigBuffer configBuffer(osrNativeCodeVersion);
+    PrepareCodeConfig *config = configBuffer.GetConfig();
+    osrVariant = pMD->PrepareCode(config);
+
+    return osrVariant;
+}
+
+// Helper method wrapper to set up a frame so we can invoke methods that might GC
+HCIMPL2(PCODE, JIT_Patchpoint_Framed, void* ip, int ilOffset)
+{
+    PCODE result = NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
+
+    result = JitPatchpointWorker(ip, ilOffset);
+
+    HELPER_METHOD_FRAME_END();
+
+    return result;
+}
+HCIMPLEND
+
+// Jit helper invoked at a patchpoint.
+//
+// Checks to see if this is a known patchpoint, if not,
+// an entry is added to the patchpoint table.
+//
+// When the patchpoint has been hit often enough to trigger
+// a transition, create an OSR method.
+//
+// Currently, counter is a pointer into the Tier0 method stack
+// frame so we have exclusive access.
+
+void JIT_Patchpoint(int* counter, int ilOffset)
+{
+    // This method may not return normally
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    // Patchpoint identity is the helper return address
+    void* const ip = _ReturnAddress();
+
+    // Fetch or setup patchpoint info for this patchpoint.
+    PerPatchpointInfo * ppInfo = NULL;
+    BOOL hasData = g_pJitPatchpointTable->GetValueSpeculative(ip, (HashDatum*)&ppInfo);
+
+    if (!hasData)
+    {
+        CrstHolder lock(&g_pJitPatchpointCrst);
+        hasData = g_pJitPatchpointTable->GetValue(ip, (HashDatum*)&ppInfo);
+
+        if (!hasData)
+        {
+            // Todo: find right heap for this data
+            ppInfo = new (nothrow) PerPatchpointInfo();
+            g_pJitPatchpointTable->InsertValue(ip, (HashDatum)ppInfo);
+            ppInfo->m_patchpointId = ++s_patchpointId;
+        }
+    }
+
+    const int verbose = g_pConfig->OSR_Verbose();
+    const int ppId = ppInfo->m_patchpointId;
+    const int counterBump = g_pConfig->OSR_CounterBump();
+
+    // In the current prototype, counter is shared by all patchpoints
+    // in a method, so no matter what happens below, we don't want to
+    // impair those other patchpoints.
+    //
+    // One might be tempted, for instance, to set the counter for
+    // invalid or ignored patchpoints to some high value to reduce
+    // the amount of back and forth with the runtime, but this would
+    // lock out other patchpoints in the method.
+    //
+    // So we always reset the counter to the bump value.
+    //
+    // In the prototype, counter is a location in a stack frame,
+    // so we can update it without worrying about other threads.
+    *counter = counterBump;
+
+    // OSR is only supported on x64, currently.
+#if !defined(TARGET_AMD64)
+    if (verbose > 1)
+    {
+        printf("### Runtime: no OSR for this isa/abi yet [%d] 0x%p\n", ppId, ip);
+    }
+    return;
+#endif
+
+    // Is this an invalid patchpoint? If so, just return to the Tier0 method.
+    if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+    {
+        if (verbose > 1)
+        {
+            printf("### Runtime: INVALID patchpoint [%d] 0x%p\n", ppId, ip);
+        }
+        return;
+    }
+    
+    // See if we have an OSR method for this patchpoint.
+    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
+    bool isNewMethod = false;
+    
+    if (osrMethodCode == NULL)
+    {
+        // No OSR method yet, let's see if we should create one.
+        //
+        // First, optionally ignore some patchpoints to increase
+        // coverage (stress mode).
+        // 
+        // Because there are multiple patchpoints in a method, and
+        // each OSR method covers the remainder of the method from
+        // that point until the method returns, if we trigger on an
+        // early patchpoint in a method, we may never see triggers on
+        // a later one.
+        const int lowId = g_pConfig->OSR_LowId();
+        const int highId = g_pConfig->OSR_HighId();
+        
+        if (!s_warnedLimitedRange && ((lowId != -1) || (highId != 10000000)))
+        {
+            printf("\n### Runtime: PATCHPOINTS LIMITED to range [%d,%d]\n\n", lowId, highId);
+            s_warnedLimitedRange = true;
+        }
+        
+        if ((ppId < lowId) || (ppId > highId))
+        {
+            if (verbose > 0)
+            {
+                printf("### Runtime: IGNORING patchpoint [%d] 0x%p\n", ppId, ip);
+            }
+            return;
+        }
+        
+        // Second, only request the OSR method if this patchpoint has
+        // been hit often enough.
+        //
+        // Note the initial invocation of the helper depends on the
+        // initial counter value baked into jitted code (call this J);
+        // subsequent invocations depend on the counter bump (call
+        // this B).
+        //
+        // J and B may differ, so the total number of loop iterations
+        // before an OSR method is created is:
+        //
+        // J, if hitLimit <= 1;
+        // J + (hitLimit-1)* B, if hitLimit > 1;
+        //
+        // Current thinking is:
+        //
+        // J should be in the range of tens to hundreds, so that newly
+        // called Tier0 methods that already have OSR methods
+        // available can transition to OSR methods quickly, but
+        // methods called only a few times do not invoke this
+        // helper and so create PerPatchpoint runtime state.
+        //
+        // B should be in the range of hundreds to thousands, so that
+        // we're not too eager to create OSR methods (since there is
+        // some jit cost), but are eager enough to transition before
+        // we run too much Tier0 code.
+        
+        const int hitLimit = g_pConfig->OSR_HitLimit();
+        const int hitCount = InterlockedIncrement(&ppInfo->m_patchpointCount);
+        
+        if ((verbose > 1) || (verbose > 0) && (hitCount == 1))
+        {
+            printf("### Runtime: patchpoint [%d] 0x%p hit:%d (limit %d)\n", ppId, ip, hitCount, hitLimit);
+        }
+        
+        // Defer, if we haven't yet reached the limit 
+        if (hitCount < hitLimit)
+        {
+            return;
+        }
+        
+        // Third, make sure no other thread is trying to create the OSR method.
+        LONG oldFlags = ppInfo->m_flags;
+        if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
+        {
+            // Some other thread is already working on the OSR method, just come back later.
+            if (verbose > 1)
+            {
+                printf("### Runtime: AWAITING patchpoint [%d] 0x%p\n", ppId, ip);
+            }
+            return;
+        }
+        
+        LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+        BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
+        
+        if (!triggerTransition)
+        {
+            // Some other thread won the race, just come back later.
+            if (verbose > 1)
+            {
+                printf("### Runtime: (lost race) AWAITING patchpoint [%d] 0x%p\n", ppId, ip);
+            }
+            return;
+        }
+        
+        // Time to create the OSR method.
+        //
+        // We currently do this synchronously. We could instead queue
+        // up a request on some worker thread, like we do for
+        // rejitting, and return control to the Tier0 method. It may
+        // eventually return here, if the patchpoint is hit often
+        // enough.
+        //
+        // There is a chance the async version will create methods
+        // that are never used (just like there is a chance that Tier1
+        // methods are ever called).
+        //
+        // In this prototype we want to expose bugs in the jitted code
+        // for OSR methods, so we stick with synchronous creation.
+        
+#if _DEBUG
+        if (verbose > 0)
+        {
+            EECodeInfo codeInfo((PCODE)ip);
+            MethodDesc* pMD = codeInfo.GetMethodDesc();
+            
+            printf("### Runtime: patchpoint [%d] 0x%p TRIGGER hit:%d bump:%d native:0x%x il:0x%x in 0x%p %s::%s %s\n",
+                ppId,
+                ip,
+                hitCount, counterBump,
+                codeInfo.GetRelOffset(), ilOffset,
+                pMD,
+                pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, pMD->m_pszDebugMethodSignature);
+        }
+#endif
+        
+        // Invoke the helper to build the OSR method
+        osrMethodCode = HCCALL2(JIT_Patchpoint_Framed, ip, ilOffset);
+        
+        // If that failed, mark the patchpoint as invaild.
+        if (osrMethodCode == NULL)
+        {
+            if (verbose > 0)
+            {
+                printf("### Runtime: unable to create OSR method, marking patchpoint [%d] 0x%p INVALID\n", ppId, ip);
+            }
+            
+            InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
+            return;
+        }
+        
+        // We've successfully created the osr method; make it available.
+        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+        ppInfo->m_osrMethodCode = osrMethodCode;
+        isNewMethod = true;
+    }
+
+    // If we get here, we have code to transition to...
+    _ASSERTE(osrMethodCode != NULL);
+
+    Thread *pThread = GetThread();
+    
+#ifdef FEATURE_HIJACK
+    // We can't crawl the stack of a thread that currently has a hijack pending
+    // (since the hijack routine won't be recognized by any code manager). So we
+    // Undo any hijack, the EE will re-attempt it later.
+    pThread->UnhijackThread();
+#endif
+    
+    // Find context for the original method
+    CONTEXT frameContext;
+    frameContext.ContextFlags = CONTEXT_FULL;
+    RtlCaptureContext(&frameContext);
+    
+    // Walk back to the original method frame
+    pThread->VirtualUnwindToFirstManagedCallFrame(&frameContext);
+    
+    // Remember original method FP and SP because new method will inherit them.
+    UINT_PTR currentSP = GetSP(&frameContext);
+    UINT_PTR currentFP = GetFP(&frameContext);
+    
+    // We expect to be back at the right IP
+    if ((UINT_PTR)ip != GetIP(&frameContext))
+    {
+        printf("### Runtime: patchpoint [%d] 0x%p TRANSITION -- odd that context has ip %p\n",
+            ppId, ip, GetIP(&frameContext));
+    }
+    
+    // Now unwind back to the original method caller frame.
+    EECodeInfo codeInfo(GetIP(&frameContext));
+    frameContext.ContextFlags = CONTEXT_FULL;
+    ULONG_PTR establisherFrame = 0;
+    PVOID handlerData = NULL;
+    RtlVirtualUnwind(UNW_FLAG_NHANDLER, codeInfo.GetModuleBase(), GetIP(&frameContext), codeInfo.GetFunctionEntry(), 
+        &frameContext, &handlerData, &establisherFrame, NULL);
+    
+    // Now, set FP and SP back to the values they had just before this helper was called,
+    // since the new method must have access to the original method frame.
+    //
+    // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
+    // use that to adjust the stack, likely saving some stack space.
+    
+#if defined(TARGET_AMD64)
+    // If calls push the return address, we need to simulate that here, so the OSR
+    // method sees the "expected" SP misalgnment on entry.
+    _ASSERTE(currentSP % 16 == 0);
+    currentSP -= 8;
+#endif
+    
+    SetSP(&frameContext, currentSP);
+    frameContext.Rbp = currentFP;
+    
+    // Note we can get here w/o triggering, if there is an existing OSR method and
+    // we hit the patchpoint.
+    if (((verbose > 0) && isNewMethod) || (verbose > 1))
+    {
+        printf("### Runtime: patchpoint [%d] 0x%p TRANSITION%s RSP %p RBP %p RIP %p (prev RBP %p)\n",
+            ppId, ip, isNewMethod ? "" : " (existing)", currentSP, currentFP, osrMethodCode , *(char**)currentFP);
+    }
+    
+    // Install new entry point as IP
+    SetIP(&frameContext, osrMethodCode);
+    
+    // Transition!
+    RtlRestoreContext(&frameContext, NULL);
+}
+
+#else
+
+void JIT_Patchpoint(int* counter, int ilOffset)
+{
+    // Stub version if OSR feature is disabled
+    //
+    // Should not be called.
+
+    UNREACHABLE();
+}
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
+
 //========================================================================
 //
 //      INTEROP HELPERS
@@ -5216,12 +5636,23 @@ void InitJITHelpers2()
 
     g_pJitGenericHandleCacheCrst.Init(CrstJitGenericHandleCache, CRST_UNSAFE_COOPGC);
 
-    // Allocate and initialize the table
+    // Allocate and initialize the generic handle cache
     NewHolder <JitGenericHandleCache> tempGenericHandleCache (new JitGenericHandleCache());
     LockOwner sLock = {&g_pJitGenericHandleCacheCrst, IsOwnerOfCrst};
     if (!tempGenericHandleCache->Init(59, &sLock))
         COMPlusThrowOM();
     g_pJitGenericHandleCache = tempGenericHandleCache.Extract();
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    g_pJitPatchpointCrst.Init(CrstJitPatchpoint, CRST_UNSAFE_COOPGC);
+
+    // Allocate and initialize the patchpoint table
+    NewHolder <JitPatchpointTable> tempJitPatchpointTable (new JitPatchpointTable());
+    LockOwner sLock2 = {&g_pJitPatchpointCrst, IsOwnerOfCrst};
+    if (!tempJitPatchpointTable->Init(59, &sLock2))
+        COMPlusThrowOM();
+    g_pJitPatchpointTable = tempJitPatchpointTable.Extract();
+#endif // FEATURE_ON_STACK_REPLACEMENT
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)

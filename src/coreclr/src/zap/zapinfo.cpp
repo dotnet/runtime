@@ -500,7 +500,7 @@ void ZapInfo::CompileMethod()
                                                      &m_currentMethodInfo,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                                      &pCode,
-                                                     &cCode );
+                                                     &cCode);
         if (FAILED(res))
         {
             // We will fall back to the "main" JIT on failure.
@@ -2941,6 +2941,12 @@ void ZapInfo::setVars(CORINFO_METHOD_HANDLE ftn,
     m_iNativeVarInfo = cVars;
 
     return;
+}
+
+void ZapInfo::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
+{
+    // No patchpoint info when prejitting
+    UNREACHABLE();
 }
 
 void * ZapInfo::allocateArray(size_t cBytes)

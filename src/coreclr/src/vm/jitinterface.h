@@ -823,6 +823,7 @@ public:
                  ICorDebugInfo::ILVarInfo **vars, bool *extendOthers);
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars);
+    void setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo);
 
     // ICorArgInfo stuff
 
@@ -1216,6 +1217,8 @@ public:
 
     void * allocGCInfo (size_t  size);
 
+    void * allocPatchpointInfo (size_t  size);
+
     void setEHcount (unsigned cEH);
 
     void setEHinfo (
@@ -1289,6 +1292,13 @@ public:
         m_pOffsetMapping = NULL;
         m_iNativeVarInfo = 0;
         m_pNativeVarInfo = NULL;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (m_pPatchpointInfo != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfo);
+
+        m_pPatchpointInfo = NULL;
+#endif
 
 #ifdef FEATURE_EH_FUNCLETS
         m_moduleBase = NULL;
@@ -1375,6 +1385,9 @@ public:
 #endif
           m_GCinfo_len(0),
           m_EHinfo_len(0),
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+          m_pPatchpointInfo(NULL),
+#endif
           m_iOffsetMapping(0),
           m_pOffsetMapping(NULL),
           m_iNativeVarInfo(0),
@@ -1405,6 +1418,12 @@ public:
 
         if (m_pNativeVarInfo != NULL)
             delete [] ((BYTE*) m_pNativeVarInfo);
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (m_pPatchpointInfo != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfo);
+#endif
+
     }
 
     // ICorDebugInfo stuff.
@@ -1412,6 +1431,7 @@ public:
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars);
+    void setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo);
     void CompressDebugInfo();
 
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                 /* IN  */
@@ -1474,6 +1494,10 @@ protected :
 
     ULONG32                 m_iNativeVarInfo;
     ICorDebugInfo::NativeVarInfo * m_pNativeVarInfo;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    CORINFO_PATCHPOINT_INFO * m_pPatchpointInfo;
+#endif
 
     // The first time a call is made to CEEJitInfo::GetProfilingHandle() from this thread
     // for this method, these values are filled in.   Thereafter, these values are used

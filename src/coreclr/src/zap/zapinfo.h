@@ -475,6 +475,7 @@ public:
                  ICorDebugInfo::ILVarInfo **vars, bool *extendOthers);
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo*vars);
+    void setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo);
     void * allocateArray(size_t cBytes);
     void freeArray(void *array);
 

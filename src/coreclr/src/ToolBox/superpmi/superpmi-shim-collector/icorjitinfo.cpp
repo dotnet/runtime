@@ -1165,6 +1165,14 @@ void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] meth
     original_ICorJitInfo->setVars(ftn, cVars, vars);
 }
 
+// Provide patchpoint info for the method currently being jitted.
+void interceptor_ICJI::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
+{
+    mc->cr->AddCall("setPatchpointInfo");
+    mc->cr->recSetPatchpointInfo(patchpointInfo); // Since the EE frees, we've gotta record before its sent to the EE.
+    original_ICorJitInfo->setPatchpointInfo(patchpointInfo);
+}
+
 /*-------------------------- Misc ---------------------------------------*/
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,

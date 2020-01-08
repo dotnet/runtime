@@ -440,6 +440,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     IN ULONG            iOffsetMapping,
     IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
     IN ULONG            iNativeVarInfo,
+    IN CORINFO_PATCHPOINT_INFO * patchpointInfo,
     IN OUT SBuffer    * pDebugInfoBuffer,
     IN LoaderHeap     * pLoaderHeap
     )
@@ -450,6 +451,13 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         PRECONDITION((iNativeVarInfo == 0) == (pNativeVarInfo == NULL));
         PRECONDITION((pDebugInfoBuffer != NULL) ^ (pLoaderHeap != NULL));
     } CONTRACTL_END;
+
+    // Patchpoint info is currently uncompressed.
+    DWORD cbPatchpointInfo = 0;
+    if (patchpointInfo != NULL)
+    {
+        cbPatchpointInfo = patchpointInfo->PatchpointInfoSize();
+    }
 
     // Actually do the compression. These will throw on oom.
     NibbleWriter boundsBuffer;
@@ -479,7 +487,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     DWORD cbHeader;
     PVOID pHeader = w.GetBlob(&cbHeader);
 
-    S_UINT32 cbFinalSize = S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
+    S_UINT32 cbFinalSize = S_UINT32(1) + S_UINT32(cbPatchpointInfo) + S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
     if (cbFinalSize.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
@@ -496,6 +504,18 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     _ASSERTE(ptrStart != NULL); // throws on oom.
 
     BYTE *ptr = ptrStart;
+
+    // First byte is a flag byte:
+    //   0 - no patchpoint info
+    //   1 - patchpoint info
+
+    *ptr++ = (cbPatchpointInfo > 0) ? 1 : 0;
+
+    if (cbPatchpointInfo > 0)
+    {
+        memcpy(ptr, (BYTE*) patchpointInfo, cbPatchpointInfo);
+        ptr += cbPatchpointInfo;
+    }
 
     memcpy(ptr, pHeader, cbHeader);
     ptr += cbHeader;
@@ -524,6 +544,8 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
 // DAC only needs to run the uncompression routines.
 //-----------------------------------------------------------------------------
 
+typedef DPTR(CORINFO_PATCHPOINT_INFO) PTR_CORINFO_PATCHPOINT_INFO;
+
 //-----------------------------------------------------------------------------
 // Uncompression (restore) routines
 //-----------------------------------------------------------------------------
@@ -551,6 +573,20 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     if (ppMap != NULL) *ppMap = NULL;
     if (pcVars != NULL) *pcVars = 0;
     if (ppVars != NULL) *ppVars = NULL;
+
+    // Check flag byte and skip over any patchpoint info
+    BYTE flagByte = *pDebugInfo;
+    pDebugInfo++;
+
+    if (flagByte == 1)
+    {
+        PTR_CORINFO_PATCHPOINT_INFO patchpointInfo = dac_cast<PTR_CORINFO_PATCHPOINT_INFO>(pDebugInfo);
+        pDebugInfo += patchpointInfo->PatchpointInfoSize();
+    }
+    else
+    {
+        _ASSERTE(flagByte == 0);
+    }
 
     NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
 
@@ -613,6 +649,35 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
             }
         }
     }
+}
+
+CORINFO_PATCHPOINT_INFO * CompressDebugInfo::RestorePatchpointInfo(IN PTR_BYTE pDebugInfo)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    PTR_CORINFO_PATCHPOINT_INFO patchpointInfo = NULL;
+
+    // Check flag byte.
+    BYTE flagByte = *pDebugInfo;
+    pDebugInfo++;
+
+    if (flagByte == 1)
+    {
+        patchpointInfo = dac_cast<PTR_CORINFO_PATCHPOINT_INFO>(pDebugInfo);
+    }
+    else
+    {
+        _ASSERTE(flagByte == 0);
+    }
+
+    return patchpointInfo;
 }
 
 #ifdef DACCESS_COMPILE

@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* b2e40020-6125-41e4-a0fc-821127ec192a */
-    0xb2e40020,
-    0x6125,
-    0x41e4,
-    {0xa0, 0xfc, 0x82, 0x11, 0x27, 0xec, 0x19, 0x2a}
+SELECTANY const GUID JITEEVersionIdentifier = { /* c231d2d7-4764-4097-a9ef-5961041540df */
+    0xc231d2d7,
+    0x4764,
+    0x4097,
+    {0xa9, 0xef, 0x59, 0x61, 0x04, 0x15, 0x40, 0xdf}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,6 +337,139 @@ private:
         }
     }
 };
+
+// CORINFO_PATCHPOINT_INFO
+//
+// Communicates layout of the original method stack to the jit
+// for an On-Stack Replacement (OSR) jit request.
+struct CORINFO_PATCHPOINT_INFO
+{
+    // Determine how much storage is needed to hold this info
+    static unsigned ComputeSize(unsigned localCount)
+    {
+        unsigned baseSize     = sizeof(CORINFO_PATCHPOINT_INFO);
+        unsigned variableSize = localCount * sizeof(int);
+        unsigned totalSize    = baseSize + variableSize;
+        return totalSize;
+    }
+
+    // Initialize
+    void Initialize(unsigned localCount, unsigned ilSize, int fpToSpDelta)
+    {
+        m_patchpointInfoSize      = ComputeSize(localCount);
+        m_ilSize                  = ilSize;
+        m_fpToSpDelta             = fpToSpDelta;
+        m_numberOfLocals          = localCount;
+        m_genericContextArgOffset = -1;
+        m_keptAliveThisOffset     = -1;
+        m_securityCookieOffset    = -1;
+    }
+
+    // Total size of this patchpoint info record, in bytes
+    unsigned PatchpointInfoSize() const
+    {
+        return m_patchpointInfoSize;
+    }
+
+    // IL Size of the original method
+    unsigned ILSize() const
+    {
+        return m_ilSize;
+    }
+
+    // FP to SP delta of the original method
+    int FpToSpDelta() const
+    {
+        return m_fpToSpDelta;
+    }
+
+    // Number of locals in the original method (including special locals)
+    unsigned NumberOfLocals() const
+    {
+        return m_numberOfLocals;
+    }
+
+    // Original method caller SP offset for generic context arg
+    int GenericContextArgOffset() const
+    {
+        return m_genericContextArgOffset;
+    }
+
+    void SetGenericContextArgOffset(int offset)
+    {
+        m_genericContextArgOffset = offset;
+    }
+
+    // Original method FP relative offset for kept-alive this
+    int KeptAliveThisOffset() const
+    {
+        return m_keptAliveThisOffset;
+    }
+
+    bool HasKeptAliveThis() const
+    {
+        return m_keptAliveThisOffset != -1;
+    }
+
+    void SetKeptAliveThisOffset(int offset)
+    {
+        m_keptAliveThisOffset = offset;
+    }
+
+    // Original method FP relative offset for security cookie
+    int SecurityCookieOffset() const
+    {
+        return m_securityCookieOffset;
+    }
+
+    bool HasSecurityCookie() const
+    {
+        return m_securityCookieOffset != -1;
+    }
+
+    void SetSecurityCookieOffset(int offset)
+    {
+        m_securityCookieOffset = offset;
+    }
+
+    // True if this local was address exposed in the original method
+    bool IsExposed(unsigned localNum) const
+    {
+        return ((m_offsetAndExposureData[localNum] & EXPOSURE_MASK) != 0);
+    }
+
+    void SetIsExposed(unsigned localNum)
+    {
+        m_offsetAndExposureData[localNum] |= EXPOSURE_MASK;
+    }
+
+    // FP relative offset of this local in the original method
+    int Offset(unsigned localNum) const
+    {
+        return (m_offsetAndExposureData[localNum] & ~EXPOSURE_MASK);
+    }
+
+    void SetOffset(unsigned localNum, int offset)
+    {
+        m_offsetAndExposureData[localNum] = offset;
+    }
+
+private:
+    enum
+    {
+        EXPOSURE_MASK = 0x1
+    };
+
+    unsigned m_patchpointInfoSize;
+    unsigned m_ilSize;
+    unsigned m_numberOfLocals;
+    int      m_fpToSpDelta;
+    int      m_genericContextArgOffset;
+    int      m_keptAliveThisOffset;
+    int      m_securityCookieOffset;
+    int      m_offsetAndExposureData[];
+};
+
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
 // These helpers can be called by native code which executes in the runtime.
@@ -630,6 +763,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
+
+    CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
 
     CORINFO_HELP_COUNT,
 };
@@ -1164,6 +1299,12 @@ struct CORINFO_SIG_INFO
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
 };
 
+struct CORINFO_OSR_INFO
+{
+    unsigned ilOffset;                       // IL offset of the patchpoint
+    CORINFO_PATCHPOINT_INFO* patchpointInfo; // patchpoint info blob for the original method
+};
+
 struct CORINFO_METHOD_INFO
 {
     CORINFO_METHOD_HANDLE       ftn;
@@ -1176,6 +1317,7 @@ struct CORINFO_METHOD_INFO
     CorInfoRegionKind           regionKind;
     CORINFO_SIG_INFO            args;
     CORINFO_SIG_INFO            locals;
+    CORINFO_OSR_INFO            osrInfo;
 };
 
 //----------------------------------------------------------------------------
@@ -2657,6 +2799,11 @@ public:
             ) = 0;
 
     /*-------------------------- Misc ---------------------------------------*/
+
+    // Provide patchpoint info for the method currently being jitted.
+    virtual void setPatchpointInfo(
+            CORINFO_PATCHPOINT_INFO* patchpointInfo
+            ) = 0;
 
     // Used to allocate memory that needs to handed to the EE.
     // For eg, use this to allocated memory for reporting debug info,

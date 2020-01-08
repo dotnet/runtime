@@ -2044,6 +2044,9 @@ public:
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    virtual unsigned GetILOffset() const { return 0; }
+#endif
     BOOL ProfilerRejectedPrecompiledCode();
     BOOL ReadyToRunRejectedPrecompiledCode();
     void SetProfilerRejectedPrecompiledCode();
@@ -2202,6 +2205,9 @@ public:
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    virtual CORINFO_OSR_INFO * GetOSRInfo();
+#endif
 private:
     ILCodeVersion m_ilCodeVersion;
 };
