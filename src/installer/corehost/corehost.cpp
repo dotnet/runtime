@@ -218,6 +218,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
             rc = main_fn_v2(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
 
+#if defined(_WIN32) && defined(FEATURE_APPHOST)
             if (rc == StatusCode::FrameworkMissingFailure && !set_error_writer_fn)
             {
                 fx_ver_t apphost_ver;
@@ -227,6 +228,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
                 trace::error(_X(""));
                 trace::error(_X("  - %s"), url.c_str());
             }
+#endif
         }
     }
     else
