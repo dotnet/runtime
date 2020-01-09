@@ -2778,6 +2778,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->signature = pLookup->signature;
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
 
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
+
     // It's available only via the run-time helper function,
 
     if (pLookup->indirections == CORINFO_USEHELPER)
@@ -2791,6 +2793,11 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     else
     {
         int indirectionsSize = 0;
+        if (pLookup->sizeOffset != 0xFFFF)
+        {
+            indirectionsSize += (pLookup->sizeOffset >= 0xFFF ? 10 : 4);
+            indirectionsSize += 12;
+        }
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
             if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
@@ -2815,8 +2822,38 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             p += 2;
         }
 
+        BYTE* pBLECall = NULL;
+
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != 0xFFFF)
+            {
+                _ASSERTE(pLookup->testForNull);
+
+                if (pLookup->sizeOffset >= 0xFFF)
+                {
+                    // mov r2, offset
+                    MovRegImm(p, 2, pLookup->sizeOffset); p += 8;
+                    // ldr r1, [r0, r2]
+                    *(WORD*)p = 0x5881; p += 2;
+                }
+                else
+                {
+                    // ldr r1, [r0 + offset]
+                    *(WORD*)p = 0xF8D0; p += 2;
+                    *(WORD*)p = (WORD)(0xFFF & pLookup->sizeOffset) | 0x1000; p += 2;
+                }
+
+                // mov r2, slotOffset
+                MovRegImm(p, 2, slotOffset); p += 8;
+
+                // cmp r1,r2
+                *(WORD*)p = 0x4291; p += 2;
+
+                // ble 'CALL HELPER'
+                pBLECall = p;       // Offset filled later
+                *(WORD*)p = 0xdd00; p += 2;
+            }
             if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
             {
                 if (pLookup->offsets[i] >= 0xFF)
@@ -2872,19 +2909,25 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // No null test required
         if (!pLookup->testForNull)
         {
+            _ASSERTE(pLookup->sizeOffset == 0xFFFF);
+
             // mov pc, lr
             *(WORD *)p = 0x46F7;
             p += 2;
         }
         else
         {
-            // cbz r0, nullvaluelabel
+            // cbz r0, 'CALL HELPER'
             *(WORD *)p = 0xB100;
             p += 2;
             // mov pc, lr
             *(WORD *)p = 0x46F7;
             p += 2;
-            // nullvaluelabel:
+
+            // CALL HELPER:
+            if (pBLECall != NULL)
+                *(WORD*)pBLECall |= (((BYTE)(p - pBLECall) - 4) >> 1);
+
             // mov r0, r3
             *(WORD *)p = 0x4618;
             p += 2;

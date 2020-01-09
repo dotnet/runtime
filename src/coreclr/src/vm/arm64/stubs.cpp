@@ -2250,14 +2250,14 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         }
         else
         {
-            // cbz x0, nullvaluelabel
+            // cbz x0, 'CALL HELPER'
             *(DWORD*)p = 0xb4000040;
             p += 4;
             // ret lr
             *(DWORD*)p = 0xd65f03c0;
             p += 4;
 
-            // nullvaluelabel:
+            // CALL HELPER:
             if(pBLECall != NULL)
                 *(DWORD*)pBLECall |= (((UINT32)(p - pBLECall) >> 2) << 5);
 
