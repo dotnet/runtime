@@ -245,6 +245,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         GC_SLOT_INTERIOR = 0x1,
         GC_SLOT_PINNED = 0x2,
         GC_SLOT_UNTRACKED = 0x4,
+
+        GC_SLOT_INVALID = -1
     };
 
     public enum GcStackSlotBase
@@ -272,12 +274,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
-
-            sb.AppendLine($"\t\t\t\tSpOffset: {SpOffset}");
-            sb.Append($"\t\t\t\tBase: {Enum.GetName(typeof(GcStackSlotBase), Base)}");
-
-            return sb.ToString();
+            return $@"{Enum.GetName(typeof(GcStackSlotBase), Base)}+0x{SpOffset:X2}";
         }
     };
 }
