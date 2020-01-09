@@ -17,6 +17,8 @@ Getting Started
 Workflow (Building, testing, etc.)
 ===============
 
+If you want to contribute a code change to this repo, start here.
+
 - [Workflow Instructions](workflow/README.md)
 
 Design Docs
