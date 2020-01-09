@@ -405,6 +405,210 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<sbyte> ReverseElementBits(Vector128<sbyte> value) => ReverseElementBits(value);
 
             /// <summary>
+            /// uint8x8_t vtrn1_u8(uint8x8_t a, uint8x8_t b)
+            ///   A64: TRN1 Vd.8B, Vn.8B, Vm.8B
+            /// </summary>
+            public static Vector64<byte> TransposeEven(Vector64<byte> left, Vector64<byte> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// int16x4_t vtrn1_s16(int16x4_t a, int16x4_t b)
+            ///   A64: TRN1 Vd.4H, Vn.4H, Vm.4H
+            /// </summary>
+            public static Vector64<short> TransposeEven(Vector64<short> left, Vector64<short> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// int32x2_t vtrn1_s32(int32x2_t a, int32x2_t b)
+            ///   A64: TRN1 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<int> TransposeEven(Vector64<int> left, Vector64<int> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// int8x8_t vtrn1_s8(int8x8_t a, int8x8_t b)
+            ///   A64: TRN1 Vd.8B, Vn.8B, Vm.8B
+            /// </summary>
+            public static Vector64<sbyte> TransposeEven(Vector64<sbyte> left, Vector64<sbyte> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// float32x2_t vtrn1_f32(float32x2_t a, float32x2_t b)
+            ///   A64: TRN1 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> TransposeEven(Vector64<float> left, Vector64<float> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// uint16x4_t vtrn1_u16(uint16x4_t a, uint16x4_t b)
+            ///   A64: TRN1 Vd.4H, Vn.4H, Vm.4H
+            /// </summary>
+            public static Vector64<ushort> TransposeEven(Vector64<ushort> left, Vector64<ushort> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// uint32x2_t vtrn1_u32(uint32x2_t a, uint32x2_t b)
+            ///   A64: TRN1 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<uint> TransposeEven(Vector64<uint> left, Vector64<uint> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// uint8x16_t vtrn1q_u8(uint8x16_t a, uint8x16_t b)
+            ///   A64: TRN1 Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> TransposeEven(Vector128<byte> left, Vector128<byte> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// float64x2_t vtrn1q_f64(float64x2_t a, float64x2_t b)
+            ///   A64: TRN1 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> TransposeEven(Vector128<double> left, Vector128<double> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// int16x8_t vtrn1q_s16(int16x8_t a, int16x8_t b)
+            ///   A64: TRN1 Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> TransposeEven(Vector128<short> left, Vector128<short> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// int32x4_t vtrn1q_s32(int32x4_t a, int32x4_t b)
+            ///   A64: TRN1 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> TransposeEven(Vector128<int> left, Vector128<int> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// int64x2_t vtrn1q_s64(int64x2_t a, int64x2_t b)
+            ///   A64: TRN1 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<long> TransposeEven(Vector128<long> left, Vector128<long> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// int8x16_t vtrn1q_u8(int8x16_t a, int8x16_t b)
+            ///   A64: TRN1 Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> TransposeEven(Vector128<sbyte> left, Vector128<sbyte> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// float32x4_t vtrn1q_f32(float32x4_t a, float32x4_t b)
+            ///   A64: TRN1 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> TransposeEven(Vector128<float> left, Vector128<float> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// uint16x8_t vtrn1q_u16(uint16x8_t a, uint16x8_t b)
+            ///   A64: TRN1 Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> TransposeEven(Vector128<ushort> left, Vector128<ushort> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// uint32x4_t vtrn1q_u32(uint32x4_t a, uint32x4_t b)
+            ///   A64: TRN1 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> TransposeEven(Vector128<uint> left, Vector128<uint> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// uint64x2_t vtrn1q_u64(uint64x2_t a, uint64x2_t b)
+            ///   A64: TRN1 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<ulong> TransposeEven(Vector128<ulong> left, Vector128<ulong> right) => TransposeEven(left, right);
+
+            /// <summary>
+            /// uint8x8_t vtrn2_u8(uint8x8_t a, uint8x8_t b)
+            ///   A64: TRN2 Vd.8B, Vn.8B, Vm.8B
+            /// </summary>
+            public static Vector64<byte> TransposeOdd(Vector64<byte> left, Vector64<byte> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// int16x4_t vtrn2_s16(int16x4_t a, int16x4_t b)
+            ///   A64: TRN2 Vd.4H, Vn.4H, Vm.4H
+            /// </summary>
+            public static Vector64<short> TransposeOdd(Vector64<short> left, Vector64<short> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// int32x2_t vtrn2_s32(int32x2_t a, int32x2_t b)
+            ///   A64: TRN2 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<int> TransposeOdd(Vector64<int> left, Vector64<int> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// int8x8_t vtrn2_s8(int8x8_t a, int8x8_t b)
+            ///   A64: TRN2 Vd.8B, Vn.8B, Vm.8B
+            /// </summary>
+            public static Vector64<sbyte> TransposeOdd(Vector64<sbyte> left, Vector64<sbyte> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// float32x2_t vtrn2_f32(float32x2_t a, float32x2_t b)
+            ///   A64: TRN2 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> TransposeOdd(Vector64<float> left, Vector64<float> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// uint16x4_t vtrn2_u16(uint16x4_t a, uint16x4_t b)
+            ///   A64: TRN2 Vd.4H, Vn.4H, Vm.4H
+            /// </summary>
+            public static Vector64<ushort> TransposeOdd(Vector64<ushort> left, Vector64<ushort> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// uint32x2_t vtrn2_u32(uint32x2_t a, uint32x2_t b)
+            ///   A64: TRN2 Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<uint> TransposeOdd(Vector64<uint> left, Vector64<uint> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// uint8x16_t vtrn2q_u8(uint8x16_t a, uint8x16_t b)
+            ///   A64: TRN2 Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> TransposeOdd(Vector128<byte> left, Vector128<byte> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// float64x2_t vtrn2q_f64(float64x2_t a, float64x2_t b)
+            ///   A64: TRN2 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> TransposeOdd(Vector128<double> left, Vector128<double> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// int16x8_t vtrn2q_s16(int16x8_t a, int16x8_t b)
+            ///   A64: TRN2 Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> TransposeOdd(Vector128<short> left, Vector128<short> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// int32x4_t vtrn2q_s32(int32x4_t a, int32x4_t b)
+            ///   A64: TRN2 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> TransposeOdd(Vector128<int> left, Vector128<int> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// int64x2_t vtrn2q_s64(int64x2_t a, int64x2_t b)
+            ///   A64: TRN2 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<long> TransposeOdd(Vector128<long> left, Vector128<long> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// int8x16_t vtrn2q_u8(int8x16_t a, int8x16_t b)
+            ///   A64: TRN2 Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> TransposeOdd(Vector128<sbyte> left, Vector128<sbyte> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// float32x4_t vtrn2q_f32(float32x4_t a, float32x4_t b)
+            ///   A64: TRN2 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> TransposeOdd(Vector128<float> left, Vector128<float> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// uint16x8_t vtrn2q_u16(uint16x8_t a, uint16x8_t b)
+            ///   A64: TRN2 Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> TransposeOdd(Vector128<ushort> left, Vector128<ushort> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// uint32x4_t vtrn1q_u32(uint32x4_t a, uint32x4_t b)
+            ///   A64: TRN1 Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> TransposeOdd(Vector128<uint> left, Vector128<uint> right) => TransposeOdd(left, right);
+
+            /// <summary>
+            /// uint64x2_t vtrn1q_u64(uint64x2_t a, uint64x2_t b)
+            ///   A64: TRN1 Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<ulong> TransposeOdd(Vector128<ulong> left, Vector128<ulong> right) => TransposeOdd(left, right);
+
+            /// <summary>
             /// uint8x8_t vuzp1_u8(uint8x8_t a, uint8x8_t b)
             ///   A64: UZP1 Vd.8B, Vn.8B, Vm.8B
             /// </summary>
