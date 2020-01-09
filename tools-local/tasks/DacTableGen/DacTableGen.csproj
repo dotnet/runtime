@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- DacTableGen needs to run in a 32-bit process since it uses msdia140.dll.
+         Since we pull down a x64 CLI to use for the build, we build this for .NET Framework instead.
+    -->
+    <TargetFramework>net46</TargetFramework>
+    <NoWarn>CS8002</NoWarn>
+    <Platform>x86</Platform>
+    <SignAssembly>false</SignAssembly>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="DIALib.dll" />
+  </ItemGroup>
+</Project>

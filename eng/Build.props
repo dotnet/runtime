@@ -74,6 +74,11 @@
       <RepoTaskProjects Include="$(RepoTasksDir)**\*.csproj" />
     </ItemGroup>
 
+    <!-- We don't need to build DacTableGen on non-Windows platforms. -->
+    <ItemGroup Condition="$(OS) != 'Windows_NT'">
+      <RepoTaskProjects Remove="@(RepoTaskProjects)" Condition="'%(FileName)' == 'DacTableGen'" />
+    </ItemGroup>
+
     <MSBuild Projects="@(RepoTaskProjects)"
              Properties="Configuration=Debug;Platform=AnyCPU"
              Targets="Restore;Build"/>
