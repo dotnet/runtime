@@ -27,16 +27,6 @@
   <PropertyGroup Condition="
     '$(RuntimeIdentifier)' != '$(OutputRid)' and
     '$(AllArtifactsDownloadPath)' != ''">
-    <!-- Assume the part of the RID before '-' is an OSGroup. Note: doesn't include '-musl'. -->
-    <RuntimeIdentifierStyleOSGroup>$(ArtifactPlatform.Split('-')[0])</RuntimeIdentifierStyleOSGroup>
-
-    <RidOSGroup Condition="'$(RuntimeIdentifierStyleOSGroup)' == 'win'">Windows_NT</RidOSGroup>
-    <RidOSGroup Condition="'$(RuntimeIdentifierStyleOSGroup)' == 'unix'">Unix</RidOSGroup>
-    <RidOSGroup Condition="'$(RuntimeIdentifierStyleOSGroup)' == 'linux'">Linux</RidOSGroup>
-    <RidOSGroup Condition="'$(RuntimeIdentifierStyleOSGroup)' == 'osx'">OSX</RidOSGroup>
-    <RidOSGroup Condition="'$(RuntimeIdentifierStyleOSGroup)' == 'freebsd'">FreeBSD</RidOSGroup>
-    <RidOSGroup Condition="'$(RuntimeIdentifierStyleOSGroup)' == 'netbsd'">NetBSD</RidOSGroup>
-
     <!-- Convert the OS component in the RID into names that match the job IDs. -->
     <ArtifactPlatform>$(RuntimeIdentifier)</ArtifactPlatform>
     <ArtifactPlatform>$(ArtifactPlatform.Replace('win-', 'Windows_NT-'))</ArtifactPlatform>
