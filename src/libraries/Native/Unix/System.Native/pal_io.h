@@ -421,6 +421,14 @@ DLLEXPORT int32_t SystemNative_CloseDir(DIR* dir);
 DLLEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
                         int32_t flags);    // 0 for defaults or PAL_O_CLOEXEC for close-on-exec
 
+/**
+ * Creates an eventfd on Linux.  Returns error everywhere else.
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+DLLEXPORT int32_t SystemNative_EventFD(uint32_t initialValue,
+                                       int32_t flags); // Passes through to eventfd() without conversion
+
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
 // for each command. This allows use to have strongly typed arguments and saves
 // complexity around converting command codes.

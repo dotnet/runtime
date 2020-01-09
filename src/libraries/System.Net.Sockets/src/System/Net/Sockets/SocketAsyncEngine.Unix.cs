@@ -237,6 +237,32 @@ namespace System.Net.Sockets
             }
         }
 
+        private void CreateShutdownPipeOrEventFD(out int readFD, out int writeFD)
+        {
+            //
+            // If this system supports eventfd(2), use it to signal shutdown, and save us
+            // a file descriptor per engine.  Otherwise, fall back to using a pipe.
+            //
+            int eventFD = Interop.Sys.EventFD(0, Interop.Sys.EventFdFlags.EFD_CLOEXEC | Interop.Sys.EventFdFlags.EFD_SEMAPHORE);
+
+            if (eventFD >= 0)
+            {
+                readFD = writeFD = eventFD;
+            }
+            else
+            {
+                int* pipeFds = stackalloc int[2];
+                int pipeResult = Interop.Sys.Pipe(pipeFds, Interop.Sys.PipeFlags.O_CLOEXEC);
+                if (pipeResult != 0)
+                {
+                    throw new InternalException(pipeResult);
+                }
+
+                readFD = pipeFds[Interop.Sys.ReadEndOfPipe];
+                writeFD = pipeFds[Interop.Sys.WriteEndOfPipe];
+            }
+        }
+
         private SocketAsyncEngine()
         {
             _port = (IntPtr)(-1);
@@ -258,18 +284,7 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
-                //
-                // Create the pipe for signaling shutdown, and register for "read" events for the pipe.  Now writing
-                // to the pipe will send an event to the event loop.
-                //
-                int* pipeFds = stackalloc int[2];
-                int pipeResult = Interop.Sys.Pipe(pipeFds, Interop.Sys.PipeFlags.O_CLOEXEC);
-                if (pipeResult != 0)
-                {
-                    throw new InternalException(pipeResult);
-                }
-                _shutdownReadPipe = pipeFds[Interop.Sys.ReadEndOfPipe];
-                _shutdownWritePipe = pipeFds[Interop.Sys.WriteEndOfPipe];
+                CreateShutdownPipeOrEventFD(out _shutdownReadPipe, out _shutdownWritePipe);
 
                 err = Interop.Sys.TryChangeSocketEventRegistration(_port, (IntPtr)_shutdownReadPipe, Interop.Sys.SocketEvents.None, Interop.Sys.SocketEvents.Read, ShutdownHandle);
                 if (err != Interop.Error.SUCCESS)
@@ -351,25 +366,40 @@ namespace System.Net.Sockets
         private void RequestEventLoopShutdown()
         {
             //
-            // Write to the pipe, which will wake up the event loop and cause it to exit.
+            // Write to the pipe or eventfd, which will wake up the event loop and cause it to exit.
+            // (Need to write 8 bytes in case we're on a system where eventfd is supported.)
             //
-            byte b = 1;
-            int bytesWritten = Interop.Sys.Write(_shutdownWritePipe, &b, 1);
-            if (bytesWritten != 1)
+            byte[] wakeThreadUp = {0, 0, 0, 0, 0, 0, 0, 1};
+            fixed (byte *b = &wakeThreadUp[0])
             {
-                throw new InternalException(bytesWritten);
+                int bytesWritten = Interop.Sys.Write(_shutdownWritePipe, b, 8);
+                if (bytesWritten != 8)
+                {
+                    throw new InternalException(bytesWritten);
+                }
             }
         }
 
         private void FreeNativeResources()
         {
-            if (_shutdownReadPipe != -1)
+            if (_shutdownReadPipe == _shutdownWritePipe && _shutdownReadPipe != -1)
             {
+                //
+                // When using eventfd, read/write ends of the "pipe" have the same file
+                // descriptor.
+                //
                 Interop.Sys.Close((IntPtr)_shutdownReadPipe);
             }
-            if (_shutdownWritePipe != -1)
+            else
             {
-                Interop.Sys.Close((IntPtr)_shutdownWritePipe);
+                if (_shutdownReadPipe != -1)
+                {
+                    Interop.Sys.Close((IntPtr)_shutdownReadPipe);
+                }
+                if (_shutdownWritePipe != -1)
+                {
+                    Interop.Sys.Close((IntPtr)_shutdownWritePipe);
+                }
             }
             if (_buffer != null)
             {

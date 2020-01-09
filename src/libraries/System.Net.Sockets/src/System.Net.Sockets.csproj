@@ -374,6 +374,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Pipe.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Eventfd.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Eventfd.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Write.cs</Link>
     </Compile>

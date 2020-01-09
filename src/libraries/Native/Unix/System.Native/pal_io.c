@@ -38,6 +38,9 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
+#if HAVE_EVENTFD
+#include <sys/eventfd.h>
+#endif
 
 #ifdef _AIX
 #include <alloca.h>
@@ -474,6 +477,21 @@ int32_t SystemNative_CloseDir(DIR* dir)
 {
     return closedir(dir);
 }
+
+#if HAVE_EVENTFD
+int32_t SystemNative_EventFD(uint32_t initialVal, int32_t flags)
+{
+    return eventfd(initialVal, flags);
+}
+#else
+int32_t SystemNative_EventFD(uint32_t initialVal, int32_t flags)
+{
+    (void)initialVal;
+    (void)flags;
+    errno = ENOTSUP;
+    return -1;
+}
+#endif
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {

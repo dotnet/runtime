@@ -105,6 +105,11 @@ check_symbol_exists(
     HAVE_GETIFADDRS)
 
 check_symbol_exists(
+    eventfd
+    sys/eventfd.h
+    HAVE_EVENTFD)
+
+check_symbol_exists(
     lseek64
     unistd.h
     HAVE_LSEEK64)
