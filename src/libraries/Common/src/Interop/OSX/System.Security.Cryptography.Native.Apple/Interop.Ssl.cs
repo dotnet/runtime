@@ -135,7 +135,8 @@ internal static partial class Interop
         private static extern int AppleCryptoNative_SslIsHostnameMatch(
             SafeSslHandle handle,
             SafeCreateHandle cfHostname,
-            SafeCFDateHandle cfValidTime);
+            SafeCFDateHandle cfValidTime,
+            out int pOSStatus);
 
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslShutdown")]
         internal static extern int SslShutdown(SafeSslHandle sslHandle);
@@ -371,7 +372,7 @@ internal static partial class Interop
             }
         }
 
-        public static bool SslCheckHostnameMatch(SafeSslHandle handle, string hostName, DateTime notBefore)
+        public static bool SslCheckHostnameMatch(SafeSslHandle handle, string hostName, DateTime notBefore, out int osStatus)
         {
             int result;
             // The IdnMapping converts Unicode input into the IDNA punycode sequence.
@@ -388,7 +389,7 @@ internal static partial class Interop
             using (SafeCFDateHandle cfNotBefore = CoreFoundation.CFDateCreate(notBefore))
             using (SafeCreateHandle cfHostname = CoreFoundation.CFStringCreateWithCString(matchName))
             {
-                result = AppleCryptoNative_SslIsHostnameMatch(handle, cfHostname, cfNotBefore);
+                result = AppleCryptoNative_SslIsHostnameMatch(handle, cfHostname, cfNotBefore, out osStatus);
             }
 
             switch (result)

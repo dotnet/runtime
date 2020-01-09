@@ -354,8 +354,10 @@ PAL_TlsIo AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint
     return OSStatusToPAL_TlsIo(status);
 }
 
-int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore)
+int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus)
 {
+    *pOSStatus = noErr;
+
     if (sslContext == NULL || notBefore == NULL)
         return -1;
     if (cfHostname == NULL)
@@ -380,6 +382,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     if (osStatus != noErr)
     {
         CFRelease(certs);
+        *pOSStatus = osStatus;
         return -5;
     }
 
@@ -388,6 +391,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     if (anchors == NULL)
     {
         CFRelease(certs);
+        *pOSStatus = errSecMemoryError;
         return -6;
     }
 
@@ -430,9 +434,40 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
         osStatus = SecTrustEvaluate(trust, &trustResult);
 #pragma clang diagnostic pop
 
+        if (osStatus == noErr && trustResult != kSecTrustResultUnspecified && trustResult != kSecTrustResultProceed)
+        {
+            // If evaliation suceeded but result is not trusted try to get details.
+            CFDictionaryRef detailsAndStuff = SecTrustCopyResult(trust);
+
+            if (detailsAndStuff != NULL)
+            {
+                CFArrayRef details = CFDictionaryGetValue(detailsAndStuff, CFSTR("TrustResultDetails"));
+
+                if (details != NULL && CFArrayGetCount(details) > 0)
+                {
+                    CFArrayRef statusCodes = CFDictionaryGetValue(CFArrayGetValueAtIndex(details,0), CFSTR("StatusCodes"));
+
+                    OSStatus status = 0;
+                    // look for first failure to keep it simple. Normally, there will be exactly one.
+                    for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
+                    {
+                        CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
+                        if (status != noErr)
+                        {
+                            *pOSStatus = status;
+                            break;
+                        }
+                    }
+                }
+
+                CFRelease(detailsAndStuff);
+            }
+        }
+
         if (osStatus != noErr)
         {
             ret = -7;
+            *pOSStatus = osStatus;
         }
         else if (trustResult == kSecTrustResultUnspecified || trustResult == kSecTrustResultProceed)
         {
@@ -446,6 +481,10 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
         {
             ret = -8;
         }
+    }
+    else
+    {
+        *pOSStatus = osStatus;
     }
 
     if (trust != NULL)
