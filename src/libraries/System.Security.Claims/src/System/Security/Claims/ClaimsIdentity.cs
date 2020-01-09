@@ -842,8 +842,7 @@ namespace System.Security.Claims
 
             if (_bootstrapContext != null)
             {
-                string? rawData = _bootstrapContext as string;
-                if (rawData != null)
+                if (_bootstrapContext is string rawData)
                 {
                     mask |= SerializationMask.BootstrapConext;
                     numberOfPropertiesWritten++;

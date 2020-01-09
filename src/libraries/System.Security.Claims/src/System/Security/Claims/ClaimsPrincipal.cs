@@ -111,8 +111,7 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(identity));
             }
 
-            ClaimsIdentity? ci = identity as ClaimsIdentity;
-            if (ci != null)
+            if (identity is ClaimsIdentity ci)
             {
                 _identities.Add(ci);
             }

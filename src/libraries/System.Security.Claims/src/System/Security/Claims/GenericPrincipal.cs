@@ -35,9 +35,7 @@ namespace System.Security.Principal
         /// </summary>
         private void AddIdentityWithRoles(IIdentity identity, string[]? roles)
         {
-            ClaimsIdentity? claimsIdentity = identity as ClaimsIdentity;
-
-            if (claimsIdentity != null)
+            if (identity is ClaimsIdentity claimsIdentity)
             {
                 claimsIdentity = claimsIdentity.Clone();
             }
