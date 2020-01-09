@@ -506,7 +506,6 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            
             for (var i = 0; i < RetElementCount; i++)
             {
                 if (Helpers.AbsoluteDifference(left[i], right[i]) != result[i])

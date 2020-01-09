@@ -506,7 +506,6 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            
             for (var i = 0; i < RetElementCount; i++)
             {
                 if (BitConverter.DoubleToInt64Bits(Helpers.AbsoluteCompareGreaterThan(left[i], right[i])) != BitConverter.DoubleToInt64Bits(result[i]))

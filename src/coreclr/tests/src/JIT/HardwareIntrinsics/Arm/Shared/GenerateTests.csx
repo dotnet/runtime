@@ -36,8 +36,7 @@ private const string SimpleOpTest_ValidationLogic = @"if ({ValidateFirstResult})
                 }
             }";
 
-private const string SimpleVecOpTest_ValidationLogic = @"
-            for (var i = 0; i < RetElementCount; i++)
+private const string SimpleVecOpTest_ValidationLogic = @"for (var i = 0; i < RetElementCount; i++)
             {
                 if ({ValidateIterResult})
                 {

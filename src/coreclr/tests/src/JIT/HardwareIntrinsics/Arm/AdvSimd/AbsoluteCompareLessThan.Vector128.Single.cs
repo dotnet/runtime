@@ -506,7 +506,6 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            
             for (var i = 0; i < RetElementCount; i++)
             {
                 if (BitConverter.SingleToInt32Bits(Helpers.AbsoluteCompareLessThan(left[i], right[i])) != BitConverter.SingleToInt32Bits(result[i]))
