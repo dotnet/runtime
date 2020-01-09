@@ -12,8 +12,8 @@ namespace System.Reflection.Internal
     {
         private sealed class DisposableData : CriticalDisposableObject
         {
-            private IDisposable _accessor; // MemoryMappedViewAccessor
-            private SafeBuffer _safeBuffer;
+            private IDisposable? _accessor; // MemoryMappedViewAccessor
+            private SafeBuffer? _safeBuffer;
             private byte* _pointer;
 
             public DisposableData(IDisposable accessor, SafeBuffer safeBuffer, long offset)

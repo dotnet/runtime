@@ -39,18 +39,18 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         public MetadataAggregator(
-            IReadOnlyList<int> baseTableRowCounts,
-            IReadOnlyList<int> baseHeapSizes,
-            IReadOnlyList<MetadataReader> deltaReaders)
+            IReadOnlyList<int>? baseTableRowCounts,
+            IReadOnlyList<int>? baseHeapSizes,
+            IReadOnlyList<MetadataReader>? deltaReaders)
             : this(null, baseTableRowCounts, baseHeapSizes, deltaReaders)
         {
         }
 
         private MetadataAggregator(
-            MetadataReader baseReader,
-            IReadOnlyList<int> baseTableRowCounts,
-            IReadOnlyList<int> baseHeapSizes,
-            IReadOnlyList<MetadataReader> deltaReaders)
+            MetadataReader? baseReader,
+            IReadOnlyList<int>? baseTableRowCounts,
+            IReadOnlyList<int>? baseHeapSizes,
+            IReadOnlyList<MetadataReader>? deltaReaders)
         {
             if (baseTableRowCounts == null)
             {
