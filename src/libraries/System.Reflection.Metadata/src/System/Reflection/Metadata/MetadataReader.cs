@@ -375,7 +375,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// A row count for each possible table. May be indexed by <see cref="TableIndex"/>.
         /// </summary>
-        internal int[]? TableRowCounts;
+        internal int[] TableRowCounts = null!;
 
         internal ModuleTableReader ModuleTable;
         internal TypeRefTableReader TypeRefTable;

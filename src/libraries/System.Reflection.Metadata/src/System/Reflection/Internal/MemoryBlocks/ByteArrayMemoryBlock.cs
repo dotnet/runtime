@@ -28,12 +28,12 @@ namespace System.Reflection.Internal
             _provider = null!;
         }
 
-        public unsafe override byte* Pointer => _provider!.Pointer + _start;
+        public unsafe override byte* Pointer => _provider.Pointer + _start;
         public override int Size => _size;
 
         public override ImmutableArray<byte> GetContentUnchecked(int start, int length)
         {
-            return ImmutableArray.Create(_provider!.Array, _start + start, length);
+            return ImmutableArray.Create(_provider.Array, _start + start, length);
         }
     }
 }

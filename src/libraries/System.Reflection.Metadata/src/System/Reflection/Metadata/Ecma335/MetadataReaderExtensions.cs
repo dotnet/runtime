@@ -30,7 +30,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.TableIndexOutOfRange();
             }
 
-            return reader.TableRowCounts![(int)tableIndex];
+            return reader.TableRowCounts[(int)tableIndex];
         }
 
         /// <summary>

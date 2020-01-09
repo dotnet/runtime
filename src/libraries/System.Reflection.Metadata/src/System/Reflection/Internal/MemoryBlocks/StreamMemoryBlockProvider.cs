@@ -119,7 +119,7 @@ namespace System.Reflection.Internal
         public override Stream GetStream(out StreamConstraints constraints)
         {
             constraints = new StreamConstraints(_streamGuard, _imageStart, _imageSize);
-            return _stream!;
+            return _stream;
         }
 
         /// <exception cref="IOException">IO error while mapping memory or not enough memory to create the mapping.</exception>
@@ -133,7 +133,7 @@ namespace System.Reflection.Internal
                 // CreateMemoryMap might modify the stream (calls FileStream.Flush)
                 lock (_streamGuard)
                 {
-                    newMemoryMap = MemoryMapLightUp.CreateMemoryMap(_stream!);
+                    newMemoryMap = MemoryMapLightUp.CreateMemoryMap(_stream);
                 }
 
                 if (newMemoryMap == null)
