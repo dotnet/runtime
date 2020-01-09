@@ -19,6 +19,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private MsQuicSession _session;
 
         // Pointer to the underlying connection
+        // TODO replace all IntPtr with SafeHandles
         private IntPtr _ptr;
 
         // Handle to this object for native callbacks.

@@ -17,6 +17,7 @@ namespace System.Net.Quic.Implementations.MsQuic
     internal sealed class MsQuicStream : QuicStreamProvider
     {
         // Pointer to the underlying stream
+        // TODO replace all IntPtr with SafeHandles
         private readonly IntPtr _ptr;
 
         // Handle to this object for native callbacks.
