@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.Asn1
                 throw new CryptographicException();
             }
 
-            _buffer![_offset + 12] = (byte)'Z';
+            _buffer[_offset + 12] = (byte)'Z';
 
             _offset += UtcTimeValueLength;
         }

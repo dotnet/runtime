@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
         public AsnEncodedData(string oid, byte[] rawData) { }
         public System.Security.Cryptography.Oid? Oid { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
-        public byte[]? RawData { get { throw null; } set { } }
+        public byte[] RawData { get { throw null; } set { } }
         public virtual void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public virtual string Format(bool multiLine) { throw null; }
     }

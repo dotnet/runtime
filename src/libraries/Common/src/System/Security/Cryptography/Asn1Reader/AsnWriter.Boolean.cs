@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Asn1
             WriteTag(tag);
             WriteLength(1);
             // Ensured by WriteLength
-            Debug.Assert(_offset < _buffer!.Length);
+            Debug.Assert(_offset < _buffer.Length);
             _buffer[_offset] = (byte)(value ? 0xFF : 0x00);
             _offset++;
         }

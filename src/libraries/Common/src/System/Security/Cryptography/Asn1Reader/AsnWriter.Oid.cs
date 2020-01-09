@@ -213,7 +213,7 @@ namespace System.Security.Cryptography.Asn1
                 Debug.Assert(!tag.IsConstructed);
                 WriteTag(tag);
                 WriteLength(tmpOffset);
-                Buffer.BlockCopy(tmp, 0, _buffer!, _offset, tmpOffset);
+                Buffer.BlockCopy(tmp, 0, _buffer, _offset, tmpOffset);
                 _offset += tmpOffset;
             }
             finally

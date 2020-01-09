@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
+#nullable enable
 internal static partial class Interop
 {
     internal static partial class Crypto

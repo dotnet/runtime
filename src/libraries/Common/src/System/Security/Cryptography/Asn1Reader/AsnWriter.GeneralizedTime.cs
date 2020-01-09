@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Asn1
             fraction.CopyTo(baseSpan.Slice(IntegerPortionLength));
             _offset += fraction.Length;
 
-            _buffer![_offset] = (byte)'Z';
+            _buffer[_offset] = (byte)'Z';
             _offset++;
         }
     }

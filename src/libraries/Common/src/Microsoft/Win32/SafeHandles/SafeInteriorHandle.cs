@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+#nullable enable
 namespace Microsoft.Win32.SafeHandles
 {
     internal abstract class SafeInteriorHandle : SafeHandle

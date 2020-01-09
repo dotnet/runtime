@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Asn1
             WriteTag(tag.AsPrimitive());
             // The unused bits byte requires +1.
             WriteLength(bitString.Length + 1);
-            _buffer![_offset] = (byte)unusedBitCount;
+            _buffer[_offset] = (byte)unusedBitCount;
             _offset++;
             bitString.CopyTo(_buffer.AsSpan(_offset));
             _offset += bitString.Length;
@@ -248,7 +248,7 @@ namespace System.Security.Cryptography.Asn1
                 // The unused bits byte requires +1.
                 WriteLength(byteLength + 1);
 
-                _buffer![_offset] = (byte)unusedBitCount;
+                _buffer[_offset] = (byte)unusedBitCount;
                 _offset++;
 
                 scratchSpace = _buffer.AsSpan(_offset, byteLength);
@@ -346,7 +346,6 @@ namespace System.Security.Cryptography.Asn1
             // Constructed CER uses the indefinite form.
             WriteLength(-1);
 
-            Debug.Assert(_buffer != null);
             byte[] ensureNoExtraCopy = _buffer;
 
             ReadOnlySpan<byte> remainingData = payload;
