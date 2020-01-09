@@ -27,14 +27,6 @@
 -nomethod System.Collections.Specialized.Tests.NameValueCollectionCtorTests.Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException
 
 ####################################################################
-##  System.Diagnostics.Process.Tests
-####################################################################
-
-# times out waiting for remote process. Would it require system wide dotnet?
-# https://github.com/mono/mono/issues/14903
--nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_ExecuteOrder
-
-####################################################################
 ##  System.Diagnostics.TraceSource.Tests
 ####################################################################
 
