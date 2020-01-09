@@ -410,59 +410,48 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public bool GetPolicyData(out byte[] ApplicationCertPoliciesData, out byte[] CertPoliciesData, out byte[] CertPolicyMappingsData,
-                           out byte[] CertPolicyConstraintsData, out byte[] EnhancedKeyUsageData, out byte[] InhibitAnyPolicyExtensionData)
+        public PolicyData GetPolicyData()
         {
-
-            ApplicationCertPoliciesData = null;
-            CertPoliciesData = null;
-            CertPolicyMappingsData = null;
-            CertPolicyConstraintsData = null;
-            EnhancedKeyUsageData = null;
-            InhibitAnyPolicyExtensionData = null;
+            PolicyData policyData = default;
 
             int extensionCount = Interop.Crypto.X509GetExtCount(_cert);
 
             for (int i = 0; i < extensionCount; i++)
             {
                 IntPtr ext = Interop.Crypto.X509GetExt(_cert, i);
-
                 Interop.Crypto.CheckValidOpenSslHandle(ext);
 
                 IntPtr oidPtr = Interop.Crypto.X509ExtensionGetOid(ext);
-
                 Interop.Crypto.CheckValidOpenSslHandle(oidPtr);
-
                 string oidValue = Interop.Crypto.GetOidValue(oidPtr);
 
                 IntPtr dataPtr = Interop.Crypto.X509ExtensionGetData(ext);
-
                 Interop.Crypto.CheckValidOpenSslHandle(dataPtr);
 
                 switch (oidValue)
                 {
                     case Oids.ApplicationCertPolicies:
-                        ApplicationCertPoliciesData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.ApplicationCertPoliciesData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                     case Oids.CertPolicies:
-                        CertPoliciesData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.CertPoliciesData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                     case Oids.CertPolicyMappings:
-                        CertPolicyMappingsData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.CertPolicyMappingsData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                     case Oids.CertPolicyConstraints:
-                       CertPolicyConstraintsData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                       policyData.CertPolicyConstraintsData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                        break;
                     case Oids.EnhancedKeyUsage:
-                        EnhancedKeyUsageData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.EnhancedKeyUsageData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                     case Oids.InhibitAnyPolicyExtension:
-                        InhibitAnyPolicyExtensionData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.InhibitAnyPolicyExtensionData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                 }
             }
 
-            return true;
+            return policyData;
         }
 
         public IEnumerable<X509Extension> Extensions

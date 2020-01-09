@@ -277,43 +277,37 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public bool GetPolicyData(out byte[] ApplicationCertPoliciesData, out byte[] CertPoliciesData, out byte[] CertPolicyMappingsData,
-                                  out byte[] CertPolicyConstraintsData, out byte[] EnhancedKeyUsageData, out byte[] InhibitAnyPolicyExtensionData)
+        public PolicyData GetPolicyData()
         {
+            PolicyData policyData = default;
             EnsureCertData();
-            ApplicationCertPoliciesData = null;
-            CertPoliciesData = null;
-            CertPolicyMappingsData = null;
-            CertPolicyConstraintsData = null;
-            EnhancedKeyUsageData = null;
-            InhibitAnyPolicyExtensionData = null;
 
             foreach (X509Extension extension in _certData.Extensions)
             {
                 switch (extension.Oid.Value)
                 {
                     case Oids.ApplicationCertPolicies:
-                        ApplicationCertPoliciesData = extension.RawData;
+                        policyData.ApplicationCertPolicies = extension.RawData;
                         break;
                     case Oids.CertPolicies:
-                        CertPoliciesData = extension.RawData;
+                        policyData.CertPolicies = extension.RawData;
                         break;
                     case Oids.CertPolicyMappings:
-                        CertPolicyMappingsData = extension.RawData;
+                        policyData.CertPolicyMappings = extension.RawData;
                         break;
                     case Oids.CertPolicyConstraints:
-                        CertPolicyConstraintsData = extension.RawData;
+                        policyData.CertPolicyConstraints = extension.RawData;
                         break;
                     case Oids.EnhancedKeyUsage:
-                        EnhancedKeyUsageData = extension.RawData;
+                        policyData.EnhancedKeyUsage = extension.RawData;
                         break;
                     case Oids.InhibitAnyPolicyExtension:
-                        InhibitAnyPolicyExtensionData = extension.RawData;
+                        policyData.InhibitAnyPolicyExtension = extension.RawData;
                         break;
                 }
             }
 
-            return true;
+            return policyData;
         }
 
         public IEnumerable<X509Extension> Extensions {

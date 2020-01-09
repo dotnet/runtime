@@ -10,6 +10,16 @@ using System.Text;
 
 namespace Internal.Cryptography
 {
+    internal struct PolicyData
+    {
+        public byte[] ApplicationCertPolicies;
+        public byte[] CertPolicies;
+        public byte[] CertPolicyMappings;
+        public byte[] CertPolicyConstraints;
+        public byte[] EnhancedKeyUsage;
+        public byte[] InhibitAnyPolicyExtension;
+    }
+
     /// <summary>Provides specific implementation for X509Certificate2.</summary>
     internal interface ICertificatePal : ICertificatePalCore
     {
@@ -27,7 +37,6 @@ namespace Internal.Cryptography
         ICertificatePal CopyWithPrivateKey(DSA privateKey);
         ICertificatePal CopyWithPrivateKey(ECDsa privateKey);
         ICertificatePal CopyWithPrivateKey(RSA privateKey);
-        bool GetPolicyData(out byte[] ApplicationCertPoliciesData, out byte[] CertPoliciesData, out byte[] CertPolicyMappingsData,
-                           out byte[] CertPolicyConstraintsData, out byte[] EnhancedKeyUsageData, out byte[] InhibitAnyPolicyExtensionData);
+        PolicyData GetPolicyData();
     }
 }

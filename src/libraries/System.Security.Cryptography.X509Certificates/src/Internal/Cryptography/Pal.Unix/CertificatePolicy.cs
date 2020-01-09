@@ -236,48 +236,38 @@ namespace Internal.Cryptography.Pal
             ISet<string> ekus = null;
             CertificatePolicy policy = new CertificatePolicy();
 
-            byte[] ApplicationCertPoliciesData;
-            byte[] CertPoliciesData;
-            byte[] CertPolicyMappingsData;
-            byte[] CertPolicyConstraintsData;
-            byte[] EnhancedKeyUsageData;
-            byte[] InhibitAnyPolicyExtensionData;
+            PolicyData policyData = cert.Pal.GetPolicyData();
 
-
-            cert.Pal.GetPolicyData(out ApplicationCertPoliciesData, out CertPoliciesData,
-                out CertPolicyMappingsData, out CertPolicyConstraintsData, out EnhancedKeyUsageData, out InhibitAnyPolicyExtensionData);
-
-            if (ApplicationCertPoliciesData != null)
+            if (policyData.ApplicationCertPolicies != null)
             {
-                applicationCertPolicies = ReadCertPolicyExtension(ApplicationCertPoliciesData);
+                applicationCertPolicies = ReadCertPolicyExtension(policyData.ApplicationCertPolicies);
             }
 
-            if (CertPoliciesData != null)
+            if (policyData.CertPolicies != null)
             {
-                policy.DeclaredCertificatePolicies = ReadCertPolicyExtension(CertPoliciesData);
+                policy.DeclaredCertificatePolicies = ReadCertPolicyExtension(policyData.CertPolicies);
             }
 
-            if (CertPolicyMappingsData != null)
+            if (policyData.CertPolicyMappings!= null)
             {
-                policy.PolicyMapping = ReadCertPolicyMappingsExtension(CertPolicyMappingsData);
+                policy.PolicyMapping = ReadCertPolicyMappingsExtension(policyData.CertPolicyMappings);
             }
 
-            if (CertPolicyConstraintsData != null)
+            if (policyData.CertPolicyConstraints != null)
             {
-                ReadCertPolicyConstraintsExtension(CertPolicyConstraintsData, policy);
+                ReadCertPolicyConstraintsExtension(policyData.CertPolicyConstraints, policy);
             }
 
-            if (EnhancedKeyUsageData != null && applicationCertPolicies == null)
+            if (policyData.EnhancedKeyUsage != null && applicationCertPolicies == null)
             {
                 // No reason to do this if the applicationCertPolicies was already read
-                ekus = ReadExtendedKeyUsageExtension(EnhancedKeyUsageData);
+                ekus = ReadExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
             }
 
-            if (InhibitAnyPolicyExtensionData != null)
+            if (policyData.InhibitAnyPolicyExtension != null)
             {
-                policy.InhibitAnyDepth = ReadInhibitAnyPolicyExtension(InhibitAnyPolicyExtensionData);
+                policy.InhibitAnyDepth = ReadInhibitAnyPolicyExtension(policyData.InhibitAnyPolicyExtension);
             }
-
 
             policy.DeclaredApplicationPolicies = applicationCertPolicies ?? ekus;
 
@@ -330,8 +320,7 @@ namespace Internal.Cryptography.Pal
             //OidCollection usages
             while (sequenceReader.HasData)
             {
-                Oid oid = sequenceReader.ReadObjectIdentifier();
-                oids.Add(oid.Value);
+                oids.Add(sequenceReader.ReadObjectIdentifierAsString());
             }
 
             return oids;
