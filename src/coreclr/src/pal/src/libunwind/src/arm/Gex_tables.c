@@ -459,6 +459,15 @@ tdep_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
 }
 
 #ifndef UNW_REMOTE_ONLY
+struct arm_proc_info_cache
+{
+  unw_word_t start_ip;
+  unw_word_t end_ip;
+  unw_word_t name_ptr;
+  unw_word_t table_data;
+  unw_word_t table_len;
+};
+static struct arm_proc_info_cache g_cache_data = {0, 0, 0, 0, 0};
 /**
  * Callback to dl_iterate_phdr to find infos about the ARM exidx segment.
  */
@@ -526,7 +535,19 @@ arm_find_proc_info (unw_addr_space_t as, unw_word_t ip,
       cb_data.di.format = -1;
 
       SIGPROCMASK (SIG_SETMASK, &unwi_full_mask, &saved_mask);
-      ret = dl_iterate_phdr (arm_phdr_cb, &cb_data);
+      if (ip >= g_cache_data.start_ip && ip < g_cache_data.end_ip)
+      {
+        cb_data.di.format = UNW_INFO_FORMAT_ARM_EXIDX;
+        cb_data.di.start_ip = g_cache_data.start_ip;
+        cb_data.di.end_ip = g_cache_data.end_ip;
+        cb_data.di.u.rti.name_ptr = g_cache_data.name_ptr;
+        cb_data.di.u.rti.table_data = g_cache_data.table_data;
+        cb_data.di.u.rti.table_len = g_cache_data.table_len;
+      }
+      else
+      {
+        ret = dl_iterate_phdr (arm_phdr_cb, &cb_data);
+      }
       SIGPROCMASK (SIG_SETMASK, &saved_mask, NULL);
 
       if (cb_data.di.format != -1)
@@ -543,6 +564,27 @@ HIDDEN void
 arm_put_unwind_info (unw_addr_space_t as, unw_proc_info_t *proc_info, void *arg)
 {
   /* it's a no-op */
+}
+
+HIDDEN void
+arm_proc_info_cache_init(void)
+{
+  struct arm_cb_data cb_data;
+  memset (&cb_data, 0, sizeof (cb_data));
+  // use address of arm_proc_info_cache_init to find infos about libcoreclr.so
+  cb_data.ip = (unw_word_t)arm_proc_info_cache_init;
+  cb_data.pi = 0;
+  cb_data.di.format = -1;
+
+  int ret = dl_iterate_phdr (arm_phdr_cb, &cb_data);
+  if (ret > 0)
+  {
+    g_cache_data.start_ip = cb_data.di.start_ip;
+    g_cache_data.end_ip = cb_data.di.end_ip;
+    g_cache_data.name_ptr = cb_data.di.u.rti.name_ptr;
+    g_cache_data.table_data = cb_data.di.u.rti.table_data;
+    g_cache_data.table_len = cb_data.di.u.rti.table_len;
+  }
 }
 #endif /* !UNW_REMOTE_ONLY */
 

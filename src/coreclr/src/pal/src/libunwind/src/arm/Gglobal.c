@@ -55,6 +55,8 @@ tdep_init (void)
 
     dwarf_init ();
 
+    arm_proc_info_cache_init ();
+
 #ifndef UNW_REMOTE_ONLY
     arm_local_addr_space_init ();
 #endif
