@@ -901,5 +901,20 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").IsMatch("input", -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("pattern").IsMatch("input", 6));
         }
+
+        [Fact]
+        public void Synchronized()
+        {
+            var m = new Regex("abc").Match("abc");
+            Assert.True(m.Success);
+            Assert.Equal("abc", m.Value);
+
+            var m2 = System.Text.RegularExpressions.Match.Synchronized(m);
+            Assert.Same(m, m2);
+            Assert.True(m2.Success);
+            Assert.Equal("abc", m2.Value);
+
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
+        }
     }
 }

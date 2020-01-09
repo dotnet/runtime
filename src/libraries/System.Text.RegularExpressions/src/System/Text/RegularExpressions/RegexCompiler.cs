@@ -1661,7 +1661,7 @@ namespace System.Text.RegularExpressions
             // Returns a rented Int32 local.
             void ReturnInt32Local(LocalBuilder int32Local)
             {
-                Debug.Assert(int32Local != null);
+                Debug.Assert(iterationLocals != null);
                 Debug.Assert(int32Local.LocalType == typeof(int));
                 iterationLocals.Push(int32Local);
             }
@@ -2637,16 +2637,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-#if DEBUG
-        /// <summary>Debug only: emit code to print out a message.</summary>
-        [ExcludeFromCodeCoverage]
-        private void Message(string str)
-        {
-            Ldstr(str);
-            Call(s_debugWriteLine!);
-        }
-#endif
-
         /// <summary>
         /// The main translation function. It translates the logic for a single opcode at
         /// the current position. The structure of this function exactly mirrors
@@ -2664,37 +2654,9 @@ namespace System.Text.RegularExpressions
         {
 #if DEBUG
             if ((_options & RegexOptions.Debug) != 0)
-            {
-                Mvlocfld(_runtextposLocal!, s_runtextposField);
-                Mvlocfld(_runtrackposLocal!, s_runtrackposField);
-                Mvlocfld(_runstackposLocal!, s_runstackposField);
-                Ldthis();
-                Callvirt(s_dumpStateM);
-
-                var sb = new StringBuilder();
-                if (_backpos > 0)
-                {
-                    sb.AppendFormat("{0:D6} ", _backpos);
-                }
-                else
-                {
-                    sb.Append("       ");
-                }
-                sb.Append(_code!.OpcodeDescription(_codepos));
-
-                if ((_regexopcode & RegexCode.Back) != 0)
-                {
-                    sb.Append(" Back");
-                }
-
-                if ((_regexopcode & RegexCode.Back2) != 0)
-                {
-                    sb.Append(" Back2");
-                }
-
-                Message(sb.ToString());
-            }
+                DumpBacktracking();
 #endif
+
             LocalBuilder charInClassLocal;
 
             // Before executing any RegEx code in the unrolled loop,
@@ -4399,5 +4361,42 @@ namespace System.Text.RegularExpressions
             Callvirt(s_checkTimeoutMethod);
             MarkLabel(label);
         }
+
+#if DEBUG
+        /// <summary>Emit code to print out the current state of the runner.</summary>
+        [ExcludeFromCodeCoverage]
+        private void DumpBacktracking()
+        {
+            Mvlocfld(_runtextposLocal!, s_runtextposField);
+            Mvlocfld(_runtrackposLocal!, s_runtrackposField);
+            Mvlocfld(_runstackposLocal!, s_runstackposField);
+            Ldthis();
+            Callvirt(s_dumpStateM);
+
+            var sb = new StringBuilder();
+            if (_backpos > 0)
+            {
+                sb.AppendFormat("{0:D6} ", _backpos);
+            }
+            else
+            {
+                sb.Append("       ");
+            }
+            sb.Append(_code!.OpcodeDescription(_codepos));
+
+            if ((_regexopcode & RegexCode.Back) != 0)
+            {
+                sb.Append(" Back");
+            }
+
+            if ((_regexopcode & RegexCode.Back2) != 0)
+            {
+                sb.Append(" Back2");
+            }
+
+            Ldstr(sb.ToString());
+            Call(s_debugWriteLine!);
+        }
+#endif
     }
 }

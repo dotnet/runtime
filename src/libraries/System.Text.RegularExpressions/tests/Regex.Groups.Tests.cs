@@ -109,6 +109,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(?:hello|hi){2,2}?", "hellohihihello", RegexOptions.None, new string[] { "hellohi" } };
             yield return new object[] { null, @"(?:abc|def|ghi|hij|klm|no){1,4}", "this is a test nonoabcxyz this is only a test", RegexOptions.None, new string[] { "nonoabc" } };
             yield return new object[] { null, @"xyz(abc|def)xyz", "abcxyzdefxyzabc", RegexOptions.None, new string[] { "xyzdefxyz", "def" } };
+            yield return new object[] { null, @"abc|(?:def|ghi)", "ghi", RegexOptions.None, new string[] { "ghi" } };
+            yield return new object[] { null, @"abc|(def|ghi)", "def", RegexOptions.None, new string[] { "def", "def" } };
 
             // Multiple character classes using character class subtraction
             yield return new object[] { null, @"98[\d-[9]][\d-[8]][\d-[0]]", "98911 98881 98870 98871", RegexOptions.None, new string[] { "98871" } };
@@ -694,11 +696,21 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"[ac]*\b", "aaa bbb", RegexOptions.ECMAScript, new string[] { "aaa" } };
             yield return new object[] { null, @"[@']*\B", "@@@", RegexOptions.None, new string[] { "@@@" } };
             yield return new object[] { null, @"[@']*\B", "@@@", RegexOptions.ECMAScript, new string[] { "@@@" } };
+            yield return new object[] { null, @".*.", "@@@", RegexOptions.Singleline, new string[] { "@@@" } };
+            // Implicitly upgrading concat loops to be atomic
+            yield return new object[] { null, @"(?:[ab]c[de]f)*", "", RegexOptions.None, new string[] { "" } };
+            yield return new object[] { null, @"(?:[ab]c[de]f)*", "acdf", RegexOptions.None, new string[] { "acdf" } };
+            yield return new object[] { null, @"(?:[ab]c[de]f)*", "acdfbcef", RegexOptions.None, new string[] { "acdfbcef" } };
+            yield return new object[] { null, @"(?:[ab]c[de]f)*", "cdfbcef", RegexOptions.None, new string[] { "" } };
+            yield return new object[] { null, @"(?:[ab]c[de]f)+", "cdfbcef", RegexOptions.None, new string[] { "bcef" } };
+            yield return new object[] { null, @"(?:[ab]c[de]f)*", "bcefbcdfacfe", RegexOptions.None, new string[] { "bcefbcdf" } };
             // Implicitly upgrading nested loops to be atomic
             yield return new object[] { null, @"(?:a){3}", "aaaaaaaaa", RegexOptions.None, new string[] { "aaa" } };
             yield return new object[] { null, @"(?:a){3}?", "aaaaaaaaa", RegexOptions.None, new string[] { "aaa" } };
             yield return new object[] { null, @"(?:a{2}){3}", "aaaaaaaaa", RegexOptions.None, new string[] { "aaaaaa" } };
             yield return new object[] { null, @"(?:a{2}?){3}?", "aaaaaaaaa", RegexOptions.None, new string[] { "aaaaaa" } };
+            yield return new object[] { null, @"(?:(?:[ab]c[de]f){3}){2}", "acdfbcdfacefbcefbcefbcdfacdef", RegexOptions.None, new string[] { "acdfbcdfacefbcefbcefbcdf" } };
+            yield return new object[] { null, @"(?:(?:[ab]c[de]f){3}hello){2}", "aaaaaacdfbcdfacefhellobcefbcefbcdfhellooooo", RegexOptions.None, new string[] { "acdfbcdfacefhellobcefbcefbcdfhello" } };
 
             // Grouping Constructs Invalid Regular Expressions
             yield return new object[] { null, @"()", "cat", RegexOptions.None, new string[] { string.Empty, string.Empty } };

@@ -222,62 +222,66 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        private static readonly Dictionary<int, string> s_codeStr = new Dictionary<int, string>()
-        {
-            { Onerep, nameof(Onerep) },
-            { Notonerep, nameof(Notonerep) },
-            { Setrep, nameof(Setrep) },
-            { Oneloop, nameof(Oneloop) },
-            { Notoneloop, nameof(Notoneloop) },
-            { Setloop, nameof(Setloop) },
-            { Onelazy, nameof(Onelazy) },
-            { Notonelazy, nameof(Notonelazy) },
-            { Setlazy, nameof(Setlazy) },
-            { One, nameof(One) },
-            { Notone, nameof(Notone) },
-            { Set, nameof(Set) },
-            { Multi, nameof(Multi) },
-            { Ref, nameof(Ref) },
-            { Bol, nameof(Bol) },
-            { Eol, nameof(Eol) },
-            { Boundary, nameof(Boundary) },
-            { Nonboundary, nameof(Nonboundary) },
-            { Beginning, nameof(Beginning) },
-            { Start, nameof(Start) },
-            { EndZ, nameof(EndZ) },
-            { End, nameof(End) },
-            { Nothing, nameof(Nothing) },
-            { Lazybranch, nameof(Lazybranch) },
-            { Branchmark, nameof(Branchmark) },
-            { Lazybranchmark, nameof(Lazybranchmark) },
-            { Nullcount, nameof(Nullcount) },
-            { Setcount, nameof(Setcount) },
-            { Branchcount, nameof(Branchcount) },
-            { Lazybranchcount, nameof(Lazybranchcount) },
-            { Nullmark, nameof(Nullmark) },
-            { Setmark, nameof(Setmark) },
-            { Capturemark, nameof(Capturemark) },
-            { Getmark, nameof(Getmark) },
-            { Setjump, nameof(Setjump) },
-            { Backjump, nameof(Backjump) },
-            { Forejump, nameof(Forejump) },
-            { Testref, nameof(Testref) },
-            { Goto, nameof(Goto) },
-            { Stop, nameof(Stop) },
-            { ECMABoundary, nameof(ECMABoundary) },
-            { NonECMABoundary, nameof(NonECMABoundary) },
-            { Oneloopatomic, nameof(Oneloopatomic) },
-            { Notoneloopatomic, nameof(Notoneloopatomic) },
-            { Setloopatomic, nameof(Setloopatomic) },
-        };
-
         [ExcludeFromCodeCoverage]
-        private static string OperatorDescription(int Opcode) =>
-            (s_codeStr.TryGetValue(Opcode & Mask, out string? codeStr) ? codeStr : "(unknown)") +
-            ((Opcode & Ci) != 0 ? "-Ci" : "") +
-            ((Opcode & Rtl) != 0 ? "-Rtl" : "") +
-            ((Opcode & Back) != 0 ? "-Back" : "") +
-            ((Opcode & Back2) != 0 ? "-Back2" : "");
+        private static string OperatorDescription(int Opcode)
+        {
+            string codeStr = (Opcode & Mask) switch
+            {
+                Onerep => nameof(Onerep),
+                Notonerep => nameof(Notonerep),
+                Setrep => nameof(Setrep),
+                Oneloop => nameof(Oneloop),
+                Notoneloop => nameof(Notoneloop),
+                Setloop => nameof(Setloop),
+                Onelazy => nameof(Onelazy),
+                Notonelazy => nameof(Notonelazy),
+                Setlazy => nameof(Setlazy),
+                One => nameof(One),
+                Notone => nameof(Notone),
+                Set => nameof(Set),
+                Multi => nameof(Multi),
+                Ref => nameof(Ref),
+                Bol => nameof(Bol),
+                Eol => nameof(Eol),
+                Boundary => nameof(Boundary),
+                Nonboundary => nameof(Nonboundary),
+                Beginning => nameof(Beginning),
+                Start => nameof(Start),
+                EndZ => nameof(EndZ),
+                End => nameof(End),
+                Nothing => nameof(Nothing),
+                Lazybranch => nameof(Lazybranch),
+                Branchmark => nameof(Branchmark),
+                Lazybranchmark => nameof(Lazybranchmark),
+                Nullcount => nameof(Nullcount),
+                Setcount => nameof(Setcount),
+                Branchcount => nameof(Branchcount),
+                Lazybranchcount => nameof(Lazybranchcount),
+                Nullmark => nameof(Nullmark),
+                Setmark => nameof(Setmark),
+                Capturemark => nameof(Capturemark),
+                Getmark => nameof(Getmark),
+                Setjump => nameof(Setjump),
+                Backjump => nameof(Backjump),
+                Forejump => nameof(Forejump),
+                Testref => nameof(Testref),
+                Goto => nameof(Goto),
+                Stop => nameof(Stop),
+                ECMABoundary => nameof(ECMABoundary),
+                NonECMABoundary => nameof(NonECMABoundary),
+                Oneloopatomic => nameof(Oneloopatomic),
+                Notoneloopatomic => nameof(Notoneloopatomic),
+                Setloopatomic => nameof(Setloopatomic),
+                _ => "(unknown)"
+            };
+
+            return
+                codeStr +
+                ((Opcode & Ci) != 0 ? "-Ci" : "") +
+                ((Opcode & Rtl) != 0 ? "-Rtl" : "") +
+                ((Opcode & Back) != 0 ? "-Back" : "") +
+                ((Opcode & Back2) != 0 ? "-Back2" : "");
+        }
 
         [ExcludeFromCodeCoverage]
         public string OpcodeDescription(int offset)

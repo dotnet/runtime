@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
 using Xunit.Sdk;
 
@@ -807,6 +809,21 @@ namespace System.Text.RegularExpressions.Tests
         public void Parse_NotNetFramework(string pattern, RegexOptions options, object error)
         {
             Parse(pattern, options, error);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void RegexParseException_Serializes()
+        {
+            ArgumentException e = Assert.ThrowsAny<ArgumentException>(() => new Regex("(abc|def"));
+
+            var bf = new BinaryFormatter();
+            var s = new MemoryStream();
+            bf.Serialize(s, e);
+            s.Position = 0;
+
+            ArgumentException e2 = (ArgumentException)bf.Deserialize(s);
+            Assert.Equal(e.Message, e2.Message);
         }
 
         private static void ParseSubTrees(string pattern, RegexOptions options)

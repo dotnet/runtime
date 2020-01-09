@@ -926,65 +926,58 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        private static readonly Dictionary<int, string> s_typeStr = new Dictionary<int, string>()
-        {
-            { Oneloop, nameof(Oneloop) },
-            { Notoneloop, nameof(Notoneloop) },
-            { Setloop, nameof(Setloop) },
-            { Onelazy, nameof(Onelazy) },
-            { Notonelazy, nameof(Notonelazy) },
-            { Setlazy, nameof(Setlazy) },
-            { One, nameof(One) },
-            { Notone, nameof(Notone) },
-            { Set, nameof(Set) },
-            { Multi, nameof(Multi) },
-            { Ref, nameof(Ref) },
-            { Bol, nameof(Bol) },
-            { Eol, nameof(Eol) },
-            { Boundary, nameof(Boundary) },
-            { Nonboundary, nameof(Nonboundary) },
-            { ECMABoundary, nameof(ECMABoundary) },
-            { NonECMABoundary, nameof(NonECMABoundary) },
-            { Beginning, nameof(Beginning) },
-            { Start, nameof(Start) },
-            { EndZ, nameof(EndZ) },
-            { End, nameof(End) },
-            { Oneloopatomic, nameof(Oneloopatomic) },
-            { Notoneloopatomic, nameof(Notoneloopatomic) },
-            { Setloopatomic, nameof(Setloopatomic) },
-            { Nothing, nameof(Nothing) },
-            { Empty, nameof(Empty) },
-            { Lazyloop, nameof(Lazyloop) },
-            { Capture, nameof(Capture) },
-            { Oneloop, nameof(Group) },
-            { Oneloop, nameof(Require) },
-            { Oneloop, nameof(Prevent) },
-            { Oneloop, nameof(Atomic) },
-            { Oneloop, nameof(Testref) },
-            { Oneloop, nameof(Testgroup) },
-        };
-
         [ExcludeFromCodeCoverage]
         public string Description()
         {
-            StringBuilder argSb = new StringBuilder();
 
-            argSb.Append(s_typeStr.TryGetValue(Type, out string? typeStr) ? typeStr : "(unknown)");
+            string typeStr = Type switch
+            {
+                Oneloop => nameof(Oneloop),
+                Notoneloop => nameof(Notoneloop),
+                Setloop => nameof(Setloop),
+                Onelazy => nameof(Onelazy),
+                Notonelazy => nameof(Notonelazy),
+                Setlazy => nameof(Setlazy),
+                One => nameof(One),
+                Notone => nameof(Notone),
+                Set => nameof(Set),
+                Multi => nameof(Multi),
+                Ref => nameof(Ref),
+                Bol => nameof(Bol),
+                Eol => nameof(Eol),
+                Boundary => nameof(Boundary),
+                Nonboundary => nameof(Nonboundary),
+                ECMABoundary => nameof(ECMABoundary),
+                NonECMABoundary => nameof(NonECMABoundary),
+                Beginning => nameof(Beginning),
+                Start => nameof(Start),
+                EndZ => nameof(EndZ),
+                End => nameof(End),
+                Oneloopatomic => nameof(Oneloopatomic),
+                Notoneloopatomic => nameof(Notoneloopatomic),
+                Setloopatomic => nameof(Setloopatomic),
+                Nothing => nameof(Nothing),
+                Empty => nameof(Empty),
+                Lazyloop => nameof(Lazyloop),
+                Capture => nameof(Capture),
+                Group => nameof(Group),
+                Require => nameof(Require),
+                Prevent => nameof(Prevent),
+                Atomic => nameof(Atomic),
+                Testref => nameof(Testref),
+                Testgroup => nameof(Testgroup),
+                _ => "(unknown)"
+            };
 
-            if ((Options & RegexOptions.ExplicitCapture) != 0)
-                argSb.Append("-C");
-            if ((Options & RegexOptions.IgnoreCase) != 0)
-                argSb.Append("-I");
-            if ((Options & RegexOptions.RightToLeft) != 0)
-                argSb.Append("-L");
-            if ((Options & RegexOptions.Multiline) != 0)
-                argSb.Append("-M");
-            if ((Options & RegexOptions.Singleline) != 0)
-                argSb.Append("-S");
-            if ((Options & RegexOptions.IgnorePatternWhitespace) != 0)
-                argSb.Append("-X");
-            if ((Options & RegexOptions.ECMAScript) != 0)
-                argSb.Append("-E");
+            var argSb = new StringBuilder().Append(typeStr);
+
+            if ((Options & RegexOptions.ExplicitCapture) != 0) argSb.Append("-C");
+            if ((Options & RegexOptions.IgnoreCase) != 0) argSb.Append("-I");
+            if ((Options & RegexOptions.RightToLeft) != 0) argSb.Append("-L");
+            if ((Options & RegexOptions.Multiline) != 0) argSb.Append("-M");
+            if ((Options & RegexOptions.Singleline) != 0) argSb.Append("-S");
+            if ((Options & RegexOptions.IgnorePatternWhitespace) != 0) argSb.Append("-X");
+            if ((Options & RegexOptions.ECMAScript) != 0) argSb.Append("-E");
 
             switch (Type)
             {
