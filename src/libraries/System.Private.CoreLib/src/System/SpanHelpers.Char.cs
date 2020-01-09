@@ -897,8 +897,13 @@ namespace System
                     break;
 
                 // Found the first element of "value". See if the tail matches.
-                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, relativeIndex + 1), ref valueTail, valueTailLength))
+                if (SequenceEqual(
+                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, relativeIndex + 1)),
+                    ref Unsafe.As<char, byte>(ref valueTail),
+                    (nuint)valueTailLength * 2))
+                {
                     return relativeIndex;  // The tail matched. Return a successful find.
+                }
 
                 index += remainingSearchSpaceLength - relativeIndex;
             }
