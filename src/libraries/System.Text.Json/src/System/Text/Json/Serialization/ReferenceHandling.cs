@@ -5,27 +5,21 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// This class defines the various ways the <see cref="JsonSerializer"/> can deal with references on Serialization and Deserialization.
+    /// This class defines the various ways the <see cref="JsonSerializer"/> can deal with references on serialization and deserialization.
     /// </summary>
     public sealed class ReferenceHandling
     {
         /// <summary>
-        /// Preserved JSON complex types will not be written/readen.
+        /// Reference handling semantics will not be applied to complex JSON types when serializing or deserializing.
         /// </summary>
         public static ReferenceHandling Default { get; } = new ReferenceHandling(PreserveReferencesHandling.None);
         /// <summary>
-        /// Preserved JSON complex types will be written/readen.
+        /// Reference metadata will be written and honored when deserializing and serializing complex JSON types.
         /// </summary>
         public static ReferenceHandling Preserve { get; } = new ReferenceHandling(PreserveReferencesHandling.All);
 
-        // For future, change to public if needed.
-        internal PreserveReferencesHandling PreserveHandlingOnSerialize => _preserveHandlingOnSerialize;
-        internal PreserveReferencesHandling PreserveHandlingOnDeserialize => _preserveHandlingOnDeserialize;
-        internal ReferenceLoopHandling LoopHandling => _loopHandling;
-
         private PreserveReferencesHandling _preserveHandlingOnSerialize;
         private PreserveReferencesHandling _preserveHandlingOnDeserialize;
-        private ReferenceLoopHandling _loopHandling;
 
         /// <summary>
         /// Creates a new instance of <see cref="ReferenceHandling"/> using the specified <paramref name="handling"/>
@@ -38,7 +32,6 @@ namespace System.Text.Json.Serialization
         {
             _preserveHandlingOnSerialize = preserveHandlingOnSerialize;
             _preserveHandlingOnDeserialize = preserveHandlingOnDeserialize;
-            _loopHandling = loopHandling;
         }
 
         internal bool ShouldReadPreservedReferences()
@@ -55,8 +48,6 @@ namespace System.Text.Json.Serialization
     internal enum ReferenceLoopHandling
     {
         Error = 0,
-        // For future if requested by the community.
-        //Ignore = 1,
     }
 
 
@@ -73,9 +64,5 @@ namespace System.Text.Json.Serialization
         /// Preserved objects and arrays will be written/readen.
         /// </summary>
         All = 1,
-
-        // For future if requested by the community.
-        // Objects = 2,
-        // Arrays = 3,
     }
 }

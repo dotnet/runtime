@@ -233,8 +233,9 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataMissingIdBeforeValues();
                 }
             }
-            else // $ref case
+            else
             {
+                Debug.Assert(meta == MetadataPropertyName.Ref);
                 if (state.Current.JsonClassInfo!.Type.IsValueType)
                 {
                     ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(state.Current.JsonClassInfo.Type);

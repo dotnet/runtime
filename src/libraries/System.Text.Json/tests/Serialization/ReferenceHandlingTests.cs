@@ -240,13 +240,6 @@ namespace System.Text.Json.Tests
         private class MyList : List<MyList> { }
 
         [Fact]
-        public static void QuickTest()
-        {
-            MyList root = JsonSerializer.Deserialize<MyList>("[[]]", _deserializeOptions);
-            Console.WriteLine(root.Count);
-        }
-
-        [Fact]
         public static void ArrayLoop()
         {
             MyList root = new MyList();

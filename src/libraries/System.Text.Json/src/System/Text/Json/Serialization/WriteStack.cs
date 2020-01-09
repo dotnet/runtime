@@ -15,6 +15,7 @@ namespace System.Text.Json
         private List<WriteStackFrame> _previous;
         private int _index;
 
+        // The bag of preservable references. It needs to be kept in the state and never in JsonSerializerOptions otherwise it may be affected by race conditions.
         private DefaultReferenceResolver _referenceResolver;
         private DefaultReferenceResolver ReferenceResolver
         {
