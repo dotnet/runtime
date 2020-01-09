@@ -16635,12 +16635,14 @@ void Compiler::fgMorph()
 
     EndPhase(PHASE_CLONE_FINALLY);
 
-    /* Compute bbNum, bbRefs and bbPreds */
-
+    // Compute bbNum, bbRefs and bbPreds
+    //
     JITDUMP("\nRenumbering the basic blocks for fgComputePreds\n");
     fgRenumberBlocks();
 
-    noway_assert(!fgComputePredsDone); // This is the first time full (not cheap) preds will be computed.
+    // This is the first time full (not cheap) preds will be computed
+    //
+    noway_assert(!fgComputePredsDone);
     fgComputePreds();
 
     // Run an early flow graph simplification pass
@@ -16651,8 +16653,8 @@ void Compiler::fgMorph()
 
     EndPhase(PHASE_COMPUTE_PREDS);
 
-    /* From this point on the flowgraph information such as bbNum,
-     * bbRefs or bbPreds has to be kept updated */
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated
 
     /* For x64 and ARM64 we need to mark irregular parameters */
     lvaRefCountState = RCS_EARLY;
