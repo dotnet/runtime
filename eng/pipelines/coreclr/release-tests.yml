@@ -1,0 +1,79 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 6 * * *"
+  displayName: Daily at 10:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/pipelines/common/checkout-job.yml
+
+#
+# Release builds
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: release
+    platformGroup: all
+    jobParameters:
+      timeoutInMinutes: 120
+
+#
+# Release test builds
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+    buildConfig: release
+    platformGroup: all
+    testGroup: outerloop
+
+#
+# Release test runs
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    buildConfig: release
+    platformGroup: all
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+
+#
+# Release R2R test runs
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    buildConfig: release
+    platformGroup: all
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      readyToRun: true
+      displayNameArgs: R2R
+
+
+#
+# Crossgen-comparison jobs
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_arm
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

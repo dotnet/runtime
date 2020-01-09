@@ -16,7 +16,7 @@ namespace System.Reflection.Internal
 
         internal static bool IsFileStream(Stream stream) => stream is FileStream;
 
-        internal static SafeHandle GetSafeFileHandle(Stream stream)
+        internal static SafeHandle? GetSafeFileHandle(Stream stream)
         {
             SafeHandle handle;
             try
@@ -47,7 +47,7 @@ namespace System.Reflection.Internal
                 return false;
             }
 
-            SafeHandle handle = GetSafeFileHandle(stream);
+            SafeHandle? handle = GetSafeFileHandle(stream);
             if (handle == null)
             {
                 return false;

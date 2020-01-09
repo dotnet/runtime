@@ -105,13 +105,6 @@ These test cases take longer than 60 seconds to run.  Currently, the Test
 Harness will timeout any test case that exceeds 60 seconds.
 
 
-File_IO: setfileattributesa/test(1,4), SetFileAttributesW/test(1,4)
-
-These test cases ensure restricted file permissions are respected.  Administrators 
-or super users (root) are not affected by file permissions and, as a result, these
-test cases will fail for such users.
-
-
 Miscellaneous: messageboxw/test(1,2)
 
 Setting PAL_MESSAGEBOX_DISABLE=1 for these test cases prevents message box pop

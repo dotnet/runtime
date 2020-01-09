@@ -52,7 +52,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="tablesAndHeaps"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="metadataVersion"/> is too long (the number of bytes when UTF8-encoded must be less than 255).</exception>
-        public MetadataRootBuilder(MetadataBuilder tablesAndHeaps, string metadataVersion = null, bool suppressValidation = false)
+        public MetadataRootBuilder(MetadataBuilder tablesAndHeaps, string? metadataVersion = null, bool suppressValidation = false)
         {
             if (tablesAndHeaps == null)
             {

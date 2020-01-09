@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
@@ -47,7 +48,7 @@ namespace System.Reflection.Internal
             }
         }
 
-        internal byte[] ToArray()
+        internal byte[]? ToArray()
         {
             return Pointer == null ? null : PeekBytes(0, Length);
         }
@@ -299,7 +300,7 @@ namespace System.Reflection.Internal
         /// <param name="terminator">A character in the ASCII range that marks the end of the string.
         /// If a value other than '\0' is passed we still stop at the null terminator if encountered first.</param>
         /// <returns>The decoded string.</returns>
-        internal string PeekUtf8NullTerminated(int offset, byte[] prefix, MetadataStringDecoder utf8Decoder, out int numberOfBytesRead, char terminator = '\0')
+        internal string PeekUtf8NullTerminated(int offset, byte[]? prefix, MetadataStringDecoder utf8Decoder, out int numberOfBytesRead, char terminator = '\0')
         {
             Debug.Assert(terminator <= 0x7F);
             CheckBounds(offset, 0);

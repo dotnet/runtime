@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* aec2498a-ca70-408e-903e-1e6d84e90bd2 */
-    0xaec2498a,
-    0xca70,
-    0x408e,
-    {0x90, 0x3e, 0x1e, 0x6d, 0x84, 0xe9, 0x0b, 0xd2}
+SELECTANY const GUID JITEEVersionIdentifier = { /* abcf830c-56d1-4b33-a8ec-5063bb5495f1 */
+    0xabcf830c,
+    0x56d1,
+    0x4b33,
+    {0xa8, 0xec, 0x50, 0x63, 0xbb, 0x54, 0x95, 0xf1}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -237,7 +237,7 @@ SELECTANY const GUID JITEEVersionIdentifier = { /* aec2498a-ca70-408e-903e-1e6d8
 #define CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS       16
 
 // System V struct passing
-// The Classification types are described in the ABI spec at http://www.x86-64.org/documentation/abi.pdf
+// The Classification types are described in the ABI spec at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
 enum SystemVClassificationType : unsigned __int8
 {
     SystemVClassificationTypeUnknown            = 0,
@@ -329,7 +329,7 @@ struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     // Return value:
     //     returns true if we the eightbyte at index slotIndex is of SSE type.
     //
-    // Follows the rules of the AMD64 System V ABI specification at www.x86-64.org/documentation/abi.pdf.
+    // Follows the rules of the AMD64 System V ABI specification at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf.
     // Please refer to it for definitions/examples.
     //
     bool IsSseSlot(unsigned slotIndex) const
@@ -1781,7 +1781,7 @@ struct CORINFO_EH_CLAUSE
 enum CORINFO_OS
 {
     CORINFO_WINNT,
-    CORINFO_PAL,
+    CORINFO_UNIX,
 };
 
 struct CORINFO_CPU

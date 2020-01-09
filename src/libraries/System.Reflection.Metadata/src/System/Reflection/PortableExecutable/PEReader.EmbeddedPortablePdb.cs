@@ -73,7 +73,7 @@ namespace System.Reflection.PortableExecutable
         // internal for testing
         internal static unsafe ImmutableArray<byte> DecodeEmbeddedPortablePdbDebugDirectoryData(AbstractMemoryBlock block)
         {
-            byte[] decompressed;
+            byte[]? decompressed;
 
             var headerReader = block.GetReader();
             if (headerReader.ReadUInt32() != PortablePdbVersions.DebugDirectoryEmbeddedSignature)
@@ -125,10 +125,10 @@ namespace System.Reflection.PortableExecutable
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref decompressed);
         }
 
-        partial void TryOpenEmbeddedPortablePdb(DebugDirectoryEntry embeddedPdbEntry, ref bool openedEmbeddedPdb, ref MetadataReaderProvider provider, ref Exception errorToReport)
+        partial void TryOpenEmbeddedPortablePdb(DebugDirectoryEntry embeddedPdbEntry, ref bool openedEmbeddedPdb, ref MetadataReaderProvider? provider, ref Exception? errorToReport)
         {
             provider = null;
-            MetadataReaderProvider candidate = null;
+            MetadataReaderProvider? candidate = null;
 
             try
             {

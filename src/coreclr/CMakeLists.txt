@@ -115,7 +115,7 @@ endif(WIN32)
 # Configure compiler settings for environment
 #----------------------------------------------------
 include(configurecompiler.cmake)
-include(${CLR_COMMON_DIR}/configuretools.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 #----------------------------------------------------
 # Cross target Component build specific configuration
@@ -136,7 +136,7 @@ include(pgosupport.cmake)
 #-----------------------------------------
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/pal)
-    add_subdirectory(src/coreclr/hosts)
+    add_subdirectory(src/hosts)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 # Add this subdir. We install the headers for the jit.

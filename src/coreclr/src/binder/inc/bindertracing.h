@@ -97,7 +97,7 @@ namespace BinderTracing
         // One of binder ID and managed ALC is expected to be non-zero. If the managed ALC is set, binder ID is ignored.
         ResolutionAttemptedOperation(BINDER_SPACE::AssemblyName *assemblyName, UINT_PTR binderId, INT_PTR managedALC, const HRESULT& hr);
 
-        void TraceBindResult(const BINDER_SPACE::BindResult &bindResult);
+        void TraceBindResult(const BINDER_SPACE::BindResult &bindResult, bool mvidMismatch = false);
 
         void SetFoundAssembly(BINDER_SPACE::Assembly *assembly)
         {
@@ -170,7 +170,7 @@ namespace BinderTracing
         SString m_exceptionMessage;
         BINDER_SPACE::Assembly *m_pFoundAssembly;
 
-        void TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly);
+        void TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly, const WCHAR *errorMessage = nullptr);
     };
 
     // This must match the BindingPathSource value map in ClrEtwAll.man

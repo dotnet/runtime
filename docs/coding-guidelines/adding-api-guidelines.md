@@ -10,6 +10,7 @@ Recommended reading to better understand this document:
     - [Determine target framework](#determine-target-framework)
     - [Determine library version](#determine-library-version)
   - [Making the changes in repo](#making-the-changes-in-repo)
+  - [Documentation](#documentation)
   - [FAQ](#faq)
 
 ### Determine what library
@@ -57,6 +58,17 @@ the implementation without compat concerns in future releases.
   - Set `TargetGroup` which will generally match the `TargetGroup` in the src library build configuration. (ex: [System.Runtime\tests\Configurations.props](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/tests/Configurations.props#L3))
   - Add new test code following [conventions](project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
   - To run just the new test configuration run `dotnet msbuild <Library>.csproj /t:RebuildAndTest /p:TargetGroup=<TargetGroup>`
+
+## Documentation
+
+New public APIs must be documented with triple-slash comments on top of them. Visual Studio automatically generates the structure for you when you type `///`.
+
+If your new API or the APIs it calls throw any exceptions, those need to be manually documented by adding the `<exception></exception>` elements.
+
+After your change is merged, we will eventually port them to the dotnet-api-docs repo, where we will review them for language and proper style (For more information, see the [API writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki)).
+
+Once the dotnet-api-docs change is merged, your comments will start showing up in the official API documentation at http://docs.microsoft.com/, and later they'll appear in IntelliSense in Visual Studio and Visual Studio Code.
+Once the documentation is official, any subsequent updates to it must be made directly in https://github.com/dotnet/dotnet-api-docs/. It's fine to make updates to the triple slash comments later, they just won't automatically flow into the official docs.
 
 ## FAQ
 _**<a name="isnetstandard">Is your API part of netstandard?</a>**_

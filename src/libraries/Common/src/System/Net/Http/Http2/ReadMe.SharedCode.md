@@ -13,8 +13,7 @@ aspnet/AspNetCore code paths:
 - To copy code from aspnet/AspNetCore to dotnet/runtime, set RUNTIME_REPO to the runtime repo root and then run CopyToRuntime.cmd.
 
 ## Building dotnet/runtime code:
-- https://github.com/dotnet/runtime/blob/master/docs/libraries/building/windows-instructions.md
-- https://github.com/dotnet/runtime/blob/master/docs/libraries/project-docs/developer-guide.md
+- https://github.com/dotnet/runtime/tree/master/docs/workflow
 - Run libraries.cmd from the root once: `PS D:\github\runtime> .\libraries.cmd`
 - Build the individual projects:
 - `PS D:\github\dotnet\src\libraries\Common\tests> dotnet msbuild /t:rebuild`

@@ -157,8 +157,8 @@ using asm_sigcontext::_xstate;
 #define FPSTATE_RESERVED padding
 #endif
 
-// The mask for YMM registers presence flag stored in the xstate_bv. On current Linuxes, this definition is
-// only in internal headers, so we define it here. The xstate_bv is extracted from the processor xstate bit
+// The mask for YMM registers presence flag stored in the xfeatures (formerly xstate_bv). On current Linuxes, this definition is
+// only in internal headers, so we define it here. The xfeatures (formerly xstate_bv) is extracted from the processor xstate bit
 // vector register, so the value is OS independent.
 #ifndef XSTATE_YMM
 #define XSTATE_YMM 4
@@ -204,7 +204,11 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
         return false;
     }
 
+#if HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
     return (FPREG_FpxSwBytes(uc)->xstate_bv & XSTATE_YMM) != 0;
+#else
+    return (FPREG_FpxSwBytes(uc)->xfeatures & XSTATE_YMM) != 0;
+#endif
 }
 
 inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)

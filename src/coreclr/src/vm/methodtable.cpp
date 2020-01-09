@@ -3283,7 +3283,7 @@ void MethodTable::DoRunClassInitThrowing()
         // Some error occurred trying to init this class
         ListLockEntry*     pEntry= (ListLockEntry *) _pLock->Find(this);
         _ASSERTE(pEntry!=NULL);
-        _ASSERTE(pEntry->m_pLoaderAllocator == (GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator()));
+        _ASSERTE(pEntry->m_pLoaderAllocator == GetLoaderAllocator());
 
         // If this isn't a TypeInitializationException, then its creation failed
         // somehow previously, so we should make one last attempt to create it. If
@@ -3444,7 +3444,7 @@ void MethodTable::DoRunClassInitThrowing()
                                     wszName, &gc.pInnerException, &gc.pInitException, &gc.pThrowable);
                             }
 
-                            pEntry->m_pLoaderAllocator = GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator();
+                            pEntry->m_pLoaderAllocator = GetLoaderAllocator();
 
                             // CreateHandle can throw due to OOM. We need to catch this so that we make sure to set the
                             // init error. Whatever exception was thrown will be rethrown below, so no worries.
@@ -3499,7 +3499,7 @@ void MethodTable::DoRunClassInitThrowing()
                     // An exception may have occurred in the cctor. DoRunClassInit() should return FALSE in that
                     // case.
                     _ASSERTE(pEntry->m_hInitException);
-                    _ASSERTE(pEntry->m_pLoaderAllocator == (GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator()));
+                    _ASSERTE(pEntry->m_pLoaderAllocator == GetLoaderAllocator());
                     _ASSERTE(IsInitError());
 
                     // Throw the saved exception. Since we are rethrowing a previously cached exception, must clear the stack trace first.

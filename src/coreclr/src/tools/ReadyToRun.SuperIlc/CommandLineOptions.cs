@@ -84,6 +84,7 @@ namespace ReadyToRun.SuperIlc
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
                         R2RDumpPath(),
+                        GCStress(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
 
@@ -231,6 +232,9 @@ namespace ReadyToRun.SuperIlc
 
             Option InputFileSearchString() =>
                 new Option(new[] { "--input-file-search-string", "-input-file" }, "Search string for input files in the input directory", new Argument<string>());
+
+            Option GCStress() =>
+                new Option(new[] { "--gcstress" }, "Run tests with the specified GC stress level enabled (the argument value is in hex)", new Argument<string>());
 
             //
             // compile-nuget specific options

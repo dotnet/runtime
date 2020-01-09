@@ -17,7 +17,7 @@ namespace System.Reflection.Internal
     /// </summary>
     internal static unsafe class EncodingHelper
     {
-        public static string DecodeUtf8(byte* bytes, int byteCount, byte[] prefix, MetadataStringDecoder utf8Decoder)
+        public static string DecodeUtf8(byte* bytes, int byteCount, byte[]? prefix, MetadataStringDecoder utf8Decoder)
         {
             Debug.Assert(utf8Decoder != null);
 
