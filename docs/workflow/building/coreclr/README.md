@@ -31,4 +31,4 @@ The build has a number of options that you can learn about using build -?.   Som
  * -release - build the 'Release' build type that does not have extra development-time checking compiled in.
  You want this if you are going to do performance testing on your build.
 
-See [Running Tests](../../testing/coreclr-testing.md) for instructions on running the tests.
+See [Running Tests](../../testing/coreclr/testing.md) for instructions on running the tests.

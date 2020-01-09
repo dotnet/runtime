@@ -306,7 +306,7 @@ namespace System.Reflection.PortableExecutable
                 builder.Add(new SectionHeader(ref reader));
             }
 
-            return builder.ToImmutable();
+            return builder.MoveToImmutable();
         }
 
         /// <summary>

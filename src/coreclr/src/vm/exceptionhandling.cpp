@@ -3063,7 +3063,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                         if (oThrowable != NULL)
                         {
                             oThrowable = PossiblyUnwrapThrowable(oThrowable, pcfThisFrame->GetAssembly());
-                            thrownType = oThrowable->GetTrueTypeHandle();
+                            thrownType = oThrowable->GetTypeHandle();
                         }
 
                         if (!thrownType.IsNull())

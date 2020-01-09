@@ -457,6 +457,7 @@ bool GCToOSInterface::SupportsWriteWatch()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef FEATURE_PAL
     bool writeWatchSupported = false;
 
     // check if the OS supports write-watch.
@@ -470,6 +471,9 @@ bool GCToOSInterface::SupportsWriteWatch()
     }
 
     return writeWatchSupported;
+#else // FEATURE_PAL
+    return false;
+#endif // FEATURE_PAL
 }
 
 // Reset the write tracking state for the specified virtual memory range.
@@ -480,7 +484,9 @@ void GCToOSInterface::ResetWriteWatch(void* address, size_t size)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef FEATURE_PAL
     ::ResetWriteWatch(address, size);
+#endif // FEATURE_PAL
 }
 
 // Retrieve addresses of the pages that are written to in a region of virtual memory
@@ -497,6 +503,7 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef FEATURE_PAL
     uint32_t flags = resetState ? 1 : 0;
     ULONG granularity;
 
@@ -504,6 +511,12 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
     _ASSERTE (granularity == GetOsPageSize());
 
     return success;
+#else // FEATURE_PAL
+    *pageAddresses = NULL;
+    *pageAddressesCount = 0;
+
+    return true;
+#endif // FEATURE_PAL
 }
 
 // Get size of the largest cache on the processor die

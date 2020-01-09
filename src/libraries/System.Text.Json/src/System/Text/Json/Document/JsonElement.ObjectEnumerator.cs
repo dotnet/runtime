@@ -19,13 +19,14 @@ namespace System.Text.Json
             private readonly JsonElement _target;
             private int _curIdx;
             private readonly int _endIdxOrVersion;
-            private JsonObjectProperty _current;
+            private JsonObjectProperty? _current;
 
             internal ObjectEnumerator(JsonElement target)
             {
                 _target = target;
                 _curIdx = -1;
                 _current = null;
+                Debug.Assert(target._parent != null);
 
                 if (target._parent is JsonDocument document)
                 {
@@ -143,6 +144,7 @@ namespace System.Text.Json
                 }
                 else
                 {
+                    Debug.Assert(_target._parent != null);
                     var document = (JsonDocument)_target._parent;
                     _curIdx = document.GetEndIndex(_curIdx, includeEndElement: true);
                 }

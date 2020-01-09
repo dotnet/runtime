@@ -2,13 +2,13 @@
 
 initTargetDistroRid()
 {
-    source ${__ProjectDir}/init-distro-rid.sh
+    source "${__ProjectDir}/init-distro-rid.sh"
 
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if cross is specified.
     if [ "$__CrossBuild" = 1 ]; then
-        passedRootfsDir=${ROOTFS_DIR}
+        passedRootfsDir="${ROOTFS_DIR}"
     fi
 
     initDistroRidGlobal "$__BuildOS" "$__BuildArch" "$__PortableBuild" "$passedRootfsDir"
@@ -16,7 +16,7 @@ initTargetDistroRid()
 
 isMSBuildOnNETCoreSupported()
 {
-    __isMSBuildOnNETCoreSupported=$__msbuildonunsupportedplatform
+    __isMSBuildOnNETCoreSupported="$__msbuildonunsupportedplatform"
 
     if [ "$__isMSBuildOnNETCoreSupported" = 1 ]; then
         return
@@ -64,7 +64,7 @@ usage()
     echo ""
     echo "Additional Options:"
     echo ""
-    for i in ${!usage_list[@]}; do
+    for i in "${!usage_list[@]}"; do
         echo "${usage_list[${i}]}"
     done
     echo ""
@@ -79,7 +79,7 @@ if [ "$CPUName" = "unknown" ]; then
     CPUName=$(uname -m)
 fi
 
-case $CPUName in
+case "$CPUName" in
     aarch64)
         __BuildArch=arm64
         __HostArch=arm64
@@ -116,7 +116,7 @@ esac
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
-case $OSName in
+case "$OSName" in
     Darwin)
         __BuildOS=OSX
         __HostOS=OSX
@@ -155,12 +155,12 @@ case $OSName in
 esac
 
 while :; do
-    if [ $# -le 0 ]; then
+    if [ "$#" -le 0 ]; then
         break
     fi
 
     lowerI="$(echo "$1" | awk '{print tolower($0)}')"
-    case $lowerI in
+    case "$lowerI" in
         -\?|-h|--help)
             usage
             exit 1
@@ -185,7 +185,7 @@ while :; do
                     mkdir "$__RootBinDir"
                 fi
                 __RootBinParent=$(dirname "$__RootBinDir")
-                __RootBinName=${__RootBinDir##*/}
+                __RootBinName="${__RootBinDir##*/}"
                 __RootBinDir="$(cd "$__RootBinParent" &>/dev/null && printf %s/%s "$PWD" "$__RootBinName")"
                 shift
             else
@@ -203,59 +203,16 @@ while :; do
             __ErrMsgPrefix="##vso[task.logissue type=error]"
             ;;
 
-        clang3.5|-clang3.5)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=5
-            ;;
-
-        clang3.6|-clang3.6)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=6
-            ;;
-
-        clang3.7|-clang3.7)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=7
-            ;;
-
-        clang3.8|-clang3.8)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=8
-            ;;
-
-        clang3.9|-clang3.9)
-            __ClangMajorVersion=3
-            __ClangMinorVersion=9
-            ;;
-
-        clang4.0|-clang4.0)
-            __ClangMajorVersion=4
-            __ClangMinorVersion=0
-            ;;
-
-        clang5.0|-clang5.0)
-            __ClangMajorVersion=5
-            __ClangMinorVersion=0
-            ;;
-
-        clang6.0|-clang6.0)
-            __ClangMajorVersion=6
-            __ClangMinorVersion=0
-            ;;
-
-        clang7|-clang7)
-            __ClangMajorVersion=7
-            __ClangMinorVersion=
-            ;;
-
-        clang8|-clang8)
-            __ClangMajorVersion=8
-            __ClangMinorVersion=
-            ;;
-
-        clang9|-clang9)
-            __ClangMajorVersion=9
-            __ClangMinorVersion=
+        clang*|-clang*)
+                __Compiler=clang
+                # clangx.y or clang-x.y
+                version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"
+                parts=(${version//./ })
+                __CompilerMajorVersion="${parts[0]}"
+                __CompilerMinorVersion="${parts[1]}"
+                if [ -z "$__CompilerMinorVersion" ] && [ "$__CompilerMajorVersion" -le 6 ]; then
+                    __CompilerMinorVersion=0;
+                fi
             ;;
 
         cmakeargs|-cmakeargs)
@@ -286,40 +243,13 @@ while :; do
             __BuildType=Debug
             ;;
 
-        gcc5|-gcc5)
-            __GccMajorVersion=5
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc6|-gcc6)
-            __GccMajorVersion=6
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc7|-gcc7)
-            __GccMajorVersion=7
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc8|-gcc8)
-            __GccMajorVersion=8
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc9|-gcc9)
-            __GccMajorVersion=9
-            __GccMinorVersion=
-            __GccBuild=1
-            ;;
-
-        gcc|-gcc)
-            __GccMajorVersion=
-            __GccMinorVersion=
-            __GccBuild=1
+        gcc*|-gcc*)
+                __Compiler=gcc
+                # gccx.y or gcc-x.y
+                version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"
+                parts=(${version//./ })
+                __CompilerMajorVersion="${parts[0]}"
+                __CompilerMinorVersion="${parts[1]}"
             ;;
 
         msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
@@ -411,15 +341,4 @@ __CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:
 if [ "$__VerboseBuild" = 1 ]; then
     export VERBOSE=1
     __CommonMSBuildArgs="$__CommonMSBuildArgs /v:detailed"
-fi
-
-# Set default clang version
-if [ "$__ClangMajorVersion" = 0 ] && [ "$__ClangMinorVersion" = 0 ]; then
-    if [ "$__BuildArch" = "arm" ] || [ "$__BuildArch" = "armel" ]; then
-        __ClangMajorVersion=5
-        __ClangMinorVersion=0
-    else
-        __ClangMajorVersion=3
-        __ClangMinorVersion=9
-    fi
 fi

@@ -5,7 +5,7 @@
 
   <PropertyGroup>
     <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
-    <ProjectAssetsFile>$(SourceDir)Common\ilasm\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(TestSourceDir)Common\ilasm\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
 </Project>

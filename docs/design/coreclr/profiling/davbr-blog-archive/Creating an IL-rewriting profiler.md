@@ -17,10 +17,10 @@ Well, first off, you're making a profiler. That means you create an unmanaged in
 
 Keep in mind there are many ways to do this. I'll outline one of the more straightforward approaches here, and the adventurous should feel free to substitute their own ingredients:
 
-- In your **ICorProfilerCallback2::ModuleLoadFinished** callback, you call **ICorProfilerInfo2::GetModuleMetadata** to get a pointer to a metadata interface on that module. 
-- QI for the metadata interface you want. Search MSDN for "IMetaDataImport", and grope through the table of contents to find topics on the metadata interfaces. 
-- Once you're in metadata-land, you have access to all the types in the module, including their fields and function prototypes. You may need to parse metadata signatures and [this signature parser](samples/sigparse.cpp) may be of use to you. 
-- In your **ICorProfilerCallback2::JITCompilationStarted** callback, you may use **ICorProfilerInfo2::GetILFunctionBody** to inspect the original IL, and **ICorProfilerInfo2::GetILFunctionBodyAllocator** and then **ICorProfilerInfo2::SetILFunctionBody** to replace that IL with your own. 
+- In your **ICorProfilerCallback2::ModuleLoadFinished** callback, you call **ICorProfilerInfo2::GetModuleMetadata** to get a pointer to a metadata interface on that module.
+- QI for the metadata interface you want. Search MSDN for "IMetaDataImport", and grope through the table of contents to find topics on the metadata interfaces.
+- Once you're in metadata-land, you have access to all the types in the module, including their fields and function prototypes. You may need to parse metadata signatures and [this signature parser](samples/sigparse.cpp) may be of use to you.
+- In your **ICorProfilerCallback2::JITCompilationStarted** callback, you may use **ICorProfilerInfo2::GetILFunctionBody** to inspect the original IL, and **ICorProfilerInfo2::GetILFunctionBodyAllocator** and then **ICorProfilerInfo2::SetILFunctionBody** to replace that IL with your own.
 
 **Q: What about NGEN?**
 
@@ -32,7 +32,7 @@ If you want to rewrite IL of NGENd modules, well, it's kind of too late because 
 
 **Q: Any examples?**
 
-Here is an MSDN article that talks about making an IL rewriting profiler:   
+Here is an MSDN article that talks about making an IL rewriting profiler:
 [http://msdn.microsoft.com/en-us/magazine/cc188743.aspx](http://msdn.microsoft.com/en-us/magazine/cc188743.aspx)
 
 **Q: Any caveats?**
@@ -45,10 +45,10 @@ And then there's the worst of both worlds: when you need to rewrite IL to call i
 
 **Q: Has anyone else tried making an IL-rewriting profiler?**
 
-Sure. If you want to learn from other people's experiences, read through the [Building Development and Diagnostic Tools for .NET Forum](http://forums.microsoft.com/MSDN/ShowForum.aspx?ForumID=868&SiteID=1). Here are some interesting threads:
+Sure. If you want to learn from other people's experiences, read through the [Building Development and Diagnostic Tools for .NET Forum](https://social.msdn.microsoft.com/Forums/en-US/home?forum=netfxtoolsdev). Here are some interesting threads:
 
-[http://social.msdn.microsoft.com/Forums/en-NZ/netfxtoolsdev/thread/5f30596b-e7b7-4b1f-b8e1-8172aa8dde31](http://social.msdn.microsoft.com/Forums/en-NZ/netfxtoolsdev/thread/5f30596b-e7b7-4b1f-b8e1-8172aa8dde31)  
+[http://social.msdn.microsoft.com/Forums/en-NZ/netfxtoolsdev/thread/5f30596b-e7b7-4b1f-b8e1-8172aa8dde31](http://social.msdn.microsoft.com/Forums/en-NZ/netfxtoolsdev/thread/5f30596b-e7b7-4b1f-b8e1-8172aa8dde31)
 [http://social.msdn.microsoft.com/Forums/en-GB/netfxtoolsdev/thread/c352266f-ded3-4ee2-b2f9-fbeb41a70c27](http://social.msdn.microsoft.com/Forums/en-GB/netfxtoolsdev/thread/c352266f-ded3-4ee2-b2f9-fbeb41a70c27)
 
- 
+
 

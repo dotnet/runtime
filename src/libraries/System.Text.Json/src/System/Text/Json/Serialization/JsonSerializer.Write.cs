@@ -25,18 +25,18 @@ namespace System.Text.Json
             {
                 do
                 {
-                    switch (state.Current.JsonClassInfo.ClassType)
+                    switch (state.Current.JsonClassInfo!.ClassType)
                     {
                         case ClassType.Enumerable:
-                            finishedSerializing = HandleEnumerable(state.Current.JsonClassInfo.ElementClassInfo, options, writer, ref state);
+                            finishedSerializing = HandleEnumerable(state.Current.JsonClassInfo.ElementClassInfo!, options, writer, ref state);
                             break;
                         case ClassType.Value:
-                            Debug.Assert(state.Current.JsonPropertyInfo.ClassType == ClassType.Value);
+                            Debug.Assert(state.Current.JsonPropertyInfo!.ClassType == ClassType.Value);
                             state.Current.JsonPropertyInfo.Write(ref state, writer);
                             finishedSerializing = true;
                             break;
                         case ClassType.Dictionary:
-                            finishedSerializing = HandleDictionary(state.Current.JsonClassInfo.ElementClassInfo, options, writer, ref state);
+                            finishedSerializing = HandleDictionary(state.Current.JsonClassInfo.ElementClassInfo!, options, writer, ref state);
                             break;
                         default:
                             Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Object ||

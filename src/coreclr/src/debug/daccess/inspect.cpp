@@ -3569,7 +3569,7 @@ ClrDataTypeInstance::GetDefinition(
 
         else if (m_typeHandle.IsTypeDesc() && m_typeHandle.AsTypeDesc()->HasTypeParam())
         {
-            // HasTypeParam is true for - ParamTypeDesc (ARRAY, SZARRAY, BYREF, PTR)
+            // HasTypeParam is true for - ParamTypeDesc (BYREF, PTR)
             defType = m_typeHandle.AsTypeDesc()->GetTypeParam();
 
             // The DefinitionType won't contain ByRef, PTR.

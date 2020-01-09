@@ -2,8 +2,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard2.0;
-      netcoreapp;
-      netfx;
+      $(NetCoreAppCurrent);
+      $(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

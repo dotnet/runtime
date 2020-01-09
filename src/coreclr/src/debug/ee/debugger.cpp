@@ -12181,9 +12181,9 @@ void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
     case ELEMENT_TYPE_ARRAY:
     case ELEMENT_TYPE_SZARRAY:
         _ASSERTE(th.IsArray());
-        res->ArrayTypeData.arrayRank = th.AsArray()->GetRank();
+        res->ArrayTypeData.arrayRank = th.GetRank();
         TypeHandleToBasicTypeInfo(pAppDomain,
-                                  th.AsArray()->GetArrayElementTypeHandle(),
+                                  th.GetArrayElementTypeHandle(),
                                   &(res->ArrayTypeData.arrayTypeArg));
         break;
 

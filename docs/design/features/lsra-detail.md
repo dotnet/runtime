@@ -106,12 +106,12 @@ There are four main phases to LSRA:
 
     -   At the beginning of each new block the register assignment of
         each lclVar `Interval` is updated, either based on incoming
-        argument locations, or based on the location at the end of the
-        selected predecessor block.
+        argument locations (for the first block in the method),
+        or based on the location at the end of the selected predecessor block.
 
     -   Iteration proceeds according to ascending order of `RefPosition`s.
         This means that the register assignment is performed in linear
-        execution order.
+        execution order within a block.
 
     -   The status of an `Interval` is updated as a `RefPosition` is
         encountered for it.
@@ -127,9 +127,10 @@ There are four main phases to LSRA:
         assignments to the `GenTree` nodes.
 
         -   It is at this point that the register assignments for the
-            lclVars is finalized at `BasicBlock` boundaries.
+            lclVars are finalized at `BasicBlock` boundaries.
 
-    -   Then the block boundaries are handled:
+    -   Then, if we are optimizing (i.e. enregistering lclVars) the block
+        boundaries are handled:
 
         -   For fork edges (the source block has multiple targets, but
             each target has only that one source), any required
@@ -142,8 +143,8 @@ There are four main phases to LSRA:
         -   Critical edges require more complicated handling, and may
             require splitting of the edge for placement of resolution.
 
-            -   It may be that it would be more efficient to simply
-                spill those lclVars that require the split edge.
+            -   This is an area in need of improvement, see
+                [Avoid Splitting Loop Backedges](#avoid-split).
 
 Preconditions
 -------------
@@ -151,7 +152,8 @@ Preconditions
 ### Lowered IR Form (LIR)
 
 The RyuJIT backend components (register allocation and code generation)
-are somewhat unusual in that the IR nodes do not map directly to target
+are somewhat unusual (compared to other compilers) in that the IR nodes
+do not map directly to target
 instructions. Instead, the `Lowering` phase of the JIT first performs
 IL transformations to ensure that the operations match the semantic
 level of the target such that all registers are explicitly represented
@@ -169,7 +171,7 @@ It is the job of the `Lowering` phase to transform the IR such that:
     is specified by the `gtNext` and `gtPrev` links).
 
 -   Any node that will be evaluated as part of its parent (consumer)
-    node have been identified. These are known as "contained" nodes, and
+    node has been identified. These are known as "contained" nodes, and
     are identified by setting the `GTF_CONTAINED` flag in the
     `gtFlags` field of the node.
 
@@ -177,20 +179,8 @@ It is the job of the `Lowering` phase to transform the IR such that:
     memory by their consumer (i.e. via an addressing mode) are marked as
     "reg-optional" (`LIR::Flags::RegOptional`)
 
-    -   Issues [\#7752](https://github.com/dotnet/coreclr/issues/7752) and [\#7753](https://github.com/dotnet/coreclr/issues/7753) track the proposal to support "folding"
-        of operations using a tree temp, i.e. supporting the possibility
-        of a def being reg-optional, as well as its use, so that it need
-        never occupy a register.
-
-    -   Issue [\#6361](https://github.com/dotnet/coreclr/issues/6361) tracks the problem that `Lowering` currently has
-        to select a single operand to be reg-optional, even if either
-        operand could be. This requires some additional state because
-        LSRA can't easily navigate from one use to the other to
-        communicate whether the first operand has been assigned a
-        register.
-
 -   All unused values (nodes that produce a result that is not consumed)
-    are identified (`gtLIRFlags` has the `LIR::Flags::UnusedValue` bit set)
+    are identified (`LIR::Flags::UnusedValue` flag is set in `gtLIRFlags`).
 
     -   Since tree temps (the values produced by nodes and consumed by
         their parent) are expected to be single-def, single-use (SDSU),
@@ -217,9 +207,9 @@ There are three types of value for which registers are allocated:
     -   These are an exception to the explicit representation of
         registers.
 
-The register requirements are determined by the `TreeNodeInfoInit()`
-method, which is called for each node just prior to building its
-`RefPosition`s.
+The register requirements are determined by the `LinearScan::BuildNode()`
+method which is called for each node in order to build its
+`RefPosition`s. (It in turn may invoke a node-specific `LinearScan::BuildXXX()` method).
 
 The register lifetimes must obey the following lifetime model:
 
@@ -230,21 +220,26 @@ The register lifetimes must obey the following lifetime model:
 
 -   Next, the internal registers are used (and are then freed).
 
--   Next, the destination register(s) are defined
+-   Next, any registers in the kill set for the instruction are killed.
 
--   Finally, any `delayRegFree` source registesr are freed.
+-   Next, the destination register(s) are defined.
+
+-   Finally, any `delayRegFree` source registers are freed.
 
 There are several things to note about this order:
 
--   The internal registers will never overlap any use, but they may
-    overlap a destination register.
+-   The lifetime of internal registers will always overlap a use (that is, they may never
+    get the same register as a source), but they do not overlap the lifetime of a destination register (so they may get the same register as a target unless they are marked `delayRegFree`).
 
 -   Internal registers are never live beyond the node.
 
--   The `delayRegFree` annotation is used for instructions that are
+-   The `delayRegFree` annotation is used to identify register uses that must not
+    be allocated the same register as a register target for the same node. This is
+    primarily used for instructions that are
     only available in a Read-Modify-Write form. That is, the destination
     register is one of the sources. In this case, we must not use the
-    same register for the non-RMW operand as for the destination.
+    same register for the non-RMW operand as for the destination. Thus, the non-RMW operand
+    is marked with the `delayRegFree` annotation.
 
 Post-Conditions
 ---------------
@@ -258,7 +253,7 @@ After LSRA, the graph has the following properties:
     evaluated as part of its parent) its gtRegNum is set to REG_NA.
 
     -   In most cases, this register must satisfy the constraints
-        specified by the `NodeInfo`.
+        specified for each `RefPosition` by the `BuildNode` methods.
 
     -   In some cases, this is difficult:
 
@@ -283,7 +278,7 @@ After LSRA, the graph has the following properties:
         requirement of the parent.
 
 -   GenTree::gtRsvdRegs has a set of registers used for internal temps.
-    These must satisfy the constraints given by the `NodeInfo`.
+    These must satisfy the constraints specified by the associated `RefPosition`s.
 
 -   A tree node is marked `GTF_SPILL` if the tree node must be spilled by
     the code generator after it has been evaluated.
@@ -299,7 +294,8 @@ After LSRA, the graph has the following properties:
         register to which the variable must be reloaded.
 
     -   For other nodes, since they represent both the def and use, if
-        the value must be reloaded to a different register, LSRA must
+        the value must be reloaded to a different register than the one specified
+        on the tree node (which is the one used when the node is evaluated), LSRA must
         insert a `GT_RELOAD` node to specify the register to which it
         should be reloaded.
 
@@ -332,19 +328,13 @@ well as supporting components) in more depth.
         dataflow analysis. Only those variables will be candidates for
         register allocation.
 
-        -   It is unclear whether it would be beneficial, but if we
-            could keep track of the variables that are only used within
-            a block (presumably true of many introduced temps), we may
-            find that we could continue to limit the number of variables
-            whose liveness is tracked across blocks, keeping an expanded
-            set only for transient liveness. [Issue \#11339](https://github.com/dotnet/coreclr/issues/11339)
 
 -   `Compiler::fgLocalVarLiveness`
 
     -   This computes the `BasicBlock::bbLiveIn` and
         `BasicBlock::bbLiveOut` sets that are used by LSRA.
 
-    -   It does this for an lclVar marked `lvTracked`, even if it is
+    -   It does this for any lclVar marked `lvTracked`, even if it is
         not a register candidate. The dataflow information is also used
         for GC info, but it may be the case that some of these should
         not be marked during the pre-LSRA dataflow analysis.
@@ -353,8 +343,8 @@ well as supporting components) in more depth.
 
     -   This mostly duplicates what is done in
         `Compiler::lvaMarkLocalVars(). There are differences in what
-        constituted a register candidate vs. what is tracked, but we
-        should probably handle them in ` Compiler::lvaMarkLocalVars()`
+        constitutes a register candidate vs. what is tracked, but we
+        should probably handle them in `Compiler::lvaMarkLocalVars()`
         when it is called after `Lowering`.
 
     -   It sets the ` lvLRACandidate` flag on lclVars that are going
@@ -362,7 +352,8 @@ well as supporting components) in more depth.
 
 ### Block Ordering
 
-The determination of block ordering is done during the building of
+The determination of the order in which the register allocator handles
+blocks is done during the building of
 `RefPosition`s. However, it is a logically distinct component. Its
 objective is to identify a sequence of `BasicBlock`s for allocation
 that satisfies the following properties:
@@ -393,109 +384,112 @@ the `LsraBlockInfo`.
 The block ordering pass also identifies whether and where there are
 critical edges. This also captured in the `LsraBlockInfo` and is used by the resolution phase.
 
-### Register Requirements
+### Building Intervals and RefPositions
 
-Like block ordering, this is done during the building of
-`RefPosition`s, but is a logically separate component.
+`Interval`s are built for lclVars up-front. These are maintained in an array, 
+`localVarIntervals` which is indexed by the `lvVarIndex` (not the `varNum`, since
+we never allocate registers for non-tracked lclVars). Other intervals (for tree temps and
+internal registers) are constructed as the relevant node is encountered.
 
--   Determine register requirements (Lowering::TreeNodeInfoInit)
+The building of `RefPosition`s is done via a traversal of the nodes, using the `blockSequence`
+constructed as described above. This traversal invokes `LinearScan::BuildNode()` for each
+node, which builds `RefPositions` according to the liveness model described above:
 
-    -   This method is responsible for initializing the `NodeInfo` for
-        each node.
+-   First, we create `RefPosition`s to define any internal registers that are required.
+    As we create new `Interval`s for these, we add the definition `RefPosition` to an array,
+    `InternalDefs`. This allows us to create the corresponding uses of these internal
+    registers later.
 
-        -   This is currently maintained in the `gtLsraInfo` for each
-            node.
+-   Then we create `RefPosition`s for each use in the instruction.
 
-        -   The nodes are placed into a map, that maps from a tree node
-            to the list of tree nodes that are the actual operands.
+    -   A use of a register candidate lclVar becomes a `RefTypeUse` `RefPosition` on the 
+        `Interval` associated with the lclVar.
 
-            -   This complication is due to contained nodes, where, e.g.
-                a `GT_IND` node may be contained, and have a
-                `GT_LEA` child whose base and addr nodes are the
-                actual operands.
+    -   For tree-temp operands (including non-register-candidate lclVars), we may have one
+        of 3 situations:
 
-            -   Work is underway to eliminate the `gtLsraInfo`, and to
-                place the `NodeInfo` of the actual operands directly
-                into the map, eliminating the need for two level (map of
-                lists) data structure [Issue \#7225](https://github.com/dotnet/coreclr/issues/7225)
+         - A contained immediate requires no registers, so no `RefPosition`s are created.
 
-            -   Subsequent work will eliminate the `NodeInfo`
-                altogether, and instead build`RefPosition`s directly
-                from the `TreeNodeInfoInit` methods [Issue \#7257](https://github.com/dotnet/coreclr/issues/7257)
+         - A contained memory operand or addressing mode will cause `RefPosition`s to be
+           created for any (non-contained) base or index registers.
+         - A single `RefPosition` is created for non-contained nodes.
 
-    -   The `NodeInfo` includes:
+         In order to build these uses, we need to find the `Interval` associated with the
+         tree-temp. This is done via the `defList`, which contains the `RefTypeDef` `RefPosition`
+         for all tree temps whose def has been encountered but for which we
+         have not yet seen the use. This is a simple list on the assumption that the distance
+         between defs and uses of tree temps is rarely very great.
 
-        -   The number of register sources and destinations.
+         For x86 and x64, when we have an instruction that will overwrite one of its sources,
+         we need to ensure that the other source isn't given the same register as the
+         target. For this, we annotate the use `RefPosition` with `delayRegFree`.
 
-        -   Register restrictions (candidates) for the register(s) defined by the node, if any.
-            These restrictions are specified separately as those imposed by this, the defining node
-            (`dstCandidates`) and those imposed by the consuming or parent node (`srcCandidates`).
+-   Next we create the uses of the internal registers, using the `InternalDefs` array.
+    This is cleared before the next instruction is handled.
 
-            -   At the time the consuming node is being handled by `TreeNodeInfoInit()`, the `Interval`
-                for the defining node (if it is a "tree temp") has already been created, as has the
-                defining (`RefTypeDef`) `RefPosition`.
-                Any conflicts between the `dstCandidates` on the sources, and the `srcCandidates` at
-                the consuming node will be handled when the consuming `RefPosition` (`RefTypeUse`) is
-                created.
+-   Next, any registers in the kill set for the instruction are killed. This is performed
+    by `buildKillPositionsForNode()`, which takes a kill mask that is generally provided
+    by a `getKillSetForXXX()` method.
 
-        -   The number (internalCount) of registers required, and their
-            register restrictions (candidates). These are neither inputs
-            nor outputs of the node, but used in the sequence of code
-            generated for the tree.
+-   Finally, we create `RefTypeDef` `RefPositions` for any registers that are defined by
+    the node.
 
-            -   At one point, we had planned to eliminate internal
-                registers, as they do not precisely represent register
-                lifetimes. However, it is felt that the complexity and
-                code expansion from eliminating them would outweigh any
-                benefit.
+-   A `RefTypeBB` `RefPosition` marks the beginning of a block, at which the incoming live
+    variables are set to their locations at the end of the selected predecessor.
 
--   Register allocation (doLinearScan)
+    -   If there are live-in variables with no location in the
+        selected predecessor, a `RefTypeDummyDef` is created for each of these.
 
-    -   Iterate over the linear ordering of nodes within each
-        `BasicBlock`:
+        -   This is generally not required, as the block will
+            normally have a predecessor block that has already
+            been allocated. This facility is exercised by the 0x200
+            (`LSRA_BLOCK_BOUNDARY_LAYOUT`) setting of `COMPlus_JitStressRegs`.
 
-        -   Build `Interval`s with annotations
+-   At the end of a block, for any exposed uses that do not have downstream
+    `RefPosition`s (e.g. variables that are live across the backedge, so there is no
+    last use), a `RefTypeExposedUse` is created.
 
-            -   Ref positions (called use positions by [[1]](#[1]) at each
-                def or use, and for internal registers.
+During this phase, preferences are set:
 
-            -   Add cross-interval preferences
+-   Cross-interval preferences are expressed via the `relatedInterval` field of `Interval` 
 
-                -   This area has room for improvement [Issue #11463](https://github.com/dotnet/coreclr/issues/11463)
+    -   When a use is encountered, it is preferenced to the target `Interval` for the
+        node, if that is deemed to be profitable. During register selection, it tries to
+        find a register that will fit the requirements of that preferenced `Interval`.
+        Then, when the use `RefPosition` is assigned a register, the
+        register preference of the target `Interval` is updated.
+        This addresses the scenario when the lclVar has already
+        (at a previous definition) been assigned a register, and we want to try to use that
+        register again, as well as the case where it has yet to be assigned a register.
 
-            -   Determine whether to prefer callee-save registers. [Issue
-                \#7664](https://github.com/dotnet/coreclr/issues/7664) tracks the need to improve the heuristics for
-                when to prefer callee-save.
+        This area has room for improvement:
 
-            -   Add pseudo-uses to the `Interval` if live at loop backedge.
+        -   A specific case that could be improved is [Issue #25312](https://github.com/dotnet/coreclr/issues/25312)
+            which involves preferencing for HW intrinsics.
 
-            -   If the previous block is not a predecessor of the
-                current block, add DummyDefs for variables that are
-                live-in to the current block, but not live-out of the
-                previous block.
+        -   Issue [#22374](https://github.com/dotnet/coreclr/issues/22374) also has a pointer
+            to some methods that could benefit from improved preferencing.
+   
+    - Register preferences are set:
 
-                -   This is generally not required, as the block will
-                    normally have a predecessor block that has already
-                    been allocated.
+        - When the use or definition of a value must use a fixed register, due to instruction
+          or ABI constraints. In this case, the register may be added to the `registerPreferences`,
+          depending on whether it conflicts with existing preferences
+          (the heuristics for determining this are in `LinearScan::mergeRegisterPreferences()`).
 
-        -   Future improvements:
+        - When a register is killed at a point where a lclVar is live, that register is removed
+          from the `registerPreferences` of the lclVar `Interval`.
 
-            -   Identify single-def variables (including arguments) --
-                these are candidates for store-at-def spilling. [Issue
-                \#11344](https://github.com/dotnet/coreclr/issues/11344).
+        - The register preferences of a related `Interval` may also be updated.
 
-            -   Identify candidates for recomputation -- values which
-                are idempotent and can be more easily recomputed than
-                spilled & reloaded [Issue \#6131](https://github.com/dotnet/coreclr/issues/6131)
+### Register allocation (doLinearScan)
 
-        -   Add appropriate ref positions for fixed registers (argument
-            registers, volatile/caller-save, write barriers, dedicated
-            registers)
+The allocation phase iterates over the blocks in `BlockSequence` order, and then over the
+linear ordering of nodes within each `BasicBlock`:
 
 -   Iterate over `RefPosition`s in forward order, performing linear scan
     allocation. The algorithm below is a modified version of that
-    specified in [[3]](#[3]), and doesn't include optimizations such as early
-    exit of the loops when the remaining `Interval`s will be out of range.
+    specified in [[3]](#[3]).
     It is a high-level abstraction of the algorithm as implemented:
 ```
 LinearScanAllocation(List<RefPosition> refPositions)
@@ -521,8 +515,6 @@ LinearScanAllocation(List<RefPosition> refPositions)
         // AllocateBlockedReg will take into account whether it must have
         // a register in this position, and may otherwise choose not to
         // allocate if existing intervals have higher priority.
-        // A split interval will be added to the unhandled list
-        // A split interval will be added to the unhandled list
         if (!TryAllocateFreeReg(refPosition))
             AllocateBusyReg(refPosition);
     }
@@ -548,19 +540,18 @@ LinearScanAllocation(List<RefPosition> refPositions)
             `Interval` to which it is preferenced, if any
 
         -   Whether it is in the register preference set for the
-            `Interval`
+            `Interval` 
 
         -   Whether it is not only available but currently unassigned
-            (i.e. this register is NOT currently assigned to an `Interval`
-            which is not currently live)
+            (i.e. this register is NOT currently assigned to an `Interval` 
+            which is not currently live, but which previously occupied
+            that register).
 
     -   It always uses the same order for iterating over the registers.
         The jit32 register allocator used a different ordering for tree
         temps than for lclVars. It's unclear if this matters for LSRA,
-        but [Issue \#11357](https://github.com/dotnet/coreclr/issues/11357) tracks this question.
-
-    -   It currently fully evaluates the "goodness" of each register.
-        [Issue \#7301](https://github.com/dotnet/coreclr/issues/7301) tracks the possibility of short-circuiting this evaluation.
+        but [Issue \#11357](https://github.com/dotnet/coreclr/issues/11357)
+        tracks this question.
 
 -   `AllocateBusyReg()` iterates over all the registers trying to find the
     best register to spill (it must only be called if `tryAllocateFreeReg()`
@@ -579,18 +570,20 @@ LinearScanAllocation(List<RefPosition> refPositions)
     -   It will always spill an `Interval` either at its most recent
         use, or at the entry to the current block.
 
-        -   Issues [\#7609](https://github.com/dotnet/coreclr/issues/7609) and [\#7665](https://github.com/dotnet/coreclr/issues/7665) track improvement of spill
+        -   Issues [\#7609](https://github.com/dotnet/coreclr/issues/7609) and
+            [\#7665](https://github.com/dotnet/coreclr/issues/7665) track improvement of spill
             placement.
 
     -   It is quite possible that combining `TryAllocateFreeReg()` and
-    `AllocateBusyReg()` might be more effective [Issue \#15408](https://github.com/dotnet/coreclr/issues/15408).
+        `AllocateBusyReg()` would be more effective, see
+        [Merge Allocation of Free and Busy Registers](#combine)
 
 -   Resolution
 
-    -   Perform resolution at block boundaries, adding moves as needed
-        (the algorithm for resolution can be found in [[2]](#[2]), though note
+    -   Perform resolution at block boundaries, adding moves as needed.
+        The algorithm for resolution can be found in [[2]](#[2]), though note
         that there is a typo: in the last 'if' statement, it should be
-        "if b != loc(pred(b))" instead of "if b = loc(pred(b))"):
+        "if b != loc(pred(b))" instead of "if b = loc(pred(b))":
 
         -   First, any variables that are in registers on the incoming
             edge, but need to be on the stack, are stored, freeing those
@@ -612,20 +605,12 @@ LinearScanAllocation(List<RefPosition> refPositions)
         -   Issue \#6001 raises the performance issue due to this
             implementation.
 
-            -   An initial approach, for which some initial
-                implementation has been done, is to support the notion
+            -   Work is in-progress to support the notion
                 of "write-thru" variables; for these, all definitions
                 would write to memory, but uses could use a register
                 value, if available.
 
-                -   The value would be reloaded at exception boundaries.
-
-            -   Support for "write-thru" variables could be extended to
-                single-def variables; if they are spilled at their
-                single definition, they need never be spilled again
-                (issue \#7465).
-
-<!-- -->
+                -   The value is reloaded at exception boundaries.
 
 -   Code generation (genGenerateCode)
 
@@ -646,11 +631,11 @@ Key Data Structures
 
 ### Live In
 
-This is the same bbLiveIn set as used elsewhere in the JIT but is
+This is the same `bbLiveIn` set as used elsewhere in the JIT but is
 recomputed prior to register allocation because `Lowering` creates new
 variables.
 
-### Live
+### currentLiveVars
 
 This is a temporary single-instance data structure used during the
 construction of `Interval`s.
@@ -667,7 +652,7 @@ contains:
 
 ### Interval
 
-A structure that represents a variable, optimizer temp, or local temp,
+A structure that represents a variable, optimizer temp, or tree temp,
 that is a candidate for enregistering. Its `RefPosition`s reflect
 actual uses (`RefTypeUse`) or defs (`RefTypeDef`) in the code
 stream, entry "definitions" (`RefTypeParamDef` and
@@ -689,6 +674,14 @@ stream, entry "definitions" (`RefTypeParamDef` and
         the `RegRecord`, but its `assignedReg` field will be set to
         REG_NA.
 
+A special type of `Interval` is used to track the status of the upper half
+of a vector register in the case where calls do not preserve the upper half
+of the callee-save vector registers. This is true for 256-bit vectors on
+`AVX` and for 128-bit registers on Arm64 `NEON`. These `Interval`s are
+marked with `isUpperVector`, and their `relatedInterval` points to the associated
+large vector `Interval`. This is an imperfect workaround for this special type
+of partial register tracking, which is costly to support in full generality.
+
 ### RegRecord
 
 `RegRecord`s for physical registers share a common base class with
@@ -704,10 +697,14 @@ latter are inserted at a point where a specific register must be used or
 defined. These are generally due to calls or instructions with implicit
 fixed registers.
 
+The representation of `TYP_DOUBLE` registers on 32-bit `Arm` is complicated by the
+fact that they overlap two `TYP_FLOAT` registers. The handling of this
+case could be improved.
+
 ### RefPosition
 
 A `RefPosition` represents a single use, def or update of an
-enregisterable variable or temporary. It contains
+enregisterable variable or temporary or physical register. It contains
 
 -   The `Interval` or `RegRecord` to which this reference belongs.
 
@@ -716,8 +713,8 @@ enregisterable variable or temporary. It contains
 
 -   Register assignment
 
-    -   Prior to allocation, this represents the set of valid register
-        for this reference
+    -   Prior to allocation, this represents the set of valid registers
+        for this reference.
 
     -   After allocation, this is a single element register mask
         including only the allocated register (or two registers in the
@@ -758,9 +755,19 @@ enregisterable variable or temporary. It contains
 
     -   `RefTypeZeroInit` is an `Interval` `RefPosition` that represents the
         position at entry at which a variable will be initialized to
-        zero
+        zero.
+    
+    -   `RefTypeUpperVectorSave` is a `RefPosition` for an upper vector `Interval`
+        that is inserted prior to a call that will kill the upper vector if
+        it is currently occupying a register. The `Interval` is then marked with
+        `isPartiallySpilled`.
 
-### Tree Nodes
+    -   `RefTypeUpperVectorRestore` is a `RefPosition` for an upper vector `Interval`
+        that is inserted prior to a use of the associated vector, or at the end
+        of a block. This is only done in the case where the `RefPosition` might
+        have become partially spilled.
+
+### GenTree Nodes
 
 The tree nodes are updated during the writeback traversal with the
 register that has been assigned to it (if any). If the associated
@@ -782,13 +789,9 @@ register to which it should be reloaded just prior to use.
 
 This mapping records the location of each live variable at the entry and
 exit of each block. It is recorded during the writeback phase
-(resolveRegisters) and is used to add resolution moves, as well as to
+(`resolveRegisters()`) and is used to add resolution moves, as well as to
 record the variable locations at the beginning of each block during code
 generation.
-
-This map incurs non-trivial JIT-time overhead. Issue \#11396 addresses
-the question of whether there is an alternative that would have better
-performance.
 
 Dumps and Debugging Support
 ---------------------------
@@ -804,11 +807,11 @@ The following dumps and debugging modes are provided:
 
     -   For each incoming arg: its type and incoming location
     -   For each instruction:
-        - The current contents of the `OperandToLocationInfoMap`. This corresponds to all the nodes that have defined values
-        that have not yet been consumed.
+        - The current contents of the `OperandToLocationInfoMap`.
+          This corresponds to all the nodes that have defined values
+          that have not yet been consumed.
         - An abbreviated dump of the GenTree node.
-        - The `TreeNodeInfo` generated for it.
-        -   A dump of each ref position as it is created.
+        - A dump of each ref position as it is created.
 
 -   After buildIntervals()
     -   A dump of all the `Interval`s and their `RefPosition`s
@@ -836,7 +839,7 @@ The following dumps and debugging modes are provided:
 LSRA Stress Modes
 -----------------
 
-The implementation uses the COMPLUS_JitStressRegs environment variable.
+The implementation uses the `COMPLUS_JitStressRegs` environment variable.
 The following are the stress modes associated with this variable. For
 the most part they can be combined, though in some cases the values are
 exclusive:
@@ -873,14 +876,27 @@ exclusive:
             larger than the maximum number of basic blocks.
 
 -   Extend lifetimes to the entire method (0x80)
-    -   This is done under MinOpts, but MinOpts doesn't actually put an
-        lclVars in registers.
+    -   Note that under MinOpts the lifetimes are already extended to the entire method,
+        but MinOpts doesn't actually put any
+        lclVars in registers, so this option is useful when the JIT
+        is generating optimized code.
 
 -   Modify the starting location (register/stack) for each variable at
     block boundaries (the default is to use the weightiest predecessor
     block that has already been allocated):
     -   Use the location from the previous block in layout order (0x100)
     -   Rotate the variable locations (0x200)
+
+-   Always insert a `GTF_RELOAD` above a use of a spilled register (0x400).
+
+-   Alyways spill (0x800). This mode is not fully functional, as there are
+    cases where spill isn't actually supported (it should be possible to simply
+    not spill in such cases).
+
+-   Never allocate a register for a `RefPosition` marked `regOptional` (0x1000).
+
+It may be useful to also have a stress mode that deliberately trashes registers that
+are not currently occupied (e.g. at block boundaries). Issue [#18944](https://github.com/dotnet/coreclr/issues/18944).
 
 Assertions & Validation
 -----------------------
@@ -890,9 +906,12 @@ effective at identifying issues (i.e. they frequently show up in bugs):
 
 -   The node information isn't showing the number of consumed registers
     that are expected:
-    -   `assert(((consume == 0) && (produce == 0)) || (ComputeAvailableSrcCount(tree) == consume));`
-        -   This usually means that the `TreeNodeInfoInit` method for this
-            node is not correctly setting its `srcCount` (which is what `consume` has been set to).
+    -   `assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));`
+        -   This usually means that the `BuildXXX` method for this
+            node is not building `RefPosition`s for all of its uses (which is what `consume` has been set to).
+-   The liveness information is incorrect. This assert comes from `LinearScan::checkLastUses()` which
+    does a reverse iteration over the `RefPosition`s for a block to verify that `bbLiveIn` is consistent with `bbLiveOut` updated with the defs and last uses:
+    -   `assert(!foundDiff);`
 -   No register is found, even with spilling.
     - `assert(farthestRefPhysRegRecord != nullptr);`
         - This means that the register requirements were over-constrained, either due to an error, or
@@ -907,19 +926,163 @@ Future Extensions and Enhancements
 
 The potential enhancements to the JIT, some of which are referenced in this document, can generally be found by [searching for LSRA in open issues](https://github.com/dotnet/coreclr/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+LSRA+in%3Atitle). The ones that are focused on JIT throughput are labeled `JITThroughput`.
 
-The following haven't yet been opened as github issues:
+## Code Quality Enhancements
 
+### <a name="combine"/>Merge Allocation of Free and Busy Registers
+
+This is captured as [\#15408](https://github.com/dotnet/coreclr/issues/15408)
+Consider merging allocating free & busy regs.
+
+Currently the register allocator will always allocate an available register, even if it only meets
+the minimum requirements for the current node. This results in some really bad worst-case behavior
+where a single scratch register is available, and is immediately spilled because it is killed prior
+to the next use. Often this same register will be used and spilled many times before a better register
+becomes free.
+
+The alternative approach under consideration is to combine free and busy register allocation
+(`tryAllocateFreeReg()` and `allocateBusyReg()`) such that a busy register will be spilled if there
+are no suitable free registers, and the current `Interval` has greater weight than the `Interval`
+occupying the register. This must be accompanied by some improvements in the efficiency of the
+checks, so as not to degrade throughput. This is currently a work-in-progress (https://github.com/CarolEidt/coreclr/tree/CombineAlloc) but hasn't yet been ported to the runtime repo, and needs
+further work to eliminate diffs and improve throughput.
+
+This would make it possible to spill a register for a higher weight `lclVar` rather than "settling"
+for a register that's a poor fit for its requirements. This is probably the best approach to
+address Issues [\#7664](https://github.com/dotnet/coreclr/issues/7664)
+Heuristics for callee saved reg allocation and
+[\#13735](https://github.com/dotnet/coreclr/issues/13735)
+Let variables within a loop use register first.
+
+The following issues are related:
+
+* Both `tryAllocateFreeReg()` and `allocateBusyReg()` currently fully evaluate the "goodness" of each register.
+  Issue [\#7301](https://github.com/dotnet/coreclr/issues/7301) tracks the possibility of short-circuiting
+  this evaluation.
+  Making such an improvement should probably be done in conjunction with this work.
+
+* Issue [\#26847](https://github.com/dotnet/coreclr/issues/26847)
+  Heuristics for callee saved reg allocation.
+
+### Auto-tuning of register selection
+
+This is not yet captured as a GitHub issue.
+
+This would be best done after [Merge Allocation of Free and Busy Registers](#combine).
+
+The idea would be to add support to change the weight given to the various selection heuristics
+according to a configuration specification, allowing them to be auto-tuned.
+
+The scoring could be done using perf scores, or even using actual performance measurements,
+though running actual benchmarks on each configuration could be quite costly.
+
+In order to enable this capability without impacting throughput, it is likely that the configurability
+would be added as an alternate path in the register allocator, leaving the default path as-is.
+
+### Pre-allocating high frequency lclVars
+
+This is captured as Issue [\#11424](https://github.com/dotnet/coreclr/issues/11424)
+Consider pre-allocating high-frequency lclVars.
+
+The idea here is to ensure that high frequency lclVars aren't forced to use less-than-optimal
+registers (or worse, spilled), by allocating them ahead of the linear scan.
+
+This requires a mechanism for recording the location of these lclVars. The LinearScan
+implementation doesn't keep a reservation table for the physical registers; instead it
+maintains the current status of each register (i.e. which `Interval` it is allocated to)
+as it proceeds during allocation or write-back. While keeping a reservation table may be
+a reasonable approach for Tier 1 or higher
+(see [Spanning trees for physical registers](#spanning-trees-for-physical-registers)),
+an alternate approach would be to only perform
+pre-allocation at block granularity, including block boundaries (for which the variable
+locations are recorded in the `varToRegMaps`). Without an interference graph or a reservation
+table, it will likely be limited to a small number of the highest frequency lclVars.
+
+One strategy would be to do something along the lines of (appropriate hand-waving applies):
+
+  - Set aside a subset of the registers for pre-allocation. This might include
+    all of the callee-save registers, and a small number of caller-save registers.
+    Some tuning would likely be required to determine exactly what and how many to reserve.
+
+  - After `buildIntervals()` has completed,for each register candidate local `Interval`,
+    in sorted order, assign a register that corresponds to its `registerPreferences`. If such
+    a register is not available, stop pre-allocating. This becomes its `assignedInterval`
+    (which will be inactive at the start of alloaction).
+
+  - During `allocateRegisters()` as each new block is encountered, instead of simply copying
+    the predecessor `varToRegMap`, iterate over the most frequently lclVars in the union of the
+    live-in, uses and defs, and displace any `Intervals` that are occupying registers that
+    would be more profitably used by the high-frequencly lclVars, weighing spill costs.
+ 
+### <a name="avoid-split"/>Avoid Splitting Loop Backedges
+
+This is captured as Issue [\#16857](https://github.com/dotnet/coreclr/issues/16857).
+
+When the register allocator performs resolution across block boundaries, it may split critical
+edges (edges from a block with multiple successors to a block with multiple predecessors).
+This can seriously impact performance, and is especially bad when the edge is a loop backedge.
+
+One option would be to avoid edge splitting altogether. Instead, we would construct `CriticalEdgeSet`s that
+would include the set of critical edges that have any edges in common.
+For these, once we have allocated the first block that contains either an in-edge or an out-edge in such
+a set, the variable locations on that edge would be fixed, and future blocks that have edges in that
+set would ensure that the variable locations match. This would eliminate not just backedge splitting,
+but all the extra branches currently inserted for resolution. It remains to be seen whether this would
+outweigh the impact of cases where more resolution moves would be required.
+
+### Avoid Spill When Stack Copy is Valid
+
+The idea here is to avoid spilling at a use if the value on the stack is already the correct value.
+
+Issues that this might address include [\#11344] Spill single-def vars at def, [\#7665] Improve spill placement,
+and [\#7465] Avoiding reg spill to memory when reg-value is consistent with memory.
+
+Currently the register allocator doesn't track whether a local variable has the same value on the stack
+as in a register. The work-in-progress to support "write-thru" EH variables (variables live across exception
+boundaries) adds capability to liveness analysis and code generation (in addition to the register allocator)
+to handle variables that are live in both registers and on the stack. This support could be further leveraged
+to avoid spilling single-def variables to memory if they have already been spilled at their
+definition.
+
+Extending such support to more generally track whether there is already a valid stack copy involves more
+work. Fully general support would require such information at block boundaries, but it might be worth
+investigating whether it would be worthwhile and cheaper to simply track this information within a block.
+
+### Support Reg-Optional Defs
+
+Issues [\#7752](https://github.com/dotnet/coreclr/issues/7752) and
+[\#7753](https://github.com/dotnet/coreclr/issues/7753) track the 
+ proposal to support "folding" of operations using a tree temp when
+the defining operation supports read-modify-write (RMW) to memory.
+This involves supporting the possibility
+of a def being reg-optional, as well as its use, so that it need
+never occupy a register.
+
+### Don't Pre-determine Reg-Optional Operand
+
+Issue [\#6361](https://github.com/dotnet/coreclr/issues/6361) 
+tracks the problem that `Lowering` currently has
+to select a single operand to be reg-optional, even if either
+operand could be. This requires some additional state because
+LSRA can't easily navigate from one use to the other to
+communicate whether the first operand has been assigned a
+register.
+        
 ### Leveraging SSA form
+
+This has not yet been opened as a github issue.
 
 Making SSA form available to LSRA would:
 
   - Allow splitting of `Interval`s where SSA names are not related by a phi node.
 
-  - Ease potential future support for "General SSA" (where sources and dests of phi nodes may overlap), as existing support for resolution at block boundaries could be easily extended to introduce minimal copies for translating out of General SSA form.
+  - Ease potential future support for "General SSA" (where sources and dests of phi nodes may overlap)
+    as existing support for resolution at block boundaries could be easily extended to introduce minimal copies for translating out of General SSA form.
 
 ### Spanning trees for physical registers
 
-LLVM has replaced their linear scan register allocator with something it
+This has not yet been opened as a github issue.
+
+LLVM has extended their linear scan register allocator with something it
 calls "Greedy Register Allocation". This uses a priority queue for the
 order of allocation (sorted by decreasing spill cost), and a B+ tree to
 represent each physical register. I think that using the B+ trees for
@@ -927,6 +1090,41 @@ physical registers would be an improvement over the current PhysRegs,
 and we may want to experiment with changing the allocation order as
 well. It would not be necessary to significantly modify the process of
 creating `Interval`s, nor the resolution phase.
+
+## Throughput Enhancements
+
+### Allocation Window for Min-Opts and Tier 0
+
+Currently, the register allocator builds the RefPositions for the entire method at once.
+In Min-Opts and Tier 0, or any time there are no local variables available for enregistration,
+there is no value in doing so, as no values remain live beyond the top-level node of an
+expression. Since the JIT doesn't do instruction scheduling or other reordering of nodes
+after `Lowering`, it is generally the case that the live-ranges for the values produced by
+nodes of disjoint top-level trees do not overlap.
+
+Performing the entire allocation (building, allocation and write-back) on a single expression
+at a time, and maintaining pools of data structures for reuse, could improve
+throughput and reduce memory consumption.
+
+As the register allocator builds the `RefPosition`s, it keeps track of outstanding values in the
+form of a `defList` that holds all of the tree temp values that have been defined but not yet used.
+Once this is empty, the register allocator could process the current list of `RefPosition`s and then
+start over.
+
+### Distinguish Intra-Block versus Inter-Block Variables
+
+It is unclear whether it would be beneficial, but if we could keep track of the variables that are
+only used within a block (presumably true of many introduced temps), we may find that we could
+continue to limit the number of variables whose liveness is tracked across blocks, keeping an expanded
+set only for transient liveness. Issue [\#11339](https://github.com/dotnet/coreclr/issues/11339).
+
+Note that this would only improve JIT throughput for optimized code.
+
+### Improve the VarToRegMap
+
+The `VarToRegMap` incurs non-trivial JIT-time overhead. Issue \#11396 addresses
+the question of whether there is an alternative that would have better
+performance. This would also improve JIT throughput only for optimized code.
 
 References
 ----------

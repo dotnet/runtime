@@ -6,13 +6,14 @@
 //
 // This class wraps a Type object and delegates all methods to that Type.
 
+using System.Diagnostics.CodeAnalysis;
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection
 {
     public class TypeDelegator : TypeInfo
     {
-        public override bool IsAssignableFrom(TypeInfo? typeInfo)
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             if (typeInfo == null)
                 return false;

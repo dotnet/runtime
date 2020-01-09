@@ -1366,7 +1366,7 @@ void CodeGen::genFloatReturn(GenTree* treeNode)
         {
             op1->gtFlags |= GTF_SPILL;
             inst_TT_RV(ins_Store(op1->gtType, compiler->isSIMDTypeLocalAligned(op1->AsLclVarCommon()->GetLclNum())),
-                       op1, op1->GetRegNum());
+                       emitTypeSize(op1->TypeGet()), op1, op1->GetRegNum());
         }
         // Now, load it to the fp stack.
         GetEmitter()->emitIns_S(INS_fld, emitTypeSize(op1), op1->AsLclVarCommon()->GetLclNum(), 0);

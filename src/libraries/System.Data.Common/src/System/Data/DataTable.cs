@@ -489,7 +489,7 @@ namespace System.Data
             }
         }
 
-        // Serialize constraints availabe on the table - note this function is marked internal because it is called by the DataSet deserializer.
+        // Serialize constraints available on the table - note this function is marked internal because it is called by the DataSet deserializer.
         // ***Schema for Serializing ArrayList of Constraints***
         // Unique Constraint - ["U"]->[constraintName]->[columnIndexes]->[IsPrimaryKey]->[extendedProperties]
         // Foriegn Key Constraint - ["F"]->[constraintName]->[parentTableIndex, parentcolumnIndexes]->[childTableIndex, childColumnIndexes]->[AcceptRejectRule, UpdateRule, DeleteRule]->[extendedProperties]

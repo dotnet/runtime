@@ -49,7 +49,7 @@ namespace System
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Found the first element of "value". See if the tail matches.
-                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + 1), ref valueTail, valueTailLength))
+                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + 1), ref valueTail, (nuint)valueTailLength))  // The (nunit)-cast is necessary to pick the correct overload
                     return offset;  // The tail matched. Return a successful find.
 
                 remainingSearchSpaceLength--;
@@ -450,7 +450,7 @@ namespace System
                     break;
 
                 // Found the first element of "value". See if the tail matches.
-                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, relativeIndex + 1), ref valueTail, valueTailLength))
+                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, relativeIndex + 1), ref valueTail, (nuint)valueTailLength))  // The (nunit)-cast is necessary to pick the correct overload
                     return relativeIndex;  // The tail matched. Return a successful find.
 
                 offset += remainingSearchSpaceLength - relativeIndex;

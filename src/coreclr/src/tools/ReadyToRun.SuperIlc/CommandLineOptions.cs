@@ -38,7 +38,7 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
-                        GenerateMapFile(),
+                        Map(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
@@ -71,7 +71,7 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
-                        GenerateMapFile(),
+                        Map(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
@@ -181,7 +181,7 @@ namespace ReadyToRun.SuperIlc
             Option NoCleanup() =>
                 new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
 
-            Option GenerateMapFile() =>
+            Option Map() =>
                 new Option(new[] { "--map" }, "Generate a map file (Crossgen2)", new Argument<bool>());
 
             Option DegreeOfParallelism() =>

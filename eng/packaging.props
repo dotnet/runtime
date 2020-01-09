@@ -3,7 +3,6 @@
     <PackageDescriptionFile>$(PkgDir)descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <RuntimeIdGraphDefinitionFile>$(PkgDir)Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
     <ProjectUrl Condition="'$(ProjectUrl)' == ''">https://github.com/dotnet/corefx</ProjectUrl>
     <Copyright>$(CopyrightNetFoundation)</Copyright>
@@ -30,7 +29,7 @@
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
     <SkipGenerationCheck>true</SkipGenerationCheck>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
     <!-- Don't build referenced projects -->
     <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>

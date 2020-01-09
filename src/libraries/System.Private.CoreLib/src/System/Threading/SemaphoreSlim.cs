@@ -716,7 +716,7 @@ namespace System.Threading
                 // We need to ensure that the Task.Delay task is appropriately cleaned up if the await
                 // completes due to the asyncWaiter completing, so we use our own token that we can explicitly
                 // cancel, and we chain the caller's supplied token into it.
-                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default))
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
                     if (asyncWaiter == await TaskFactory.CommonCWAnyLogic(new Task[] { asyncWaiter, Task.Delay(millisecondsTimeout, cts.Token) }).ConfigureAwait(false))
                     {

@@ -3,6 +3,7 @@ parameters:
   osGroup: ''
   archType: ''
   osSubgroup: ''
+  platform: ''
   timeoutInMinutes: 120
   condition: true
   container: ''
@@ -22,6 +23,9 @@ parameters:
         _BuildConfig: Release
 
   buildCommandSourcesDirectory: '$(Build.SourcesDirectory)/'
+
+  isOfficialBuild: false
+  useOfficialAllConfigurations: false
 
   liveCoreClrBuildConfig: ''
   liveLibrariesBuildConfig: ''
@@ -44,29 +48,44 @@ jobs:
     - name: ${{ variable.key }}
       value: ${{ variable.value }}
 
-  # Produce test-signed build for PR and Public builds
-  - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
-    - name: SignType
-      value: test
+  - name: SkipTests
+    value: ${{ or(parameters.isOfficialBuild, parameters.crossBuild) }}
+
+  - name: OfficialBuildArg
+    value: ''
+
+  # TODO: (Consolidation) Enable test signing during PR validation. https://github.com/dotnet/runtime/issues/1026
+  #
+  # CoreCLR only produces the UCRT redist file in Release config. When the redist file isn't
+  # present, signing fails. For now, only sign in official builds which only run Release mode.
+  - name: SignType
+    value: ''
 
   # Set up non-PR build from internal project
-  - ${{ if eq(variables.isOfficialBuild, true) }}:
+  - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
+    - name: OfficialBuildArg
+      value: /p:OfficialBuildId=$(Build.BuildNumber)
 
   - name: LiveOverridePathArgs
     value: >-
-      $(CoreCLROverridePathArg)
-      $(CoreFXOverridePathArg)
+      $(CoreCLRArtifactsPathArg)
+      $(LibrariesConfigurationArg)
+      $(LibrariesAllConfigurationsArtifactsPathArg)
 
-  - name: CoreCLROverridePathArg
+  - name: CoreCLRArtifactsPathArg
     value: ''
-  - name: CoreFXOverridePathArg
+  - name: LibrariesConfigurationArg
+    value: ''
+  - name: LibrariesAllConfigurationsArtifactsPathArg
     value: ''
 
   - name: CoreClrDownloadPath
     value: ''
   - name: LibrariesDownloadPath
+    value: ''
+  - name: LibrariesDownloadPathAllConfigurations
     value: ''
 
   - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
@@ -78,7 +97,7 @@ jobs:
         parameters.liveCoreClrBuildConfig) }}
     - name: CoreClrDownloadPath
       value: 'artifacts/transport/coreclr'
-    - name: CoreCLROverridePathArg
+    - name: CoreCLRArtifactsPathArg
       value: /p:CoreCLROverridePath=${{ parameters.buildCommandSourcesDirectory }}$(CoreClrDownloadPath)
     - name: CoreClrArtifactName
       value: CoreCLRProduct_$(liveCoreClrLegName)
@@ -91,11 +110,21 @@ jobs:
         parameters.archType,
         parameters.liveLibrariesBuildConfig) }}
     - name: LibrariesDownloadPath
-      value: 'artifacts/transport/libraries'
-    - name: CoreFXOverridePathArg
-      value: /p:CoreFXOverridePath=${{ parameters.buildCommandSourcesDirectory }}$(LibrariesDownloadPath)
+      value: 'artifacts'
     - name: LibrariesArtifactName
       value: libraries_bin_$(liveLibrariesLegName)
+    - name: LibrariesConfigurationArg
+      value: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
+
+  # Download allconfigurations bits to a separate location. It overlaps with the live libraries
+  # download and causes conflict when unzipping to the same location.
+  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
+    - name: LibrariesDownloadPathAllConfigurations
+      value: 'artifacts/transport/librariesallconfigurations'
+    - name: LibrariesAllConfigurationsArtifactsPathArg
+      value: /p:LibrariesAllConfigurationsArtifactsPath=${{ parameters.buildCommandSourcesDirectory }}$(LibrariesDownloadPathAllConfigurations)
+    - name: LibrariesArtifactNameAllConfigurations
+      value: libraries_bin_official_allconfigurations
 
   dependsOn:
   - checkout
@@ -112,6 +141,8 @@ jobs:
         parameters.osSubgroup,
         parameters.archType,
         parameters.liveLibrariesBuildConfig) }}
+  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
+    - libraries_build_allconfigurations_Windows_NT_x64_Release
 
   steps:
 
@@ -152,6 +183,17 @@ jobs:
         artifactFileName: '$(LibrariesArtifactName)$(archiveExtension)'
         artifactName: '$(LibrariesArtifactName)'
         displayName: 'Libraries artifacts'
+        cleanUnpackFolder: false
+
+  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/$(LibrariesDownloadPathAllConfigurations)
+        # Always use '.zip' because AllConfigurations is built on Windows but used everywhere.
+        artifactFileName: '$(LibrariesArtifactNameAllConfigurations).zip'
+        artifactName: '$(LibrariesArtifactNameAllConfigurations)'
+        displayName: 'Libraries artifacts (AllConfigurations)'
+        cleanUnpackFolder: false
 
   - ${{ parameters.buildSteps }}
 
@@ -159,6 +201,7 @@ jobs:
     parameters:
       name: ${{ coalesce(parameters.name, parameters.platform) }}
       skipTests: ${{ parameters.skipTests }}
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
 
   - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
     - script: set -x && df -h
