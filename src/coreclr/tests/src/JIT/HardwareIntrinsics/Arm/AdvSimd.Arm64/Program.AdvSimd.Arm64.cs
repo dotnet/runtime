@@ -18,6 +18,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["AbsoluteCompareGreaterThanOrEqual.Vector128.Double"] = AbsoluteCompareGreaterThanOrEqual_Vector128_Double,
                 ["AbsoluteCompareLessThan.Vector128.Double"] = AbsoluteCompareLessThan_Vector128_Double,
                 ["AbsoluteCompareLessThanOrEqual.Vector128.Double"] = AbsoluteCompareLessThanOrEqual_Vector128_Double,
+                ["AbsoluteDifference.Vector128.Double"] = AbsoluteDifference_Vector128_Double,
                 ["AddAcross.Vector64.Byte"] = AddAcross_Vector64_Byte,
                 ["AddAcross.Vector64.SByte"] = AddAcross_Vector64_SByte,
                 ["AddAcross.Vector64.UInt16"] = AddAcross_Vector64_UInt16,
