@@ -356,22 +356,19 @@ PAL_TlsIo AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint
 
 int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus)
 {
-    if (pOSStatus == NULL)
-        return -1;
+    if (pOSStatus != NULL)
+        *pOSStatus = noErr;
 
-    if (sslContext == NULL || notBefore == NULL)
+    if (sslContext == NULL || notBefore == NULL || pOSStatus == NULL)
     {
-        *pOSStatus = errSecInvalidData;
         return -1;
     }
 
     if (cfHostname == NULL)
     {
-        *pOSStatus = errSecInvalidData;
         return -2;
     }
 
-    *pOSStatus = noErr;
     SecPolicyRef sslPolicy = SecPolicyCreateSSL(true, cfHostname);
 
     if (sslPolicy == NULL)

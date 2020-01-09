@@ -40,7 +40,7 @@ namespace System.Net
                         errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
 
                         if (NetEventSource.IsEnabled)
-                            NetEventSource.Error(sslContext, $"Cert name validation for '{hostName}' failed {osStatus}");
+                            NetEventSource.Error(sslContext, $"Cert name validation for '{hostName}' failed with status '{osStatus}'");
                     }
                 }
             }
