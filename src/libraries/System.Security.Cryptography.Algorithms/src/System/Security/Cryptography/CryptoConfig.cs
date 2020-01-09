@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
 
         private static readonly char[] SepArray = { '.' }; // valid ASN.1 separators
 
-        // CoreFx does not support AllowOnlyFipsAlgorithms
+        // .NET Core does not support AllowOnlyFipsAlgorithms
         public static bool AllowOnlyFipsAlgorithms => false;
 
         private static Dictionary<string, string> DefaultOidHT
@@ -275,7 +275,7 @@ namespace System.Security.Cryptography
                 s_defaultNameHT = ht;
                 return s_defaultNameHT;
 
-                // Types in Desktop but currently unsupported in CoreFx:
+                // Types in .NET Framework but currently unsupported in .NET Core:
                 // Type HMACRIPEMD160Type = typeof(System.Security.Cryptography.HMACRIPEMD160);
                 // Type MAC3DESType = typeof(System.Security.Cryptography.MACTripleDES);
                 // Type DSASignatureDescriptionType = typeof(System.Security.Cryptography.DSASignatureDescription);

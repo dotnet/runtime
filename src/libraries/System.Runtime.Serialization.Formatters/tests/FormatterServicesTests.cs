@@ -317,15 +317,3 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
     }
 }
-
-namespace System.Runtime.CompilerServices
-{
-    // Local definition of IsByRefLikeAttribute while the real one becomes available in corefx
-    [AttributeUsage(AttributeTargets.Struct)]
-    public sealed class IsByRefLikeAttribute : Attribute
-    {
-        public IsByRefLikeAttribute()
-        {
-        }
-    }
-}
