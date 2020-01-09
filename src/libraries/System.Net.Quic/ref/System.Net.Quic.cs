@@ -57,8 +57,8 @@ namespace System.Net.Quic
         public SslClientAuthenticationOptions ClientAuthenticationOptions { get => throw null; set => throw null; }
         public IPEndPoint LocalEndPoint { get => throw null; set => throw null; }
         public IPEndPoint RemoteEndPoint { get => throw null; set => throw null; }
-        public short MaxBidirectionalStreams { get => throw null; set => throw null; }
-        public short MaxUnidirectionalStreams { get => throw null; set => throw null; }
+        public long MaxBidirectionalStreams { get => throw null; set => throw null; }
+        public long MaxUnidirectionalStreams { get => throw null; set => throw null; }
         public TimeSpan IdleTimeout { get => throw null; set => throw null; }
     }
     public class QuicListenerOptions
@@ -66,8 +66,8 @@ namespace System.Net.Quic
         public SslServerAuthenticationOptions ServerAuthenticationOptions { get => throw null; set => throw null; }
         public IPEndPoint ListenEndPoint { get => throw null; set => throw null; }
         public int ListenBacklog { get => throw null; set => throw null; }
-        public short MaxBidirectionalStreams { get => throw null; set => throw null; }
-        public short MaxUnidirectionalStreams { get => throw null; set => throw null; }
+        public long MaxBidirectionalStreams { get => throw null; set => throw null; }
+        public long MaxUnidirectionalStreams { get => throw null; set => throw null; }
         public TimeSpan IdleTimeout { get => throw null; set => throw null; }
     }
 }

@@ -19,8 +19,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             if (!_opened)
             {
                 OpenSession(options.ClientAuthenticationOptions.ApplicationProtocols[0].Protocol.ToArray(),
-                    options.MaxBidirectionalStreams,
-                    options.MaxUnidirectionalStreams);
+                    (ushort)options.MaxBidirectionalStreams,
+                    (ushort)options.MaxUnidirectionalStreams);
             }
 
             MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.ConnectionOpenDelegate(
@@ -32,12 +32,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return connectionPtr;
         }
 
-        private void OpenSession(byte[] alpn, short bidirectionalStreamCount, short undirectionalStreamCount)
+        private void OpenSession(byte[] alpn, ushort bidirectionalStreamCount, ushort undirectionalStreamCount)
         {
             _opened = true;
             _nativeObjPtr = MsQuicApi.Api.SessionOpen(alpn);
-            SetPeerBiDirectionalStreamCount((ushort)bidirectionalStreamCount);
-            SetPeerUnidirectionalStreamCount((ushort)undirectionalStreamCount);
+            SetPeerBiDirectionalStreamCount(bidirectionalStreamCount);
+            SetPeerUnidirectionalStreamCount(undirectionalStreamCount);
         }
 
         // TODO allow for a callback to select the certificate (SNI).
@@ -46,8 +46,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             if (!_opened)
             {
                 OpenSession(options.ServerAuthenticationOptions.ApplicationProtocols[0].Protocol.ToArray(),
-                                    options.MaxBidirectionalStreams,
-                                    options.MaxUnidirectionalStreams);
+                                    (ushort)options.MaxBidirectionalStreams,
+                                    (ushort)options.MaxUnidirectionalStreams);
             }
 
             MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.ListenerOpenDelegate(

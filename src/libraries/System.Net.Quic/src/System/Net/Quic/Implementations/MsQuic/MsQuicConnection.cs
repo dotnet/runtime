@@ -366,9 +366,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _ptr = IntPtr.Zero;
 
-            _handle.Free();
-            _session?.Dispose();
-            _securityConfig?.Dispose();
+            if (disposing)
+            {
+                _handle.Free();
+                _session?.Dispose();
+                _securityConfig?.Dispose();
+            }
+
             _disposed = true;
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);

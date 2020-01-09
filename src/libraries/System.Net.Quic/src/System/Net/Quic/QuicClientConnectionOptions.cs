@@ -32,7 +32,7 @@ namespace System.Net.Quic
         /// Default is 100.
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.
-        public short MaxBidirectionalStreams { get; set; } = 100;
+        public long MaxBidirectionalStreams { get; set; } = 100;
 
         /// <summary>
         /// Limit on the number of unidirectional streams the peer connection can create
@@ -40,7 +40,7 @@ namespace System.Net.Quic
         /// Default is 100.
         /// </summary>
         // TODO consider constraining these limits to 0 to whatever the max of the QUIC library we are using.
-        public short MaxUnidirectionalStreams { get; set; } = 100;
+        public long MaxUnidirectionalStreams { get; set; } = 100;
 
         /// <summary>
         /// Idle timeout for connections, afterwhich the connection will be closed.
