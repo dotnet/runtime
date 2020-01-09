@@ -360,14 +360,10 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
         *pOSStatus = noErr;
 
     if (sslContext == NULL || notBefore == NULL || pOSStatus == NULL)
-    {
         return -1;
-    }
 
     if (cfHostname == NULL)
-    {
         return -2;
-    }
 
     SecPolicyRef sslPolicy = SecPolicyCreateSSL(true, cfHostname);
 
@@ -397,7 +393,6 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     if (anchors == NULL)
     {
         CFRelease(certs);
-        *pOSStatus = errSecMemoryError;
         return -6;
     }
 
