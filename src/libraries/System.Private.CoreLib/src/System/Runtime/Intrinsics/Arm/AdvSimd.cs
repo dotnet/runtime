@@ -84,6 +84,12 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector128<double> AbsoluteCompareLessThanOrEqual(Vector128<double> left, Vector128<double> right) => AbsoluteCompareLessThanOrEqual(left, right);
 
+            /// <summary>
+            /// float64x2_t vabdq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FABD Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> AbsoluteDifference(Vector128<double> left, Vector128<double> right) => AbsoluteDifference(left, right);
+
             // /// <summary>
             // /// int64x1_t vabs_s64 (int64x1_t a)
             // ///   A64: ABS Dd, Dn
@@ -1128,6 +1134,104 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: FACGE Vd, Vn, Vm
         /// </summary>
         public static Vector128<float> AbsoluteCompareLessThanOrEqual(Vector128<float> left, Vector128<float> right) => AbsoluteCompareLessThanOrEqual(left, right);
+
+        /// <summary>
+        /// uint8x8_t vabd_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VABD.U8 Dd, Dn, Dm
+        ///   A64: UABD Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> AbsoluteDifference(Vector64<byte> left, Vector64<byte> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// int16x4_t vabd_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VABD.S16 Dd, Dn, Dm
+        ///   A64: SABD Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> AbsoluteDifference(Vector64<short> left, Vector64<short> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// int32x2_t vabd_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VABD.S32 Dd, Dn, Dm
+        ///   A64: SABD Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> AbsoluteDifference(Vector64<int> left, Vector64<int> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// int8x8_t vabd_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VABD.S8 Dd, Dn, Dm
+        ///   A64: SABD Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> AbsoluteDifference(Vector64<sbyte> left, Vector64<sbyte> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// float32x2_t vabd_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VABD.F32 Dd, Dn, Dm
+        ///   A64: FABD Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> AbsoluteDifference(Vector64<float> left, Vector64<float> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// uint16x4_t vabd_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VABD.U16 Dd, Dn, Dm
+        ///   A64: UABD Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> AbsoluteDifference(Vector64<ushort> left, Vector64<ushort> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// uint32x2_t vabd_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VABD.U32 Dd, Dn, Dm
+        ///   A64: UABD Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> AbsoluteDifference(Vector64<uint> left, Vector64<uint> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// uint8x16_t vabdq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VABD.U8 Qd, Qn, Qm
+        ///   A64: UABD Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> AbsoluteDifference(Vector128<byte> left, Vector128<byte> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// int16x8_t vabdq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VABD.S16 Qd, Qn, Qm
+        ///   A64: SABD Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> AbsoluteDifference(Vector128<short> left, Vector128<short> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// int32x4_t vabdq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VABD.S32 Qd, Qn, Qm
+        ///   A64: SABD Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> AbsoluteDifference(Vector128<int> left, Vector128<int> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// int8x16_t vabdq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VABD.S8 Qd, Qn, Qm
+        ///   A64: SABD Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> AbsoluteDifference(Vector128<sbyte> left, Vector128<sbyte> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// float32x4_t vabdq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VABD.F32 Qd, Qn, Qm
+        ///   A64: FABD Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> AbsoluteDifference(Vector128<float> left, Vector128<float> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// uint16x8_t vabdq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VABD.U16 Qd, Qn, Qm
+        ///   A64: UABD Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> AbsoluteDifference(Vector128<ushort> left, Vector128<ushort> right) => AbsoluteDifference(left, right);
+
+        /// <summary>
+        /// uint32x4_t vabdq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VABD.U32 Qd, Qn, Qm
+        ///   A64: UABD Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> AbsoluteDifference(Vector128<uint> left, Vector128<uint> right) => AbsoluteDifference(left, right);
 
         // /// <summary>
         // /// float64x1_t vabs_f64 (float64x1_t a)

@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void AbsoluteCompareLessThan_Vector128_Single()
+        private static void AbsoluteDifference_Vector128_Single()
         {
-            var test = new SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single();
+            var test = new SimpleBinaryOpTest__AbsoluteDifference_Vector128_Single();
 
             if (test.IsSupported)
             {
@@ -110,7 +110,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single
+    public sealed unsafe class SimpleBinaryOpTest__AbsoluteDifference_Vector128_Single
     {
         private struct DataTable
         {
@@ -182,20 +182,20 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single testClass)
+            public void RunStructFldScenario(SimpleBinaryOpTest__AbsoluteDifference_Vector128_Single testClass)
             {
-                var result = AdvSimd.AbsoluteCompareLessThan(_fld1, _fld2);
+                var result = AdvSimd.AbsoluteDifference(_fld1, _fld2);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
             }
 
-            public void RunStructFldScenario_Load(SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single testClass)
+            public void RunStructFldScenario_Load(SimpleBinaryOpTest__AbsoluteDifference_Vector128_Single testClass)
             {
                 fixed (Vector128<Single>* pFld1 = &_fld1)
                 fixed (Vector128<Single>* pFld2 = &_fld2)
                 {
-                    var result = AdvSimd.AbsoluteCompareLessThan(
+                    var result = AdvSimd.AbsoluteDifference(
                         AdvSimd.LoadVector128((Single*)(pFld1)),
                         AdvSimd.LoadVector128((Single*)(pFld2))
                     );
@@ -223,7 +223,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        static SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single()
+        static SimpleBinaryOpTest__AbsoluteDifference_Vector128_Single()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
@@ -231,7 +231,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar2), ref Unsafe.As<Single, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
         }
 
-        public SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single()
+        public SimpleBinaryOpTest__AbsoluteDifference_Vector128_Single()
         {
             Succeeded = true;
 
@@ -253,7 +253,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = AdvSimd.AbsoluteCompareLessThan(
+            var result = AdvSimd.AbsoluteDifference(
                 Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr),
                 Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr)
             );
@@ -266,7 +266,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            var result = AdvSimd.AbsoluteCompareLessThan(
+            var result = AdvSimd.AbsoluteDifference(
                 AdvSimd.LoadVector128((Single*)(_dataTable.inArray1Ptr)),
                 AdvSimd.LoadVector128((Single*)(_dataTable.inArray2Ptr))
             );
@@ -279,7 +279,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.AbsoluteCompareLessThan), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.AbsoluteDifference), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr),
                                         Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr)
@@ -293,7 +293,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.AbsoluteCompareLessThan), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.AbsoluteDifference), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>) })
                                      .Invoke(null, new object[] {
                                         AdvSimd.LoadVector128((Single*)(_dataTable.inArray1Ptr)),
                                         AdvSimd.LoadVector128((Single*)(_dataTable.inArray2Ptr))
@@ -307,7 +307,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = AdvSimd.AbsoluteCompareLessThan(
+            var result = AdvSimd.AbsoluteDifference(
                 _clsVar1,
                 _clsVar2
             );
@@ -323,7 +323,7 @@ namespace JIT.HardwareIntrinsics.Arm
             fixed (Vector128<Single>* pClsVar1 = &_clsVar1)
             fixed (Vector128<Single>* pClsVar2 = &_clsVar2)
             {
-                var result = AdvSimd.AbsoluteCompareLessThan(
+                var result = AdvSimd.AbsoluteDifference(
                     AdvSimd.LoadVector128((Single*)(pClsVar1)),
                     AdvSimd.LoadVector128((Single*)(pClsVar2))
                 );
@@ -339,7 +339,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var op1 = Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr);
             var op2 = Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr);
-            var result = AdvSimd.AbsoluteCompareLessThan(op1, op2);
+            var result = AdvSimd.AbsoluteDifference(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -351,7 +351,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var op1 = AdvSimd.LoadVector128((Single*)(_dataTable.inArray1Ptr));
             var op2 = AdvSimd.LoadVector128((Single*)(_dataTable.inArray2Ptr));
-            var result = AdvSimd.AbsoluteCompareLessThan(op1, op2);
+            var result = AdvSimd.AbsoluteDifference(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -361,8 +361,8 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single();
-            var result = AdvSimd.AbsoluteCompareLessThan(test._fld1, test._fld2);
+            var test = new SimpleBinaryOpTest__AbsoluteDifference_Vector128_Single();
+            var result = AdvSimd.AbsoluteDifference(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
@@ -372,12 +372,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
 
-            var test = new SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single();
+            var test = new SimpleBinaryOpTest__AbsoluteDifference_Vector128_Single();
 
             fixed (Vector128<Single>* pFld1 = &test._fld1)
             fixed (Vector128<Single>* pFld2 = &test._fld2)
             {
-                var result = AdvSimd.AbsoluteCompareLessThan(
+                var result = AdvSimd.AbsoluteDifference(
                     AdvSimd.LoadVector128((Single*)(pFld1)),
                     AdvSimd.LoadVector128((Single*)(pFld2))
                 );
@@ -391,7 +391,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = AdvSimd.AbsoluteCompareLessThan(_fld1, _fld2);
+            var result = AdvSimd.AbsoluteDifference(_fld1, _fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
@@ -404,7 +404,7 @@ namespace JIT.HardwareIntrinsics.Arm
             fixed (Vector128<Single>* pFld1 = &_fld1)
             fixed (Vector128<Single>* pFld2 = &_fld2)
             {
-                var result = AdvSimd.AbsoluteCompareLessThan(
+                var result = AdvSimd.AbsoluteDifference(
                     AdvSimd.LoadVector128((Single*)(pFld1)),
                     AdvSimd.LoadVector128((Single*)(pFld2))
                 );
@@ -419,7 +419,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.AbsoluteCompareLessThan(test._fld1, test._fld2);
+            var result = AdvSimd.AbsoluteDifference(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
@@ -430,7 +430,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.AbsoluteCompareLessThan(
+            var result = AdvSimd.AbsoluteDifference(
                 AdvSimd.LoadVector128((Single*)(&test._fld1)),
                 AdvSimd.LoadVector128((Single*)(&test._fld2))
             );
@@ -508,7 +508,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                if (BitConverter.SingleToInt32Bits(Helpers.AbsoluteCompareLessThan(left[i], right[i])) != BitConverter.SingleToInt32Bits(result[i]))
+                if (BitConverter.SingleToInt32Bits(Helpers.AbsoluteDifference(left[i], right[i])) != BitConverter.SingleToInt32Bits(result[i]))
                 {
                     succeeded = false;
                     break;
@@ -517,7 +517,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd)}.{nameof(AdvSimd.AbsoluteCompareLessThan)}<Single>(Vector128<Single>, Vector128<Single>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd)}.{nameof(AdvSimd.AbsoluteDifference)}<Single>(Vector128<Single>, Vector128<Single>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");

@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void AbsoluteCompareLessThan_Vector128_Single()
+        private static void AbsoluteDifference_Vector64_UInt32()
         {
-            var test = new SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single();
+            var test = new SimpleBinaryOpTest__AbsoluteDifference_Vector64_UInt32();
 
             if (test.IsSupported)
             {
@@ -110,7 +110,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single
+    public sealed unsafe class SimpleBinaryOpTest__AbsoluteDifference_Vector64_UInt32
     {
         private struct DataTable
         {
@@ -124,11 +124,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
             private ulong alignment;
 
-            public DataTable(Single[] inArray1, Single[] inArray2, Single[] outArray, int alignment)
+            public DataTable(UInt32[] inArray1, UInt32[] inArray2, UInt32[] outArray, int alignment)
             {
-                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Single>();
-                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<Single>();
-                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<Single>();
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<UInt32>();
+                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<UInt32>();
+                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<UInt32>();
                 if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
@@ -144,8 +144,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 this.alignment = (ulong)alignment;
 
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<Single, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<Single, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<UInt32, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<UInt32, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
             }
 
             public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
@@ -167,37 +167,37 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private struct TestStruct
         {
-            public Vector128<Single> _fld1;
-            public Vector128<Single> _fld2;
+            public Vector64<UInt32> _fld1;
+            public Vector64<UInt32> _fld2;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref testStruct._fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetSingle(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref testStruct._fld2), ref Unsafe.As<Single, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt32(); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<UInt32>, byte>(ref testStruct._fld1), ref Unsafe.As<UInt32, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetUInt32(); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<UInt32>, byte>(ref testStruct._fld2), ref Unsafe.As<UInt32, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
 
                 return testStruct;
             }
 
-            public void RunStructFldScenario(SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single testClass)
+            public void RunStructFldScenario(SimpleBinaryOpTest__AbsoluteDifference_Vector64_UInt32 testClass)
             {
-                var result = AdvSimd.AbsoluteCompareLessThan(_fld1, _fld2);
+                var result = AdvSimd.AbsoluteDifference(_fld1, _fld2);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
             }
 
-            public void RunStructFldScenario_Load(SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single testClass)
+            public void RunStructFldScenario_Load(SimpleBinaryOpTest__AbsoluteDifference_Vector64_UInt32 testClass)
             {
-                fixed (Vector128<Single>* pFld1 = &_fld1)
-                fixed (Vector128<Single>* pFld2 = &_fld2)
+                fixed (Vector64<UInt32>* pFld1 = &_fld1)
+                fixed (Vector64<UInt32>* pFld2 = &_fld2)
                 {
-                    var result = AdvSimd.AbsoluteCompareLessThan(
-                        AdvSimd.LoadVector128((Single*)(pFld1)),
-                        AdvSimd.LoadVector128((Single*)(pFld2))
+                    var result = AdvSimd.AbsoluteDifference(
+                        AdvSimd.LoadVector64((UInt32*)(pFld1)),
+                        AdvSimd.LoadVector64((UInt32*)(pFld2))
                     );
 
                     Unsafe.Write(testClass._dataTable.outArrayPtr, result);
@@ -206,43 +206,43 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private static readonly int LargestVectorSize = 16;
+        private static readonly int LargestVectorSize = 8;
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
-        private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
-        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector64<UInt32>>() / sizeof(UInt32);
+        private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector64<UInt32>>() / sizeof(UInt32);
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector64<UInt32>>() / sizeof(UInt32);
 
-        private static Single[] _data1 = new Single[Op1ElementCount];
-        private static Single[] _data2 = new Single[Op2ElementCount];
+        private static UInt32[] _data1 = new UInt32[Op1ElementCount];
+        private static UInt32[] _data2 = new UInt32[Op2ElementCount];
 
-        private static Vector128<Single> _clsVar1;
-        private static Vector128<Single> _clsVar2;
+        private static Vector64<UInt32> _clsVar1;
+        private static Vector64<UInt32> _clsVar2;
 
-        private Vector128<Single> _fld1;
-        private Vector128<Single> _fld2;
+        private Vector64<UInt32> _fld1;
+        private Vector64<UInt32> _fld2;
 
         private DataTable _dataTable;
 
-        static SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single()
+        static SimpleBinaryOpTest__AbsoluteDifference_Vector64_UInt32()
         {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetSingle(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar2), ref Unsafe.As<Single, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt32(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<UInt32>, byte>(ref _clsVar1), ref Unsafe.As<UInt32, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetUInt32(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<UInt32>, byte>(ref _clsVar2), ref Unsafe.As<UInt32, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
         }
 
-        public SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single()
+        public SimpleBinaryOpTest__AbsoluteDifference_Vector64_UInt32()
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetSingle(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld2), ref Unsafe.As<Single, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt32(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<UInt32>, byte>(ref _fld1), ref Unsafe.As<UInt32, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetUInt32(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector64<UInt32>, byte>(ref _fld2), ref Unsafe.As<UInt32, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetSingle(); }
-            _dataTable = new DataTable(_data1, _data2, new Single[RetElementCount], LargestVectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt32(); }
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetUInt32(); }
+            _dataTable = new DataTable(_data1, _data2, new UInt32[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => AdvSimd.IsSupported;
@@ -253,9 +253,9 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = AdvSimd.AbsoluteCompareLessThan(
-                Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr),
-                Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr)
+            var result = AdvSimd.AbsoluteDifference(
+                Unsafe.Read<Vector64<UInt32>>(_dataTable.inArray1Ptr),
+                Unsafe.Read<Vector64<UInt32>>(_dataTable.inArray2Ptr)
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -266,9 +266,9 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            var result = AdvSimd.AbsoluteCompareLessThan(
-                AdvSimd.LoadVector128((Single*)(_dataTable.inArray1Ptr)),
-                AdvSimd.LoadVector128((Single*)(_dataTable.inArray2Ptr))
+            var result = AdvSimd.AbsoluteDifference(
+                AdvSimd.LoadVector64((UInt32*)(_dataTable.inArray1Ptr)),
+                AdvSimd.LoadVector64((UInt32*)(_dataTable.inArray2Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -279,13 +279,13 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.AbsoluteCompareLessThan), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.AbsoluteDifference), new Type[] { typeof(Vector64<UInt32>), typeof(Vector64<UInt32>) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr),
-                                        Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr)
+                                        Unsafe.Read<Vector64<UInt32>>(_dataTable.inArray1Ptr),
+                                        Unsafe.Read<Vector64<UInt32>>(_dataTable.inArray2Ptr)
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Single>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector64<UInt32>)(result));
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
         }
 
@@ -293,13 +293,13 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.AbsoluteCompareLessThan), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>) })
+            var result = typeof(AdvSimd).GetMethod(nameof(AdvSimd.AbsoluteDifference), new Type[] { typeof(Vector64<UInt32>), typeof(Vector64<UInt32>) })
                                      .Invoke(null, new object[] {
-                                        AdvSimd.LoadVector128((Single*)(_dataTable.inArray1Ptr)),
-                                        AdvSimd.LoadVector128((Single*)(_dataTable.inArray2Ptr))
+                                        AdvSimd.LoadVector64((UInt32*)(_dataTable.inArray1Ptr)),
+                                        AdvSimd.LoadVector64((UInt32*)(_dataTable.inArray2Ptr))
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Single>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector64<UInt32>)(result));
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
         }
 
@@ -307,7 +307,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = AdvSimd.AbsoluteCompareLessThan(
+            var result = AdvSimd.AbsoluteDifference(
                 _clsVar1,
                 _clsVar2
             );
@@ -320,12 +320,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
 
-            fixed (Vector128<Single>* pClsVar1 = &_clsVar1)
-            fixed (Vector128<Single>* pClsVar2 = &_clsVar2)
+            fixed (Vector64<UInt32>* pClsVar1 = &_clsVar1)
+            fixed (Vector64<UInt32>* pClsVar2 = &_clsVar2)
             {
-                var result = AdvSimd.AbsoluteCompareLessThan(
-                    AdvSimd.LoadVector128((Single*)(pClsVar1)),
-                    AdvSimd.LoadVector128((Single*)(pClsVar2))
+                var result = AdvSimd.AbsoluteDifference(
+                    AdvSimd.LoadVector64((UInt32*)(pClsVar1)),
+                    AdvSimd.LoadVector64((UInt32*)(pClsVar2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -337,9 +337,9 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var op1 = Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr);
-            var op2 = Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr);
-            var result = AdvSimd.AbsoluteCompareLessThan(op1, op2);
+            var op1 = Unsafe.Read<Vector64<UInt32>>(_dataTable.inArray1Ptr);
+            var op2 = Unsafe.Read<Vector64<UInt32>>(_dataTable.inArray2Ptr);
+            var result = AdvSimd.AbsoluteDifference(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -349,9 +349,9 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            var op1 = AdvSimd.LoadVector128((Single*)(_dataTable.inArray1Ptr));
-            var op2 = AdvSimd.LoadVector128((Single*)(_dataTable.inArray2Ptr));
-            var result = AdvSimd.AbsoluteCompareLessThan(op1, op2);
+            var op1 = AdvSimd.LoadVector64((UInt32*)(_dataTable.inArray1Ptr));
+            var op2 = AdvSimd.LoadVector64((UInt32*)(_dataTable.inArray2Ptr));
+            var result = AdvSimd.AbsoluteDifference(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -361,8 +361,8 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single();
-            var result = AdvSimd.AbsoluteCompareLessThan(test._fld1, test._fld2);
+            var test = new SimpleBinaryOpTest__AbsoluteDifference_Vector64_UInt32();
+            var result = AdvSimd.AbsoluteDifference(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
@@ -372,14 +372,14 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
 
-            var test = new SimpleBinaryOpTest__AbsoluteCompareLessThan_Vector128_Single();
+            var test = new SimpleBinaryOpTest__AbsoluteDifference_Vector64_UInt32();
 
-            fixed (Vector128<Single>* pFld1 = &test._fld1)
-            fixed (Vector128<Single>* pFld2 = &test._fld2)
+            fixed (Vector64<UInt32>* pFld1 = &test._fld1)
+            fixed (Vector64<UInt32>* pFld2 = &test._fld2)
             {
-                var result = AdvSimd.AbsoluteCompareLessThan(
-                    AdvSimd.LoadVector128((Single*)(pFld1)),
-                    AdvSimd.LoadVector128((Single*)(pFld2))
+                var result = AdvSimd.AbsoluteDifference(
+                    AdvSimd.LoadVector64((UInt32*)(pFld1)),
+                    AdvSimd.LoadVector64((UInt32*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -391,7 +391,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = AdvSimd.AbsoluteCompareLessThan(_fld1, _fld2);
+            var result = AdvSimd.AbsoluteDifference(_fld1, _fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
@@ -401,12 +401,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
 
-            fixed (Vector128<Single>* pFld1 = &_fld1)
-            fixed (Vector128<Single>* pFld2 = &_fld2)
+            fixed (Vector64<UInt32>* pFld1 = &_fld1)
+            fixed (Vector64<UInt32>* pFld2 = &_fld2)
             {
-                var result = AdvSimd.AbsoluteCompareLessThan(
-                    AdvSimd.LoadVector128((Single*)(pFld1)),
-                    AdvSimd.LoadVector128((Single*)(pFld2))
+                var result = AdvSimd.AbsoluteDifference(
+                    AdvSimd.LoadVector64((UInt32*)(pFld1)),
+                    AdvSimd.LoadVector64((UInt32*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -419,7 +419,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.AbsoluteCompareLessThan(test._fld1, test._fld2);
+            var result = AdvSimd.AbsoluteDifference(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
@@ -430,9 +430,9 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
 
             var test = TestStruct.Create();
-            var result = AdvSimd.AbsoluteCompareLessThan(
-                AdvSimd.LoadVector128((Single*)(&test._fld1)),
-                AdvSimd.LoadVector128((Single*)(&test._fld2))
+            var result = AdvSimd.AbsoluteDifference(
+                AdvSimd.LoadVector64((UInt32*)(&test._fld1)),
+                AdvSimd.LoadVector64((UInt32*)(&test._fld2))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -476,39 +476,39 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateResult(Vector128<Single> op1, Vector128<Single> op2, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector64<UInt32> op1, Vector64<UInt32> op2, void* result, [CallerMemberName] string method = "")
         {
-            Single[] inArray1 = new Single[Op1ElementCount];
-            Single[] inArray2 = new Single[Op2ElementCount];
-            Single[] outArray = new Single[RetElementCount];
+            UInt32[] inArray1 = new UInt32[Op1ElementCount];
+            UInt32[] inArray2 = new UInt32[Op2ElementCount];
+            UInt32[] outArray = new UInt32[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<Single, byte>(ref inArray1[0]), op1);
-            Unsafe.WriteUnaligned(ref Unsafe.As<Single, byte>(ref inArray2[0]), op2);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Single>>());
+            Unsafe.WriteUnaligned(ref Unsafe.As<UInt32, byte>(ref inArray1[0]), op1);
+            Unsafe.WriteUnaligned(ref Unsafe.As<UInt32, byte>(ref inArray2[0]), op2);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
 
             ValidateResult(inArray1, inArray2, outArray, method);
         }
 
         private void ValidateResult(void* op1, void* op2, void* result, [CallerMemberName] string method = "")
         {
-            Single[] inArray1 = new Single[Op1ElementCount];
-            Single[] inArray2 = new Single[Op2ElementCount];
-            Single[] outArray = new Single[RetElementCount];
+            UInt32[] inArray1 = new UInt32[Op1ElementCount];
+            UInt32[] inArray2 = new UInt32[Op2ElementCount];
+            UInt32[] outArray = new UInt32[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<Single>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector128<Single>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Single>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt32, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt32, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector64<UInt32>>());
 
             ValidateResult(inArray1, inArray2, outArray, method);
         }
 
-        private void ValidateResult(Single[] left, Single[] right, Single[] result, [CallerMemberName] string method = "")
+        private void ValidateResult(UInt32[] left, UInt32[] right, UInt32[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                if (BitConverter.SingleToInt32Bits(Helpers.AbsoluteCompareLessThan(left[i], right[i])) != BitConverter.SingleToInt32Bits(result[i]))
+                if (Helpers.AbsoluteDifference(left[i], right[i]) != result[i])
                 {
                     succeeded = false;
                     break;
@@ -517,7 +517,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd)}.{nameof(AdvSimd.AbsoluteCompareLessThan)}<Single>(Vector128<Single>, Vector128<Single>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(AdvSimd)}.{nameof(AdvSimd.AbsoluteDifference)}<UInt32>(Vector64<UInt32>, Vector64<UInt32>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");

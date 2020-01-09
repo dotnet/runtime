@@ -14,6 +14,7 @@
     <Compile Include="AbsoluteCompareGreaterThanOrEqual.Vector128.Double.cs" />
     <Compile Include="AbsoluteCompareLessThan.Vector128.Double.cs" />
     <Compile Include="AbsoluteCompareLessThanOrEqual.Vector128.Double.cs" />
+    <Compile Include="AbsoluteDifference.Vector128.Double.cs" />
     <Compile Include="AddAcross.Vector64.Byte.cs" />
     <Compile Include="AddAcross.Vector64.SByte.cs" />
     <Compile Include="AddAcross.Vector64.UInt16.cs" />

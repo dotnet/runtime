@@ -1269,5 +1269,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return BitConverter.Int32BitsToSingle(result);
         }
+
+        public static byte AbsoluteDifference(sbyte left, sbyte right) => (byte)Math.Abs((long)left - (long)right);
+        public static ushort AbsoluteDifference(short left, short right) => (ushort)Math.Abs((long)left - (long)right);
+        public static uint AbsoluteDifference(int left, int right) => (uint)Math.Abs((long)left - (long)right);
+        public static byte AbsoluteDifference(byte left, byte right) => (byte)Math.Abs((long)left - (long)right);
+        public static ushort AbsoluteDifference(ushort left, ushort right) => (ushort)Math.Abs((long)left - (long)right);
+        public static uint AbsoluteDifference(uint left, uint right) => (uint)Math.Abs((long)left - (long)right);
+        public static float AbsoluteDifference(float left, float right) => Math.Abs(left - right);
+        public static double AbsoluteDifference(double left, double right) => Math.Abs(left - right);
     }
 }
