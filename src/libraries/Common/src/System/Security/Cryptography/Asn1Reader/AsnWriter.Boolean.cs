@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 
-#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal sealed partial class AsnWriter
