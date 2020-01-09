@@ -45,9 +45,5 @@
 -nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.*
 -nomethod System.Net.Sockets.Tests.SendReceiveSyncForceNonBlocking.TcpReceiveSendGetsCanceledByDispose
 
-# https://github.com/mono/mono/issues/18061 [interpreter] Conversions.ToX(NaN) are expected to throw OverflowException
--nomethod Microsoft.VisualBasic.Tests.ConversionsTests.*
--nomethod Microsoft.VisualBasic.CompilerServices.Tests.IntegerTypeTests.FromString_ThrowsOverflowException
-
 # https://github.com/mono/mono/issues/18063 [interpreter] EqualityComparer<TEnum?>.Default.Equals doesn't work correctly
 -nomethod System.Collections.Generic.Tests.EqualityComparerTests.NullableEquals*
