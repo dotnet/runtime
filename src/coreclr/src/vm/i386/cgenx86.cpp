@@ -1736,6 +1736,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // No null test required
         if (!pLookup->testForNull)
         {
+            _ASSERTE(pLookup->sizeOffset == 0xFFFF);
+
             // No fixups needed for R2R
 
             // mov eax,ecx
