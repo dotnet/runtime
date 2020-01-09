@@ -183,6 +183,9 @@ void Compiler::optEarlyProp()
 
         compCurBB = block;
 
+        CompAllocator                 allocator(getAllocator(CMK_EarlyProp));
+        LocalNumberToNullCheckTreeMap nullCheckMap(allocator);
+
         for (Statement* stmt = block->firstStmt(); stmt != nullptr;)
         {
             // Preserve the next link before the propagation and morph.
@@ -195,7 +198,7 @@ void Compiler::optEarlyProp()
             bool isRewritten = false;
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
-                GenTree* rewrittenTree = optEarlyPropRewriteTree(tree);
+                GenTree* rewrittenTree = optEarlyPropRewriteTree(tree, &nullCheckMap);
                 if (rewrittenTree != nullptr)
                 {
                     gtUpdateSideEffects(stmt, rewrittenTree);
@@ -229,26 +232,35 @@ void Compiler::optEarlyProp()
 //
 // Arguments:
 //    tree           - The input tree node to be rewritten.
+//    nullCheckMap   - Map of the local numbers to the latest NULLCHECKs on those locals in the current basic block.
 //
 // Return Value:
 //    Return a new tree if the original tree was successfully rewritten.
 //    The containing tree links are updated.
 //
-GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree)
+GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
     GenTree*    objectRefPtr = nullptr;
     optPropKind propKind     = optPropKind::OPK_INVALID;
+
+    if (tree->OperIsIndirOrArrLength())
+    {
+        // optFoldNullCheck takes care of updating statement info if a null check is removed.
+        optFoldNullCheck(tree, nullCheckMap);
+    }
+    else
+    {
+        return nullptr;
+    }
 
     if (tree->OperGet() == GT_ARR_LENGTH)
     {
         objectRefPtr = tree->AsOp()->gtOp1;
         propKind     = optPropKind::OPK_ARRAYLEN;
     }
-    else if (tree->OperIsIndir())
+    else
     {
-        // optFoldNullCheck takes care of updating statement info if a null check is removed.
-        optFoldNullCheck(tree);
-
+        assert(tree->OperIsIndir());
         if (gtIsVtableRef(tree))
         {
             // Don't propagate type handles that are used as null checks, which are usually in
@@ -268,10 +280,6 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree)
         {
             return nullptr;
         }
-    }
-    else
-    {
-        return nullptr;
     }
 
     if (!objectRefPtr->OperIsScalarLocal() || !lvaInSsa(objectRefPtr->AsLclVarCommon()->GetLclNum()))
@@ -477,208 +485,363 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 }
 
 //----------------------------------------------------------------
-// optFoldNullChecks: Try to find a GT_NULLCHECK node that can be folded into the GT_INDIR node.
+// optFoldNullChecks: Try to find a GT_NULLCHECK node that can be folded into the indirection node mark it for removal
+// if possible.
 //
 // Arguments:
-//    tree           - The input GT_INDIR tree.
+//    tree           - The input indirection tree.
+//    nullCheckMap   - Map of the local numbers to the latest NULLCHECKs on those locals in the current basic block
 //
+// Notes:
+//    If a GT_NULLCHECK node is post-dominated by an indirection node on the same local and the trees between
+//    the GT_NULLCHECK and the indirection don't have unsafe side effects, the GT_NULLCHECK can be removed.
+//    The indir will cause a NullReferenceException if and only if GT_NULLCHECK will cause the same
+//    NullReferenceException.
 
-void Compiler::optFoldNullCheck(GenTree* tree)
+void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    //
-    // Check for a pattern like this:
-    //
-    //                         =
-    //                       /   \.
-    //                      x    comma
-    //                           /   \.
-    //                     nullcheck  +
-    //                         |     / \.
-    //                         y    y  const
-    //
-    //
-    //                    some trees in the same
-    //                    basic block with
-    //                    no unsafe side effects
-    //
-    //                           indir
-    //                             |
-    //                             x
-    //
-    // where the const is suitably small
-    // and transform it into
-    //
-    //                         =
-    //                       /   \.
-    //                      x     +
-    //                           / \.
-    //                          y  const
-    //
-    //
-    //              some trees with no unsafe side effects here
-    //
-    //                           indir
-    //                             |
-    //                             x
-
     if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
     {
         return;
     }
 
-    assert(tree->OperIsIndir());
-
-    GenTree* const addr = tree->AsIndir()->Addr();
-    if (addr->OperGet() == GT_LCL_VAR)
+    GenTree*   nullCheckTree   = optFindNullCheckToFold(tree, nullCheckMap);
+    GenTree*   nullCheckParent = nullptr;
+    Statement* nullCheckStmt   = nullptr;
+    if ((nullCheckTree != nullptr) && optIsNullCheckFoldingLegal(tree, nullCheckTree, &nullCheckParent, &nullCheckStmt))
     {
-        // Check if we have the pattern above and find the nullcheck node if we do.
-
-        // Find the definition of the indirected local (x in the picture)
-        GenTreeLclVarCommon* const lclVarNode = addr->AsLclVarCommon();
-
-        const unsigned lclNum = lclVarNode->GetLclNum();
-        const unsigned ssaNum = lclVarNode->GetSsaNum();
-
-        if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+#ifdef DEBUG
+        if (verbose)
         {
-            LclSsaVarDsc* defLoc   = lvaTable[lclNum].GetPerSsaData(ssaNum);
-            BasicBlock*   defBlock = defLoc->GetBlock();
-
-            if (compCurBB == defBlock)
-            {
-                GenTree* defParent = defLoc->GetAssignment();
-                assert(defParent->OperIs(GT_ASG));
-
-                if (defParent->gtNext == nullptr)
-                {
-                    GenTree* defRHS = defParent->gtGetOp2();
-                    if (defRHS->OperGet() == GT_COMMA)
-                    {
-                        if (defRHS->gtGetOp1()->OperGet() == GT_NULLCHECK)
-                        {
-                            GenTree* nullCheckTree = defRHS->gtGetOp1();
-                            if (nullCheckTree->gtGetOp1()->OperGet() == GT_LCL_VAR)
-                            {
-                                // We found a candidate for 'y' in the picture
-                                unsigned nullCheckLclNum = nullCheckTree->gtGetOp1()->AsLclVarCommon()->GetLclNum();
-
-                                if (defRHS->gtGetOp2()->OperGet() == GT_ADD)
-                                {
-                                    GenTree* additionNode = defRHS->gtGetOp2();
-                                    if ((additionNode->gtGetOp1()->OperGet() == GT_LCL_VAR) &&
-                                        (additionNode->gtGetOp1()->AsLclVarCommon()->GetLclNum() == nullCheckLclNum))
-                                    {
-                                        GenTree* offset = additionNode->gtGetOp2();
-                                        if (offset->IsCnsIntOrI())
-                                        {
-                                            if (!fgIsBigOffset(offset->AsIntConCommon()->IconValue()))
-                                            {
-                                                // Walk from the use to the def in reverse execution order to see
-                                                // if any nodes have unsafe side effects.
-                                                GenTree*       currentTree        = lclVarNode->gtPrev;
-                                                bool           isInsideTry        = compCurBB->hasTryIndex();
-                                                bool           canRemoveNullCheck = true;
-                                                const unsigned maxNodesWalked     = 25;
-                                                unsigned       nodesWalked        = 0;
-
-                                                // First walk the nodes in the statement containing the indirection
-                                                // in reverse execution order starting with the indirection's
-                                                // predecessor.
-                                                while (canRemoveNullCheck && (currentTree != nullptr))
-                                                {
-                                                    if ((nodesWalked++ > maxNodesWalked) ||
-                                                        !optCanMoveNullCheckPastTree(currentTree, isInsideTry))
-                                                    {
-                                                        canRemoveNullCheck = false;
-                                                    }
-                                                    else
-                                                    {
-                                                        currentTree = currentTree->gtPrev;
-                                                    }
-                                                }
-
-                                                // Then walk the statement list in reverse execution order
-                                                // until we get to the statement containing the null check.
-                                                // We only need to check the side effects at the root of each statement.
-                                                Statement* curStmt = compCurStmt->GetPrevStmt();
-                                                currentTree        = curStmt->GetRootNode();
-                                                while (canRemoveNullCheck && (currentTree != defParent))
-                                                {
-                                                    if ((nodesWalked++ > maxNodesWalked) ||
-                                                        !optCanMoveNullCheckPastTree(currentTree, isInsideTry))
-                                                    {
-                                                        canRemoveNullCheck = false;
-                                                    }
-                                                    else
-                                                    {
-                                                        curStmt = curStmt->GetPrevStmt();
-                                                        assert(curStmt != nullptr);
-                                                        currentTree = curStmt->GetRootNode();
-                                                    }
-                                                }
-
-                                                if (canRemoveNullCheck)
-                                                {
-                                                    // Remove the null check
-                                                    nullCheckTree->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
-
-                                                    // Set this flag to prevent reordering
-                                                    nullCheckTree->gtFlags |= GTF_ORDER_SIDEEFF;
-                                                    nullCheckTree->gtFlags |= GTF_IND_NONFAULTING;
-
-                                                    defRHS->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
-                                                    defRHS->gtFlags |=
-                                                        additionNode->gtFlags & (GTF_EXCEPT | GTF_DONT_CSE);
-
-                                                    // Re-morph the statement.
-                                                    fgMorphBlockStmt(compCurBB, curStmt DEBUGARG("optFoldNullCheck"));
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            printf("optEarlyProp Marking a null check for removal\n");
+            gtDispTree(nullCheckTree);
+            printf("\n");
         }
+#endif
+        // Remove the null check
+        nullCheckTree->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
+
+        // Set this flag to prevent reordering
+        nullCheckTree->gtFlags |= GTF_ORDER_SIDEEFF;
+        nullCheckTree->gtFlags |= GTF_IND_NONFAULTING;
+
+        if (nullCheckParent != nullptr)
+        {
+            nullCheckParent->gtFlags &= ~GTF_DONT_CSE;
+        }
+
+        nullCheckMap->Remove(nullCheckTree->gtGetOp1()->AsLclVarCommon()->GetLclNum());
+
+        // Re-morph the statement.
+        Statement* curStmt = compCurStmt;
+        fgMorphBlockStmt(compCurBB, nullCheckStmt DEBUGARG("optFoldNullCheck"));
+        compCurStmt = curStmt;
+    }
+
+    if ((tree->OperGet() == GT_NULLCHECK) && (tree->gtGetOp1()->OperGet() == GT_LCL_VAR))
+    {
+        nullCheckMap->Set(tree->gtGetOp1()->AsLclVarCommon()->GetLclNum(), tree,
+                          LocalNumberToNullCheckTreeMap::SetKind::Overwrite);
     }
 }
 
 //----------------------------------------------------------------
-// optCanMoveNullCheckPastTree: Check if GT_NULLCHECK can be folded into a node that
-//                              is after tree is execution order.
+// optFindNullCheckToFold: Try to find a GT_NULLCHECK node that can be folded into the indirection node.
 //
 // Arguments:
-//    tree           - The input GT_INDIR tree.
-//    isInsideTry    - True if tree is inside try, false otherwise
+//    tree           - The input indirection tree.
+//    nullCheckMap   - Map of the local numbers to the latest NULLCHECKs on those locals in the current basic block
 //
-// Return Value:
-//    True if GT_NULLCHECK can be folded into a node that is after tree is execution order,
-//    false otherwise.
+// Notes:
+//    Check for cases where
+//    1. One of the following trees
+//
+//       nullcheck(x)
+//       or
+//       x = comma(nullcheck(y), add(y, const1))
+//
+//       is post-dominated in the same basic block by one of the following trees
+//
+//       indir(x)
+//       or
+//       indir(add(x, const2))
+//
+//       (indir is any node for which OperIsIndirOrArrLength() is true.)
+//
+//     2.  const1 + const2 if sufficiently small.
 
-bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry)
+GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    bool result = true;
-    if (isInsideTry)
+    assert(tree->OperIsIndirOrArrLength());
+
+    GenTree* addr = (tree->OperGet() == GT_ARR_LENGTH) ? tree->AsArrLen()->ArrRef() : tree->AsIndir()->Addr();
+
+    ssize_t offsetValue = 0;
+
+    if ((addr->OperGet() == GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
     {
-        // We disallow calls, exception sources, and all assignments.
-        // Assignments to locals are disallowed inside try because
-        // they may be live in the handler.
-        if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
+        offsetValue += addr->gtGetOp2()->AsIntConCommon()->IconValue();
+        addr = addr->gtGetOp1();
+    }
+
+    if (addr->OperGet() != GT_LCL_VAR)
+    {
+        return nullptr;
+    }
+
+    GenTreeLclVarCommon* const lclVarNode = addr->AsLclVarCommon();
+    const unsigned             ssaNum     = lclVarNode->GetSsaNum();
+
+    if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
+    {
+        return nullptr;
+    }
+
+    const unsigned lclNum          = lclVarNode->GetLclNum();
+    GenTree*       nullCheckTree   = nullptr;
+    unsigned       nullCheckLclNum = BAD_VAR_NUM;
+
+    // Check if we saw a nullcheck on this local in this basic block
+    // This corresponds to nullcheck(x) tree in the header comment.
+    if (nullCheckMap->Lookup(lclNum, &nullCheckTree))
+    {
+        GenTree* nullCheckAddr = nullCheckTree->AsIndir()->Addr();
+        if ((nullCheckAddr->OperGet() != GT_LCL_VAR) || (nullCheckAddr->AsLclVarCommon()->GetSsaNum() != ssaNum))
         {
-            result = false;
+            nullCheckTree = nullptr;
         }
+        else
+        {
+            nullCheckLclNum = nullCheckAddr->AsLclVarCommon()->GetLclNum();
+        }
+    }
+
+    if (nullCheckTree == nullptr)
+    {
+        // Check if we have x = comma(nullcheck(y), add(y, const1)) pattern.
+
+        // Find the definition of the indirected local ('x' in the pattern above).
+        LclSsaVarDsc* defLoc = lvaTable[lclNum].GetPerSsaData(ssaNum);
+
+        if (compCurBB != defLoc->GetBlock())
+        {
+            return nullptr;
+        }
+
+        GenTree* defRHS = defLoc->GetAssignment()->gtGetOp2();
+
+        if (defRHS->OperGet() != GT_COMMA)
+        {
+            return nullptr;
+        }
+
+        const bool commaOnly              = true;
+        GenTree*   commaOp1EffectiveValue = defRHS->gtGetOp1()->gtEffectiveVal(commaOnly);
+
+        if (commaOp1EffectiveValue->OperGet() != GT_NULLCHECK)
+        {
+            return nullptr;
+        }
+
+        GenTree* nullCheckAddress = commaOp1EffectiveValue->gtGetOp1();
+
+        if ((nullCheckAddress->OperGet() != GT_LCL_VAR) || (defRHS->gtGetOp2()->OperGet() != GT_ADD))
+        {
+            return nullptr;
+        }
+
+        // We found a candidate for 'y' in the pattern above.
+
+        GenTree* additionNode = defRHS->gtGetOp2();
+        GenTree* additionOp1  = additionNode->gtGetOp1();
+        GenTree* additionOp2  = additionNode->gtGetOp2();
+        if ((additionOp1->OperGet() == GT_LCL_VAR) &&
+            (additionOp1->AsLclVarCommon()->GetLclNum() == nullCheckAddress->AsLclVarCommon()->GetLclNum()) &&
+            (additionOp2->IsCnsIntOrI()))
+        {
+            offsetValue += additionOp2->AsIntConCommon()->IconValue();
+            nullCheckTree = commaOp1EffectiveValue;
+        }
+    }
+
+    if (fgIsBigOffset(offsetValue))
+    {
+        return nullptr;
     }
     else
     {
-        // We disallow calls, exception sources, and assignments to
-        // global memory.
-        if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(tree->gtFlags))
+        return nullCheckTree;
+    }
+}
+
+//----------------------------------------------------------------
+// optIsNullCheckFoldingLegal: Check the nodes between the GT_NULLCHECK node and the indirection to determine
+//                             if null check folding is legal.
+//
+// Arguments:
+//    tree                - The input indirection tree.
+//    nullCheckTree       - The GT_NULLCHECK tree that is a candidate for removal.
+//    nullCheckParent     - The parent of the GT_NULLCHECK tree that is a candidate for removal (out-parameter).
+//    nullCheckStatement  - The statement of the GT_NULLCHECK tree that is a candidate for removal (out-parameter).
+
+bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
+                                          GenTree*    nullCheckTree,
+                                          GenTree**   nullCheckParent,
+                                          Statement** nullCheckStmt)
+{
+    // Check all nodes between the GT_NULLCHECK and the indirection to see
+    // if any nodes have unsafe side effects.
+    unsigned       nullCheckLclNum    = nullCheckTree->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+    bool           isInsideTry        = compCurBB->hasTryIndex();
+    bool           canRemoveNullCheck = true;
+    const unsigned maxNodesWalked     = 50;
+    unsigned       nodesWalked        = 0;
+
+    // First walk the nodes in the statement containing the GT_NULLCHECK in forward execution order
+    // until we get to the indirection or process the statement root.
+    GenTree* previousTree = nullCheckTree;
+    GenTree* currentTree  = nullCheckTree->gtNext;
+    assert(fgStmtListThreaded);
+    while (canRemoveNullCheck && (currentTree != tree) && (currentTree != nullptr))
+    {
+        if ((*nullCheckParent == nullptr) && (nullCheckTree->gtGetChildPointer(currentTree) != nullptr))
         {
-            result = false;
+            *nullCheckParent = currentTree;
+        }
+        const bool checkExceptionSummary = false;
+        if ((nodesWalked++ > maxNodesWalked) ||
+            !optCanMoveNullCheckPastTree(currentTree, nullCheckLclNum, isInsideTry, checkExceptionSummary))
+        {
+            canRemoveNullCheck = false;
+        }
+        else
+        {
+            previousTree = currentTree;
+            currentTree  = currentTree->gtNext;
         }
     }
+
+    if (currentTree == tree)
+    {
+        // The GT_NULLCHECK and the indirection are in the same statements.
+        *nullCheckStmt = compCurStmt;
+    }
+    else
+    {
+        // The GT_NULLCHECK and the indirection are in different statements.
+        // Walk the nodes in the statement containing the indirection
+        // in reverse execution order starting with the indirection's
+        // predecessor.
+        GenTree* nullCheckStatementRoot = previousTree;
+        currentTree                     = tree->gtPrev;
+        while (canRemoveNullCheck && (currentTree != nullptr))
+        {
+            const bool checkExceptionSummary = false;
+            if ((nodesWalked++ > maxNodesWalked) ||
+                !optCanMoveNullCheckPastTree(currentTree, nullCheckLclNum, isInsideTry, checkExceptionSummary))
+            {
+                canRemoveNullCheck = false;
+            }
+            else
+            {
+                currentTree = currentTree->gtPrev;
+            }
+        }
+
+        // Finally, walk the statement list in reverse execution order
+        // until we get to the statement containing the null check.
+        // We only check the side effects at the root of each statement.
+        Statement* curStmt = compCurStmt->GetPrevStmt();
+        currentTree        = curStmt->GetRootNode();
+        while (canRemoveNullCheck && (currentTree != nullCheckStatementRoot))
+        {
+            const bool checkExceptionSummary = true;
+            if ((nodesWalked++ > maxNodesWalked) ||
+                !optCanMoveNullCheckPastTree(currentTree, nullCheckLclNum, isInsideTry, checkExceptionSummary))
+            {
+                canRemoveNullCheck = false;
+            }
+            else
+            {
+                curStmt     = curStmt->GetPrevStmt();
+                currentTree = curStmt->GetRootNode();
+            }
+        }
+        *nullCheckStmt = curStmt;
+    }
+
+    if (canRemoveNullCheck && (*nullCheckParent == nullptr))
+    {
+        *nullCheckParent = nullCheckTree->gtGetParent(nullptr);
+    }
+
+    return canRemoveNullCheck;
+}
+
+//----------------------------------------------------------------
+// optCanMoveNullCheckPastTree: Check if a nullcheck node that is before `tree`
+//                              in execution order may be folded into an indirection node that
+//                              is after `tree` is execution order.
+//
+// Arguments:
+//    tree                  - The tree to check.
+//    nullCheckLclNum       - The local variable that GT_NULLCHECK checks.
+//    isInsideTry           - True if tree is inside try, false otherwise.
+//    checkSideEffectSummary -If true, check side effect summary flags only,
+//                            otherwise check the side effects of the operation itself.
+//
+// Return Value:
+//    True if nullcheck may be folded into a node that is after tree in execution order,
+//    false otherwise.
+
+bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
+                                           unsigned nullCheckLclNum,
+                                           bool     isInsideTry,
+                                           bool     checkSideEffectSummary)
+{
+    bool result = true;
+
+    if ((tree->gtFlags & GTF_CALL) != 0)
+    {
+        result = !checkSideEffectSummary && !tree->OperRequiresCallFlag(this);
+    }
+
+    if (result && (tree->gtFlags & GTF_EXCEPT) != 0)
+    {
+        result = !checkSideEffectSummary && !tree->OperMayThrow(this);
+    }
+
+    if (result && ((tree->gtFlags & GTF_ASG) != 0))
+    {
+        if (tree->OperGet() == GT_ASG)
+        {
+            GenTree* lhs = tree->gtGetOp1();
+            GenTree* rhs = tree->gtGetOp2();
+            if (checkSideEffectSummary && ((rhs->gtFlags & GTF_ASG) != 0))
+            {
+                result = false;
+            }
+            else if (isInsideTry)
+            {
+                // Inside try we allow only assignments to locals not live in handlers.
+                // lvVolatileHint is set to true on variables that are line in handlers.
+                result = (lhs->OperGet() == GT_LCL_VAR) && !lvaTable[lhs->AsLclVarCommon()->GetLclNum()].lvVolatileHint;
+            }
+            else
+            {
+                // We disallow only assignments to global memory.
+                result = ((lhs->gtFlags & GTF_GLOB_REF) == 0);
+            }
+        }
+        else if (checkSideEffectSummary)
+        {
+            result = !isInsideTry && ((tree->gtFlags & GTF_GLOB_REF) == 0);
+        }
+        else
+        {
+            result = !isInsideTry && (!tree->OperRequiresAsgFlag() || ((tree->gtFlags & GTF_GLOB_REF) == 0));
+        }
+    }
+
     return result;
 }
