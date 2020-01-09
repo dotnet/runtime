@@ -21,12 +21,12 @@ namespace Internal.Cryptography
         //
         // Attempts to map a friendly name to an OID. Returns null if not a known name.
         //
-        public static string ToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
+        public static string? ToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             if (oid == null)
                 throw new ArgumentNullException(nameof(oid));
 
-            string mappedName;
+            string? mappedName;
             bool shouldUseCache = ShouldUseCache(oidGroup);
 
             // On Unix shouldUseCache is always true, so no matter what OidGroup is passed in the Windows
@@ -60,14 +60,14 @@ namespace Internal.Cryptography
         //
         // Attempts to retrieve the friendly name for an OID. Returns null if not a known or valid OID.
         //
-        public static string ToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
+        public static string? ToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             if (friendlyName == null)
                 throw new ArgumentNullException(nameof(friendlyName));
             if (friendlyName.Length == 0)
                 return null;
 
-            string mappedOid;
+            string? mappedOid;
             bool shouldUseCache = ShouldUseCache(oidGroup);
 
             if (shouldUseCache)

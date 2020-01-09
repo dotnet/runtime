@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal partial class AsnReader
@@ -70,7 +71,7 @@ namespace System.Security.Cryptography.Asn1
             // CER and DER are restricted to YYMMDDhhmmssZ
             // T-REC-X.690-201510 sec 11.8
 
-            byte[] rented = null;
+            byte[]? rented = null;
             // The longest format is 17 bytes.
             Span<byte> tmpSpace = stackalloc byte[17];
 

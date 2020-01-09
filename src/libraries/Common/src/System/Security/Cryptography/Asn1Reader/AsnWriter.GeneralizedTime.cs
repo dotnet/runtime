@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal sealed partial class AsnWriter
@@ -152,7 +153,7 @@ namespace System.Security.Cryptography.Asn1
             fraction.CopyTo(baseSpan.Slice(IntegerPortionLength));
             _offset += fraction.Length;
 
-            _buffer[_offset] = (byte)'Z';
+            _buffer![_offset] = (byte)'Z';
             _offset++;
         }
     }

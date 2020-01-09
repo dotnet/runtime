@@ -12,7 +12,7 @@ namespace Internal.Cryptography
 {
     internal sealed class OpenSslAsnFormatter : AsnFormatter
     {
-        protected override string FormatNative(Oid oid, byte[] rawData, bool multiLine)
+        protected override string? FormatNative(Oid? oid, byte[] rawData, bool multiLine)
         {
             if (oid == null || string.IsNullOrEmpty(oid.Value))
             {

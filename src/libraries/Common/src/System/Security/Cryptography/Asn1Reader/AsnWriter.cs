@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     /// <summary>
@@ -18,9 +19,9 @@ namespace System.Security.Cryptography.Asn1
     /// </summary>
     internal sealed partial class AsnWriter : IDisposable
     {
-        private byte[] _buffer;
+        private byte[]? _buffer;
         private int _offset;
-        private Stack<(Asn1Tag, int, UniversalTagNumber)> _nestingStack;
+        private Stack<(Asn1Tag, int, UniversalTagNumber)>? _nestingStack;
 
         /// <summary>
         ///   The <see cref="AsnEncodingRules"/> in use by this writer.
@@ -245,7 +246,7 @@ namespace System.Security.Cryptography.Asn1
                 // While the ArrayPool may have similar logic, make sure we don't run into a lot of
                 // "grow a little" by asking in 1k steps.
                 int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;
-                byte[] oldBytes = _buffer;
+                byte[]? oldBytes = _buffer;
                 _buffer = CryptoPool.Rent(BlockSize * blocks);
 
                 if (oldBytes != null)
@@ -285,6 +286,7 @@ namespace System.Security.Cryptography.Asn1
         {
             const byte MultiByteMarker = 0x80;
             Debug.Assert(length >= -1);
+            Debug.Assert(_buffer != null);
 
             // If the indefinite form has been requested.
             // T-REC-X.690-201508 sec 8.1.3.6
@@ -400,7 +402,7 @@ namespace System.Security.Cryptography.Asn1
         private void WriteEndOfContents()
         {
             EnsureWriteCapacity(2);
-            _buffer[_offset++] = 0;
+            _buffer![_offset++] = 0;
             _buffer[_offset++] = 0;
         }
 
@@ -440,6 +442,7 @@ namespace System.Security.Cryptography.Asn1
 
             _nestingStack.Pop();
 
+            Debug.Assert(_buffer != null);
             if (sortContents)
             {
                 SortContents(_buffer, lenOffset + 1, _offset);

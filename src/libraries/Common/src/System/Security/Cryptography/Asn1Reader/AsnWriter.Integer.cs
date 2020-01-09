@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Numerics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal sealed partial class AsnWriter
@@ -205,7 +206,7 @@ namespace System.Security.Cryptography.Asn1
 
             do
             {
-                _buffer[idx] = (byte)remaining;
+                _buffer![idx] = (byte)remaining;
                 remaining >>= 8;
                 idx--;
             } while (idx >= _offset);
@@ -257,7 +258,7 @@ namespace System.Security.Cryptography.Asn1
 
             do
             {
-                _buffer[idx] = (byte)remaining;
+                _buffer![idx] = (byte)remaining;
                 remaining >>= 8;
                 idx--;
             } while (idx >= _offset);
@@ -293,7 +294,7 @@ namespace System.Security.Cryptography.Asn1
             if (value[0] >= 0x80)
             {
                 WriteLength(checked(value.Length + 1));
-                _buffer[_offset] = 0;
+                _buffer![_offset] = 0;
                 _offset++;
             }
             else
@@ -346,7 +347,7 @@ namespace System.Security.Cryptography.Asn1
             Debug.Assert(!tag.IsConstructed);
             WriteTag(tag);
             WriteLength(encoded.Length);
-            Buffer.BlockCopy(encoded, 0, _buffer, _offset, encoded.Length);
+            Buffer.BlockCopy(encoded, 0, _buffer!, _offset, encoded.Length);
             _offset += encoded.Length;
         }
     }

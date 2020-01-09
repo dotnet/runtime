@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal partial class AsnReader
@@ -614,7 +615,7 @@ namespace System.Security.Cryptography.Asn1
             UniversalTagNumber universalTagNumber,
             Text.Encoding encoding)
         {
-            byte[] rented = null;
+            byte[]? rented = null;
 
             // T-REC-X.690-201508 sec 8.23.3, all character strings are encoded as octet strings.
             ReadOnlySpan<byte> contents = GetOctetStringContents(
@@ -668,7 +669,7 @@ namespace System.Security.Cryptography.Asn1
             Span<char> destination,
             out int charsWritten)
         {
-            byte[] rented = null;
+            byte[]? rented = null;
 
             // T-REC-X.690-201508 sec 8.23.3, all character strings are encoded as octet strings.
             ReadOnlySpan<byte> contents = GetOctetStringContents(

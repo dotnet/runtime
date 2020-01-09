@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal sealed partial class AsnWriter
@@ -212,7 +213,7 @@ namespace System.Security.Cryptography.Asn1
                 Debug.Assert(!tag.IsConstructed);
                 WriteTag(tag);
                 WriteLength(tmpOffset);
-                Buffer.BlockCopy(tmp, 0, _buffer, _offset, tmpOffset);
+                Buffer.BlockCopy(tmp, 0, _buffer!, _offset, tmpOffset);
                 _offset += tmpOffset;
             }
             finally

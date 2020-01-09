@@ -29,7 +29,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
         private static extern unsafe void ErrErrorStringN(ulong e, byte* buf, int len);
 
-        private static unsafe string ErrErrorStringN(ulong error)
+        private static unsafe string? ErrErrorStringN(ulong error)
         {
             var buffer = new byte[1024];
             fixed (byte* buf = &buffer[0])
@@ -109,7 +109,7 @@ internal static partial class Interop
 
         private sealed class OpenSslCryptographicException : CryptographicException
         {
-            internal OpenSslCryptographicException(int errorCode, string message)
+            internal OpenSslCryptographicException(int errorCode, string? message)
                 : base(message)
             {
                 HResult = errorCode;

@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal sealed partial class AsnWriter
@@ -111,7 +112,7 @@ namespace System.Security.Cryptography.Asn1
             WriteTag(tag.AsPrimitive());
             // The unused bits byte requires +1.
             WriteLength(bitString.Length + 1);
-            _buffer[_offset] = (byte)unusedBitCount;
+            _buffer![_offset] = (byte)unusedBitCount;
             _offset++;
             bitString.CopyTo(_buffer.AsSpan(_offset));
             _offset += bitString.Length;
@@ -212,7 +213,7 @@ namespace System.Security.Cryptography.Asn1
 
             int savedOffset = _offset;
             Span<byte> scratchSpace;
-            byte[] ensureNoExtraCopy = null;
+            byte[]? ensureNoExtraCopy = null;
             int expectedSize = 0;
 
             // T-REC-X.690-201508 sec 9.2
@@ -247,7 +248,7 @@ namespace System.Security.Cryptography.Asn1
                 // The unused bits byte requires +1.
                 WriteLength(byteLength + 1);
 
-                _buffer[_offset] = (byte)unusedBitCount;
+                _buffer![_offset] = (byte)unusedBitCount;
                 _offset++;
 
                 scratchSpace = _buffer.AsSpan(_offset, byteLength);
@@ -345,6 +346,7 @@ namespace System.Security.Cryptography.Asn1
             // Constructed CER uses the indefinite form.
             WriteLength(-1);
 
+            Debug.Assert(_buffer != null);
             byte[] ensureNoExtraCopy = _buffer;
 
             ReadOnlySpan<byte> remainingData = payload;

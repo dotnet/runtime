@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal sealed partial class AsnWriter
@@ -95,7 +96,7 @@ namespace System.Security.Cryptography.Asn1
             int expectedSize = fullSegments * FullSegmentEncodedSize + remainingEncodedSize + 2;
             EnsureWriteCapacity(expectedSize);
 
-            byte[] ensureNoExtraCopy = _buffer;
+            byte[]? ensureNoExtraCopy = _buffer;
             int savedOffset = _offset;
 
             ReadOnlySpan<byte> remainingData = payload;
