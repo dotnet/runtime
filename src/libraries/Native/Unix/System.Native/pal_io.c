@@ -1368,8 +1368,8 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
     int outFd;
     int ret;
     int tmpErrno;
-    int openFlags;
     struct stat_ sourceStat;
+    bool copied = false;
 
     while ((ret = fstat_(inFd, &sourceStat)) < 0 && errno == EINTR);
     if (ret != 0)
@@ -1411,21 +1411,13 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
     (void)srcPath;
 #endif
 
-    openFlags = O_WRONLY | O_TRUNC | O_CREAT | (overwrite ? 0 : O_EXCL);
-#if HAVE_O_CLOEXEC
-    openFlags |= O_CLOEXEC;
-#endif
-    while ((outFd = open(destPath, openFlags, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
+    outFd = (int)SystemNative_Open(destPath,
+        PAL_O_WRONLY | PAL_O_TRUNC | PAL_O_CREAT | PAL_O_CLOEXEC | (overwrite ? 0 : PAL_O_EXCL),
+        sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
     if (outFd < 0)
     {
-        return -1;
+        return ret;
     }
-#if !HAVE_O_CLOEXEC
-    fcntl(outFd, F_SETFD, FD_CLOEXEC);
-#endif
-
-    // Get the stats on the source file.
-    bool copied = false;
 
 #if defined(PAL_COPY_FILE_RANGE_SYSCALL)
     // If copy_file_range(2) is available (Linux), try to use it, as
@@ -1444,18 +1436,22 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
     // an oldschool read/write loop before giving up.
     // TODO: Distinguish between general I/O errors (where trying read/write wouldn't help anyway),
     // and method-specific errors (where we should try again -- e.g. cross-volume copies).
-    copied = copied || CopyFile_ReadWrite(inFd, outFd);
+    copied = copied || CopyFile_ReadWrite(ToFileDescriptor(inFd), ToFileDescriptor(outFd));
 
     if (copied)
     {
-        CopyFileMetadata(outFd, &sourceStat);
+        ret = CopyFileMetadata(ToFileDescriptor(outFd), &sourceStat);
+    }
+    else
+    {
+        while (unlink(destPath) < 0 && errno == EINTR);
     }
 
     tmpErrno = errno;
-    close(outFd);
+    SystemNative_Close(outFd);
     errno = tmpErrno;
 
-    return copied ? 0 : -1;
+    return ret;
 }
 
 intptr_t SystemNative_INotifyInit(void)
