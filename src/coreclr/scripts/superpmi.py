@@ -158,7 +158,7 @@ asm_diff_parser = subparsers.add_parser("asmdiffs")
 
 # Add required arguments
 asm_diff_parser.add_argument("base_jit_path", nargs=1, help="Path to baseline clrjit.")
-asm_diff_parser.add_argument("diff_jit_path", nargs=1, help="Path to diff clrjit.")
+asm_diff_parser.add_argument("diff_jit_path", nargs='?', help="Path to diff clrjit. Defaults to Core_Root JIT.")
 asm_diff_parser.add_argument("collection", nargs='?', default="default", help=collection_help)
 
 asm_diff_parser.add_argument("-mch_file", nargs=1, help=mch_file_help)
@@ -245,6 +245,19 @@ def make_safe_filename(s):
         else:
             return "_"
     return "".join(safe_char(c) for c in s)
+
+def _find(name, pathlist, matchFunc=os.path.isfile):
+    for dirname in pathlist:
+        candidate = os.path.join(dirname, name)
+        if matchFunc(candidate):
+            return candidate
+    return None
+
+def findFile(filename, pathlist):
+    return _find(filename, pathlist)
+
+def findDir(dirname, pathlist):
+    return _find(dirname, pathlist, matchFunc=os.path.isdir)
 
 ################################################################################
 # Helper classes
@@ -371,7 +384,7 @@ class SuperPMICollect:
     """ SuperPMI Collect class
 
     Notes:
-        The object is responsible for setting up a super pmi collection given
+        The object is responsible for setting up a SuperPMI collection given
         the arguments passed into the script.
     """
 
@@ -860,7 +873,7 @@ class SuperPMIReplay:
             return_code = proc.returncode
 
             if return_code == 0:
-                print("Clean SuperPMI Replay")
+                print("Clean SuperPMI replay")
                 return_code = True
 
             if is_nonzero_length_file(self.fail_mcl_file):  
@@ -1409,6 +1422,23 @@ class SuperPMIReplayAsmDiffs:
 
                 if current_text_diff is not None:
                     print("Textual differences found, the asm is located under %s and %s" % (base_asm_location, diff_asm_location))
+                    print("Generate a diff analysis report by building jit-analyze from https://github.com/dotnet/jitutils and running:")
+                    print("    jit-analyze -r --base %s --diff %s" % (base_asm_location, diff_asm_location))
+
+                    # Find jit-analyze.bat/sh on PATH, if it exists, then invoke it.
+                    search_path = os.environ.get("PATH")
+                    if search_path is not None:
+                        search_path = search_path.split(";")
+                        jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
+                        jit_analyze_path = findFile(jit_analyze_file, search_path)
+                        if jit_analyze_path is not None:
+                            # It appears we have a built jit-analyze on the path, so try to run it.
+                            command = [ jit_analyze_path, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
+                            print("Invoking: " + " ".join(command))
+                            proc = subprocess.Popen(command)
+                            proc.communicate()
+
+                    # Open VS Code on the diffs.
 
                     if self.coreclr_args.diff_with_code and not self.coreclr_args.diff_jit_dump_only:
                         batch_command = ["cmd", "/c"] if platform.system() == "Windows" else []
@@ -1824,10 +1854,12 @@ def setup_args(args):
                         "Error setting default_coreclr_bin_mch_location")
 
     if coreclr_args.mode == "collect":
+
         coreclr_args.verify(args,
                             "collection_command",
                             lambda command: command is None or os.path.isfile(command),
                             "Unable to find script.")
+
         coreclr_args.verify(args,
                             "collection_args",
                             lambda unused: True,
@@ -1929,6 +1961,7 @@ def setup_args(args):
             coreclr_args.has_run_collection_command = True
     
     elif coreclr_args.mode == "replay":
+
         coreclr_args.verify(args,
                             "collection",
                             lambda collection_name: collection_name in download_index(coreclr_args),
@@ -1939,7 +1972,7 @@ def setup_args(args):
                             lambda mch_file: os.path.isfile(mch_file),
                             lambda mch_file: "Incorrect file path to mch_file: {}".format(mch_file),
                             modify_arg=lambda arg: arg[0] if arg is not None else setup_mch_arg(arg))
-        
+
         coreclr_args.verify(args,
                             "jit_path",
                             lambda jit_path: os.path.isfile(jit_path),
@@ -2007,6 +2040,7 @@ def setup_args(args):
                             modify_arg=lambda arg: arg[0] if arg is not None else setup_mch_arg(arg))
 
     elif coreclr_args.mode == "asmdiffs":
+
         coreclr_args.verify(args,
                             "base_jit_path",
                             lambda unused: True,
@@ -2015,9 +2049,9 @@ def setup_args(args):
 
         coreclr_args.verify(args,
                             "diff_jit_path",
-                            lambda jit_path: True,
-                            "Unable to set base_jit_path",
-                            modify_arg=lambda arg: arg[0])
+                            lambda jit_path: os.path.isfile(jit_path),
+                            "Unable to set diff_jit_path",
+                            modify_arg=lambda arg: os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args)) if arg is None else arg)
 
         coreclr_args.verify(args,
                             "collection",
@@ -2187,8 +2221,10 @@ def main(args):
             print("mch path: {}".format(coreclr_args.output_mch_path))
 
         end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
 
         print("Finish time: {}".format(end_time.strftime("%H:%M:%S")))
+        print("Elapsed time: {}".format(elapsed_time))
 
     elif coreclr_args.mode == "replay":
         # Start a new SuperPMI Replay
@@ -2213,8 +2249,10 @@ def main(args):
         print("Finished SuperPMI replay")
 
         end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
 
         print("Finish time: {}".format(end_time.strftime("%H:%M:%S")))
+        print("Elapsed time: {}".format(elapsed_time))
 
     elif coreclr_args.mode == "asmdiffs":
         # Start a new SuperPMI Replay with AsmDiffs
@@ -2241,8 +2279,10 @@ def main(args):
         print("Finished SuperPMI replay")
 
         end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
 
         print("Finish time: {}".format(end_time.strftime("%H:%M:%S")))
+        print("Elapsed time: {}".format(elapsed_time))
 
     elif coreclr_args.mode == "upload":
         begin_time = datetime.datetime.now()
@@ -2256,7 +2296,11 @@ def main(args):
         print("Finished SuperPMI upload")
 
         end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
+
         print("Finish time: {}".format(end_time.strftime("%H:%M:%S")))
+        print("Elapsed time: {}".format(elapsed_time))
+
     elif coreclr_args.mode == "list-collections":
         index = download_index(coreclr_args)
 
