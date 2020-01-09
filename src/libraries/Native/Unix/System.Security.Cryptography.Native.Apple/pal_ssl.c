@@ -356,13 +356,22 @@ PAL_TlsIo AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint
 
 int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus)
 {
-    *pOSStatus = noErr;
+    if (pOSStatus == NULL)
+        return -1;
 
     if (sslContext == NULL || notBefore == NULL)
+    {
+        *pOSStatus = errSecInvalidData;
         return -1;
-    if (cfHostname == NULL)
-        return -2;
+    }
 
+    if (cfHostname == NULL)
+    {
+        *pOSStatus = errSecInvalidData;
+        return -2;
+    }
+
+    *pOSStatus = noErr;
     SecPolicyRef sslPolicy = SecPolicyCreateSSL(true, cfHostname);
 
     if (sslPolicy == NULL)
@@ -436,7 +445,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
 
         if (osStatus == noErr && trustResult != kSecTrustResultUnspecified && trustResult != kSecTrustResultProceed)
         {
-            // If evaliation suceeded but result is not trusted try to get details.
+            // If evaluation succeeded but result is not trusted try to get details.
             CFDictionaryRef detailsAndStuff = SecTrustCopyResult(trust);
 
             if (detailsAndStuff != NULL)
