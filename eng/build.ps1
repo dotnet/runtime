@@ -7,6 +7,7 @@ Param(
   [string][Alias('c')]$configuration = "Debug",
   [string][Alias('f')]$framework,
   [string]$vs,
+  [string]$vspath,
   [string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
@@ -43,6 +44,7 @@ function Get-Help() {
 
   Write-Host "Libraries settings:"
   Write-Host "  -vs                     Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
+  Write-Host "  -vspath                 Path to the VS to use (devenv.exe) - to be able to run with preview VS versions"
   Write-Host "  -framework              Build framework: netcoreapp or netfx (short: -f)"
   Write-Host "  -coverage               Collect code coverage when testing"
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
@@ -64,14 +66,26 @@ $subsetCategory = $subsetCategory.ToLowerInvariant()
 if ($vs) {
   . $PSScriptRoot\common\tools.ps1
 
-  if (-Not (Test-Path $vs)) {
-    $vs = Join-Path "$PSScriptRoot\..\src\libraries" $vs | Join-Path -ChildPath "$vs.sln"
+  # Microsoft.DotNet.CoreSetup.sln is special - hosting tests are currently meant to run on the
+  # bootstrapped .NET Core, not on the live-built runtime.
+  if ([System.IO.Path]::GetFileName($vs) -ieq "Microsoft.DotNet.CoreSetup.sln") {
+    if (-Not (Test-Path $vs)) {
+      $vs = Join-Path "$PSScriptRoot\..\src\installer" $vs
+    }
+
+    # This tells .NET Core to use the bootstrapped runtime to run the tests
+    $env:DOTNET_ROOT=InitializeDotNetCli -install:$false
   }
+  else {
+    if (-Not (Test-Path $vs)) {
+      $vs = Join-Path "$PSScriptRoot\..\src\libraries" $vs | Join-Path -ChildPath "$vs.sln"
+    }
 
-  $archTestHost = if ($arch) { $arch } else { "x64" }
+    $archTestHost = if ($arch) { $arch } else { "x64" }
 
-  # This tells .NET Core to use the same dotnet.exe that build scripts use
-  $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-$configuration-$archTestHost";
+    # This tells .NET Core to use the same dotnet.exe that build scripts use
+    $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-$configuration-$archTestHost";
+  }
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
   $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=InitializeDotNetCli -install:$false
@@ -83,7 +97,12 @@ if ($vs) {
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
 
   # Launch Visual Studio with the locally defined environment variables
-  ."$vs"
+  if ([string]::IsNullOrEmpty($vspath)) {
+    ."$vs"
+  }
+  else {
+    & $vspath $vs
+  }
 
   exit 0
 }
