@@ -256,5 +256,21 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return BitConverter.Int32BitsToSingle(result);
         }
+
+<#
+        foreach (var type in new[] { (name: "sbyte",  unsigned: "byte"),
+                                     (name: "short",  unsigned: "ushort"),
+                                     (name: "int",    unsigned: "uint"),
+                                     (name: "byte",   unsigned: "byte"),
+                                     (name: "ushort", unsigned: "ushort"),
+                                     (name: "uint",   unsigned: "uint") })
+        {
+#>
+        public static <#= type.unsigned #> AbsoluteDifference(<#= type.name  #> left, <#= type.name  #> right) => (<#= type.unsigned #>)Math.Abs((long)left - (long)right);
+<#
+        }
+#>
+        public static float AbsoluteDifference(float left, float right) => Math.Abs(left - right);
+        public static double AbsoluteDifference(double left, double right) => Math.Abs(left - right);
     }
 }

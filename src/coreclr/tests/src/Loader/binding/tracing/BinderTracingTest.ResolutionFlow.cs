@@ -75,7 +75,7 @@ namespace BinderTracingTests
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [AssemblyNotFound]
         [BinderTest(isolate: true, testSetup: nameof(LoadSubdirectoryAssembly_InstanceALC))]
-        public static BindOperation FindInLoadContext_IncompatibleVersion()
+        public static BindOperation FindInLoadContext_CustomALC_IncompatibleVersion()
         {
             var assemblyName = new AssemblyName($"{SubdirectoryAssemblyName}, Version=4.3.2.1");
             Assert.Throws<FileNotFoundException>(() => alcInstance.LoadFromAssemblyName(assemblyName));
@@ -95,6 +95,31 @@ namespace BinderTracingTests
                     GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alcInstance, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, alcInstance, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, alcInstance, ResolutionResult.AssemblyNotFound)
+                }
+            };
+        }
+
+        // Incompatible version in load context:
+        //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [IncompatibleVersion]
+        //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (DefaultALC)    [AssemblyNotFound]
+        [BinderTest(isolate: true, testSetup: nameof(UseDependentAssembly))]
+        public static BindOperation FindInLoadContext_DefaultALC_IncompatibleVersion()
+        {
+            var assemblyName = new AssemblyName($"{DependentAssemblyName}, Version=4.3.2.1");
+            Assert.Throws<FileNotFoundException>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName));
+
+            return new BindOperation()
+            {
+                AssemblyName = assemblyName,
+                AssemblyLoadContext = DefaultALC,
+                Success = false,
+                Cached = false,
+                ResolutionAttempts = new List<ResolutionAttempt>()
+                {
+                    GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.IncompatibleVersion, UseDependentAssembly()),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound)
                 }
             };
         }
@@ -124,6 +149,33 @@ namespace BinderTracingTests
             };
         }
 
+        // Incompatible version in load context:
+        //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [IncompatibleVersion]
+        //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (DefaultALC)    [AssemblyNotFound]
+        [BinderTest(isolate: true)]
+        public static BindOperation ApplicationAssemblies_IncompatibleVersion()
+        {
+            var assemblyName = new AssemblyName($"{DependentAssemblyName}, Version=4.3.2.1");
+            Assert.Throws<FileNotFoundException>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName));
+
+            return new BindOperation()
+            {
+                AssemblyName = assemblyName,
+                AssemblyLoadContext = DefaultALC,
+                Success = false,
+                Cached = false,
+                ResolutionAttempts = new List<ResolutionAttempt>()
+                {
+                    GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.IncompatibleVersion, new AssemblyName($"{DependentAssemblyName}, Version=1.0.0.0"), Helpers.GetAssemblyInAppPath(DependentAssemblyName)),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextResolvingEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AppDomainAssemblyResolveEvent, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound)
+                }
+            };
+        }
+
         // Mismatched assembly name from platform assemblies:
         //   ResolutionAttempted : FindInLoadContext                    (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [MismatchedAssemblyName]
@@ -132,12 +184,11 @@ namespace BinderTracingTests
         [BinderTest(isolate: true)]
         public static BindOperation ApplicationAssemblies_MismatchedAssemblyName()
         {
-            string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string assemblyPath = Path.Combine(appPath, $"{DependentAssemblyName}_Copy.dll");
             var assemblyName = new AssemblyName($"{DependentAssemblyName}_Copy, Culture=neutral, PublicKeyToken=null");
+            string assemblyPath = Helpers.GetAssemblyInAppPath(assemblyName.Name);
             try
             {
-                File.Copy(Path.Combine(appPath,$"{DependentAssemblyName}.dll"), assemblyPath, true);
+                File.Copy(Helpers.GetAssemblyInAppPath(DependentAssemblyName), assemblyPath, true);
                 Assert.Throws<FileNotFoundException>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName));
             }
             finally
@@ -244,6 +295,37 @@ namespace BinderTracingTests
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
                     GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.Success, asm),
                     GetResolutionAttempt(assemblyName, ResolutionStage.DefaultAssemblyLoadContextFallback, alc, ResolutionResult.Success, asm)
+                }
+            };
+        }
+
+        // Successful load through satellite assembly resolution logic:
+        //   ResolutionAttempted : FindInLoadContext        (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextLoad  (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : ResolveSatelliteAssembly (CustomALC)     [Success]
+        [BinderTest]
+        public static BindOperation ResolveSatelliteAssembly()
+        {
+            AssemblyName assemblyName = new AssemblyName($"{DependentAssemblyName}.resources");
+            assemblyName.CultureInfo = SatelliteCulture;
+
+            CustomALC alc = new CustomALC(nameof(ResolveSatelliteAssembly));
+            alc.LoadFromAssemblyPath(Helpers.GetAssemblyInAppPath(DependentAssemblyName));
+            Assembly asm = alc.LoadFromAssemblyName(assemblyName);
+
+            return new BindOperation()
+            {
+                AssemblyName = assemblyName,
+                AssemblyLoadContext = alc.ToString(),
+                Success = true,
+                ResultAssemblyName = asm.GetName(),
+                ResultAssemblyPath = asm.Location,
+                Cached = false,
+                ResolutionAttempts = new List<ResolutionAttempt>()
+                {
+                    GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.ResolveSatelliteAssembly, alc, ResolutionResult.Success, asm)
                 }
             };
         }
@@ -524,6 +606,69 @@ namespace BinderTracingTests
             };
         }
 
+        // Assembly with different MVID is found in load context when attempted to load through full path:
+        //   ResolutionAttempted : FindInLoadContext        (DefaultALC)    [Failure]
+        [BinderTest(isolate: true, testSetup: nameof(UseDependentAssembly))]
+        public static BindOperation LoadFromAssemblyPath_FoundInLoadContext_DifferentMvid()
+        {
+            var assemblyPath = Helpers.GetAssemblyInSubdirectoryPath($"{DependentAssemblyName}_V2");
+
+            string errorMessage = null;
+            try
+            {
+                AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
+            }
+            catch (FileLoadException e)
+            {
+                errorMessage = e.Message;
+            }
+
+            var assemblyName = new AssemblyName($"{DependentAssemblyName}, Version=2.0.0.0");
+            return new BindOperation()
+            {
+                AssemblyName = assemblyName,
+                AssemblyPath = assemblyPath,
+                AssemblyLoadContext = DefaultALC,
+                RequestingAssembly = CoreLibName,
+                RequestingAssemblyLoadContext = DefaultALC,
+                Success = false,
+                Cached = false,
+                ResolutionAttempts = new List<ResolutionAttempt>()
+                {
+                    // GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.IncompatibleVersion, UseDependentAssembly()),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.Failure, new AssemblyName($"{DependentAssemblyName}, Version=1.0.0.0"), Helpers.GetAssemblyInAppPath(DependentAssemblyName), errorMessage),
+                }
+            };
+        }
+
+        // Incompatible version is found in app path when attempted to load through full path:
+        //   ResolutionAttempted : FindInLoadContext        (DefaultALC)    [AssemblyNotFound]
+        //   ResolutionAttempted : ApplicationAssemblies    (DefaultALC)    [IncompatibleVersion]
+        [BinderTest(isolate: true)]
+        public static BindOperation LoadFromAssemblyPath_FoundInAppPath_IncompatibleVersion()
+        {
+            var assemblyPath = Helpers.GetAssemblyInSubdirectoryPath($"{DependentAssemblyName}_V2");
+
+            Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath));
+
+            var assemblyName = new AssemblyName($"{DependentAssemblyName}, Version=2.0.0.0");
+            return new BindOperation()
+            {
+                AssemblyName = assemblyName,
+                AssemblyPath = assemblyPath,
+                AssemblyLoadContext = DefaultALC,
+                RequestingAssembly = CoreLibName,
+                RequestingAssemblyLoadContext = DefaultALC,
+                Success = false,
+                Cached = false,
+                ResolutionAttempts = new List<ResolutionAttempt>()
+                {
+                    GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.ApplicationAssemblies, AssemblyLoadContext.Default, ResolutionResult.IncompatibleVersion, new AssemblyName($"{DependentAssemblyName}, Version=1.0.0.0"), Helpers.GetAssemblyInAppPath(DependentAssemblyName)),
+                }
+            };
+        }
+
         private static ResolutionAttempt GetResolutionAttempt(AssemblyName assemblyName, ResolutionStage stage, AssemblyLoadContext alc, string exceptionMessage)
         {
             return GetResolutionAttempt(assemblyName, stage, alc, ResolutionResult.Exception, null, null, exceptionMessage);
@@ -542,7 +687,7 @@ namespace BinderTracingTests
             return GetResolutionAttempt(assemblyName, stage, alc, result, resultAssemblyName, resultAssemblyPath);
         }
 
-        private static ResolutionAttempt GetResolutionAttempt(AssemblyName assemblyName, ResolutionStage stage, AssemblyLoadContext alc, ResolutionResult result, AssemblyName resultAssemblyName, string resultAssemblyPath, string exceptionMessage = null)
+        private static ResolutionAttempt GetResolutionAttempt(AssemblyName assemblyName, ResolutionStage stage, AssemblyLoadContext alc, ResolutionResult result, AssemblyName resultAssemblyName, string resultAssemblyPath, string errorMessage = null)
         {
             var attempt = new ResolutionAttempt()
             {
@@ -554,9 +699,9 @@ namespace BinderTracingTests
                 ResultAssemblyPath = resultAssemblyPath
             };
 
-            if (!string.IsNullOrEmpty(exceptionMessage))
+            if (!string.IsNullOrEmpty(errorMessage))
             {
-                attempt.ErrorMessage = exceptionMessage;
+                attempt.ErrorMessage = errorMessage;
             }
             else
             {

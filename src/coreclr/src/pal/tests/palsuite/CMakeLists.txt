@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.12.2)
 
 project(PALTESTSUITE)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 include_directories(${PALTESTSUITE_SOURCE_DIR}/common)
 
 # All test will link against these libraries:

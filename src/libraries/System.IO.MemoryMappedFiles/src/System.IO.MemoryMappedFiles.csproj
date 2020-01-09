@@ -90,8 +90,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualQuery.cs">
       <Link>Common\Interop\Windows\Interop.VirtualQuery.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
-      <Link>System\IO\Win32Marshal.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Windows.cs" />

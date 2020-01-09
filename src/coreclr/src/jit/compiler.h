@@ -327,7 +327,7 @@ public:
         }
 
         unsigned ssaNum    = GetMinSsaNum() + m_count;
-        m_array[m_count++] = T(jitstd::forward<Args>(args)...);
+        m_array[m_count++] = T(std::forward<Args>(args)...);
 
         // Ensure that the first SSA number we allocate is SsaConfig::FIRST_SSA_NUM
         assert((ssaNum == SsaConfig::FIRST_SSA_NUM) || (m_count > 1));
@@ -5578,6 +5578,7 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     void fgMarkAddressExposedLocals();
+    void fgMarkAddressExposedLocals(Statement* stmt);
 
     static fgWalkPreFn  fgUpdateSideEffectsPre;
     static fgWalkPostFn fgUpdateSideEffectsPost;
@@ -10588,8 +10589,12 @@ const instruction INS_SQRT = INS_vsqrt;
 
 #ifdef _TARGET_ARM64_
 
-const instruction INS_MULADD     = INS_madd;
+const instruction INS_MULADD = INS_madd;
+#if defined(_TARGET_UNIX_)
+const instruction INS_BREAKPOINT = INS_brk;
+#else
 const instruction INS_BREAKPOINT = INS_bkpt;
+#endif
 
 const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;

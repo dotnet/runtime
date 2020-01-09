@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12.2)
-
 add_subdirectory(abs)
 add_subdirectory(acos)
 add_subdirectory(acosf)
@@ -146,7 +144,6 @@ add_subdirectory(_alloca)
 add_subdirectory(_fdopen)
 add_subdirectory(_finite)
 add_subdirectory(_finitef)
-add_subdirectory(_fullpath)
 
 # TODO: make this test compile
 # add_subdirectory(_gcvt)
@@ -157,7 +154,6 @@ add_subdirectory(_itow)
 add_subdirectory(_mbsdec)
 add_subdirectory(_mbsinc)
 add_subdirectory(_mbsninc)
-add_subdirectory(_open_osfhandle)
 add_subdirectory(_putenv)
 add_subdirectory(_rotl)
 add_subdirectory(_rotr)

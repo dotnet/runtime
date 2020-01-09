@@ -27,7 +27,7 @@ namespace System.Net.Http
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
             stream.WriteAsync(_content).AsTask();
 
-        internal override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
             stream.WriteAsync(_content, cancellationToken).AsTask();
 
         protected internal override bool TryComputeLength(out long length)

@@ -17336,7 +17336,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
         case CORINFO_HELP_NEWARR_1_OBJ:
         case CORINFO_HELP_NEWARR_1_VC:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
-        case CORINFO_HELP_NEWARR_1_R2R_DIRECT:
         case CORINFO_HELP_READYTORUN_NEWARR_1:
         {
             CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;

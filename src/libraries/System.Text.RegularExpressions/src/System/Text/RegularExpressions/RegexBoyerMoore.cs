@@ -12,6 +12,7 @@
 // need to be examined.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -338,8 +339,10 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Used when dumping for debugging.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         public override string ToString() => Pattern;
 
+        [ExcludeFromCodeCoverage]
         public string Dump(string indent)
         {
             StringBuilder sb = new StringBuilder();

@@ -37,8 +37,8 @@
     <Compile Include="System\UriPartial.cs" />
     <Compile Include="System\UriScheme.cs" />
     <Compile Include="System\UriSyntax.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

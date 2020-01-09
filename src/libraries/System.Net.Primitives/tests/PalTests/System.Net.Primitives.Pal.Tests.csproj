@@ -44,7 +44,7 @@
     <Compile Include="$(CommonPath)System\Marvin.cs">
       <Link>ProductionCode\Common\System\Marvin.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
       <Link>ProductionCode\Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
   </ItemGroup>

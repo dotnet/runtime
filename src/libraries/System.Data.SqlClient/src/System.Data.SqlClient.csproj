@@ -190,8 +190,8 @@
       <Link>System\Data\SQLTypes\SQLResource.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\NotImplemented.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIHandle.cs" />
@@ -232,8 +232,8 @@
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
       <Link>Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>

@@ -92,6 +92,44 @@ namespace System.Text.RegularExpressions.Tests
 
             yield return new object[]
             {
+                @"\b\w*\b", "handling words of various lengths", RegexOptions.None,
+                new CaptureData[]
+                {
+                    new CaptureData("handling", 0, 8),
+                    new CaptureData("", 8, 0),
+                    new CaptureData("words", 9, 5),
+                    new CaptureData("", 14, 0),
+                    new CaptureData("of", 15, 2),
+                    new CaptureData("", 17, 0),
+                    new CaptureData("various", 18, 7),
+                    new CaptureData("", 25, 0),
+                    new CaptureData("lengths", 26, 7),
+                    new CaptureData("", 33, 0),
+                }
+            };
+
+            yield return new object[]
+            {
+                @"\b\w{2}\b", "handling words of various lengths", RegexOptions.None,
+                new CaptureData[]
+                {
+                    new CaptureData("of", 15, 2),
+                }
+            };
+
+            yield return new object[]
+            {
+                @"\w{6,}", "handling words of various lengths", RegexOptions.None,
+                new CaptureData[]
+                {
+                    new CaptureData("handling", 0, 8),
+                    new CaptureData("various", 18, 7),
+                    new CaptureData("lengths", 26, 7),
+                }
+            };
+
+            yield return new object[]
+            {
                 @"foo\d+", "0123456789foo4567890foo1foo  0987", RegexOptions.RightToLeft,
                 new CaptureData[]
                 {
@@ -141,18 +179,21 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            yield return new object[]
+            if (!PlatformDetection.IsFullFramework) // missing fix in https://github.com/dotnet/runtime/pull/993
             {
-                "[^]", "every", RegexOptions.ECMAScript,
-                new CaptureData[]
+                yield return new object[]
                 {
-                    new CaptureData("e", 0, 1),
-                    new CaptureData("v", 1, 1),
-                    new CaptureData("e", 2, 1),
-                    new CaptureData("r", 3, 1),
-                    new CaptureData("y", 4, 1),
-                }
-            };
+                    "[^]", "every", RegexOptions.ECMAScript,
+                    new CaptureData[]
+                    {
+                        new CaptureData("e", 0, 1),
+                        new CaptureData("v", 1, 1),
+                        new CaptureData("e", 2, 1),
+                        new CaptureData("r", 3, 1),
+                        new CaptureData("y", 4, 1),
+                    }
+                };
+            }
         }
 
         [Theory]

@@ -426,7 +426,7 @@ public:
 
     BOOL IsSafeTypeForMarshalling();
 
-    // Creates a new Template and caches it on the MethodTable/ArrayTypeDesc or class factory.
+    // Creates a new Template and caches it on the MethodTable or class factory.
     static ComCallWrapperTemplate *CreateTemplate(TypeHandle thClass, WinRTManagedClassFactory *pClsFact = NULL);
 
     // Creates a new Template for just one interface. Used for lazily created CCWs for interfaces with variance.

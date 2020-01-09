@@ -794,22 +794,6 @@ ULONG NativeVarLocations(const ICorDebugInfo::VarLoc &   varLoc,
 }
 
 
-BOOL CompareFiles(HANDLE hFile1,HANDLE hFile2)
-{
-
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    BY_HANDLE_FILE_INFORMATION fileinfo1;
-    BY_HANDLE_FILE_INFORMATION fileinfo2;
-    if (!GetFileInformationByHandle(hFile1,&fileinfo1) ||
-        !GetFileInformationByHandle(hFile2,&fileinfo2))
-        ThrowLastError();
-    return fileinfo1.nFileIndexLow == fileinfo2.nFileIndexLow &&
-               fileinfo1.nFileIndexHigh == fileinfo2.nFileIndexHigh &&
-               fileinfo1.dwVolumeSerialNumber==fileinfo2.dwVolumeSerialNumber;
-}
-
-
 #ifndef DACCESS_COMPILE
 
 // Returns the location at which the variable

@@ -1,7 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- This constant is only here for usage in $(CommonTestPath), since not all projects using these tests have been updated yet-->
-    <DefineConstants>$(DefineConstants);STREAM_MEMORY_OVERLOADS_AVAILABLE</DefineConstants>
     <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -43,8 +41,8 @@
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs">
       <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
   <!--

@@ -612,7 +612,7 @@ namespace System.Xml.Schema
             int[] days = leapYear ? DaysToMonth366 : DaysToMonth365;
             // All months have less than 32 days, so n >> 5 is a good conservative
             // estimate for the month
-            month = n >> 5 + 1;
+            month = (n >> 5) + 1;
             // m = 1-based month number
             while (n >= days[month])
                 month++;

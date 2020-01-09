@@ -1938,7 +1938,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
     if ((op1->gtOper != GT_LCL_VAR) && (op2->gtOper == GT_LCL_VAR))
     {
-        jitstd::swap(op1, op2);
+        std::swap(op1, op2);
     }
     // If op1 is lcl and op2 is const or lcl, create assertion.
     if ((op1->gtOper == GT_LCL_VAR) &&
@@ -1951,7 +1951,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     if (((op1->gtOper != GT_IND) || (op1->AsOp()->gtOp1->gtOper != GT_LCL_VAR)) &&
         ((op2->gtOper == GT_IND) && (op2->AsOp()->gtOp1->gtOper == GT_LCL_VAR)))
     {
-        jitstd::swap(op1, op2);
+        std::swap(op1, op2);
     }
     // If op1 is ind, then extract op1's oper.
     if ((op1->gtOper == GT_IND) && (op1->AsOp()->gtOp1->gtOper == GT_LCL_VAR))
@@ -1962,7 +1962,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // Look for a call to an IsInstanceOf helper compared to a nullptr
     if ((op2->gtOper != GT_CNS_INT) && (op1->gtOper == GT_CNS_INT))
     {
-        jitstd::swap(op1, op2);
+        std::swap(op1, op2);
     }
     // Validate op1 and op2
     if ((op1->gtOper != GT_CALL) || (op1->AsCall()->gtCallType != CT_HELPER) || (op1->TypeGet() != TYP_REF) || // op1

@@ -55,7 +55,7 @@ namespace Internal.Cryptography.Pal
                                 throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecInvalidKeyRef);
                             }
                             // EccGetKeySizeInBits can fail for two reasons. First, the Apple implementation has changed
-                            // and we receive values from API that were not previously handled. In that case the CoreFX
+                            // and we receive values from API that were not previously handled. In that case the
                             // implementation will need to be adjusted to handle these values. Second, we deliberately
                             // return 0 from the native code to prevent hitting buggy API implementations in Apple code
                             // later.

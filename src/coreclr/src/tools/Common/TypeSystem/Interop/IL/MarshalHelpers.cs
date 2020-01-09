@@ -440,6 +440,7 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsPointer)
             {
+#if READYTORUN
                 TypeDesc parameterType = ((PointerType)type).ParameterType;
 
                 if ((!parameterType.IsEnum
@@ -450,6 +451,10 @@ namespace Internal.TypeSystem.Interop
                     // Pointers cannot reference marshaled structures.  Use ByRef instead.
                     return MarshallerKind.Invalid;
                 }
+#else
+                // Do not bother enforcing the above artificial restriction
+                // See https://github.com/dotnet/coreclr/issues/27800
+#endif
 
                 if (nativeType == NativeTypeKind.Default)
                     return MarshallerKind.BlittableValue;
