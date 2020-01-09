@@ -497,6 +497,37 @@ namespace System.Text.Json.Tests
             Assert.Equal(1, root.NestedList.Count);
             Assert.Equal(3, root.NestedList[0].Count);
         }
+
+        [Fact]
+        public static void ArrayWithMetadataWithinArray_UsingPreserve()
+        {
+            const string json =
+            @"[
+                {
+                    ""$id"": ""1"",
+                    ""$values"": []
+                }
+            ]";
+
+            List<List<Employee>> root = JsonSerializer.Deserialize<List<List<Employee>>>(json, _serializeOptionsPreserve);
+            Assert.Equal(1, root.Count);
+            Assert.Equal(0, root[0].Count);
+        }
+
+        [Fact]
+        public static void ObjectWithinArray_UsingDefault()
+        {
+            const string json =
+            @"[
+                {
+                    ""$id"": ""1"",
+                    ""$values"": []
+                }
+            ]";
+
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<List<Employee>>>(json));
+            Assert.Equal("$[0]", ex.Path);
+        }
         #endregion
 
         #region Converter

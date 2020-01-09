@@ -29,24 +29,7 @@ namespace System.Text.Json
             if (state.Current.IsProcessingEnumerable())
             {
                 // A nested object within an enumerable (non-dictionary).
-                if (!state.Current.CollectionPropertyInitialized)
-                {
-                    if (options.ReferenceHandling.ShouldReadPreservedReferences())
-                    {
-                        HandleStartPreservedArray(ref state, options);
-                    }
-                    else
-                    {
-                        // We have bad JSON: enumerable element appeared without preceding StartArray token.
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo!.DeclaredPropertyType);
-                    }
-                }
-                else
-                {
-                    Type objType = state.Current.GetElementType();
-                    state.Push();
-                    state.Current.Initialize(objType, options);
-                }
+                HandleStartObjectInEnumerable(ref state, options);
             }
             else if (state.Current.JsonPropertyInfo != null)
             {
@@ -84,19 +67,16 @@ namespace System.Text.Json
             }
             else if (state.Current.IsProcessingObject(ClassType.Enumerable))
             {
-                // Nested preserved array within another preserved array.
+                // Nested array with metadata within another array with metadata.
+                HandleStartObjectInEnumerable(ref state, options);
                 Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
 
-                Type preservedObjType = state.Current.JsonPropertyInfo!.GetJsonPreservedReferenceType();
-                // Re-Initialize the current frame.
-                state.Current.Initialize(preservedObjType, options);
                 state.Current.ReturnValue = state.Current.JsonClassInfo!.CreateObject!();
-                state.Current.IsPreservedArray = true;
                 state.Current.IsNestedPreservedArray = true;
             }
             else
             {
-                // Only dictionaries or objects are valid given the `StartObject` token.
+                // Only dictionaries, objects and (arrays with metadata in Preserve mode) are valid given the `StartObject` token.
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(classInfo.Type);
             }
         }
@@ -175,6 +155,28 @@ namespace System.Text.Json
             }
 
             state.Current.IsPreservedArray = true;
+        }
+
+        private static void HandleStartObjectInEnumerable(ref ReadStack state, JsonSerializerOptions options)
+        {
+            if (!state.Current.CollectionPropertyInitialized)
+            {
+                if (options.ReferenceHandling.ShouldReadPreservedReferences())
+                {
+                    HandleStartPreservedArray(ref state, options);
+                }
+                else
+                {
+                    // We have bad JSON: enumerable element appeared without preceding StartArray token.
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo!.DeclaredPropertyType);
+                }
+            }
+            else
+            {
+                Type objType = state.Current.GetElementType();
+                state.Push();
+                state.Current.Initialize(objType, options);
+            }
         }
     }
 }
