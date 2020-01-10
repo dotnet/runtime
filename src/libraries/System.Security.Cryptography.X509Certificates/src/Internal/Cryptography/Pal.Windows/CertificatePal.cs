@@ -360,7 +360,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public PolicyData GetPolicyData();
+        public PolicyData GetPolicyData()
         {
             throw new PlatformNotSupportedException();
         }
