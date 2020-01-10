@@ -273,6 +273,33 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
+        internal override void AbortWrite(int errorCode)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            ThrowIfDisposed();
+
+            bool shouldComplete = false;
+
+            lock (_sync)
+            {
+                if (_shutdownState == ShutdownWriteState.None)
+                {
+                    _shutdownState = ShutdownWriteState.Canceled;
+                    shouldComplete = true;
+                }
+            }
+
+            if (shouldComplete)
+            {
+                _shutdownWriteResettableCompletionSource.CompleteException(new OperationCanceledException("Shutdown was Aborted"));
+            }
+
+            MsQuicApi.Api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_SEND, errorCode: errorCode);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
+
         internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
@@ -297,8 +324,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _shutdownWriteResettableCompletionSource.CompleteException(new OperationCanceledException("Shutdown was canceled"));
                 }
             });
-
-            //var status = MsQuicApi.Api._streamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 

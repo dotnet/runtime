@@ -104,6 +104,7 @@ namespace System.Net.Quic
         public override Task FlushAsync(CancellationToken cancellationToken) => _provider.FlushAsync(cancellationToken);
 
         public void AbortRead() => _provider.AbortRead();
+        public void AbortWrite(int errorCode) => _provider.AbortWrite(errorCode);
 
         public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffer, endStream, cancellationToken);
 
