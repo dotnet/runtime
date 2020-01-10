@@ -1073,7 +1073,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 Assert.False(asyncDisposableService.DisposeAsyncCalled);
 
-                await ((IAsyncDisposable) host).DisposeAsync();
+                await ((IAsyncDisposable)host).DisposeAsync();
 
                 Assert.True(asyncDisposableService.DisposeAsyncCalled);
             }
@@ -1087,7 +1087,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             var sourceMock = new Mock<IConfigurationSource>();
             sourceMock.Setup(s => s.Build(It.IsAny<IConfigurationBuilder>()))
-                .Returns((ConfigurationProvider) providerMock.Object);
+                .Returns((ConfigurationProvider)providerMock.Object);
 
             var host = CreateBuilder()
                 .ConfigureAppConfiguration(configuration =>
@@ -1098,7 +1098,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             providerMock.Verify(c => c.Dispose(), Times.Never);
 
-            await ((IAsyncDisposable) host).DisposeAsync();
+            await ((IAsyncDisposable)host).DisposeAsync();
 
             providerMock.Verify(c => c.Dispose(), Times.AtLeastOnce());
         }
@@ -1111,7 +1111,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             var sourceMock = new Mock<IConfigurationSource>();
             sourceMock.Setup(s => s.Build(It.IsAny<IConfigurationBuilder>()))
-                .Returns((ConfigurationProvider) providerMock.Object);
+                .Returns((ConfigurationProvider)providerMock.Object);
 
             var host = CreateBuilder()
                 .ConfigureHostConfiguration(configuration =>
@@ -1122,9 +1122,25 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             providerMock.Verify(c => c.Dispose(), Times.Never);
 
-            await ((IAsyncDisposable) host).DisposeAsync();
+            await ((IAsyncDisposable)host).DisposeAsync();
 
             providerMock.Verify(c => c.Dispose(), Times.AtLeastOnce());
+        }
+
+        [Fact]
+        public void ThrowExceptionForCustomImplementationOfIHostApplicationLifetime()
+        {
+            var hostApplicationLifetimeMock = new Mock<IHostApplicationLifetime>();
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                CreateBuilder()
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddSingleton(hostApplicationLifetimeMock.Object);
+                })
+                .Build();
+            });
         }
 
         private IHostBuilder CreateBuilder(IConfiguration config = null)
