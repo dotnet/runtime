@@ -35290,11 +35290,11 @@ void gc_heap::descr_generations (BOOL begin_gc_p)
 
  unsigned int PromotedObjectCount  = 0;
  unsigned int CreatedObjectCount       = 0;
- unsigned int AllocDuration            = 0;
+ int64_t  AllocDuration            = 0;
  unsigned int AllocCount               = 0;
  unsigned int AllocBigCount            = 0;
  unsigned int AllocSmallCount      = 0;
- unsigned int AllocStart             = 0;
+ int64_t AllocStart             = 0;
 #endif //TRACE_GC
 
 //Static member variables.
@@ -38257,7 +38257,7 @@ void gc_heap::do_post_gc()
 #ifdef COUNT_CYCLES
     AllocStart = GetCycleCount32();
 #else
-    AllocStart = clock();
+    AllocStart = GCToOSInterface::QueryPerformanceCounter();
 #endif //COUNT_CYCLES
 #endif //TRACE_GC
 
@@ -38477,7 +38477,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 #ifdef COUNT_CYCLES
     AllocDuration += GetCycleCount32() - AllocStart;
 #else
-    AllocDuration += clock() - AllocStart;
+    AllocDuration += GCToOSInterface::QueryPerformanceCounter() - AllocStart;
 #endif //COUNT_CYCLES
 #endif //TRACE_GC
 
@@ -38526,9 +38526,9 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
     unsigned finish;
     start = GetCycleCount32();
 #else
-    clock_t start;
-    clock_t finish;
-    start = clock();
+    int64_t start;
+    int64_t finish;
+    start = GCToOSInterface::QueryPerformanceCounter();
 #endif //COUNT_CYCLES
     PromotedObjectCount = 0;
 #endif //TRACE_GC
@@ -38570,7 +38570,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 #ifdef COUNT_CYCLES
     finish = GetCycleCount32();
 #else
-    finish = clock();
+    finish = GCToOSInterface::QueryPerformanceCounter();
 #endif //COUNT_CYCLES
     GcDuration += finish - start;
     dprintf (3,
