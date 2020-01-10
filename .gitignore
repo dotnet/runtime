@@ -338,3 +338,10 @@ sandbox
 
 #IL linker for testing
 linker
+
+# Symbolic link for the shared portion of CoreLib
+# On Windows, make your own by running these commands from the repo root:
+# mklink /D src\coreclr\src\System.Private.CoreLib\shared %CD%\src\libraries\System.Private.CoreLib\src
+# mklink /D src\coreclr\src\System.Private.CoreLib\common %CD%\src\libraries\Common\src
+src/coreclr/src/System.Private.CoreLib/shared
+src/coreclr/src/System.Private.CoreLib/common
