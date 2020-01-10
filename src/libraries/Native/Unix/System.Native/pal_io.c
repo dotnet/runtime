@@ -1211,12 +1211,28 @@ enum CloneFileResult
     CLONEFILE_ERROR
 };
 
-static enum CloneFileResult CopyFile_CloneFile(const char* srcPath, const char* destPath, bool destinationExists)
+static enum CloneFileResult CopyFile_CloneFile(const char* srcPath, const char* destPath, struct stat_ *sourceStat, int32_t overwrite)
 {
+    struct stat_ destStat;
     int ret;
 
-    if (destinationExists)
+    while ((ret = stat_(destPath, &destStat)) < 0 && errno == EINTR);
+    if (ret == 0)
     {
+        if (!overwrite)
+        {
+            errno = EEXIST;
+            return CLONEFILE_ERROR;
+        }
+
+        if (sourceStat->st_dev == destStat.st_dev && sourceStat->st_ino == destStat.st_ino)
+        {
+            // Attempt to copy file over itself. Fail with the same error code as
+            // open would.
+            errno = EBUSY;
+            return CLONEFILE_ERROR;
+        }
+
         // We need to unlink the destination file first but we need to check
         // permission first to ensure we don't try to unlink a read-only file.
         if (access(destPath, W_OK) != 0)
@@ -1362,74 +1378,74 @@ static bool CopyFile_CopyFileRange(int inFd, int outFd, const struct stat_ *sour
 }
 #endif // defined(PAL_COPY_FILE_RANGE_SYSCALL)
 
-int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite)
+int32_t SystemNative_CopyFile(const char* srcPath, const char* destPath, int32_t overwrite)
 {
-    int inFd = ToFileDescriptor(sourceFd);
-    int outFd;
+    intptr_t inFd;
+    intptr_t outFd;
     int ret;
     int tmpErrno;
     struct stat_ sourceStat;
+    bool locked = false;
     bool copied = false;
 
-    while ((ret = fstat_(inFd, &sourceStat)) < 0 && errno == EINTR);
-    if (ret != 0)
+    // Not all file copying methods require an open file descriptor for the source file; however,
+    // to provide a behavior similar to Windows, we maintain POSIX advisory locks while the file is
+    // being copied.
+    inFd = SystemNative_Open(srcPath, PAL_O_RDONLY | PAL_O_CLOEXEC, 0);
+    if (inFd < 0)
     {
-        return -1;
+        goto out_no_open;
     }
 
-    struct stat_ destStat;
-    while ((ret = stat_(destPath, &destStat)) < 0 && errno == EINTR);
-    if (ret == 0)
+    if (SystemNative_FLock(inFd, LOCK_EX | LOCK_NB) < 0)
     {
-        if (!overwrite)
-        {
-            errno = EEXIST;
-            return -1;
-        }
+        goto out;
+    }
 
-        if (sourceStat.st_dev == destStat.st_dev && sourceStat.st_ino == destStat.st_ino)
-        {
-            // Attempt to copy file over itself. Fail with the same error code as
-            // open would.
-            errno = EBUSY;
-            return -1;
-        }
+    locked = true;
+
+    while ((ret = fstat_(ToFileDescriptor(inFd), &sourceStat)) < 0 && errno == EINTR);
+    if (ret != 0)
+    {
+        goto out;
     }
 
 #if HAVE_CLONEFILE
-    switch (CopyFile_CloneFile(srcPath, destPath, ret == 0))
+    // If clonefile() is available (macOS), try to use it, as filesystems might implement better
+    // file copying strategies (e.g.  CoW).
+    switch (CopyFile_CloneFile(srcPath, destPath, &sourceStat, overwrite))
     {
         case CLONEFILE_SUCCESS:
-            return 0;
+            copied = true;
+            goto out;
         case CLONEFILE_ERROR:
-            return -1;
+            goto out;
         case CLONEFILE_TRY_READ_WRITE:
             break;
     }
-#else
-    // Unused variable
-    (void)srcPath;
 #endif
 
-    outFd = (int)SystemNative_Open(destPath,
+    // TODO: On Linux, it might be worthwhile creating the file with O_TMPFILE while the copy
+    // operation is pending and, when it's finshed, hardlink it to the final destination path.
+    // This way, if the process is interrupted mid-copy, no files are left on the disk.
+    outFd = SystemNative_Open(destPath,
         PAL_O_WRONLY | PAL_O_TRUNC | PAL_O_CREAT | PAL_O_CLOEXEC | (overwrite ? 0 : PAL_O_EXCL),
         sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
     if (outFd < 0)
     {
-        return ret;
+        goto out;
     }
 
 #if defined(PAL_COPY_FILE_RANGE_SYSCALL)
-    // If copy_file_range(2) is available (Linux), try to use it, as
-    // filesystems might implement better file copying strategies (e.g.
-    // CoW).
-    copied = CopyFile_CopyFileRange(inFd, outFd, &sourceStat);
+    // If copy_file_range(2) is available (Linux), try to use it, as filesystems might implement
+    // better file copying strategies (e.g.  CoW through reflinks).
+    copied = copied || CopyFile_CopyFileRange(ToFileDescriptor(inFd), ToFileDescriptor(outFd), &sourceStat);
 #endif // defined(PAL_COPY_FILE_RANGE_SYSCALL)
 
 #if HAVE_SENDFILE_4
-    // If sendfile(2) is available (Linux), try to use it, as the whole copy
-    // can be performed in the kernel, without lots of unnecessary copying.
-    copied = copied || CopyFile_SendFile4(inFd, outFd, &sourceStat);
+    // If sendfile(2) is available (Linux), try to use it, as the whole copy can be performed in
+    // the kernel, without lots of unnecessary copying.
+    copied = copied || CopyFile_SendFile4(ToFileDescriptor(inFd), ToFileDescriptor(outFd), &sourceStat);
 #endif // HAVE_SENDFILE_4
 
     // If there are no better file copying methods, or the previous methods somehow failed, try
@@ -1440,7 +1456,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
 
     if (copied)
     {
-        ret = CopyFileMetadata(ToFileDescriptor(outFd), &sourceStat);
+        CopyFileMetadata(ToFileDescriptor(outFd), &sourceStat);
     }
     else
     {
@@ -1451,7 +1467,23 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
     SystemNative_Close(outFd);
     errno = tmpErrno;
 
-    return ret;
+out:
+    // Closing the file should drop the lock, but be cautious here and issue a flock() anyway.
+    // (Errors are ignored because, at this point, there's nothing that can be done, as the
+    // file is being closed next.)
+    SystemNative_FLock(inFd, LOCK_UN);
+
+    tmpErrno = errno;
+    SystemNative_Close(inFd);
+    errno = tmpErrno;
+
+    if (locked)
+    {
+        return copied ? 0 : errno;
+    }
+
+out_no_open:
+    return -errno;
 }
 
 intptr_t SystemNative_INotifyInit(void)

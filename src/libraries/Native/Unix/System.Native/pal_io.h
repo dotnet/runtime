@@ -668,10 +668,12 @@ PALEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bu
 
 /**
  * Copies all data from the source file descriptor/path to the destination file path.
+ * Obtains a exclusive advisory lock on the input file while the copy is being performed.
  *
- * Returns 0 on success; otherwise, returns -1 and sets errno.
+ * Returns 0 on success; otherwise, set errno and returns a positive integer if copying failed,
+ * and a negative integer if locking failed.
  */
-PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite);
+PALEXPORT int32_t SystemNative_CopyFile(const char* srcPath, const char* destPath, int32_t overwrite);
 
 /**
 * Initializes a new inotify instance and returns a file
