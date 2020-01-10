@@ -128,7 +128,7 @@ namespace System.Diagnostics.Tests
             {
                 var token = cts.Token;
                 var process = Process.GetCurrentProcess();
-                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.WaitForExitAsync(token));
+                OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.WaitForExitAsync(token));
                 Assert.Equal(token, ex.CancellationToken);
                 Assert.False(process.HasExited);
             }
@@ -161,12 +161,12 @@ namespace System.Diagnostics.Tests
             p.Start();
 
             // Verify we can try to wait for the process to exit multiple times
-            using (var cts = new CancellationTokenSource(0))
+            using (var cts = new CancellationTokenSource(millisecondsDelay: 0))
             {
                 var token = cts.Token;
-                for (var i = 0; i < 2; i++)
+                for (int i = 0; i < 2; i++)
                 {
-                    var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(token));
+                    OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(token));
                     Assert.Equal(token, ex.CancellationToken);
                     Assert.False(p.HasExited);
                 }
@@ -177,16 +177,14 @@ namespace System.Diagnostics.Tests
             // killing it while we're waiting, but we could end up killing it
             // before hand, in which case we're simply not testing exactly
             // what we wanted to test, but everything should still work.
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            Task.Delay(10).ContinueWith(_ => p.Kill());
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            _ = Task.Delay(10).ContinueWith(_ => p.Kill());
 
             using (var cts = new CancellationTokenSource(WaitInMS))
             {
                 await p.WaitForExitAsync(cts.Token);
                 Assert.True(p.HasExited);
             }
-            using (var cts = new CancellationTokenSource(0))
+            using (var cts = new CancellationTokenSource(millisecondsDelay: 0))
             {
                 await p.WaitForExitAsync(cts.Token);
                 Assert.True(p.HasExited);
@@ -242,7 +240,7 @@ namespace System.Diagnostics.Tests
             p.Kill();
             Assert.True(await tcs.Task);
 
-            using (var cts = new CancellationTokenSource(0))
+            using (var cts = new CancellationTokenSource(millisecondsDelay: 0))
             {
                 await p.WaitForExitAsync(cts.Token);
                 Assert.True(p.HasExited);
@@ -293,15 +291,15 @@ namespace System.Diagnostics.Tests
         [Fact]
         public async Task SingleProcess_CopiesShareExitAsyncInformation()
         {
-            Process p = CreateProcessLong();
+            using Process p = CreateProcessLong();
             p.Start();
 
             Process[] copies = Enumerable.Range(0, 3).Select(_ => Process.GetProcessById(p.Id)).ToArray();
 
-            using (var cts = new CancellationTokenSource(0))
+            using (var cts = new CancellationTokenSource(millisecondsDelay: 0))
             {
                 var token = cts.Token;
-                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(token));
+                OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(token));
                 Assert.Equal(token, ex.CancellationToken);
                 Assert.False(p.HasExited);
             }
@@ -312,10 +310,12 @@ namespace System.Diagnostics.Tests
                 Assert.True(p.HasExited);
             }
 
-            using (var cts = new CancellationTokenSource(0))
+            using (var cts = new CancellationTokenSource(millisecondsDelay: 0))
             {
                 foreach (Process copy in copies)
                 {
+                    // Since the process has already exited, waiting again does not throw (even if the token is canceled) because
+                    // there's no work to do.
                     await copy.WaitForExitAsync(cts.Token);
                     Assert.True(copy.HasExited);
                 }
@@ -351,10 +351,10 @@ namespace System.Diagnostics.Tests
         [Fact]
         public async Task WaitAsyncForPeerProcess()
         {
-            Process child1 = CreateProcessLong();
+            using Process child1 = CreateProcessLong();
             child1.Start();
 
-            Process child2 = CreateProcess(async peerId =>
+            using Process child2 = CreateProcess(async peerId =>
             {
                 Process peer = Process.GetProcessById(int.Parse(peerId));
                 Console.WriteLine("Signal");
@@ -438,10 +438,10 @@ namespace System.Diagnostics.Tests
             const string successResponse = "Success";
             const int timeout = 5 * 1000;
 
-            Process p = CreateProcessPortable(RemotelyInvokable.WriteLineReadLine);
+            using Process p = CreateProcessPortable(RemotelyInvokable.WriteLineReadLine);
             p.StartInfo.RedirectStandardInput = true;
             p.StartInfo.RedirectStandardOutput = true;
-            var mre = new ManualResetEventSlim(false);
+            using var mre = new ManualResetEventSlim(false);
 
             int linesReceived = 0;
             p.OutputDataReceived += (s, e) =>
