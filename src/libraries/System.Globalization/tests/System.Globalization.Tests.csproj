@@ -116,12 +116,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CoreFx.Private.TestUtilities.Unicode.TestData" Version="$(CoreFxPrivateTestUtilitiesUnicodeTestDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
-    <EmbeddedResource Include="$(PkgCoreFx_Private_TestUtilities_Unicode_TestData)\contentFiles\any\any\12.1.0\ucd\UnicodeData.txt">
+    <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\12.1.0\ucd\UnicodeData.txt">
       <Link>CharUnicodeInfo\UnicodeData.12.1.txt</Link>
       <LogicalName>UnicodeData.12.1.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgCoreFx_Private_TestUtilities_Unicode_TestData)\contentFiles\any\any\12.1.0\ucd\auxiliary\GraphemeBreakTest.txt">
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\12.1.0\ucd\auxiliary\GraphemeBreakTest.txt">
       <Link>CharUnicodeInfo\GraphemeBreakTest-12.1.0.txt</Link>
       <LogicalName>GraphemeBreakTest-12.1.0.txt</LogicalName>
     </EmbeddedResource>

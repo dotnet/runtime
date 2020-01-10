@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
     <UnicodeUcdVersion>12.1</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -16,32 +16,32 @@
     <Compile Include="System\Text\Unicode\CodePoint.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CoreFx.Private.TestUtilities.Unicode.TestData" Version="$(CoreFxPrivateTestUtilitiesUnicodeTestDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
-    <EmbeddedResource Include="$(PkgCoreFx_Private_TestUtilities_Unicode_TestData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\CaseFolding.txt">
+    <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\CaseFolding.txt">
       <Link>UnicodeData\CaseFolding.txt</Link>
       <LogicalName>CaseFolding.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgCoreFx_Private_TestUtilities_Unicode_TestData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\PropList.txt">
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\PropList.txt">
       <Link>UnicodeData\PropList.txt</Link>
       <LogicalName>PropList.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgCoreFx_Private_TestUtilities_Unicode_TestData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
       <Link>UnicodeData\UnicodeData.txt</Link>
       <LogicalName>UnicodeData.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgCoreFx_Private_TestUtilities_Unicode_TestData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\auxiliary\GraphemeBreakProperty.txt">
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\auxiliary\GraphemeBreakProperty.txt">
       <Link>UnicodeData\GraphemeBreakProperty.txt</Link>
       <LogicalName>GraphemeBreakProperty.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgCoreFx_Private_TestUtilities_Unicode_TestData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\extracted\DerivedBidiClass.txt">
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\extracted\DerivedBidiClass.txt">
       <Link>UnicodeData\DerivedBidiClass.txt</Link>
       <LogicalName>DerivedBidiClass.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgCoreFx_Private_TestUtilities_Unicode_TestData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\extracted\DerivedName.txt">
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\extracted\DerivedName.txt">
       <Link>UnicodeData\DerivedName.txt</Link>
       <LogicalName>DerivedName.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgCoreFx_Private_TestUtilities_Unicode_TestData)\contentFiles\any\any\emoji\$(UnicodeUcdVersion)\emoji-data.txt">
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\emoji\$(UnicodeUcdVersion)\emoji-data.txt">
       <Link>UnicodeData\emoji-data.txt</Link>
       <LogicalName>emoji-data.txt</LogicalName>
     </EmbeddedResource>
