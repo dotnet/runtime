@@ -129,6 +129,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
+#nullable enable
 namespace <xsl:value-of select="@namespace" />
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -141,7 +142,7 @@ namespace <xsl:value-of select="@namespace" />
             var usedTags = new System.Collections.Generic.Dictionary&lt;Asn1Tag, string&gt;();
             Action&lt;Asn1Tag, string&gt; ensureUniqueTag = (tag, fieldName) =&gt;
             {
-                if (usedTags.TryGetValue(tag, out string existing))
+                if (usedTags.TryGetValue(tag, out string? existing))
                 {
                     throw new InvalidOperationException($"Tag '{tag}' is in use by both '{existing}' and '{fieldName}'");
                 }
