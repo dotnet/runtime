@@ -621,15 +621,17 @@ namespace Mono.Linker.Steps {
 
 			if (_context.KeepUsedAttributeTypesOnly) {
 				switch (attr_type.FullName) {
-				// [ThreadStatic] and [ContextStatic] are required by the runtime
+				// These are required by the runtime
 				case "System.ThreadStaticAttribute":
 				case "System.ContextStaticAttribute":
+				case "System.Runtime.CompilerServices.IsByRefLikeAttribute":
 					return true;
 				// Attributes related to `fixed` keyword used to declare fixed length arrays
 				case "System.Runtime.CompilerServices.FixedBufferAttribute":
 					return true;
 				case "System.Runtime.InteropServices.InterfaceTypeAttribute":
 				case "System.Runtime.InteropServices.GuidAttribute":
+				case "System.Runtime.CompilerServices.InternalsVisibleToAttribute":
 					return true;
 				}
 				
