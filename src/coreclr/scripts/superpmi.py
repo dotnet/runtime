@@ -1895,7 +1895,8 @@ def setup_args(args):
         coreclr_args.verify(args,
                             "core_root",
                             lambda core_root: (core_root is not None) and os.path.isdir(core_root),
-                            "Invalid core_root.")
+                            lambda core_root: "Invalid core_root {}".format(core_root),
+                            modify_arg=lambda arg: coreclr_args.core_root if args.core_root is None else args.core_root)
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -2013,7 +2014,14 @@ def setup_args(args):
         coreclr_args.verify(args,
                             "core_root",
                             lambda core_root: (core_root is not None) and os.path.isdir(core_root),
-                            "Invalid core_root.")
+                            lambda core_root: "Invalid core_root {}".format(core_root),
+                            modify_arg=lambda arg: coreclr_args.core_root if args.core_root is None else args.core_root)
+
+        coreclr_args.verify(args,
+                            "spmi_location",
+                            lambda unused: True,
+                            "Unable to set pmi_location",
+                            modify_arg=lambda spmi_location: os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location)
 
         coreclr_args.verify(args,
                             "collection",
@@ -2046,12 +2054,6 @@ def setup_args(args):
                             "break_on_error",
                             lambda unused: True,
                             "Unable to set break_on_error")
-
-        coreclr_args.verify(args,
-                            "spmi_location",
-                            lambda unused: True,
-                            "Unable to set pmi_location",
-                            modify_arg=lambda spmi_location: os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location)
 
         standard_location = False
         if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():
@@ -2103,7 +2105,8 @@ def setup_args(args):
         coreclr_args.verify(args,
                             "core_root",
                             lambda core_root: (core_root is not None) and os.path.isdir(core_root),
-                            "Invalid core_root.")
+                            lambda core_root: "Invalid core_root {}".format(core_root),
+                            modify_arg=lambda arg: coreclr_args.core_root if args.core_root is None else args.core_root)
 
         coreclr_args.verify(args,
                             "base_jit_path",
@@ -2121,6 +2124,12 @@ def setup_args(args):
                             "collection",
                             lambda collection_name: collection_name in download_index(coreclr_args),
                             "Invalid collection. Please run 'superpmi.py list-collections' to see valid options.")
+
+        coreclr_args.verify(args,
+                            "spmi_location",
+                            lambda unused: True,
+                            "Unable to set pmi_location",
+                            modify_arg=lambda spmi_location: os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location)
 
         coreclr_args.verify(args,
                             "log_file",
@@ -2175,12 +2184,6 @@ def setup_args(args):
                                 "diff_jit_dump",
                                 lambda unused: True,
                                 "Unable to set diff_jit_dump.")
-
-        coreclr_args.verify(args,
-                            "spmi_location",
-                            lambda unused: True,
-                            "Unable to set pmi_location",
-                            modify_arg=lambda spmi_location: os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location)
 
         standard_location = False
         if coreclr_args.product_location.lower() in coreclr_args.base_jit_path.lower():
@@ -2238,7 +2241,8 @@ def setup_args(args):
         coreclr_args.verify(args,
                             "core_root",
                             lambda core_root: (core_root is not None) and os.path.isdir(core_root),
-                            "Invalid core_root.")
+                            lambda core_root: "Invalid core_root {}".format(core_root),
+                            modify_arg=lambda arg: coreclr_args.core_root if args.core_root is None else args.core_root)
 
         coreclr_args.verify(args,
                             "az_storage_key",
