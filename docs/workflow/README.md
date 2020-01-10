@@ -2,6 +2,8 @@
 
 The repo can be built for the following platforms, using the provided setup and the following instructions. Before attempting to clone or build, please check these requirements.
 
+## Requirements (what you need for building to work)
+
 | Chip  | Windows  | Linux    | macOS    | FreeBSD  |
 | :---- | :------: | :------: | :------: | :------: |
 | x64   | &#x2714; | &#x2714; | &#x2714; | &#x2714; |
@@ -20,9 +22,11 @@ build -h
 ```
 On Unix, arguments can be passed in with a single `-` or double hyphen `--`.
 
-### Configurations
+## Configurations
 
-Sometimes you want to build this repo in a mixture of configurations. First, a quick reminder of some concepts -- see the [glossary](../project/glossary.md) for more on these:
+You may need to build the tree in a combination of configurations. This section explains why. 
+
+A quick reminder of some concepts -- see the [glossary](../project/glossary.md) for more on these:
 
 * **Debug configuration** -- Non-optimized code.  Asserts are enabled.
   
@@ -36,56 +40,18 @@ Sometimes you want to build this repo in a mixture of configurations. First, a q
 
 * **All other libraries** (most code under src/libraries) -- the bulk of the libraries are oblivious to the configuration that CoreCLR/CoreLib were built in. Like most code they are most debuggable when built in a debug configuration, and, happily, they still run sufficiently fast in that configuration that it's acceptable for development work.
 
-So if you're working in CoreCLR proper, you may want to build everything in the debug configuration, depending on how comfortable you are debugging optimized native code. If you're working in most libraries, you probably want to use debug libraries with release CoreCLR and CoreLib, because the tests will run faster. And if you're working in CoreLib - you probably want to try to get the job done with release CoreCLR and CoreLib, and fall back to debug if you need to.
+### What does this mean for me?
 
-How do you achieve that mixed configuration state? You pass the `/p:CoreCLRConfiguration` flag to the build.
+* if you're working in CoreCLR proper, you may want to build everything in the debug configuration, depending on how comfortable you are debugging optimized native code
+* if you're working in most libraries, you will want to use debug libraries with release CoreCLR and CoreLib, because the tests will run faster.
+* if you're working in CoreLib - you probably want to try to get the job done with release CoreCLR and CoreLib, and fall back to debug if you need to. The [Building libraries](building/libraries/README.md) document explains how you'll do this.
 
-These example commands will build a release CoreCLR (and CoreLib) and debug libraries:
-
-For Linux:
-```
-src/coreclr/build.sh -release -skiptests
-./libraries.sh /p:CoreCLRConfiguration=Release
-```
-
-For Windows:
-```
-src\coreclr\build.cmd -release -skiptests
-libraries.cmd /p:CoreCLRConfiguration=Release
-```
-
-Detailed information about building and testing CoreCLR and the libraries is in the documents linked below.
-
-## Workflows
-
-Here is one example of a daily workflow for a developer working mainly on the libraries, in this case using Windows:
-```
-:: From root in the morning:
-git clean -xdf
-git pull upstream master & git push origin master
-cd src\coreclr
-build -release -skiptests
-cd ..\..\
-.\libraries /p:CoreCLRConfiguration=Release
-
-:: The above you may only perform once in a day, subsequently
-:: iterating on one or two libraries:
-
-:: Switch to working on a given library:
-cd src\libraries\System.Text.RegularExpressions
-
-:: Open in Visual Studio for code navigation and editing
-System.Text.RegularExpressions.sln
-cd tests
-
-:: Then inner loop build / test:
-pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
-```
-
-For detailed instructions on how to build, debug, test, etc. please visit the instructions in the workflow sub-folders.
+Now you know about configurations and how we use them, you will want to read how to build what you plan to work on. Pick one of these:
 
 - [Building coreclr](building/coreclr/README.md)
 - [Building libraries](building/libraries/README.md)
+
+After that, here's information about how to run tests:
 
 - [Testing coreclr](testing/coreclr/testing.md)
 - [Testing libraries](testing/libraries/testing.md)

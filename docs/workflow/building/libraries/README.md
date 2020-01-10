@@ -1,14 +1,86 @@
 # Build
 
-To build just the libraries, use the `--subsetCategory` flag to the `build.sh` (or `build.cmd`) at the repo root:
+## Quick Start
+
+Here is one example of a daily workflow for a developer working mainly on the libraries, in this case using Windows:
 
 ```
-./build.sh --subsetCategory libraries
+:: From root in the morning:
+git clean -xdf
+git pull upstream master & git push origin master
+cd src\coreclr
+build -release -skiptests
+cd ..\..\
+build -subsetCategory libraries /p:CoreCLRConfiguration=Release
+
+:: The above you may only perform once in a day, or when
+:: you pull down significant new changes.
+
+:: Switch to working on a given library (RegularExpressions in this case)
+cd src\libraries\System.Text.RegularExpressions
+
+:: At this point you probably open files to work on. If you use
+:: Visual Studio, you might open System.Text.RegularExpressions.sln here.
+
+:: Change to test directory
+cd tests
+
+:: Then inner loop build / test:
+pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 ```
-or on Windows,
+
+The instructions for Linux are essentially the same:
+
 ```
-build.cmd --subsetCategory libraries
+:: From root in the morning:
+git clean -xdf
+git pull upstream master & git push origin master
+cd src/coreclr
+build -release -skiptests
+cd ../../
+./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release
+
+:: The above you may only perform once in a day, or when
+:: you pull down significant new changes.
+
+:: Switch to working on a given library (RegularExpressions in this case)
+cd src/libraries/System.Text.RegularExpressions
+
+:: At this point you probably open files to work on. If you use
+:: Visual Studio, you might open System.Text.RegularExpressions.sln here.
+
+:: Change to test directory
+cd tests
+
+:: Then inner loop build / test:
+pushd ../src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 ```
+
+Want more details about what this means? Read on.
+
+## Building everything
+
+This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built CoreCLR (aka, the "runtime") to give the libraries something to run on. You should normally build CoreCLR in release configuration and libraries in debug configuration. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
+
+These example commands will build a release CoreCLR (and CoreLib) and debug libraries:
+
+For Linux:
+```
+src/coreclr/build.sh -release -skiptests
+./libraries.sh /p:CoreCLRConfiguration=Release
+```
+
+For Windows:
+```
+src\coreclr\build.cmd -release -skiptests
+libraries.cmd /p:CoreCLRConfiguration=Release
+```
+
+Detailed information about building and testing CoreCLR and the libraries is in the documents linked below.
+
+### More details if you need them
+
+The above commands will give you libraries in "debug" configuration (the default) using a runtime in "release" configuration which hopefully you built earlier.
 
 The libraries build has two logical components, the native build which produces the "shims" (which provide a stable interface between the OS and managed code) and the managed build which produces the MSIL code and NuGet packages that make up CoreFX. The commands above will build both.
 
@@ -21,13 +93,7 @@ The build configurations are generally defaulted based on where you are building
 
 For more details on the build configurations see [project-guidelines](../../../coding-guidelines/project-guidelines.md#build-pivots).
 
-**Note**: In order to work on individual library projects or run library tests it is necessary to have built CoreCLR (aka, the "runtime"). To do this you must run `build.sh` (or `build.cmd`) from the root once before beginning that work.
-
-It is also a good idea to run `build` whenever you pull a large set of unknown changes into your branch. If you invoke the build script without any actions, the default action chain `-restore -build` is executed.
-
-You can chain multiple actions together (e.g., `-restore -build -buildtests`) and they will execute in the appropriate order. Note that if you specify actions like `-build` explicitly, you likely need to explicitly add `-restore` as well.
-
-The most common workflow for developers is to first build once from the root, then iterate on an individual library and its tests.
+If you invoke the build script without any actions, the default action chain `-restore -build` is executed. You can chain multiple actions together (e.g., `-restore -build -buildtests`) and they will execute in the appropriate order. Note that if you specify actions like `-build` explicitly, you likely need to explicitly add `-restore` as well.
 
 By default build only builds the product libraries and none of the tests. If you want to build the tests you can add the flag `-buildtests`. If you want to run the tests you can add the flag `-test`. To build and run the tests combine both arguments: `-buildtests -test`. To specify just the libraries, use `-subcategory libraries`.
 
@@ -60,7 +126,7 @@ By default build only builds the product libraries and none of the tests. If you
 
 For Windows, replace `./build.sh` with `build.cmd`.
 
-### Build Native
+### How to building native components only
 
 The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.
 
@@ -78,26 +144,16 @@ The libraries build contains some native code. This includes shims over libc, op
 
 For Windows, replace `build-native.sh` with `build-native.cmd`.
 
-### Building individual libraries
-
-**Note**: Recall that in order to work on individual library projects or run library tests it is necessary to have built CoreCLR (aka, the "runtime"). To do this you must run `build.sh` (or `build.cmd`) from the root once before beginning that work.
+## Building individual libraries
 
 Similar to building the entire repo with `build.cmd` or `build.sh` in the root you can build projects based on our directory structure by passing in the directory. We also support shortcuts for libraries so you can omit the root src folder from the path. When given a directory we will build all projects that we find recursively under that directory. Some examples may help here.
 
 **Examples**
 
 - Build all projects for a given library (e.g.: System.Collections) including running the tests
-```
-./build.sh -subsetCategory libraries System.Collections
-```
-or
+
 ```
  ./build.sh -subsetCategory libraries src\libraries\System.Collections
-```
-or
-```
-cd src/libraries/System.Collections
-../../build.sh .
 ```
 
 - Build just the tests for a library project.
@@ -163,4 +219,4 @@ One can build 32- or 64-bit binaries or for any architecture by specifying in th
 
 If you are working on Windows, and use Visual Studio, you can open individual libraries projects into it. From within Visual Studio you can then build, debug, and run tests.
 
-// TODO - add more information here: or likely, in another document. We also need documentation on Visual Studio Code.
+For more details about running tests inside Visual Studio, [go here](../../testing/libraries/testing-vs.md)
