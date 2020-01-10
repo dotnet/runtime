@@ -116,14 +116,13 @@ namespace System.Runtime.CompilerServices
                 int index = KeyToBucket(table, source, target);
                 ref CastCacheEntry pEntry = ref Element(table, index);
 
-                for (int i = 0; i < BUCKET_SIZE; i++)
+                for (int i = 0; i < BUCKET_SIZE;)
                 {
                     // must read in this order: version -> entry parts -> version
                     // if version is odd or changes, the entry is inconsistent and thus ignored
                     int version1 = Volatile.Read(ref pEntry._version);
                     nint entrySource = pEntry._source;
 
-                    // TODO: WIP port to native too
                     // mask the lower version bit to make it even.
                     // This way we can check if version is odd or changing in just one compare.
                     version1 &= ~1;
@@ -135,7 +134,7 @@ namespace System.Runtime.CompilerServices
                         // target never has its lower bit set.
                         // a matching entryTargetAndResult would have same bits, except for the lowest one, which is the result.
                         entryTargetAndResult ^= target;
-                        if ((nuint)entryTargetAndResult <= (nuint)1)
+                        if (entryTargetAndResult <= 1)
                         {
                             int version2 = pEntry._version;
                             if (version2 != version1)
@@ -157,6 +156,7 @@ namespace System.Runtime.CompilerServices
                     }
 
                     // quadratic reprobe
+                    i++;
                     index += i;
                     pEntry = ref Element(table, index & TableMask(table));
                 }
