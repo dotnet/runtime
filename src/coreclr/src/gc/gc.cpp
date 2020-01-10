@@ -37483,10 +37483,11 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 #ifdef TRACE_GC
 #ifdef COUNT_CYCLES
     finish = GetCycleCount32();
+    AllocDuration += finish - AllocStart;
 #elif defined(ENABLE_INSTRUMENTATION)
     finish = GetInstLogTime();
-#endif //COUNT_CYCLES
     AllocDuration += finish - AllocStart;
+#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
@@ -37545,11 +37546,12 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
 #ifdef TRACE_GC
 #ifdef COUNT_CYCLES
     finish = GetCycleCount32();
+    AllocDuration += finish - AllocStart;
 #elif defined(ENABLE_INSTRUMENTATION)
     finish = GetInstLogTime();
     AllocDuration += finish - AllocStart;
-    AllocCount++;
 #endif //COUNT_CYCLES
+    AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
 }
