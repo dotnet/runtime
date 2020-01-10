@@ -314,7 +314,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     case TargetArchitecture.ARM64:
                                         // DESKTOP BEHAVIOR fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ? (4 * (uint)sizeof(float)) : (4 * (uint)sizeof(double));
                                         // S and D registers overlap. Since we copy D registers in the UniversalTransitionThunk, we'll
-                                        // thread floats like doubles during copying.
+                                        // treat floats like doubles during copying.
                                         fpReturnSize = 4 * (uint)sizeof(double);
                                         break;
 
