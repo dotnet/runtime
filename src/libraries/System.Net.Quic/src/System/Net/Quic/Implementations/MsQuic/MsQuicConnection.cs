@@ -379,7 +379,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal override ValueTask CloseAsync(int code, CancellationToken cancellationToken = default)
+        internal override ValueTask CloseAsync(int shutdownCode, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 

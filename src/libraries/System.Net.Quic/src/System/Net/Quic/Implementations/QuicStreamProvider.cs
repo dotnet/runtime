@@ -19,6 +19,8 @@ namespace System.Net.Quic.Implementations
 
         internal abstract void AbortRead();
 
+        internal abstract void AbortWrite(int errorCode);
+
         internal abstract bool CanWrite { get; }
 
         internal abstract void Write(ReadOnlySpan<byte> buffer);

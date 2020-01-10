@@ -79,7 +79,7 @@ namespace System.Net.Quic
         /// <summary>
         /// Close the connection and terminate any active streams.
         /// </summary>
-        public ValueTask CloseAsync(int code, CancellationToken cancellationToken = default) => _provider.CloseAsync(code, cancellationToken);
+        public ValueTask CloseAsync(int shutdownCode, CancellationToken cancellationToken = default) => _provider.CloseAsync(code, cancellationToken);
 
         public void Dispose() => _provider.Dispose();
     }

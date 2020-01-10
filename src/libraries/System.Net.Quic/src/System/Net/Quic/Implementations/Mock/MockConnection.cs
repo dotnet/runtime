@@ -168,7 +168,7 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockStream(socket, streamId, bidirectional: bidirectional);
         }
 
-        internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask CloseAsync(int shutdownCode, CancellationToken cancellationToken = default)
         {
             Dispose();
             return default;

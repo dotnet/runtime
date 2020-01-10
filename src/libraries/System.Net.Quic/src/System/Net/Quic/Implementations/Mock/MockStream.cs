@@ -146,6 +146,12 @@ namespace System.Net.Quic.Implementations.Mock
             throw new NotImplementedException();
         }
 
+        internal override void AbortWrite(int errorCode)
+        {
+            throw new NotImplementedException();
+        }
+
+
         internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
             CheckDisposed();

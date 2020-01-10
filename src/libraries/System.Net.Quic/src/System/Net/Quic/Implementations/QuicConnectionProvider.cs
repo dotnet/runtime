@@ -25,7 +25,7 @@ namespace System.Net.Quic.Implementations
 
         internal abstract System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get; }
 
-        internal abstract ValueTask CloseAsync(CancellationToken cancellationToken = default);
+        internal abstract ValueTask CloseAsync(int shutdownCode, CancellationToken cancellationToken = default);
 
         public abstract void Dispose();
     }
