@@ -58,6 +58,30 @@ Detailed information about building and testing CoreCLR and the libraries is in 
 
 ## Workflows
 
+Here is one example of a daily workflow for a developer working mainly on the libraries, in this case using Windows:
+```
+:: From root in the morning:
+git clean -xdf
+git pull upstream master & git push origin master
+cd src\coreclr
+build -release -skiptests
+cd ..\..\
+.\libraries /p:CoreCLRConfiguration=Release
+
+:: The above you may only perform once in a day, subsequently
+:: iterating on one or two libraries:
+
+:: Switch to working on a given library:
+cd src\libraries\System.Text.RegularExpressions
+
+:: Open in Visual Studio for code navigation and editing
+System.Text.RegularExpressions.sln
+cd tests
+
+:: Then inner loop build / test:
+pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:rebuildandtest
+```
+
 For detailed instructions on how to build, debug, test, etc. please visit the instructions in the workflow sub-folders.
 
 - [Building coreclr](building/coreclr/README.md)
