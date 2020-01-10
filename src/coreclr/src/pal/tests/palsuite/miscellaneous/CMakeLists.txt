@@ -1,6 +1,4 @@
 add_subdirectory(CGroup)
-add_subdirectory(CharNextA)
-add_subdirectory(CharNextExA)
 add_subdirectory(CloseHandle)
 add_subdirectory(CreatePipe)
 add_subdirectory(FlushInstructionCache)

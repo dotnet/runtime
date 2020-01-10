@@ -69,7 +69,7 @@ require very little effort from people who write "managed code". Efficient means
 - GCs should happen as infrequently as possible to avoid using otherwise useful CPU time, even though frequent GCs would result in lower memory usage.
 - A GC should be productive. If GC reclaims a small amount of memory, then the GC (including the associated CPU cycles) was wasted.
 - Each GC should be fast. Many workloads have low latency requirements.
-- Managed code developers shouldn’t need to know much about the GC to achieve good memory utilization (relative to their workload).
+- Managed code developers shouldn't need to know much about the GC to achieve good memory utilization (relative to their workload).
 – The GC should tune itself to satisfy different memory usage patterns.
 
 Logical representation of the managed heap
@@ -82,10 +82,10 @@ process is called promotion. There are exceptions to this when we
 decide to demote or not promote.
 
 For small objects the heap is divided into 3 generations: gen0, gen1
-and gen2. For large objects there’s one generation – gen3. Gen0 and gen1 are referred to as ephemeral (objects lasting for a short time) generations.
+and gen2. For large objects there's one generation – gen3. Gen0 and gen1 are referred to as ephemeral (objects lasting for a short time) generations.
 
 For the small object heap, the generation number represents the age – gen0
-being the youngest generation. This doesn’t mean all objects in gen0
+being the youngest generation. This doesn't mean all objects in gen0
 are younger than any objects in gen1 or gen2. There are exceptions
 which will be explained below. Collecting a generation means collecting
 objects in that generation and all its younger generations.
@@ -95,7 +95,7 @@ objects but since compacting large objects is very expensive, they are treated d
 they are always collected with gen2 collections due to performance
 reasons. Both gen2 and gen3 can be big, and collecting ephemeral generations (gen0 and gen1) needs to have a bounded cost.
 
-Allocations are made in the youngest generation – for small objects this means always gen0 and for large objects this means gen3 since there’s only one generation.
+Allocations are made in the youngest generation – for small objects this means always gen0 and for large objects this means gen3 since there's only one generation.
 
 Physical representation of the managed heap
 -------------------------------------------
@@ -103,7 +103,7 @@ Physical representation of the managed heap
 The managed heap is a set of managed heap segments. A heap segment is a contiguous block of memory that is acquired by the GC from the OS. The heap segments are
 partitioned into small and large object segments, given the distinction of small and large objects. On each heap the heap segments are chained together. There is at least one small object segment and one large segment - they are reserved when CLR is loaded.
 
-There’s always only one ephemeral segment in each small object heap, which is where gen0 and gen1 live. This segment may or may not include gen2
+There's always only one ephemeral segment in each small object heap, which is where gen0 and gen1 live. This segment may or may not include gen2
 objects. In addition to the ephemeral segment, there can be zero, one or more additional segments, which will be gen2 segments since they only contain gen2 objects.
 
 There are 1 or more segments on the large object heap.
@@ -114,7 +114,7 @@ older than those of higher addresses. Again there are exceptions that
 will be described below.
 
 Heap segments can be acquired as needed. They are  deleted when they
-don’t contain any live objects, however the initial segment on the heap
+don't contain any live objects, however the initial segment on the heap
 will always exist. For each heap, one segment at a time is acquired,
 which is done during a GC for small objects and during allocation time
 for large objects. This design provides better performance because large objects are only collected with gen2 collections (which are relatively expensive).
@@ -138,9 +138,9 @@ When a GC is triggered, the GC must first determine which generation to collect.
 
 - Fragmentation of a generation – if a generation has high fragmentation, collecting that generation is likely to be productive.
 - If the memory load on the machine is too high, the GC may collect
-  more aggressively if that’s likely to yield free space. This is important to
+  more aggressively if that's likely to yield free space. This is important to
   prevent unnecessary paging (across the machine).
-- If the ephemeral segment is running out of space, the GC may do more aggressive ephemeral collections (meaning doing more gen1’s) to avoid acquiring a new heap segment.
+- If the ephemeral segment is running out of space, the GC may do more aggressive ephemeral collections (meaning doing more gen1's) to avoid acquiring a new heap segment.
 
 The flow of a GC
 ----------------
@@ -170,7 +170,7 @@ Relocate phase
 --------------
 
 If the GC decides to compact, which will result in moving objects, then  references to these objects must be updated. The relocate phase needs to find all references that point to objects that are in the
-generations being collected. In contrast, the mark phase only consults live objects so it doesn’t need to consider weak references.
+generations being collected. In contrast, the mark phase only consults live objects so it doesn't need to consider weak references.
 
 Compact phase
 -------------

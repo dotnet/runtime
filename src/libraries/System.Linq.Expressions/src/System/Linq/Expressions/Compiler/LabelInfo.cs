@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Compiler
     internal sealed class LabelInfo
     {
         // The tree node representing this label
-        private readonly LabelTarget _node;
+        private readonly LabelTarget? _node;
 
         // The IL label, will be mutated if Node is redefined
         private Label _label;
@@ -32,7 +32,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         // The local that carries the label's value, if any
-        private LocalBuilder _value;
+        private LocalBuilder? _value;
 
         // The blocks where this label is defined. If it has more than one item,
         // the blocks can't be jumped to except from a child block
@@ -58,7 +58,7 @@ namespace System.Linq.Expressions.Compiler
 
         private readonly ILGenerator _ilg;
 
-        internal LabelInfo(ILGenerator il, LabelTarget node, bool canReturn)
+        internal LabelInfo(ILGenerator il, LabelTarget? node, bool canReturn)
         {
             _ilg = il;
             _node = node;
@@ -90,16 +90,16 @@ namespace System.Linq.Expressions.Compiler
             // Prevent the label from being shadowed, which enforces cleaner
             // trees. Also we depend on this for simplicity (keeping only one
             // active IL Label per LabelInfo)
-            for (LabelScopeInfo j = block; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = block; j != null; j = j.Parent)
             {
-                if (j.ContainsTarget(_node))
+                if (j.ContainsTarget(_node!))
                 {
-                    throw Error.LabelTargetAlreadyDefined(_node.Name);
+                    throw Error.LabelTargetAlreadyDefined(_node!.Name);
                 }
             }
 
             _definitions.Add(block);
-            block.AddLabelInfo(_node, this);
+            block.AddLabelInfo(_node!, this);
 
             // Once defined, validate all jumps
             if (_definitions.Count == 1)
@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Compiler
                 // now invalid
                 if (_acrossBlockJump)
                 {
-                    throw Error.AmbiguousJump(_node.Name);
+                    throw Error.AmbiguousJump(_node!.Name);
                 }
                 // For local jumps, we need a new IL label
                 // This is okay because:
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Compiler
             _opCode = _canReturn ? OpCodes.Ret : OpCodes.Br;
 
             // look for a simple jump out
-            for (LabelScopeInfo j = reference; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = reference; j != null; j = j.Parent)
             {
                 if (_definitions.Contains(j))
                 {
@@ -158,20 +158,20 @@ namespace System.Linq.Expressions.Compiler
 
             if (_definitions.Count > 1)
             {
-                throw Error.AmbiguousJump(_node.Name);
+                throw Error.AmbiguousJump(_node!.Name);
             }
 
             // We didn't find an outward jump. Look for a jump across blocks
             LabelScopeInfo def = _definitions.First();
-            LabelScopeInfo common = Helpers.CommonNode(def, reference, b => b.Parent);
+            LabelScopeInfo? common = Helpers.CommonNode(def, reference, b => b.Parent!);
 
             // Assume we can do a ret/branch
             _opCode = _canReturn ? OpCodes.Ret : OpCodes.Br;
 
             // Validate that we aren't jumping across a finally
-            for (LabelScopeInfo j = reference; j != common; j = j.Parent)
+            for (LabelScopeInfo? j = reference; j != common; j = j.Parent)
             {
-                if (j.Kind == LabelScopeKind.Finally)
+                if (j!.Kind == LabelScopeKind.Finally)
                 {
                     throw Error.ControlCannotLeaveFinally();
                 }
@@ -187,9 +187,9 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // Validate that we aren't jumping into a catch or an expression
-            for (LabelScopeInfo j = def; j != common; j = j.Parent)
+            for (LabelScopeInfo? j = def; j != common; j = j.Parent)
             {
-                if (!j.CanJumpInto)
+                if (!j!.CanJumpInto)
                 {
                     if (j.Kind == LabelScopeKind.Expression)
                     {
@@ -208,7 +208,7 @@ namespace System.Linq.Expressions.Compiler
             // Make sure that if this label was jumped to, it is also defined
             if (_references.Count > 0 && _definitions.Count == 0)
             {
-                throw Error.LabelTargetUndefined(_node.Name);
+                throw Error.LabelTargetUndefined(_node!.Name);
             }
         }
 
@@ -327,11 +327,11 @@ namespace System.Linq.Expressions.Compiler
     //
     internal sealed class LabelScopeInfo
     {
-        private Dictionary<LabelTarget, LabelInfo> _labels; // lazily allocated, we typically use this only once every 6th-7th block
+        private Dictionary<LabelTarget, LabelInfo>? _labels; // lazily allocated, we typically use this only once every 6th-7th block
         internal readonly LabelScopeKind Kind;
-        internal readonly LabelScopeInfo Parent;
+        internal readonly LabelScopeInfo? Parent;
 
-        internal LabelScopeInfo(LabelScopeInfo parent, LabelScopeKind kind)
+        internal LabelScopeInfo(LabelScopeInfo? parent, LabelScopeKind kind)
         {
             Parent = parent;
             Kind = kind;
@@ -367,7 +367,7 @@ namespace System.Linq.Expressions.Compiler
             return _labels.ContainsKey(target);
         }
 
-        internal bool TryGetLabelInfo(LabelTarget target, out LabelInfo info)
+        internal bool TryGetLabelInfo(LabelTarget target, out LabelInfo? info)
         {
             if (_labels == null)
             {

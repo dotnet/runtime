@@ -78,7 +78,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         private readonly ImmutableArray<BranchInfo>.Builder _branches;
         private readonly ImmutableArray<int>.Builder _labels;
-        private ImmutableArray<ExceptionHandlerInfo>.Builder _lazyExceptionHandlers;
+        private ImmutableArray<ExceptionHandlerInfo>.Builder? _lazyExceptionHandlers;
 
         public ControlFlowBuilder()
         {

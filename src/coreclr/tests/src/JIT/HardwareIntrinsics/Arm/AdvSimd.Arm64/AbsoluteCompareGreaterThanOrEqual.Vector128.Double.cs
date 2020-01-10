@@ -506,19 +506,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            if (BitConverter.DoubleToInt64Bits(Helpers.AbsoluteCompareGreaterThanOrEqual(left[0], right[0])) != BitConverter.DoubleToInt64Bits(result[0]))
+            for (var i = 0; i < RetElementCount; i++)
             {
-                succeeded = false;
-            }
-            else
-            {
-                for (var i = 1; i < RetElementCount; i++)
+                if (BitConverter.DoubleToInt64Bits(Helpers.AbsoluteCompareGreaterThanOrEqual(left[i], right[i])) != BitConverter.DoubleToInt64Bits(result[i]))
                 {
-                    if (BitConverter.DoubleToInt64Bits(Helpers.AbsoluteCompareGreaterThanOrEqual(left[i], right[i])) != BitConverter.DoubleToInt64Bits(result[i]))
-                    {
-                        succeeded = false;
-                        break;
-                    }
+                    succeeded = false;
+                    break;
                 }
             }
 

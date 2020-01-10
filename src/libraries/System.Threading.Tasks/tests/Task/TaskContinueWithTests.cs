@@ -1421,7 +1421,7 @@ namespace System.Threading.Tasks.Tests
             // Set up teardown cancellation.  We will request cancellation when a) the supplied options token
             // has cancellation requested or b) when we actually complete somewhere in order to tear down
             // the rest of our configured set up.
-            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, CancellationToken.None);
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             Task branch1 = CreateChooseBranch<int>(cts, result, TaskScheduler.Default);
             Task branch2 = CreateChooseBranch<int>(cts, result, TaskScheduler.Default);

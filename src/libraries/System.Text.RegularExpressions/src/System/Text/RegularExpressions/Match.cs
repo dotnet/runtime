@@ -26,6 +26,7 @@
 //
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -331,6 +332,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
+        [ExcludeFromCodeCoverage]
         internal bool Debug => _regex != null && _regex.Debug;
 
         internal virtual void Dump()
@@ -372,6 +374,7 @@ namespace System.Text.RegularExpressions
         public override GroupCollection Groups => _groupcoll ??= new GroupCollection(this, _caps);
 
 #if DEBUG
+        [ExcludeFromCodeCoverage]
         internal override void Dump()
         {
             if (_caps != null)

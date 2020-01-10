@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -39,13 +40,13 @@ namespace System.Linq.Expressions
         {
             if (initializers != null)
             {
-                if (ExpressionUtils.SameElements(ref initializers, Initializers))
+                if (ExpressionUtils.SameElements(ref initializers!, Initializers))
                 {
                     return this;
                 }
             }
 
-            return Expression.ListBind(Member, initializers);
+            return Expression.ListBind(Member, initializers!);
         }
 
         internal override void ValidateAsDefinedHere(int index)

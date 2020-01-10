@@ -10,8 +10,8 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexLWCGCompiler : RegexCompiler
     {
-        private static int s_regexCount = 0;
         private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
+        private static int s_regexCount = 0;
 
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
         public RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options, bool hasTimeout)
@@ -32,16 +32,13 @@ namespace System.Text.RegularExpressions
             DynamicMethod goMethod = DefineDynamicMethod("Go" + regexnumString, null, typeof(CompiledRegexRunner));
             GenerateGo();
 
-            DynamicMethod firstCharMethod = DefineDynamicMethod("FindFirstChar" + regexnumString, typeof(bool), typeof(CompiledRegexRunner));
+            DynamicMethod findFirstCharMethod = DefineDynamicMethod("FindFirstChar" + regexnumString, typeof(bool), typeof(CompiledRegexRunner));
             GenerateFindFirstChar();
 
-            DynamicMethod trackCountMethod = DefineDynamicMethod("InitTrackCount" + regexnumString, null, typeof(CompiledRegexRunner));
+            DynamicMethod initTrackCountMethod = DefineDynamicMethod("InitTrackCount" + regexnumString, null, typeof(CompiledRegexRunner));
             GenerateInitTrackCount();
 
-            return new CompiledRegexRunnerFactory(
-                (Action<RegexRunner>)goMethod.CreateDelegate(typeof(Action<RegexRunner>)),
-                (Func<RegexRunner, bool>)firstCharMethod.CreateDelegate(typeof(Func<RegexRunner, bool>)),
-                (Action<RegexRunner>)trackCountMethod.CreateDelegate(typeof(Action<RegexRunner>)));
+            return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, initTrackCountMethod);
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>

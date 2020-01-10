@@ -229,14 +229,10 @@ namespace Internal.Cryptography.Pal
             if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
                 pfxCertStoreFlags |= PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 
-            // In the full .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
+            // In .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
             // enable a native application compiled against CAPI to find that private key and interoperate with it.
             //
-            // For CoreFX this behavior is being retained.
-            //
-            // For .NET Native (UWP) the API used to delete the private key (if it wasn't added to a store) is not
-            // allowed to be called if the key is stored in CAPI.  So for UWP force the key to be stored in the
-            // CNG Key Storage Provider, then deleting the key with CngKey.Delete will clean up the file on disk, too.
+            // For .NET Core this behavior is being retained.
 
             return pfxCertStoreFlags;
         }

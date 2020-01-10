@@ -281,7 +281,7 @@ function(install_library_and_symbols targetName)
 endfunction()
 
 include(configure.cmake)
-include(${CLR_COMMON_DIR}/configuretools.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 

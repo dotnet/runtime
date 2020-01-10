@@ -1233,6 +1233,12 @@ INST1(zip1,    "zip1",   0, 0, IF_DV_3A,  0x0E003800)
 INST1(zip2,    "zip2",   0, 0, IF_DV_3A,  0x0E007800)
                                    //  zip2    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 001110nnnnnddddd   0E00 7800   Vd,Vn,Vm  (vector)
 
+INST1(trn1,    "trn1",   0, 0, IF_DV_3A,  0x0E002800)
+                                   //  trn1    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 001010nnnnnddddd   0E00 2800   Vd,Vn,Vm  (vector)
+
+INST1(trn2,    "trn2",   0, 0, IF_DV_3A,  0x0E006800)
+                                   //  trn2    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 011010nnnnnddddd   0E00 6800   Vd,Vn,Vm  (vector)
+
 INST1(xtn,     "xtn",    0, 0, IF_DV_2M,  0x0E212800)
                                    //  xtn     Vd,Vn                DV_2M  00101110XX110000 001110nnnnnddddd   0E21 2800   Vd,Vn      (vector)
 

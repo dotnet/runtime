@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Compiler
                     curTypeInfo.MakeDelegateType(returnType, types);
                 }
 
-                return curTypeInfo.DelegateType;
+                return curTypeInfo.DelegateType!;
             }
         }
 
@@ -105,8 +105,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static bool IsByRef(DynamicMetaObject mo)
         {
-            ParameterExpression pe = mo.Expression as ParameterExpression;
-            return pe != null && pe.IsByRef;
+            return mo.Expression is ParameterExpression pe && pe.IsByRef;
         }
 
 #if FEATURE_COMPILE
@@ -125,7 +124,7 @@ namespace System.Linq.Expressions.Compiler
             TypeBuilder builder = AssemblyGen.DefineDelegateType("Delegate" + types.Length);
             builder.DefineConstructor(CtorAttributes, CallingConventions.Standard, s_delegateCtorSignature).SetImplementationFlags(ImplAttributes);
             builder.DefineMethod("Invoke", InvokeAttributes, returnType, parameters).SetImplementationFlags(ImplAttributes);
-            return builder.CreateTypeInfo();
+            return builder.CreateTypeInfo()!;
 #else
             throw new PlatformNotSupportedException();
 #endif

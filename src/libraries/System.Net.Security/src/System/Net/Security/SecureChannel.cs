@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -846,13 +845,6 @@ namespace System.Net.Security
             }
 
             output = result;
-            if (_negotiatedApplicationProtocol == default)
-            {
-                // try to get ALPN info unless we already have it. (this function can be called multiple times)
-                byte[] alpnResult = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
-                _negotiatedApplicationProtocol = alpnResult == null ? default : new SslApplicationProtocol(alpnResult, false);
-            }
-
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Exit(this);
@@ -872,6 +864,13 @@ namespace System.Net.Security
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
+
+            if (_negotiatedApplicationProtocol == default)
+            {
+                // try to get ALPN info unless we already have it. (renegotiation)
+                byte[] alpnResult = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
+                _negotiatedApplicationProtocol = alpnResult == null ? default : new SslApplicationProtocol(alpnResult, false);
+            }
 
             SslStreamPal.QueryContextStreamSizes(_securityContext, out StreamSizes streamSizes);
 

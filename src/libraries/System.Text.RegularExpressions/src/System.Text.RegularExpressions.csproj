@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED</DefineConstants>
-    <DefineConstants>$(DefineConstants);FEATURE_COMPILEAPIS</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
     <Nullable>enable</Nullable>
