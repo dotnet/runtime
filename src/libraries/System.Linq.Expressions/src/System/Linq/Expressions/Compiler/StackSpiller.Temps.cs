@@ -87,12 +87,12 @@ namespace System.Linq.Expressions.Compiler
             /// <summary>
             /// List of free temporary variables. These can be recycled for new temporary variables.
             /// </summary>
-            private List<ParameterExpression> _freeTemps;
+            private List<ParameterExpression>? _freeTemps;
 
             /// <summary>
             /// Stack of temporary variables that are currently in use.
             /// </summary>
-            private Stack<ParameterExpression> _usedTemps;
+            private Stack<ParameterExpression>? _usedTemps;
 
             /// <summary>
             /// List of all temporary variables created by the stack spiller instance.

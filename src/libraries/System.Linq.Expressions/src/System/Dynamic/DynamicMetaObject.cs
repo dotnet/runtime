@@ -63,7 +63,7 @@ namespace System.Dynamic
         /// <summary>
         /// The runtime value represented by this <see cref="DynamicMetaObject"/>.
         /// </summary>
-        public object Value => HasValue ? _value : null;
+        public object? Value => HasValue ? _value : null;
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="DynamicMetaObject"/> has the runtime value.
@@ -73,7 +73,7 @@ namespace System.Dynamic
         /// <summary>
         /// Gets the <see cref="Type"/> of the runtime value or null if the <see cref="DynamicMetaObject"/> has no value associated with it.
         /// </summary>
-        public Type RuntimeType
+        public Type? RuntimeType
         {
             get
             {
@@ -285,8 +285,7 @@ namespace System.Dynamic
         {
             ContractUtils.RequiresNotNull(expression, nameof(expression));
 
-            IDynamicMetaObjectProvider ido = value as IDynamicMetaObjectProvider;
-            if (ido != null)
+            if (value is IDynamicMetaObjectProvider ido)
             {
                 var idoMetaObject = ido.GetMetaObject(expression);
 
