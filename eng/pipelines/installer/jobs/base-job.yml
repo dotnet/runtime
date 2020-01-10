@@ -29,6 +29,7 @@ parameters:
 
   liveCoreClrBuildConfig: ''
   liveLibrariesBuildConfig: ''
+  upstreamPlatforms: []
 
 jobs:
 - job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
@@ -70,15 +71,18 @@ jobs:
 
   - name: LiveOverridePathArgs
     value: >-
-      $(CoreCLRArtifactsPathArg)
+      $(CoreCLRArtifactsArgs)
       $(LibrariesConfigurationArg)
       $(LibrariesAllConfigurationsArtifactsPathArg)
+      $(AllArtifactsArgs)
 
-  - name: CoreCLRArtifactsPathArg
+  - name: CoreCLRArtifactsArgs
     value: ''
   - name: LibrariesConfigurationArg
     value: ''
   - name: LibrariesAllConfigurationsArtifactsPathArg
+    value: ''
+  - name: AllArtifactsArgs
     value: ''
 
   - name: CoreClrDownloadPath
@@ -86,6 +90,8 @@ jobs:
   - name: LibrariesDownloadPath
     value: ''
   - name: LibrariesDownloadPathAllConfigurations
+    value: ''
+  - name: AllArtifactsDownloadPath
     value: ''
 
   - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
@@ -97,8 +103,10 @@ jobs:
         parameters.liveCoreClrBuildConfig) }}
     - name: CoreClrDownloadPath
       value: 'artifacts/transport/coreclr'
-    - name: CoreCLRArtifactsPathArg
-      value: /p:CoreCLROverridePath=${{ parameters.buildCommandSourcesDirectory }}$(CoreClrDownloadPath)
+    - name: CoreCLRArtifactsArgs
+      value: >-
+        /p:CoreCLROverridePath=${{ parameters.buildCommandSourcesDirectory }}$(CoreClrDownloadPath)
+        /p:CoreCLRConfiguration=${{ parameters.liveCoreClrBuildConfig }}
     - name: CoreClrArtifactName
       value: CoreCLRProduct_$(liveCoreClrLegName)
 
@@ -126,6 +134,16 @@ jobs:
     - name: LibrariesArtifactNameAllConfigurations
       value: libraries_bin_official_allconfigurations
 
+  # Download all upstream platforms and incorporate in the platform manifest. Use 'each' as a
+  # makeshift condition because there is no documented way to evaluate this and duplication is ok.
+  - ${{ each platform in parameters.upstreamPlatforms }}:
+    - name: AllArtifactsDownloadPath
+      value: 'artifacts/transport/AllArtifacts'
+    - name: AllArtifactsArgs
+      value: >-
+        /p:AllArtifactsDownloadPath=${{ parameters.buildCommandSourcesDirectory }}$(AllArtifactsDownloadPath)
+        /p:BuildFullPlatformManifest=true
+
   dependsOn:
   - checkout
   - ${{ parameters.dependsOn }}
@@ -143,6 +161,9 @@ jobs:
         parameters.liveLibrariesBuildConfig) }}
   - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
     - libraries_build_allconfigurations_Windows_NT_x64_Release
+  - ${{ each platform in parameters.upstreamPlatforms }}:
+    - coreclr_product_build_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}
+    - libraries_build_netcoreapp_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
 
   steps:
 
@@ -167,6 +188,33 @@ jobs:
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
   - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+  # Download and extract artifacts for earlier subsets.
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download artifacts for all platforms'
+    inputs:
+      buildType: current
+      downloadType: specific
+      downloadPath: '$(Build.SourcesDirectory)/__download__/AllPlatforms/'
+      itemPattern: |
+        CoreCLRProduct_*/**
+        libraries_bin_*/**
+
+  - ${{ each platform in parameters.upstreamPlatforms }}:
+    - task: ExtractFiles@1
+      displayName: 'Unzip CoreCLR artifacts: ${{ platform }}'
+      inputs:
+        archiveFilePatterns: |
+          $(Build.SourcesDirectory)/__download__/AllPlatforms/CoreCLRProduct_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}.*
+        destinationFolder: $(AllArtifactsDownloadPath)/CoreCLRProduct_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}/
+        cleanUnpackFolder: false
+    - task: ExtractFiles@1
+      displayName: 'Unzip Libraries artifacts: ${{ platform }}'
+      inputs:
+        archiveFilePatterns: |
+          $(Build.SourcesDirectory)/__download__/AllPlatforms/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}.*
+        destinationFolder: $(AllArtifactsDownloadPath)/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}/
+        cleanUnpackFolder: false
 
   - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
