@@ -18856,18 +18856,34 @@ bool Compiler::fgCheckStmtAfterTailCall()
 
 #if FEATURE_TAILCALL_OPT_SHARED_RETURN
 
-            // We can have a move from the call result to an lvaInlineeReturnSpillTemp.
-            // However, we can't check that this assignment was created there.
-            if (nextMorphStmt->GetRootNode()->gtOper == GT_ASG)
+            // We can have a chain of assignments from the call result to
+            // various inline return spill temps. These are ok as long
+            // as the last one ultimately provides the return value or is ignored.
+            //
+            // And if we're returning a small type we may see a cast
+            // on the source side.
+            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_ASG)))
             {
                 Statement* moveStmt = nextMorphStmt;
                 GenTree*   moveExpr = nextMorphStmt->GetRootNode();
-                noway_assert(moveExpr->gtGetOp1()->OperIsLocal() && moveExpr->gtGetOp2()->OperIsLocal());
+                GenTree*   moveDest = moveExpr->gtGetOp1();
+                noway_assert(moveDest->OperIsLocal());
 
-                unsigned srcLclNum = moveExpr->gtGetOp2()->AsLclVarCommon()->GetLclNum();
+                // Tunnel through any casts on the source side.
+                GenTree* moveSource = moveExpr->gtGetOp2();
+                while (moveSource->OperIs(GT_CAST))
+                {
+                    noway_assert(!moveSource->gtOverflow());
+                    moveSource = moveSource->gtGetOp1();
+                }
+                noway_assert(moveSource->OperIsLocal());
+
+                // Verify we're just passing the value from one local to another
+                // along the chain.
+                const unsigned srcLclNum = moveSource->AsLclVarCommon()->GetLclNum();
                 noway_assert(srcLclNum == callResultLclNumber);
-                unsigned dstLclNum  = moveExpr->gtGetOp1()->AsLclVarCommon()->GetLclNum();
-                callResultLclNumber = dstLclNum;
+                const unsigned dstLclNum = moveDest->AsLclVarCommon()->GetLclNum();
+                callResultLclNumber      = dstLclNum;
 
                 nextMorphStmt = moveStmt->GetNextStmt();
             }
