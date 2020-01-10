@@ -8,7 +8,7 @@
 # Title               : coreclr_arguments.py
 #
 # Notes:
-#  
+#
 # Setup script, to avoid re-writing argument validation between different
 # coreclr scripts.
 #
@@ -42,7 +42,7 @@ class CoreclrArguments:
     # ctor
     ############################################################################
 
-    def __init__(self, 
+    def __init__(self,
                  args,
                  require_built_test_dir=False,
                  require_built_core_root=False,
@@ -97,10 +97,10 @@ class CoreclrArguments:
 
         return True
 
-    def verify(self, 
-               args, 
+    def verify(self,
+               args,
                arg_name,
-               verify, 
+               verify,
                failure_str,
                arg_value=None,
                modify_arg=None,
@@ -108,14 +108,20 @@ class CoreclrArguments:
         """ Verify an arg
 
         Args:
-            args        (argParser)             : arg parser args
-            arg_name    (String)                : argument to verify
-            verify      (lambda: arg -> bool)   : verify method
-            failure_str (String)                : failure output if not verified
-            modify_arg  (lambda: arg -> arg)    : modify the argument before assigning
+            args        (argParser)                             : arg parser args
+            arg_name    (String)                                : argument to verify
+            verify      (lambda: arg -> bool)                   : verify method
+            failure_str (String or lambda: arg_value -> String) : failure output if not verified
+            arg_value
+            modify_arg  (lambda: arg -> arg)                    : modify the argument before assigning
+            modify_after_validation (bool)                      : If True, run the modify_arg function after validation.
+                                                                  Otherwise (default), run it before validation.
 
         Returns:
             verified (bool)
+
+        Note:
+            The CoreclrArguments object gets a new member named by `arg_name` with the argument value.
         """
         verified = False
         arg_value = None
@@ -136,14 +142,14 @@ class CoreclrArguments:
             verified = verify(arg_value)
         except:
             pass
-        
+
         if verified == False and isinstance(failure_str, str):
             print(failure_str)
             sys.exit(1)
         elif verified == False:
             print(failure_str(arg_value))
             sys.exit(1)
-        
+
         if modify_arg != None and modify_after_validation:
             arg_value = modify_arg(arg_value)
 
@@ -169,7 +175,7 @@ class CoreclrArguments:
             else:
                 print("Unknown OS: %s" % self.host_os)
                 sys.exit(1)
-            
+
             return None
 
         def check_host_os(host_os):
@@ -247,7 +253,7 @@ class CoreclrArguments:
                     "Unsupported host_os",
                     modify_arg=lambda host_os: provide_default_host_os() if host_os is None else host_os)
 
-        self.verify(args, 
+        self.verify(args,
                     "arch",
                     check_arch,
                     "Unsupported architecture.\nSupported architectures: %s" % (", ".join(self.valid_arches)))
