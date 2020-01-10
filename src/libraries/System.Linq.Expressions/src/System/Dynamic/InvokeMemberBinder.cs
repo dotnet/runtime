@@ -84,7 +84,7 @@ namespace System.Dynamic
         /// <param name="args">The arguments of the dynamic invoke member operation.</param>
         /// <param name="errorSuggestion">The binding result to use if binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public abstract DynamicMetaObject FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject? errorSuggestion);
 
         /// <summary>
         /// When overridden in the derived class, performs the binding of the dynamic invoke operation if the target dynamic object cannot bind.
@@ -98,6 +98,6 @@ namespace System.Dynamic
         /// as a sequence of get member, and invoke, to let the <see cref="DynamicMetaObject"/>
         /// request the binding of the invoke operation only.
         /// </remarks>
-        public abstract DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject? errorSuggestion);
     }
 }

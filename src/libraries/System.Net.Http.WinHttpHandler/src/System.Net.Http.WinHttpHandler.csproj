@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;$(NetFrameworkCurrent)-Windows_NT-Debug;$(NetFrameworkCurrent)-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -19,8 +20,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.certificates.cs</Link>
     </Compile>	
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>System\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
     </Compile>	
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs</Link>
@@ -82,11 +83,9 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
       <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
     </Compile>	
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
       <Link>System\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
     <Compile Include="System\Net\Http\WinHttpAuthHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpCertificateHelper.cs" />
@@ -102,8 +101,8 @@
     <Compile Include="System\Net\Http\WinHttpResponseStream.cs" />
     <Compile Include="System\Net\Http\WinHttpTraceHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpTransportContext.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>

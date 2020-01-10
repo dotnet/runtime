@@ -234,9 +234,9 @@ namespace System.Reflection.PortableExecutable
             ulong baseAddress,
             BlobBuilder metadataBuilder,
             BlobBuilder ilBuilder,
-            BlobBuilder mappedFieldDataBuilderOpt,
-            BlobBuilder resourceBuilderOpt,
-            BlobBuilder debugDataBuilderOpt,
+            BlobBuilder? mappedFieldDataBuilderOpt,
+            BlobBuilder? resourceBuilderOpt,
+            BlobBuilder? debugDataBuilderOpt,
             out Blob strongNameSignature)
         {
             Debug.Assert(builder.Count == 0);

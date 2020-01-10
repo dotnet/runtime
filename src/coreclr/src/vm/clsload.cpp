@@ -3332,9 +3332,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             }
 
             templateMT = pLoaderModule->CreateArrayMethodTable(paramType, kind, rank, pamTracker);
-
-            BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ArrayTypeDesc))));
-            typeHnd = TypeHandle(new(mem)  ArrayTypeDesc(templateMT));
+            typeHnd = TypeHandle(templateMT);
         }
         else
         {
@@ -3377,9 +3375,6 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
 
         // Key must match that of the handle
         PRECONDITION(typeHnd.CheckMatchesKey(pTypeKey));
-
-        // Don't publish array template method tables; these are accessed only through type descs
-        PRECONDITION(typeHnd.IsTypeDesc() || !typeHnd.AsMethodTable()->IsArray());
     }
     CONTRACTL_END;
 
@@ -4033,9 +4028,9 @@ ClassLoader::LoadArrayTypeThrowing(
     if (arrayKind == ELEMENT_TYPE_SZARRAY) {
         predefinedElementType = elemType.GetSignatureCorElementType();
         if (predefinedElementType <= ELEMENT_TYPE_R8) {
-            ArrayTypeDesc* typeDesc = g_pPredefinedArrayTypes[predefinedElementType];
-            if (typeDesc != 0)
-                RETURN(TypeHandle(typeDesc));
+            TypeHandle th = g_pPredefinedArrayTypes[predefinedElementType];
+            if (th != 0)
+                RETURN(th);
         }
         // This call to AsPtr is somewhat bogus and only used
         // as an optimization.  If the TypeHandle is really a TypeDesc
@@ -4043,16 +4038,16 @@ ClassLoader::LoadArrayTypeThrowing(
         // fail.  Thus ArrayMT should not be used elsewhere in this function
         else if (elemType.AsPtr() == PTR_VOID(g_pObjectClass)) {
             // Code duplicated because Object[]'s SigCorElementType is E_T_CLASS, not OBJECT
-            ArrayTypeDesc* typeDesc = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
-            if (typeDesc != 0)
-                RETURN(TypeHandle(typeDesc));
+            TypeHandle th = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
+            if (th != 0)
+                RETURN(th);
             predefinedElementType = ELEMENT_TYPE_OBJECT;
         }
         else if (elemType.AsPtr() == PTR_VOID(g_pStringClass)) {
             // Code duplicated because String[]'s SigCorElementType is E_T_CLASS, not STRING
-            ArrayTypeDesc* typeDesc = g_pPredefinedArrayTypes[ELEMENT_TYPE_STRING];
-            if (typeDesc != 0)
-                RETURN(TypeHandle(typeDesc));
+            TypeHandle th = g_pPredefinedArrayTypes[ELEMENT_TYPE_STRING];
+            if (th != 0)
+                RETURN(th);
             predefinedElementType = ELEMENT_TYPE_STRING;
         }
         else {
@@ -4072,12 +4067,12 @@ ClassLoader::LoadArrayTypeThrowing(
     }
 #endif
 
-    TypeKey key(arrayKind, elemType, FALSE, rank);
+    TypeKey key(arrayKind, elemType, rank);
     TypeHandle th = LoadConstructedTypeThrowing(&key, fLoadTypes, level);
 
     if (predefinedElementType != ELEMENT_TYPE_END && !th.IsNull() && th.IsFullyLoaded())
     {
-        g_pPredefinedArrayTypes[predefinedElementType] = th.AsArray();
+        g_pPredefinedArrayTypes[predefinedElementType] = th;
     }
 
     RETURN(th);
@@ -4935,7 +4930,7 @@ BOOL ClassLoader::CanAccessMethodInstantiation( // True if access is legal, fals
         {
             TypeHandle th = inst[i];
 
-            MethodTable* pMT = th.GetMethodTableOfElementType();
+            MethodTable* pMT = th.GetMethodTableOfRootTypeParam();
 
             // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
             if (pMT == NULL)
@@ -4997,7 +4992,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
         {
             TypeHandle th = inst[i];
 
-            MethodTable* pMT = th.GetMethodTableOfElementType();
+            MethodTable* pMT = th.GetMethodTableOfRootTypeParam();
 
             // Either a TypeVarTypeDesc or a FnPtrTypeDesc. No access check needed.
             if (pMT == NULL)
@@ -5611,8 +5606,7 @@ BOOL ClassLoader::CanAccessFamilyVerification(TypeHandle thCurrentClass,
     if (thInstanceClass.CanCastTo(TypeHandle(pAccessor)))
         return TRUE;
 
-    //ArrayTypeDescs are the only typedescs that have methods, and their methods don't have IL.  All other
-    //TypeDescs don't need to be here.  So only run this on MethodTables.
+    //TypeDescs don't have methods so only run this on MethodTables.
     if (!thInstanceClass.IsNull())
     {
         return CanAccessFamilyVerificationEnclosingHelper(pAccessor, thInstanceClass);

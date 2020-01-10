@@ -77,32 +77,24 @@ namespace Microsoft.Win32
         {
             get
             {
-                if (Environment.OSVersion.Platform == System.PlatformID.Win32NT)
-                {
-                    IntPtr hwinsta = IntPtr.Zero;
-
-                    hwinsta = Interop.User32.GetProcessWindowStation();
-                    if (hwinsta != IntPtr.Zero && s_processWinStation != hwinsta)
-                    {
-                        s_isUserInteractive = true;
-
-                        int lengthNeeded = 0;
-                        Interop.User32.USEROBJECTFLAGS flags = default;
-
-                        if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, ref flags, sizeof(Interop.User32.USEROBJECTFLAGS), ref lengthNeeded))
-                        {
-                            if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
-                            {
-                                s_isUserInteractive = false;
-                            }
-                        }
-                        s_processWinStation = hwinsta;
-                    }
-                }
-                else
+                IntPtr hwinsta = Interop.User32.GetProcessWindowStation();
+                if (hwinsta != IntPtr.Zero && s_processWinStation != hwinsta)
                 {
                     s_isUserInteractive = true;
+
+                    uint dummy = 0;
+                    Interop.User32.USEROBJECTFLAGS flags = default;
+
+                    if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, &flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
+                    {
+                        if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
+                        {
+                            s_isUserInteractive = false;
+                        }
+                    }
+                    s_processWinStation = hwinsta;
                 }
+
                 return s_isUserInteractive;
             }
         }

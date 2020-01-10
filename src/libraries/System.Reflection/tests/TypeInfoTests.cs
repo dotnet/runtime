@@ -1197,6 +1197,7 @@ namespace System.Reflection.Tests
         public void Guid()
         {
             Assert.Equal(new Guid("FD80F123-BEDD-4492-B50A-5D46AE94DD4E"), typeof(TypeInfoTests).GetTypeInfo().GUID);
+            Assert.Equal(System.Guid.Empty, typeof(int[]).GetTypeInfo().GUID);
         }
 
         [Theory]

@@ -3251,14 +3251,6 @@ void Module::FreeClassTables()
                         }
                     }
                 }
-                else if (th.IsArray())
-                {
-                    ComCallWrapperTemplate *pTemplate = th.AsArray()->GetComCallWrapperTemplate();
-                    if (pTemplate != NULL)
-                    {
-                        pTemplate->Release();
-                    }
-                }
 #endif // FEATURE_COMINTEROP
 
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
@@ -3922,7 +3914,7 @@ ILStubCache* Module::GetILStubCache()
 
     // Use per-LoaderAllocator cache for modules when not NGENing
     BaseDomain *pDomain = GetDomain();
-    if (!IsSystem() && !pDomain->IsSharedDomain() && !pDomain->AsAppDomain()->IsCompilationDomain())
+    if (!IsSystem() && !pDomain->AsAppDomain()->IsCompilationDomain())
         return GetLoaderAllocator()->GetILStubCache();
 
     if (m_pILStubCache == NULL)

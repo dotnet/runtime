@@ -307,11 +307,11 @@
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Cng.cs">
       <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
-      <Link>Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs</Link>
@@ -323,28 +323,28 @@
       <Link>Common\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHashData.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptHashData.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptHashData.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptDeriveKeyMaterial.cs">
       <Link>Internal\Windows\NCrypt\Interop.NCryptDeriveKeyMaterial.cs</Link>
@@ -424,7 +424,7 @@
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\ErrorCodeHelper.cs">
       <Link>Internal\Cryptography\Windows\ErrorCodeHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Internal\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.cs">

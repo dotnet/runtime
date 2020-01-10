@@ -67,6 +67,10 @@ jobs:
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: clangArg
           value: ''
+      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+        - name: clangArg
+          value: ''
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
       - name: dotnetfeedUrl

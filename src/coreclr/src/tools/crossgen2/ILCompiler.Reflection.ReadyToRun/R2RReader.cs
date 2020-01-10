@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -226,27 +227,23 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             if (MetadataReader == null)
             {
-                Image = File.ReadAllBytes(Filename);
+                byte[] image = File.ReadAllBytes(Filename);
+                Image = image;
 
-                fixed (byte* p = Image)
+                PEReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
+
+                if (!PEReader.HasMetadata)
                 {
-                    IntPtr ptr = (IntPtr)p;
-                    PEReader = new PEReader(p, Image.Length);
-
-                    if (!PEReader.HasMetadata)
-                    {
-                        throw new Exception($"ECMA metadata not found in file '{Filename}'");
-                    }
-
-                    MetadataReader = PEReader.GetMetadataReader();
+                    throw new Exception($"ECMA metadata not found in file '{Filename}'");
                 }
+
+                MetadataReader = PEReader.GetMetadataReader();
+
             }
             else
             {
                 ImmutableArray<byte> content = PEReader.GetEntireImage().GetContent();
-                // TODO: Avoid copying
-                Image = new byte[content.Length];
-                content.CopyTo(Image);
+                Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
             }
 
             ParseHeader();

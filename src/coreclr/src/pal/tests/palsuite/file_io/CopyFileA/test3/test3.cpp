@@ -60,7 +60,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* set the file attributes of the source file to readonly */
-    bRc = SetFileAttributes(szSrcExisting, FILE_ATTRIBUTE_READONLY);
+    bRc = SetFileAttributesA(szSrcExisting, FILE_ATTRIBUTE_READONLY);
     if(!bRc)
     {
         Fail("CopyFileA: ERROR-> Couldn't set file attributes for "

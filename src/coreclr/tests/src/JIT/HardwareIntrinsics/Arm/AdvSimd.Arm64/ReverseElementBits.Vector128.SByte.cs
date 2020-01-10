@@ -466,7 +466,6 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            
             for (var i = 0; i < RetElementCount; i++)
             {
                 if (Helpers.ReverseElementBits(firstOp[i]) != result[i])

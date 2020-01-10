@@ -16,7 +16,7 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal override Expression VisitDynamic(DynamicExpression node)
         {
-            Expression[] a = ExpressionVisitorUtils.VisitArguments(this, node);
+            Expression[]? a = ExpressionVisitorUtils.VisitArguments(this, node);
             if (a == null)
             {
                 return node;

@@ -28,13 +28,6 @@ namespace System.Net.Quic.Implementations.Mock
             _listenEndPoint = listenEndPoint;
 
             _tcpListener = new TcpListener(listenEndPoint);
-            _tcpListener.Start();
-
-            if (listenEndPoint.Port == 0)
-            {
-                // Get auto-assigned port
-                _listenEndPoint = (IPEndPoint)_tcpListener.LocalEndpoint;
-            }
         }
 
         // IPEndPoint is mutable, so we must create a new instance every time this is retrieved.
@@ -68,6 +61,19 @@ namespace System.Net.Quic.Implementations.Mock
             await socket.SendAsync(buffer, SocketFlags.None).ConfigureAwait(false);
 
             return new MockConnection(socket, peerListenEndPoint, inboundListener);
+        }
+
+        internal override void Start()
+        {
+            CheckDisposed();
+
+            _tcpListener.Start();
+
+            if (_listenEndPoint.Port == 0)
+            {
+                // Get auto-assigned port
+                _listenEndPoint = (IPEndPoint)_tcpListener.LocalEndpoint;
+            }
         }
 
         internal override void Close()

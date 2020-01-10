@@ -13,7 +13,7 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(LoopExpressionProxy))]
     public sealed class LoopExpression : Expression
     {
-        internal LoopExpression(Expression body, LabelTarget @break, LabelTarget @continue)
+        internal LoopExpression(Expression body, LabelTarget? @break, LabelTarget? @continue)
         {
             Body = body;
             BreakLabel = @break;
@@ -41,12 +41,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the <see cref="LabelTarget"/> that is used by the loop body as a break statement target.
         /// </summary>
-        public LabelTarget BreakLabel { get; }
+        public LabelTarget? BreakLabel { get; }
 
         /// <summary>
         /// Gets the <see cref="LabelTarget"/> that is used by the loop body as a continue statement target.
         /// </summary>
-        public LabelTarget ContinueLabel { get; }
+        public LabelTarget? ContinueLabel { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions
         /// <param name="continueLabel">The <see cref="ContinueLabel"/> property of the result.</param>
         /// <param name="body">The <see cref="Body"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public LoopExpression Update(LabelTarget breakLabel, LabelTarget continueLabel, Expression body)
+        public LoopExpression Update(LabelTarget? breakLabel, LabelTarget? continueLabel, Expression body)
         {
             if (breakLabel == BreakLabel && continueLabel == ContinueLabel && body == Body)
             {
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The body of the loop.</param>
         /// <param name="break">The break target used by the loop body.</param>
         /// <returns>The created <see cref="LoopExpression"/>.</returns>
-        public static LoopExpression Loop(Expression body, LabelTarget @break)
+        public static LoopExpression Loop(Expression body, LabelTarget? @break)
         {
             return Loop(body, @break, @continue: null);
         }
@@ -105,7 +105,7 @@ namespace System.Linq.Expressions
         /// <param name="break">The break target used by the loop body.</param>
         /// <param name="continue">The continue target used by the loop body.</param>
         /// <returns>The created <see cref="LoopExpression"/>.</returns>
-        public static LoopExpression Loop(Expression body, LabelTarget @break, LabelTarget @continue)
+        public static LoopExpression Loop(Expression body, LabelTarget? @break, LabelTarget? @continue)
         {
             ExpressionUtils.RequiresCanRead(body, nameof(body));
             if (@continue != null && @continue.Type != typeof(void)) throw Error.LabelTypeMustBeVoid(nameof(@continue));

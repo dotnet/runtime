@@ -48,7 +48,7 @@ public:
         CONTRACTL_END
 
         // Only simple class types can have native IIDs
-        if (th.IsTypeDesc())
+        if (th.IsTypeDesc() || th.IsArray())
             return NULL;
 
         HashDatum Data;

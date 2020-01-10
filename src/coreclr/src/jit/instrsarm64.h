@@ -470,6 +470,14 @@ INST2(fabd,    "fabd",   0, 0, IF_EN2G,   0x2EA0D400,  0x7EA0D400)
                                    //  fabd    Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 110101nnnnnddddd   2EA0 D400   Vd,Vn,Vm  (vector)
                                    //  fabd    Vd,Vn,Vm             DV_3D  011111101X1mmmmm 110101nnnnnddddd   7EA0 D400   Vd,Vn,Vm  (scalar)
 
+INST2(facge,   "facge",  0, 0, IF_EN2G,   0x2E20EC00,  0x7E20EC00)
+                                   //  facge   Vd,Vn,Vm             DV_3B  0Q1011100X1mmmmm 111011nnnnnddddd   2E20 EC00   Vd,Vn,Vm  (vector)
+                                   //  facge   Vd,Vn,Vm             DV_3D  011111100X1mmmmm 111011nnnnnddddd   7E20 EC00   Vd,Vn,Vm  (scalar)
+
+INST2(facgt,   "facgt",  0, 0, IF_EN2G,   0x2EA0EC00,  0x7EA0EC00)
+                                   //  facgt   Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 111011nnnnnddddd   2EA0 EC00   Vd,Vn,Vm  (vector)
+                                   //  facgt   Vd,Vn,Vm             DV_3D  011111101X1mmmmm 111011nnnnnddddd   7EA0 EC00   Vd,Vn,Vm  (scalar)
+
 //    enum     name     FP LD/ST            DV_2K        DV_1C
 INST2(fcmp,    "fcmp",   0, 0, IF_EN2I,   0x1E202000,  0x1E202008)
                                    //  fcmp    Vn,Vm                DV_2K  000111100X1mmmmm 001000nnnnn00000   1E20 2000   Vn Vm
@@ -1212,6 +1220,24 @@ INST1(umaxv,   "umaxv",  0, 0, IF_DV_2M,  0x2E30A800)
 
 INST1(uminv,   "uminv",  0, 0, IF_DV_2M,  0x2E31A800)
                                    //  uminv   Vd,Vn                DV_2M  0Q101110XX110001 101010nnnnnddddd   2E31 A800   Vd,Vn      (vector)
+
+INST1(uzp1,    "uzp1",   0, 0, IF_DV_3A,  0x0E001800)
+                                   //  uzp1    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 000110nnnnnddddd   0E00 1800   Vd,Vn,Vm  (vector)
+
+INST1(uzp2,    "uzp2",   0, 0, IF_DV_3A,  0x0E005800)
+                                   //  upz2    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 010110nnnnnddddd   0E00 5800   Vd,Vn,Vm  (vector)
+
+INST1(zip1,    "zip1",   0, 0, IF_DV_3A,  0x0E003800)
+                                   //  zip1    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 011110nnnnnddddd   0E00 3800   Vd,Vn,Vm  (vector)
+
+INST1(zip2,    "zip2",   0, 0, IF_DV_3A,  0x0E007800)
+                                   //  zip2    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 001110nnnnnddddd   0E00 7800   Vd,Vn,Vm  (vector)
+
+INST1(trn1,    "trn1",   0, 0, IF_DV_3A,  0x0E002800)
+                                   //  trn1    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 001010nnnnnddddd   0E00 2800   Vd,Vn,Vm  (vector)
+
+INST1(trn2,    "trn2",   0, 0, IF_DV_3A,  0x0E006800)
+                                   //  trn2    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 011010nnnnnddddd   0E00 6800   Vd,Vn,Vm  (vector)
 
 INST1(xtn,     "xtn",    0, 0, IF_DV_2M,  0x0E212800)
                                    //  xtn     Vd,Vn                DV_2M  00101110XX110000 001110nnnnnddddd   0E21 2800   Vd,Vn      (vector)

@@ -31,7 +31,7 @@ echo Visual Studio 2017 or later not found
 :call_vs
 if not exist "%_VSCOMNTOOLS%" (
     echo %__MsgPrefix%Error: Visual Studio 2017 or 2019 required.
-    echo        Please see https://github.com/dotnet/runtime/blob/master/docs/coreclr/building/windows-instructions.md for build instructions.
+    echo        Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md for build instructions.
     exit /b 1
 )
 echo %__MsgPrefix%"%_VSCOMNTOOLS%\VsDevCmd.bat"

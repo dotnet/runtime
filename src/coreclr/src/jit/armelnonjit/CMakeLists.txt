@@ -17,12 +17,12 @@ if (CLR_CMAKE_PLATFORM_ARCH_I386)
     add_definitions(-D_TARGET_ARM_)
     add_definitions(-DARM_SOFTFP)
     add_definitions(-DFEATURE_EH_FUNCLETS)
-    set(JIT_ARCH_ALTJIT_SOURCES ${JIT_ARM_SOURCES})
+    set(JIT_ARCH_SOURCES ${JIT_ARM_SOURCES})
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_arm)
 elseif(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     remove_definitions(-D_TARGET_AMD64_)
     add_definitions(-D_TARGET_ARM64_)
-    set(JIT_ARCH_ALTJIT_SOURCES ${JIT_ARM64_SOURCES})
+    set(JIT_ARCH_SOURCES ${JIT_ARM64_SOURCES})
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_arm64)
 else()
     clr_unknown_arch()
@@ -38,57 +38,4 @@ if (NOT WIN32)
     endif()
 endif(NOT WIN32)
 
-if(WIN32)
-  add_definitions(-DFX_VER_INTERNALNAME_STR=armelnonjit.dll)
-endif(WIN32)
-
-set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
-
-add_library_clr(armelnonjit
-   SHARED
-   ${SHARED_LIB_SOURCES}
-   ${JIT_ARCH_ALTJIT_SOURCES}
-)
-
-target_precompile_header(TARGET armelnonjit HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
-
-add_dependencies(armelnonjit jit_exports)
-
-set_property(TARGET armelnonjit APPEND_STRING PROPERTY LINK_FLAGS ${JIT_EXPORTS_LINKER_OPTION})
-set_property(TARGET armelnonjit APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPORTS_FILE})
-
-set(RYUJIT_LINK_LIBRARIES
-   utilcodestaticnohost
-   ${JIT_ARCH_LINK_LIBRARIES}
-)
-
-if(CLR_CMAKE_PLATFORM_UNIX)
-    list(APPEND RYUJIT_LINK_LIBRARIES
-       mscorrc_debug
-       coreclrpal
-       palrt
-    )
-else()
-    list(APPEND RYUJIT_LINK_LIBRARIES
-       ${STATIC_MT_CRT_LIB}
-       ${STATIC_MT_VCRT_LIB}
-       kernel32.lib
-       advapi32.lib
-       ole32.lib
-       oleaut32.lib
-       uuid.lib
-       user32.lib
-       version.lib
-       shlwapi.lib
-       bcrypt.lib
-       crypt32.lib
-       RuntimeObject.lib
-    )
-endif(CLR_CMAKE_PLATFORM_UNIX)
-
-target_link_libraries(armelnonjit
-   ${RYUJIT_LINK_LIBRARIES}
-)
-
-# add the install targets
-install_clr(TARGETS armelnonjit)
+add_jit(armelnonjit)

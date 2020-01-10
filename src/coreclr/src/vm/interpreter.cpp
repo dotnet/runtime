@@ -3341,7 +3341,7 @@ bool Interpreter::MethodHandlesException(OBJECTREF orThrowable)
                             GCX_COOP();
                             // Handle a wrapped exception.
                             OBJECTREF orUnwrapped = PossiblyUnwrapThrowable(orThrowable, GetMethodDesc()->GetAssembly());
-                            if (ExceptionIsOfRightType(TypeHandle::FromPtr(excType), orUnwrapped->GetTrueTypeHandle()))
+                            if (ExceptionIsOfRightType(TypeHandle::FromPtr(excType), orUnwrapped->GetTypeHandle()))
                             {
                                 // Push the exception object onto the operand stack.
                                 OpStackSet<OBJECTREF>(0, orUnwrapped);

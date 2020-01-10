@@ -96,8 +96,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.WndProc.cs">
       <Link>Common\Interop\Windows\User32\Interop.WndProc.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs</Link>

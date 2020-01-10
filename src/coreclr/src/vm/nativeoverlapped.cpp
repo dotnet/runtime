@@ -112,7 +112,7 @@ FCIMPL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped
 
     if (userObject != NULL)
     {
-        if (userObject->GetMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]->GetMethodTable())
+        if (userObject->GetMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].AsMethodTable())
         {
             BASEARRAYREF asArray = (BASEARRAYREF) userObject;
             OBJECTREF *pObj = (OBJECTREF*)(asArray->GetDataPtr());

@@ -1094,11 +1094,11 @@ BOOL CEEPreloader::CanEmbedClassHandle(CORINFO_CLASS_HANDLE    typeHandle)
     {
         embedStats.array++;
 
-        CorElementType arrType = hnd.AsArray()->GetInternalCorElementType();
+        CorElementType arrType = hnd.GetInternalCorElementType();
         if (arrType == ELEMENT_TYPE_SZARRAY)
             embedStats.szarray++;
 
-        CorElementType elemType = hnd.AsArray()->GetArrayElementTypeHandle().GetInternalCorElementType();
+        CorElementType elemType = hnd.GetArrayElementTypeHandle().GetInternalCorElementType();
         if (elemType <= ELEMENT_TYPE_R8)
             embedStats.primitives++;
     }
@@ -1675,14 +1675,6 @@ void EncodeTypeInDictionarySignature(
         }
 
         return;
-    }
-    else if((CorElementTypeZapSig)typ == ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG)
-    {
-        pSigBuilder->AppendElementType((CorElementType)ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
-
-        IfFailThrow(ptr.GetElemType(&typ));
-
-        _ASSERTE(typ == ELEMENT_TYPE_SZARRAY || typ == ELEMENT_TYPE_ARRAY);
     }
 
     pSigBuilder->AppendElementType(typ);
@@ -4693,13 +4685,13 @@ static bool IsTypeAccessibleOutsideItsAssembly(TypeHandle th)
 {
     STANDARD_VM_CONTRACT;
 
-    if (th.IsTypeDesc())
+    if (th.HasTypeParam())
     {
-        if (th.AsTypeDesc()->HasTypeParam())
-            return IsTypeAccessibleOutsideItsAssembly(th.AsTypeDesc()->GetTypeParam());
-
-        return true;
+        return IsTypeAccessibleOutsideItsAssembly(th.GetTypeParam());
     }
+
+    if (th.IsTypeDesc())
+        return true;
 
     MethodTable * pMT = th.AsMethodTable();
 
@@ -5081,7 +5073,7 @@ void CEEPreloader::ApplyTypeDependencyProductionsForType(TypeHandle t)
     STANDARD_VM_CONTRACT;
 
     // Only actual types
-    if (t.IsTypeDesc())
+    if (t.IsTypeDesc() || t.IsArray())
         return;
 
     MethodTable * pMT = t.AsMethodTable();
@@ -5412,7 +5404,7 @@ void CEEPreloader::TriageTypeForZap(TypeHandle th, BOOL fAcceptIfNotSure, BOOL f
     STANDARD_VM_CONTRACT;
 
     // We care about param types only
-    if (th.IsTypicalTypeDefinition() && !th.IsTypeDesc())
+    if (th.IsTypicalTypeDefinition() && !(th.IsTypeDesc() || th.IsArray()))
         return;
 
     // We care about types from our module only
@@ -5519,9 +5511,9 @@ void CEEPreloader::TriageTypeForZap(TypeHandle th, BOOL fAcceptIfNotSure, BOOL f
     }
 
 #ifdef FEATURE_FULL_NGEN
-    // Only save arrays and other param types in their preferred zap modules,
+    // Only save arrays and param types in their preferred zap modules,
     // i.e. never duplicate them.
-    if (th.IsTypeDesc() || th.IsArrayType())
+    if (th.IsTypeDesc() || th.IsArray())
     {
         triage = Rejected;
         rejectReason = "type is a TypeDesc";

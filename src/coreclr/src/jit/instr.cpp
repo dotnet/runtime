@@ -648,118 +648,41 @@ AGAIN:
     }
 }
 
-/*****************************************************************************
- *
- *  Generate an instruction that has one operand given by a tree (which has
- *  been made addressable) and another that is a register.
- */
-
-void CodeGen::inst_TT_RV(instruction ins, GenTree* tree, regNumber reg, unsigned offs, emitAttr size, insFlags flags)
+//------------------------------------------------------------------------
+// inst_TT_RV: Generate a store of a lclVar
+//
+// Arguments:
+//    ins  - the instruction to generate
+//    size - the size attributes for the store
+//    tree - the lclVar node
+//    reg  - the register currently holding the value of the local
+//
+void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg)
 {
+#ifdef DEBUG
+    // The tree must have a valid register value.
     assert(reg != REG_STK);
-
-AGAIN:
-
-    /* Is this a spilled value? */
-
-    if (tree->gtFlags & GTF_SPILLED)
+    bool isValidInReg = ((tree->gtFlags & GTF_SPILLED) == 0);
+    if (!isValidInReg)
     {
-        assert(!"ISSUE: If this can happen, we need to generate 'ins [ebp+spill]'");
-    }
-
-    if (size == EA_UNKNOWN)
-    {
-        if (instIsFP(ins))
+        // Is this the special case of a write-thru lclVar?
+        // We mark it as SPILLED to denote that its value is valid in memory.
+        if (((tree->gtFlags & GTF_SPILL) != 0) && tree->gtOper == GT_STORE_LCL_VAR)
         {
-            size = EA_ATTR(genTypeSize(tree->TypeGet()));
-        }
-        else
-        {
-            size = emitTypeSize(tree->TypeGet());
+            isValidInReg = true;
         }
     }
+    assert(isValidInReg);
+    assert(size != EA_UNKNOWN);
+    assert(tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+#endif // DEBUG
 
-    switch (tree->gtOper)
-    {
-        unsigned varNum;
-
-        case GT_LCL_VAR:
-
-            inst_set_SV_var(tree);
-            goto LCL;
-
-        case GT_LCL_FLD:
-        case GT_STORE_LCL_FLD:
-            offs += tree->AsLclFld()->GetLclOffs();
-            goto LCL;
-
-        LCL:
-
-            varNum = tree->AsLclVarCommon()->GetLclNum();
-            assert(varNum < compiler->lvaCount);
-
+    unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
+    assert(varNum < compiler->lvaCount);
 #if CPU_LOAD_STORE_ARCH
-            if (!GetEmitter()->emitInsIsStore(ins))
-            {
-                // TODO-LdStArch-Bug: Should regTmp be a dst on the node or an internal reg?
-                // Either way, it is not currently being handled by Lowering.
-                regNumber regTmp = tree->GetRegNum();
-                assert(regTmp != REG_NA);
-                GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), size, regTmp, varNum, offs);
-                GetEmitter()->emitIns_R_R(ins, size, regTmp, reg, flags);
-                GetEmitter()->emitIns_S_R(ins_Store(tree->TypeGet()), size, regTmp, varNum, offs);
-
-                regSet.verifyRegUsed(regTmp);
-            }
-            else
+    assert(GetEmitter()->emitInsIsStore(ins));
 #endif
-            {
-                // ins is a Store instruction
-                //
-                GetEmitter()->emitIns_S_R(ins, size, reg, varNum, offs);
-#ifdef _TARGET_ARM_
-                // If we need to set the flags then add an extra movs reg,reg instruction
-                if (flags == INS_FLAGS_SET)
-                    GetEmitter()->emitIns_R_R(INS_mov, size, reg, reg, INS_FLAGS_SET);
-#endif
-            }
-            return;
-
-        case GT_CLS_VAR:
-            // Make sure FP instruction size matches the operand size
-            // (We optimized constant doubles to floats when we can, just want to
-            // make sure that we don't mistakenly use 8 bytes when the
-            // constant).
-            assert(!isFloatRegType(tree->gtType) || genTypeSize(tree->gtType) == EA_SIZE_IN_BYTES(size));
-
-#if CPU_LOAD_STORE_ARCH
-            if (!GetEmitter()->emitInsIsStore(ins))
-            {
-                NYI("Store of GT_CLS_VAR not supported for ARM");
-            }
-            else
-#endif // CPU_LOAD_STORE_ARCH
-            {
-                GetEmitter()->emitIns_C_R(ins, size, tree->AsClsVar()->gtClsVarHnd, reg, offs);
-            }
-            return;
-
-        case GT_IND:
-        case GT_NULLCHECK:
-        case GT_ARR_ELEM:
-        {
-            assert(!"inst_TT_RV not supported for GT_IND, GT_NULLCHECK or GT_ARR_ELEM");
-        }
-        break;
-
-        case GT_COMMA:
-            //     tree->AsOp()->gtOp1 - already processed by genCreateAddrMode()
-            tree = tree->AsOp()->gtOp2;
-            goto AGAIN;
-
-        default:
-            assert(!"invalid address");
-    }
+    GetEmitter()->emitIns_S_R(ins, size, reg, varNum, 0);
 }
 
 /*****************************************************************************

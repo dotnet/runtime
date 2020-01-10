@@ -1054,10 +1054,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("var_zapsig");
                     break;
 
-                case CorElementType.ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
-                    builder.Append("native_array_template_zapsig");
-                    break;
-
                 case CorElementType.ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
                     builder.Append("native_valuetype_zapsig");
                     break;
