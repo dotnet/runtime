@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -21,7 +22,7 @@ namespace System.Linq
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
-            Expression obj = Visit(m.Object);
+            Expression? obj = Visit(m.Object);
             ReadOnlyCollection<Expression> args = Visit(m.Arguments);
 
             // check for args changed
@@ -30,7 +31,7 @@ namespace System.Linq
                 MethodInfo mInfo = m.Method;
                 Type[]? typeArgs = (mInfo.IsGenericMethod) ? mInfo.GetGenericArguments() : null;
 
-                if ((mInfo.IsStatic || mInfo.DeclaringType!.IsAssignableFrom(obj.Type))
+                if ((mInfo.IsStatic || mInfo.DeclaringType!.IsAssignableFrom(obj!.Type))
                     && ArgsMatch(mInfo, args, typeArgs))
                 {
                     // current method is still valid
@@ -194,8 +195,7 @@ namespace System.Linq
 
         protected override Expression VisitConstant(ConstantExpression c)
         {
-            EnumerableQuery? sq = c.Value as EnumerableQuery;
-            if (sq != null)
+            if (c.Value is EnumerableQuery sq)
             {
                 if (sq.Enumerable != null)
                 {
@@ -333,7 +333,7 @@ namespace System.Linq
 
         protected override Expression VisitGoto(GotoExpression node)
         {
-            Type type = node.Value.Type;
+            Type type = node.Value!.Type;
             if (!typeof(IQueryable).IsAssignableFrom(type))
                 return base.VisitGoto(node);
             LabelTarget target = VisitLabelTarget(node.Target);
@@ -341,14 +341,15 @@ namespace System.Linq
             return Expression.MakeGoto(node.Kind, target, value, GetEquivalentType(typeof(EnumerableQuery).IsAssignableFrom(type) ? value.Type : type));
         }
 
-        protected override LabelTarget VisitLabelTarget(LabelTarget node)
+        [return: NotNullIfNotNull("node")]
+        protected override LabelTarget? VisitLabelTarget(LabelTarget? node)
         {
             LabelTarget? newTarget;
             if (_targetCache == null)
                 _targetCache = new Dictionary<LabelTarget, LabelTarget>();
-            else if (_targetCache.TryGetValue(node, out newTarget))
+            else if (_targetCache.TryGetValue(node!, out newTarget))
                 return newTarget;
-            Type type = node.Type;
+            Type type = node!.Type;
             if (!typeof(IQueryable).IsAssignableFrom(type))
                 newTarget = base.VisitLabelTarget(node);
             else

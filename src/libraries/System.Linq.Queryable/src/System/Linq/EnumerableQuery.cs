@@ -112,8 +112,7 @@ namespace System.Linq
 
         public override string? ToString()
         {
-            ConstantExpression? c = _expression as ConstantExpression;
-            if (c != null && c.Value == this)
+            if (_expression is ConstantExpression c && c.Value == this)
             {
                 if (_enumerable != null)
                     return _enumerable.ToString();
