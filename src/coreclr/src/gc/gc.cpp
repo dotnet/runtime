@@ -35279,10 +35279,6 @@ void gc_heap::descr_generations (BOOL begin_gc_p)
 #endif //TRACE_GC
 }
 
-#undef TRACE_GC
-
-//#define TRACE_GC
-
 //-----------------------------------------------------------------------------
 //
 //                                  VM Specific support
@@ -35307,7 +35303,7 @@ VOLATILE(BOOL)    GCHeap::GcInProgress            = FALSE;
 //CMCSafeLock*      GCHeap::fGcLock;
 GCEvent            *GCHeap::WaitForGCEvent         = NULL;
 //GCTODO
-#ifdef TRACE_GC
+#if defined(TRACE_GC) && !defined(MULTIPLE_HEAPS)
 unsigned int       GCHeap::GcDuration;
 #endif //TRACE_GC
 unsigned            GCHeap::GcCondemnedGeneration   = 0;
@@ -37622,10 +37618,11 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 #ifdef TRACE_GC
 #ifdef COUNT_CYCLES
     finish = GetCycleCount32();
+    AllocDuration += finish - AllocStart;
 #elif defined(ENABLE_INSTRUMENTATION)
     finish = GetInstLogTime();
-#endif //COUNT_CYCLES
     AllocDuration += finish - AllocStart;
+#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
