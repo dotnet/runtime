@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "diagnosticsipc.h"
 
 IpcStream::DiagnosticsIpc::DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength])
@@ -23,12 +24,36 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
         return nullptr;
 
     char namedPipeName[MaxNamedPipeNameLength]{};
-    const int nCharactersWritten = sprintf_s(
-        namedPipeName,
-        sizeof(namedPipeName),
-        "\\\\.\\pipe\\%s-%d",
-        pIpcName,
-        ::GetCurrentProcessId());
+    int nCharactersWritten = -1;
+
+    char *customTransportPath;
+    errno_t fSuccess = _dupenv_s(&customTransportPath, NULL, "COMPlus_DiagnosticsServerTransportPath");
+    if (fSuccess != 0)
+    {
+        if (callback != nullptr)
+            callback("Failed to read COMPlus_DiagnosticsServerTransportPath environment variable", fSuccess);
+        assert(fSuccess == 0);
+        return nullptr;
+    }
+
+    if (customTransportPath != nullptr)
+    {
+        nCharactersWritten = sprintf_s(
+            namedPipeName,
+            sizeof(namedPipeName),
+            "\\\\.\\pipe\\%s",
+            customTransportPath);
+        free(customTransportPath);
+    }
+    else
+    {
+        nCharactersWritten = sprintf_s(
+            namedPipeName,
+            sizeof(namedPipeName),
+            "\\\\.\\pipe\\%s-%d",
+            pIpcName,
+            ::GetCurrentProcessId());
+    }
 
     if (nCharactersWritten == -1)
     {

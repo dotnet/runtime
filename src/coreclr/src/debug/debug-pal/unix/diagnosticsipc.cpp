@@ -53,14 +53,28 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     sockaddr_un serverAddress{};
     serverAddress.sun_family = AF_UNIX;
 
-    const ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
-    PAL_GetTransportName(
-        sizeof(serverAddress.sun_path),
-        serverAddress.sun_path,
-        pIpcName,
-        pd.m_Pid,
-        pd.m_ApplicationGroupId,
-        "socket");
+    // A user specified socket location and name supersedes the default
+    // we are in charge of freeing this memory
+    const char *customTransportPath = getenv("COMPlus_DiagnosticsServerTransportPath");
+    if (customTransportPath != nullptr)
+    {
+        int chars = snprintf(serverAddress.sun_path, sizeof(serverAddress.sun_path), customTransportPath);
+        _ASSERTE(chars > 0 && (unsigned int)chars < sizeof(serverAddress.sun_path));
+        delete customTransportPath;
+    }
+    else
+    {
+        // generate the default socket name in TMP Path
+        const ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
+        PAL_GetTransportName(
+            sizeof(serverAddress.sun_path),
+            serverAddress.sun_path,
+            pIpcName,
+            pd.m_Pid,
+            pd.m_ApplicationGroupId,
+            "socket");
+    }
+
 
 #ifndef __APPLE__
     if (fchmod(serverSocket, S_IRUSR | S_IWUSR) == -1)
