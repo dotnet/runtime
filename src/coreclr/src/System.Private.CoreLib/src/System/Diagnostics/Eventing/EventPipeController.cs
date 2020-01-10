@@ -48,7 +48,7 @@ namespace System.Diagnostics.Tracing
                     {
                         // Enable tracing immediately.
                         // It will be disabled automatically on shutdown.
-                        EventPipe.Enable(BuildConfigFromEnvironment());
+                        // EventPipe.Enable(BuildConfigFromEnvironment());
                     }
 
                     RuntimeEventSource.Initialize();

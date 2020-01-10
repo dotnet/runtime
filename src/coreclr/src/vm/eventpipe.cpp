@@ -18,6 +18,7 @@
 #include "eventpipesession.h"
 #include "eventpipejsonfile.h"
 #include "eventtracebase.h"
+#include "eventtracebase.h"
 #include "sampleprofiler.h"
 #include "win32threadpool.h"
 #include "ceemain.h"
@@ -94,11 +95,83 @@ void EventPipe::Initialize()
 #endif
     }
 
-
     {
         CrstHolder _crst(GetLock());
         if (tracingInitialized)
             s_state = EventPipeState::Initialized;
+    }
+
+    EnableViaEnvironmentVariables();
+}
+
+//
+// If EventPipe environment variables are specified, parse them and start a session
+// 
+void EventPipe::EnableViaEnvironmentVariables()
+{
+    STANDARD_VM_CONTRACT;
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableEventPipe) != 0)
+    {
+        LPWSTR eventpipeConfig = NULL;
+        CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeConfig, &eventpipeConfig);
+        auto configuration = XplatEventLoggerConfiguration();
+        auto configToParse = eventpipeConfig;
+        auto t_configToParse = eventpipeConfig;
+
+        // TODO: The behavior should be the same as existing code - enable with default provider configuration 
+        if (configToParse == nullptr || *configToParse == L'\0')
+        {
+            return;
+        }
+
+        // Count how many providers there are to parse
+        int cnt = 0;
+        static WCHAR comma = W(',');
+        while(t_configToParse != nullptr)
+        {
+            cnt += 1;
+            auto end = wcschr(configToParse, comma);
+            if (end == nullptr)
+            {
+                break;
+            }
+            configToParse = end + 1;
+        }
+
+        EventPipeProviderConfiguration* pProviders = new EventPipeProviderConfiguration[cnt]; 
+        int i = 0;
+
+        while (configToParse != nullptr)
+        {
+            auto end = wcschr(configToParse, comma);
+            configuration.Parse(configToParse);
+
+            pProviders[i++] = EventPipeProviderConfiguration(
+                configuration.GetProviderName(),
+                configuration.GetEnabledKeywordsMask(),
+                configuration.GetLevel(),
+                nullptr
+                // TODO: Add arguments here
+            );
+
+            if (end == nullptr)
+            {
+                break;
+            }
+            configToParse = end + 1;
+        }
+
+        UINT64 sessionID = EventPipe::Enable(
+            W("mytrace.nettrace"),
+            128,
+            pProviders,
+            cnt,
+            EventPipeSessionType::File,
+            EventPipeSerializationFormat::NetTraceV4,
+            true,
+            nullptr
+        );
+        EventPipe::StartStreaming(sessionID);
     }
 }
 

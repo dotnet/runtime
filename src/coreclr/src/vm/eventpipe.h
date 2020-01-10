@@ -47,6 +47,9 @@ public:
     // Initialize the event pipe.
     static void Initialize();
 
+    // Initialize environment variable based session
+    static void EnableViaEnvironmentVariables();
+
     // Shutdown the event pipe.
     static void Shutdown();
 
