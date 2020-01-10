@@ -26,8 +26,6 @@ parts:
         - libstdc++6
         - zlib1g
         - libgcc1
-        - lldb
-        - libunwind8
         - libtinfo5
         - liblttng-ust0
         - liburcu6

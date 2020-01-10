@@ -38,8 +38,6 @@ parts:
       - libstdc++6
       - zlib1g
       - libgcc1
-      - lldb
-      - libunwind8
       - libtinfo5
       - libdb5.3
       - libc6
