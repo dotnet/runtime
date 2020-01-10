@@ -431,22 +431,22 @@ namespace Internal.Cryptography.Pal
                 switch (oidValue)
                 {
                     case Oids.ApplicationCertPolicies:
-                        policyData.ApplicationCertPoliciesData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.ApplicationCertPolicies = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                     case Oids.CertPolicies:
-                        policyData.CertPoliciesData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.CertPolicies = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                     case Oids.CertPolicyMappings:
-                        policyData.CertPolicyMappingsData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.CertPolicyMappings = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                     case Oids.CertPolicyConstraints:
-                       policyData.CertPolicyConstraintsData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                       policyData.CertPolicyConstraints = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                        break;
                     case Oids.EnhancedKeyUsage:
-                        policyData.EnhancedKeyUsageData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.EnhancedKeyUsage = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                     case Oids.InhibitAnyPolicyExtension:
-                        policyData.InhibitAnyPolicyExtensionData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        policyData.InhibitAnyPolicyExtension = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                         break;
                 }
             }
