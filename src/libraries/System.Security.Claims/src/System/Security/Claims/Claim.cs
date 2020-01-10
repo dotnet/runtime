@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace System.Security.Claims
@@ -31,7 +32,7 @@ namespace System.Security.Claims
 
         private readonly string _issuer;
         private readonly string _originalIssuer;
-        private Dictionary<string, string?>? _properties;
+        private Dictionary<string, string>? _properties;
 
         private readonly ClaimsIdentity? _subject;
         private readonly string _type;
@@ -272,8 +273,8 @@ namespace System.Security.Claims
 
             if (propertyKey != null)
             {
-                _properties = new Dictionary<string, string?>();
-                _properties[propertyKey] = propertyValue;
+                _properties = new Dictionary<string, string>();
+                _properties[propertyKey] = propertyValue!;
             }
         }
 
@@ -308,7 +309,7 @@ namespace System.Security.Claims
             _valueType = other._valueType;
             if (other._properties != null)
             {
-                _properties = new Dictionary<string, string?>(other._properties);
+                _properties = new Dictionary<string, string>(other._properties);
             }
 
             if (other._userSerializationData != null)
@@ -352,13 +353,13 @@ namespace System.Security.Claims
         /// <summary>
         /// Gets the collection of Properties associated with the <see cref="Claim"/>.
         /// </summary>
-        public IDictionary<string, string?> Properties
+        public IDictionary<string, string> Properties
         {
             get
             {
                 if (_properties == null)
                 {
-                    _properties = new Dictionary<string, string?>();
+                    _properties = new Dictionary<string, string>();
                 }
                 return _properties;
             }
@@ -518,7 +519,7 @@ namespace System.Security.Claims
                 foreach (var kvp in _properties)
                 {
                     writer.Write(kvp.Key);
-                    writer.Write(kvp.Value!);
+                    writer.Write(kvp.Value);
                 }
             }
 

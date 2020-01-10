@@ -9,8 +9,8 @@ namespace System.Security.Principal
 {
     public class GenericIdentity : ClaimsIdentity
     {
-        private readonly string m_name = null!;  // Initialized in parameterized constructors
-        private readonly string m_type = null!;
+        private readonly string m_name;
+        private readonly string m_type;
 
         public GenericIdentity(string name)
         {
@@ -35,11 +35,6 @@ namespace System.Security.Principal
 
             AddNameClaim();
         }
-
-        private GenericIdentity()
-            : base()
-        { }
-
 
         protected GenericIdentity(GenericIdentity identity)
             : base(identity)

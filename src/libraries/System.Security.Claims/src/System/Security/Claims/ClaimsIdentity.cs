@@ -894,7 +894,7 @@ namespace System.Security.Claims
 
             if ((mask & SerializationMask.BootstrapConext) == SerializationMask.BootstrapConext)
             {
-                writer.Write((_bootstrapContext as string)!);
+                writer.Write((string)_bootstrapContext!);
             }
 
             if ((mask & SerializationMask.NameClaimType) == SerializationMask.NameClaimType)
@@ -917,7 +917,7 @@ namespace System.Security.Claims
                 writer.Write(_instanceClaims.Count);
                 foreach (var claim in _instanceClaims)
                 {
-                    claim!.WriteTo(writer);
+                    claim.WriteTo(writer);
                 }
             }
 
