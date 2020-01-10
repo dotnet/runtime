@@ -79,7 +79,7 @@ System.Text.RegularExpressions.sln
 cd tests
 
 :: Then inner loop build / test:
-pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:rebuildandtest
+pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 ```
 
 For detailed instructions on how to build, debug, test, etc. please visit the instructions in the workflow sub-folders.
