@@ -10,7 +10,7 @@ namespace System.Linq
 {
     internal static class TypeHelper
     {
-        internal static Type? FindGenericType(Type definition, [NotNull]Type? type)
+        internal static Type? FindGenericType(Type definition, Type type)
         {
             bool? definitionIsInterface = null;
             while (type != null && type != typeof(object))
@@ -28,7 +28,7 @@ namespace System.Linq
                             return found;
                     }
                 }
-                type = type.BaseType;
+                type = type.BaseType!;
             }
             return null;
         }
