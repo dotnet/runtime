@@ -289,7 +289,7 @@ namespace System.Runtime.CompilerServices
         }
 
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
-        // Unlike the ChkCastInterface, ChkCastClass, and ChkCastArray functions,
+        // Unlike the ChkCastInterface and ChkCastClass functions,
         // this test must deal with all kinds of type tests
         [DebuggerHidden]
         [StackTraceHidden]

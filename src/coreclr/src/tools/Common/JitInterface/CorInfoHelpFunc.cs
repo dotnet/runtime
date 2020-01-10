@@ -76,12 +76,10 @@ namespace Internal.JitInterface
         // the right helper to use
 
         CORINFO_HELP_ISINSTANCEOFINTERFACE, // Optimized helper for interfaces
-        CORINFO_HELP_ISINSTANCEOFARRAY,  // Optimized helper for arrays
         CORINFO_HELP_ISINSTANCEOFCLASS, // Optimized helper for classes
         CORINFO_HELP_ISINSTANCEOFANY,   // Slow helper for any type
 
         CORINFO_HELP_CHKCASTINTERFACE,
-        CORINFO_HELP_CHKCASTARRAY,
         CORINFO_HELP_CHKCASTCLASS,
         CORINFO_HELP_CHKCASTANY,
         CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases 

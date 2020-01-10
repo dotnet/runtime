@@ -6231,8 +6231,7 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
             *pfClassMustBeRestored = true;
         }
 
-        // If it is an array, use the fast array helper
-        helper = CORINFO_HELP_ISINSTANCEOFARRAY;
+        _ASSERTE(helper == CORINFO_HELP_ISINSTANCEOFANY);
     }
     else
     if (!clsHnd.IsTypeDesc() && !Nullable::IsNullableType(clsHnd))
@@ -6262,8 +6261,6 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
 
         static_assert_no_msg(CORINFO_HELP_CHKCASTINTERFACE
             == CORINFO_HELP_ISINSTANCEOFINTERFACE + delta);
-        static_assert_no_msg(CORINFO_HELP_CHKCASTARRAY
-            == CORINFO_HELP_ISINSTANCEOFARRAY + delta);
         static_assert_no_msg(CORINFO_HELP_CHKCASTCLASS
             == CORINFO_HELP_ISINSTANCEOFCLASS + delta);
 

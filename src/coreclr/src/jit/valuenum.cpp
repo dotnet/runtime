@@ -8846,7 +8846,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_CHKCASTCLASS:
         case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
-        case CORINFO_HELP_CHKCASTARRAY:
         case CORINFO_HELP_CHKCASTINTERFACE:
         case CORINFO_HELP_CHKCASTANY:
             vnf = VNF_CastClass;
@@ -8858,7 +8857,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_ISINSTANCEOFCLASS:
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
-        case CORINFO_HELP_ISINSTANCEOFARRAY:
         case CORINFO_HELP_ISINSTANCEOFANY:
             vnf = VNF_IsInstanceOf;
             break;
