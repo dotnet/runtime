@@ -1204,7 +1204,8 @@ LCGMethodResolver::GetStringLength(mdToken metaTok)
 
     GCX_COOP();
 
-    return GetStringLiteral(metaTok)->GetStringLength();
+    STRINGREF str = GetStringLiteral(metaTok);
+    return str == NULL ? - 1 : str->GetStringLength();
 }
 
 //---------------------------------------------------------------------------------------
