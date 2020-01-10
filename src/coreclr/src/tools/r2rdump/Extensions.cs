@@ -217,46 +217,7 @@ namespace R2RDump
             if (theThis.Method.GcInfo is ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo)
             {
                 writer.WriteLine("GC info:");
-                writer.WriteLine($@"    Version:                           {gcInfo.Version}");
-                writer.WriteLine($@"    ReturnKind:                        {gcInfo.ReturnKind}");
-                writer.WriteLine($@"    ValidRangeStart:                   0x{gcInfo.ValidRangeStart:X4}");
-                writer.WriteLine($@"    ValidRangeEnd:                     0x{gcInfo.ValidRangeEnd:X4}");
-                writer.WriteLine($@"    SecurityObjectStackSlot:           0x{gcInfo.SecurityObjectStackSlot:X4}");
-                writer.WriteLine($@"    GSCookieStackSlot:                 0x{gcInfo.GSCookieStackSlot:X4}");
-                writer.WriteLine($@"    PSPSymStackSlot:                   0x{gcInfo.PSPSymStackSlot:X4}");
-                writer.WriteLine($@"    GenericsInstContextStackSlot:      0x{gcInfo.GenericsInstContextStackSlot:X4}");
-                writer.WriteLine($@"    StackBaseRegister:                 {gcInfo.StackBaseRegister}");
-                writer.WriteLine($@"    SizeOfENCPreservedArea:            0x{gcInfo.SizeOfEditAndContinuePreservedArea:X4}");
-                writer.WriteLine($@"    ReversePInvokeFrameStackSlot:      0x{gcInfo.ReversePInvokeFrameStackSlot:X4}");
-                writer.WriteLine($@"    SizeOfStackOutgoingAndScratchArea: 0x{gcInfo.SizeOfStackOutgoingAndScratchArea:X4}");
-                writer.WriteLine($@"    NumSafePoints:                     {gcInfo.NumSafePoints}");
-                writer.WriteLine($@"    NumInterruptibleRanges:            {gcInfo.NumInterruptibleRanges}");
-
-                writer.WriteLine($@"    SafePointOffsets: {gcInfo.SafePointOffsets.Count}");
-                foreach (ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo.SafePointOffset safePoint in gcInfo.SafePointOffsets)
-                {
-                    writer.WriteLine($@"        Index: {safePoint.Index,2}; Value: 0x{safePoint.Value:X4}");
-                    if (gcInfo.LiveSlotsAtSafepoints != null)
-                        writer.WriteLine($@"        Live slots: {String.Join(", ", gcInfo.LiveSlotsAtSafepoints[safePoint.Index])}");
-                }
-
-                writer.WriteLine($@"    InterruptibleRanges: {gcInfo.InterruptibleRanges.Count}");
-                foreach (ILCompiler.Reflection.ReadyToRun.Amd64.InterruptibleRange range in gcInfo.InterruptibleRanges)
-                {
-                    writer.WriteLine($@"        Index: {range.Index,2}; StartOffset: 0x{range.StartOffset:X4}; StopOffset: 0x{range.StopOffset:X4}");
-                }
-
-                writer.WriteLine("    SlotTable:");
-                writer.WriteLine($@"        NumRegisters:  {gcInfo.SlotTable.NumRegisters}");
-                writer.WriteLine($@"        NumStackSlots: {gcInfo.SlotTable.NumStackSlots}");
-                writer.WriteLine($@"        NumUntracked:  {gcInfo.SlotTable.NumUntracked}");
-                writer.WriteLine($@"        NumSlots:      {gcInfo.SlotTable.NumSlots}");
-                writer.WriteLine($@"        GcSlots:       {gcInfo.SlotTable.GcSlots.Count}");
-                foreach (ILCompiler.Reflection.ReadyToRun.Amd64.GcSlotTable.GcSlot slot in gcInfo.SlotTable.GcSlots)
-                {
-                    writer.WriteLine($@"            Index: {slot.Index,2}; RegisterNumber: {slot.RegisterNumber,2}; Flags: {slot.Flags}");
-                }
-                writer.WriteLine();
+                writer.WriteLine(gcInfo.ToString());
             }
 
             if (theThis.EHInfo != null)
