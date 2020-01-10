@@ -1548,7 +1548,9 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
+	MONO_ENTER_GC_UNSAFE;
 	mono_arch_set_native_call_context_args (&ccontext, frame, sig);
+	MONO_EXIT_GC_UNSAFE;
 	args = &ccontext;
 #else
 	InterpMethodArguments *margs = build_args_from_sig (sig, frame);
@@ -1562,8 +1564,11 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
-	if (!context->has_resume_state)
+	if (!context->has_resume_state) {
+		MONO_ENTER_GC_UNSAFE;
 		mono_arch_get_native_call_context_ret (&ccontext, frame, sig);
+		MONO_EXIT_GC_UNSAFE;
+	}
 
 	if (ccontext.stack != NULL)
 		g_free (ccontext.stack);
