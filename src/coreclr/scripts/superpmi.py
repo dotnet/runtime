@@ -198,6 +198,7 @@ upload_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False,
 # subparser for list-collections
 list_parser = subparsers.add_parser("list-collections")
 
+list_parser.add_argument("-host_os", dest="host_os", nargs='?')
 list_parser.add_argument("-arch", dest="arch", nargs='?', default="x64", help=arch_help)
 list_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked", help=build_type_help)
 
@@ -1512,7 +1513,7 @@ class SuperPMIReplayAsmDiffs:
                     current_jit_dump_diff = None
 
                 if current_jit_dump_diff is not None:
-                    print("Diffs found in the JitDump generated. These files are located under <repo_root>/artifacts/jit_dump/base and <repo_root>/artifacts/jit_dump/diff")
+                    print("Textual differences found in JitDump. JitDump is located under %s %s" % (base_dump_location, diff_dump_location))
 
                     if self.coreclr_args.diff_with_code:
                         batch_command = ["cmd", "/c"] if platform.system() == "Windows" else []
@@ -1712,7 +1713,13 @@ def download_index(coreclr_args):
 
     urls = list_superpmi_container_via_rest_api(coreclr_args, lambda url: "index.json" in url)
 
-    assert(len(urls) == 1)
+    if len(urls) == 0:
+        print("Didn't find any index.json for the specified configuration.")
+        exit(1)
+    elif len(urls) > 1:
+        print("Error: found {} index.json files (expected 1).".format(len(urls)))
+        exit(1)
+
     json_string = urllib.request.urlopen(urls[0]).read().decode('utf-8')
 
     json_obj = json.loads(json_string)
@@ -1781,7 +1788,6 @@ def upload_mch(coreclr_args):
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
-
     """
 
     try:
@@ -1855,7 +1861,7 @@ def setup_args(args):
         args (CoreclrArguments)
 
     """
-    coreclr_args = CoreclrArguments(args, require_built_core_root=True, require_built_product_dir=False, require_built_test_dir=False, default_build_type="Checked")
+    coreclr_args = CoreclrArguments(args, require_built_core_root=False, require_built_product_dir=False, require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
                         "skip_cleanup",
@@ -1885,6 +1891,11 @@ def setup_args(args):
             return mch_location
 
     if coreclr_args.mode == "collect":
+
+        coreclr_args.verify(args,
+                            "core_root",
+                            lambda core_root: (core_root is not None) and os.path.isdir(core_root),
+                            "Invalid core_root.")
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -2000,6 +2011,11 @@ def setup_args(args):
     elif coreclr_args.mode == "replay":
 
         coreclr_args.verify(args,
+                            "core_root",
+                            lambda core_root: (core_root is not None) and os.path.isdir(core_root),
+                            "Invalid core_root.")
+
+        coreclr_args.verify(args,
                             "collection",
                             lambda collection_name: collection_name in download_index(coreclr_args),
                             "Invalid collection. Please run 'superpmi.py list-collections' to see valid options.")
@@ -2083,6 +2099,11 @@ def setup_args(args):
                             modify_arg=lambda arg: arg[0] if arg is not None else setup_mch_arg(arg))
 
     elif coreclr_args.mode == "asmdiffs":
+
+        coreclr_args.verify(args,
+                            "core_root",
+                            lambda core_root: (core_root is not None) and os.path.isdir(core_root),
+                            "Invalid core_root.")
 
         coreclr_args.verify(args,
                             "base_jit_path",
@@ -2213,6 +2234,11 @@ def setup_args(args):
                             modify_arg=lambda arg: arg[0] if arg is not None else setup_mch_arg(arg))
 
     elif coreclr_args.mode == "upload":
+
+        coreclr_args.verify(args,
+                            "core_root",
+                            lambda core_root: (core_root is not None) and os.path.isdir(core_root),
+                            "Invalid core_root.")
 
         coreclr_args.verify(args,
                             "az_storage_key",
@@ -2358,8 +2384,8 @@ def main(args):
         print("{} different collections".format(index_count))
         print("")
 
-        for item in index:
-            print(item)
+        for item, value in index.items():
+            print("{} : {}".format(item, value))
 
         print("")
     else:
