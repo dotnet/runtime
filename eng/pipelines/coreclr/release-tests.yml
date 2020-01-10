@@ -17,27 +17,15 @@ jobs:
 - template: /eng/pipelines/common/checkout-job.yml
 
 #
-# Release builds
+# Release CoreCLR and Library builds
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: release
     platformGroup: all
     jobParameters:
-      timeoutInMinutes: 120
-
-#
-# Release library builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Release
-    platformGroup: all
-    jobParameters:
       isOfficialBuild: false
-      liveCoreClrBuildConfig: release
 
 #
 # Release test builds
