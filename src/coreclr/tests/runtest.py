@@ -124,6 +124,7 @@ parser.add_argument("--run_crossgen_tests", dest="run_crossgen_tests", action="s
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--precompile_core_root", dest="precompile_core_root", action="store_true", default=False)
+parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests. Useful in conjunction with --precompile_core_root")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
@@ -876,6 +877,9 @@ def run_tests(args,
     if args.precompile_core_root:
         precompile_core_root(args)
 
+    if args.skip_test_run:
+        return
+
     # Set default per-test timeout to 15 minutes (in milliseconds).
     per_test_timeout = 15*60*1000
 
@@ -1081,6 +1085,11 @@ def setup_args(args):
                               "precompile_core_root",
                               lambda arg: True,
                               "Error setting precompile_core_root")
+
+    coreclr_setup_args.verify(args,
+                              "skip_test_run",
+                              lambda arg: True,
+                              "Error setting skip_test_run")
 
     coreclr_setup_args.verify(args,
                               "sequential",
@@ -1613,11 +1622,11 @@ def main(args):
                                                lambda test_env_script_path: run_tests(args, test_env_script_path))
         print("Test run finished.")
 
-    tests = parse_test_results(args)
-
-    if tests is not None:
-        print_summary(tests)
-        create_repro(args, env, tests)
+    if not args.skip_test_run:
+        tests = parse_test_results(args)
+        if tests is not None:
+            print_summary(tests)
+            create_repro(args, env, tests)
 
     return ret_code
 
