@@ -22,7 +22,7 @@ namespace System.Net.Quic
         public QuicStream OpenBidirectionalStream() => throw null;
         public System.Threading.Tasks.ValueTask<QuicStream> AcceptStreamAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol => throw null;
-        public ValueTask CloseAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public ValueTask CloseAsync(int shutdownCode, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() => throw null;
     }
     public sealed partial class QuicListener : IDisposable
@@ -49,6 +49,7 @@ namespace System.Net.Quic
         public override void Write(byte[] buffer, int offset, int count) => throw null;
         public long StreamId => throw null;
         public void AbortRead() => throw null;
+        public void AbortWrite(int errorCode) => throw null;
         public ValueTask WriteAsync(ReadOnlyMemory<byte> data, bool endStream, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public ValueTask ShutdownWriteCompleted(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }

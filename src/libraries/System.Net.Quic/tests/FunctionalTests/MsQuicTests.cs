@@ -60,7 +60,7 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [Fact(Skip = "MsQuic not available")]
+        [Fact]
         public async Task MultipleReadsAndWrites()
         {
             for (int j = 0; j < 100; j++)
