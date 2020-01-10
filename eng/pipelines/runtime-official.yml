@@ -102,11 +102,13 @@ stages:
   #
   - template: /eng/pipelines/installer/installer-matrix.yml
     parameters:
-      liveCoreClrBuildConfig: release
-      liveLibrariesBuildConfig: Release
-      isOfficialBuild: ${{ variables.isOfficialBuild }}
-      useOfficialAllConfigurations: true
-      upstreamPlatforms:
+      jobParameters:
+        liveCoreClrBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: true
+        buildFullPlatformManifest: true
+      platforms:
       - OSX_x64
       - Linux_x64
       - Linux_arm
