@@ -29,7 +29,7 @@ namespace System.Text.Json
             if (state.Current.IsProcessingEnumerable())
             {
                 // A nested object within an enumerable (non-dictionary).
-                HandleStartObjectInEnumerable(ref state, options);
+                HandleStartObjectInEnumerable(ref state, options, state.Current.JsonPropertyInfo!.DeclaredPropertyType);
             }
             else if (state.Current.JsonPropertyInfo != null)
             {
@@ -68,16 +68,12 @@ namespace System.Text.Json
             else if (state.Current.IsProcessingObject(ClassType.Enumerable))
             {
                 // Nested array with metadata within another array with metadata.
-                HandleStartObjectInEnumerable(ref state, options);
+                HandleStartObjectInEnumerable(ref state, options, classInfo.Type);
                 Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
+                Debug.Assert(state.Current.JsonClassInfo!.Type.GetGenericTypeDefinition() == typeof(JsonPreservedReference<>));
 
-                state.Current.ReturnValue = state.Current.JsonClassInfo!.CreateObject!();
+                state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject!();
                 state.Current.IsNestedPreservedArray = true;
-            }
-            else
-            {
-                // Only dictionaries, objects and (arrays with metadata in Preserve mode) are valid given the `StartObject` token.
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(classInfo.Type);
             }
         }
 
@@ -157,7 +153,7 @@ namespace System.Text.Json
             state.Current.IsPreservedArray = true;
         }
 
-        private static void HandleStartObjectInEnumerable(ref ReadStack state, JsonSerializerOptions options)
+        private static void HandleStartObjectInEnumerable(ref ReadStack state, JsonSerializerOptions options, Type type)
         {
             if (!state.Current.CollectionPropertyInitialized)
             {
@@ -168,7 +164,7 @@ namespace System.Text.Json
                 else
                 {
                     // We have bad JSON: enumerable element appeared without preceding StartArray token.
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo!.DeclaredPropertyType);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(type);
                 }
             }
             else
