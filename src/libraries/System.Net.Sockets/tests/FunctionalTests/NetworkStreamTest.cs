@@ -1203,8 +1203,6 @@ namespace System.Net.Sockets.Tests
         {
             public DerivedNetworkStream(Socket socket) : base(socket) { }
 
-            public new Socket Socket => base.Socket;
-
             public new bool Readable
             {
                 get { return base.Readable; }
