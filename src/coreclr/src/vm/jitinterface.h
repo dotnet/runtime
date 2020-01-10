@@ -211,12 +211,6 @@ EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfClass_Portable, MethodTable* pMT, Obje
 EXTERN_C FCDECL2(Object*, JIT_ChkCastInterface, MethodTable* pMT, Object* pObject);
 EXTERN_C FCDECL2(Object*, JIT_ChkCastInterface_Portable, MethodTable* pMT, Object* pObject);
 
-#ifndef JIT_IsInstanceOfInterface
-#define JIT_IsInstanceOfInterface JIT_IsInstanceOfInterface_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfInterface, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfInterface_Portable, MethodTable* pMT, Object* pObject);
-
 extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_);
 extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 
@@ -275,7 +269,6 @@ extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
 extern "C" FCDECL2(Object*, JITutil_ChkCastInterface, MethodTable *pInterfaceMT, Object *obj);
-extern "C" FCDECL2(Object*, JITutil_IsInstanceOfInterface, MethodTable *pInterfaceMT, Object *obj);
 extern "C" FCDECL2(Object*, JITutil_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *obj);
 extern "C" FCDECL2(Object*, JITutil_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object *obj);
 extern "C" FCDECL2(Object*, JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);

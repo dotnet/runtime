@@ -1949,17 +1949,6 @@ public:
     bool NativeRequiresAlign8();
 #endif // FEATURE_64BIT_ALIGNMENT
 
-    // True if interface casts for an object having this type require more
-    // than a simple scan of the interface map
-    // See JIT_IsInstanceOfInterface
-    inline BOOL InstanceRequiresNonTrivialInterfaceCast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GetFlag(enum_flag_NonTrivialInterfaceCast);
-    }
-
-
     //-------------------------------------------------------------------
     // PARENT INTERFACES
     //

@@ -53,7 +53,6 @@ endif
 extern JIT_InternalThrow:proc
 
 extern JITutil_ChkCastInterface:proc
-extern JITutil_IsInstanceOfInterface:proc
 extern JITutil_ChkCastAny:proc
 extern JITutil_IsInstanceOfAny:proc
 
@@ -226,109 +225,6 @@ ifdef FEATURE_PREJIT
     @@:
 endif
 endm
-
-; PERF TODO: consider prefetching the entire interface map into the cache
-
-; For all bizarre castes this quickly fails and falls back onto the JITutil_IsInstanceOfInterface
-; helper, this means that all failure cases take the slow path as well.
-;
-; This can trash r10/r11
-LEAF_ENTRY JIT_IsInstanceOfInterface, _TEXT
-        test    rdx, rdx
-        jz      IsNullInst
-
-        ; get methodtable
-        mov     rax, [rdx]
-        mov     r11w, word ptr [rax + OFFSETOF__MethodTable__m_wNumInterfaces]
-
-        test    r11w, r11w
-        jz      DoBizarre
-
-        ; fetch interface map ptr
-        mov     rax, [rax + OFFSETOF__MethodTable__m_pInterfaceMap]
-
-        ; r11 holds number of interfaces
-        ; rax is pointer to beginning of interface map list
-    align 16
-    Top:
-        ; rax -> InterfaceInfo_t* into the interface map, aligned to 4 entries
-        ; use offsets of SIZEOF__InterfaceInfo_t to get at entry 1, 2, 3 in this
-        ; block. If we make it through the full 4 without a hit we'll move to
-        ; the next block of 4 and try again.
-
-        ; unroll 0
-ifdef FEATURE_PREJIT
-        mov     r10, [rax + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
-        FIX_INDIRECTION r10
-        cmp     rcx, r10
-else
-        cmp     rcx, [rax + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
-endif
-        je      Found
-        ; move to next entry in list
-        dec     r11w
-        jz      DoBizarre
-
-        ; unroll 1
-ifdef FEATURE_PREJIT
-        mov     r10, [rax + SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
-        FIX_INDIRECTION r10
-        cmp     rcx, r10
-else
-        cmp     rcx, [rax + SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
-endif
-        je      Found
-        ; move to next entry in list
-        dec     r11w
-        jz      DoBizarre
-
-        ; unroll 2
-ifdef FEATURE_PREJIT
-        mov     r10, [rax + 2 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
-        FIX_INDIRECTION r10
-        cmp     rcx, r10
-else
-        cmp     rcx, [rax + 2 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
-endif
-        je      Found
-        ; move to next entry in list
-        dec     r11w
-        jz      DoBizarre
-
-        ; unroll 3
-ifdef FEATURE_PREJIT
-        mov     r10, [rax + 3 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
-        FIX_INDIRECTION r10
-        cmp     rcx, r10
-else
-        cmp     rcx, [rax + 3 * SIZEOF__InterfaceInfo_t + OFFSETOF__InterfaceInfo_t__m_pMethodTable]
-endif
-        je      Found
-        ; move to next entry in list
-        dec     r11w
-        jz      DoBizarre
-
-        ; if we didn't find the entry in this loop jump to the next 4 entries in the map
-        add     rax, 4 * SIZEOF__InterfaceInfo_t
-        jmp     Top
-
-    DoBizarre:
-        mov     rax, [rdx]
-        test    dword ptr [rax + OFFSETOF__MethodTable__m_dwFlags], METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS
-        jnz     NonTrivialCast
-        xor     rax,rax
-        ret
-
-    align 16
-    Found:
-    IsNullInst:
-        ; return the successful instance
-        mov     rax, rdx
-        ret
-
-    NonTrivialCast:
-        jmp     JITutil_IsInstanceOfInterface
-LEAF_END JIT_IsInstanceOfInterface, _TEXT
 
 ; For all bizarre castes this quickly fails and falls back onto the JITutil_ChkCastInterface
 ; helper, this means that all failure cases take the slow path as well.

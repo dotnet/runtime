@@ -6,12 +6,16 @@ using System.Diagnostics;
 using Internal.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if BIT64
 using nint = System.Int64;
+using nuint = System.UInt64;
 #else
 using nint = System.Int32;
+using nuint = System.UInt32;
 #endif
 
 namespace System.Runtime.CompilerServices
@@ -50,12 +54,13 @@ namespace System.Runtime.CompilerServices
             // we do `rotl(source, <half-size>) ^ target` for mixing inputs.
             // then we use fibonacci hashing to reduce the value to desired size.
 
+            int hashShift = HashShift(table);
 #if BIT64
             ulong hash = (((ulong)source << 32) | ((ulong)source >> 32)) ^ (ulong)target;
-            return (int)((hash * 11400714819323198485ul) >> HashShift(table));
+            return (int)((hash * 11400714819323198485ul) >> hashShift);
 #else
             uint hash = (((uint)source >> 16) | ((uint)source << 16)) ^ (uint)target;
-            return (int)((hash * 2654435769ul) >> HashShift(table));
+            return (int)((hash * 2654435769u) >> hashShift);
 #endif
         }
 
@@ -63,7 +68,7 @@ namespace System.Runtime.CompilerServices
         private static ref int AuxData(int[] table)
         {
             // element 0 is used for embedded aux data
-            return ref Unsafe.As<byte, int>(ref table.GetRawSzArrayData());
+            return ref MemoryMarshal.GetArrayDataReference(table);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -106,66 +111,57 @@ namespace System.Runtime.CompilerServices
             // we use NULL as a sentinel for a rare case when a table could not be allocated
             // because we avoid OOMs.
             // we could use 0-element table instead, but then we would have to check the size here.
-            if (table == null)
+            if (table != null)
             {
-                return CastResult.MaybeCast;
-            }
+                int index = KeyToBucket(table, source, target);
+                ref CastCacheEntry pEntry = ref Element(table, index);
 
-            int index = KeyToBucket(table, source, target);
-            ref CastCacheEntry pEntry = ref Element(table, index);
-
-            for (int i = 0; i < BUCKET_SIZE; i++)
-            {
-                // must read in this order: version -> entry parts -> version
-                // if version is odd or changes, the entry is inconsistent and thus ignored
-                int version1 = Volatile.Read(ref pEntry._version);
-                nint entrySource = pEntry._source;
-
-                if (entrySource == source)
+                for (int i = 0; i < BUCKET_SIZE; i++)
                 {
-                    nint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
+                    // must read in this order: version -> entry parts -> version
+                    // if version is odd or changes, the entry is inconsistent and thus ignored
+                    int version1 = Volatile.Read(ref pEntry._version);
+                    nint entrySource = pEntry._source;
 
-                    // target never has its lower bit set.
-                    // a matching entryTargetAndResult would have same bits, except for the lowest one, which is the result.
-                    entryTargetAndResult ^= target;
-                    if (entryTargetAndResult <= 1)
+                    // TODO: WIP port to native too
+                    // mask the lower version bit to make it even.
+                    // This way we can check if version is odd or changing in just one compare.
+                    version1 &= ~1;
+
+                    if (entrySource == source)
                     {
-                        int version2 = pEntry._version;
-                        if (version2 != version1 || ((version1 & 1) != 0))
+                        nint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
+
+                        // target never has its lower bit set.
+                        // a matching entryTargetAndResult would have same bits, except for the lowest one, which is the result.
+                        entryTargetAndResult ^= target;
+                        if ((nuint)entryTargetAndResult <= (nuint)1)
                         {
-                            // oh, so close, the entry is in inconsistent state.
-                            // it is either changing or has changed while we were reading.
-                            // treat it as a miss.
-                            break;
+                            int version2 = pEntry._version;
+                            if (version2 != version1)
+                            {
+                                // oh, so close, the entry is in inconsistent state.
+                                // it is either changing or has changed while we were reading.
+                                // treat it as a miss.
+                                break;
+                            }
+
+                            return (CastResult)entryTargetAndResult;
                         }
-
-                        return (CastResult)entryTargetAndResult;
                     }
-                }
 
-                if (version1 == 0)
-                {
-                    // the rest of the bucket is unclaimed, no point to search further
-                    break;
-                }
+                    if (version1 == 0)
+                    {
+                        // the rest of the bucket is unclaimed, no point to search further
+                        break;
+                    }
 
-                // quadratic reprobe
-                index += i;
-                pEntry = ref Element(table, index & TableMask(table));
+                    // quadratic reprobe
+                    index += i;
+                    pEntry = ref Element(table, index & TableMask(table));
+                }
             }
-
             return CastResult.MaybeCast;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static CastResult ObjIsInstanceOfCached(object obj, void* toTypeHnd)
-        {
-            void* mt = RuntimeHelpers.GetMethodTable(obj);
-
-            if (mt == toTypeHnd)
-                return CastResult.CanCast;
-
-            return TryGet((nint)mt, (nint)toTypeHnd);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -182,15 +178,108 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? JIT_IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
-            CastResult result;
+            if (obj != null)
+            {
+                void* mt = RuntimeHelpers.GetMethodTable(obj);
+                if (mt != toTypeHnd)
+                {
+                    CastResult result = TryGet((nint)mt, (nint)toTypeHnd);
+                    if (result == CastResult.CanCast)
+                    {
+                        // do nothing
+                    }
+                    else if (result == CastResult.CannotCast)
+                    {
+                        obj = null;
+                    }
+                    else
+                    {
+                        goto slowPath;
+                    }
+                }
+            }
 
-            if (obj == null ||
-                (result = ObjIsInstanceOfCached(obj, toTypeHnd)) == CastResult.CanCast)
+            return obj;
+
+        slowPath:
+            // fall through to the slow helper
+            return JITutil_IsInstanceOfAny_NoCacheLookup(toTypeHnd, obj);
+        }
+
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        private static object? JIT_IsInstanceOfInterface(void* toTypeHnd, object? obj)
+        {
+            if (obj != null)
+            {
+                // get methodtable
+                MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+                nint interfaceCount = mt->InterfaceCount;
+                if (interfaceCount > 0)
+                {
+                    nuint* interfaceMap = mt->InterfaceMap;
+                    nint i = 0;
+
+                    do
+                    {
+                        if (interfaceMap[i + 0] == (nuint)toTypeHnd)
+                            goto pass;
+                        if (interfaceMap[i + 1] == (nuint)toTypeHnd)
+                            goto pass;
+                        if (interfaceMap[i + 2] == (nuint)toTypeHnd)
+                            goto pass;
+                        if (interfaceMap[i + 3] == (nuint)toTypeHnd)
+                            goto pass;
+                    }
+                    while ((i += 4) < interfaceCount);
+
+                    // REVIEW FYI: Also tried the following (vectorizing the lookup).
+                    //             It improved the worst case scenarios (10-20%), since we can get through the whole list faster.
+                    //             but best/common cases got slower (also 10-20%). I am guessing that superscalar CPU is very good at
+                    //             linear/speculative compares, and without any math vectorization does not help that much.
+                    //
+
+                    //var toTypeV = Vector256.Create((nuint)toTypeHnd);
+                    //do
+                    //{
+                    //    var matchMask = Avx2.CompareEqual(toTypeV, *(Vector256<nuint>*)(interfaceMap + i));
+                    //    var anyMatch = Avx2.MoveMask(matchMask.AsByte());
+                    //
+                    //    if (anyMatch != 0)
+                    //    {
+                    //        goto pass;
+                    //    }
+                    //}
+                    //while ((i += 4) < interfaceCount);
+                }
+
+                if (mt->NonTrivialInterfaceCast)
+                {
+                    goto slowPath;
+                }
+
+                obj = null;
+            }
+
+        pass:
+            return obj;
+
+        slowPath:
+            return IsInstanceHelper(toTypeHnd, obj);
+        }
+
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        private static object? IsInstanceHelper(void* toTypeHnd, object obj)
+        {
+            CastResult result = TryGet((nint)RuntimeHelpers.GetMethodTable(obj), (nint)toTypeHnd);
+            if (result == CastResult.CanCast)
             {
                 return obj;
             }
-
-            if (result == CastResult.CannotCast)
+            else if (result == CastResult.CannotCast)
             {
                 return null;
             }
@@ -209,12 +298,23 @@ namespace System.Runtime.CompilerServices
         {
             CastResult result;
 
-            if (obj == null ||
-                (result = ObjIsInstanceOfCached(obj, toTypeHnd)) == CastResult.CanCast)
+            if (obj != null)
             {
-                return obj;
+                void* mt = RuntimeHelpers.GetMethodTable(obj);
+                if (mt != toTypeHnd)
+                {
+                    result = TryGet((nint)mt, (nint)toTypeHnd);
+                    if (result != CastResult.CanCast)
+                    {
+                        goto slowPath;
+                    }
+                }
             }
 
+            return obj;
+
+        slowPath:
+            // fall through to the slow helper
             object objRet = JITutil_ChkCastAny_NoCacheLookup(toTypeHnd, obj);
             // Make sure that the fast helper have not lied
             Debug.Assert(result != CastResult.CannotCast);

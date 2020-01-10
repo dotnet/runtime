@@ -550,7 +550,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #define JIT_ChkCastClassSpecial     JIT_ChkCastClassSpecial
 #define JIT_IsInstanceOfClass       JIT_IsInstanceOfClass
 #define JIT_ChkCastInterface        JIT_ChkCastInterface
-#define JIT_IsInstanceOfInterface   JIT_IsInstanceOfInterface
 #define JIT_NewCrossContext         JIT_NewCrossContext
 #define JIT_Stelem_Ref              JIT_Stelem_Ref
 #endif // FEATURE_PAL

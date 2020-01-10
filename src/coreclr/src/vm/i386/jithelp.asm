@@ -66,7 +66,6 @@ endif
 EXTERN _g_TailCallFrameVptr:DWORD
 EXTERN @JIT_FailFast@0:PROC
 EXTERN _s_gsCookie:DWORD
-EXTERN @JITutil_IsInstanceOfInterface@8:PROC
 EXTERN @JITutil_ChkCastInterface@8:PROC
 EXTERN @JITutil_IsInstanceOfAny@8:PROC
 EXTERN @JITutil_ChkCastAny@8:PROC
@@ -1292,81 +1291,6 @@ _JIT_PatchedCodeLast@0 endp
 _JIT_PatchedCodeEnd@0 proc public
 ret
 _JIT_PatchedCodeEnd@0 endp
-
-; This is the ASM portion of JIT_IsInstanceOfInterface.  For all the bizarre cases, it quickly
-; fails and falls back on the JITutil_IsInstanceOfInterface helper.  So all failure cases take
-; the slow path, too.
-;
-; ARGUMENT_REG1 = array or interface to check for.
-; ARGUMENT_REG2 = instance to be cast.
-
-        ALIGN 16
-PUBLIC @JIT_IsInstanceOfInterface@8
-@JIT_IsInstanceOfInterface@8 PROC
-        test    ARGUMENT_REG2, ARGUMENT_REG2
-        jz      IsNullInst
-
-        mov     eax, [ARGUMENT_REG2]            ; get MethodTable
-
-        push    ebx
-        push    esi
-        movzx   ebx, word ptr [eax+MethodTable_m_wNumInterfaces]
-
-        ; check if this MT implements any interfaces
-        test    ebx, ebx
-        jz      IsInstanceOfInterfaceDoBizarre
-
-        ; move Interface map ptr into eax
-        mov     eax, [eax+MethodTable_m_pInterfaceMap]
-
-IsInstanceOfInterfaceTop:
-        ; eax -> current InterfaceInfo_t entry in interface map list
-ifdef FEATURE_PREJIT
-        mov     esi, [eax]
-        test    esi, 1
-        ; Move the deference out of line so that this jump is correctly predicted for the case
-        ; when there is no indirection
-        jnz     IsInstanceOfInterfaceIndir
-        cmp     ARGUMENT_REG1, esi
-else
-        cmp     ARGUMENT_REG1, [eax]
-endif
-        je      IsInstanceOfInterfaceFound
-
-IsInstanceOfInterfaceNext:
-        add     eax, SIZEOF_InterfaceInfo_t
-        dec     ebx
-        jnz     IsInstanceOfInterfaceTop
-
-        ; fall through to DoBizarre
-
-IsInstanceOfInterfaceDoBizarre:
-        pop     esi
-        pop     ebx
-        mov     eax, [ARGUMENT_REG2]    ; get MethodTable
-        test    dword ptr [eax+MethodTable_m_dwFlags], NonTrivialInterfaceCastFlags
-        jnz     IsInstanceOfInterfaceNonTrivialCast
-
-IsNullInst:
-        xor     eax,eax
-        ret
-
-ifdef FEATURE_PREJIT
-IsInstanceOfInterfaceIndir:
-        cmp     ARGUMENT_REG1,[esi-1]
-        jne     IsInstanceOfInterfaceNext
-endif
-
-IsInstanceOfInterfaceFound:
-        pop     esi
-        pop     ebx
-        mov     eax, ARGUMENT_REG2      ; the successful instance
-        ret
-
-IsInstanceOfInterfaceNonTrivialCast:
-        jmp     @JITutil_IsInstanceOfInterface@8
-
-@JIT_IsInstanceOfInterface@8 endp
 
 ; This is the ASM portion of JIT_ChkCastInterface.  For all the bizarre cases, it quickly
 ; fails and falls back on the JITutil_ChkCastAny helper.  So all failure cases take

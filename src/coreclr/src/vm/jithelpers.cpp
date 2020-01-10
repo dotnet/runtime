@@ -2302,33 +2302,6 @@ HCIMPL2(Object*, JIT_ChkCastInterface_Portable, MethodTable *pInterfaceMT, Objec
 }
 HCIMPLEND
 
-HCIMPL2(Object*, JIT_IsInstanceOfInterface_Portable, MethodTable *pInterfaceMT, Object* pObject)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(pInterfaceMT->IsInterface());
-    } CONTRACTL_END;
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    if (pObject->GetMethodTable()->ImplementsInterfaceInline(pInterfaceMT))
-    {
-        return pObject;
-    }
-
-    if (!pObject->GetMethodTable()->InstanceRequiresNonTrivialInterfaceCast())
-    {
-        return NULL;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfInterface, pInterfaceMT, pObject);
-}
-HCIMPLEND
-
 HCIMPL2(Object *, JIT_ChkCastArray, CORINFO_CLASS_HANDLE type, Object *pObject)
 {
     CONTRACTL {
@@ -2396,28 +2369,6 @@ HCIMPL2(Object *, JIT_IsInstanceOfArray, CORINFO_CLASS_HANDLE type, Object *pObj
 
     ENDFORBIDGC();
     return HCCALL2(JITutil_IsInstanceOfAny_NoCacheLookup, type, pObject);
-}
-HCIMPLEND
-
-NOINLINE HCIMPL2(Object *, JITutil_IsInstanceOfInterface, MethodTable *pInterfaceMT, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    MethodTable* pMT = obj->GetMethodTable();
-    TypeHandle::CastResult result = CastCache::TryGetFromCache(pMT, pInterfaceMT);
-
-    switch (result) {
-    case TypeHandle::CanCast:
-        return obj;
-    case TypeHandle::CannotCast:
-        return NULL;
-    default:
-        // fall through to the slow helper
-        break;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE(pInterfaceMT), obj);
 }
 HCIMPLEND
 

@@ -127,6 +127,15 @@ void CastCache::Initialize()
     PCODE pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
 
+#ifdef FEATURE_PREJIT
+    // just set ISINSTANCEOFINTERFACE to ISINSTANCEOFANY
+    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
+#else
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_ISINSTANCEOFINTERFACE));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
+#endif
+
     pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTANY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
