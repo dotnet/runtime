@@ -32,7 +32,7 @@ pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 The instructions for Linux are essentially the same:
 
 ```
-:: From root in the morning:
+# From root in the morning:
 git clean -xdf
 git pull upstream master & git push origin master
 cd src/coreclr
@@ -40,19 +40,19 @@ build -release -skiptests
 cd ../../
 ./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release
 
-:: The above you may only perform once in a day, or when
-:: you pull down significant new changes.
+# The above you may only perform once in a day, or when
+# you pull down significant new changes.
 
-:: Switch to working on a given library (RegularExpressions in this case)
+# Switch to working on a given library (RegularExpressions in this case)
 cd src/libraries/System.Text.RegularExpressions
 
-:: At this point you probably open files to work on. If you use
-:: Visual Studio, you might open System.Text.RegularExpressions.sln here.
+# At this point you probably open files to work on. If you use
+# Visual Studio, you might open System.Text.RegularExpressions.sln here.
 
-:: Change to test directory
+# Change to test directory
 cd tests
 
-:: Then inner loop build / test:
+# Then inner loop build / test:
 pushd ../src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 ```
 
