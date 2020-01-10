@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Asn1
         /// </exception>
         public DateTimeOffset ReadGeneralizedTime(Asn1Tag expectedTag, bool disallowFractions = false)
         {
-            byte[] rented = null;
+            byte[]? rented = null;
 
             // An X.509 time is 15 characters (yyyyMMddHHmmssZ), beyond that is fractions (no limit) or
             // BER specified offset.
