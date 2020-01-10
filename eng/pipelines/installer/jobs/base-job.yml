@@ -134,8 +134,9 @@ jobs:
     - name: LibrariesArtifactNameAllConfigurations
       value: libraries_bin_official_allconfigurations
 
-  # Download all upstream platforms and incorporate in the platform manifest.
-  - ${{ if ne(parameters.upstreamPlatforms, '') }}:
+  # Download all upstream platforms and incorporate in the platform manifest. Use 'each' as a
+  # makeshift condition because there is no documented way to evaluate this and duplication is ok.
+  - ${{ each platform in parameters.upstreamPlatforms }}:
     - name: AllArtifactsDownloadPath
       value: 'artifacts/transport/AllArtifacts'
     - name: AllArtifactsArgs
