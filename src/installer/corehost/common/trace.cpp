@@ -57,6 +57,7 @@ bool trace::enable()
         if (pal::getenv(_X("COREHOST_TRACEFILE"), &tracefile_str))
         {
             FILE *tracefile = pal::file_open(tracefile_str, _X("a"));
+            setvbuf(tracefile, nullptr, _IONBF, 0);
 
             if (tracefile)
             {
