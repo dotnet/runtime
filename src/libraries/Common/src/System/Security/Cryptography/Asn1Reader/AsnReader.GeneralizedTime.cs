@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal partial class AsnReader
