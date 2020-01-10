@@ -75,7 +75,7 @@ namespace System.Collections.Immutable
                         }
                         else
                         {
-                            _elements = ImmutableArray<T>.Empty.array;
+                            _elements = ImmutableArray<T>.Empty.array!;
                         }
                     }
                 }
@@ -113,7 +113,7 @@ namespace System.Collections.Immutable
                         {
                             for (int i = value; i < this.Count; i++)
                             {
-                                _elements[i] = default(T);
+                                _elements[i] = default(T)!;
                             }
                         }
                     }
@@ -211,7 +211,7 @@ namespace System.Collections.Immutable
                 }
 
                 T[] temp = _elements;
-                _elements = ImmutableArray<T>.Empty.array;
+                _elements = ImmutableArray<T>.Empty.array!;
                 _count = 0;
                 return new ImmutableArray<T>(temp);
             }
@@ -433,7 +433,7 @@ namespace System.Collections.Immutable
             {
                 if (this.Count == 0)
                 {
-                    return Empty.array;
+                    return Empty.array!;
                 }
 
                 T[] result = new T[this.Count];
@@ -516,7 +516,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
             [Pure]
-            public int IndexOf(T item, int startIndex, int count, IEqualityComparer<T> equalityComparer)
+            public int IndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
             {
                 if (count == 0 && startIndex == 0)
                 {
@@ -602,7 +602,7 @@ namespace System.Collections.Immutable
             /// <param name="equalityComparer">The equality comparer to use in the search.</param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
             [Pure]
-            public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T> equalityComparer)
+            public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
             {
                 if (count == 0 && startIndex == 0)
                 {
@@ -691,7 +691,7 @@ namespace System.Collections.Immutable
             /// Sorts the array.
             /// </summary>
             /// <param name="comparer">The comparer to use in sorting. If <c>null</c>, the default comparer is used.</param>
-            public void Sort(IComparer<T> comparer)
+            public void Sort(IComparer<T>? comparer)
             {
                 if (Count > 1)
                 {
@@ -705,7 +705,7 @@ namespace System.Collections.Immutable
             /// <param name="index">The index of the first element to consider in the sort.</param>
             /// <param name="count">The number of elements to include in the sort.</param>
             /// <param name="comparer">The comparer to use in sorting. If <c>null</c>, the default comparer is used.</param>
-            public void Sort(int index, int count, IComparer<T> comparer)
+            public void Sort(int index, int count, IComparer<T>? comparer)
             {
                 // Don't rely on Array.Sort's argument validation since our internal array may exceed
                 // the bounds of the publicly addressable region.

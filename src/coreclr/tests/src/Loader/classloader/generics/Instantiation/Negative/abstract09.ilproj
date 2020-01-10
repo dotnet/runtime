@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
+    <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abstract09.il" />

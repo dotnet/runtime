@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -163,7 +163,7 @@ namespace System
 
         // Returns true if the given object is a database null. This operation
         // corresponds to "value.GetTypeCode() == TypeCode.DBNull".
-        public static bool IsDBNull(object? value)
+        public static bool IsDBNull([NotNullWhen(true)] object? value)
         {
             if (value == System.DBNull.Value) return true;
             return value is IConvertible convertible ? convertible.GetTypeCode() == TypeCode.DBNull : false;

@@ -17,7 +17,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="TValue">The type of the value.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableDictionaryDebuggerProxy<,>))]
-    public sealed partial class ImmutableDictionary<TKey, TValue> : IImmutableDictionary<TKey, TValue>, IImmutableDictionaryInternal<TKey, TValue>, IHashKeyCollection<TKey>, IDictionary<TKey, TValue>, IDictionary
+    public sealed partial class ImmutableDictionary<TKey, TValue> : IImmutableDictionary<TKey, TValue>, IImmutableDictionaryInternal<TKey, TValue>, IHashKeyCollection<TKey>, IDictionary<TKey, TValue>, IDictionary where TKey: notnull
     {
         /// <summary>
         /// An empty immutable dictionary with default equality comparers.
@@ -65,7 +65,7 @@ namespace System.Collections.Immutable
         /// Initializes a new instance of the <see cref="ImmutableDictionary{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="comparers">The comparers.</param>
-        private ImmutableDictionary(Comparers comparers = null)
+        private ImmutableDictionary(Comparers? comparers = null)
         {
             _comparers = comparers ?? Comparers.Get(EqualityComparer<TKey>.Default, EqualityComparer<TValue>.Default);
             _root = SortedInt32KeyNode<HashBucket>.EmptyNode;
@@ -250,7 +250,7 @@ namespace System.Collections.Immutable
                 Requires.NotNullAllowStructs(key, nameof(key));
 
                 TValue value;
-                if (this.TryGetValue(key, out value))
+                if (this.TryGetValue(key, out value!))
                 {
                     return value;
                 }
@@ -417,10 +417,10 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            return TryGetValue(key, this.Origin, out value);
+            return TryGetValue(key, this.Origin, out value!);
         }
 
         /// <summary>
@@ -436,7 +436,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer)
         {
             if (keyComparer == null)
             {
@@ -476,7 +476,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey> keyComparer)
+        public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey>? keyComparer)
         {
             return this.WithComparers(keyComparer, _comparers.ValueComparer);
         }
@@ -708,7 +708,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="key">The <see cref="object"/> to use as the key of the element to add.</param>
         /// <param name="value">The <see cref="object"/> to use as the value of the element to add.</param>
-        void IDictionary.Add(object key, object value)
+        void IDictionary.Add(object key, object? value)
         {
             throw new NotSupportedException();
         }
@@ -750,7 +750,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="key">The key.</param>
         /// <returns></returns>
-        object IDictionary.this[object key]
+        object? IDictionary.this[object key]
         {
             get { return this[(TKey)key]; }
             set { throw new NotSupportedException(); }
@@ -871,7 +871,7 @@ namespace System.Collections.Immutable
         /// <param name="sequence">The sequence that may have come from an immutable map.</param>
         /// <param name="other">Receives the concrete <see cref="ImmutableDictionary{TKey, TValue}"/> typed value if one can be found.</param>
         /// <returns><c>true</c> if the cast was successful; <c>false</c> otherwise.</returns>
-        private static bool TryCastToImmutableMap(IEnumerable<KeyValuePair<TKey, TValue>> sequence, out ImmutableDictionary<TKey, TValue> other)
+        private static bool TryCastToImmutableMap(IEnumerable<KeyValuePair<TKey, TValue>> sequence, [NotNullWhen(true)] out ImmutableDictionary<TKey, TValue>? other)
         {
             other = sequence as ImmutableDictionary<TKey, TValue>;
             if (other != null)
@@ -879,8 +879,7 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            var builder = sequence as Builder;
-            if (builder != null)
+            if (sequence is Builder builder)
             {
                 other = builder.ToImmutable();
                 return true;
@@ -901,7 +900,7 @@ namespace System.Collections.Immutable
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
                 TValue value;
-                return bucket.TryGetValue(key, origin.Comparers, out value);
+                return bucket.TryGetValue(key, origin.Comparers, out value!);
             }
 
             return false;
@@ -917,7 +916,7 @@ namespace System.Collections.Immutable
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
                 TValue value;
-                return bucket.TryGetValue(keyValuePair.Key, origin.Comparers, out value)
+                return bucket.TryGetValue(keyValuePair.Key, origin.Comparers, out value!)
                     && origin.ValueComparer.Equals(value, keyValuePair.Value);
             }
 
@@ -927,16 +926,16 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Performs the operation on a given data structure.
         /// </summary>
-        private static bool TryGetValue(TKey key, MutationInput origin, out TValue value)
+        private static bool TryGetValue(TKey key, MutationInput origin, [MaybeNullWhen(false)] out TValue value)
         {
             int hashCode = origin.KeyComparer.GetHashCode(key);
             HashBucket bucket;
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
-                return bucket.TryGetValue(key, origin.Comparers, out value);
+                return bucket.TryGetValue(key, origin.Comparers, out value!);
             }
 
-            value = default(TValue);
+            value = default(TValue)!;
             return false;
         }
 
@@ -1060,7 +1059,7 @@ namespace System.Collections.Immutable
         /// <param name="root">The root of the data structure.</param>
         /// <param name="adjustedCountIfDifferentRoot">The adjusted count if the root has changed.</param>
         /// <returns>The immutable collection.</returns>
-        private ImmutableDictionary<TKey, TValue> Wrap(SortedInt32KeyNode<HashBucket> root, int adjustedCountIfDifferentRoot)
+        private ImmutableDictionary<TKey, TValue> Wrap(SortedInt32KeyNode<HashBucket>? root, int adjustedCountIfDifferentRoot)
         {
             if (root == null)
             {
@@ -1090,8 +1089,7 @@ namespace System.Collections.Immutable
             {
                 // If the items being added actually come from an ImmutableDictionary<TKey, TValue>
                 // then there is no value in reconstructing it.
-                ImmutableDictionary<TKey, TValue> other;
-                if (TryCastToImmutableMap(pairs, out other))
+                if (TryCastToImmutableMap(pairs, out ImmutableDictionary<TKey, TValue>? other))
                 {
                     return other.WithComparers(this.KeyComparer, this.ValueComparer);
                 }

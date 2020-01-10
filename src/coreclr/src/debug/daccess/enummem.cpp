@@ -280,7 +280,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEEDbgInterfaceImpl.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CORDebuggerControlFlags.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_Mscorlib.EnumMem(); )
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]->EnumMemoryRegions(flags); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( StubManager::EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFinalizerThread.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pSuspensionThread.EnumMem(); )
@@ -511,8 +511,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     {
         // first dump the array's element type
         TypeHandle arrayTypeHandle = stackTraceArrayObj->GetTypeHandle();
-        ArrayTypeDesc* pArrayTypeDesc = arrayTypeHandle.AsArray();
-        TypeHandle elementTypeHandle = pArrayTypeDesc->GetArrayElementTypeHandle();
+        TypeHandle elementTypeHandle = arrayTypeHandle.GetArrayElementTypeHandle();
         elementTypeHandle.AsMethodTable()->EnumMemoryRegions(flags);
         elementTypeHandle.AsMethodTable()->GetClass()->EnumMemoryRegions(flags, elementTypeHandle.AsMethodTable());
 

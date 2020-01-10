@@ -23,15 +23,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string?>,
-        // IEquatable<string> is invariant by design.  However, the lack of covariance means that String?
-        // couldn't be used in places constrained to T : IEquatable<String>.  As a workaround, until the
-        // language provides a mechanism for this, we make the generic type argument oblivious, in conjunction
-        // with making all such constraints oblivious as well.
-#nullable disable
-        IEquatable<string>,
-#nullable restore
-        ICloneable
+    public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string?>, IEquatable<string?>, ICloneable
     {
         //
         // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
@@ -53,6 +45,7 @@ namespace System
          */
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char[])", "System.String")]
         public extern String(char[] value);
 
 #if !CORECLR
@@ -73,6 +66,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char[],System.Int32,System.Int32)", "System.String")]
         public extern String(char[] value, int startIndex, int length);
 
 #if !CORECLR
@@ -106,6 +100,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char*)", "System.String")]
         public extern unsafe String(char* value);
 
 #if !CORECLR
@@ -128,6 +123,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char*,System.Int32,System.Int32)", "System.String")]
         public extern unsafe String(char* value, int startIndex, int length);
 
 #if !CORECLR
@@ -161,6 +157,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.SByte*)", "System.String")]
         public extern unsafe String(sbyte* value);
 
 #if !CORECLR
@@ -179,6 +176,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32)", "System.String")]
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
 #if !CORECLR
@@ -238,6 +236,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)", "System.String")]
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
 #if !CORECLR
@@ -272,6 +271,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char,System.Int32)", "System.String")]
         public extern String(char c, int count);
 
 #if !CORECLR
@@ -321,6 +321,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.ReadOnlySpan`1<System.Char>)", "System.String")]
         public extern String(ReadOnlySpan<char> value);
 
 #if !CORECLR

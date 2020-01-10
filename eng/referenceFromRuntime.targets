@@ -1,13 +1,6 @@
 <Project>
-  <Target Name="AddReferenceFromRuntimeForTests"
-          BeforeTargets="SetupDefaultReferences"
-          Condition="'$(IsTestProject)'=='true' and '@(ReferenceFromRuntime)' != ''">
-    <ItemGroup>
-      <Reference Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" />
-    </ItemGroup>
-  </Target>
-  
-  <PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <PrepareProjectReferencesDependsOn>
       AddRuntimeProjectReference;
       $(PrepareProjectReferencesDependsOn);
@@ -24,29 +17,52 @@
 
   <Target Name="AddRuntimeProjectReference"
           Condition="'$(IsTestProject)'!='true' and '@(ReferenceFromRuntime)' != ''">
-    <Error Condition="('$(IsReferenceAssembly)' != 'true' or '$(AllowReferenceFromRuntime)' == 'true') and '$(RuntimeProjectFile)' == ''" Text="RuntimeProjectFile must be specified when using ReferenceFromRuntime from source projects." />
     <Error Condition="'$(IsReferenceAssembly)' == 'true' and '$(AllowReferenceFromRuntime)' != 'true'" Text="ReferenceFromRuntime may not be used from reference assemblies." />
+
+    <PropertyGroup>
+      <RuntimeProjectFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'restore', 'runtime', 'runtime.depproj'))</RuntimeProjectFile>
+    </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="$(RuntimeProjectFile)">
         <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-        <OutputItemType>_referencePathFromRuntime</OutputItemType>
+        <OutputItemType>_referencePathFromRestoredRuntime</OutputItemType>
       </ProjectReference>
     </ItemGroup>
   </Target>
 
+  <Target Name="GetFilesFromCoreCLR" Returns="@(CoreCLRFiles)" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" />
+
   <Target Name="FilterReferenceFromRuntime"
           AfterTargets="ResolveProjectReferences"
-          Condition="'$(IsTestProject)'!='true' and '@(ReferenceFromRuntime)' != ''">
+          Condition="'@(ReferenceFromRuntime)' != ''">
+
+    <Error Condition="'$(IsReferenceAssembly)' == 'true' and '$(AllowReferenceFromRuntime)' != 'true'" Text="ReferenceFromRuntime may not be used from reference assemblies." />
+
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="GetFilesFromCoreCLR" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+      <Output TaskParameter="TargetOutputs" ItemName="CoreCLRFiles" />
+    </MSBuild>
+
     <ItemGroup>
+      <_referencePathFromRuntime Include="@(CoreCLRFiles)" Private="false" />
+      <_referencePathFromRuntime Include="@(_referencePathFromRestoredRuntime)" Private="false" />
+      <!-- If this is a test project, also use the $(RuntimePath) to find a @(ReferenceFromRuntime) assembly. -->
+      <_referencePathFromRuntime Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" Condition="'$(IsTestProject)' == 'true'" />
       <!-- transform to filename in order to intersect -->
       <_referencePathFromRuntimeByFileName Include="@(_referencePathFromRuntime->'%(FileName)')" Condition="'%(_referencePathFromRuntime.Extension)' == '.dll'" >
         <ReferencePath>%(Identity)</ReferencePath>
       </_referencePathFromRuntimeByFileName>
+    </ItemGroup>
+
+    <RemoveDuplicates Inputs="@(_referencePathFromRuntimeByFileName)">
+      <Output TaskParameter="Filtered" ItemName="_referencePathFromRuntimeByFileNameFiltered" />
+    </RemoveDuplicates>
+
+    <ItemGroup>
 
       <!-- intersect with ReferenceFromRuntime -->
-      <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileName)"
-          Condition="'@(_referencePathFromRuntimeByFileName)' == '@(ReferenceFromRuntime)' and '%(Identity)' != ''">
+      <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileNameFiltered)"
+          Condition="'@(_referencePathFromRuntimeByFileNameFiltered)' == '@(ReferenceFromRuntime)' and '%(Identity)' != ''">
         <Aliases>@(ReferenceFromRuntime->'%(Aliases)')</Aliases>
       </_filteredReferencePathFromRuntimeByFileName>
 
@@ -57,8 +73,8 @@
         <OriginalReferenceFromRuntime>%(Identity)</OriginalReferenceFromRuntime>
       </_remainingReferenceFromRuntimeWithNI>
 
-      <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileName)"
-          Condition="'@(_referencePathFromRuntimeByFileName)' == '@(_remainingReferenceFromRuntimeWithNI)' and '%(Identity)' != ''">
+      <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileNameFiltered)"
+          Condition="'@(_referencePathFromRuntimeByFileNameFiltered)' == '@(_remainingReferenceFromRuntimeWithNI)' and '%(Identity)' != ''">
         <Aliases>@(_remainingReferenceFromRuntimeWithNI->'%(Aliases)')</Aliases>
       </_filteredReferencePathFromRuntimeByFileName>
 
@@ -66,8 +82,9 @@
 
       <!-- transform back to path -->
       <!-- We are adding two items(with and without aliases) for references having Aliases. The major reason behind this to not use the Aliases for all the types in that reference.  -->
-      <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" />
-      <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" Condition="'%(Aliases)' != ''" Aliases="" />
+      <!-- We can't use a Reference item for both since only the first one will be kept. Use ReferencePath for the second reference so it will still be passed to the compiler. -->
+      <Reference Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" />
+      <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" Condition="'%(_filteredReferencePathFromRuntimeByFileName.Aliases)' != ''" Aliases="" />
     </ItemGroup>
 
     <Error Condition="'@(_missingReferenceFromRuntime)' != ''"

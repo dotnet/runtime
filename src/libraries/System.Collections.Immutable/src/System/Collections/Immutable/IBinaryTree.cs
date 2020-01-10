@@ -27,12 +27,12 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the left branch of this node.
         /// </summary>
-        IBinaryTree Left { get; }
+        IBinaryTree? Left { get; }
 
         /// <summary>
         /// Gets the right branch of this node.
         /// </summary>
-        IBinaryTree Right { get; }
+        IBinaryTree? Right { get; }
     }
 
     /// <summary>
@@ -49,11 +49,11 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the left branch of this node.
         /// </summary>
-        new IBinaryTree<T> Left { get; }
+        new IBinaryTree<T>? Left { get; }
 
         /// <summary>
         /// Gets the right branch of this node.
         /// </summary>
-        new IBinaryTree<T> Right { get; }
+        new IBinaryTree<T>? Right { get; }
     }
 }

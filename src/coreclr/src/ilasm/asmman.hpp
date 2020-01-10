@@ -8,7 +8,6 @@
 #ifndef ASMMAN_HPP
 #define ASMMAN_HPP
 
-#include "strongname.h"
 #include "specstrings.h"
 
 struct AsmManFile

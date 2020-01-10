@@ -19,6 +19,6 @@ namespace System.Text.Json.Serialization
         public abstract bool CanConvert(Type typeToConvert);
 
         // This is used internally to quickly determine the type being converted for JsonConverter<T>.
-        internal virtual Type TypeToConvert => null;
+        internal virtual Type? TypeToConvert => null;
     }
 }

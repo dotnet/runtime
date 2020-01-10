@@ -13,7 +13,7 @@ namespace System.Linq.Expressions.Compiler
 {
     internal sealed class AssemblyGen
     {
-        private static AssemblyGen s_assembly;
+        private static AssemblyGen? s_assembly;
 
         private readonly ModuleBuilder _myModule;
 
@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Compiler
             var name = new AssemblyName("Snippets");
 
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
-            _myModule = myAssembly.DefineDynamicModule(name.Name);
+            _myModule = myAssembly.DefineDynamicModule(name.Name!);
         }
 
         private TypeBuilder DefineType(string name, Type parent, TypeAttributes attr)

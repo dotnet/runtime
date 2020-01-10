@@ -20,7 +20,7 @@
 
 #include "assemblyspec.hpp"
 #include "eeconfig.h"
-#include "strongname.h"
+#include "strongnameinternal.h"
 #include "strongnameholders.h"
 #include "eventtrace.h"
 
@@ -689,11 +689,10 @@ void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
         StrongNameBufferHolder<BYTE> pbStrongNameToken;
         DWORD cbStrongNameToken;
 
-        if (!StrongNameTokenFromPublicKey((BYTE*) pbPublicKey,
-                                            cbPublicKey,
-                                            &pbStrongNameToken,
-                                            &cbStrongNameToken))
-            ThrowHR(StrongNameErrorInfo());
+        IfFailThrow(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
+            cbPublicKey,
+            &pbStrongNameToken,
+            &cbStrongNameToken));
 
         if ((m_cbPublicKeyOrToken != cbStrongNameToken) ||
             memcmp(m_pbPublicKeyOrToken, pbStrongNameToken, cbStrongNameToken))
@@ -1002,12 +1001,10 @@ HRESULT AssemblySpec::EmitToken(
         if (m_cbPublicKeyOrToken && fUsePublicKeyToken && IsAfPublicKey(m_dwFlags)) {
             StrongNameBufferHolder<BYTE> pbPublicKeyToken;
             DWORD cbPublicKeyToken;
-            if (!StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
-                                              m_cbPublicKeyOrToken,
-                                              &pbPublicKeyToken,
-                                              &cbPublicKeyToken)) {
-                IfFailGo(StrongNameErrorInfo());
-            }
+            IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
+                m_cbPublicKeyOrToken,
+                &pbPublicKeyToken,
+                &cbPublicKeyToken));
 
             hr = pEmit->DefineAssemblyRef(pbPublicKeyToken,
                                           cbPublicKeyToken,

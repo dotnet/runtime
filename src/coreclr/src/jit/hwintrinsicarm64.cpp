@@ -367,8 +367,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_ArmBase_LeadingZeroCount:
+        case NI_ArmBase_ReverseElementBits:
         case NI_ArmBase_Arm64_LeadingSignCount:
         case NI_ArmBase_Arm64_LeadingZeroCount:
+        case NI_ArmBase_Arm64_ReverseElementBits:
         case NI_Sha1_FixedRotate:
         {
             assert(numArgs == 1);

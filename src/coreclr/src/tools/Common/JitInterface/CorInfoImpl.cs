@@ -41,6 +41,7 @@ namespace Internal.JitInterface
             IA64 = 0x0200,
             AMD64 = 0x8664,
             ARM = 0x01c4,
+            ARM64 = 0xaa64,
         }
 
         private const string JitLibrary = "clrjitilc";
@@ -57,9 +58,6 @@ namespace Internal.JitInterface
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
         private ExceptionDispatchInfo _lastException;
-
-        [DllImport(JitLibrary)]
-        private extern static IntPtr PAL_RegisterModule([MarshalAs(UnmanagedType.LPUTF8Str)] string moduleName);
 
         [DllImport(JitLibrary, CallingConvention=CallingConvention.StdCall)] // stdcall in CoreCLR!
         private extern static IntPtr jitStartup(IntPtr host);
@@ -121,14 +119,6 @@ namespace Internal.JitInterface
             if (jitConfig.JitPath != null)
             {
                 NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, JitLibraryResolver);
-            }
-
-            if (Environment.OSVersion.Platform == PlatformID.Unix)
-            {
-                // TODO: The PAL_RegisterModule export should be removed from the JIT
-                // and the call to PAL_InitializeDLL should be moved to jitStartup.
-                // https://github.com/dotnet/coreclr/issues/27941
-                PAL_RegisterModule("libclrjitilc.so");
             }
 
             jitStartup(GetJitHost(jitConfig.UnmanagedInstance));
@@ -356,6 +346,9 @@ namespace Internal.JitInterface
 #if !READYTORUN
             _sequencePoints = null;
             _variableToTypeDesc = null;
+
+            _parameterIndexToNameMap = null;
+            _localSlotToInfoMap = null;
 #endif
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -432,7 +425,6 @@ namespace Internal.JitInterface
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
-
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
@@ -491,7 +483,7 @@ namespace Internal.JitInterface
 
             CorInfoType corInfoRetType = asCorInfoType(signature.ReturnType, &sig->retTypeClass);
             sig->_retType = (byte)corInfoRetType;
-            sig->retTypeSigClass = sig->retTypeClass; // The difference between the two is not relevant for ILCompiler
+            sig->retTypeSigClass = ObjectToHandle(signature.ReturnType);
 
             sig->flags = 0;    // used by IL stubs code
 
@@ -647,14 +639,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
-            {
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
-
-                if (method.IsRawPInvoke())
-                {
-                    result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
-                }
-            }
 
 #if READYTORUN
             if (method.RequireSecObject)
@@ -695,7 +680,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             // Check for SIMD intrinsics
             DefType owningDefType = method.OwningType as DefType;
-            if (owningDefType != null && VectorFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+            if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
             {
                 throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
             }
@@ -1408,14 +1393,29 @@ namespace Internal.JitInterface
             return (uint)type.InstanceFieldAlignment.AsInt;
         }
 
+        private int MarkGcField(byte* gcPtrs, CorInfoGCType gcType)
+        {
+            // Ensure that if we have multiple fields with the same offset,
+            // that we don't double count the data in the gc layout.
+            if (*gcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
+            {
+                *gcPtrs = (byte)gcType;
+                return 1;
+            }
+            else
+            {
+                Debug.Assert(*gcPtrs == (byte)gcType);
+                return 0;
+            }
+        }
+
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT)
+            if (type.IsByReferenceOfT || type.IsWellKnownType(WellKnownType.TypedReference))
             {
-                *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
-                return 1;
+                return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
             }
 
             foreach (var field in type.GetFields())
@@ -1456,20 +1456,9 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    // Ensure that if we have multiple fields with the same offset, 
-                    // that we don't double count the data in the gc layout.
-                    if (*fieldGcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
-                    {
-                        *fieldGcPtrs = (byte)gcType;
-                        result++;
-                    }
-                    else
-                    {
-                        Debug.Assert(*fieldGcPtrs == (byte)gcType);
-                    }
+                    result += MarkGcField(fieldGcPtrs, gcType);
                 }
             }
-
             return result;
         }
 
@@ -1608,10 +1597,11 @@ namespace Internal.JitInterface
                         return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
                     }
                 }
-                else if (!md.IsConstructor && !typeToInit.IsValueType)
+                else if (!md.IsConstructor && !typeToInit.IsValueType && !typeToInit.IsInterface)
                 {
                     // According to the spec, we should be able to do this optimization for both reference and valuetypes.
                     // To maintain backward compatibility, we are doing it for reference types only.
+                    // We don't do this for interfaces though, as those don't have instance constructors.
                     // For instance methods of types with precise-initialization
                     // semantics, we can assume that the .ctor triggerred the
                     // type initialization.
@@ -1652,7 +1642,7 @@ namespace Internal.JitInterface
                 // This optimization may cause static fields in reference types to be accessed without cctor being triggered
                 // for NULL "this" object. It does not conform with what the spec says. However, we have been historically 
                 // doing it for perf reasons.
-                if (!typeToInit.IsValueType && !typeToInit.IsBeforeFieldInit)
+                if (!typeToInit.IsValueType && ! typeToInit.IsInterface && !typeToInit.IsBeforeFieldInit)
                 {
                     if (typeToInit == typeFromContext(context) || typeToInit == MethodBeingCompiled.OwningType)
                     {
@@ -1670,10 +1660,6 @@ namespace Internal.JitInterface
             }
 
             return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
-        }
-
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
         }
 
         private CORINFO_CLASS_STRUCT_* getBuiltinClass(CorInfoClassId classId)
@@ -2219,13 +2205,22 @@ namespace Internal.JitInterface
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
 #endif
                     }
-                    else if (field.HasGCStaticBase)
-                    {
-                        helperId = ReadyToRunHelperId.GetGCStaticBase;
-                    }
                     else
                     {
-                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        helperId = field.HasGCStaticBase ?
+                            ReadyToRunHelperId.GetGCStaticBase :
+                            ReadyToRunHelperId.GetNonGCStaticBase;
+
+                        //
+                        // Currently, we only do this optimization for regular statics, but it
+                        // looks like it may be permissible to do this optimization for
+                        // thread statics as well.
+                        //
+                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
+                            (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
+                        {
+                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
+                        }
                     }
 
 #if READYTORUN
@@ -2431,6 +2426,7 @@ namespace Internal.JitInterface
                 new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = TargetABI;
+            pEEInfoOut.osType = _compilation.NodeFactory.Target.IsWindows ? CORINFO_OS.CORINFO_WINNT : CORINFO_OS.CORINFO_UNIX;
         }
 
         private string getJitTimeLogFilename()
@@ -2541,13 +2537,12 @@ namespace Internal.JitInterface
         private byte* findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException("findNameOfToken"); }
 
-        SystemVStructClassificator _systemVStructClassificator = new SystemVStructClassificator();
-
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         {
             TypeDesc typeDesc = HandleToObject(structHnd);
 
-            return _systemVStructClassificator.getSystemVAmd64PassStructInRegisterDescriptor(typeDesc, structPassInRegDescPtr);
+            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(typeDesc, out *structPassInRegDescPtr);
+            return true;
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
@@ -2809,16 +2804,6 @@ namespace Internal.JitInterface
             // Nothing to do
         }
 
-        private void setEHcount(uint cEH)
-        {
-            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
-        }
-
-        private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
-        {
-            _ehClauses[EHnumber] = clause;
-        }
-
         private bool logMsg(uint level, byte* fmt, IntPtr args)
         {
             // Console.WriteLine(Marshal.PtrToStringAnsi((IntPtr)fmt));
@@ -2911,19 +2896,41 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        // Translates relocation type constants used by JIT (defined in winnt.h) to RelocType enumeration
+        private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
+        {
+            if (targetArchitecture != TargetArchitecture.ARM64)
+                return (RelocType)fRelocType;
+
+            const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
+            const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+
+            switch (fRelocType)
+            {
+                case IMAGE_REL_ARM64_PAGEBASE_REL21:
+                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
+                case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                default:
+                    Debug.Fail("Invalid RelocType: " + fRelocType);
+                    return 0;
+            };
+        }
+
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
-            // slotNum is not unused
+            // slotNum is not used
             Debug.Assert(slotNum == 0);
 
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
+            TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
+
             if (locationBlock != BlockType.Code)
             {
                 // TODO: https://github.com/dotnet/corert/issues/3877
-                TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
                 if (targetArchitecture == TargetArchitecture.ARM)
                     return;
                 throw new NotImplementedException("Arbitrary relocs"); 
@@ -2962,12 +2969,13 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+            RelocType relocType = GetRelocType(targetArchitecture, fRelocType);
             // relocDelta is stored as the value
-            Relocation.WriteValue((RelocType)fRelocType, location, relocDelta);
+            Relocation.WriteValue(relocType, location, relocDelta);
 
             if (_relocs.Count == 0)
                 _relocs.EnsureCapacity(_code.Length / 32 + 1);
-            _relocs.Add(new Relocation((RelocType)fRelocType, relocOffset, relocTarget));
+            _relocs.Add(new Relocation(relocType, relocOffset, relocTarget));
         }
 
         private ushort getRelocTypeHint(void* target)
@@ -3001,7 +3009,7 @@ namespace Internal.JitInterface
                 case TargetArchitecture.ARM:
                     return (uint)ImageFileMachine.ARM;
                 case TargetArchitecture.ARM64:
-                    return (uint)ImageFileMachine.ARM;
+                    return (uint)ImageFileMachine.ARM64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }

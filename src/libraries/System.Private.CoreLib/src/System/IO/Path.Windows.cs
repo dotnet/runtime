@@ -4,6 +4,7 @@
 
 #nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 #if MS_IO_REDIST
@@ -187,7 +188,7 @@ namespace System.IO
 
         // Tests if the given path contains a root. A path is considered rooted
         // if it starts with a backslash ("\") or a valid drive letter and a colon (":").
-        public static bool IsPathRooted(string? path)
+        public static bool IsPathRooted([NotNullWhen(true)] string? path)
         {
             return path != null && IsPathRooted(path.AsSpan());
         }

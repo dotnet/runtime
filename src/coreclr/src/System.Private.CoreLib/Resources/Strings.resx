@@ -1129,6 +1129,9 @@
   <data name="Argument_InvalidCultureName" xml:space="preserve">
     <value>Culture name '{0}' is not supported.</value>
   </data>
+  <data name="Argument_InvalidPredefinedCultureName" xml:space="preserve">
+    <value>Culture name '{0}' is not a predefined culture.</value>
+  </data>
   <data name="Argument_InvalidDateTimeKind" xml:space="preserve">
     <value>Invalid DateTimeKind value.</value>
   </data>
@@ -2643,9 +2646,6 @@
   </data>
   <data name="InvalidTimeZone_InvalidJulianDay" xml:space="preserve">
     <value>Invalid Julian day in POSIX strings.</value>
-  </data>
-  <data name="InvalidTimeZone_NJulianDayNotSupported" xml:space="preserve">
-    <value>Julian n day in POSIX strings is not supported.</value>
   </data>
   <data name="InvalidTimeZone_NoTTInfoStructures" xml:space="preserve">
     <value>There are no ttinfo structures in the tzfile.  At least one ttinfo structure is required in order to construct a TimeZoneInfo object.</value>

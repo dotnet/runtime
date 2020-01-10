@@ -5,16 +5,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using Internal.Runtime.CompilerServices;
 using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 using MdToken = System.Reflection.MetadataToken;
-using Internal.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -3082,7 +3082,7 @@ namespace System
 
 #if FEATURE_TYPEEQUIVALENCE
         // Reflexive, symmetric, transitive.
-        public override bool IsEquivalentTo(Type? other)
+        public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
             if (!(other is RuntimeType otherRtType))
             {
@@ -3822,12 +3822,12 @@ namespace System
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
-        internal object CreateInstanceImpl(
+        internal object? CreateInstanceImpl(
             BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture)
         {
             CreateInstanceCheckThis();
 
-            object server;
+            object? instance;
 
             args ??= Array.Empty<object>();
 
@@ -3841,7 +3841,7 @@ namespace System
             if (args.Length == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                 && (IsGenericCOMObjectImpl() || IsValueType))
             {
-                server = CreateInstanceDefaultCtor(publicOnly, false, true, wrapExceptions);
+                instance = CreateInstanceDefaultCtor(publicOnly, skipCheckThis: false, fillCache: true, wrapExceptions);
             }
             else
             {
@@ -3895,17 +3895,17 @@ namespace System
                     }
 
                     // fast path??
-                    server = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions)!;
+                    instance = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
                 }
                 else
                 {
-                    server = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
+                    instance = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
                     if (state != null)
                         binder.ReorderArgumentArray(ref args, state);
                 }
             }
 
-            return server;
+            return instance;
         }
 
         // the cache entry
@@ -3951,7 +3951,7 @@ namespace System
         /// <summary>
         /// The slow path of CreateInstanceDefaultCtor
         /// </summary>
-        private object CreateInstanceDefaultCtorSlow(bool publicOnly, bool wrapExceptions, bool fillCache)
+        private object? CreateInstanceDefaultCtorSlow(bool publicOnly, bool wrapExceptions, bool fillCache)
         {
             RuntimeMethodHandleInternal runtimeCtor = default;
             bool canBeCached = false;
@@ -3977,7 +3977,7 @@ namespace System
         /// </summary>
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal object? CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
             // Call the cached
             if (GenericCache is ActivatorCache cacheEntry)
@@ -4288,7 +4288,7 @@ namespace System
             }
             else
             {
-                return SpanHelpers.SequenceEqual<byte>(ref *s.m_pStringHeap, ref *m_pStringHeap, m_StringHeapByteLength);
+                return SpanHelpers.SequenceEqual(ref *s.m_pStringHeap, ref *m_pStringHeap, (uint)m_StringHeapByteLength);
             }
         }
 

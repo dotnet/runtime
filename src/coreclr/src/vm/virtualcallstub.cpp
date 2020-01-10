@@ -546,19 +546,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
         resolve_heap_commit_size     = 24;        resolve_heap_reserve_size      =  300;
         vtable_heap_commit_size      = 24;        vtable_heap_reserve_size       =  600;
     }
-    else if (parentDomain->IsSharedDomain())
-    {
-        indcell_heap_commit_size     = 16;        indcell_heap_reserve_size      =  100;
-#ifdef BIT64
-                                                  indcell_heap_reserve_size      = 2000;
-#endif
-        cache_entry_heap_commit_size = 16;        cache_entry_heap_reserve_size  =  500;
-
-        lookup_heap_commit_size      = 24;        lookup_heap_reserve_size       =  200;
-        dispatch_heap_commit_size    = 24;        dispatch_heap_reserve_size     =  450;
-        resolve_heap_commit_size     = 24;        resolve_heap_reserve_size      =  200;
-        vtable_heap_commit_size      = 24;        vtable_heap_reserve_size       =  450;
-    }
     else
     {
         indcell_heap_commit_size     = 8;         indcell_heap_reserve_size      = 8;
@@ -721,7 +708,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> indcell_heap_holder(
                                new LoaderHeap(indcell_heap_reserve_size, indcell_heap_commit_size,
                                               initReservedMem, indcell_heap_reserve_size,
-                                              NULL, NULL, FALSE));
+                                              NULL, FALSE));
 
     initReservedMem += indcell_heap_reserve_size;
 
@@ -729,7 +716,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> cache_entry_heap_holder(
                                new LoaderHeap(cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
                                               initReservedMem, cache_entry_heap_reserve_size,
-                                              NULL,
                                               &cache_entry_rangeList, FALSE));
 
     initReservedMem += cache_entry_heap_reserve_size;
@@ -738,7 +724,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> lookup_heap_holder(
                                new LoaderHeap(lookup_heap_reserve_size, lookup_heap_commit_size,
                                               initReservedMem, lookup_heap_reserve_size,
-                                              NULL,
                                               &lookup_rangeList, TRUE));
 
     initReservedMem += lookup_heap_reserve_size;
@@ -747,7 +732,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> dispatch_heap_holder(
                                new LoaderHeap(dispatch_heap_reserve_size, dispatch_heap_commit_size,
                                               initReservedMem, dispatch_heap_reserve_size,
-                                              NULL,
                                               &dispatch_rangeList, TRUE));
 
     initReservedMem += dispatch_heap_reserve_size;
@@ -756,7 +740,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> resolve_heap_holder(
                                new LoaderHeap(resolve_heap_reserve_size, resolve_heap_commit_size,
                                               initReservedMem, resolve_heap_reserve_size,
-                                              NULL,
                                               &resolve_rangeList, TRUE));
 
     initReservedMem += resolve_heap_reserve_size;
@@ -765,7 +748,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> vtable_heap_holder(
                                new LoaderHeap(vtable_heap_reserve_size, vtable_heap_commit_size,
                                               initReservedMem, vtable_heap_reserve_size,
-                                              NULL,
                                               &vtable_rangeList, TRUE));
 
     initReservedMem += vtable_heap_reserve_size;
@@ -1779,16 +1761,8 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     BOOL bCallToShorterLivedTarget = FALSE;
 
     // We care about the following cases:
-    // Call from shared domain -> domain-specific target (collectible or not)
     // Call from any site -> collectible target
-    if (parentDomain->IsSharedDomain())
-    {
-        // The callee's manager
-        pCalleeMgr = objectType->GetLoaderAllocator()->GetVirtualCallStubManager();
-        // We already know that we are the shared manager, so we can just see if the callee has the same manager
-        bCallToShorterLivedTarget = (pCalleeMgr != this);
-    }
-    else if (objectType->GetLoaderAllocator()->IsCollectible())
+    if (objectType->GetLoaderAllocator()->IsCollectible())
     {
         // The callee's manager
         pCalleeMgr = objectType->GetLoaderAllocator()->GetVirtualCallStubManager();
@@ -3119,7 +3093,6 @@ void VirtualCallStubManager::LogStats()
         return;
     }
 
-    BOOL isShared  = parentDomain->IsSharedDomain();
     BOOL isDefault = parentDomain->IsDefaultDomain();
 
     // Temp space to use for formatting the output.
@@ -3129,8 +3102,7 @@ void VirtualCallStubManager::LogStats()
 
     if (g_hStubLogFile && (stats.site_write != 0))
     {
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nStats for %s Manager\r\n", isShared  ? "the Shared"  :
-                                                            isDefault ? "the Default" : "an Unshared");
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nStats for %s Manager\r\n", isDefault ? "the Default" : "an Unshared");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
         //output counters

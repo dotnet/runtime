@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Security;
 using System.Security.Principal;
 using System.Threading;
 using System.ComponentModel;

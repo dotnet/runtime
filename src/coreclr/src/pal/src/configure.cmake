@@ -46,10 +46,6 @@ check_include_files(numa.h HAVE_NUMA_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  check_include_files("libintl.h" HAVE_LIBINTL_H)
-endif()
-
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
 
 check_cxx_source_compiles("
@@ -1101,6 +1097,10 @@ int main(int argc, char **argv)
     struct _fpx_sw_bytes bytes;
     return 0;
 }" HAVE_PUBLIC_XSTATE_STRUCT)
+
+if(HAVE_PUBLIC_XSTATE_STRUCT)
+    check_struct_has_member ("struct _fpx_sw_bytes" xstate_bv "signal.h" HAVE__FPX_SW_BYTES_WITH_XSTATE_BV)
+endif()
 
 check_cxx_source_compiles("
 #include <sys/prctl.h>

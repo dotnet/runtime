@@ -1,2 +1,7 @@
 @echo off
-"%~dp0build.cmd" -subsetCategory coreclr %*
+setlocal
+
+set _args=-subsetCategory coreclr %*
+if "%~1"=="-?" set _args=-help
+
+"%~dp0build.cmd" %_args%

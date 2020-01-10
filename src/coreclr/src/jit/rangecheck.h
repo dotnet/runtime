@@ -51,8 +51,8 @@
 //
 //  **Step 4. Check if the dependency chain is monotonic.
 //
-//  **Step 5. If monotonic is true, then perform a widening step, where we assume, the
-//  SSA variables that are "dependent" get their values from the definitions in the
+//  **Step 5. If monotonic increasing is true, then perform a widening step, where we assume, the
+//  SSA variables that are "dependent" get their lower bound values from the definitions in the
 //  dependency loop and their initial values must be the definitions that are not in
 //  the dependency loop, in this case i_0's value which is 0.
 //
@@ -292,9 +292,9 @@ struct RangeOps
         return result;
     }
 
-    // Given two ranges "r1" and "r2", do a Phi merge. If "monotonic" is true,
-    // then ignore the dependent variables.
-    static Range Merge(Range& r1, Range& r2, bool monotonic)
+    // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
+    // then ignore the dependent variables for the lower bound but not for the upper bound.
+    static Range Merge(Range& r1, Range& r2, bool monIncreasing)
     {
         Limit& r1lo = r1.LowerLimit();
         Limit& r1hi = r1.UpperLimit();
@@ -314,7 +314,7 @@ struct RangeOps
         }
         else if (r1lo.IsDependent() || r2lo.IsDependent())
         {
-            if (monotonic)
+            if (monIncreasing)
             {
                 result.lLimit = r1lo.IsDependent() ? r2lo : r1lo;
             }
@@ -335,14 +335,7 @@ struct RangeOps
         }
         else if (r1hi.IsDependent() || r2hi.IsDependent())
         {
-            if (monotonic)
-            {
-                result.uLimit = r1hi.IsDependent() ? r2hi : r1hi;
-            }
-            else
-            {
-                result.uLimit = Limit(Limit::keDependent);
-            }
+            result.uLimit = Limit(Limit::keDependent);
         }
 
         if (r1lo.IsConstant() && r2lo.IsConstant())
@@ -460,19 +453,19 @@ public:
     // Given the index expression try to find its range.
     // The range of a variable depends on its rhs which in turn depends on its constituent variables.
     // The "path" is the path taken in the search for the rhs' range and its constituents' range.
-    // If "monotonic" is true, the calculations are made more liberally assuming initial values
-    // at phi definitions.
-    Range GetRange(BasicBlock* block, GenTree* expr, bool monotonic DEBUGARG(int indent));
+    // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
+    // at phi definitions for the lower bound.
+    Range GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRange.
-    Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monotonic DEBUGARG(int indent));
+    Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range, rather than retrieve a cached value. Helper for GetRange.
-    Range ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic DEBUGARG(int indent));
+    Range ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range for the op1 and op2 for the given binary operator.
-    Range ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monotonic DEBUGARG(int indent));
+    Range ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent));
 
     // Merge assertions from AssertionProp's flags, for the corresponding "phiArg."
     // Requires "pRange" to contain range that is computed partially.
@@ -504,8 +497,8 @@ public:
     // Does the current "expr" which is a use involve a definition, that overflows.
     bool DoesOverflow(BasicBlock* block, GenTree* tree);
 
-    // Widen the range by first checking if the induction variable is monotonic. Requires "pRange"
-    // to be partially computed.
+    // Widen the range by first checking if the induction variable is monotonically increasing.
+    // Requires "pRange" to be partially computed.
     void Widen(BasicBlock* block, GenTree* tree, Range* pRange);
 
     // Is the binary operation increasing the value.

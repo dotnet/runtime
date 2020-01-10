@@ -23,8 +23,6 @@ if (WIN32)
     set(END_LIBRARY_GROUP)
 
 else()
-    add_definitions(-DNO_CRT_INIT)
-
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
@@ -98,7 +96,6 @@ set(CORECLR_LIBRARIES
     corguids
     gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"
     ildbsymlib
-    strongname_wks
     utilcode
     v3binder
 )

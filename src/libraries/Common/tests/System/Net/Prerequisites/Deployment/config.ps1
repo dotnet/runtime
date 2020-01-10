@@ -3,7 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 #
-# CoreFX - Net configuration
+# Libraries - Net configuration
 #
 
 # -- Machine Information
@@ -21,22 +21,22 @@
 #
 
 # A Windows Server SKU hosting Active Directory services. This machine will become the Domain Controller:
-$COREFX_NET_AD_Machine = ""             #Example: "TESTAD"
-$COREFX_NET_AD_MachineIP = ""           #Example: "192.168.0.1" - must be a Static IPv4 address.
+$LIBRARIES_NET_AD_MACHINE = ""             #Example: "TESTAD"
+$LIBRARIES_NET_AD_MACHINEIP = ""           #Example: "192.168.0.1" - must be a Static IPv4 address.
 
 # A Windows Client or Server SKU hosting the IIS Server. This machine will be joined to the Domain.
-$COREFX_NET_IISSERVER_Machine = ""      #Example: "TESTIIS"
-$COREFX_NET_IISSERVER_MachineIP = ""    #Example: "192.168.0.1" - must be a Static IPv4 address.
+$LIBRARIES_NET_IISSERVER_MACHINE = ""      #Example: "TESTIIS"
+$LIBRARIES_NET_IISSERVER_MACHINEIP = ""    #Example: "192.168.0.1" - must be a Static IPv4 address.
 
-# A Windows Client or Server SKU hosting the corefx repo. This machine will be joined to the Domain.
-$COREFX_NET_CLIENT_Machine = ""         #Example: "TESTCLIENT"
+# A Windows Client or Server SKU hosting the runtime repo. This machine will be joined to the Domain.
+$LIBRARIES_NET_CLIENT_MACHINE = ""         #Example: "TESTCLIENT"
 
 # -- Test Parameters
 
 # For security reasons, it's advisable that the default username/password pairs below are changed regularly.
 
 $script:domainName = "corp.contoso.com"
-$script:domainNetbios = "corefx-net-ad"
+$script:domainNetbios = "libraries-net-ad"
 
 $script:domainUserName = "testaduser"
 $script:domainUserPassword = "Test-ADPassword"
@@ -48,13 +48,13 @@ $script:basicUserPassword = "Test-Basic"
 $script:iisServerFQDN = "testserver.contoso.com"
 
 $script:PreRebootRoles = @(
-    @{Name = "COREFX_NET_AD_CLIENT"; Script = "setup_activedirectory_client.ps1"; MachineName = $COREFX_NET_IISSERVER_Machine},
-    @{Name = "COREFX_NET_AD_CLIENT"; Script = "setup_activedirectory_client.ps1"; MachineName = $COREFX_NET_CLIENT_Machine},
-    @{Name = "COREFX_NET_AD_DC"; Script = "setup_activedirectory_domaincontroller.ps1"; MachineName = $COREFX_NET_AD_Machine; MachineIP = $COREFX_NET_AD_MachineIP}
+    @{Name = "LIBRARIES_NET_AD_CLIENT"; Script = "setup_activedirectory_client.ps1"; MachineName = $LIBRARIES_NET_IISSERVER_MACHINE},
+    @{Name = "LIBRARIES_NET_AD_CLIENT"; Script = "setup_activedirectory_client.ps1"; MachineName = $LIBRARIES_NET_CLIENT_MACHINE},
+    @{Name = "LIBRARIES_NET_AD_DC"; Script = "setup_activedirectory_domaincontroller.ps1"; MachineName = $LIBRARIES_NET_AD_MACHINE; MachineIP = $LIBRARIES_NET_AD_MACHINEIP}
 )
 
 $script:Roles = @(
-    @{Name = "COREFX_NET_IISSERVER"; Script = "setup_iisserver.ps1"; MachineName = $COREFX_NET_IISSERVER_Machine; MachineIP = $COREFX_NET_IISSERVER_MachineIP},
-    @{Name = "COREFX_NET_CLIENT"; Script = "setup_client.ps1"; MachineName = $COREFX_NET_CLIENT_Machine},
-    @{Name = "COREFX_NET_AD_DC"; Script = "setup_activedirectory_domaincontroller.ps1"; MachineName = $COREFX_NET_AD_Machine; MachineIP = $COREFX_NET_AD_MachineIP}
+    @{Name = "LIBRARIES_NET_IISSERVER"; Script = "setup_iisserver.ps1"; MachineName = $LIBRARIES_NET_IISSERVER_MACHINE; MachineIP = $LIBRARIES_NET_IISSERVER_MACHINEIP},
+    @{Name = "LIBRARIES_NET_CLIENT"; Script = "setup_client.ps1"; MachineName = $LIBRARIES_NET_CLIENT_MACHINE},
+    @{Name = "LIBRARIES_NET_AD_DC"; Script = "setup_activedirectory_domaincontroller.ps1"; MachineName = $LIBRARIES_NET_AD_MACHINE; MachineIP = $LIBRARIES_NET_AD_MACHINEIP}
 )

@@ -634,7 +634,7 @@ float ValueNumStore::EvalOpSpecialized<float>(VNFunc vnf, float v0, float v1)
 template <typename T>
 T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
 {
-    typedef typename jitstd::make_unsigned<T>::type UT;
+    typedef typename std::make_unsigned<T>::type UT;
 
     assert((sizeof(T) == 4) || (sizeof(T) == 8));
 
@@ -853,7 +853,7 @@ int ValueNumStore::EvalComparison<float>(VNFunc vnf, float v0, float v1)
 template <typename T>
 int ValueNumStore::EvalComparison(VNFunc vnf, T v0, T v1)
 {
-    typedef typename jitstd::make_unsigned<T>::type UT;
+    typedef typename std::make_unsigned<T>::type UT;
 
     // Here we handle the compare ops that are the same for all integer types.
     if (vnf < VNF_Boundary)
@@ -1956,7 +1956,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         // Order arg0 arg1 by numerical VN value.
         if (arg0VN > arg1VN)
         {
-            jitstd::swap(arg0VN, arg1VN);
+            std::swap(arg0VN, arg1VN);
         }
     }
 
@@ -6723,6 +6723,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
     {
         switch (oper)
         {
+            case GT_LCL_VAR_ADDR:
+            case GT_LCL_FLD_ADDR:
+                assert(lvaVarAddrExposed(tree->AsLclVarCommon()->GetLclNum()));
+                tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                break;
+
             case GT_LCL_VAR:
             {
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
@@ -6877,7 +6883,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_LCL_FLD:
             {
                 GenTreeLclFld* lclFld = tree->AsLclFld();
-                assert(!lvaInSsa(lclFld->GetLclNum()) || lclFld->gtFieldSeq != nullptr);
+                assert(!lvaInSsa(lclFld->GetLclNum()) || (lclFld->GetFieldSeq() != nullptr));
                 // If this is a (full) def, then the variable will be labeled with the new SSA number,
                 // which will not have a value.  We skip; it will be handled by one of the assignment-like
                 // forms (assignment, or initBlk or copyBlk).
@@ -6888,7 +6894,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     LclVarDsc* varDsc = &lvaTable[lclNum];
 
                     var_types indType = tree->TypeGet();
-                    if (lclFld->gtFieldSeq == FieldSeqStore::NotAField() || !lvaInSsa(lclFld->GetLclNum()))
+                    if ((lclFld->GetFieldSeq() == FieldSeqStore::NotAField()) || !lvaInSsa(lclFld->GetLclNum()))
                     {
                         // This doesn't represent a proper field access or it's a struct
                         // with overlapping fields that is hard to reason about; return a new unique VN.
@@ -6897,7 +6903,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     else
                     {
                         ValueNumPair lclVNPair = varDsc->GetPerSsaData(ssaNum)->m_vnPair;
-                        tree->gtVNPair         = vnStore->VNPairApplySelectors(lclVNPair, lclFld->gtFieldSeq, indType);
+                        tree->gtVNPair = vnStore->VNPairApplySelectors(lclVNPair, lclFld->GetFieldSeq(), indType);
                     }
                 }
             }
@@ -7169,8 +7175,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         else
                         {
                             // We should never have a null field sequence here.
-                            assert(lclFld->gtFieldSeq != nullptr);
-                            if (lclFld->gtFieldSeq == FieldSeqStore::NotAField())
+                            assert(lclFld->GetFieldSeq() != nullptr);
+                            if (lclFld->GetFieldSeq() == FieldSeqStore::NotAField())
                             {
                                 // We don't know what field this represents.  Assign a new VN to the whole variable
                                 // (since we may be writing to an unknown portion of it.)
@@ -7184,7 +7190,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 // (we looked in a side table above for its "def" identity).  Look up that value.
                                 ValueNumPair oldLhsVNPair =
                                     lvaTable[lclFld->GetLclNum()].GetPerSsaData(lclFld->GetSsaNum())->m_vnPair;
-                                newLhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lclFld->gtFieldSeq,
+                                newLhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lclFld->GetFieldSeq(),
                                                                                    rhsVNPair, // Pre-value.
                                                                                    lclFld->TypeGet(), compCurBB);
                             }
@@ -7607,7 +7613,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
                 else if (arg->OperGet() == GT_LCL_FLD)
                 {
-                    fieldSeq = arg->AsLclFld()->gtFieldSeq;
+                    fieldSeq = arg->AsLclFld()->GetFieldSeq();
                     if (fieldSeq == nullptr)
                     {
                         // Local field with unknown field seq -- not a precise pointer.
@@ -8756,7 +8762,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_JitNewArr;
             break;
 
-        case CORINFO_HELP_NEWARR_1_R2R_DIRECT:
         case CORINFO_HELP_READYTORUN_NEWARR_1:
             vnf = VNF_JitReadyToRunNewArr;
             break;

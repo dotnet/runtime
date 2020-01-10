@@ -120,9 +120,6 @@ LONG ThreadpoolMgr::Initialization=0;           // indicator of whether the thre
 // Cacheline aligned, hot variable
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) unsigned int ThreadpoolMgr::LastDequeueTime; // used to determine if work items are getting thread starved
 
-// Move out of from preceeding variables' cache line
-DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) int ThreadpoolMgr::offset_counter = 0;
-
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestHead);        // Head of work request queue
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestTail);        // Head of work request queue
 
@@ -922,10 +919,6 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
 
     _ASSERTE(ThreadAdjustmentLock.IsHeld());
 
-    DWORD currentTicks = GetTickCount();
-    LONG totalNumCompletions = (LONG)Thread::GetTotalWorkerThreadPoolCompletionCount();
-    LONG numCompletions = totalNumCompletions - VolatileLoad(&PriorCompletedWorkRequests);
-
     LARGE_INTEGER startTime = CurrentSampleStartTime;
     LARGE_INTEGER endTime;
     QueryPerformanceCounter(&endTime);
@@ -944,6 +937,9 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
     //
     if (elapsed*1000.0 >= (ThreadAdjustmentInterval/2))
     {
+        DWORD currentTicks = GetTickCount();
+        LONG totalNumCompletions = (LONG)Thread::GetTotalWorkerThreadPoolCompletionCount();
+        LONG numCompletions = totalNumCompletions - VolatileLoad(&PriorCompletedWorkRequests);
         ThreadCounter::Counts currentCounts = WorkerCounter.GetCleanCounts();
 
         int newMax = HillClimbingInstance.Update(
@@ -1736,29 +1732,6 @@ void ThreadpoolMgr::RecycleMemory(LPVOID mem, enum MemType memType)
     }
 }
 
-#define THROTTLE_RATE  0.10 /* rate by which we increase the delay as number of threads increase */
-
-// This is to avoid the 64KB/1MB aliasing problem present on Pentium 4 processors,
-// which can significantly impact performance with HyperThreading enabled
-DWORD WINAPI ThreadpoolMgr::intermediateThreadProc(PVOID arg)
-{
-    WRAPPER_NO_CONTRACT;
-
-    offset_counter++;
-    if (offset_counter * offset_multiplier > (int)GetOsPageSize())
-        offset_counter = 0;
-
-    (void)_alloca(offset_counter * offset_multiplier);
-
-    intermediateThreadParam* param = (intermediateThreadParam*)arg;
-
-    LPTHREAD_START_ROUTINE ThreadFcnPtr = param->lpThreadFunction;
-    PVOID args = param->lpArg;
-    delete param;
-
-    return ThreadFcnPtr(args);
-}
-
 Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpArgs, BOOL *pIsCLRThread)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -1813,22 +1786,14 @@ Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStart
         if (bOK != TRUE)
             return NULL;
 #endif // !FEATURE_PAL
-        NewHolder<intermediateThreadParam> lpThreadArgs(new (nothrow) intermediateThreadParam);
-        if (lpThreadArgs != NULL)
-        {
-            lpThreadArgs->lpThreadFunction = lpStartAddress;
-            lpThreadArgs->lpArg = lpArgs;
-            threadHandle = CreateThread(NULL,               // security descriptor
-                                        0,                  // default stack size
-                                        intermediateThreadProc,
-                                        lpThreadArgs,       // arguments
-                                        CREATE_SUSPENDED,
-                                        &threadId);
+        threadHandle = CreateThread(NULL,               // security descriptor
+                                    0,                  // default stack size
+                                    lpStartAddress,
+                                    lpArgs,
+                                    CREATE_SUSPENDED,
+                                    &threadId);
 
-            SetThreadName(threadHandle, W(".NET ThreadPool Worker"));
-            if (threadHandle != NULL)
-                lpThreadArgs.SuppressRelease();
-        }
+        SetThreadName(threadHandle, W(".NET ThreadPool Worker"));
 #ifndef FEATURE_PAL
         UndoRevert(bReverted, token);
 #endif // !FEATURE_PAL
@@ -3706,7 +3671,7 @@ LPOVERLAPPED ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(
     //Very Very Important!
     //Do not change the timeout for GetQueuedCompletionStatus to a non-zero value.
     //Selecting a non-zero value can cause the thread to block, and lead to expensive context switches.
-    //In real life scenarios, we have noticed a packet to be not availabe immediately, but very shortly
+    //In real life scenarios, we have noticed a packet to be not available immediately, but very shortly
     //(after few 100's of instructions), and falling back to the VM is good in that case as compared to
     //taking a context switch. Changing the timeout to non-zero can lead to perf degrades, that are very
     //hard to diagnose.

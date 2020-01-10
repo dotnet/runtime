@@ -334,8 +334,7 @@ protected:
     regMaskTP genJmpCallArgMask();
 
     void genFreeLclFrame(unsigned           frameSize,
-                         /* IN OUT */ bool* pUnwindStarted,
-                         bool               jmpEpilog);
+                         /* IN OUT */ bool* pUnwindStarted);
 
     void genMov32RelocatableDisplacement(BasicBlock* block, regNumber reg);
     void genMov32RelocatableDataLabel(unsigned value, regNumber reg);
@@ -1012,9 +1011,6 @@ protected:
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 #endif // defined(_TARGET_XARCH_)
-#if defined(_TARGET_ARM64_)
-    void genSpecialIntrinsic(GenTreeHWIntrinsic* node);
-#endif // defined(_TARGET_XARCH_)
 #endif // FEATURE_HW_INTRINSICS
 
 #if !defined(_TARGET_64BIT_)
@@ -1318,12 +1314,7 @@ public:
 
     void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
 
-    void inst_TT_RV(instruction ins,
-                    GenTree*    tree,
-                    regNumber   reg,
-                    unsigned    offs  = 0,
-                    emitAttr    size  = EA_UNKNOWN,
-                    insFlags    flags = INS_FLAGS_DONT_CARE);
+    void inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg);
 
     void inst_RV_TT(instruction ins,
                     regNumber   reg,

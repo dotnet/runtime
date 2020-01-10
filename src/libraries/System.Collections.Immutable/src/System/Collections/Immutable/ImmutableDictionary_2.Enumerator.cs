@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The builder being enumerated, if applicable.
             /// </summary>
-            private readonly Builder _builder;
+            private readonly Builder? _builder;
 
             /// <summary>
             /// The enumerator over the sorted dictionary whose keys are hash values.
@@ -41,7 +41,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="root">The root.</param>
             /// <param name="builder">The builder, if applicable.</param>
-            internal Enumerator(SortedInt32KeyNode<HashBucket> root, Builder builder = null)
+            internal Enumerator(SortedInt32KeyNode<HashBucket> root, Builder? builder = null)
             {
                 _builder = builder;
                 _mapEnumerator = new SortedInt32KeyNode<HashBucket>.Enumerator(root);

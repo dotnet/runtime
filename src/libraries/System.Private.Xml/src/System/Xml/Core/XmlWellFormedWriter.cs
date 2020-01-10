@@ -2122,7 +2122,7 @@ namespace System.Xml
             return s;
         }
 
-        private unsafe void CheckNCName(string ncname)
+        private void CheckNCName(string ncname)
         {
             Debug.Assert(ncname != null && ncname.Length > 0);
 

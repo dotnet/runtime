@@ -609,7 +609,7 @@ namespace System.Net.Http
             CancellationTokenSource cancellationWithConnectTimeout = null;
             if (Settings._connectTimeout != Timeout.InfiniteTimeSpan)
             {
-                cancellationWithConnectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default);
+                cancellationWithConnectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 cancellationWithConnectTimeout.CancelAfter(Settings._connectTimeout);
                 cancellationToken = cancellationWithConnectTimeout.Token;
             }
@@ -699,7 +699,7 @@ namespace System.Net.Http
                 return (null, tunnelResponse);
             }
 
-            return (await tunnelResponse.Content.ReadAsStreamAsync().ConfigureAwait(false), null);
+            return (await tunnelResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false), null);
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>

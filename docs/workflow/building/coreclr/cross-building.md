@@ -21,7 +21,7 @@ Cross Compilation for ARM, ARM64 or x86 on Linux
 
 Through cross compilation, on Linux it is possible to build CoreCLR for arm or arm64. Note that this documentation exists to explain using `runtime/eng/common/build-rootfs.sh`. This will build a rootfs and then use it to cross build. Newer documentation [linux-instructions.md](linux-instructions.md) exists which leverages docker to use a prebuilt environment to cross build.
 
-Requirements for targetting Debian based distros
+Requirements for targeting Debian based distros
 ------------------------------------------------
 
 You need a Debian based host and the following packages need to be installed:
@@ -36,8 +36,12 @@ and conversely for arm64:
 
     ~/runtime/ $ sudo apt-get install binutils-aarch64-linux-gnu
 
+and for armel (ARM softfp):
 
-Requirements for targetting ARM or ARM64 Alpine Linux
+    ~/runtime/ $ sudo apt-get install binutils-arm-linux-gnueabi
+
+
+Requirements for targeting ARM or ARM64 Alpine Linux
 -----------------------------------------------------
 
 You can use any Linux distro as a host. The qemu, qemu-user-static and binfmt-support packages need to be installed (the names may be different for some distros).
@@ -97,6 +101,31 @@ Cross compiling CoreCLR
 
 As usual, the resulting binaries will be found in `artifacts/bin/coreclr/BuildOS.BuildArch.BuildType/`
 
+Cross compiling CoreCLR for Other VFP configurations
+----------------------------------------------------------
+The default arm compilation configuration for CoreCLR is armv7-a with thumb-2 instruction set and
+VFPv3 floating point with 32 64-bit FPU registers.
+
+CoreCLR JIT requires 16 64-bit or 32 32-bit FPU registers.
+
+A set of FPU configuration options have been provided via build.sh to accommodate different CPU types.
+These FPU configuration options are: CLR_ARM_FPU_CAPABILITY and CLR_ARM_FPU_TYPE.
+
+CLR_ARM_FPU_TYPE translates to a value given to -mfpu compiler option. Please refer to
+your compiler documentation for possible options.
+
+CLR_ARM_FPU_CAPABILITY is used by the PAL code to decide which FPU registers should be saved and
+restored during context switches.
+
+Bit 0 unused always set to 1.
+Bit 1 corresponds to 16 64-bit FPU registers.
+Bit 2 corresponds to 32 64-bit FPU registers.
+
+Supported options are 0x3 and 0x7.
+
+If you wanted to support armv7 CPU with VFPv3-d16, you'd use the following compile options:
+
+./build.sh -cross -arm -cmakeargs -DCLR_ARM_FPU_CAPABILITY=0x3 -cmakeargs -DCLR_ARM_FPU_TYPE=vfpv3-d16
 
 Build System.Private.CoreLib on Ubuntu
 --------------------------------------

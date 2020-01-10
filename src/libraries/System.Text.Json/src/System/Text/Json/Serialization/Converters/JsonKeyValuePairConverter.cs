@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Converters
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: null,
-                culture: null);
+                culture: null)!;
 
             return converter;
         }

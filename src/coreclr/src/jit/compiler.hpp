@@ -1456,13 +1456,13 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
             Compiler*     compiler     = JitTls::GetCompiler();
             bool          isZeroOffset = compiler->GetZeroOffsetFieldMap()->Lookup(this, &zeroFieldSeq);
 
-            AsLclFld()->gtLclOffs  = 0;
-            AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+            AsLclFld()->SetLclOffs(0);
+            AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
 
             if (zeroFieldSeq != nullptr)
             {
                 // Set the zeroFieldSeq in the GT_LCL_FLD node
-                AsLclFld()->gtFieldSeq = zeroFieldSeq;
+                AsLclFld()->SetFieldSeq(zeroFieldSeq);
                 // and remove the annotation from the ZeroOffsetFieldMap
                 compiler->GetZeroOffsetFieldMap()->Remove(this);
             }
@@ -4066,34 +4066,6 @@ inline void Compiler::EndPhase(Phases phase)
     fgDumpFlowGraph(phase);
 #endif // DUMP_FLOWGRAPHS
     previousCompletedPhase = phase;
-#ifdef DEBUG
-    if (dumpIR)
-    {
-        if ((*dumpIRPhase == L'*') || (wcscmp(dumpIRPhase, PhaseShortNames[phase]) == 0))
-        {
-            printf("\n");
-            printf("IR after %s (switch: %ls)\n", PhaseEnums[phase], PhaseShortNames[phase]);
-            printf("\n");
-
-            if (dumpIRLinear)
-            {
-                dFuncIR();
-            }
-            else if (dumpIRTrees)
-            {
-                dTrees();
-            }
-
-            // If we are just dumping a single method and we have a request to exit
-            // after dumping, do so now.
-
-            if (dumpIRExit && ((*dumpIRPhase != L'*') || (phase == PHASE_EMIT_GCEH)))
-            {
-                exit(0);
-            }
-        }
-    }
-#endif
 }
 
 /*****************************************************************************/

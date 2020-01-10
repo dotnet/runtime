@@ -107,7 +107,7 @@ namespace VirtualMemoryLogging
     // An entry in the in-memory log
     struct LogRecord
     {
-        LONG RecordId;
+        ULONG RecordId;
         DWORD Operation;
         LPVOID CurrentThread;
         LPVOID RequestedAddress;
@@ -118,14 +118,14 @@ namespace VirtualMemoryLogging
     };
 
     // Maximum number of records in the in-memory log
-    const LONG MaxRecords = 128;
+    const ULONG MaxRecords = 128;
 
     // Buffer used to store the logged data
     volatile LogRecord logRecords[MaxRecords];
 
     // Current record number. Use (recordNumber % MaxRecords) to determine
     // the current position in the circular buffer.
-    volatile LONG recordNumber = 0;
+    volatile ULONG recordNumber = 0;
 
     // Record an entry in the in-memory log
     void LogVaOperation(
@@ -137,7 +137,7 @@ namespace VirtualMemoryLogging
         IN LPVOID returnedAddress,
         IN BOOL result)
     {
-        LONG i = InterlockedIncrement(&recordNumber) - 1;
+        ULONG i = (ULONG)InterlockedIncrement((LONG *)&recordNumber) - 1;
         LogRecord* curRec = (LogRecord*)&logRecords[i % MaxRecords];
 
         curRec->RecordId = i;
@@ -2038,48 +2038,6 @@ size_t GetVirtualPageSize()
 {
     _ASSERTE(s_virtualPageSize);
     return s_virtualPageSize;
-}
-
-/*++
-Function:
-  GetWriteWatch
-
-See MSDN doc.
---*/
-UINT
-PALAPI
-GetWriteWatch(
-  IN DWORD dwFlags,
-  IN PVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize,
-  OUT PVOID *lpAddresses,
-  IN OUT PULONG_PTR lpdwCount,
-  OUT PULONG lpdwGranularity
-)
-{
-    // TODO: implement this method
-    *lpAddresses = NULL;
-    *lpdwCount = 0;
-    // Until it is implemented, return non-zero value as an indicator of failure
-    return 1;
-}
-
-/*++
-Function:
-  ResetWriteWatch
-
-See MSDN doc.
---*/
-UINT
-PALAPI
-ResetWriteWatch(
-  IN LPVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize
-)
-{
-    // TODO: implement this method
-    // Until it is implemented, return non-zero value as an indicator of failure
-    return 1;
 }
 
 /*++

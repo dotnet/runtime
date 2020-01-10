@@ -1375,6 +1375,9 @@ AGAIN:
 
     if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
+        // We should not be building address modes out of non-foldable constants
+        assert(op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()));
+
         /* We're adding a constant */
 
         cns += op2->AsIntConCommon()->IconValue();
@@ -2282,11 +2285,6 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
-#ifdef DEBUG
-    /* We're done generating code for this function */
-    compiler->compCodeGenDone = true;
-#endif
-
     compiler->EndPhase(PHASE_GENERATE_CODE);
 
     codeSize =
@@ -2295,6 +2293,13 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
                                      &epilogSize, codePtr, &coldCodePtr, &consPtr);
 
     compiler->EndPhase(PHASE_EMIT_CODE);
+
+#ifdef DEBUG
+    assert(compiler->compCodeGenDone == false);
+
+    /* We're done generating code for this function */
+    compiler->compCodeGenDone = true;
+#endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
     // Add code size information into the Perf Score
@@ -2307,9 +2312,10 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
-        printf("; Total bytes of code %d, prolog size %d, perf score %.2f, (MethodHash=%08x) for method %s\n", codeSize,
-               prologSize, compiler->info.compPerfScore, compiler->info.compMethodHash(), compiler->info.compFullName);
-        printf("; ============================================================\n");
+        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, (MethodHash=%08x) for method %s\n",
+               codeSize, prologSize, compiler->info.compPerfScore, compiler->info.compMethodHash(),
+               compiler->info.compFullName);
+        printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
     }
 
@@ -3796,7 +3802,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         varDsc = compiler->lvaTable + varNum;
 
 #ifndef _TARGET_64BIT_
-        // If not a stack arg go to the next one
+        // If this arg is never on the stack, go to the next one.
         if (varDsc->lvType == TYP_LONG)
         {
             if (regArgTab[argNum].slot == 1 && !regArgTab[argNum].stackArg)
@@ -3811,7 +3817,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         else
 #endif // !_TARGET_64BIT_
         {
-            // If not a stack arg go to the next one
+            // If this arg is never on the stack, go to the next one.
             if (!regArgTab[argNum].stackArg)
             {
                 continue;
@@ -5419,36 +5425,18 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
     GetEmitter()->emitIns_R_I(INS_vpop, EA_8BYTE, lowReg, slots / 2);
 }
 
-/*-----------------------------------------------------------------------------
- *
- *  If we have a jmp call, then the argument registers cannot be used in the
- *  epilog. So return the current call's argument registers as the argument
- *  registers for the jmp call.
- */
-regMaskTP CodeGen::genJmpCallArgMask()
-{
-    assert(compiler->compGeneratingEpilog);
-
-    regMaskTP argMask = RBM_NONE;
-    for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; ++varNum)
-    {
-        const LclVarDsc& desc = compiler->lvaTable[varNum];
-        if (desc.lvIsRegArg)
-        {
-            argMask |= genRegMask(desc.GetArgReg());
-        }
-    }
-    return argMask;
-}
-
-/*-----------------------------------------------------------------------------
- *
- *  Free the local stack frame: add to SP.
- *  If epilog unwind hasn't been started, and we generate code, we start unwind
- *  and set *pUnwindStarted = true.
- */
-
-void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted, bool jmpEpilog)
+//------------------------------------------------------------------------
+// genFreeLclFrame: free the local stack frame by adding `frameSize` to SP.
+//
+// Arguments:
+//   frameSize - the frame size to free;
+//   pUnwindStarted - was epilog unwind started or not.
+//
+// Notes:
+//   If epilog unwind hasn't been started, and we generate code, we start unwind
+//    and set* pUnwindStarted = true.
+//
+void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted)
 {
     assert(compiler->compGeneratingEpilog);
 
@@ -5478,13 +5466,8 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
     }
     else
     {
-        regMaskTP grabMask = RBM_INT_CALLEE_TRASH;
-        if (jmpEpilog)
-        {
-            // Do not use argument registers as scratch registers in the jmp epilog.
-            grabMask &= ~genJmpCallArgMask();
-        }
-        regNumber tmpReg = REG_TMP_0;
+        // R12 doesn't hold arguments or return values, so can be used as temp.
+        regNumber tmpReg = REG_R12;
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, frameSize);
         if (*pUnwindStarted)
         {
@@ -7947,7 +7930,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) ==
             RBM_NONE)
     {
-        genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted, jmpEpilog);
+        genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
     }
 
     if (!unwindStarted)
@@ -8791,7 +8774,7 @@ void CodeGen::genFuncletEpilog()
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genFreeLclFrame(genFuncletInfo.fiSpDelta, &unwindStarted, false);
+        genFreeLclFrame(genFuncletInfo.fiSpDelta, &unwindStarted);
     }
 
     if (!unwindStarted)

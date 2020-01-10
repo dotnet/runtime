@@ -139,22 +139,6 @@ BOOL Object::ValidateObjectWithPossibleAV()
 
 #ifndef DACCESS_COMPILE
 
-TypeHandle Object::GetTrueTypeHandle()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_pMethTab->IsArray())
-        return ((ArrayBase*) this)->GetTypeHandle();
-    else
-        return TypeHandle(GetMethodTable());
-}
-
 // There are cases where it is not possible to get a type handle during a GC.
 // If we can get the type handle, this method will return it.
 // Otherwise, the method will return NULL.
@@ -207,26 +191,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     //         allocated on the same loader heap, except the case where the array is
     //         Object[], in which case its MT is in mscorlib and thus doesn't unload.
 
-    MethodTable * pMTToCheck = pMT;
-    if (pMTToCheck->IsArray())
-    {
-        TypeHandle thElem = static_cast<const ArrayBase * const>(this)->GetArrayElementTypeHandle();
-
-        // Ideally, we would just call thElem.GetLoaderModule() here. Unfortunately, the
-        // current TypeDesc::GetLoaderModule() implementation depends on data structures
-        // that might have been unloaded already. So we just simulate
-        // TypeDesc::GetLoaderModule() for the limited array case that we care about. In
-        // case we're dealing with an array of arrays of arrays etc. traverse until we
-        // find the deepest element, and that's the type we'll check
-        while (thElem.HasTypeParam())
-        {
-            thElem = thElem.GetTypeParam();
-        }
-
-        pMTToCheck = thElem.GetMethodTable();
-    }
-
-    Module * pLoaderModule = pMTToCheck->GetLoaderModule();
+    Module * pLoaderModule = pMT->GetLoaderModule();
 
     // Don't look up types that are unloading due to Collectible Assemblies. Haven't been
     // able to find a case where we actually encounter objects like this that can cause
@@ -673,26 +638,6 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 
 
 #endif   // VERIFY_HEAP
-
-#ifndef DACCESS_COMPILE
-#ifdef _DEBUG
-void ArrayBase::AssertArrayTypeDescLoaded()
-{
-    _ASSERTE (m_pMethTab->IsArray());
-
-    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-
-    // The type should already be loaded
-    // See also: MethodTable::DoFullyLoad
-    TypeHandle th = ClassLoader::LoadArrayTypeThrowing(m_pMethTab->GetArrayElementTypeHandle(),
-                                                       m_pMethTab->GetInternalCorElementType(),
-                                                       m_pMethTab->GetRank(),
-                                                       ClassLoader::DontLoadTypes);
-
-    _ASSERTE(!th.IsNull());
-}
-#endif // DEBUG
-#endif // !DACCESS_COMPILE
 
 /*==================================NewString===================================
 **Action:  Creates a System.String object.
@@ -1696,7 +1641,7 @@ OBJECTREF Nullable::Box(void* srcPtr, MethodTable* nullableMT)
 
     OBJECTREF obj = 0;
     GCPROTECT_BEGININTERIOR (src);
-    MethodTable* argMT = nullableMT->GetInstantiation()[0].GetMethodTable();
+    MethodTable* argMT = nullableMT->GetInstantiation()[0].AsMethodTable();
     obj = argMT->Allocate();
     CopyValueClass(obj->UnBox(), src->ValueAddr(nullableMT), argMT);
     GCPROTECT_END ();

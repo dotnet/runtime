@@ -83,18 +83,18 @@ namespace System.Net.Sockets
 
         private MultipleConnectAsync _multipleConnect;
 
-        public SocketAsyncEventArgs() : this(flowExecutionContext: true)
+        public SocketAsyncEventArgs() : this(unsafeSuppressExecutionContextFlow: false)
         {
         }
 
         /// <summary>Initialize the SocketAsyncEventArgs</summary>
-        /// <param name="flowExecutionContext">
-        /// Whether to capture and flow ExecutionContext. ExecutionContext flow should only
+        /// <param name="unsafeSuppressExecutionContextFlow">
+        /// Whether to disable the capturing and flow of ExecutionContext. ExecutionContext flow should only
         /// be disabled if it's going to be handled by higher layers.
         /// </param>
-        internal SocketAsyncEventArgs(bool flowExecutionContext)
+        public SocketAsyncEventArgs(bool unsafeSuppressExecutionContextFlow)
         {
-            _flowExecutionContext = flowExecutionContext;
+            _flowExecutionContext = !unsafeSuppressExecutionContextFlow;
             InitializeInternals();
         }
 

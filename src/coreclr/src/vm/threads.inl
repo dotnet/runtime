@@ -130,12 +130,6 @@ inline OBJECTREF Thread::GetExposedObjectRaw()
     return ObjectFromHandle(m_ExposedObject);
 }
 
-inline void Thread::FinishSOWork()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(!HasThreadStateNC(TSNC_SOWorkNeeded));
-}
-
 #ifdef FEATURE_COMINTEROP
 inline void Thread::RevokeApartmentSpy()
 {

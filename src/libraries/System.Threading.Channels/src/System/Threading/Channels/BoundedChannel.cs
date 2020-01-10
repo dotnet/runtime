@@ -69,6 +69,28 @@ namespace System.Threading.Channels
 
             public override Task Completion => _parent._completion.Task;
 
+            public override bool CanCount => true;
+
+            public override int Count
+            {
+                get
+                {
+                    BoundedChannel<T> parent = _parent;
+                    lock (parent.SyncObj)
+                    {
+                        parent.AssertInvariants();
+                        return parent._items.Count;
+                    }
+                }
+            }
+
+            /// <summary>Gets the number of items in the channel. This should only be used by the debugger.</summary>
+            /// <remarks>
+            /// Unlike <see cref="Count"/>, avoids locking so as to not block the debugger if another suspended thread is holding the lock.
+            /// Hence, this must only be used from the debugger in a serialized context.
+            /// </remarks>
+            private int ItemsCountForDebugger => _parent._items.Count;
+
             public override bool TryRead([MaybeNullWhen(false)] out T item)
             {
                 BoundedChannel<T> parent = _parent;
@@ -228,9 +250,6 @@ namespace System.Threading.Channels
                 // Return the item
                 return item;
             }
-
-            /// <summary>Gets the number of items in the channel. This should only be used by the debugger.</summary>
-            private int ItemsCountForDebugger => _parent._items.Count;
 
             /// <summary>Gets an enumerator the debugger can use to show the contents of the channel.</summary>
             IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _parent._items.GetEnumerator();

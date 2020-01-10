@@ -2555,11 +2555,13 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
     // containingNode supports nodes that read from an aligned memory address
     //
-    // This will generally be an explicit LoadAligned instruction and is generally
-    // false for machines with VEX support. This is because there is currently no way
-    // to guarantee that the address read from will always be aligned and we could silently
-    // change the behavior of the program in the case where an Access Violation would have
-    // otherwise occurred.
+    // This will generally be an explicit LoadAligned instruction and is false for
+    // machines with VEX support when minOpts is enabled. This is because there is
+    // currently no way to guarantee that the address read from will always be
+    // aligned and we want to assert that the address is aligned when optimizations
+    // aren't enabled. However, when optimizations are enabled, we want to allow
+    // folding of memory operands as it produces better codegen and allows simpler
+    // coding patterns on the managed side.
     bool supportsAlignedSIMDLoads = false;
 
     // containingNode supports nodes that read from general memory
@@ -2609,10 +2611,23 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                 {
                     // These intrinsics only expect 16 or 32-byte nodes for containment
                     assert((genTypeSize(node->TypeGet()) == 16) || (genTypeSize(node->TypeGet()) == 32));
-                    supportsAlignedSIMDLoads =
-                        !comp->canUseVexEncoding() && (containingIntrinsicId != NI_SSE2_ConvertToVector128Double);
-                    supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
-                    supportsGeneralLoads       = supportsUnalignedSIMDLoads;
+
+                    if (!comp->canUseVexEncoding())
+                    {
+                        // Most instructions under the non-VEX encoding require aligned operands.
+                        // Those used for Sse2.ConvertToVector128Double (CVTDQ2PD and CVTPS2PD)
+                        // are exceptions and don't fail for unaligned inputs.
+
+                        supportsAlignedSIMDLoads   = (containingIntrinsicId != NI_SSE2_ConvertToVector128Double);
+                        supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
+                    }
+                    else
+                    {
+                        supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                        supportsUnalignedSIMDLoads = true;
+                    }
+
+                    supportsGeneralLoads = supportsUnalignedSIMDLoads;
                     break;
                 }
             }
@@ -2660,8 +2675,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                     assert((genTypeSize(node->TypeGet()) == 16) || (genTypeSize(node->TypeGet()) == 32));
                     assert(supportsSIMDScalarLoads == false);
 
-                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding();
-                    supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
+                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
+                    supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
                     supportsGeneralLoads       = supportsUnalignedSIMDLoads;
 
                     break;
@@ -2893,7 +2908,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
             return supportsSIMDScalarLoads;
         }
 
-        // VEX encoding supports unaligned memory ops, so we can fold them
         case NI_SSE_LoadVector128:
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadVector256:
