@@ -204,8 +204,11 @@ namespace Mono.Linker.Steps {
 
 		void Process ()
 		{
+			//
+			// This can happen when linker is called on facade with all references skipped
+			//
 			if (QueueIsEmpty ())
-				throw new InvalidOperationException ("No entry methods");
+				return;
 
 			while (ProcessPrimaryQueue () || ProcessLazyAttributes () || ProcessLateMarkedAttributes ())
 
