@@ -35289,12 +35289,12 @@ void gc_heap::descr_generations (BOOL begin_gc_p)
 #ifdef TRACE_GC
 
  unsigned int PromotedObjectCount  = 0;
- unsigned int CreatedObjectCount       = 0;
- int64_t  AllocDuration            = 0;
- unsigned int AllocCount               = 0;
- unsigned int AllocBigCount            = 0;
+ unsigned int CreatedObjectCount   = 0;
+ unsigned int AllocCount           = 0;
+ unsigned int AllocBigCount        = 0;
  unsigned int AllocSmallCount      = 0;
- int64_t AllocStart             = 0;
+ int64_t      AllocStart           = 0;
+ int64_t      AllocDuration        = 0;
 #endif //TRACE_GC
 
 //Static member variables.
@@ -35304,7 +35304,7 @@ VOLATILE(BOOL)    GCHeap::GcInProgress            = FALSE;
 GCEvent            *GCHeap::WaitForGCEvent         = NULL;
 //GCTODO
 #if defined(TRACE_GC) && !defined(MULTIPLE_HEAPS)
-unsigned int       GCHeap::GcDuration;
+uint64_t            GCHeap::GcDuration;
 #endif //TRACE_GC
 unsigned            GCHeap::GcCondemnedGeneration   = 0;
 size_t              GCHeap::totalSurvivedSize       = 0;
