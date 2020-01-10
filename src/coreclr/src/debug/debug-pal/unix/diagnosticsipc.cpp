@@ -58,9 +58,9 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     const char *customTransportPath = getenv("COMPlus_DiagnosticsServerTransportPath");
     if (customTransportPath != nullptr)
     {
-        int chars = snprintf(serverAddress.sun_path, sizeof(serverAddress.sun_path), customTransportPath);
+        int chars = snprintf(serverAddress.sun_path, sizeof(serverAddress.sun_path), "%s", customTransportPath);
         _ASSERTE(chars > 0 && (unsigned int)chars < sizeof(serverAddress.sun_path));
-        delete customTransportPath;
+        free(customTransportPath);
     }
     else
     {
