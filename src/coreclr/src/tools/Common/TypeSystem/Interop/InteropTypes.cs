@@ -45,9 +45,9 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Marshal");
         }
 
-        public static MetadataType GetRuntimeHelpers(TypeSystemContext context)
+        public static MetadataType GetMemoryMarshal(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MemoryMarshal");
         }
 
         public static MetadataType GetStubHelpers(TypeSystemContext context)

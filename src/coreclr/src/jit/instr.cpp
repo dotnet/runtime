@@ -963,7 +963,6 @@ void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regN
     GetEmitter()->emitIns_R_R_I(ins, size, reg1, reg2, ival);
 }
 
-#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // inst_RV_TT_IV: Generates an instruction that takes 3 operands:
 //                a register operand, an operand that may be memory or register and an immediate
@@ -975,10 +974,6 @@ void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regN
 //    reg1      -- The first operand, a register
 //    rmOp      -- The second operand, which may be a memory node or a node producing a register
 //    ival      -- The immediate operand
-//
-// Notes:
-//    This isn't really specific to HW intrinsics, but depends on other methods that are
-//    only defined for FEATURE_HW_INTRINSICS, and is currently only used in that context.
 //
 void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival)
 {
@@ -1012,9 +1007,13 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
             }
             else
             {
+#if defined(FEATURE_HW_INTRINSICS)
                 assert(rmOp->AsHWIntrinsic()->OperIsMemoryLoad());
                 assert(HWIntrinsicInfo::lookupNumArgs(rmOp->AsHWIntrinsic()) == 1);
                 addr = rmOp->gtGetOp1();
+#else
+                unreached();
+#endif // FEATURE_HW_INTRINSICS
             }
 
             switch (addr->OperGet())
@@ -1068,7 +1067,6 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 
                 default:
                     unreached();
-                    break;
             }
         }
 
@@ -1086,8 +1084,160 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
         GetEmitter()->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpReg, ival);
     }
 }
-#endif // FEATURE_HW_INTRINSICS
 
+//------------------------------------------------------------------------
+// inst_RV_RV_TT: Generates an instruction that takes 2 operands:
+//                a register operand and an operand that may be in memory or register
+//                the result is returned in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    size      -- The emit size attribute
+//    targetReg -- The target register
+//    op1Reg    -- The first operand register
+//    op2       -- The second operand, which may be a memory node or a node producing a register
+//    isRMW     -- true if the instruction is RMW; otherwise, false
+//
+void CodeGen::inst_RV_RV_TT(
+    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
+{
+    noway_assert(GetEmitter()->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
+
+    // TODO-XArch-CQ: Commutative operations can have op1 be contained
+    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+
+    if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        TempDsc* tmpDsc = nullptr;
+        unsigned varNum = BAD_VAR_NUM;
+        unsigned offset = (unsigned)-1;
+
+        if (op2->isUsedFromSpillTemp())
+        {
+            assert(op2->IsRegOptional());
+
+            tmpDsc = getSpillTempDsc(op2);
+            varNum = tmpDsc->tdTempNum();
+            offset = 0;
+
+            regSet.tmpRlsTemp(tmpDsc);
+        }
+        else if (op2->isIndir() || op2->OperIsHWIntrinsic())
+        {
+            GenTree*      addr;
+            GenTreeIndir* memIndir = nullptr;
+
+            if (op2->isIndir())
+            {
+                memIndir = op2->AsIndir();
+                addr     = memIndir->Addr();
+            }
+            else
+            {
+#if defined(FEATURE_HW_INTRINSICS)
+                assert(op2->AsHWIntrinsic()->OperIsMemoryLoad());
+                assert(HWIntrinsicInfo::lookupNumArgs(op2->AsHWIntrinsic()) == 1);
+                addr = op2->gtGetOp1();
+#else
+                unreached();
+#endif // FEATURE_HW_INTRINSICS
+            }
+
+            switch (addr->OperGet())
+            {
+                case GT_LCL_VAR_ADDR:
+                {
+                    varNum = addr->AsLclVarCommon()->GetLclNum();
+                    offset = 0;
+                    break;
+                }
+
+                case GT_CLS_VAR_ADDR:
+                {
+                    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, addr->AsClsVar()->gtClsVarHnd, 0);
+                    return;
+                }
+
+                default:
+                {
+                    GenTreeIndir load = indirForm(op2->TypeGet(), addr);
+
+                    if (memIndir == nullptr)
+                    {
+                        // This is the HW intrinsic load case.
+                        // Until we improve the handling of addressing modes in the emitter, we'll create a
+                        // temporary GT_IND to generate code with.
+                        memIndir = &load;
+                    }
+                    GetEmitter()->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, memIndir);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            switch (op2->OperGet())
+            {
+                case GT_LCL_FLD:
+                {
+                    varNum = op2->AsLclFld()->GetLclNum();
+                    offset = op2->AsLclFld()->GetLclOffs();
+                    break;
+                }
+
+                case GT_LCL_VAR:
+                {
+                    assert(op2->IsRegOptional() ||
+                           !compiler->lvaGetDesc(op2->AsLclVar()->GetLclNum())->lvIsRegCandidate());
+                    varNum = op2->AsLclVar()->GetLclNum();
+                    offset = 0;
+                    break;
+                }
+
+                case GT_CNS_DBL:
+                {
+                    GenTreeDblCon*       dblCns = op2->AsDblCon();
+                    CORINFO_FIELD_HANDLE cnsDblHnd =
+                        GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
+                    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, cnsDblHnd, 0);
+                    return;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+        }
+
+        // Ensure we got a good varNum and offset.
+        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+        assert(offset != (unsigned)-1);
+
+        GetEmitter()->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, varNum, offset);
+    }
+    else
+    {
+        regNumber op2Reg = op2->GetRegNum();
+
+        if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
+        {
+            // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW instruction.
+            //
+            // For non-commutative instructions, we should have ensured that op2 was marked
+            // delay free in order to prevent it from getting assigned the same register
+            // as target. However, for commutative instructions, we can just swap the operands
+            // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+            op2Reg = op1Reg;
+            op1Reg = targetReg;
+        }
+
+        GetEmitter()->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+    }
+}
 #endif // _TARGET_XARCH_
 
 /*****************************************************************************

@@ -73,14 +73,14 @@ jobs:
     value: >-
       $(CoreCLRArtifactsArgs)
       $(LibrariesConfigurationArg)
-      $(LibrariesAllConfigurationsArtifactsPathArg)
+      $(LibrariesAllConfigurationsOverridePathArg)
       $(AllArtifactsArgs)
 
   - name: CoreCLRArtifactsArgs
     value: ''
   - name: LibrariesConfigurationArg
     value: ''
-  - name: LibrariesAllConfigurationsArtifactsPathArg
+  - name: LibrariesAllConfigurationsOverridePathArg
     value: ''
   - name: AllArtifactsArgs
     value: ''
@@ -129,8 +129,8 @@ jobs:
   - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
     - name: LibrariesDownloadPathAllConfigurations
       value: 'artifacts/transport/librariesallconfigurations'
-    - name: LibrariesAllConfigurationsArtifactsPathArg
-      value: /p:LibrariesAllConfigurationsArtifactsPath=${{ parameters.buildCommandSourcesDirectory }}$(LibrariesDownloadPathAllConfigurations)
+    - name: LibrariesAllConfigurationsOverridePathArg
+      value: /p:LibrariesAllConfigurationsOverridePath=${{ parameters.buildCommandSourcesDirectory }}$(LibrariesDownloadPathAllConfigurations)
     - name: LibrariesArtifactNameAllConfigurations
       value: libraries_bin_official_allconfigurations
 
