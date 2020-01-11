@@ -40,6 +40,9 @@ namespace Mono.Linker {
 		protected readonly Dictionary<AssemblyDefinition, AssemblyAction> assembly_actions = new Dictionary<AssemblyDefinition, AssemblyAction> ();
 		protected readonly Dictionary<MethodDefinition, MethodAction> method_actions = new Dictionary<MethodDefinition, MethodAction> ();
 		protected readonly Dictionary<MethodDefinition, object> method_stub_values = new Dictionary<MethodDefinition, object> ();
+		protected readonly Dictionary<FieldDefinition, object> field_values = new Dictionary<FieldDefinition, object> ();
+		protected readonly HashSet<FieldDefinition> field_init = new HashSet<FieldDefinition> ();
+		protected readonly HashSet<TypeDefinition> fieldType_init = new HashSet<TypeDefinition> ();
 		protected readonly HashSet<IMetadataTokenProvider> marked = new HashSet<IMetadataTokenProvider> ();
 		protected readonly HashSet<IMetadataTokenProvider> processed = new HashSet<IMetadataTokenProvider> ();
 		protected readonly Dictionary<TypeDefinition, TypePreserve> preserved_types = new Dictionary<TypeDefinition, TypePreserve> ();
@@ -122,6 +125,31 @@ namespace Mono.Linker {
 		public void SetMethodStubValue (MethodDefinition method, object value)
 		{
 			method_stub_values [method] = value;
+		}
+
+		public void SetFieldValue (FieldDefinition field, object value)
+		{
+			field_values [field] = value;
+		}
+
+		public void SetSubstitutedInit (FieldDefinition field)
+		{
+			field_init.Add (field);
+		}
+
+		public bool HasSubstitutedInit (FieldDefinition field)
+		{
+			return field_init.Contains (field);
+		}
+
+		public void SetSubstitutedInit (TypeDefinition type)
+		{
+			fieldType_init.Add (type);
+		}
+
+		public bool HasSubstitutedInit (TypeDefinition type)
+		{
+			return fieldType_init.Contains (type);
 		}
 
 		public void Mark (IMetadataTokenProvider provider)
@@ -241,6 +269,11 @@ namespace Mono.Linker {
 		public bool TryGetMethodStubValue (MethodDefinition method, out object value)
 		{
 			return method_stub_values.TryGetValue (method, out value);
+		}
+
+		public bool TryGetFieldUserValue (FieldDefinition field, out object value)
+		{
+			return field_values.TryGetValue (field, out value);
 		}
 
 		public HashSet<string> GetResourcesToRemove (AssemblyDefinition assembly)

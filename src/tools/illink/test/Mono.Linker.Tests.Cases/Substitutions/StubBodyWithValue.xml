@@ -25,6 +25,8 @@
       </method>
       <method signature="System.UInt32 TestMethod_12()" body="stub" value="4294967295">
       </method>
+      <field name="StaticField" value="0">
+      </field>
     </type>
   </assembly>
 </linker>

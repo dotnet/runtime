@@ -1022,6 +1022,11 @@ namespace Mono.Linker.Steps {
 			if (!Annotations.HasPreservedStaticCtor (parent))
 				MarkStaticConstructor (parent);
 
+			if (Annotations.HasSubstitutedInit (field)) {
+				Annotations.SetPreservedStaticCtor (parent);
+				Annotations.SetSubstitutedInit (parent);
+			}
+
 			Annotations.Mark (field);
 		}
 

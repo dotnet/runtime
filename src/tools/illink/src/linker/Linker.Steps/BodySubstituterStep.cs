@@ -1,8 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
+using System.Globalization;
 using System.Xml.XPath;
 using Mono.Cecil;
-using System.Globalization;
 
 namespace Mono.Linker.Steps
 {
@@ -96,10 +97,14 @@ namespace Mono.Linker.Steps
 				return;
 
 			XPathNodeIterator methods = nav.SelectChildren ("method", "");
-			if (methods.Count == 0)
-				return;
+			if (methods.Count > 0)
+				ProcessMethods (type, methods);
 
-			ProcessMethods (type, methods);
+			var fields = nav.SelectChildren ("field", "");
+			if (fields.Count > 0) {
+				while (fields.MoveNext ())
+					ProcessField (type, fields);
+			}
 		}
 
 		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator)
@@ -116,7 +121,7 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition method = FindMethod (type, signature);
 			if (method == null) {
-				Context.LogMessage (MessageImportance.Low, $"Could not find method '{signature}' for substitution");
+				Context.LogMessage (MessageImportance.Normal, $"Could not find method '{signature}' for substitution");
 				return;
 			}
 
@@ -141,6 +146,41 @@ namespace Mono.Linker.Steps
 			default:
 				Context.LogMessage (MessageImportance.High, $"Unknown body modification '{action}' for '{signature}'");
 				return;
+			}
+		}
+
+		void ProcessField (TypeDefinition type, XPathNodeIterator iterator)
+		{
+			string name = GetAttribute (iterator.Current, "name");
+			if (string.IsNullOrEmpty (name))
+				return;
+
+			var field = type.Fields.FirstOrDefault (f => f.Name == name);
+			if (field == null) {
+				Context.LogMessage (MessageImportance.Normal, $"Could not find field '{name}' for substitution.");
+				return;
+			}
+
+			if (!field.IsStatic || field.IsLiteral) {
+				Context.LogMessage (MessageImportance.Normal, $"Substituted field '{name}' needs to be static field.");
+				return;
+			}
+
+			string value = GetAttribute (iterator.Current, "value");
+			if (string.IsNullOrEmpty (value)) {
+				Context.LogMessage (MessageImportance.High, $"Missing 'value' attribute for field '{field}'.");
+				return;
+			}
+			if (!TryConvertValue (value, field.FieldType, out object res)) {
+				Context.LogMessage (MessageImportance.High, $"Invalid value for '{field}': '{value}'.");
+				return;
+			}
+
+			Annotations.SetFieldValue (field, res);
+
+			string init = GetAttribute (iterator.Current, "initialize");
+			if (init?.ToLowerInvariant () == "true") {
+				Annotations.SetSubstitutedInit (field);
 			}
 		}
 

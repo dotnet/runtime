@@ -4,5 +4,8 @@
       <method signature="System.Int32 get_Property()" body="stub" value="3">
       </method>
     </type>
+    <type fullname="Mono.Linker.Tests.Cases.UnreachableBlock.BodiesWithSubstitutions/ClassWithField">
+      <field name="SField" value="9"/>
+    </type>
   </assembly>
 </linker>
