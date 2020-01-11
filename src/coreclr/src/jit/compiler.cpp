@@ -4622,8 +4622,13 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     }
     EndPhase(PHASE_GS_COOKIE);
 
+    // GC Poll marking assumes block bbnums match lexical block order,
+    // so make sure this is the case.
+    fgRenumberBlocks();
+
     /* If we need to emit GC Poll calls, mark the blocks that need them now.  This is conservative and can
      * be optimized later. */
+
     fgMarkGCPollBlocks();
     EndPhase(PHASE_MARK_GC_POLL_BLOCKS);
 
