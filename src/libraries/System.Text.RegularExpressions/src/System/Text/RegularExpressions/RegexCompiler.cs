@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1316,8 +1317,9 @@ namespace System.Text.RegularExpressions
                             Ret();
                             break;
 
-                        case 2:
-                        case 3:
+                        default:
+                            Debug.Assert(setCharsCount == 2 || setCharsCount == 3, $"Unexpected setCharsCount: {setCharsCount}");
+
                             // int i = this.runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOfAny(setChars[0], setChars[1]{, setChars[2]});
                             Ldthisfld(s_runtextField);
                             Ldloc(_runtextposLocal);
@@ -1351,10 +1353,6 @@ namespace System.Text.RegularExpressions
                             Stfld(s_runtextposField);
                             Ldc(1);
                             Ret();
-                            break;
-
-                        default:
-                            Debug.Fail("Unexpected setCharsCount: " + setCharsCount);
                             break;
                     }
                 }
@@ -1434,8 +1432,8 @@ namespace System.Text.RegularExpressions
 
         private bool TryGenerateNonBacktrackingGo(RegexNode node)
         {
-            Debug.Assert(node.Type == RegexNode.Capture && node.ChildCount() == 1,
-                "Every generated tree should begin with a capture node that has a single child.");
+            Debug.Assert(node.Type == RegexNode.Capture, "Every generated tree should begin with a capture node");
+            Debug.Assert(node.ChildCount() == 1, "Capture nodes should have one child");
 
             // RightToLeft is rare and not worth adding a lot of custom code to handle in this path.
             if ((node.Options & RegexOptions.RightToLeft) != 0)
@@ -1443,8 +1441,11 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
-            // Skip the Capture node.  This path only supports the implicit capture of the whole match,
-            // which we handle implicitly at the end of the generated code in one location.
+            // We use an empty bit from the node's options to store data on whether a node contains captures.
+            Debug.Assert(Regex.MaxOptionShift == 10);
+            const RegexOptions HasCapturesFlag = (RegexOptions)(1 << 31);
+
+            // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
             if (!NodeSupportsNonBacktrackingImplementation(node, level: 0))
             {
@@ -1518,9 +1519,36 @@ namespace System.Text.RegularExpressions
             Ldthisfld(s_runtextposField);
             Callvirt(s_captureMethod);
 
-            // Done:
+            // If the graph contained captures, undo any remaining to handle failed matches.
+            if ((node.Options & HasCapturesFlag) != 0)
+            {
+                // while (Crawlpos() != 0) Uncapture();
+
+                Label finalReturnLabel = DefineLabel();
+                Br(finalReturnLabel);
+
+                MarkLabel(doneLabel);
+                Label condition = DefineLabel();
+                Label body = DefineLabel();
+                Br(condition);
+                MarkLabel(body);
+                Ldthis();
+                Callvirt(s_uncaptureMethod);
+                MarkLabel(condition);
+                Ldthis();
+                Callvirt(s_crawlposMethod);
+                Brtrue(body);
+
+                // Done:
+                MarkLabel(finalReturnLabel);
+            }
+            else
+            {
+                // Done:
+                MarkLabel(doneLabel);
+            }
+
             // return;
-            MarkLabel(doneLabel);
             Ret();
 
             // Generated code successfully with non-backtracking implementation.
@@ -1540,6 +1568,7 @@ namespace System.Text.RegularExpressions
                     level < 20) // arbitrary cut-off to limit stack dives
                 {
                     int childCount = node.ChildCount();
+                    Debug.Assert((node.Options & HasCapturesFlag) == 0);
 
                     switch (node.Type)
                     {
@@ -1631,6 +1660,48 @@ namespace System.Text.RegularExpressions
                                 }
                             }
                             break;
+
+                        case RegexNode.Capture:
+                            // Currently we only support capnums without uncapnums
+                            supported = node.N == -1;
+                            if (supported)
+                            {
+                                // And we only support them in certain places in the tree, e.g. we don't support
+                                // them inside of lookaheads.
+                                RegexNode? parent = node.Next;
+                                while (parent != null)
+                                {
+                                    if (parent.Type != RegexNode.Concatenate &&
+                                        parent.Type != RegexNode.Alternate &&
+                                        parent.Type != RegexNode.Capture &&
+                                        parent.Type != RegexNode.Require) // a positive look* node is already checked to ensure it's lookahead rather than lookbehind
+                                    {
+                                        supported = false;
+                                        break;
+                                    }
+
+                                    parent = parent.Next;
+                                }
+
+                                if (supported)
+                                {
+                                    // And we only support them if their children are supported.
+                                    supported = NodeSupportsNonBacktrackingImplementation(node.Child(0), level + 1);
+
+                                    // If we've found a supported capture, mark all of the nodes in its parent
+                                    // hierarchy as containing a capture.
+                                    if (supported)
+                                    {
+                                        parent = node;
+                                        while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
+                                        {
+                                            parent.Options |= HasCapturesFlag;
+                                            parent = parent.Next;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
                     }
                 }
 #if DEBUG
@@ -1687,6 +1758,7 @@ namespace System.Text.RegularExpressions
                 spanLocals.Push(spanLocal);
             }
 
+            // Emits the sum of a constant and a value from a local.
             void EmitSum(int constant, LocalBuilder? local)
             {
                 if (local == null)
@@ -1728,6 +1800,8 @@ namespace System.Text.RegularExpressions
                 }
             }
 
+            // Adds the value of textSpanPos into the runtextpos local, slices textspan by the corresponding amount,
+            // and zeros out textSpanPos.
             void TransferTextSpanPosToRunTextPos()
             {
                 if (textSpanPos > 0)
@@ -1781,6 +1855,19 @@ namespace System.Text.RegularExpressions
                 Stloc(startingRunTextPos);
                 int startingTextSpanPos = textSpanPos;
 
+                // If the alternation's branches contain captures, save off the relevant
+                // state.  Note that this is only about subexpressions within the alternation,
+                // as the alternation is atomic, so we're not concerned about captures after
+                // the alternation.
+                LocalBuilder? startingCrawlpos = null;
+                if ((node.Options & HasCapturesFlag) != 0)
+                {
+                    startingCrawlpos = RentInt32Local();
+                    Ldthis();
+                    Callvirt(s_crawlposMethod);
+                    Stloc(startingCrawlpos);
+                }
+
                 // Label to jump to when any branch completes successfully.
                 Label doneAlternate = DefineLabel();
 
@@ -1804,26 +1891,115 @@ namespace System.Text.RegularExpressions
                     TransferTextSpanPosToRunTextPos();
                     BrFar(doneAlternate);
 
-                    // Reset state for next branch and loop around to generate it.
+                    // Reset state for next branch and loop around to generate it.  This includes
+                    // setting runtextpos back to what it was at the beginning of the alternation,
+                    // updating textSpan to be the full length it was, and if there's a capture that
+                    // needs to be reset, uncapturing it.
                     MarkLabel(nextBranch);
                     Ldloc(startingRunTextPos);
                     Stloc(runtextposLocal);
                     LoadTextSpanLocal();
                     textSpanPos = startingTextSpanPos;
+                    if (startingCrawlpos != null)
+                    {
+                        EmitUncaptureUntil(startingCrawlpos);
+                    }
                 }
 
-                // If the final branch fails, that's like any other failure, and we jump to done.
-                doneLabel = postAlternateDone;
-                EmitNode(node.Child(childCount - 1));
-                TransferTextSpanPosToRunTextPos();
+                // If the final branch fails, that's like any other failure, and we jump to
+                // done (unless we have captures we need to unwind first, in which case we uncapture
+                // them and then jump to done).
+                if (startingCrawlpos != null)
+                {
+                    Label uncapture = DefineLabel();
+                    doneLabel = uncapture;
+                    EmitNode(node.Child(childCount - 1));
+                    doneLabel = postAlternateDone;
+                    TransferTextSpanPosToRunTextPos();
+                    Br(doneAlternate);
+
+                    MarkLabel(uncapture);
+                    EmitUncaptureUntil(startingCrawlpos);
+                    BrFar(doneLabel);
+                }
+                else
+                {
+                    doneLabel = postAlternateDone;
+                    EmitNode(node.Child(childCount - 1));
+                    TransferTextSpanPosToRunTextPos();
+                }
 
                 // Successfully completed the alternate.
                 MarkLabel(doneAlternate);
                 ReturnInt32Local(startingRunTextPos);
 
+                if (startingCrawlpos != null)
+                {
+                    ReturnInt32Local(startingCrawlpos);
+                }
+
                 Debug.Assert(textSpanPos == 0);
             }
 
+            // Emits the code for a Capture node.
+            void EmitCapture(RegexNode node)
+            {
+                Debug.Assert(node.N == -1);
+
+                // Get the capture number.  This needs to be kept
+                // in sync with MapCapNum in RegexWriter.
+                Debug.Assert(node.Type == RegexNode.Capture);
+                Debug.Assert(node.N == -1, "Currently only support capnum, not uncapnum");
+                int capnum = node.M;
+                if (capnum != -1 && _code!.Caps != null)
+                {
+                    capnum = (int)_code.Caps[capnum]!;
+                }
+
+                // runtextpos += textSpanPos;
+                // textSpan = textSpan.Slice(textSpanPos);
+                // startingRunTextPos = runtextpos;
+                TransferTextSpanPosToRunTextPos();
+                LocalBuilder startingRunTextPos = RentInt32Local();
+                Ldloc(runtextposLocal);
+                Stloc(startingRunTextPos);
+
+                // Emit child node.
+                EmitNode(node.Child(0));
+
+                // runtextpos += textSpanPos;
+                // textSpan = textSpan.Slice(textSpanPos);
+                // Capture(capnum, startingRunTextPos, runtextpos);
+                TransferTextSpanPosToRunTextPos();
+                Ldthis();
+                Ldc(capnum);
+                Ldloc(startingRunTextPos);
+                Ldloc(runtextposLocal);
+                Callvirt(s_captureMethod);
+
+                ReturnInt32Local(startingRunTextPos);
+            }
+
+            // Emits code to unwind the capture stack until the crawl position specified in the provided local.
+            void EmitUncaptureUntil(LocalBuilder startingCrawlpos)
+            {
+                Debug.Assert(startingCrawlpos != null);
+
+                // while (Crawlpos() != startingCrawlpos) Uncapture();
+                Label condition = DefineLabel();
+                Label body = DefineLabel();
+                Br(condition);
+                MarkLabel(body);
+                Ldthis();
+                Callvirt(s_uncaptureMethod);
+                MarkLabel(condition);
+                Ldthis();
+                Callvirt(s_crawlposMethod);
+                Ldloc(startingCrawlpos);
+                Bne(body);
+            }
+
+            // Emits the code to handle a positive lookahead assertion.
             void EmitPositiveLookaheadAssertion(RegexNode node)
             {
                 // Save off runtextpos.  We'll need to reset this upon successful completion of the lookahead.
@@ -1836,6 +2012,7 @@ namespace System.Text.RegularExpressions
                 EmitNode(node.Child(0));
 
                 // After the child completes successfully, reset the text positions.
+                // Do not reset captures, which persist beyond the lookahead.
                 Ldloc(startingRunTextPos);
                 Stloc(runtextposLocal);
                 LoadTextSpanLocal();
@@ -1844,6 +2021,7 @@ namespace System.Text.RegularExpressions
                 ReturnInt32Local(startingRunTextPos);
             }
 
+            // Emits the code to handle a negative lookahead assertion.
             void EmitNegativeLookaheadAssertion(RegexNode node)
             {
                 // Save off runtextpos.  We'll need to reset this upon successful completion of the lookahead.
@@ -1950,6 +2128,10 @@ namespace System.Text.RegularExpressions
                         {
                             EmitNode(node.Child(i));
                         }
+                        break;
+
+                    case RegexNode.Capture:
+                        EmitCapture(node);
                         break;
 
                     case RegexNode.Require:

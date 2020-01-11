@@ -110,7 +110,7 @@ namespace System.Text.RegularExpressions
         public char Ch { get; private set; }
         public int M { get; private set; }
         public int N { get; private set; }
-        public readonly RegexOptions Options;
+        public RegexOptions Options;
         public RegexNode? Next;
 
         public RegexNode(int type, RegexOptions options)
@@ -177,6 +177,7 @@ namespace System.Text.RegularExpressions
         internal RegexNode FinalOptimize()
         {
             RegexNode rootNode = this;
+            Debug.Assert(rootNode.Type == Capture && rootNode.ChildCount() == 1);
 
             // If we find backtracking construct at the end of the regex, we can instead make it non-backtracking,
             // since nothing would ever backtrack into it anyway.  Doing this then makes the construct available
@@ -184,7 +185,8 @@ namespace System.Text.RegularExpressions
             if ((Options & RegexOptions.RightToLeft) == 0 && // only apply optimization when LTR to avoid needing additional code for the rarer RTL case
                 (Options & RegexOptions.Compiled) != 0) // only apply when we're compiling, as that's the only time it would make a meaningful difference
             {
-                RegexNode node = rootNode;
+                // Walk the tree, starting from the sole child of the root implicit capture.
+                RegexNode node = rootNode.Child(0);
                 while (true)
                 {
                     switch (node.Type)
@@ -227,6 +229,13 @@ namespace System.Text.RegularExpressions
 
                     break;
                 }
+            }
+
+            // If the root node under the implicit Capture is an Atomic, the Atomic is useless as there's nothing
+            // to backtrack into it, so we can remove it.
+            if (rootNode.Child(0).Type == Atomic)
+            {
+                rootNode.ReplaceChild(0, rootNode.Child(0).Child(0));
             }
 
             // Done optimizing.  Return the final tree.
@@ -727,12 +736,12 @@ namespace System.Text.RegularExpressions
             {
                 RegexNode node = children[i], subsequent = children[i + 1];
 
-                // Skip down the node past irrelevant capturing groups.  We don't need to
+                // Skip down the node past irrelevant nodes.  We don't need to
                 // skip Groups, as they should have already been reduced away.
-                while (node.Type == Capture)
+                // If there's a concatenation, we can jump to the last element of it.
+                while (node.Type == Capture || node.Type == Concatenate)
                 {
-                    Debug.Assert(node.ChildCount() == 1);
-                    node = node.Child(0);
+                    node = node.Child(node.ChildCount() - 1);
                 }
                 Debug.Assert(node.Type != Group);
 
@@ -958,6 +967,9 @@ namespace System.Text.RegularExpressions
                 Setloopatomic => nameof(Setloopatomic),
                 Nothing => nameof(Nothing),
                 Empty => nameof(Empty),
+                Alternate => nameof(Alternate),
+                Concatenate => nameof(Concatenate),
+                Loop => nameof(Loop),
                 Lazyloop => nameof(Lazyloop),
                 Capture => nameof(Capture),
                 Group => nameof(Group),
@@ -966,7 +978,7 @@ namespace System.Text.RegularExpressions
                 Atomic => nameof(Atomic),
                 Testref => nameof(Testref),
                 Testgroup => nameof(Testgroup),
-                _ => "(unknown)"
+                _ => $"(unknown {Type})"
             };
 
             var argSb = new StringBuilder().Append(typeStr);
@@ -1062,5 +1074,5 @@ namespace System.Text.RegularExpressions
             }
         }
 #endif
-        }
+    }
 }
