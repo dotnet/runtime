@@ -25,7 +25,8 @@ cd src\libraries\System.Text.RegularExpressions
 :: Change to test directory
 cd tests
 
-:: Then inner loop build / test:
+:: Then inner loop build / test
+:: (If using Visual Studio, you might run tests inside it instead)
 pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 ```
 
@@ -67,13 +68,13 @@ These example commands will build a release CoreCLR (and CoreLib) and debug libr
 For Linux:
 ```
 src/coreclr/build.sh -release -skiptests
-./libraries.sh /p:CoreCLRConfiguration=Release
+./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release
 ```
 
 For Windows:
 ```
 src\coreclr\build.cmd -release -skiptests
-libraries.cmd /p:CoreCLRConfiguration=Release
+build.cmd -subsetCategory libraries  /p:CoreCLRConfiguration=Release
 ```
 
 Detailed information about building and testing CoreCLR and the libraries is in the documents linked below.
@@ -110,8 +111,8 @@ By default build only builds the product libraries and none of the tests. If you
 
 - Building for different target frameworks (restore and build are implicit again as no action is passed in)
 ```
-./build.sh -subsetCategory libraries  -framework netcoreapp
-./build.sh -subsetCategory libraries  -framework netfx
+./build.sh -subsetCategory libraries -framework netcoreapp
+./build.sh -subsetCategory libraries -framework netfx
 ```
 
 - Build only managed components and skip the native build
@@ -153,12 +154,12 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 - Build all projects for a given library (e.g.: System.Collections) including running the tests
 
 ```
- ./build.sh -subsetCategory libraries src\libraries\System.Collections
+ ./build.sh -subsetCategory libraries src/libraries/System.Collections
 ```
 
 - Build just the tests for a library project.
 ```
- ./build.sh -subsetCategory libraries src\libraries\System.Collections\tests
+ ./build.sh -subsetCategory libraries src/libraries/System.Collections/tests
 ```
 
 - All the options listed above like framework and configuration are also supported (note they must be after the directory)
@@ -193,7 +194,7 @@ dotnet msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Linux
 dotnet msbuild System.Net.NetworkInformation.csproj /p:ConfigurationGroup=Release
 ```
 
-To build for all supported configurations you can use the `BuildAll` and `RebuildAll` tasks:
+To build for all supported configurations you can use the `BuildAll` and `RebuildAll` targets:
 
 ```
 dotnet msbuild System.Net.NetworkInformation.csproj /t:RebuildAll
