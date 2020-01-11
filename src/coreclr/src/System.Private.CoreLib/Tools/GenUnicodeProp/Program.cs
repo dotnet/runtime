@@ -96,7 +96,7 @@ namespace GenUnicodeProp
             // categoryCasingTable.CalculateTableVariants();
             // numericGraphemeTable.CalculateTableVariants();
 
-            // Now generate the C# source files.
+            // Now generate the C# source file.
 
             using (StreamWriter file = File.CreateText(SOURCE_NAME))
             {
@@ -152,7 +152,14 @@ namespace GenUnicodeProp
                 file.Write("\n        // Contains grapheme cluster segmentation values");
                 PrintValueArray("GraphemeSegmentationValues", numericGraphemeMap, NumericGraphemeInfo.ToGraphemeBytes, file);
 
-                file.Write("\n    }\n}");
+                file.Write("\n    }\n}\n");
+            }
+
+            // Quick fixup: Replace \n with \r\n on Windows.
+
+            if (Environment.NewLine != "\n")
+            {
+                File.WriteAllText(SOURCE_NAME, File.ReadAllText(SOURCE_NAME).Replace("\n", Environment.NewLine));
             }
 
             Console.WriteLine("Completed!");
