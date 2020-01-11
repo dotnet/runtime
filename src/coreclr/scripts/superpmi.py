@@ -442,44 +442,44 @@ class SuperPMICollect:
         the arguments passed into the script.
     """
 
-    def __init__(self, args):
+    def __init__(self, coreclr_args):
         """ Constructor
 
         Args:
-            args (CoreclrArguments): parsed args
+            coreclr_args (CoreclrArguments) : parsed args
 
         """
 
-        if args.host_os == "OSX":
+        if coreclr_args.host_os == "OSX":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.mcs_tool_name = "mcs"
             self.corerun_tool_name = "corerun"
-        elif args.host_os == "Linux":
+        elif coreclr_args.host_os == "Linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
             self.mcs_tool_name = "mcs"
             self.corerun_tool_name = "corerun"
-        elif args.host_os == "Windows_NT":
+        elif coreclr_args.host_os == "Windows_NT":
             self.collection_shim_name = "superpmi-shim-collector.dll"
             self.mcs_tool_name = "mcs.exe"
             self.corerun_tool_name = "corerun.exe"
         else:
             raise RuntimeError("Unsupported OS.")
 
-        self.coreclr_args = args
+        self.jit_path = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
+        self.superpmi_path = os.path.join(coreclr_args.core_root, determine_superpmi_tool_name(coreclr_args))
+        self.mcs_path = os.path.join(coreclr_args.core_root, self.mcs_tool_name)
 
-        self.jit_path = os.path.join(args.core_root, determine_jit_name(coreclr_args))
-        self.superpmi_path = os.path.join(args.core_root, determine_superpmi_tool_name(coreclr_args))
-        self.mcs_path = os.path.join(args.core_root, self.mcs_tool_name)
+        self.core_root = coreclr_args.core_root
 
-        self.core_root = args.core_root
+        self.collection_command = coreclr_args.collection_command
+        self.collection_args = coreclr_args.collection_args
 
-        self.collection_command = args.collection_command
-        self.collection_args = args.collection_args
-
-        if args.pmi:
-            self.pmi_location = determine_pmi_location(args)
-            self.pmi_assemblies = args.pmi_assemblies
+        if coreclr_args.pmi:
+            self.pmi_location = determine_pmi_location(coreclr_args)
+            self.pmi_assemblies = coreclr_args.pmi_assemblies
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
+
+        self.coreclr_args = coreclr_args
 
     ############################################################################
     # Instance Methods
@@ -831,9 +831,9 @@ class SuperPMIReplay:
         """ Constructor
 
         Args:
-            args (CoreclrArguments) : parsed args
-            mch_file (str)          : MCH file to replay
-            jit_path (str)          : path to clrjit/libclrjit.
+            coreclr_args (CoreclrArguments) : parsed args
+            mch_file (str)                  : MCH file to replay
+            jit_path (str)                  : path to clrjit/libclrjit.
 
         """
 
@@ -994,10 +994,10 @@ class SuperPMIReplayAsmDiffs:
         """ Constructor
 
         Args:
-            args (CoreclrArguments) : parsed args
-            mch_file (str)          : final mch file from the collection
-            base_jit_path (str)     : path to clrjit/libclrjit
-            diff_jit_path (str)     : path to clrjit/libclrjit
+            coreclr_args (CoreclrArguments) : parsed args
+            mch_file (str)                  : MCH file to replay
+            base_jit_path (str)             : path to baselin clrjit/libclrjit
+            diff_jit_path (str)             : path to diff clrjit/libclrjit
 
         """
 
@@ -1981,6 +1981,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set use_zapdisable")
 
+        coreclr_args.verify(False,          # Force it to false. TODO: support altjit collections?
+                            "altjit",
+                            lambda unused: True,
+                            "Unable to set altjit.")
+
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
             assert args.pmi is True
@@ -2215,6 +2220,11 @@ def setup_args(args):
                             "jit_location",
                             lambda unused: True,
                             "Unable to set jit_location.")
+
+        coreclr_args.verify(False,          # Force `altjit` to false. TODO: support altjit uploads?
+                            "altjit",
+                            lambda unused: True,
+                            "Unable to set altjit.")
 
     return coreclr_args
 
