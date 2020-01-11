@@ -1538,11 +1538,15 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
 //    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 
-var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType)
+var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType, int* is__m128)
 {
     assert(structHnd != NO_CLASS_HANDLE);
 
     var_types structType = TYP_STRUCT;
+    if (is__m128)
+    {
+        *is__m128 = 0;
+    }
 
 #ifdef FEATURE_SIMD
     if (supportSIMDTypes())
@@ -1557,7 +1561,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
             if (structSizeMightRepresentSIMDType(originalSize))
             {
                 unsigned int sizeBytes;
-                var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+                var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes, is__m128);
                 if (simdBaseType != TYP_UNKNOWN)
                 {
                     assert(sizeBytes == originalSize);
