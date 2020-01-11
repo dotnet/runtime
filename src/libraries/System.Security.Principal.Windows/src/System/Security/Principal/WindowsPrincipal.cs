@@ -135,9 +135,8 @@ namespace System.Security.Principal
 
         public virtual bool IsInRole(int rid)
         {
-            SecurityIdentifier sid = new SecurityIdentifier(IdentifierAuthority.NTAuthority,
-                                                            new int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, rid });
-
+            ReadOnlySpan<int> subAuthorities = stackalloc int[2] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, rid  };
+            SecurityIdentifier sid = new SecurityIdentifier(IdentifierAuthority.NTAuthority, subAuthorities);
             return IsInRole(sid);
         }
 

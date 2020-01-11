@@ -439,8 +439,8 @@ namespace System.Security.Principal
                 {
                     // This approach will not work correctly for domain guests (will return false
                     // instead of true). This is a corner-case that is not very interesting.
-                    _isAuthenticated = CheckNtTokenForSid(new SecurityIdentifier(IdentifierAuthority.NTAuthority,
-                                                                    new int[] { Interop.SecurityIdentifier.SECURITY_AUTHENTICATED_USER_RID })) ? 1 : 0;
+                    ReadOnlySpan<int> subAuthorities = stackalloc int[1] { Interop.SecurityIdentifier.SECURITY_AUTHENTICATED_USER_RID };
+                    _isAuthenticated = CheckNtTokenForSid(new SecurityIdentifier(IdentifierAuthority.NTAuthority, subAuthorities)) ? 1 : 0;
                 }
                 return _isAuthenticated == 1;
             }
@@ -503,8 +503,8 @@ namespace System.Security.Principal
                 if (_safeTokenHandle.IsInvalid)
                     return false;
 
-                return CheckNtTokenForSid(new SecurityIdentifier(IdentifierAuthority.NTAuthority,
-                                                new int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, (int)WindowsBuiltInRole.Guest }));
+                ReadOnlySpan<int> subAuthorities = stackalloc int[2] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, (int)WindowsBuiltInRole.Guest };
+                return CheckNtTokenForSid(new SecurityIdentifier(IdentifierAuthority.NTAuthority, subAuthorities));
             }
         }
 
@@ -515,8 +515,10 @@ namespace System.Security.Principal
                 // special case the anonymous identity.
                 if (_safeTokenHandle.IsInvalid)
                     return false;
-                SecurityIdentifier sid = new SecurityIdentifier(IdentifierAuthority.NTAuthority,
-                                                                new int[] { Interop.SecurityIdentifier.SECURITY_LOCAL_SYSTEM_RID });
+
+                ReadOnlySpan<int> subAuthorities = stackalloc int[1] { Interop.SecurityIdentifier.SECURITY_LOCAL_SYSTEM_RID };
+                SecurityIdentifier sid = new SecurityIdentifier(IdentifierAuthority.NTAuthority, subAuthorities);
+
                 return (this.User == sid);
             }
         }
@@ -528,8 +530,9 @@ namespace System.Security.Principal
                 // special case the anonymous identity.
                 if (_safeTokenHandle.IsInvalid)
                     return true;
-                SecurityIdentifier sid = new SecurityIdentifier(IdentifierAuthority.NTAuthority,
-                                                                new int[] { Interop.SecurityIdentifier.SECURITY_ANONYMOUS_LOGON_RID });
+
+                ReadOnlySpan<int> subAuthorities = stackalloc int[1] { Interop.SecurityIdentifier.SECURITY_ANONYMOUS_LOGON_RID };
+                SecurityIdentifier sid = new SecurityIdentifier(IdentifierAuthority.NTAuthority, subAuthorities);
                 return (this.User == sid);
             }
         }

@@ -265,7 +265,7 @@ namespace System.Security.Principal
         // Maximum number of subauthorities in a SID
         //
 
-        internal const byte MaxSubAuthorities = 15;
+        internal const int MaxSubAuthorities = 15;
 
         //
         // Minimum length of a binary representation of a SID
@@ -310,22 +310,24 @@ namespace System.Security.Principal
         //       the typecast
         //
 
-        private void CreateFromParts(IdentifierAuthority identifierAuthority, int[] subAuthorities)
+        private void CreateFromParts(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
         {
-            if (subAuthorities == null)
+
+            if (subAuthorities.IsEmpty)
             {
                 throw new ArgumentNullException(nameof(subAuthorities));
             }
 
+            int subAuthoritiesLength = subAuthorities.Length;
+
             //
             // Check the number of subauthorities passed in
             //
-
-            if (subAuthorities.Length > MaxSubAuthorities)
+            if (subAuthoritiesLength > MaxSubAuthorities)
             {
                 throw new ArgumentOutOfRangeException(
                     "subAuthorities.Length",
-                    subAuthorities.Length,
+                    subAuthoritiesLength,
                     SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities));
             }
 
@@ -347,8 +349,8 @@ nameof(identifierAuthority),
             //
 
             _identifierAuthority = identifierAuthority;
-            _subAuthorities = new int[subAuthorities.Length];
-            subAuthorities.CopyTo(_subAuthorities, 0);
+            _subAuthorities = new int[subAuthoritiesLength];
+            subAuthorities.CopyTo(new Span<int>(_subAuthorities));
 
             //
             // Compute and store the binary form
@@ -361,21 +363,20 @@ nameof(identifierAuthority),
             // } SID, *PISID;
             //
 
-            byte i;
-            _binaryForm = new byte[1 + 1 + 6 + 4 * this.SubAuthorityCount];
+            _binaryForm = new byte[1 + 1 + 6 + 4 * subAuthoritiesLength];
 
             //
             // First two bytes contain revision and subauthority count
             //
 
             _binaryForm[0] = Revision;
-            _binaryForm[1] = (byte)this.SubAuthorityCount;
+            _binaryForm[1] = (byte)subAuthoritiesLength;
 
             //
             // Identifier authority takes up 6 bytes
             //
 
-            for (i = 0; i < 6; i++)
+            for (int i = 0; i < 6; i++)
             {
                 _binaryForm[2 + i] = (byte)((((ulong)_identifierAuthority) >> ((5 - i) * 8)) & 0xFF);
             }
@@ -384,7 +385,7 @@ nameof(identifierAuthority),
             // Subauthorities go last, preserving big-endian representation
             //
 
-            for (i = 0; i < this.SubAuthorityCount; i++)
+            for (int i = 0; i < subAuthoritiesLength; i++)
             {
                 byte shift;
                 for (shift = 0; shift < 4; shift += 1)
@@ -428,8 +429,8 @@ nameof(binaryForm),
                     SR.ArgumentOutOfRange_ArrayTooSmall);
             }
 
-            IdentifierAuthority Authority;
-            int[] SubAuthorities;
+            IdentifierAuthority authority;
+            Span<int> subAuthorities = stackalloc int[MaxSubAuthorities];
 
             //
             // Extract the elements of a SID
@@ -470,7 +471,7 @@ nameof(binaryForm));
 nameof(binaryForm));
             }
 
-            Authority =
+            authority =
                 (IdentifierAuthority)(
                 (((long)binaryForm[offset + 2]) << 40) +
                 (((long)binaryForm[offset + 3]) << 32) +
@@ -479,7 +480,7 @@ nameof(binaryForm));
                 (((long)binaryForm[offset + 6]) << 8) +
                 (((long)binaryForm[offset + 7])));
 
-            SubAuthorities = new int[binaryForm[offset + 1]];
+            int subAuthoritiesLength = binaryForm[offset + 1];
 
             //
             // Subauthorities are represented in big-endian format
@@ -489,7 +490,7 @@ nameof(binaryForm));
             {
                 unchecked
                 {
-                    SubAuthorities[i] =
+                    subAuthorities[i] =
                         (int)(
                         (((uint)binaryForm[offset + 8 + 4 * i + 0]) << 0) +
                         (((uint)binaryForm[offset + 8 + 4 * i + 1]) << 8) +
@@ -498,7 +499,7 @@ nameof(binaryForm));
                 }
             }
 
-            CreateFromParts(Authority, SubAuthorities);
+            CreateFromParts(authority, subAuthorities.Slice(0, subAuthoritiesLength));
 
             return;
         }
@@ -665,7 +666,7 @@ nameof(binaryForm));
             CreateFromBinaryForm(resultSid, 0);
         }
 
-        internal SecurityIdentifier(IdentifierAuthority identifierAuthority, int[] subAuthorities)
+        internal SecurityIdentifier(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
         {
             CreateFromParts(identifierAuthority, subAuthorities);
         }
