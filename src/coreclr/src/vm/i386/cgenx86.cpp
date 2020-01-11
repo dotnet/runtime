@@ -1663,6 +1663,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
+
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -1692,43 +1694,38 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         for (WORD i = 0; i < pLookup->indirections; i++)
             indirectionsSize += (pLookup->offsets[i] >= 0x80 ? 6 : 3);
 
-        int codeSize = indirectionsSize + (pLookup->testForNull ? 21 : 3) + (pLookup->sizeOffset != 0xFFFF ? 12 : 0);
+        int codeSize = indirectionsSize + (pLookup->testForNull ? 15 : 1) + (pLookup->sizeOffset != 0xFFFF ? 12 : 0);
 
         BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
 
-        if (pLookup->testForNull || pLookup->sizeOffset != 0xFFFF)
-        {
-            // ecx contains the generic context parameter. Save a copy of it in the eax register
-            // mov eax,ecx
-            *(UINT16*)p = 0xc889; p += 2;
-        }
+        BYTE* pJLECall = NULL;
 
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
             if (i == pLookup->indirections - 1 && pLookup->sizeOffset != 0xFFFF)
             {
-                _ASSERTE(pLookup->testForNull);
+                _ASSERTE(pLookup->testForNull && i > 0);
 
-                // cmp dword ptr[ecx + sizeOffset],slotOffset
-                *(UINT16*)p = 0xb981; p += 2;
+                // cmp dword ptr[eax + sizeOffset],slotOffset
+                *(UINT16*)p = 0xb881; p += 2;
                 *(UINT32*)p = (UINT32)pLookup->sizeOffset; p += 4;
                 *(UINT32*)p = (UINT32)slotOffset; p += 4;
 
                 // jle 'HELPER CALL'
-                UINT8 jmpLength = (UINT8)(codeSize - 12 - (p - pStart) - 2);
                 *p++ = 0x7e;
-                *p++ = jmpLength;
+                pJLECall = p++;     // Offset filled later
             }
 
-            // mov ecx,qword ptr [ecx+offset]
+            // Move from ecx if it's the first indirection, otherwise from eax
+            // mov eax,dword ptr [ecx|eax + offset]
             if (pLookup->offsets[i] >= 0x80)
             {
-                *(UINT16*)p = 0x898b; p += 2;
+                *(UINT16*)p = (i == 0 ? 0x818b : 0x808b); p += 2;
                 *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
             }
             else
             {
-                *(UINT16*)p = 0x498b; p += 2;
+                *(UINT16*)p = (i == 0 ? 0x418b : 0x408b); p += 2;
                 *p++ = (BYTE)pLookup->offsets[i];
             }
         }
@@ -1739,9 +1736,6 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(pLookup->sizeOffset == 0xFFFF);
 
             // No fixups needed for R2R
-
-            // mov eax,ecx
-            *(UINT16*)p = 0xc889; p += 2;
             *p++ = 0xC3;    // ret
         }
         else
@@ -1750,21 +1744,20 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
             _ASSERTE(pLookup->indirections != 0);
 
-            // test ecx,ecx
-            *(UINT16*)p = 0xc985; p += 2;
+            // test eax,eax
+            *(UINT16*)p = 0xc085; p += 2;
 
-            // je 'HELPER_CALL' (a jump of 3 bytes)
-            *(UINT16*)p = 0x0374; p += 2;
+            // je 'HELPER_CALL' (a jump of 1 byte)
+            *(UINT16*)p = 0x0174; p += 2;
 
-            // mov eax,ecx
-            *(UINT16*)p = 0xc889; p += 2;
             *p++ = 0xC3;    // ret
 
             // 'HELPER_CALL'
             {
-                // Put the generic context back into rcx (was previously saved in eax)
-                // mov ecx,eax
-                *(UINT16*)p = 0xc189; p += 2;
+                if (pJLECall != NULL)
+                    *pJLECall = (BYTE)(p - pJLECall - 1);
+
+                // ecx already contains the generic context parameter
 
                 // mov edx,pArgs
                 // jmp helperAddress

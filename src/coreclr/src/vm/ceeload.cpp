@@ -13244,7 +13244,7 @@ void Module::RecordSharedGenericTypeDependency(MethodTable* pMT, MethodTable* pD
 #endif
 
     GCX_COOP();
-    m_sharedGenericTypeDependencies.Add(pMT, pDependencyMT, GetLoaderAllocator());
+    m_sharedGenericTypeDependencies.Add(pMT, pDependencyMT, pDependencyMT->GetLoaderAllocator());
 }
 
 void Module::UpdateDictionaryOnSharedGenericTypeDependencies(MethodTable* pMT, Dictionary* pDictionary, ULONG dictionaryIndex)

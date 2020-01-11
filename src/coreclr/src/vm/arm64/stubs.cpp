@@ -2109,6 +2109,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
+
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -2183,7 +2185,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         {
             if (i == pLookup->indirections - 1 && pLookup->sizeOffset != 0xFFFF)
             {
-                _ASSERTE(pLookup->testForNull);
+                _ASSERTE(pLookup->testForNull && i > 0);
 
                 if (pLookup->sizeOffset > 32760)
                 {
