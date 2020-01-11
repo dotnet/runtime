@@ -312,7 +312,6 @@ namespace System.Security.Principal
 
         private void CreateFromParts(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
         {
-
             if (subAuthorities.IsEmpty)
             {
                 throw new ArgumentNullException(nameof(subAuthorities));
@@ -338,10 +337,7 @@ namespace System.Security.Principal
             if (identifierAuthority < 0 ||
                 (long)identifierAuthority > MaxIdentifierAuthority)
             {
-                throw new ArgumentOutOfRangeException(
-nameof(identifierAuthority),
-                    identifierAuthority,
-                    SR.IdentityReference_IdentifierAuthorityTooLarge);
+                throw new ArgumentOutOfRangeException(nameof(identifierAuthority), identifierAuthority, SR.IdentityReference_IdentifierAuthorityTooLarge);
             }
 
             //
@@ -412,10 +408,7 @@ nameof(identifierAuthority),
 
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException(
-nameof(offset),
-                    offset,
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             //
@@ -424,9 +417,7 @@ nameof(offset),
 
             if (binaryForm.Length - offset < SecurityIdentifier.MinBinaryLength)
             {
-                throw new ArgumentOutOfRangeException(
-nameof(binaryForm),
-                    SR.ArgumentOutOfRange_ArrayTooSmall);
+                throw new ArgumentOutOfRangeException(nameof(binaryForm), SR.ArgumentOutOfRange_ArrayTooSmall);
             }
 
             IdentifierAuthority authority;
@@ -442,9 +433,7 @@ nameof(binaryForm),
                 // Revision is incorrect
                 //
 
-                throw new ArgumentException(
-                    SR.IdentityReference_InvalidSidRevision,
-nameof(binaryForm));
+                throw new ArgumentException(SR.IdentityReference_InvalidSidRevision, nameof(binaryForm));
             }
 
             //
@@ -453,9 +442,7 @@ nameof(binaryForm));
 
             if (binaryForm[offset + 1] > MaxSubAuthorities)
             {
-                throw new ArgumentException(
-                    SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities),
-nameof(binaryForm));
+                throw new ArgumentException(SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities), nameof(binaryForm));
             }
 
             //
@@ -466,9 +453,7 @@ nameof(binaryForm));
 
             if (binaryForm.Length - offset < Length)
             {
-                throw new ArgumentException(
-                    SR.ArgumentOutOfRange_ArrayTooSmall,
-nameof(binaryForm));
+                throw new ArgumentException(SR.ArgumentOutOfRange_ArrayTooSmall, nameof(binaryForm));
             }
 
             authority =
@@ -486,7 +471,7 @@ nameof(binaryForm));
             // Subauthorities are represented in big-endian format
             //
 
-            for (byte i = 0; i < binaryForm[offset + 1]; i++)
+            for (int i = 0; i < binaryForm[offset + 1]; i++)
             {
                 unchecked
                 {
@@ -514,8 +499,6 @@ nameof(binaryForm));
 
         public SecurityIdentifier(string sddlForm)
         {
-            byte[] resultSid;
-
             //
             // Give us something to work with
             //
@@ -529,20 +512,20 @@ nameof(binaryForm));
             // Call into the underlying O/S conversion routine
             //
 
-            int Error = Win32.CreateSidFromString(sddlForm, out resultSid);
+            int error = Win32.CreateSidFromString(sddlForm, out byte[] resultSid);
 
-            if (Error == Interop.Errors.ERROR_INVALID_SID)
+            if (error == Interop.Errors.ERROR_INVALID_SID)
             {
                 throw new ArgumentException(SR.Argument_InvalidValue, nameof(sddlForm));
             }
-            else if (Error == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
+            else if (error == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
             {
                 throw new OutOfMemoryException();
             }
-            else if (Error != Interop.Errors.ERROR_SUCCESS)
+            else if (error != Interop.Errors.ERROR_SUCCESS)
             {
-                Debug.Fail($"Win32.CreateSidFromString returned unrecognized error {Error}");
-                throw new Win32Exception(Error);
+                Debug.Fail($"Win32.CreateSidFromString returned unrecognized error {error}");
+                throw new Win32Exception(error);
             }
 
             CreateFromBinaryForm(resultSid, 0);
@@ -562,12 +545,6 @@ nameof(binaryForm));
         //
 
         public SecurityIdentifier(IntPtr binaryForm)
-            : this(binaryForm, true)
-        {
-        }
-
-
-        internal SecurityIdentifier(IntPtr binaryForm, bool noDemand)
             : this(Win32.ConvertIntPtrSidToByteArraySid(binaryForm), 0)
         {
         }
@@ -592,9 +569,6 @@ nameof(binaryForm));
                 throw new ArgumentException(SR.IdentityReference_CannotCreateLogonIdsSid, nameof(sidType));
             }
 
-            byte[] resultSid;
-            int Error;
-
             //
             // sidType should not exceed the max defined value
             //
@@ -607,7 +581,7 @@ nameof(binaryForm));
             //
             // for sidType between 38 to 50, the domainSid parameter must be specified
             //
-
+            int error;
             if ((sidType >= WellKnownSidType.AccountAdministratorSid) && (sidType <= WellKnownSidType.AccountRasAndIasServersSid))
             {
                 if (domainSid == null)
@@ -619,25 +593,21 @@ nameof(binaryForm));
                 // verify that the domain sid is a valid windows domain sid
                 // to do that we call GetAccountDomainSid and the return value should be the same as the domainSid
                 //
+                error = Win32.GetWindowsAccountDomainSid(domainSid, out SecurityIdentifier resultDomainSid);
 
-                SecurityIdentifier resultDomainSid;
-                int ErrorCode;
-
-                ErrorCode = Win32.GetWindowsAccountDomainSid(domainSid, out resultDomainSid);
-
-                if (ErrorCode == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                if (error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                 {
                     throw new OutOfMemoryException();
                 }
-                else if (ErrorCode == Interop.Errors.ERROR_NON_ACCOUNT_SID)
+                else if (error == Interop.Errors.ERROR_NON_ACCOUNT_SID)
                 {
                     // this means that the domain sid is not valid
                     throw new ArgumentException(SR.IdentityReference_NotAWindowsDomain, nameof(domainSid));
                 }
-                else if (ErrorCode != Interop.Errors.ERROR_SUCCESS)
+                else if (error != Interop.Errors.ERROR_SUCCESS)
                 {
-                    Debug.Fail($"Win32.GetWindowsAccountDomainSid returned unrecognized error {ErrorCode}");
-                    throw new Win32Exception(ErrorCode);
+                    Debug.Fail($"Win32.GetWindowsAccountDomainSid returned unrecognized error {error}");
+                    throw new Win32Exception(error);
                 }
 
                 //
@@ -651,16 +621,16 @@ nameof(binaryForm));
             }
 
 
-            Error = Win32.CreateWellKnownSid(sidType, domainSid, out resultSid);
+            error = Win32.CreateWellKnownSid(sidType, domainSid, out byte[] resultSid);
 
-            if (Error == Interop.Errors.ERROR_INVALID_PARAMETER)
+            if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
             {
-                throw new ArgumentException(new Win32Exception(Error).Message, "sidType/domainSid");
+                throw new ArgumentException(new Win32Exception(error).Message, "sidType/domainSid");
             }
-            else if (Error != Interop.Errors.ERROR_SUCCESS)
+            else if (error != Interop.Errors.ERROR_SUCCESS)
             {
-                Debug.Fail($"Win32.CreateWellKnownSid returned unrecognized error {Error}");
-                throw new Win32Exception(Error);
+                Debug.Fail($"Win32.CreateWellKnownSid returned unrecognized error {error}");
+                throw new Win32Exception(error);
             }
 
             CreateFromBinaryForm(resultSid, 0);
@@ -679,13 +649,7 @@ nameof(binaryForm));
         // Revision is always '1'
         //
 
-        internal static byte Revision
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        internal static byte Revision => 1;
 
         #endregion
 
@@ -697,37 +661,13 @@ nameof(binaryForm));
         // prevent the caller from messing with the internal representation.
         //
 
-        internal byte[] BinaryForm
-        {
-            get
-            {
-                return _binaryForm;
-            }
-        }
+        internal byte[] BinaryForm => _binaryForm;
 
-        internal IdentifierAuthority IdentifierAuthority
-        {
-            get
-            {
-                return _identifierAuthority;
-            }
-        }
+        internal IdentifierAuthority IdentifierAuthority => _identifierAuthority;
 
-        internal int SubAuthorityCount
-        {
-            get
-            {
-                return _subAuthorities.Length;
-            }
-        }
+        internal int SubAuthorityCount => _subAuthorities.Length;
 
-        public int BinaryLength
-        {
-            get
-            {
-                return _binaryForm.Length;
-            }
-        }
+        public int BinaryLength => _binaryForm.Length;
 
         //
         // Returns the domain portion of a SID or null if the specified
@@ -766,10 +706,10 @@ nameof(binaryForm));
 
         public override int GetHashCode()
         {
-            int hashCode = ((long)this.IdentifierAuthority).GetHashCode();
+            int hashCode = ((long)IdentifierAuthority).GetHashCode();
             for (int i = 0; i < SubAuthorityCount; i++)
             {
-                hashCode ^= this.GetSubAuthority(i);
+                hashCode ^= GetSubAuthority(i);
             }
             return hashCode;
         }
@@ -802,9 +742,8 @@ nameof(binaryForm));
                 result[1] = '-';
                 result[2] = '1';
                 result[3] = '-';
-                int written;
                 int length = 4;
-                ((ulong)_identifierAuthority).TryFormat(result.Slice(length), out written);
+                ((ulong)_identifierAuthority).TryFormat(result.Slice(length), out int written);
                 length += written;
                 int[] values = _subAuthorities;
                 for (int index = 0; index < values.Length; index++)
@@ -853,25 +792,22 @@ nameof(binaryForm));
 
         internal SecurityIdentifier GetAccountDomainSid()
         {
-            SecurityIdentifier ResultSid;
-            int Error;
+            int error = Win32.GetWindowsAccountDomainSid(this, out SecurityIdentifier resultSid);
 
-            Error = Win32.GetWindowsAccountDomainSid(this, out ResultSid);
-
-            if (Error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+            if (error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
             {
                 throw new OutOfMemoryException();
             }
-            else if (Error == Interop.Errors.ERROR_NON_ACCOUNT_SID)
+            else if (error == Interop.Errors.ERROR_NON_ACCOUNT_SID)
             {
-                ResultSid = null;
+                resultSid = null;
             }
-            else if (Error != Interop.Errors.ERROR_SUCCESS)
+            else if (error != Interop.Errors.ERROR_SUCCESS)
             {
-                Debug.Fail($"Win32.GetWindowsAccountDomainSid returned unrecognized error {Error}");
-                throw new Win32Exception(Error);
+                Debug.Fail($"Win32.GetWindowsAccountDomainSid returned unrecognized error {error}");
+                throw new Win32Exception(error);
             }
-            return ResultSid;
+            return resultSid;
         }
 
 
@@ -1190,17 +1126,13 @@ nameof(binaryForm));
 
         internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceSids, Type targetType, bool forceSuccess)
         {
-            bool SomeFailed = false;
-            IdentityReferenceCollection Result;
+            IdentityReferenceCollection result = Translate(sourceSids, targetType, out bool someFailed);
 
-
-            Result = Translate(sourceSids, targetType, out SomeFailed);
-
-            if (forceSuccess && SomeFailed)
+            if (forceSuccess && someFailed)
             {
                 IdentityReferenceCollection UnmappedIdentities = new IdentityReferenceCollection();
 
-                foreach (IdentityReference id in Result)
+                foreach (IdentityReference id in result)
                 {
                     if (id.GetType() != targetType)
                     {
@@ -1211,7 +1143,7 @@ nameof(binaryForm));
                 throw new IdentityNotMappedException(SR.IdentityReference_IdentityNotMapped, UnmappedIdentities);
             }
 
-            return Result;
+            return result;
         }
 
 

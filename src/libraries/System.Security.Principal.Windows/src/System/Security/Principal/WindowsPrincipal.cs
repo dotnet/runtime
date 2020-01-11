@@ -35,10 +35,7 @@ namespace System.Security.Principal
         public WindowsPrincipal(WindowsIdentity ntIdentity)
             : base(ntIdentity)
         {
-            if (ntIdentity == null)
-                throw new ArgumentNullException(nameof(ntIdentity));
-
-            _identity = ntIdentity;
+            _identity = ntIdentity ?? throw new ArgumentNullException(nameof(ntIdentity));
         }
 
         //
@@ -91,8 +88,7 @@ namespace System.Security.Principal
             {
                 foreach (ClaimsIdentity identity in Identities)
                 {
-                    WindowsIdentity wi = identity as WindowsIdentity;
-                    if (wi != null)
+                    if (identity is WindowsIdentity wi)
                     {
                         foreach (Claim claim in wi.UserClaims)
                         {
@@ -113,8 +109,7 @@ namespace System.Security.Principal
             {
                 foreach (ClaimsIdentity identity in Identities)
                 {
-                    WindowsIdentity wi = identity as WindowsIdentity;
-                    if (wi != null)
+                    if (identity is WindowsIdentity wi)
                     {
                         foreach (Claim claim in wi.DeviceClaims)
                         {
