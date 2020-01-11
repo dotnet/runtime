@@ -1740,7 +1740,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
         {
             get
             {
-                return false;
+                return Thread.CurrentThread.GetApartmentState() == ApartmentState.STA;
             }
         }
 
