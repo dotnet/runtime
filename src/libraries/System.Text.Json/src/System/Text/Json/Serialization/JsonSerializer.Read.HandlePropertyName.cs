@@ -213,6 +213,8 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty();
                 }
 
+                // TODO: Hook up JsonPropertyInfoAsString here instead.
+                // in case read of string value for this property fails.
                 JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
                 info.JsonPropertyName = propertyName.ToArray();
                 state.Current.JsonPropertyInfo = info;
@@ -224,6 +226,9 @@ namespace System.Text.Json
             {
                 // Preserved JSON arrays are wrapped into JsonPreservedReference<T> where T is the original type of the enumerable
                 // and Values is the actual enumerable instance being preserved.
+
+                // TODO: Hook up JsonPropertyInfoAsString
+                // to print $values on the JSON Path in case of failure deeper on the object graph.
                 JsonPropertyInfo info = state.Current.JsonClassInfo!.PropertyCache!["Values"];
                 info.JsonPropertyName = propertyName.ToArray();
                 state.Current.JsonPropertyInfo = info;
@@ -245,6 +250,9 @@ namespace System.Text.Json
                 {
                     ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
                 }
+
+                // TODO: Hook up JsonPropertyInfoAsString here instead.
+                // in case read of string value for this property fails.
 
                 JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
                 info.JsonPropertyName = propertyName.ToArray();

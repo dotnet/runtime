@@ -26,12 +26,10 @@ namespace System.Text.Json
 
         public void AddReference(string key, object value)
         {
-            if (_keyObjectMap!.ContainsKey(key))
+            if (!JsonHelpers.TryAdd(_keyObjectMap!, key, value))
             {
                 ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(key);
             }
-
-            _keyObjectMap[key] = value;
         }
 
         public string GetOrAddReference(object value, out bool alreadyExists)

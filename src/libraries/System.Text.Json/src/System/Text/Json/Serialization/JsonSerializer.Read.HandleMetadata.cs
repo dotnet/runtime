@@ -18,7 +18,7 @@ namespace System.Text.Json
 
             if (metadata == MetadataPropertyName.Id)
             {
-                state.ReferenceResolver.AddReference(key!, GetValueToPreserve(ref state));
+                state.ReferenceResolver.AddReference(key, GetValueToPreserve(ref state));
             }
             else if (metadata == MetadataPropertyName.Ref)
             {
@@ -80,6 +80,7 @@ namespace System.Text.Json
                 }
                 else
                 {
+                    // TODO: Hook up JsonPropertyInfoAsString here instead.
                     JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
                     info.JsonPropertyName = propertyName.ToArray();
                     state.Current.JsonPropertyInfo = info;
