@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -399,8 +400,8 @@ internal static partial class Interop
                 case 1:
                     return true;
                 default:
-                    if (System.Net.NetEventSource.IsEnabled)
-                        System.Net.NetEventSource.Error(null, $"AppleCryptoNative_SslIsHostnameMatch returned '{result}' for '{hostName}'");
+                    if (NetEventSource.IsEnabled)
+                        NetEventSource.Error(null, $"AppleCryptoNative_SslIsHostnameMatch returned '{result}' for '{hostName}'");
                     Debug.Fail($"AppleCryptoNative_SslIsHostnameMatch returned {result}");
                     throw new SslException();
             }
