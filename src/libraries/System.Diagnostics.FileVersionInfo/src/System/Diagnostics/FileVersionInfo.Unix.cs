@@ -205,22 +205,18 @@ namespace System.Diagnostics
             if (versionString != null)
             {
                 string[] parts = versionString.Split(s_versionSeparators);
-                if (parts.Length <= 4)
+                if (parts.Length <= 4 && parts.Length > 0)
                 {
-                    bool endedEarly;
-                    if (parts.Length > 0)
+                    major = ParseUInt16UntilNonDigit(parts[0], out bool endedEarly);
+                    if (!endedEarly && parts.Length > 1)
                     {
-                        major = ParseUInt16UntilNonDigit(parts[0], out endedEarly);
-                        if (!endedEarly && parts.Length > 1)
+                        minor = ParseUInt16UntilNonDigit(parts[1], out endedEarly);
+                        if (!endedEarly && parts.Length > 2)
                         {
-                            minor = ParseUInt16UntilNonDigit(parts[1], out endedEarly);
-                            if (!endedEarly && parts.Length > 2)
+                            build = ParseUInt16UntilNonDigit(parts[2], out endedEarly);
+                            if (!endedEarly && parts.Length > 3)
                             {
-                                build = ParseUInt16UntilNonDigit(parts[2], out endedEarly);
-                                if (!endedEarly && parts.Length > 3)
-                                {
-                                    priv = ParseUInt16UntilNonDigit(parts[3], out endedEarly);
-                                }
+                                priv = ParseUInt16UntilNonDigit(parts[3], out _);
                             }
                         }
                     }
