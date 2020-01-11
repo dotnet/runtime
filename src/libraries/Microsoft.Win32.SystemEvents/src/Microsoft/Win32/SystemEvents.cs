@@ -722,11 +722,11 @@ namespace Microsoft.Win32
             Debug.Assert(s_threadCallbackList != null, "Invoking marshaled callbacks before there are any");
 
             Delegate? current = null;
-            lock (s_threadCallbackList)
+            lock (s_threadCallbackList!)
             {
                 if (s_threadCallbackList.Count > 0)
                 {
-                    current = (Delegate)s_threadCallbackList.Dequeue();
+                    current = s_threadCallbackList.Dequeue();
                 }
             }
 
@@ -737,8 +737,7 @@ namespace Microsoft.Win32
                 {
                     // Optimize a common case of using EventHandler. This allows us to invoke
                     // early bound, which is a bit more efficient.
-                    EventHandler? c = current as EventHandler;
-                    if (c != null)
+                    if (current is EventHandler c)
                     {
                         c(null, EventArgs.Empty);
                     }
@@ -751,16 +750,12 @@ namespace Microsoft.Win32
                 {
                     Debug.Fail("SystemEvents marshaled callback failed:" + t);
                 }
+
                 lock (s_threadCallbackList)
                 {
-                    if (s_threadCallbackList.Count > 0)
-                    {
-                        current = (Delegate)s_threadCallbackList.Dequeue();
-                    }
-                    else
-                    {
-                        current = null;
-                    }
+                    current = s_threadCallbackList.Count > 0 ?
+                        s_threadCallbackList.Dequeue() :
+                        null;
                 }
             }
         }
@@ -798,7 +793,7 @@ namespace Microsoft.Win32
                 s_threadCallbackList.Enqueue(method);
             }
 
-            Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
+            Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle), s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
         }
 
         /// <summary>
@@ -1007,6 +1002,8 @@ namespace Microsoft.Win32
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void RaiseEvent(bool checkFinalization, object key, params object[] args)
         {
+            Debug.Assert(args != null && args.Length == 2);
+
             // If the AppDomain's unloading, we shouldn't fire SystemEvents other than Shutdown.
             if (checkFinalization && AppDomain.CurrentDomain.IsFinalizingForUnload())
             {
@@ -1037,7 +1034,7 @@ namespace Microsoft.Win32
                     try
                     {
                         SystemEventInvokeInfo info = invokeItemArray[i]!;
-                        info.Invoke(checkFinalization, args);
+                        info.Invoke(checkFinalization, args!);
                         invokeItemArray[i] = null; // clear it if it's valid
                     }
                     catch (Exception)
