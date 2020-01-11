@@ -108,7 +108,7 @@ namespace Internal.Cryptography
         // doesn't roundtrip (new Oid(new Oid(value).FriendlyName).Value) are contained in s_compatOids.
         //
         // X-Plat: The names (and casing) in this table come from Windows. Part of the intent of this table
-        // is to prevent issues wherein an identifier is different between CoreFX\Windows and CoreFX\Unix;
+        // is to prevent issues wherein an identifier is different between Windows and Unix;
         // since any existing code would be using the Windows identifier, it is the de facto standard.
         private static readonly Dictionary<string, string> s_friendlyNameToOid =
             new Dictionary<string, string>(FriendlyNameToOidCount, StringComparer.OrdinalIgnoreCase)

@@ -84,6 +84,13 @@ namespace System.Net.Http
         /// <summary>SocketAsyncEventArgs that carries with it additional state for a Task builder and a CancellationToken.</summary>
         private sealed class ConnectEventArgs : SocketAsyncEventArgs
         {
+            internal ConnectEventArgs() :
+                // The OnCompleted callback serves just to complete a task that's awaited in ConnectAsync,
+                // so we don't need to also flow ExecutionContext again into the OnCompleted callback.
+                base(unsafeSuppressExecutionContextFlow: true)
+            {
+            }
+
             public AsyncTaskMethodBuilder Builder { get; private set; }
             public CancellationToken CancellationToken { get; private set; }
 

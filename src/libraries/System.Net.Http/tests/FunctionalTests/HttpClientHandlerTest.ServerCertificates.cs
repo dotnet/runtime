@@ -78,12 +78,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task UseCallback_HaveCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_Success()
         {
-            if (IsWinHttpHandler && PlatformDetection.IsWindows7)
-            {
-                // Issue #27612
-                return;
-            }
-
             var options = new LoopbackProxyServer.Options
                 { AuthenticationSchemes = AuthenticationSchemes.Basic,
                   ConnectionCloseAfter407 = true
@@ -274,18 +268,10 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
-            try
+            using (HttpClient client = CreateHttpClient())
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
             {
-                using (HttpClient client = CreateHttpClient())
-                using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
-                {
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                }
-            }
-            catch (HttpRequestException)
-            {
-                if (UseSocketsHttpHandler)
-                    throw;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
 
@@ -308,9 +294,9 @@ namespace System.Net.Http.Functional.Tests
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer , SslPolicyErrors.RemoteCertificateNameMismatch},
         };
 
-        private async Task UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(string url, string useSocketsHttpHandlerString, string useHttp2String, SslPolicyErrors expectedErrors)
+        private async Task UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(string url, string useHttp2String, SslPolicyErrors expectedErrors)
         {
-            HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
+            HttpClientHandler handler = CreateHttpClientHandler(useHttp2String);
             using (HttpClient client = CreateHttpClient(handler, useHttp2String))
             {
                 bool callbackCalled = false;
@@ -348,7 +334,7 @@ namespace System.Net.Http.Functional.Tests
 
             try
             {
-                await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, UseSocketsHttpHandler.ToString(), UseHttp2.ToString(), expectedErrors);
+                await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, UseHttp2.ToString(), expectedErrors);
             }
             catch (HttpRequestException e) when (e.InnerException?.GetType().Name == "WinHttpException" &&
                 e.InnerException.HResult == SEC_E_BUFFER_TOO_SMALL &&
@@ -405,7 +391,6 @@ namespace System.Net.Http.Functional.Tests
         {
             // We set SSL_CERT_DIR and SSL_CERT_FILE to empty locations.
             // The HttpClient should fail to validate the server certificate.
-
             var psi = new ProcessStartInfo();
             string sslCertDir = GetTestFilePath();
             Directory.CreateDirectory(sslCertDir);
@@ -415,15 +400,15 @@ namespace System.Net.Http.Functional.Tests
             File.WriteAllText(sslCertFile, "");
             psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
 
-            RemoteExecutor.Invoke(async (useSocketsHttpHandlerString, useHttp2String) =>
+            RemoteExecutor.Invoke(async (useHttp2String) =>
             {
                 const string Url = "https://www.microsoft.com";
 
-                using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString, useHttp2String))
+                using (HttpClient client = CreateHttpClient(useHttp2String))
                 {
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
                 }
-            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, UseHttp2.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

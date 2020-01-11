@@ -68,12 +68,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(9)]
         public async Task GetAsync_RequestVersion0X_ThrowsOr11(int minorVersion)
         {
-            Type exceptionType = null;
-            if (UseSocketsHttpHandler)
-            {
-                exceptionType = typeof(NotSupportedException);
-            }
-
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -83,17 +77,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
-
-                    if (exceptionType == null)
-                    {
-                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-                        var requestLines = await serverTask;
-                        Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
-                    }
-                    else
-                    {
-                        await Assert.ThrowsAsync(exceptionType, (() => TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask)));
-                    }
+                    await Assert.ThrowsAsync<NotSupportedException>(() => TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk});
         }
@@ -167,8 +151,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(7)]
         public async Task GetAsync_ResponseUnknownVersion1X_Success(int responseMinorVersion)
         {
-            bool reportAs00 = !UseSocketsHttpHandler;
-
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -185,16 +167,8 @@ namespace System.Net.Http.Functional.Tests
 
                     using (HttpResponseMessage response = await getResponseTask)
                     {
-                        if (reportAs00)
-                        {
-                            Assert.Equal(0, response.Version.Major);
-                            Assert.Equal(0, response.Version.Minor);
-                        }
-                        else
-                        {
-                            Assert.Equal(1, response.Version.Major);
-                            Assert.Equal(responseMinorVersion, response.Version.Minor);
-                        }
+                        Assert.Equal(1, response.Version.Major);
+                        Assert.Equal(responseMinorVersion, response.Version.Minor);
                     }
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
@@ -277,30 +251,16 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1 600 still valid", 600, "still valid")]
         public async Task GetAsync_ExpectedStatusCodeAndReason_Success(string statusLine, int expectedStatusCode, string expectedReason)
         {
-            if (IsWinHttpHandler)
-            {
-                return; // [ActiveIssue(25880)]
-            }
-
             await GetAsyncSuccessHelper(statusLine, expectedStatusCode, expectedReason);
         }
 
         [Theory]
-        [InlineData("HTTP/1.1 200      ", 200, "     ", "")]
-        [InlineData("HTTP/1.1 200      Something", 200, "     Something", "Something")]
-        public async Task GetAsync_ExpectedStatusCodeAndReason_PlatformBehaviorTest(string statusLine,
-            int expectedStatusCode, string reasonWithSpace, string reasonNoSpace)
+        [InlineData("HTTP/1.1 200      ", 200, "     ")]
+        [InlineData("HTTP/1.1 200      Something", 200, "     Something")]
+        public async Task GetAsync_ExpectedStatusCodeAndReason_PlatformBehaviorTest(string statusLine, int expectedStatusCode, string reasonWithSpace)
         {
-            if (UseSocketsHttpHandler)
-            {
-                // SocketsHttpHandler and .NET Framework will keep the space characters.
-                await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonWithSpace);
-            }
-            else
-            {
-                // WinHttpHandler will trim space characters.
-                await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonNoSpace);
-            }
+            // SocketsHttpHandler and .NET Framework will keep the space characters.
+            await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonWithSpace);
         }
 
         [Theory]
@@ -391,12 +351,8 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1 200\t")]
         public async Task GetAsync_InvalidStatusLine_ThrowsExceptionOnSocketsHttpHandler(string responseString)
         {
-            if (UseSocketsHttpHandler)
-            {
-                // SocketsHttpHandler and .NET Framework will throw HttpRequestException.
-                await GetAsyncThrowsExceptionHelper(responseString);
-            }
-            // WinHttpHandler will succeed.
+            // SocketsHttpHandler and .NET Framework will throw HttpRequestException.
+            await GetAsyncThrowsExceptionHelper(responseString);
         }
 
         private async Task GetAsyncThrowsExceptionHelper(string responseString)
@@ -451,18 +407,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly_MemberData))]
         public async Task GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly(int maxChunkSize, string lineEnding, bool useCopyToAsync)
         {
-            if (IsWinHttpHandler)
-            {
-                // [ActiveIssue(28423)]
-                return;
-            }
-
-            if (!UseSocketsHttpHandler && lineEnding != "\r\n")
-            {
-                // Some handlers don't deal well with "\n" alone as the line ending
-                return;
-            }
-
             var rand = new Random(42);
             byte[] expectedData = new byte[100_000];
             rand.NextBytes(expectedData);

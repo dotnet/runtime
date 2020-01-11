@@ -10,7 +10,6 @@
 
 #include "common.h"
 #include "pefile.h"
-#include "strongname.h"
 #include "eecontract.h"
 #include "apithreadstress.h"
 #include "eeconfig.h"
@@ -1924,14 +1923,6 @@ PEAssembly::PEAssembly(
     GetCodeBaseOrName(m_debugName);
     m_debugName.Normalize();
     m_pDebugName = m_debugName;
-
-    AssemblySpec spec;
-    spec.InitializeSpec(this);
-
-    spec.GetFileOrDisplayName(ASM_DISPLAYF_VERSION |
-                              ASM_DISPLAYF_CULTURE |
-                              ASM_DISPLAYF_PUBLIC_KEY_TOKEN,
-                              m_sTextualIdentity);
 #endif
 }
 

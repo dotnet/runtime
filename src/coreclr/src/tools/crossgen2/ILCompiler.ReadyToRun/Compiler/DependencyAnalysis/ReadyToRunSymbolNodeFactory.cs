@@ -102,14 +102,14 @@ namespace ILCompiler.DependencyAnalysis
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
                     ctorKey.Method,
                     isUnboxingStub: false,
-                    isInstantiatingStub: false,
+                    isInstantiatingStub: ctorKey.Method.Method.HasInstantiation,
                     isPrecodeImportRequired: false,
                     signatureContext: signatureContext);
 
                 return new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ReadyToRunHelper.DelayLoad_Helper,
+                    ReadyToRunHelper.DelayLoad_Helper_ObjObj,
                     new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Token, signatureContext));
             });
 
@@ -327,7 +327,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ReadyToRunHelper.DelayLoad_Helper,
+                ReadyToRunHelper.DelayLoad_Helper_Obj,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.IsInstanceOf, type, signatureContext));
         }
 

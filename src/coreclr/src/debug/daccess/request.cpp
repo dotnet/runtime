@@ -129,15 +129,8 @@ BOOL DacValidateMethodTable(MethodTable *pMT, BOOL &bIsFree)
     EX_TRY
     {
         bIsFree = FALSE;
-        EEClass *pEEClass = pMT->GetClass();
-        if (pEEClass==NULL)
+        if (HOST_CDADDR(pMT) == HOST_CDADDR(g_pFreeObjectMethodTable))
         {
-            // Okay to have a NULL EEClass if this is a free methodtable
-            CLRDATA_ADDRESS MethTableAddr = HOST_CDADDR(pMT);
-            CLRDATA_ADDRESS FreeObjMethTableAddr = HOST_CDADDR(g_pFreeObjectMethodTable);
-            if (MethTableAddr != FreeObjMethTableAddr)
-                goto BadMethodTable;
-
             bIsFree = TRUE;
         }
         else
@@ -2207,8 +2200,8 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
                 TypeHandle thElem = mt->GetArrayElementTypeHandle();
 
                 TypeHandle thCur  = thElem;
-                while (thCur.IsTypeDesc())
-                    thCur = thCur.AsArray()->GetArrayElementTypeHandle();
+                while (thCur.IsArray())
+                    thCur = thCur.GetArrayElementTypeHandle();
 
                 TADDR mtCurTADDR = thCur.AsTAddr();
                 if (!DacValidateMethodTable(PTR_MethodTable(mtCurTADDR), bFree))
@@ -3126,9 +3119,9 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
 
     SOSDacEnter();
 
-    PTR_ArrayTypeDesc objArray = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
-    if (objArray)
-        globalsData->ArrayMethodTable = HOST_CDADDR(objArray->GetMethodTable());
+    TypeHandle objArray = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
+    if (objArray != NULL)
+        globalsData->ArrayMethodTable = HOST_CDADDR(objArray.AsMethodTable());
     else
         globalsData->ArrayMethodTable = 0;
 

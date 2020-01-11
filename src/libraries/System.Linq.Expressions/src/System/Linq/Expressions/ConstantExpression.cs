@@ -13,7 +13,7 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(ConstantExpressionProxy))]
     public class ConstantExpression : Expression
     {
-        internal ConstantExpression(object value)
+        internal ConstantExpression(object? value)
         {
             Value = value;
         }
@@ -45,7 +45,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the value of the constant expression.
         /// </summary>
-        public object Value { get; }
+        public object? Value { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -58,7 +58,7 @@ namespace System.Linq.Expressions
 
     internal class TypedConstantExpression : ConstantExpression
     {
-        internal TypedConstantExpression(object value, Type type)
+        internal TypedConstantExpression(object? value, Type type)
             : base(value)
         {
             Type = type;
@@ -77,7 +77,7 @@ namespace System.Linq.Expressions
         /// A <see cref="ConstantExpression"/> that has the <see cref="NodeType"/> property equal to
         /// <see cref="ExpressionType.Constant"/> and the <see cref="ConstantExpression.Value"/> property set to the specified value.
         /// </returns>
-        public static ConstantExpression Constant(object value)
+        public static ConstantExpression Constant(object? value)
         {
             return new ConstantExpression(value);
         }
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions
         /// <see cref="ExpressionType.Constant"/> and the <see cref="ConstantExpression.Value"/> and
         /// <see cref="Type"/> properties set to the specified values.
         /// </returns>
-        public static ConstantExpression Constant(object value, Type type)
+        public static ConstantExpression Constant(object? value, Type type)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));

@@ -307,7 +307,7 @@ bool WinRTTypeNameConverter::AppendWinRTTypeNameForManagedType(
             //
             strWinRTTypeName.Append(W("Windows.Foundation.IReferenceArray`1<"));
 
-            if (!AppendWinRTTypeNameForManagedType(thManagedType.AsArray()->GetArrayElementTypeHandle(), strWinRTTypeName, bForGetRuntimeClassName, NULL))
+            if (!AppendWinRTTypeNameForManagedType(thManagedType.GetArrayElementTypeHandle(), strWinRTTypeName, bForGetRuntimeClassName, NULL))
                 return false;
 
             strWinRTTypeName.Append(W('>'));

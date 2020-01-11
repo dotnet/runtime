@@ -24,7 +24,7 @@ namespace System.IO
         /// <devdoc>
         ///    Initializes a new instance of the <see cref='System.IO.InternalBufferOverflowException'/> class with the error message to be displayed specified.
         /// </devdoc>
-        public InternalBufferOverflowException(string message) : base(message)
+        public InternalBufferOverflowException(string? message) : base(message)
         {
             HResult = HResults.InternalBufferOverflow;
         }
@@ -33,7 +33,7 @@ namespace System.IO
         ///    Initializes a new instance of the <see cref='System.IO.InternalBufferOverflowException'/>
         ///    class with the message to be displayed and the generated inner exception specified.
         /// </devdoc>
-        public InternalBufferOverflowException(string message, Exception inner) : base(message, inner)
+        public InternalBufferOverflowException(string? message, Exception? inner) : base(message, inner)
         {
             HResult = HResults.InternalBufferOverflow;
         }

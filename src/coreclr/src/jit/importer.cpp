@@ -3105,8 +3105,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_VC) &&
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8)
 #ifdef FEATURE_READYTORUN_COMPILER
-        && newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_R2R_DIRECT) &&
-        newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1)
+        && newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1)
 #endif
             )
     {
@@ -4015,6 +4014,36 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_get_IsValueType:
+            {
+                // Optimize
+                //
+                //   call Type.GetTypeFromHandle (which is replaced with CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE)
+                //   call Type.IsValueType
+                //
+                // to `true` or `false`
+                // e.g. `typeof(int).IsValueType` => `true`
+                if (impStackTop().val->IsCall())
+                {
+                    GenTreeCall* call = impStackTop().val->AsCall();
+                    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+                    {
+                        CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtCallArgs->GetNode());
+                        if (hClass != NO_CLASS_HANDLE)
+                        {
+                            retNode =
+                                gtNewIconNode((eeIsValueClass(hClass) &&
+                                               // pointers are not value types (e.g. typeof(int*).IsValueType is false)
+                                               info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR)
+                                                  ? 1
+                                                  : 0);
+                            impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                        }
+                    }
+                }
+                break;
+            }
+
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
             case NI_System_MathF_FusedMultiplyAdd:
@@ -4304,6 +4333,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "KeepAlive") == 0)
             {
                 result = NI_System_GC_KeepAlive;
+            }
+        }
+        else if (strcmp(className, "Type") == 0)
+        {
+            if (strcmp(methodName, "get_IsValueType") == 0)
+            {
+                result = NI_System_Type_get_IsValueType;
             }
         }
     }
@@ -6496,17 +6532,25 @@ void Compiler::impCheckForPInvokeCall(
         // inlining in CoreRT. Skip the ambient conditions checks and profitability checks.
         if (!IsTargetAbi(CORINFO_CORERT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
         {
-            if (!impCanPInvokeInline())
+            if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
             {
-                return;
+                // Raw PInvoke call in PInvoke IL stub generated must be inlined to avoid infinite
+                // recursive calls to the stub.
             }
-
-            // Size-speed tradeoff: don't use inline pinvoke at rarely
-            // executed call sites.  The non-inline version is more
-            // compact.
-            if (block->isRunRarely())
+            else
             {
-                return;
+                if (!impCanPInvokeInline())
+                {
+                    return;
+                }
+
+                // Size-speed tradeoff: don't use inline pinvoke at rarely
+                // executed call sites.  The non-inline version is more
+                // compact.
+                if (block->isRunRarely())
+                {
+                    return;
+                }
             }
         }
 
@@ -10823,11 +10867,22 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else if (lhs->OperIsBlk())
                     {
-                        // Check for ADDR(LCL_VAR), or ADD(ADDR(LCL_VAR),CNS_INT))
-                        // (the latter may appear explicitly in the IL).
-                        // Local field stores will cause the stack to be spilled when
-                        // they are encountered.
-                        lclVar = lhs->AsBlk()->Addr()->IsLocalAddrExpr();
+                        // Check if LHS address is within some struct local, to catch
+                        // cases where we're updating the struct by something other than a stfld
+                        GenTree* addr = lhs->AsBlk()->Addr();
+
+                        // Catches ADDR(LCL_VAR), or ADD(ADDR(LCL_VAR),CNS_INT))
+                        lclVar = addr->IsLocalAddrExpr();
+
+                        // Catches ADDR(FIELD(... ADDR(LCL_VAR)))
+                        if (lclVar == nullptr)
+                        {
+                            GenTree* lclTree = nullptr;
+                            if (impIsAddressInLocal(addr, &lclTree))
+                            {
+                                lclVar = lclTree->AsLclVarCommon();
+                            }
+                        }
                     }
                     if (lclVar != nullptr)
                     {
@@ -18563,7 +18618,9 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     inlCurArgInfo->argNode = curArgVal;
 
     GenTree* lclVarTree;
-    if (impIsAddressInLocal(curArgVal, &lclVarTree) && varTypeIsStruct(lclVarTree))
+
+    const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
+    if (isAddressInLocal && varTypeIsStruct(lclVarTree))
     {
         inlCurArgInfo->argIsByRefToStructLocal = true;
 #ifdef FEATURE_SIMD
@@ -18588,8 +18645,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         INDEBUG(curArgVal->AsLclVar()->gtLclILoffs = argNum;)
     }
 
-    if ((curArgVal->OperKind() & GTK_CONST) ||
-        ((curArgVal->gtOper == GT_ADDR) && (curArgVal->AsOp()->gtOp1->gtOper == GT_LCL_VAR)))
+    if ((curArgVal->OperKind() & GTK_CONST) || isAddressInLocal)
     {
         inlCurArgInfo->argIsInvariant = true;
         if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
@@ -20644,7 +20700,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         return;
     }
 
-    // CT_INDRECT calls may use the cookie, bail if so...
+    // CT_INDIRECT calls may use the cookie, bail if so...
     //
     // If transforming these provides a benefit, we could save this off in the same way
     // we save the stub address below.

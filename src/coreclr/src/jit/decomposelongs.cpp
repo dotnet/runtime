@@ -361,12 +361,12 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
     else
     {
         loResult->SetOper(GT_LCL_FLD);
-        loResult->AsLclFld()->gtLclOffs  = 0;
-        loResult->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+        loResult->AsLclFld()->SetLclOffs(0);
+        loResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
 
         hiResult->SetOper(GT_LCL_FLD);
-        hiResult->AsLclFld()->gtLclOffs  = 4;
-        hiResult->AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+        hiResult->AsLclFld()->SetLclOffs(4);
+        hiResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
     }
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
@@ -390,7 +390,7 @@ GenTree* DecomposeLongs::DecomposeLclFld(LIR::Use& use)
     GenTreeLclFld* loResult = tree->AsLclFld();
     loResult->gtType        = TYP_INT;
 
-    GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->GetLclNum(), TYP_INT, loResult->gtLclOffs + 4);
+    GenTree* hiResult = m_compiler->gtNewLclFldNode(loResult->GetLclNum(), TYP_INT, loResult->GetLclOffs() + 4);
     Range().InsertAfter(loResult, hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
@@ -510,7 +510,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
     loStore->gtFlags |= GTF_VAR_USEASG;
 
     // Create the store for the upper half of the GT_LONG and insert it after the low store.
-    GenTreeLclFld* hiStore = m_compiler->gtNewLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->gtLclOffs + 4);
+    GenTreeLclFld* hiStore = m_compiler->gtNewLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->GetLclOffs() + 4);
     hiStore->SetOper(GT_STORE_LCL_FLD);
     hiStore->gtOp1 = value->gtOp2;
     hiStore->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);

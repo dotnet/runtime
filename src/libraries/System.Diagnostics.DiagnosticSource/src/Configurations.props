@@ -8,9 +8,9 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netcoreapp;
+      $(NetCoreAppCurrent);
       netstandard2.0;
-      netfx;
+      $(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

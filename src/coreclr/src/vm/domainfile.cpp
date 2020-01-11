@@ -891,8 +891,6 @@ void DomainFile::LoadLibrary()
     }
     CONTRACTL_END;
 
-    Thread::LoadingFileHolder holder(GetThread());
-    GetThread()->SetLoadingFile(this);
     GetFile()->LoadLibrary();
 }
 

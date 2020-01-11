@@ -2107,31 +2107,12 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         // allow an object of type T to be cast to Nullable<T> (they have the same representation)
         fCast = TRUE;
     }
-    else if (pMT->IsArray())
-    {
-        if (toTypeHnd.IsArray())
-        {
-            fCast = pMT->ArrayIsInstanceOf(toTypeHnd, /* pVisited */ NULL);
-        }
-        else if (!toTypeHnd.IsTypeDesc())
-        {
-            MethodTable* toMT = toTypeHnd.AsMethodTable();
-            if (toMT->IsInterface() && toMT->HasInstantiation())
-            {
-                fCast = pMT->ArraySupportsBizarreInterface(toMT, /* pVisited */ NULL);
-            }
-            else
-            {
-                fCast = pMT->CanCastToClassOrInterface(toMT, /* pVisited */ NULL);
-            }
-        }
-    }
     else if (toTypeHnd.IsTypeDesc())
     {
         CastCache::TryAddToCache(pMT, toTypeHnd, FALSE);
         fCast = FALSE;
     }
-    else if (pMT->CanCastToClassOrInterface(toTypeHnd.AsMethodTable(), /* pVisited */ NULL))
+    else if (pMT->CanCastTo(toTypeHnd.AsMethodTable(), /* pVisited */ NULL))
     {
         fCast = TRUE;
     }
@@ -2634,7 +2615,7 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
         Thread *thread = GetThread();
 
         TypeHandle typeHandle(typeHnd_);
-        _ASSERTE(!typeHandle.IsTypeDesc());
+        _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
         MethodTable *methodTable = typeHandle.AsMethodTable();
 
         SIZE_T size = methodTable->GetBaseSize();
@@ -2675,7 +2656,7 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     TypeHandle typeHnd(typeHnd_);
 
-    _ASSERTE(!typeHnd.IsTypeDesc());                                   // we never use this helper for arrays
+    _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
     _ASSERTE(pMT->IsRestored_NoLogging());
 
@@ -3056,22 +3037,6 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
 }
 HCIMPLEND
 
-//*************************************************************
-// R2R-specific array allocation wrapper that extracts array method table from ArrayTypeDesc
-//
-HCIMPL2(Object*, JIT_NewArr1_R2R, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle arrayTypeHandle(arrayTypeHnd_);
-    ArrayTypeDesc *pArrayTypeDesc = arrayTypeHandle.AsArray();
-    MethodTable *pArrayMT = pArrayTypeDesc->GetTemplateMethodTable();
-
-    ENDFORBIDGC();
-    return HCCALL2(JIT_NewArr1, (CORINFO_CLASS_HANDLE)pArrayMT, size);
-}
-HCIMPLEND
-
 #include <optdefault.h>
 
 /*************************************************************/
@@ -3329,7 +3294,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     TypeHandle clsHnd(type);
 
-    _ASSERTE(!clsHnd.IsTypeDesc());  // we never use this helper for arrays
+    _ASSERTE(!clsHnd.IsTypeDesc());  // boxable types have method tables
 
     MethodTable *pMT = clsHnd.AsMethodTable();
 
@@ -3433,7 +3398,7 @@ LPVOID __fastcall JIT_Unbox_Helper(CORINFO_CLASS_HANDLE type, Object* obj)
     CorElementType type2 = pMT2->GetInternalCorElementType();
     if (type1 == type2)
     {
-        MethodTable* pMT1 = typeHnd.GetMethodTable();
+        MethodTable* pMT1 = typeHnd.AsMethodTable();
         if (pMT1 && (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
         {
@@ -3454,7 +3419,7 @@ HCIMPL2(LPVOID, JIT_Unbox, CORINFO_CLASS_HANDLE type, Object* obj)
 
     TypeHandle typeHnd(type);
     VALIDATEOBJECT(obj);
-    _ASSERTE(!typeHnd.IsTypeDesc());       // value classes are always unshared
+    _ASSERTE(!typeHnd.IsTypeDesc());   // boxable types have method tables
 
         // This has been tuned so that branch predictions are good
         // (fall through for forward branches) for the common case
@@ -4069,9 +4034,6 @@ NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
     if (refType == NULL)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-        // Compensate for CORINFO_TOKENKIND_Ldtoken optimization done by CEEInfo::embedGenericHandle
-        if (!typeHandle.IsTypeDesc() && typeHandle.AsMethodTable()->IsArray())
-            typeHandle = ArrayBase::GetTypeHandle(typeHandle.AsMethodTable());
         refType = typeHandle.GetManagedClassObject();
         HELPER_METHOD_FRAME_END();
     }

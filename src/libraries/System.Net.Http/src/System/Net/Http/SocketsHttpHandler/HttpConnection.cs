@@ -1743,7 +1743,7 @@ namespace System.Net.Http
             }
         }
 
-        public async ValueTask DrainResponseAsync(HttpResponseMessage response)
+        public async ValueTask DrainResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
         {
             Debug.Assert(_inUse);
 
@@ -1752,7 +1752,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_authconnectionfailure);
             }
 
-            Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             HttpContentReadStream responseStream = stream as HttpContentReadStream;
 
             Debug.Assert(responseStream != null || stream is EmptyReadStream);

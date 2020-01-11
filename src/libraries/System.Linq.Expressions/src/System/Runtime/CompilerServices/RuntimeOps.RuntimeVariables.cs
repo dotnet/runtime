@@ -17,7 +17,7 @@ namespace System.Runtime.CompilerServices
 
             int IRuntimeVariables.Count => _boxes.Length;
 
-            object IRuntimeVariables.this[int index]
+            object? IRuntimeVariables.this[int index]
             {
                 get
                 {

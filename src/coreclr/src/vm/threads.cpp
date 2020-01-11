@@ -529,8 +529,6 @@ DWORD Thread::StartThread()
 LONG    Thread::m_DebugWillSyncCount = -1;
 LONG    Thread::m_DetachCount = 0;
 LONG    Thread::m_ActiveDetachCount = 0;
-int     Thread::m_offset_counter = 0;
-Volatile<LONG> Thread::m_threadsAtUnsafePlaces = 0;
 
 //-------------------------------------------------------------------------
 // Public function: SetupThreadNoThrow()
@@ -852,8 +850,6 @@ void DestroyThread(Thread *th)
 
     _ASSERTE(g_fEEShutDown || th->m_dwLockCount == 0 || th->m_fRudeAborted);
 
-    th->FinishSOWork();
-
     GCX_PREEMP_NO_DTOR();
 
     if (th->IsAbortRequested()) {
@@ -943,8 +939,6 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     _ASSERTE ((m_State & Thread::TS_Detached) == 0);
 
     _ASSERTE (this == GetThread());
-
-    FinishSOWork();
 
     FastInterlockIncrement(&Thread::m_DetachCount);
 
@@ -1437,8 +1431,6 @@ Thread::Thread()
 
     m_RequestedStackSize = 0;
     m_PreventAsync = 0;
-    m_PreventAbort = 0;
-    m_nNestedMarshalingExceptions = 0;
     m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
@@ -1449,7 +1441,6 @@ Thread::Thread()
     m_OSContext = NULL;
     m_ThreadTasks = (ThreadTasks)0;
     m_pLoadLimiter= NULL;
-    m_pLoadingFile = NULL;
 
     // The state and the tasks must be 32-bit aligned for atomicity to be guaranteed.
     _ASSERTE((((size_t) &m_State) & 3) == 0);
@@ -1523,9 +1514,6 @@ Thread::Thread()
     SetProfilerCallbacksAllowed(TRUE);
 
     m_pCreatingThrowableForException = NULL;
-#ifdef _DEBUG
-    m_dwDisableAbortCheckCount = 0;
-#endif // _DEBUG
 
 #ifdef FEATURE_EH_FUNCLETS
     m_dwIndexClauseForCatch = 0;
@@ -2071,28 +2059,6 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
     return bRet;
 }
 
-
-// This is to avoid the 64KB/1MB aliasing problem present on Pentium 4 processors,
-// which can significantly impact performance with HyperThreading enabled
-DWORD WINAPI Thread::intermediateThreadProc(PVOID arg)
-{
-    WRAPPER_NO_CONTRACT;
-
-    m_offset_counter++;
-    if (m_offset_counter * offset_multiplier > (int) GetOsPageSize())
-        m_offset_counter = 0;
-
-    (void)_alloca(m_offset_counter * offset_multiplier);
-
-    intermediateThreadParam* param = (intermediateThreadParam*)arg;
-
-    LPTHREAD_START_ROUTINE ThreadFcnPtr = param->lpThreadFunction;
-    PVOID args = param->lpArg;
-    delete param;
-
-    return ThreadFcnPtr(args);
-}
-
 HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags, DWORD* pThreadId)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2268,13 +2234,6 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     }
 #endif // !FEATURE_PAL
 
-    intermediateThreadParam* lpThreadArgs = new (nothrow) intermediateThreadParam;
-    if (lpThreadArgs == NULL)
-    {
-        return FALSE;
-    }
-    NewHolder<intermediateThreadParam> argHolder(lpThreadArgs);
-
     // Make sure we have all our handles, in case someone tries to suspend us
     // as we are starting up.
     if (!AllocHandles())
@@ -2283,24 +2242,19 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
         return FALSE;
     }
 
-    lpThreadArgs->lpThreadFunction = start;
-    lpThreadArgs->lpArg = args;
-
 #ifdef FEATURE_PAL
     h = ::PAL_CreateThread64(NULL     /*=SECURITY_ATTRIBUTES*/,
 #else
     h = ::CreateThread(      NULL     /*=SECURITY_ATTRIBUTES*/,
 #endif
                              sizeToCommitOrReserve,
-                             intermediateThreadProc,
-                             lpThreadArgs,
+                             start,
+                             args,
                              dwCreationFlags,
                              &ourId);
 
     if (h == NULL)
         return FALSE;
-
-    argHolder.SuppressRelease();
 
     _ASSERTE(!m_fPreemptiveGCDisabled);     // leave in preemptive until HasStarted.
 
@@ -3353,12 +3307,6 @@ void Thread::DoAppropriateWaitWorkerAlertableHelper(WaitMode mode)
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-
-    // If thread abort is prevented, we do not want this thread to see thread abort and thread interrupt exception.
-    if (IsAbortPrevented())
-    {
-        return;
-    }
 
     // A word about ordering for Interrupt.  If someone tries to interrupt a thread
     // that's in the interruptible state, we queue an APC.  But if they try to interrupt
@@ -7078,8 +7026,6 @@ VOID Thread::RestoreGuardPage()
         }
     }
 
-    FinishSOWork();
-
     INDEBUG(DebugLogStackMBIs());
 
     return;
@@ -8126,8 +8072,6 @@ void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeed
 
     _ASSERTE (this == GetThread());
 
-    FinishSOWork();
-
     INT32 nPriority = ThreadNative::PRIORITY_NORMAL;
 
     if (!fNotFinalizerThread && this == FinalizerThread::GetFinalizerThread())
@@ -8163,57 +8107,6 @@ void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeed
             SetThreadPriority(THREAD_PRIORITY_HIGHEST);
         }
     }
-}
-
-ETaskType GetCurrentTaskType()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    ETaskType TaskType = TT_UNKNOWN;
-    size_t type = (size_t)ClrFlsGetValue (TlsIdx_ThreadType);
-    if (type & ThreadType_DbgHelper)
-    {
-        TaskType = TT_DEBUGGERHELPER;
-    }
-    else if (type & ThreadType_GC)
-    {
-        TaskType = TT_GC;
-    }
-    else if (type & ThreadType_Finalizer)
-    {
-        TaskType = TT_FINALIZER;
-    }
-    else if (type & ThreadType_Timer)
-    {
-        TaskType = TT_THREADPOOL_TIMER;
-    }
-    else if (type & ThreadType_Gate)
-    {
-        TaskType = TT_THREADPOOL_GATE;
-    }
-    else if (type & ThreadType_Wait)
-    {
-        TaskType = TT_THREADPOOL_WAIT;
-    }
-    else if (type & ThreadType_Threadpool_IOCompletion)
-    {
-        TaskType = TT_THREADPOOL_IOCOMPLETION;
-    }
-    else if (type & ThreadType_Threadpool_Worker)
-    {
-        TaskType = TT_THREADPOOL_WORKER;
-    }
-    else
-    {
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            TaskType = TT_USER;
-        }
-    }
-
-    return TaskType;
 }
 
 DeadlockAwareLock::DeadlockAwareLock(const char *description)

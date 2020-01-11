@@ -200,6 +200,11 @@ namespace ILCompiler
 
             Debug.Assert(method is EcmaMethod);
 
+            // If the PInvoke is declared on an external module, we can only compile it if
+            // that module is part of the version bubble.
+            if (!_versionBubbleModuleSet.Contains(((EcmaMethod)method).Module))
+                return false;
+
             if (((EcmaMethod)method).Module.Equals(method.Context.SystemModule))
                 return true;
 

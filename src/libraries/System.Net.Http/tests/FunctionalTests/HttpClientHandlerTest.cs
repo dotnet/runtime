@@ -421,11 +421,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         public async Task ProxyTunnelRequest_UserAgentHeaderAdded(bool addUserAgentHeader)
         {
-            if (!UseSocketsHttpHandler)
-            {
-                return; // Skip test since the fix is only in SocketsHttpHandler.
-            }
-
             string addressUri = $"https://{Configuration.Http.SecureHost}/";
             bool connectionAccepted = false;
 
@@ -542,7 +537,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized()
         {
-            using (HttpClient client = CreateHttpClient(UseSocketsHttpHandler.ToString(), UseHttp2.ToString()))
+            using (HttpClient client = CreateHttpClient(UseHttp2.ToString()))
             {
                 Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: Username, password: Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -581,11 +576,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
-            if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1709OrGreater)
-            {
-                return;
-            }
-
             string name = "X-Cust-Header-NoValue";
             string value = "";
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -711,12 +701,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, true)]
         public async Task GetAsync_IncompleteData_ThrowsHttpRequestException(bool failDuringHeaders, bool getString)
         {
-            if (IsWinHttpHandler)
-            {
-                // [ActiveIssue(39136)]
-                return;
-            }
-
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -735,17 +719,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
-            if (IsWinHttpHandler)
-            {
-                // Issue #27171
-                // Fails consistently with:
-                // System.InvalidCastException: "Unable to cast object of type 'System.Object[]' to type 'System.Net.Http.WinHttpRequestState'"
-                // This appears to be due to adding the Expect: 100-continue header, which causes winhttp
-                // to fail with a "The parameter is incorrect" error, which in turn causes the request to
-                // be torn down, and in doing so, we handle this during disposal of the SafeWinHttpHandle.
-                return;
-            }
-
             const string content = "hello world";
 
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
@@ -1827,17 +1800,15 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpResponseMessage response = await client.SendAsync(req))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    if (UseSocketsHttpHandler)
+
+                    const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
+                    if (expectContinue == true && (version == "1.1" || version == "2.0"))
                     {
-                        const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
-                        if (expectContinue == true && (version == "1.1" || version == "2.0"))
-                        {
-                            Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
-                        }
-                        else
-                        {
-                            Assert.DoesNotContain(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
-                        }
+                        Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
+                    }
+                    else
+                    {
+                        Assert.DoesNotContain(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
                     }
                 }
             }
@@ -2068,10 +2039,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task SendAsync_101SwitchingProtocolsResponse_Success()
         {
-            // WinHttpHandler and CurlHandler will hang, waiting for additional response.
-            // Other handlers will accept 101 as a final response.
-            if (IsWinHttpHandler) return;
-
             if (LoopbackServerFactory.IsHttp2)
             {
                 throw new SkipTestException("Upgrade is not supported on HTTP/2");
@@ -2366,7 +2333,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
-                    if (method == "TRACE" && (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || UseSocketsHttpHandler))
+                    if (method == "TRACE")
                     {
                         // .NET Framework also allows the HttpWebRequest and HttpClient APIs to send a request using 'TRACE'
                         // verb and a request body. The usual response from a server is "400 Bad Request".
@@ -2404,14 +2371,9 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Fact]
+        [ActiveIssue(339)]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
-            // SocketsHttpHandler treats 0.0 as a bad version, and throws.
-            if (UseSocketsHttpHandler)
-            {
-                return;
-            }
-
             // The default value for HttpRequestMessage.Version is Version(1,1).
             // So, we need to set something different (0,0), to test the "unknown" version.
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0, 0));
@@ -2423,11 +2385,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Http2Servers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
         {
-            if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1703OrGreater)
-            {
-                // Skip this test if running on Windows but on a release prior to Windows 10 Creators Update.
-                throw new SkipTestException("Skipping test due to Windows 10 version prior to Version 1703.");
-            }
             // We don't currently have a good way to test whether HTTP/2 is supported without
             // using the same mechanism we're trying to test, so for now we allow both 2.0 and 1.1 responses.
             var request = new HttpRequestMessage(HttpMethod.Get, server);

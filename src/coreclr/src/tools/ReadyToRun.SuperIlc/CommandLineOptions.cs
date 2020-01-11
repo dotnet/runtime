@@ -38,12 +38,14 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        Map(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
                         UseFramework(),
                         Release(),
                         LargeBubble(),
+                        Crossgen2Parallelism(),
                         ReferencePath(),
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
@@ -69,17 +71,20 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        Map(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
                         UseFramework(),
                         Release(),
                         LargeBubble(),
+                        Crossgen2Parallelism(),
                         ReferencePath(),
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
                         R2RDumpPath(),
+                        GCStress(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
 
@@ -177,6 +182,9 @@ namespace ReadyToRun.SuperIlc
             Option NoCleanup() =>
                 new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
 
+            Option Map() =>
+                new Option(new[] { "--map" }, "Generate a map file (Crossgen2)", new Argument<bool>());
+
             Option DegreeOfParallelism() =>
                 new Option(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)", new Argument<int>());
 
@@ -194,6 +202,9 @@ namespace ReadyToRun.SuperIlc
 
             Option LargeBubble() =>
                 new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());
+
+            Option Crossgen2Parallelism() =>
+                new Option(new[] { "--crossgen2-parallelism" }, "Max number of threads to use in Crossgen2 (default = logical processor count)", new Argument<int>());
 
             Option IssuesPath() =>
                 new Option(new[] { "--issues-path", "-ip" }, "Path to issues.targets", new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore });
@@ -221,6 +232,9 @@ namespace ReadyToRun.SuperIlc
 
             Option InputFileSearchString() =>
                 new Option(new[] { "--input-file-search-string", "-input-file" }, "Search string for input files in the input directory", new Argument<string>());
+
+            Option GCStress() =>
+                new Option(new[] { "--gcstress" }, "Run tests with the specified GC stress level enabled (the argument value is in hex)", new Argument<string>());
 
             //
             // compile-nuget specific options

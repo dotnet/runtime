@@ -214,7 +214,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     return false;
 }
 
-#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // IsDstSrcImmAvxInstruction: Checks if the instruction has a "reg, reg/mem, imm" or
 //                            "reg/mem, reg, imm" form for the legacy, VEX, and EVEX
@@ -250,7 +249,6 @@ static bool IsDstSrcImmAvxInstruction(instruction ins)
             return false;
     }
 }
-#endif // FEATURE_HW_INTRINSICS
 
 // -------------------------------------------------------------------
 // Is4ByteSSEInstruction: Returns true if the SSE instruction is a 4-byte opcode.
@@ -3360,12 +3358,9 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             {
                 case GT_LCL_FLD:
                 case GT_STORE_LCL_FLD:
-                {
-                    GenTreeLclFld* lclField = memOp->AsLclFld();
-                    varNum                  = lclField->GetLclNum();
-                    offset                  = lclField->gtLclOffs;
+                    varNum = memOp->AsLclFld()->GetLclNum();
+                    offset = memOp->AsLclFld()->GetLclOffs();
                     break;
-                }
 
                 case GT_LCL_VAR:
                 {
@@ -5632,7 +5627,6 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     emitAdjustStackDepthPushPop(ins);
 }
 
-#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // emitIns_SIMD_R_R_I: emits the code for an instruction that takes a register operand, an immediate operand
 //                     and that returns a value in register
@@ -5813,6 +5807,7 @@ void emitter::emitIns_SIMD_R_R_S(
     }
 }
 
+#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // emitIns_SIMD_R_R_A_I: emits the code for a SIMD instruction that takes a register operand, a GenTreeIndir address,
 //                       an immediate operand, and that returns a value in register
@@ -14027,10 +14022,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    // all others
-                    assert(!"unreached");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
-                    result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+                    // unhandled instruction insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -14054,9 +14047,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    // all others
-                    assert(!"unreached");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    // unhandled instruction insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
             }
             break;
 
@@ -14087,9 +14080,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    // all others
-                    assert(!"unreached");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    // unhandled instruction insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -14223,8 +14215,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    assert(!"Unhandled insFmt for INS_call");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    // unhandled instruction, insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -15066,12 +15058,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         default:
-            // static instruction s_ins = ins;
-            // printf("Unsupported instruction: %s", codeGen->genInsName(ins));
-            // assert(!"Unhandled ins for getInsExecutionCharacteristics");
-            // all other ins
-            result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
-            result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+            // unhandled instruction insFmt combination
+            perfScoreUnhandledInstruction(id, &result);
             break;
     }
 

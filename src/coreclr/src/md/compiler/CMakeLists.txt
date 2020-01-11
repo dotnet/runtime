@@ -26,7 +26,6 @@ set(MDCOMPILER_HEADERS
   ../../inc/mdcommon.h
   ../../inc/metadata.h
   ../../inc/posterror.h
-  ../../inc/strongname.h
   ../../inc/sstring.h
   ../../inc/switches.h
   ../inc/cahlprinternal.h

@@ -35,7 +35,7 @@ $dotnetPath = -join($repoRoot, "\.dotnet\dotnet.exe")
 $csprojPath = -join($PSScriptRoot, "\", (Get-ChildItem $PSScriptRoot"\*.csproj" | Select-Object -ExpandProperty Name))
 $packagesCachePath = -join($repoRoot, "\packages")
 $localPackageSourcePath = -join($repoRoot, "\artifacts\packages\Debug\")
-$targetFramework = -join("netcoreapp", $frameworkVersion)
+$targetFramework = -join("netcoreapp5.0", $frameworkVersion)
 
 if (!(Test-Path $localPackageSourcePath))
 {

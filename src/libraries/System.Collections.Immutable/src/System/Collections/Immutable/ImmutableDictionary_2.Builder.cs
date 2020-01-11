@@ -54,7 +54,7 @@ namespace System.Collections.Immutable
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableDictionary<TKey, TValue> _immutable;
+            private ImmutableDictionary<TKey, TValue>? _immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.
@@ -64,7 +64,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The object callers may use to synchronize access to this collection.
             /// </summary>
-            private object _syncRoot;
+            private object? _syncRoot;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableDictionary{TKey, TValue}.Builder"/> class.
@@ -262,7 +262,7 @@ namespace System.Collections.Immutable
                 {
                     if (_syncRoot == null)
                     {
-                        Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
+                        Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
                     }
 
                     return _syncRoot;
@@ -288,9 +288,9 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The <see cref="object"/> to use as the key of the element to add.</param>
             /// <param name="value">The <see cref="object"/> to use as the value of the element to add.</param>
-            void IDictionary.Add(object key, object value)
+            void IDictionary.Add(object key, object? value)
             {
-                this.Add((TKey)key, (TValue)value);
+                this.Add((TKey)key, (TValue)value!);
             }
 
             /// <summary>
@@ -330,10 +330,10 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key.</param>
             /// <returns></returns>
-            object IDictionary.this[object key]
+            object? IDictionary.this[object key]
             {
                 get { return this[(TKey)key]; }
-                set { this[(TKey)key] = (TValue)value; }
+                set { this[(TKey)key] = (TValue)value!; }
             }
 
             #endregion
@@ -414,7 +414,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     TValue value;
-                    if (this.TryGetValue(key, out value))
+                    if (this.TryGetValue(key, out value!))
                     {
                         return value;
                     }
@@ -473,9 +473,10 @@ namespace System.Collections.Immutable
             /// <param name="key">The key to search for.</param>
             /// <returns>The value for the key, or the default value of type <typeparamref name="TValue"/> if no matching key was found.</returns>
             [Pure]
+            [return: MaybeNull]
             public TValue GetValueOrDefault(TKey key)
             {
-                return this.GetValueOrDefault(key, default(TValue));
+                return this.GetValueOrDefault(key, default(TValue)!);
             }
 
             /// <summary>
@@ -492,7 +493,7 @@ namespace System.Collections.Immutable
                 Requires.NotNullAllowStructs(key, nameof(key));
 
                 TValue value;
-                if (this.TryGetValue(key, out value))
+                if (this.TryGetValue(key, out value!))
                 {
                     return value;
                 }
@@ -602,9 +603,9 @@ namespace System.Collections.Immutable
             /// true if the object that implements <see cref="IDictionary{TKey, TValue}"/> contains an element with the specified key; otherwise, false.
             /// </returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is null.</exception>
-            public bool TryGetValue(TKey key, out TValue value)
+            public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
             {
-                return ImmutableDictionary<TKey, TValue>.TryGetValue(key, this.Origin, out value);
+                return ImmutableDictionary<TKey, TValue>.TryGetValue(key, this.Origin, out value!);
             }
 
             /// <summary>
@@ -727,7 +728,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A simple view of the immutable collection that the debugger can show to the developer.
     /// </summary>
-    internal class ImmutableDictionaryBuilderDebuggerProxy<TKey, TValue>
+    internal class ImmutableDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
     {
         /// <summary>
         /// The collection to be enumerated.
@@ -737,7 +738,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The simple view of the collection.
         /// </summary>
-        private KeyValuePair<TKey, TValue>[] _contents;
+        private KeyValuePair<TKey, TValue>[]? _contents;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableDictionaryBuilderDebuggerProxy{TKey, TValue}"/> class.

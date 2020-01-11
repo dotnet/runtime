@@ -619,9 +619,6 @@ CLRUnmapViewOfFile(
     IN LPVOID lpBaseAddress
     );
 
-BOOL CompareFiles(HANDLE hFile1,HANDLE hFile2);
-
-
 #ifndef DACCESS_COMPILE
 FORCEINLINE void VoidCLRUnmapViewOfFile(void *ptr) { CLRUnmapViewOfFile(ptr); }
 typedef Wrapper<void *, DoNothing, VoidCLRUnmapViewOfFile> CLRMapViewHolder;
@@ -637,8 +634,6 @@ typedef Wrapper<void *, DoNothing, VoidPALUnloadPEFile> PALPEFileHolder;
 typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
 #endif
 #endif // FEATURE_PAL
-
-void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX);
 
 #define SetupThreadForComCall(OOMRetVal)            \
     MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk()); \

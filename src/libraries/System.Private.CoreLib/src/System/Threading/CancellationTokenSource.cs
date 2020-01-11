@@ -524,6 +524,7 @@ namespace System.Threading
                 {
                     // Assign the next available unique ID.
                     id = partition.NextAvailableId++;
+                    Debug.Assert(id != 0, "IDs should never be the reserved value 0.");
 
                     // Get a node, from the free list if possible or else a new one.
                     node = partition.FreeNodeList;
@@ -752,11 +753,11 @@ namespace System.Threading
 
         /// <summary>
         /// Creates a <see cref="CancellationTokenSource"/> that will be in the canceled state
-        /// when any of the source tokens are in the canceled state.
+        /// when the supplied token is in the canceled state.
         /// </summary>
-        /// <param name="token">The first <see cref="CancellationToken">CancellationToken</see> to observe.</param>
-        /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source tokens.</returns>
-        internal static CancellationTokenSource CreateLinkedTokenSource(CancellationToken token) =>
+        /// <param name="token">The <see cref="CancellationToken">CancellationToken</see> to observe.</param>
+        /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source token.</returns>
+        public static CancellationTokenSource CreateLinkedTokenSource(CancellationToken token) =>
             token.CanBeCanceled ? new Linked1CancellationTokenSource(token) : new CancellationTokenSource();
 
         /// <summary>
@@ -939,8 +940,15 @@ namespace System.Threading
 
             internal bool Unregister(long id, CallbackNode node)
             {
-                Debug.Assert(id != 0, "Expected non-zero id");
                 Debug.Assert(node != null, "Expected non-null node");
+
+                if (id == 0)
+                {
+                    // In general, we won't get 0 passed in here.  However, race conditions between threads
+                    // Unregistering and also zero'ing out the CancellationTokenRegistration could cause 0
+                    // to be passed in here, in which case there's nothing to do. 0 is never a valid id.
+                    return false;
+                }
 
                 bool lockTaken = false;
                 Lock.Enter(ref lockTaken);

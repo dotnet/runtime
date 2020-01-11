@@ -19,14 +19,6 @@
   <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(InstallerTasksAssemblyPath)" />
   <UsingTask TaskName="RegenerateReadmeTable" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
-  <PropertyGroup>
-    <!--
-      Define this here (not just in Versions.props) because the SDK resets it
-      unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
-    -->
-    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
-  </PropertyGroup>
-
   <!-- Common target to find all sfxproj. In a target to avoid evaluating for every project. -->
   <Target Name="GetSharedFrameworkProjects">
     <ItemGroup>
@@ -98,7 +90,6 @@
       <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
       <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
 
-      <BinariesRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</BinariesRelativePath>
       <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
     </PropertyGroup>
 
@@ -136,12 +127,12 @@
 
     <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
       <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
-      
+
       <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostPackageRelease>
       <HostPackageRelease>$([System.String]::Copy('$(HostPackageRelease)').Replace('-', '_'))</HostPackageRelease>
-      
+
       <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
-      
+
       <HostResolverPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostResolverPackageRelease>
       <HostResolverPackageRelease>$([System.String]::Copy('$(HostResolverPackageRelease)').Replace('-', '_'))</HostResolverPackageRelease>
 

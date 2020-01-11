@@ -17,14 +17,13 @@
 
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
+#include "bindertracing.h"
 #include "loadcontext.hpp"
 #include "bindresult.inl"
 #include "failurecache.hpp"
 #include "utils.hpp"
 #include "variables.hpp"
 #include "stringarraylist.h"
-
-#include "strongname.h"
 
 #define APP_DOMAIN_LOCKED_UNLOCKED        0x02
 #define APP_DOMAIN_LOCKED_CONTEXT         0x04
@@ -52,83 +51,66 @@ namespace BINDER_SPACE
         //
         // This defines the assembly equivalence relation
         //
-        HRESULT IsValidAssemblyVersion(/* in */ AssemblyName *pRequestedName,
-                                       /* in */ AssemblyName *pFoundName,
-                                       /* in */ ApplicationContext *pApplicationContext)
+        bool IsCompatibleAssemblyVersion(/* in */ AssemblyName *pRequestedName,
+                                         /* in */ AssemblyName *pFoundName)
         {
-            HRESULT hr = S_OK;
             AssemblyVersion *pRequestedVersion = pRequestedName->GetVersion();
             AssemblyVersion *pFoundVersion = pFoundName->GetVersion();
 
-            do
+            if (!pRequestedVersion->HasMajor())
             {
-                if (!pRequestedVersion->HasMajor())
-                {
-                    // An unspecified requested version component matches any value for the same component in the found version,
-                    // regardless of lesser-order version components
-                    break;
-                }
-                if (!pFoundVersion->HasMajor() || pRequestedVersion->GetMajor() > pFoundVersion->GetMajor())
-                {
-                    // - A specific requested version component does not match an unspecified value for the same component in
-                    //   the found version, regardless of lesser-order version components
-                    // - Or, the requested version is greater than the found version
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-                if (pRequestedVersion->GetMajor() < pFoundVersion->GetMajor())
-                {
-                    // The requested version is less than the found version
-                    break;
-                }
-
-                if (!pRequestedVersion->HasMinor())
-                {
-                    break;
-                }
-                if (!pFoundVersion->HasMinor() || pRequestedVersion->GetMinor() > pFoundVersion->GetMinor())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-                if (pRequestedVersion->GetMinor() < pFoundVersion->GetMinor())
-                {
-                    break;
-                }
-
-                if (!pRequestedVersion->HasBuild())
-                {
-                    break;
-                }
-                if (!pFoundVersion->HasBuild() || pRequestedVersion->GetBuild() > pFoundVersion->GetBuild())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-                if (pRequestedVersion->GetBuild() < pFoundVersion->GetBuild())
-                {
-                    break;
-                }
-
-                if (!pRequestedVersion->HasRevision())
-                {
-                    break;
-                }
-                if (!pFoundVersion->HasRevision() || pRequestedVersion->GetRevision() > pFoundVersion->GetRevision())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-            } while (false);
-
-            if (pApplicationContext->IsTpaListProvided() && hr == FUSION_E_APP_DOMAIN_LOCKED)
+                // An unspecified requested version component matches any value for the same component in the found version,
+                // regardless of lesser-order version components
+                return true;
+            }
+            if (!pFoundVersion->HasMajor() || pRequestedVersion->GetMajor() > pFoundVersion->GetMajor())
             {
-                // For our new binding models, use a more descriptive error code than APP_DOMAIN_LOCKED for bind
-                // failures.
-                hr = FUSION_E_REF_DEF_MISMATCH;
+                // - A specific requested version component does not match an unspecified value for the same component in
+                //   the found version, regardless of lesser-order version components
+                // - Or, the requested version is greater than the found version
+                return false;
+            }
+            if (pRequestedVersion->GetMajor() < pFoundVersion->GetMajor())
+            {
+                // The requested version is less than the found version
+                return true;
             }
 
-            return hr;
+            if (!pRequestedVersion->HasMinor())
+            {
+                return true;
+            }
+            if (!pFoundVersion->HasMinor() || pRequestedVersion->GetMinor() > pFoundVersion->GetMinor())
+            {
+                return false;
+            }
+            if (pRequestedVersion->GetMinor() < pFoundVersion->GetMinor())
+            {
+                return true;
+            }
+
+            if (!pRequestedVersion->HasBuild())
+            {
+                return true;
+            }
+            if (!pFoundVersion->HasBuild() || pRequestedVersion->GetBuild() > pFoundVersion->GetBuild())
+            {
+                return false;
+            }
+            if (pRequestedVersion->GetBuild() < pFoundVersion->GetBuild())
+            {
+                return true;
+            }
+
+            if (!pRequestedVersion->HasRevision())
+            {
+                return true;
+            }
+            if (!pFoundVersion->HasRevision() || pRequestedVersion->GetRevision() > pFoundVersion->GetRevision())
+            {
+                return false;
+            }
+            return true;
         }
 
         HRESULT URLToFullPath(PathString &assemblyPath)
@@ -303,6 +285,9 @@ namespace BINDER_SPACE
         LONG kContextVersion = 0;
         BindResult bindResult;
 
+        // Tracing happens outside the binder lock to avoid calling into managed code within the lock
+        BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+
 #ifndef CROSSGEN_COMPILE
     Retry:
         {
@@ -349,9 +334,10 @@ namespace BINDER_SPACE
 #endif
 
     Exit:
+        tracer.TraceBindResult(bindResult);
+
         if (bindResult.HaveResult())
         {
-
 #ifndef CROSSGEN_COMPILE
             BindResult hostBindResult;
 
@@ -610,41 +596,63 @@ namespace BINDER_SPACE
     {
         HRESULT hr = S_OK;
 
+        bool isTpaListProvided = pApplicationContext->IsTpaListProvided();
 #ifndef CROSSGEN_COMPILE
         ContextEntry *pContextEntry = NULL;
-        IF_FAIL_GO(FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry));
+        hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
+
+        // Add the attempt to the bind result on failure / not found. On success, it will be added after the version check.
+        if (FAILED(hr) || pContextEntry == NULL)
+            pBindResult->SetAttemptResult(hr, pContextEntry);
+
+        IF_FAIL_GO(hr);
         if (pContextEntry != NULL)
         {
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-            if (skipVersionCompatibilityCheck)
-            {
-                // Skip RefDef matching if we have been asked to.
-            }
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-            else
+            if (!skipVersionCompatibilityCheck)
             {
                 // Can't give higher version than already bound
-                IF_FAIL_GO(IsValidAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName(), pApplicationContext));
+                bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName());
+                hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
+                pBindResult->SetAttemptResult(hr, pContextEntry);
+
+                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
+                    hr = FUSION_E_REF_DEF_MISMATCH;
             }
+            else
+            {
+                pBindResult->SetAttemptResult(hr, pContextEntry);
+            }
+
+            IF_FAIL_GO(hr);
 
             pBindResult->SetResult(pContextEntry);
         }
         else
 #endif // !CROSSGEN_COMPILE
-        if (pApplicationContext->IsTpaListProvided())
+        if (isTpaListProvided)
         {
-            IF_FAIL_GO(BindByTpaList(pApplicationContext,
+            // BindByTpaList handles setting attempt results on the bind result
+            hr = BindByTpaList(pApplicationContext,
                                      pAssemblyName,
                                      excludeAppPaths,
-                                     pBindResult));
-            if (pBindResult->HaveResult())
+                                     pBindResult);
+            if (SUCCEEDED(hr) && pBindResult->HaveResult())
             {
-                hr = IsValidAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName(), pApplicationContext);
-                if (FAILED(hr))
-                {
-                    pBindResult->SetNoResult();
-                }
+                bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName());
+                hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
+                pBindResult->SetAttemptResult(hr, pBindResult->GetAsAssembly());
+
+                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
+                    hr = FUSION_E_REF_DEF_MISMATCH;
             }
+
+            if (FAILED(hr))
+            {
+                pBindResult->SetNoResult();
+            }
+            IF_FAIL_GO(hr);
         }
     Exit:
         return hr;
@@ -665,20 +673,20 @@ namespace BINDER_SPACE
         ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
         ContextEntry *pContextEntry = pExecutionContext->Lookup(pAssemblyName);
 
+        // Set any found context entry. It is up to the caller to check the returned HRESULT
+        // for errors due to validation
+        *ppContextEntry = pContextEntry;
         if (pContextEntry != NULL)
         {
             AssemblyName *pContextName = pContextEntry->GetAssemblyName();
             if (pAssemblyName->GetIsDefinition() &&
                 (pContextName->GetArchitecture() != pAssemblyName->GetArchitecture()))
             {
-                IF_FAIL_GO(FUSION_E_APP_DOMAIN_LOCKED);
+                return FUSION_E_APP_DOMAIN_LOCKED;
             }
         }
 
-        *ppContextEntry = pContextEntry;
-
-    Exit:
-        return hr;
+        return pContextEntry != NULL ? S_OK : S_FALSE;
     }
 
 #endif //CROSSGEN_COMPILE
@@ -713,10 +721,13 @@ namespace BINDER_SPACE
 
     namespace
     {
+        typedef void (*OnPathProbed)(const WCHAR *path, HRESULT hr);
+
         HRESULT BindSatelliteResourceByProbingPaths(
             const StringArrayList   *pResourceRoots,
             AssemblyName            *pRequestedAssemblyName,
-            BindResult              *pBindResult)
+            BindResult              *pBindResult,
+            OnPathProbed            onPathProbed)
         {
             HRESULT hr = S_OK;
 
@@ -739,6 +750,7 @@ namespace BINDER_SPACE
                                                  FALSE /* fIsInGAC */,
                                                  FALSE /* fExplicitBindToNativeImage */,
                                                  &pAssembly);
+                onPathProbed(fileName, hr);
 
                 // Missing files are okay and expected when probing
                 if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -746,22 +758,27 @@ namespace BINDER_SPACE
                     continue;
                 }
 
-                IF_FAIL_GO(hr);
+                pBindResult->SetAttemptResult(hr, pAssembly);
+                if (FAILED(hr))
+                    return hr;
 
                 AssemblyName *pBoundAssemblyName = pAssembly->GetAssemblyName();
                 if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pBoundAssemblyName, false /*tpaListAssembly*/))
                 {
                     pBindResult->SetResult(pAssembly);
-                    GO_WITH_HRESULT(S_OK);
+                    hr = S_OK;
+                }
+                else
+                {
+                    hr = FUSION_E_REF_DEF_MISMATCH;
                 }
 
-                IF_FAIL_GO(FUSION_E_REF_DEF_MISMATCH);
+                pBindResult->SetAttemptResult(hr, pAssembly);
+                return hr;
             }
 
             // Up-stack expects S_OK when we don't find any candidate assemblies and no fatal error occurred (ie, no S_FALSE)
-            hr = S_OK;
-        Exit:
-            return hr;
+            return  S_OK;
         }
 
         HRESULT BindAssemblyByProbingPaths(
@@ -772,6 +789,7 @@ namespace BINDER_SPACE
         {
             SString &simpleName = pRequestedAssemblyName->GetSimpleName();
 
+            BinderTracing::PathSource pathSource = useNativeImages ? BinderTracing::PathSource::AppNativeImagePaths : BinderTracing::PathSource::AppPaths;
             // Loop through the binding paths looking for a matching assembly
             for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
             {
@@ -789,6 +807,7 @@ namespace BINDER_SPACE
                                                  FALSE, // fIsInGAC
                                                  useNativeImages, // fExplicitBindToNativeImage
                                                  &pAssembly);
+                BinderTracing::PathProbed(fileName, pathSource, hr);
 
                 if (FAILED(hr))
                 {
@@ -798,6 +817,7 @@ namespace BINDER_SPACE
                                                      FALSE, // fIsInGAC
                                                      useNativeImages, // fExplicitBindToNativeImage
                                                      &pAssembly);
+                    BinderTracing::PathProbed(fileName, pathSource, hr);
                 }
 
                 // Since we're probing, file not founds are ok and we should just try another
@@ -807,6 +827,8 @@ namespace BINDER_SPACE
                     continue;
                 }
 
+                // Set any found assembly. It is up to the caller to check the returned HRESULT for errors due to validation
+                *ppAssembly = pAssembly.Extract();
                 if (FAILED(hr))
                     return hr;
 
@@ -819,7 +841,6 @@ namespace BINDER_SPACE
                 if (!TestCandidateRefMatchesDef(pRequestedAssemblyName, pAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
                     return FUSION_E_REF_DEF_MISMATCH;
 
-                *ppAssembly = pAssembly.Extract();
                 return S_OK;
             }
 
@@ -861,7 +882,8 @@ namespace BINDER_SPACE
 
             hr = BindSatelliteResourceByProbingPaths(pApplicationContext->GetPlatformResourceRoots(),
                                                      pRequestedAssemblyName,
-                                                     pBindResult);
+                                                     pBindResult,
+                                                     [](const WCHAR *path, HRESULT res) { BinderTracing::PathProbed(path, BinderTracing::PathSource::PlatformResourceRoots, res); });
 
             // We found a platform resource file with matching file name, but whose ref-def didn't match.  Fall
             // back to application resource lookup to handle case where a user creates resources with the same
@@ -875,7 +897,8 @@ namespace BINDER_SPACE
             {
                 IF_FAIL_GO(BindSatelliteResourceByProbingPaths(pApplicationContext->GetAppPaths(),
                                                                pRequestedAssemblyName,
-                                                               pBindResult));
+                                                               pBindResult,
+                                                               [](const WCHAR *path, HRESULT res) { BinderTracing::PathProbed(path, BinderTracing::PathSource::AppPaths, res); }));
             }
         }
         else
@@ -895,6 +918,7 @@ namespace BINDER_SPACE
                                      TRUE,  // fIsInGAC
                                      TRUE,  // fExplicitBindToNativeImage
                                      &pTPAAssembly);
+                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
                 }
                 else
                 {
@@ -905,7 +929,10 @@ namespace BINDER_SPACE
                                      TRUE,  // fIsInGAC
                                      FALSE, // fExplicitBindToNativeImage
                                      &pTPAAssembly);
+                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
                 }
+
+                pBindResult->SetAttemptResult(hr, pTPAAssembly);
 
                 // On file not found, simply fall back to app path probing
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -917,12 +944,14 @@ namespace BINDER_SPACE
                     {
                         // We have found the requested assembly match on TPA with validation of the full-qualified name. Bind to it.
                         pBindResult->SetResult(pTPAAssembly);
+                        pBindResult->SetAttemptResult(S_OK, pTPAAssembly);
                         GO_WITH_HRESULT(S_OK);
                     }
                     else
                     {
                         // We found the assembly on TPA but it didn't match the RequestedAssembly assembly-name. In this case, lets proceed to see if we find the requested
                         // assembly in the App paths.
+                        pBindResult->SetAttemptResult(FUSION_E_REF_DEF_MISMATCH, pTPAAssembly);
                         fPartialMatchOnTpa = true;
                     }
                 }
@@ -946,6 +975,7 @@ namespace BINDER_SPACE
                                                     &pAssembly);
                 }
 
+                pBindResult->SetAttemptResult(hr, pAssembly);
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
                 {
                     IF_FAIL_GO(hr);
@@ -960,6 +990,7 @@ namespace BINDER_SPACE
                         {
                             // Fullname (SimpleName+Culture+PKT) matched for TPA and app assembly - so bind to TPA instance.
                             pBindResult->SetResult(pTPAAssembly);
+                            pBindResult->SetAttemptResult(hr, pTPAAssembly);
                             GO_WITH_HRESULT(S_OK);
                         }
                         else
@@ -980,11 +1011,9 @@ namespace BINDER_SPACE
         }
 
         // Couldn't find a matching assembly in any of the probing paths
-        // Return S_OK here.  BindByName will interpret a lack of BindResult
-        // as a failure to find a matching assembly.  Other callers of this
-        // function, such as BindLockedOrService will interpret as deciding
-        // not to override an explicit bind with a probed assembly
-        hr = S_OK;
+        // Return S_FALSE here. BindByName will interpret a successful HRESULT
+        // and lack of BindResult as a failure to find a matching assembly.
+        hr = S_FALSE;
 
     Exit:
         return hr;
@@ -1117,7 +1146,7 @@ namespace BINDER_SPACE
         // This method is invoked under a lock (by its caller), so we are thread safe.
         ContextEntry *pContextEntry = NULL;
         hr = FindInExecutionContext(pApplicationContext, pBindResult->GetAssemblyName(), &pContextEntry);
-        if (hr == S_OK)
+        if (SUCCEEDED(hr))
         {
             if (pContextEntry == NULL)
             {
@@ -1203,7 +1232,7 @@ namespace BINDER_SPACE
 
             hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
 
-            if ((hr == S_OK) && (pContextEntry == NULL))
+            if (SUCCEEDED(hr) && (pContextEntry == NULL))
             {
                 // We can accept this bind in the domain
                 GO_WITH_HRESULT(S_OK);
@@ -1262,15 +1291,19 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
     // Prepare binding data
     *ppAssembly = NULL;
 
+    // Tracing happens outside the binder lock to avoid calling into managed code within the lock
+    BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, pApplicationContext->GetBinderID(), 0 /*managedALC*/, hr};
+
     // Attempt the actual bind (eventually more than once)
 Retry:
+    bool mvidMismatch = false;
     {
         // Lock the application context
         CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
         // Attempt uncached bind and register stream if possible
         // We skip version compatibility check - so assemblies with same simple name will be reported
-        // as a successfull bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
+        // as a successful bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
         hr = BindByName(pApplicationContext,
                         pAssemblyName,
                         true,  // skipFailureCaching
@@ -1308,14 +1341,15 @@ Retry:
                 // load.
                 IF_FAIL_GO(bindResult.GetAsAssembly()->GetMVID(&boundMVID));
 
-                if (incomingMVID != boundMVID)
+                mvidMismatch = incomingMVID != boundMVID;
+                if (mvidMismatch)
                 {
                     // MVIDs do not match, so fail the load.
                     IF_FAIL_GO(COR_E_FILELOAD);
                 }
 
                 // MVIDs match - request came in for the same assembly that was previously loaded.
-                // Let is through...
+                // Let it through...
             }
         }
 
@@ -1336,6 +1370,8 @@ Retry:
 
         if (hr == S_FALSE)
         {
+            tracer.TraceBindResult(bindResult);
+
             // Another bind interfered. We need to retry entire bind.
             // This by design loops as long as needed because by construction we eventually
             // will succeed or fail the bind.
@@ -1349,6 +1385,7 @@ Retry:
     }
 
 Exit:
+    tracer.TraceBindResult(bindResult, mvidMismatch);
     return hr;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

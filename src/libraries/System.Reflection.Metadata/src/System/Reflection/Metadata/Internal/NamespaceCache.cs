@@ -13,8 +13,8 @@ namespace System.Reflection.Metadata.Ecma335
     {
         private readonly MetadataReader _metadataReader;
         private readonly object _namespaceTableAndListLock = new object();
-        private volatile Dictionary<NamespaceDefinitionHandle, NamespaceData> _namespaceTable;
-        private NamespaceData _rootNamespace;
+        private volatile Dictionary<NamespaceDefinitionHandle, NamespaceData>? _namespaceTable;
+        private NamespaceData? _rootNamespace;
         private uint _virtualNamespaceCounter;
 
         internal NamespaceCache(MetadataReader reader)
@@ -49,11 +49,12 @@ namespace System.Reflection.Metadata.Ecma335
         internal NamespaceData GetNamespaceData(NamespaceDefinitionHandle handle)
         {
             EnsureNamespaceTableIsPopulated();
-            NamespaceData result;
-            if (!_namespaceTable.TryGetValue(handle, out result))
+            NamespaceData? result;
+            if (!_namespaceTable!.TryGetValue(handle, out result))
             {
                 Throw.InvalidHandle();
             }
+
             return result;
         }
 
@@ -134,7 +135,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Dictionary<string, NamespaceDataBuilder> stringTable;
                 MergeDuplicateNamespaces(namespaceBuilderTable, out stringTable);
 
-                List<NamespaceDataBuilder> virtualNamespaces;
+                List<NamespaceDataBuilder>? virtualNamespaces;
                 ResolveParentChildRelationships(stringTable, out virtualNamespaces);
 
                 var namespaceTable = new Dictionary<NamespaceDefinitionHandle, NamespaceData>();
@@ -167,15 +168,15 @@ namespace System.Reflection.Metadata.Ecma335
         private void MergeDuplicateNamespaces(Dictionary<NamespaceDefinitionHandle, NamespaceDataBuilder> table, out Dictionary<string, NamespaceDataBuilder> stringTable)
         {
             var namespaces = new Dictionary<string, NamespaceDataBuilder>();
-            List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>> remaps = null;
+            List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>>? remaps = null;
             foreach (var group in table)
             {
                 NamespaceDataBuilder data = group.Value;
-                NamespaceDataBuilder existingRecord;
+                NamespaceDataBuilder? existingRecord;
                 if (namespaces.TryGetValue(data.FullName, out existingRecord))
                 {
                     // Children should not exist until the next step.
-                    Debug.Assert(data.Namespaces.Count == 0);
+                    Debug.Assert(data.Namespaces!.Count == 0);
                     data.MergeInto(existingRecord);
 
                     if (remaps == null)
@@ -232,7 +233,7 @@ namespace System.Reflection.Metadata.Ecma335
             Debug.Assert(child != null && parent != null);
             Debug.Assert(!child.Handle.IsNil);
             child.Parent = parent.Handle;
-            parent.Namespaces.Add(child.Handle);
+            parent.Namespaces!.Add(child.Handle);
         }
 
         /// <summary>
@@ -241,7 +242,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         private void LinkChildToParentNamespace(Dictionary<string, NamespaceDataBuilder> existingNamespaces,
             NamespaceDataBuilder realChild,
-            ref List<NamespaceDataBuilder> virtualNamespaces)
+            ref List<NamespaceDataBuilder>? virtualNamespaces)
         {
             Debug.Assert(realChild.Handle.HasFullName);
             string childName = realChild.FullName;
@@ -271,7 +272,7 @@ namespace System.Reflection.Metadata.Ecma335
                     parentName = childName.Substring(0, lastIndex);
                 }
 
-                NamespaceDataBuilder parentData;
+                NamespaceDataBuilder? parentData;
                 if (existingNamespaces.TryGetValue(parentName, out parentData))
                 {
                     LinkChildDataToParentData(child, parentData);
@@ -309,7 +310,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// of their own, but do have child namespaces. These are returned via the virtualNamespaces out
         /// parameter.
         /// </summary>
-        private void ResolveParentChildRelationships(Dictionary<string, NamespaceDataBuilder> namespaces, out List<NamespaceDataBuilder> virtualNamespaces)
+        private void ResolveParentChildRelationships(Dictionary<string, NamespaceDataBuilder> namespaces, out List<NamespaceDataBuilder>? virtualNamespaces)
         {
             virtualNamespaces = null;
             foreach (var namespaceData in namespaces)
@@ -334,17 +335,17 @@ namespace System.Reflection.Metadata.Ecma335
                 }
 
                 NamespaceDefinitionHandle namespaceHandle = _metadataReader.TypeDefTable.GetNamespaceDefinition(typeHandle);
-                NamespaceDataBuilder builder;
+                NamespaceDataBuilder? builder;
                 if (table.TryGetValue(namespaceHandle, out builder))
                 {
-                    builder.TypeDefinitions.Add(typeHandle);
+                    builder.TypeDefinitions!.Add(typeHandle);
                 }
                 else
                 {
                     StringHandle name = GetSimpleName(namespaceHandle);
                     string fullName = _metadataReader.GetString(namespaceHandle);
                     var newData = new NamespaceDataBuilder(namespaceHandle, name, fullName);
-                    newData.TypeDefinitions.Add(typeHandle);
+                    newData.TypeDefinitions!.Add(typeHandle);
                     table.Add(namespaceHandle, newData);
                 }
             }
@@ -366,10 +367,10 @@ namespace System.Reflection.Metadata.Ecma335
                 }
 
                 NamespaceDefinitionHandle namespaceHandle = exportedType.NamespaceDefinition;
-                NamespaceDataBuilder builder;
+                NamespaceDataBuilder? builder;
                 if (table.TryGetValue(namespaceHandle, out builder))
                 {
-                    builder.ExportedTypes.Add(exportedTypeHandle);
+                    builder.ExportedTypes!.Add(exportedTypeHandle);
                 }
                 else
                 {
@@ -377,7 +378,7 @@ namespace System.Reflection.Metadata.Ecma335
                     StringHandle simpleName = GetSimpleName(namespaceHandle);
                     string fullName = _metadataReader.GetString(namespaceHandle);
                     var newData = new NamespaceDataBuilder(namespaceHandle, simpleName, fullName);
-                    newData.ExportedTypes.Add(exportedTypeHandle);
+                    newData.ExportedTypes!.Add(exportedTypeHandle);
                     table.Add(namespaceHandle, newData);
                 }
             }
@@ -412,11 +413,11 @@ namespace System.Reflection.Metadata.Ecma335
             public readonly StringHandle Name;
             public readonly string FullName;
             public NamespaceDefinitionHandle Parent;
-            public ImmutableArray<NamespaceDefinitionHandle>.Builder Namespaces;
-            public ImmutableArray<TypeDefinitionHandle>.Builder TypeDefinitions;
-            public ImmutableArray<ExportedTypeHandle>.Builder ExportedTypes;
+            public ImmutableArray<NamespaceDefinitionHandle>.Builder? Namespaces;
+            public ImmutableArray<TypeDefinitionHandle>.Builder? TypeDefinitions;
+            public ImmutableArray<ExportedTypeHandle>.Builder? ExportedTypes;
 
-            private NamespaceData _frozen;
+            private NamespaceData? _frozen;
 
             public NamespaceDataBuilder(NamespaceDefinitionHandle handle, StringHandle name, string fullName)
             {
@@ -439,13 +440,13 @@ namespace System.Reflection.Metadata.Ecma335
                 // because it's immutable.
                 if (_frozen == null)
                 {
-                    var namespaces = Namespaces.ToImmutable();
+                    var namespaces = Namespaces!.ToImmutable();
                     Namespaces = null;
 
-                    var typeDefinitions = TypeDefinitions.ToImmutable();
+                    var typeDefinitions = TypeDefinitions!.ToImmutable();
                     TypeDefinitions = null;
 
-                    var exportedTypes = ExportedTypes.ToImmutable();
+                    var exportedTypes = ExportedTypes!.ToImmutable();
                     ExportedTypes = null;
 
                     _frozen = new NamespaceData(Name, FullName, Parent, namespaces, typeDefinitions, exportedTypes);
@@ -457,9 +458,9 @@ namespace System.Reflection.Metadata.Ecma335
             public void MergeInto(NamespaceDataBuilder other)
             {
                 Parent = default(NamespaceDefinitionHandle);
-                other.Namespaces.AddRange(this.Namespaces);
-                other.TypeDefinitions.AddRange(this.TypeDefinitions);
-                other.ExportedTypes.AddRange(this.ExportedTypes);
+                other.Namespaces!.AddRange(this.Namespaces!);
+                other.TypeDefinitions!.AddRange(this.TypeDefinitions!);
+                other.ExportedTypes!.AddRange(this.ExportedTypes!);
             }
         }
     }

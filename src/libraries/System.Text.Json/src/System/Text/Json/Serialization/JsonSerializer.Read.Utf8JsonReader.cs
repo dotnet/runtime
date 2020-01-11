@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -47,9 +48,10 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static TValue Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions options = null)
+        [return: MaybeNull]
+        public static TValue Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
         {
-            return (TValue)ReadValueCore(ref reader, typeof(TValue), options);
+            return (TValue)ReadValueCore(ref reader, typeof(TValue), options)!;
         }
 
         /// <summary>
@@ -93,7 +95,7 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static object Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options = null)
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
@@ -101,7 +103,7 @@ namespace System.Text.Json
             return ReadValueCore(ref reader, returnType, options);
         }
 
-        private static object ReadValueCore(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
+        private static object? ReadValueCore(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options)
         {
             if (options == null)
             {

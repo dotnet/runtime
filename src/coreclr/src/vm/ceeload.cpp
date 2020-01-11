@@ -3251,14 +3251,6 @@ void Module::FreeClassTables()
                         }
                     }
                 }
-                else if (th.IsArray())
-                {
-                    ComCallWrapperTemplate *pTemplate = th.AsArray()->GetComCallWrapperTemplate();
-                    if (pTemplate != NULL)
-                    {
-                        pTemplate->Release();
-                    }
-                }
 #endif // FEATURE_COMINTEROP
 
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
@@ -3922,7 +3914,7 @@ ILStubCache* Module::GetILStubCache()
 
     // Use per-LoaderAllocator cache for modules when not NGENing
     BaseDomain *pDomain = GetDomain();
-    if (!IsSystem() && !pDomain->IsSharedDomain() && !pDomain->AsAppDomain()->IsCompilationDomain())
+    if (!IsSystem() && !pDomain->AsAppDomain()->IsCompilationDomain())
         return GetLoaderAllocator()->GetILStubCache();
 
     if (m_pILStubCache == NULL)
@@ -6689,22 +6681,18 @@ LoaderHeap *Module::GetThunkHeap()
     }
     CONTRACT_END
 
-        if (!m_pThunkHeap)
+    if (!m_pThunkHeap)
+    {
+        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
+            0,                                 // DWORD dwCommitBlockSize
+            ThunkHeapStubManager::g_pManager->GetRangeList(),
+            TRUE);                             // BOOL fMakeExecutable
+
+        if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
         {
-            size_t * pPrivatePCLBytes = NULL;
-            size_t * pGlobalPCLBytes = NULL;
-
-            LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
-                0,                                 // DWORD dwCommitBlockSize
-                pPrivatePCLBytes,
-                ThunkHeapStubManager::g_pManager->GetRangeList(),
-                TRUE);                             // BOOL fMakeExecutable
-
-            if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
-            {
-                delete pNewHeap;
-            }
+            delete pNewHeap;
         }
+    }
 
     RETURN m_pThunkHeap;
 }

@@ -1,9 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
+<Project>
   <ItemGroup>
-    <TestTargetFramework Include=".NETCoreApp,Version=v5.0">
-      <Folder>netcoreapp5.0</Folder>
+    <TestTargetFramework Include="$(NetCoreAppCurrentTargetFrameworkMoniker)">
+      <Folder>$(NetCoreAppCurrent)</Folder>
     </TestTargetFramework>
   </ItemGroup>
 
@@ -19,8 +17,7 @@
     <!-- These projects are individually restored in order. Each
          subsequent restore only copies files that don't already exist
          in CORE_ROOT, so assets from the first project file win. -->
-    <CoreRootProjectFiles Include="$(SourceDir)Common\test_dependencies\test_dependencies.csproj" />
-    <CoreRootProjectFiles Include="$(SourceDir)Common\test_runtime\test_runtime.csproj" />
+    <CoreRootProjectFiles Include="$(TestSourceDir)Common\test_dependencies\test_dependencies.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -34,5 +31,4 @@
              Properties="Language=C#;RuntimeIdentifier=$(TargetRid)" />
 
   </Target>
-
 </Project>

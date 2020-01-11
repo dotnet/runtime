@@ -2369,6 +2369,33 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum)
     lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_AddrExposed));
 }
 
+//------------------------------------------------------------------------
+// lvaSetVarLiveInOutOfHandler: Set the local varNum as being live in and/or out of a handler
+//
+// Arguments:
+//    varNum - the varNum of the local
+//
+void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+    INDEBUG(varDsc->lvLiveInOutOfHndlr = 1);
+
+    if (varDsc->lvPromoted)
+    {
+        noway_assert(varTypeIsStruct(varDsc));
+
+        for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
+        {
+            noway_assert(lvaTable[i].lvIsStructField);
+            INDEBUG(lvaTable[i].lvLiveInOutOfHndlr = 1);
+            lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
+        }
+    }
+
+    lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+}
+
 /*****************************************************************************
  *
  *  Record that the local var "varNum" should not be enregistered (for one of several reasons.)
@@ -3613,6 +3640,14 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             }
 #endif
         }
+    }
+
+    if (tree->OperIsLocalAddr())
+    {
+        LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
+        assert(varDsc->lvAddrExposed);
+        varDsc->incRefCnts(weight, this);
+        return;
     }
 
     if ((tree->gtOper != GT_LCL_VAR) && (tree->gtOper != GT_LCL_FLD))
@@ -6771,6 +6806,11 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         printf(" HFA(%s) ", varTypeName(varDsc->GetHfaType()));
     }
 
+    if (varDsc->lvLiveInOutOfHndlr)
+    {
+        printf(" EH");
+    }
+
     if (varDsc->lvDoNotEnregister)
     {
         printf(" do-not-enreg[");
@@ -7348,7 +7388,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             /* Change lclVar(lclNum) to lclFld(lclNum,padding) */
 
             tree->ChangeOper(GT_LCL_FLD);
-            tree->AsLclFld()->gtLclOffs = padding;
+            tree->AsLclFld()->SetLclOffs(padding);
         }
         else
         {

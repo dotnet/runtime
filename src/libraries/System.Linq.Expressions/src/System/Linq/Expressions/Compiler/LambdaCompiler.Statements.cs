@@ -87,8 +87,7 @@ namespace System.Linq.Expressions.Compiler
             if (HasVariables(node) &&
                 (_scope.MergedScopes == null || !_scope.MergedScopes.Contains(node)))
             {
-                CompilerScope scope;
-                if (!_tree.Scopes.TryGetValue(node, out scope))
+                if (!_tree.Scopes.TryGetValue(node, out CompilerScope? scope))
                 {
                     //
                     // Very often, we want to compile nodes as reductions
@@ -123,7 +122,7 @@ namespace System.Linq.Expressions.Compiler
         {
             if (_scope.Node == node)
             {
-                _scope = _scope.Exit();
+                _scope = _scope.Exit()!;
             }
         }
 
@@ -411,7 +410,7 @@ namespace System.Linq.Expressions.Compiler
                     // allowed, but can't be reached.
                     if (uniqueKeys.Add(key))
                     {
-                        keys.Add(new SwitchLabel(key, test.Value, labels[i]));
+                        keys.Add(new SwitchLabel(key, test.Value!, labels[i]));
                     }
                 }
             }
@@ -444,7 +443,7 @@ namespace System.Linq.Expressions.Compiler
             return true;
         }
 
-        private static decimal ConvertSwitchValue(object value)
+        private static decimal ConvertSwitchValue(object? value)
         {
             if (value is char)
             {
@@ -629,7 +628,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (info.Is64BitSwitch)
             {
-                _ilg.MarkLabel(after.Value);
+                _ilg.MarkLabel(after!.Value);
             }
         }
 
@@ -757,7 +756,7 @@ namespace System.Linq.Expressions.Compiler
         private void CheckRethrow()
         {
             // Rethrow is only valid inside a catch.
-            for (LabelScopeInfo j = _labelBlock; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = _labelBlock; j != null; j = j.Parent)
             {
                 if (j.Kind == LabelScopeKind.Catch)
                 {
@@ -777,7 +776,7 @@ namespace System.Linq.Expressions.Compiler
         private void CheckTry()
         {
             // Try inside a filter is not verifiable
-            for (LabelScopeInfo j = _labelBlock; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = _labelBlock; j != null; j = j.Parent)
             {
                 if (j.Kind == LabelScopeKind.Filter)
                 {
@@ -821,7 +820,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(node.Body);
 
             Type tryType = node.Type;
-            LocalBuilder value = null;
+            LocalBuilder? value = null;
             if (tryType != typeof(void))
             {
                 //store the value of the try body
@@ -857,7 +856,7 @@ namespace System.Linq.Expressions.Compiler
                 if (tryType != typeof(void))
                 {
                     //store the value of the catch block body
-                    _ilg.Emit(OpCodes.Stloc, value);
+                    _ilg.Emit(OpCodes.Stloc, value!);
                 }
 
                 ExitScope(cb);
@@ -883,7 +882,7 @@ namespace System.Linq.Expressions.Compiler
                 }
 
                 // Emit the body
-                EmitExpressionAsVoid(node.Finally ?? node.Fault);
+                EmitExpressionAsVoid(node.Finally ?? node.Fault!);
 
                 _ilg.EndExceptionBlock();
                 PopLabelBlock(LabelScopeKind.Finally);
@@ -895,8 +894,8 @@ namespace System.Linq.Expressions.Compiler
 
             if (tryType != typeof(void))
             {
-                _ilg.Emit(OpCodes.Ldloc, value);
-                FreeLocal(value);
+                _ilg.Emit(OpCodes.Ldloc, value!);
+                FreeLocal(value!);
             }
             PopLabelBlock(LabelScopeKind.Try);
         }
@@ -939,7 +938,7 @@ namespace System.Linq.Expressions.Compiler
             // begin the catch, clear the exception, we've
             // already saved it
             _ilg.MarkLabel(endFilter);
-            _ilg.BeginCatchBlock(exceptionType: null);
+            _ilg.BeginCatchBlock(exceptionType: null!);
             _ilg.Emit(OpCodes.Pop);
         }
 
