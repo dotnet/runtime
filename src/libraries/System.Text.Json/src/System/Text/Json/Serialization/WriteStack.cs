@@ -120,22 +120,22 @@ namespace System.Text.Json
             }
         }
 
-        internal ResolvedReferenceHandling GetResolvedReferenceHandling(object value, out string? referenceId)
+        internal MetadataPropertyName GetResolvedReferenceHandling(object value, out string? referenceId)
         {
             // Avoid emitting metadata to value types.
             Type currentType = Current.JsonPropertyInfo?.DeclaredPropertyType ?? Current.JsonClassInfo!.Type;
             if (currentType.IsValueType)
             {
                 referenceId = default;
-                return ResolvedReferenceHandling.None;
+                return MetadataPropertyName.NoMetadata;
             }
 
             if (ReferenceAlreadyExists(value, out referenceId))
             {
-                return ResolvedReferenceHandling.IsReference;
+                return MetadataPropertyName.Ref;
             }
 
-            return ResolvedReferenceHandling.Preserve;
+            return MetadataPropertyName.Id;
         }
 
         private bool ReferenceAlreadyExists(object value, out string id)

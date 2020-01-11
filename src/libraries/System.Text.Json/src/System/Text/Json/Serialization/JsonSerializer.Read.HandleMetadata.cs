@@ -109,12 +109,4 @@ namespace System.Text.Json
             state.Current.ShouldHandleReference = false;
         }
     }
-
-    internal enum MetadataPropertyName
-    {
-        NoMetadata,
-        Values,
-        Id,
-        Ref,
-    }
 }
