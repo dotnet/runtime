@@ -156,35 +156,30 @@ namespace System.Text.Json
             }
 
             MetadataPropertyName metadata = GetMetadataPropertyName(propertyName, ref state, ref reader);
-            state.Current.MetadataProperty = metadata;
             return metadata;
         }
 
         private static void ResolveMetadataOnDictionary(MetadataPropertyName metadata, ref ReadStack state)
         {
-            bool isPreserved = state.Current.IsProcessingProperty(ClassType.Dictionary) ?
-                state.Current.DictionaryPropertyIsPreserved : state.Current.IsPreserved;
-
             if (metadata == MetadataPropertyName.Id)
             {
                 // Check we are not parsing into immutable.
-                if (state.Current.TempDictionaryValues != null)
+                if (state.Current.JsonPropertyInfo!.DictionaryConverter != null)
                 {
-                    ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(state.Current.JsonPropertyInfo!.DeclaredPropertyType);
+                    ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(state.Current.JsonPropertyInfo.DeclaredPropertyType);
                 }
 
-                if (state.Current.KeyName != null || isPreserved)
+                if (state.Current.DictionaryHaveKeys)
                 {
                     state.Current.KeyName = null;
                     ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty();
                 }
 
-                MarkAsPreserved(ref state.Current);
                 state.Current.ReadMetadataValue = true;
             }
             else if (metadata == MetadataPropertyName.Ref)
             {
-                if (state.Current.KeyName != null || isPreserved)
+                if (state.Current.DictionaryHaveKeys)
                 {
                     state.Current.KeyName = null;
                     ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
@@ -193,6 +188,9 @@ namespace System.Text.Json
                 state.Current.ShouldHandleReference = true;
                 state.Current.ReadMetadataValue = true;
             }
+
+            state.Current.MetadataProperty = metadata;
+            state.Current.DictionaryHaveKeys = true;
         }
 
         private static void ResolveMetadataOnObject(ReadOnlySpan<byte> propertyName, MetadataPropertyName meta, ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
@@ -208,7 +206,7 @@ namespace System.Text.Json
             }
             else if (meta == MetadataPropertyName.Id)
             {
-                if (state.Current.PropertyIndex > 0 || state.Current.IsPreserved)
+                if (state.Current.ObjectHaveProperties)
                 {
                     ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty();
                 }
@@ -220,7 +218,6 @@ namespace System.Text.Json
                 state.Current.JsonPropertyInfo = info;
 
                 state.Current.ReadMetadataValue = true;
-                MarkAsPreserved(ref state.Current);
             }
             else if (meta == MetadataPropertyName.Values)
             {
@@ -233,7 +230,7 @@ namespace System.Text.Json
                 info.JsonPropertyName = propertyName.ToArray();
                 state.Current.JsonPropertyInfo = info;
 
-                if (!state.Current.IsPreserved)
+                if (state.Current.MetadataProperty != MetadataPropertyName.Id)
                 {
                     ThrowHelper.ThrowJsonException_MetadataMissingIdBeforeValues();
                 }
@@ -246,7 +243,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(state.Current.JsonClassInfo.Type);
                 }
 
-                if (state.Current.PropertyIndex > 0 || state.Current.IsPreserved)
+                if (state.Current.ObjectHaveProperties)
                 {
                     ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
                 }
@@ -261,6 +258,9 @@ namespace System.Text.Json
                 state.Current.ReadMetadataValue = true;
                 state.Current.ShouldHandleReference = true;
             }
+
+            state.Current.MetadataProperty = meta;
+            state.Current.ObjectHaveProperties = true;
         }
     }
 }

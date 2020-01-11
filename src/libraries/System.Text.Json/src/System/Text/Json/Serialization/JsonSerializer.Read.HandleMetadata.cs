@@ -108,18 +108,6 @@ namespace System.Text.Json
 
             state.Current.ShouldHandleReference = false;
         }
-
-        internal static void MarkAsPreserved(ref ReadStackFrame frame)
-        {
-            if (frame.IsProcessingProperty(ClassType.Dictionary))
-            {
-                frame.DictionaryPropertyIsPreserved = true;
-            }
-            else
-            {
-                frame.IsPreserved = true;
-            }
-        }
     }
 
     internal enum MetadataPropertyName

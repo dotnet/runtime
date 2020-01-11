@@ -38,10 +38,10 @@ namespace System.Text.Json
         public bool Drain;
 
         // Preserve Reference
-        public bool IsPreserved;
         public bool IsPreservedArray;
         public bool IsNestedPreservedArray;
-        public bool DictionaryPropertyIsPreserved;
+        public bool DictionaryHaveKeys;
+        public bool ObjectHaveProperties;
         // maybe I can remove ShouldHandleReference if I use ReferenceId = null as false.
         public bool ShouldHandleReference;
         public bool ReadMetadataValue;
@@ -176,7 +176,6 @@ namespace System.Text.Json
             JsonClassInfo = null;
             PropertyRefCache = null;
             ReturnValue = null;
-            IsPreserved = false;
             IsPreservedArray = false;
             IsNestedPreservedArray = false;
             EndObject();
@@ -184,6 +183,7 @@ namespace System.Text.Json
 
         public void EndObject()
         {
+            ObjectHaveProperties = false;
             PropertyIndex = 0;
             EndProperty();
         }
@@ -197,7 +197,7 @@ namespace System.Text.Json
             TempDictionaryValues = null;
             JsonPropertyName = null;
             KeyName = null;
-            DictionaryPropertyIsPreserved = false;
+            DictionaryHaveKeys = false;
         }
 
         public static object? CreateEnumerableValue(ref ReadStack state)
