@@ -70,7 +70,7 @@ src/coreclr/build.sh -release -skiptests
 For Windows:
 ```
 src\coreclr\build.cmd -release -skiptests
-build.cmd -subsetCategory libraries  /p:CoreCLRConfiguration=Release
+build.cmd -subsetCategory libraries /p:CoreCLRConfiguration=Release
 ```
 
 Detailed information about building and testing CoreCLR and the libraries is in the documents linked below.
