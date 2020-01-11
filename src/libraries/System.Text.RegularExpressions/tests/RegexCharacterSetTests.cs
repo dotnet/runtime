@@ -12,7 +12,6 @@ namespace System.Text.RegularExpressions.Tests
     public class RegexCharacterSetTests
     {
         [Theory]
-        [InlineData(@"a", RegexOptions.None, new[] { 'a' })]
         [InlineData(@"a", RegexOptions.IgnoreCase, new[] { 'a', 'A' })]
         [InlineData(@"\u00A9", RegexOptions.None, new[] { '\u00A9' })]
         [InlineData(@"\u00A9", RegexOptions.IgnoreCase, new[] { '\u00A9' })]
@@ -50,6 +49,63 @@ namespace System.Text.RegularExpressions.Tests
             {
                 ValidateSet($"[^{set}]", options, null, new HashSet<char>(expectedIncluded));
             }
+        }
+
+        [Theory]
+        [InlineData('\0')]
+        [InlineData('\uFFFF')]
+        [InlineData('a')]
+        [InlineData('5')]
+        public void SingleExpected(char c)
+        {
+            string s = @"\u" + ((int)c).ToString("X4");
+            var set = new HashSet<char>() { c };
+
+            // One
+            ValidateSet($"{s}", RegexOptions.None, set, null);
+            ValidateSet($"[{s}]", RegexOptions.None, set, null);
+            ValidateSet($"[^{s}]", RegexOptions.None, null, set);
+
+            // Positive lookahead
+            ValidateSet($"(?={s}){s}", RegexOptions.None, set, null);
+            ValidateSet($"(?=[^{s}])[^{s}]", RegexOptions.None, null, set);
+
+            // Negative lookahead
+            ValidateSet($"(?![^{s}]){s}", RegexOptions.None, set, null);
+            ValidateSet($"(?![{s}])[^{s}]", RegexOptions.None, null, set);
+
+            // Concatenation
+            ValidateSet($"[{s}{s}]", RegexOptions.None, set, null);
+            ValidateSet($"[^{s}{s}{s}]", RegexOptions.None, null, set);
+
+            // Alternation
+            ValidateSet($"{s}|{s}", RegexOptions.None, set, null);
+            ValidateSet($"[^{s}]|[^{s}]|[^{s}]", RegexOptions.None, null, set);
+            ValidateSet($"{s}|[^{s}]", RegexOptions.None, null, new HashSet<char>());
+        }
+
+        [Fact]
+        public void AllEmptySets()
+        {
+            var set = new HashSet<char>();
+
+            ValidateSet(@"[\u0000-\uFFFF]", RegexOptions.None, null, set);
+            ValidateSet(@"[\u0000-\uFFFFa-z]", RegexOptions.None, null, set);
+            ValidateSet(@"[\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, null, set);
+            ValidateSet(@"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set);
+
+            ValidateSet(@"[^\u0000-\uFFFF]", RegexOptions.None, set, null);
+            ValidateSet(@"[^\u0000-\uFFFFa-z]", RegexOptions.None, set, null);
+            ValidateSet(@"[^\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, set, null);
+            ValidateSet(@"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null);
+        }
+
+        [Fact]
+        public void AllButOneSets()
+        {
+            ValidateSet(@"[\u0000-\uFFFE]", RegexOptions.None, null, new HashSet<char>() { '\uFFFF' });
+            ValidateSet(@"[\u0001-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { '\u0000' });
+            ValidateSet(@"[\u0000-ac-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { 'b' });
         }
 
         [Fact]
