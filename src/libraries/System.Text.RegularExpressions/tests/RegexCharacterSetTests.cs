@@ -88,8 +88,16 @@ namespace System.Text.RegularExpressions.Tests
         public void AllEmptySets()
         {
             var set = new HashSet<char>();
+
             ValidateSet(@"[\u0000-\uFFFF]", RegexOptions.None, null, set);
+            ValidateSet(@"[\u0000-\uFFFFa-z]", RegexOptions.None, null, set);
+            ValidateSet(@"[\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, null, set);
+            ValidateSet(@"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set);
+
             ValidateSet(@"[^\u0000-\uFFFF]", RegexOptions.None, set, null);
+            ValidateSet(@"[^\u0000-\uFFFFa-z]", RegexOptions.None, set, null);
+            ValidateSet(@"[^\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, set, null);
+            ValidateSet(@"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null);
         }
 
         [Fact]
