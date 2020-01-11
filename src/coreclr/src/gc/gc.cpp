@@ -35279,10 +35279,6 @@ void gc_heap::descr_generations (BOOL begin_gc_p)
 #endif //TRACE_GC
 }
 
-#undef TRACE_GC
-
-//#define TRACE_GC
-
 //-----------------------------------------------------------------------------
 //
 //                                  VM Specific support
@@ -35293,12 +35289,12 @@ void gc_heap::descr_generations (BOOL begin_gc_p)
 #ifdef TRACE_GC
 
  unsigned int PromotedObjectCount  = 0;
- unsigned int CreatedObjectCount       = 0;
- unsigned int AllocDuration            = 0;
- unsigned int AllocCount               = 0;
- unsigned int AllocBigCount            = 0;
+ unsigned int CreatedObjectCount   = 0;
+ unsigned int AllocCount           = 0;
+ unsigned int AllocBigCount        = 0;
  unsigned int AllocSmallCount      = 0;
- unsigned int AllocStart             = 0;
+ int64_t      AllocStart           = 0;
+ int64_t      AllocDuration        = 0;
 #endif //TRACE_GC
 
 //Static member variables.
@@ -35307,8 +35303,8 @@ VOLATILE(BOOL)    GCHeap::GcInProgress            = FALSE;
 //CMCSafeLock*      GCHeap::fGcLock;
 GCEvent            *GCHeap::WaitForGCEvent         = NULL;
 //GCTODO
-#ifdef TRACE_GC
-unsigned int       GCHeap::GcDuration;
+#if defined(TRACE_GC) && !defined(MULTIPLE_HEAPS)
+uint64_t            GCHeap::GcDuration;
 #endif //TRACE_GC
 unsigned            GCHeap::GcCondemnedGeneration   = 0;
 size_t              GCHeap::totalSurvivedSize       = 0;
@@ -37487,10 +37483,11 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 #ifdef TRACE_GC
 #ifdef COUNT_CYCLES
     finish = GetCycleCount32();
+    AllocDuration += finish - AllocStart;
 #elif defined(ENABLE_INSTRUMENTATION)
     finish = GetInstLogTime();
-#endif //COUNT_CYCLES
     AllocDuration += finish - AllocStart;
+#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
@@ -37549,11 +37546,12 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
 #ifdef TRACE_GC
 #ifdef COUNT_CYCLES
     finish = GetCycleCount32();
+    AllocDuration += finish - AllocStart;
 #elif defined(ENABLE_INSTRUMENTATION)
     finish = GetInstLogTime();
     AllocDuration += finish - AllocStart;
-    AllocCount++;
 #endif //COUNT_CYCLES
+    AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
 }
@@ -37622,10 +37620,11 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 #ifdef TRACE_GC
 #ifdef COUNT_CYCLES
     finish = GetCycleCount32();
+    AllocDuration += finish - AllocStart;
 #elif defined(ENABLE_INSTRUMENTATION)
     finish = GetInstLogTime();
-#endif //COUNT_CYCLES
     AllocDuration += finish - AllocStart;
+#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
@@ -38260,7 +38259,7 @@ void gc_heap::do_post_gc()
 #ifdef COUNT_CYCLES
     AllocStart = GetCycleCount32();
 #else
-    AllocStart = clock();
+    AllocStart = GCToOSInterface::QueryPerformanceCounter();
 #endif //COUNT_CYCLES
 #endif //TRACE_GC
 
@@ -38480,7 +38479,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 #ifdef COUNT_CYCLES
     AllocDuration += GetCycleCount32() - AllocStart;
 #else
-    AllocDuration += clock() - AllocStart;
+    AllocDuration += GCToOSInterface::QueryPerformanceCounter() - AllocStart;
 #endif //COUNT_CYCLES
 #endif //TRACE_GC
 
@@ -38529,9 +38528,9 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
     unsigned finish;
     start = GetCycleCount32();
 #else
-    clock_t start;
-    clock_t finish;
-    start = clock();
+    int64_t start;
+    int64_t finish;
+    start = GCToOSInterface::QueryPerformanceCounter();
 #endif //COUNT_CYCLES
     PromotedObjectCount = 0;
 #endif //TRACE_GC
@@ -38573,7 +38572,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 #ifdef COUNT_CYCLES
     finish = GetCycleCount32();
 #else
-    finish = clock();
+    finish = GCToOSInterface::QueryPerformanceCounter();
 #endif //COUNT_CYCLES
     GcDuration += finish - start;
     dprintf (3,
