@@ -306,6 +306,7 @@ namespace System.Runtime.CompilerServices
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
+        private const uint enum_flag_HasTypeEquivalence = 0x00004000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
@@ -335,6 +336,14 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        public bool HasTypeEquivalence
+        {
+            get
+            {
+                return (Flags & enum_flag_HasTypeEquivalence) != 0;
+            }
+        }
+
         public bool IsMultiDimensionalArray
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -358,27 +367,35 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public nuint* InterfaceMap
+        public MethodTable* BaseMethodTable
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                byte* pMt = (byte*)Unsafe.AsPointer(ref this.Flags);
+                int mtFieldOffset = 0x10 / sizeof(nuint);
+#if DEBUG
+                mtFieldOffset += 1; // adjust for debug_m_szClassName
+#endif
+                ref nuint @this = ref Unsafe.As<MethodTable, nuint>(ref this);
+                return (MethodTable*)Unsafe.Add(ref @this, mtFieldOffset);
+            }
+        }
 
+        public nuint* InterfaceMap
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
 #if BIT64
-#if DEBUG
-                return *(nuint**)(pMt + 0x40);
+                int imFieldOffset = 0x38 / sizeof(nuint);
 #else
-                return *(nuint**)(pMt + 0x38);
+                int imFieldOffset = 0x24 / sizeof(nuint);
 #endif
-
-#else //BIT64
-
 #if DEBUG
-                return *(nuint**)(pMt + 0x28);
-#else
-                return *(nuint**)(pMt + 0x24);
+                imFieldOffset += 1; // adjust for debug_m_szClassName
 #endif
-#endif
+                ref nuint @this = ref Unsafe.As<MethodTable, nuint>(ref this);
+                return (nuint*)Unsafe.Add(ref @this, imFieldOffset);
             }
         }
     }

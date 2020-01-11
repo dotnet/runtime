@@ -173,9 +173,9 @@ namespace System.Runtime.CompilerServices
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface, IsInstanceOfClass, and IsIsntanceofArray functions,
         // this test must deal with all kinds of type tests
-        [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
+        //[DebuggerHidden]
+        //[StackTraceHidden]
+        //[DebuggerStepThrough]
         private static object? JIT_IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
             if (obj != null)
@@ -206,14 +206,13 @@ namespace System.Runtime.CompilerServices
             return JITutil_IsInstanceOfAny_NoCacheLookup(toTypeHnd, obj);
         }
 
-        [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
+        //[DebuggerHidden]
+        //[StackTraceHidden]
+        //[DebuggerStepThrough]
         private static object? JIT_IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
             if (obj != null)
             {
-                // get methodtable
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
                 nint interfaceCount = mt->InterfaceCount;
                 if (interfaceCount > 0)
@@ -224,17 +223,18 @@ namespace System.Runtime.CompilerServices
                     do
                     {
                         if (interfaceMap[i + 0] == (nuint)toTypeHnd)
-                            goto pass;
+                            goto done;
                         if (interfaceMap[i + 1] == (nuint)toTypeHnd)
-                            goto pass;
+                            goto done;
                         if (interfaceMap[i + 2] == (nuint)toTypeHnd)
-                            goto pass;
+                            goto done;
                         if (interfaceMap[i + 3] == (nuint)toTypeHnd)
-                            goto pass;
+                            goto done;
                     }
                     while ((i += 4) < interfaceCount);
 
                     // REVIEW FYI: Also tried the following (vectorizing the lookup).
+                    //
                     //             It improved the worst case scenarios (10-20%), since we can get through the whole list faster.
                     //             but best/common cases got slower (also 10-20%). I am guessing that superscalar CPU is very good at
                     //             linear/speculative compares, and without any math vectorization does not help that much.
@@ -262,16 +262,70 @@ namespace System.Runtime.CompilerServices
                 obj = null;
             }
 
-        pass:
+        done:
             return obj;
 
         slowPath:
             return IsInstanceHelper(toTypeHnd, obj);
         }
 
-        [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
+        //[DebuggerHidden]
+        //[StackTraceHidden]
+        //[DebuggerStepThrough]
+        private static object? JIT_IsInstanceOfClass(void* toTypeHnd, object? obj)
+        {
+            if (obj != null)
+            {
+                MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+                for (;;)
+                {
+                    if (mt == toTypeHnd)
+                        goto done;
+
+                    mt = mt->BaseMethodTable;
+                    if (mt == null)
+                        break;
+
+                    if (mt == toTypeHnd)
+                        goto done;
+
+                    mt = mt->BaseMethodTable;
+                    if (mt == null)
+                        break;
+
+                    if (mt == toTypeHnd)
+                        goto done;
+
+                    mt = mt->BaseMethodTable;
+                    if (mt == null)
+                        break;
+
+                    if (mt == toTypeHnd)
+                        goto done;
+
+                    mt = mt->BaseMethodTable;
+                    if (mt == null)
+                        break;
+                }
+
+                if (RuntimeHelpers.GetMethodTable(obj)->HasTypeEquivalence)
+                {
+                    goto slowPath;
+                }
+
+                obj = null;
+            }
+
+        done:
+            return obj;
+
+        slowPath:
+            return IsInstanceHelper(toTypeHnd, obj);
+        }
+
+        //[DebuggerHidden]
+        //[StackTraceHidden]
+        //[DebuggerStepThrough]
         private static object? IsInstanceHelper(void* toTypeHnd, object obj)
         {
             CastResult result = TryGet((nint)RuntimeHelpers.GetMethodTable(obj), (nint)toTypeHnd);
@@ -291,9 +345,9 @@ namespace System.Runtime.CompilerServices
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the ChkCastInterface and ChkCastClass functions,
         // this test must deal with all kinds of type tests
-        [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
+        //[DebuggerHidden]
+        //[StackTraceHidden]
+        //[DebuggerStepThrough]
         private static object? JIT_ChkCastAny(void* toTypeHnd, object? obj)
         {
             CastResult result;

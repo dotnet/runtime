@@ -199,12 +199,6 @@ EXTERN_C FCDECL2(Object*, JIT_ChkCastClass_Portable, MethodTable* pMT, Object* p
 EXTERN_C FCDECL2(Object*, JIT_ChkCastClassSpecial, MethodTable* pMT, Object* pObject);
 EXTERN_C FCDECL2(Object*, JIT_ChkCastClassSpecial_Portable, MethodTable* pMT, Object* pObject);
 
-#ifndef JIT_IsInstanceOfClass
-#define JIT_IsInstanceOfClass JIT_IsInstanceOfClass_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfClass, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfClass_Portable, MethodTable* pMT, Object* pObject);
-
 #ifndef JIT_ChkCastInterface
 #define JIT_ChkCastInterface JIT_ChkCastInterface_Portable
 #endif

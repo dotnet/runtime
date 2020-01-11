@@ -265,9 +265,6 @@ ASMCONSTANTS_C_ASSERT(ComPlusCallInfo__m_pRetThunk == offsetof(ComPlusCallInfo, 
 
 #endif // FEATURE_COMINTEROP
 
-#define               NonTrivialInterfaceCastFlags (0x00080000 + 0x40000000 + 0x00400000)
-ASMCONSTANTS_C_ASSERT(NonTrivialInterfaceCastFlags == MethodTable::public_enum_flag_NonTrivialInterfaceCast)
-
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)
 

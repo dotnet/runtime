@@ -3828,14 +3828,6 @@ private:
         return (m_wFlags2 & (DWORD)mask) == (DWORD)flag;
     }
 
-    // Just exposing a couple of these for x86 asm versions of JIT_IsInstanceOfClass and JIT_IsInstanceOfInterface
-public:
-    enum
-    {
-        public_enum_flag_HasTypeEquivalence = enum_flag_HasTypeEquivalence,
-        public_enum_flag_NonTrivialInterfaceCast = enum_flag_NonTrivialInterfaceCast,
-    };
-
 private:
     /*
      * This stuff must be first in the struct and should fit on a cache line - don't move it. Used by the GC.

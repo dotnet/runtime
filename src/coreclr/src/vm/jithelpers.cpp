@@ -2248,38 +2248,6 @@ HCIMPL2(Object*, JIT_ChkCastClassSpecial_Portable, MethodTable* pTargetMT, Objec
 }
 HCIMPLEND
 
-HCIMPL2(Object*, JIT_IsInstanceOfClass_Portable, MethodTable* pTargetMT, Object* pObject)
-{
-    FCALL_CONTRACT;
-
-    //
-    // casts pObject to type pMT
-    //
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    PTR_VOID pMT = pObject->GetMethodTable();
-
-    do {
-        if (pMT == pTargetMT)
-            return pObject;
-
-        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
-    } while (pMT);
-
-    if (!pObject->GetMethodTable()->HasTypeEquivalence())
-    {
-        return NULL;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny, CORINFO_CLASS_HANDLE(pTargetMT), pObject);
-}
-HCIMPLEND
-
 HCIMPL2(Object*, JIT_ChkCastInterface_Portable, MethodTable *pInterfaceMT, Object* pObject)
 {
     CONTRACTL {
