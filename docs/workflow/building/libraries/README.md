@@ -216,4 +216,8 @@ One can build 32- or 64-bit binaries or for any architecture by specifying in th
 
 If you are working on Windows, and use Visual Studio, you can open individual libraries projects into it. From within Visual Studio you can then build, debug, and run tests.
 
+## Running tests
+
 For more details about running tests inside Visual Studio, [go here](../../testing/libraries/testing-vs.md)
+
+For more about running tests, read the [running tests](../../testing/libraries/testing.md) document.
