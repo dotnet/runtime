@@ -69,6 +69,7 @@ namespace System.Text.Json
             {
                 // Nested array with metadata within another array with metadata.
                 HandleStartObjectInEnumerable(ref state, options, classInfo.Type);
+
                 Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
                 Debug.Assert(state.Current.JsonClassInfo!.Type.GetGenericTypeDefinition() == typeof(JsonPreservedReference<>));
 

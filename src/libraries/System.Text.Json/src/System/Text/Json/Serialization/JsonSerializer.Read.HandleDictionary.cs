@@ -53,18 +53,15 @@ namespace System.Text.Json
 
                     state.Current.ReturnValue = classInfo.CreateObject();
                 }
-                // Preserved Array within the dictionary.
-                else if (options.ReferenceHandling.ShouldReadPreservedReferences() && state.Current.IsProcessingEnumerable())
+                else if (state.Current.IsProcessingObject(ClassType.Enumerable))
                 {
-                    Type preservedObjType = state.Current.JsonClassInfo.PolicyProperty!.GetJsonPreservedReferenceType();
-                    // Re-Initialize the current frame.
-                    state.Current.Initialize(preservedObjType, options);
+                    // Array with metadata within the dictionary.
+                    HandleStartObjectInEnumerable(ref state, options, classInfo.Type);
+
+                    Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
+                    Debug.Assert(state.Current.JsonClassInfo!.Type.GetGenericTypeDefinition() == typeof(JsonPreservedReference<>));
+
                     state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject!();
-                    state.Current.IsPreservedArray = true;
-                }
-                else
-                {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(classInfo.Type);
                 }
 
                 return;
