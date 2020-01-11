@@ -136,5 +136,88 @@ namespace System.Text.RegularExpressions.Tests
                 }
             }
         }
+
+        // These patterns come from real-world customer usages
+
+        [Theory]
+        [InlineData("https://foo.com:443/bar/17/groups/0ad1/providers/Network/public/4e-ip?version=16", "Network/public/4e-ip")]
+        [InlineData("ftp://443/notproviders/17/groups/0ad1/providers/Network/public/4e-ip?version=16", "Network/public/4e-ip")]
+        [InlineData("ftp://443/providersnot/17/groups/0ad1/providers/Network/public/4e-ip?version=16", "Network/public/4e-ip")]
+        public void ExtractResourceUri(string url, string expected)
+        {
+            foreach (RegexOptions options in new[] { RegexOptions.Compiled, RegexOptions.None })
+            {
+                Regex r = new Regex(@"/providers/(.+?)\?", options);
+                Match m = r.Match(url);
+                Assert.True(m.Success);
+                Assert.Equal(2, m.Groups.Count);
+                Assert.Equal(expected, m.Groups[1].Value);
+            }
+        }
+
+        [Theory]
+        [InlineData("IsValidCSharpName", true)]
+        [InlineData("_IsValidCSharpName", true)]
+        [InlineData("__", true)]
+        [InlineData("a\u2169", true)] // \u2169 is in {Nl}
+        [InlineData("\u2169b", true)] // \u2169 is in {Nl}
+        [InlineData("a\u0600", true)] // \u0600 is in {Cf}
+        [InlineData("\u0600b", false)] // \u0600 is in {Cf}
+        [InlineData("a\u0300", true)] // \u0300 is in {Mn}
+        [InlineData("\u0300b", false)] // \u0300 is in {Mn}
+        [InlineData("https://foo.com:443/bar/17/groups/0ad1/providers/Network/public/4e-ip?version=16", false)]
+        [InlineData("david.jones@proseware.com", false)]
+        [InlineData("~david", false)]
+        [InlineData("david~", false)]
+        public void IsValidCSharpName(string value, bool isExpectedMatch)
+        {
+            const string StartCharacterRegex = @"_|[\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Nl}]";
+            const string PartCharactersRegex = @"[\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Nl}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\p{Cf}]";
+
+            const string IdentifierRegex = @"^(" + StartCharacterRegex + ")(" + PartCharactersRegex + ")*$";
+
+            foreach (RegexOptions options in new[] { RegexOptions.Compiled, RegexOptions.None })
+            {
+                Regex r = new Regex(IdentifierRegex, options);
+                Assert.Equal(isExpectedMatch, r.IsMatch(value));
+            }
+        }
+
+        [Theory]
+        [InlineData("; this is a comment", true)]
+        [InlineData("\t; so is this", true)]
+        [InlineData("  ; and this", true)]
+        [InlineData(";", true)]
+        [InlineData(";comment\nNotThisBecauseOfNewLine", false)]
+        [InlineData("-;not a comment", false)]
+        public void IsCommentLine(string value, bool isExpectedMatch)
+        {
+            const string CommentLineRegex = @"^\s*;\s*(.*?)\s*$";
+
+            foreach (RegexOptions options in new[] { RegexOptions.Compiled, RegexOptions.None })
+            {
+                Regex r = new Regex(CommentLineRegex, options);
+                Assert.Equal(isExpectedMatch, r.IsMatch(value));
+            }
+        }
+
+        [Theory]
+        [InlineData("[ThisIsASection]", true)]
+        [InlineData(" [ThisIsASection] ", true)]
+        [InlineData("\t[ThisIs\\ASection]\t", true)]
+        [InlineData("\t[This.Is:(A+Section)]\t", true)]
+        [InlineData("[This Is Not]", false)]
+        [InlineData("This is not[]", false)]
+        [InlineData("[Nor This]/", false)]
+        public void IsSectionLine(string value, bool isExpectedMatch)
+        {
+            const string SectionLineRegex = @"^\s*\[([\w\.\-\+:\/\(\)\\]+)\]\s*$";
+
+            foreach (RegexOptions options in new[] { RegexOptions.Compiled, RegexOptions.None })
+            {
+                Regex r = new Regex(SectionLineRegex, options);
+                Assert.Equal(isExpectedMatch, r.IsMatch(value));
+            }
+        }
     }
 }
