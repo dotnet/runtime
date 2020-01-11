@@ -10830,6 +10830,183 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
 
 #endif // FEATURE_SIMD
 
+ //------------------------------------------------------------------------
+ // fgMorphCommutative: Fold constants in a tree with commutative operators (|, ^, &, +)
+ //
+ // Arguments:
+ //    tree - This node will be checked for patterns where constants can be folded.
+ //
+ // Return Value:
+ //    A GenTree* which points to the new tree with folded constants.
+ //
+
+GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_OR, GT_XOR, GT_AND, GT_ADD));
+
+    GenTree*   op1  = tree->gtGetOp1();
+    GenTree*   op2  = tree->gtGetOp2();
+    genTreeOps oper = tree->OperGet();
+
+    // Fold "((x <op> icon1) <op> (y <op> icon2))" to "((x <op> y) <op> (icon1 <op> icon2))"
+    if (op1->OperIs(op2->OperGet()) && op1->OperIs(oper) && !gtIsActiveCSE_Candidate(op2) &&
+        op1->AsOp()->gtGetOp2()->IsCnsIntOrI() && op2->AsOp()->gtGetOp2()->IsCnsIntOrI())
+    {
+        // Don't create a byref pointer that may point outside of the ref object.
+        // If a GC happens, the byref won't get updated. This can happen if one
+        // of the int components is negative. It also requires the address generation
+        // be in a fully-interruptible code region.
+        if (!varTypeIsGC(op1->AsOp()->gtGetOp1()->TypeGet()) &&
+            !varTypeIsGC(op2->AsOp()->gtGetOp1()->TypeGet()))
+        {
+            GenTreeIntCon* cns1  = op1->AsOp()->gtGetOp2()->AsIntCon();
+            GenTreeIntCon* cns2  = op2->AsOp()->gtGetOp2()->AsIntCon();
+            const ssize_t  icon1 = cns1->IconValue();
+            const ssize_t  icon2 = cns2->IconValue();
+
+            if (oper == GT_ADD)
+            {
+                if (tree->gtOverflow() || op1->gtOverflow() || op2->gtOverflow())
+                {
+                    return tree;
+                }
+                cns1->SetIconValue(icon1 + icon2);
+            }
+            else if (oper == GT_OR)
+            {
+                cns1->SetIconValue(icon1 | icon2);
+            }
+            else if (oper == GT_XOR)
+            {
+                cns1->SetIconValue(icon1 ^ icon2);
+            }
+            else if (oper == GT_AND)
+            {
+                cns1->SetIconValue(icon1 & icon2);
+            }
+            else
+            {
+                noway_assert(!"unexpected operator");
+            }
+#ifdef _TARGET_64BIT_
+            if (cns1->TypeGet() == TYP_INT)
+            {
+                // we need to properly re-sign-extend or truncate after adding two int constants above
+                cns1->TruncateOrSignExtend32();
+            }
+#endif //_TARGET_64BIT_
+
+            tree->gtOp2 = cns1;
+            DEBUG_DESTROY_NODE(cns2);
+
+            op1->AsOp()->gtOp2 = op2->AsOp()->gtOp1;
+            op1->gtFlags |= (op1->AsOp()->gtOp2->gtFlags & GTF_ALL_EFFECT);
+            DEBUG_DESTROY_NODE(op2);
+            op2 = tree->gtOp2;
+        }
+    }
+
+    if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(tree->TypeGet()))
+    {
+        // Fold "((x <op> icon1) <op> icon2) to (x <op> (icon1 <op> icon2))"
+        if (op1->OperIs(oper) &&
+            !gtIsActiveCSE_Candidate(op1) &&
+            op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
+            (op1->AsOp()->gtGetOp2()->OperGet() == op2->OperGet()) &&
+            !varTypeIsGC(op1->AsOp()->gtGetOp2()->TypeGet()) &&
+            !varTypeIsGC(op2->TypeGet()))
+        {
+            GenTreeIntConCommon* cns1  = op1->AsOp()->gtGetOp2()->AsIntConCommon();
+            GenTreeIntConCommon* cns2  = op2->AsIntConCommon();
+            const ssize_t        icon1 = cns1->IconValue();
+            const ssize_t        icon2 = cns2->IconValue();
+
+            if (oper == GT_ADD)
+            {
+                if (tree->gtOverflow() || op1->gtOverflow())
+                {
+                    return tree;
+                }
+                cns2->SetIconValue(icon1 + icon2);
+            }
+            else if (oper == GT_OR)
+            {
+                cns2->SetIconValue(icon1 | icon2);
+            }
+            else if (oper == GT_XOR)
+            {
+                cns2->SetIconValue(icon1 ^ icon2);
+            }
+            else if (oper == GT_AND)
+            {
+                cns2->SetIconValue(icon1 & icon2);
+            }
+            else
+            {
+                noway_assert(!"unexpected operator");
+            }
+#ifdef _TARGET_64BIT_
+            if (op2->TypeGet() == TYP_INT)
+            {
+                // we need to properly re-sign-extend or truncate after folding two int constants above
+                op2->AsIntCon()->TruncateOrSignExtend32();
+            }
+#endif //_TARGET_64BIT_
+
+            if (cns1->OperGet() == GT_CNS_INT)
+            {
+                op2->AsIntCon()->gtFieldSeq =
+                    GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
+            }
+            DEBUG_DESTROY_NODE(cns1);
+
+            tree->gtOp1 = op1->AsOp()->gtOp1;
+            DEBUG_DESTROY_NODE(op1);
+            op1 = tree->gtOp1;
+        }
+
+        // Fold (x <op> 0) for GT_ADD, GT_OR and GT_XOR.
+        if (tree->OperIs(GT_ADD, GT_OR, GT_XOR) && (op2->AsIntConCommon()->IconValue() == 0) &&
+            !gtIsActiveCSE_Candidate(tree))
+        {
+
+            // If this addition is adding an offset to a null pointer,
+            // avoid the work and yield the null pointer immediately.
+            // Dereferencing the pointer in either case will have the
+            // same effect.
+
+            if (!optValnumCSE_phase && varTypeIsGC(op2->TypeGet()) &&
+                ((op1->gtFlags & GTF_ALL_EFFECT) == 0))
+            {
+                op2->gtType = tree->gtType;
+                DEBUG_DESTROY_NODE(op1);
+                DEBUG_DESTROY_NODE(tree);
+                return op2;
+            }
+
+            // Remove the addition if it won't change the tree type
+            // to TYP_REF.
+
+            if (!gtIsActiveCSE_Candidate(op2) &&
+                ((op1->TypeGet() == tree->TypeGet()) || (op1->TypeGet() != TYP_REF)))
+            {
+                if (fgGlobalMorph && (op2->OperGet() == GT_CNS_INT) &&
+                    (op2->AsIntCon()->gtFieldSeq != nullptr) &&
+                    (op2->AsIntCon()->gtFieldSeq != FieldSeqStore::NotAField()))
+                {
+                    fgAddFieldSeqForZeroOffset(op1, op2->AsIntCon()->gtFieldSeq);
+                }
+
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(tree);
+                return op1;
+            }
+        }
+    }
+
+    return tree;
+}
+
 /*****************************************************************************
  *
  *  Transform the given GTK_SMPOP tree for code generation.
@@ -11871,7 +12048,6 @@ DONE_MORPHING_CHILDREN:
      */
 
     GenTree*      temp;
-    GenTree*      cns1;
     GenTree*      cns2;
     size_t        ival1, ival2;
     GenTree*      lclVarTree;
@@ -12527,164 +12703,17 @@ DONE_MORPHING_CHILDREN:
             // See if we can fold constants for commutative operators.
             if (tree->OperIs(GT_OR, GT_XOR, GT_AND, GT_ADD))
             {
-                // Fold "((x <op> icon1) <op> (y <op> icon2))" to "((x <op> y) <op> (icon1 <op> icon2))"
-                if (op1->OperIs(op2->OperGet()) && op1->OperIs(oper) && !gtIsActiveCSE_Candidate(op2) &&
-                    op1->AsOp()->gtGetOp2()->IsCnsIntOrI() && op2->AsOp()->gtGetOp2()->IsCnsIntOrI())
+                tree = fgMorphCommutative(tree->AsOp());
+                if (!tree->OperIsBinary()) // e.g. fgMorphCommutative optimized `x + 0` into `x`
                 {
-                    // Don't create a byref pointer that may point outside of the ref object.
-                    // If a GC happens, the byref won't get updated. This can happen if one
-                    // of the int components is negative. It also requires the address generation
-                    // be in a fully-interruptible code region.
-                    if (!varTypeIsGC(op1->AsOp()->gtGetOp1()->TypeGet()) &&
-                        !varTypeIsGC(op2->AsOp()->gtGetOp1()->TypeGet()))
-                    {
-                        cns1          = op1->AsOp()->gtGetOp2();
-                        cns2          = op2->AsOp()->gtGetOp2();
-                        ssize_t icon1 = cns1->AsIntCon()->IconValue();
-                        ssize_t icon2 = cns2->AsIntCon()->IconValue();
-
-                        if (oper == GT_ADD)
-                        {
-                            if (op1->gtOverflow() || op2->gtOverflow())
-                            {
-                                break;
-                            }
-                            cns1->AsIntCon()->SetIconValue(icon1 + icon2);
-                        }
-                        else if (oper == GT_OR)
-                        {
-                            cns1->AsIntCon()->SetIconValue(icon1 | icon2);
-                        }
-                        else if (oper == GT_XOR)
-                        {
-                            cns1->AsIntCon()->SetIconValue(icon1 ^ icon2);
-                        }
-                        else if (oper == GT_AND)
-                        {
-                            cns1->AsIntCon()->SetIconValue(icon1 & icon2);
-                        }
-                        else
-                        {
-                            noway_assert(!"unexpected operator");
-                        }
-#ifdef _TARGET_64BIT_
-                        if (cns1->TypeGet() == TYP_INT)
-                        {
-                            // we need to properly re-sign-extend or truncate after adding two int constants above
-                            cns1->AsIntCon()->TruncateOrSignExtend32();
-                        }
-#endif //_TARGET_64BIT_
-
-                        tree->AsOp()->gtOp2 = cns1;
-                        DEBUG_DESTROY_NODE(cns2);
-
-                        op1->AsOp()->gtOp2 = op2->AsOp()->gtOp1;
-                        op1->gtFlags |= (op1->AsOp()->gtOp2->gtFlags & GTF_ALL_EFFECT);
-                        DEBUG_DESTROY_NODE(op2);
-                        op2 = tree->AsOp()->gtOp2;
-                    }
+                    return tree;
                 }
-
-                if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ))
-                {
-                    // Fold "((x <op> icon1) <op> icon2) to (x <op> (icon1 <op> icon2))"
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-
-                    if (op1->OperIs(oper) &&                                      //
-                        !gtIsActiveCSE_Candidate(op1) &&                          //
-                        op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&                 //
-                        (op1->AsOp()->gtGetOp2()->OperGet() == op2->OperGet()) && //
-                        (op1->AsOp()->gtGetOp2()->TypeGet() != TYP_REF) &&        // Don't fold REFs
-                        (op2->TypeGet() != TYP_REF))                              // Don't fold REFs
-                    {
-                        cns1          = op1->AsOp()->gtGetOp2();
-                        ssize_t icon1 = cns1->AsIntConCommon()->IconValue();
-                        ssize_t icon2 = op2->AsIntConCommon()->IconValue();
-
-                        if (oper == GT_ADD)
-                        {
-                            if (op1->gtOverflow())
-                            {
-                                break;
-                            }
-                            op2->AsIntConCommon()->SetIconValue(icon1 + icon2);
-                        }
-                        else if (oper == GT_OR)
-                        {
-                            op2->AsIntConCommon()->SetIconValue(icon1 | icon2);
-                        }
-                        else if (oper == GT_XOR)
-                        {
-                            op2->AsIntConCommon()->SetIconValue(icon1 ^ icon2);
-                        }
-                        else if (oper == GT_AND)
-                        {
-                            op2->AsIntConCommon()->SetIconValue(icon1 & icon2);
-                        }
-                        else
-                        {
-                            noway_assert(!"unexpected operator");
-                        }
-#ifdef _TARGET_64BIT_
-                        if (op2->TypeGet() == TYP_INT)
-                        {
-                            // we need to properly re-sign-extend or truncate after adding two int constants above
-                            op2->AsIntCon()->TruncateOrSignExtend32();
-                        }
-#endif //_TARGET_64BIT_
-
-                        if (cns1->OperGet() == GT_CNS_INT)
-                        {
-                            op2->AsIntCon()->gtFieldSeq =
-                                GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
-                        }
-                        DEBUG_DESTROY_NODE(cns1);
-
-                        tree->AsOp()->gtOp1 = op1->AsOp()->gtOp1;
-                        DEBUG_DESTROY_NODE(op1);
-                        op1 = tree->AsOp()->gtOp1;
-                    }
-
-                    // Fold (x <op> 0) for GT_ADD, GT_OR and GT_XOR.
-                    if (tree->OperIs(GT_ADD, GT_OR, GT_XOR) && (op2->AsIntConCommon()->IconValue() == 0) &&
-                        !gtIsActiveCSE_Candidate(tree))
-                    {
-
-                        // If this addition is adding an offset to a null pointer,
-                        // avoid the work and yield the null pointer immediately.
-                        // Dereferencing the pointer in either case will have the
-                        // same effect.
-
-                        if (!optValnumCSE_phase && varTypeIsGC(op2->TypeGet()) &&
-                            ((op1->gtFlags & GTF_ALL_EFFECT) == 0))
-                        {
-                            op2->gtType = tree->gtType;
-                            DEBUG_DESTROY_NODE(op1);
-                            DEBUG_DESTROY_NODE(tree);
-                            return op2;
-                        }
-
-                        // Remove the addition iff it won't change the tree type
-                        // to TYP_REF.
-
-                        if (!gtIsActiveCSE_Candidate(op2) &&
-                            ((op1->TypeGet() == tree->TypeGet()) || (op1->TypeGet() != TYP_REF)))
-                        {
-                            if (fgGlobalMorph && (op2->OperGet() == GT_CNS_INT) &&
-                                (op2->AsIntCon()->gtFieldSeq != nullptr) &&
-                                (op2->AsIntCon()->gtFieldSeq != FieldSeqStore::NotAField()))
-                            {
-                                fgAddFieldSeqForZeroOffset(op1, op2->AsIntCon()->gtFieldSeq);
-                            }
-
-                            DEBUG_DESTROY_NODE(op2);
-                            DEBUG_DESTROY_NODE(tree);
-
-                            return op1;
-                        }
-                    }
-                }
+                op1  = tree->gtGetOp1();
+                op2  = tree->AsOp()->gtGetOp2();
+                oper = tree->OperGet();
+                typ  = tree->TypeGet();
             }
+
             /* See if we can fold GT_MUL by const nodes */
             else if (oper == GT_MUL && op2->IsCnsIntOrI() && !optValnumCSE_phase)
             {
