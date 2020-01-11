@@ -19,8 +19,7 @@ build -subsetCategory libraries /p:CoreCLRConfiguration=Release
 :: Switch to working on a given library (RegularExpressions in this case)
 cd src\libraries\System.Text.RegularExpressions
 
-:: At this point you probably open files to work on. If you use
-:: Visual Studio, you might open System.Text.RegularExpressions.sln here.
+:: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
 
 :: Change to test directory
 cd tests
@@ -47,9 +46,6 @@ cd ../../
 # Switch to working on a given library (RegularExpressions in this case)
 cd src/libraries/System.Text.RegularExpressions
 
-# At this point you probably open files to work on. If you use
-# Visual Studio, you might open System.Text.RegularExpressions.sln here.
-
 # Change to test directory
 cd tests
 
@@ -57,7 +53,7 @@ cd tests
 pushd ../src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 ```
 
-Want more details about what this means? Read on.
+The steps above may be all you need to know to make a change. Want more details about what this means? Read on.
 
 ## Building everything
 
