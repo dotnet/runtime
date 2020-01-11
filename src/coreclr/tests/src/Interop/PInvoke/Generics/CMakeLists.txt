@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 2.6) 
 project (GenericsNative) 
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
 if(CLR_CMAKE_TARGET_ARCH_I386)
