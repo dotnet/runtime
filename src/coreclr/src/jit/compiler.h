@@ -3794,7 +3794,7 @@ public:
 
     GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);
 
-    var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* simdBaseType = nullptr);
+    var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* simdBaseType = nullptr, int* is__m128 = nullptr);
 
     GenTree* impNormStructVal(GenTree*             structVal,
                               CORINFO_CLASS_HANDLE structHnd,
@@ -7941,7 +7941,7 @@ private:
 
     // Get the base (element) type and size in bytes for a SIMD type. Returns TYP_UNKNOWN
     // if it is not a SIMD type or is an unsupported base type.
-    var_types getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
+    var_types getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr, int* is__m128 = nullptr);
 
     var_types getBaseTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
     {

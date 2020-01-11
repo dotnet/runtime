@@ -119,9 +119,13 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
 //         this when we implement  SIMD intrinsic identification for the final
 //         product.
 //
-var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
+var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */, int* is__m128 /*= nullptr*/)
 {
     assert(supportSIMDTypes());
+    if (is__m128)
+    {
+        *is__m128 = 0;
+    }
 
     if (m_simdHandleCache == nullptr)
     {
@@ -441,60 +445,100 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
 #endif // defined(TARGET_XARCH)
             if (typeHnd == m_simdHandleCache->Vector128FloatHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_FLOAT;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<float>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128DoubleHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_DOUBLE;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<double>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128IntHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_INT;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<int>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128UIntHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_UINT;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<uint>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128ShortHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_SHORT;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<short>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128UShortHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_USHORT;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<ushort>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128ByteHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_BYTE;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<sbyte>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128UByteHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_UBYTE;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<byte>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128LongHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_LONG;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<long>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector128ULongHandle)
         {
+            if (is__m128)
+            {
+                *is__m128 = 1;
+            }
             simdBaseType = TYP_ULONG;
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<ulong>\n");
