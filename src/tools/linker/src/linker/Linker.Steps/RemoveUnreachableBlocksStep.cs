@@ -185,6 +185,21 @@ namespace Mono.Linker.Steps
 					changed = true;
 					break;
 
+				case Code.Ldsfld:
+					var ftarget = (FieldReference)instr.Operand;
+					var field = ftarget.Resolve ();
+					if (field == null)
+						break;
+
+					if (Context.Annotations.TryGetFieldUserValue (field, out object value)) {
+						targetResult = CodeRewriterStep.CreateConstantResultInstruction (field.FieldType, value);
+						if (targetResult == null)
+							break;
+						reducer.Rewrite (i, targetResult);
+						changed = true;
+					}
+					break;
+
 				case Code.Sizeof:
 					//
 					// sizeof (IntPtr) and sizeof (UIntPtr) are just aliases for IntPtr.Size and UIntPtr.Size
@@ -898,7 +913,7 @@ namespace Mono.Linker.Steps
 
 			Instruction GetReturnInitialization (out Instruction[] initInstructions)
 			{
-				var cinstr = CodeRewriterStep.CreateConstantResultInstruction (body.Method);
+				var cinstr = CodeRewriterStep.CreateConstantResultInstruction (body.Method.ReturnType);
 				if (cinstr != null) {
 					initInstructions = null;
 					return cinstr;

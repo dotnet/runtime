@@ -98,6 +98,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 
 			VerifyTypeDefinitionKept (original, linked);
+
+			if (original.HasAttribute (nameof (CreatedMemberAttribute))) {
+				foreach (var attr in original.CustomAttributes.Where (l => l.AttributeType.Name == nameof (CreatedMemberAttribute))) {
+					var newName = original.FullName + "::" + attr.ConstructorArguments [0].Value.ToString ();
+
+					Assert.AreEqual (1, linkedMembers.RemoveWhere (l => l.Contains (newName)), $"Newly created member '{newName}' was not found");
+				}
+			}
 		}
 
 		protected virtual void VerifyTypeDefinitionKept (TypeDefinition original, TypeDefinition linked)

@@ -27,8 +27,63 @@ namespace Mono.Linker.Steps {
 					ProcessMethod (method);
 			}
 
+			if (type.HasFields && Annotations.HasSubstitutedInit (type)) {
+				AddFieldsInitializations (type);
+			}
+
 			foreach (var nested in type.NestedTypes)
 				ProcessType (nested);
+		}
+
+		void AddFieldsInitializations (TypeDefinition type)
+		{
+			Instruction ret;
+			ILProcessor processor;
+
+			var cctor = type.Methods.FirstOrDefault (MethodDefinitionExtensions.IsStaticConstructor);
+			if (cctor == null) {
+				type.Attributes |= TypeAttributes.BeforeFieldInit;
+
+				var method = new MethodDefinition (".cctor",
+					MethodAttributes.Static | MethodAttributes.Private | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName | MethodAttributes.HideBySig,
+					assembly.MainModule.TypeSystem.Void);
+
+				type.Methods.Add (method);
+
+				processor = method.Body.GetILProcessor ();
+				ret = Instruction.Create (OpCodes.Ret);
+				processor.Append (ret);
+			} else {
+				ret = cctor.Body.Instructions.Last (l => l.OpCode.Code == Code.Ret);
+				var body = cctor.Body;
+				processor = cctor.Body.GetILProcessor ();
+
+				for (int i = 0; i < body.Instructions.Count; ++i) {
+					var instr = body.Instructions [i];
+					if (instr.OpCode.Code != Code.Stsfld)
+						continue;
+
+					var field = (FieldReference)instr.Operand;
+					if (!Annotations.HasSubstitutedInit (field.Resolve ()))
+						continue;
+
+					processor.Replace (instr, Instruction.Create (OpCodes.Pop));
+				}
+			}
+
+			foreach (var field in type.Fields) {
+				if (!Annotations.HasSubstitutedInit (field))
+					continue;
+
+				Context.Annotations.TryGetFieldUserValue (field, out object value);
+
+				var valueInstr = CreateConstantResultInstruction (field.FieldType, value);
+				if (valueInstr == null)
+					throw new NotImplementedException (field.FieldType.ToString ());
+
+				processor.InsertBefore (ret, valueInstr);
+				processor.InsertBefore (ret, Instruction.Create (OpCodes.Stsfld, field));
+			}
 		}
 
 		void ProcessMethod (MethodDefinition method)
@@ -151,12 +206,11 @@ namespace Mono.Linker.Steps {
 		public static Instruction CreateConstantResultInstruction (LinkContext context, MethodDefinition method)
 		{
 			context.Annotations.TryGetMethodStubValue (method, out object value);
-			return CreateConstantResultInstruction (method, value);
+			return CreateConstantResultInstruction (method.ReturnType, value);
 		}
 
-		public static Instruction CreateConstantResultInstruction (MethodDefinition method, object value = null)
+		public static Instruction CreateConstantResultInstruction (TypeReference rtype, object value = null)
 		{
-			var rtype = method.ReturnType;
 			switch (rtype.MetadataType) {
 			case MetadataType.ValueType:
 				var definition = rtype.Resolve ();
