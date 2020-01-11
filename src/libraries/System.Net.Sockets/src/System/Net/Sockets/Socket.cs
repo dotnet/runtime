@@ -4629,7 +4629,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.ioctlsocket returns errorCode:{errorCode}");
 
-            // We will update only internal state but only on successfull win32 call
+            // We will update only internal state but only on successful win32 call
             // so if the native call fails, the state will remain the same.
             if (errorCode == SocketError.Success)
             {

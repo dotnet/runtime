@@ -110,7 +110,7 @@ Parameters :
     SHMPTR value : new value of element
 
 Return value :
-    TRUE if successfull, FALSE otherwise.
+    TRUE if successful, FALSE otherwise.
 
 Notes :
     The SHM lock should be held while manipulating shared memory

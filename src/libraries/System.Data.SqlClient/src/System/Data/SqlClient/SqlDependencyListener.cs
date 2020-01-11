@@ -10,10 +10,10 @@ using System.Data.ProviderBase;
 using System.Data.SqlClient;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Xml;
-using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 
 // This class is the process wide dependency dispatcher.  It contains all connection listeners for the entire process and
 // receives notifications on those connections to dispatch to the corresponding AppDomain dispatcher to notify the
@@ -234,7 +234,7 @@ internal class SqlDependencyProcessDispatcher : MarshalByRefObject
                     ProcessNotificationResults(reader);
                 }
 
-                // Successfull completion of query - no errors.
+                // Successful completion of query - no errors.
                 if (!_stop)
                 {
                     AsynchronouslyQueryServiceBrokerQueue(); // Requeue...
