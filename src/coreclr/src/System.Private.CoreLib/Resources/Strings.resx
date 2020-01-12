@@ -2896,6 +2896,9 @@
   <data name="NotSupported_MaxWaitHandles" xml:space="preserve">
     <value>The number of WaitHandles must be less than or equal to 64.</value>
   </data>
+  <data name="NotSupported_MaxWaitHandles_STA" xml:space="preserve">
+    <value>The number of WaitHandles on a STA thread must be less than or equal to 63.</value>
+  </data>
   <data name="NotSupported_MemStreamNotExpandable" xml:space="preserve">
     <value>Memory stream is not expandable.</value>
   </data>
