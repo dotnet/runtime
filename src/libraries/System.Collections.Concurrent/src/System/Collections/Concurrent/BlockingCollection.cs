@@ -1710,7 +1710,7 @@ nameof(boundedCapacity), boundedCapacity,
             if ((collections.Length > 63) ||
                 ((collections.Length == 63) && (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)))
             {
-                //The number of WaitHandles must be <= 64 for MTA, and <=63 for STA, and we reserve one for CancellationToken
+                //The number of WaitHandles must be <= 64 for MTA, and <=63 for STA, as we reserve one for CancellationToken
                 throw new ArgumentOutOfRangeException(
 nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
             }
