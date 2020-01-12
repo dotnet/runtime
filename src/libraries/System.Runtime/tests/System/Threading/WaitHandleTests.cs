@@ -94,6 +94,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void WaitAny_MaxHandles_STA()
         {
             Thread t = new Thread(() =>
