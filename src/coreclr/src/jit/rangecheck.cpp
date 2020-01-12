@@ -778,8 +778,14 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
-    if (binop->OperIs(GT_AND, GT_RSH, GT_UMOD) && op2->IsIntCnsFitsInI32())
+    if (binop->OperIs(GT_AND, GT_RSH, GT_UMOD))
     {
+        if (!op2->IsIntCnsFitsInI32())
+        {
+            // only cns is supported for op2 at the moment for &,%,>> operators
+            return Range(Limit::keUnknown);
+        }
+
         int icon = -1;
         if (binop->OperIs(GT_AND))
         {
