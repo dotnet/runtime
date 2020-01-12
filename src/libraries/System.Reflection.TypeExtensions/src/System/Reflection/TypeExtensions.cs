@@ -201,13 +201,13 @@ namespace System.Reflection
             return type.GetProperty(name, returnType, types);
         }
 
-        public static bool IsAssignableFrom(Type type, Type? c)
+        public static bool IsAssignableFrom(Type type, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Type? c)
         {
             Requires.NotNull(type, nameof(type));
             return type.IsAssignableFrom(c);
         }
 
-        public static bool IsInstanceOfType(Type type, object? o)
+        public static bool IsInstanceOfType(Type type, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? o)
         {
             Requires.NotNull(type, nameof(type));
             return type.IsInstanceOfType(o);

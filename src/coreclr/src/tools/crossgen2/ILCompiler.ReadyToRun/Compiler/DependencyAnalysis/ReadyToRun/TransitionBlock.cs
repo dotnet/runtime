@@ -11,6 +11,7 @@ using System.Diagnostics;
 
 using Internal.TypeSystem;
 using Internal.CorConstants;
+using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -265,45 +266,79 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         Debug.Assert(!thRetType.IsNull() && thRetType.IsValueType());
 
-                        if (thRetType.IsHFA() && !isVarArgMethod)
+                        if ((Architecture == TargetArchitecture.X64) && IsX64UnixABI)
                         {
-                            CorElementType hfaType = thRetType.GetHFAType();
+                            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor;
+                            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(thRetType.GetRuntimeTypeHandle(), out descriptor);
 
-                            switch (Architecture)
+                            if (descriptor.passedInRegisters)
                             {
-                                case TargetArchitecture.ARM:
-                                    fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
-                                        (4 * (uint)sizeof(float)) :
-                                        (4 * (uint)sizeof(double));
-                                    break;
+                                if (descriptor.eightByteCount == 1)
+                                {
+                                    if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
+                                    {
+                                        fpReturnSize = sizeof(double);
+                                    }
+                                }
+                                else
+                                {
+                                    fpReturnSize = 16;
+                                    if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
+                                    {
+                                        fpReturnSize += 1;
+                                    }
 
-                                case TargetArchitecture.ARM64:
-                                    // DESKTOP BEHAVIOR fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ? (4 * (uint)sizeof(float)) : (4 * (uint)sizeof(double));
-                                    // S and D registers overlap. Since we copy D registers in the UniversalTransitionThunk, we'll
-                                    // thread floats like doubles during copying.
-                                    fpReturnSize = 4 * (uint)sizeof(double);
-                                    break;
+                                    if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
+                                    {
+                                        fpReturnSize += 2;
+                                    }
+                                }
 
-                                default:
-                                    throw new NotImplementedException();
-                            }
-                            break;
-                        }
-
-                        uint size = (uint)thRetType.GetSize();
-
-                        if (IsX86 || IsX64)
-                        {
-                            // Return value types of size which are not powers of 2 using a RetBuffArg
-                            if ((size & (size - 1)) != 0)
-                            {
-                                usesRetBuffer = true;
                                 break;
                             }
                         }
+                        else
+                        {
+                            if (thRetType.IsHFA() && !isVarArgMethod)
+                            {
+                                CorElementType hfaType = thRetType.GetHFAType();
 
-                        if (size <= EnregisteredReturnTypeIntegerMaxSize)
-                            break;
+                                switch (Architecture)
+                                {
+                                    case TargetArchitecture.ARM:
+                                        fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ?
+                                            (4 * (uint)sizeof(float)) :
+                                            (4 * (uint)sizeof(double));
+                                        break;
+
+                                    case TargetArchitecture.ARM64:
+                                        // DESKTOP BEHAVIOR fpReturnSize = (hfaType == CorElementType.ELEMENT_TYPE_R4) ? (4 * (uint)sizeof(float)) : (4 * (uint)sizeof(double));
+                                        // S and D registers overlap. Since we copy D registers in the UniversalTransitionThunk, we'll
+                                        // treat floats like doubles during copying.
+                                        fpReturnSize = 4 * (uint)sizeof(double);
+                                        break;
+
+                                    default:
+                                        throw new NotImplementedException();
+                                }
+                                break;
+                            }
+
+                            uint size = (uint)thRetType.GetSize();
+
+                            if (IsX86 || IsX64)
+                            {
+                                // Return value types of size which are not powers of 2 using a RetBuffArg
+                                if ((size & (size - 1)) != 0)
+                                {
+                                    usesRetBuffer = true;
+                                    break;
+                                }
+                            }
+
+                            if (size <= EnregisteredReturnTypeIntegerMaxSize)
+                                break;
+                        }
                     }
 
                     // Value types are returned using return buffer by default

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Linq.Expressions.Interpreter
@@ -57,7 +58,7 @@ namespace System.Linq.Expressions.Interpreter
         public int Index { get; }
         public ParameterExpression Parameter { get; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is LocalDefinition)
             {
@@ -81,7 +82,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class LocalVariables
     {
         private readonly HybridReferenceDictionary<ParameterExpression, VariableScope> _variables = new HybridReferenceDictionary<ParameterExpression, VariableScope>();
-        private Dictionary<ParameterExpression, LocalVariable> _closureVariables;
+        private Dictionary<ParameterExpression, LocalVariable>? _closureVariables;
 
         private int _localCount, _maxLocalCount;
 
@@ -90,7 +91,7 @@ namespace System.Linq.Expressions.Interpreter
             var result = new LocalVariable(_localCount++, closure: false);
             _maxLocalCount = Math.Max(_localCount, _maxLocalCount);
 
-            VariableScope existing, newScope;
+            VariableScope? existing, newScope;
             if (_variables.TryGetValue(variable, out existing))
             {
                 newScope = new VariableScope(result, start, existing);
@@ -152,10 +153,9 @@ namespace System.Linq.Expressions.Interpreter
 
         public int LocalCount => _maxLocalCount;
 
-        public bool TryGetLocalOrClosure(ParameterExpression var, out LocalVariable local)
+        public bool TryGetLocalOrClosure(ParameterExpression var, [NotNullWhen(true)] out LocalVariable? local)
         {
-            VariableScope scope;
-            if (_variables.TryGetValue(var, out scope))
+            if (_variables.TryGetValue(var, out VariableScope? scope))
             {
                 local = scope.Variable;
                 return true;
@@ -172,7 +172,7 @@ namespace System.Linq.Expressions.Interpreter
         /// <summary>
         /// Gets the variables which are defined in an outer scope and available within the current scope.
         /// </summary>
-        internal Dictionary<ParameterExpression, LocalVariable> ClosureVariables => _closureVariables;
+        internal Dictionary<ParameterExpression, LocalVariable>? ClosureVariables => _closureVariables;
 
         internal LocalVariable AddClosureVariable(ParameterExpression variable)
         {
@@ -193,10 +193,10 @@ namespace System.Linq.Expressions.Interpreter
             public readonly int Start;
             public int Stop = int.MaxValue;
             public readonly LocalVariable Variable;
-            public readonly VariableScope Parent;
-            public List<VariableScope> ChildScopes;
+            public readonly VariableScope? Parent;
+            public List<VariableScope>? ChildScopes;
 
-            public VariableScope(LocalVariable variable, int start, VariableScope parent)
+            public VariableScope(LocalVariable variable, int start, VariableScope? parent)
             {
                 Variable = variable;
                 Start = start;

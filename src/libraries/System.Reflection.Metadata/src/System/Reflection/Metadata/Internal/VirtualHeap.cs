@@ -37,7 +37,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         // maps raw value of StringHandle or BlobHandle to the corresponding pinned array
-        private Dictionary<uint, PinnedBlob> _blobs;
+        private Dictionary<uint, PinnedBlob>? _blobs;
 
         private VirtualHeap()
         {
@@ -111,7 +111,7 @@ namespace System.Reflection.Metadata.Ecma335
             return result;
         }
 
-        internal static VirtualHeap GetOrCreateVirtualHeap(ref VirtualHeap lazyHeap)
+        internal static VirtualHeap GetOrCreateVirtualHeap(ref VirtualHeap? lazyHeap)
         {
             if (lazyHeap == null)
             {

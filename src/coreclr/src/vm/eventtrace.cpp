@@ -6164,8 +6164,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(bFireDomainModuleEvents)
     {
-        if(pModule->GetDomain()->IsSharedDomain()) // for shared domains, we do not fire domainmodule event
-            return;
         ullAppDomainId = (ULONGLONG)pModule->GetDomainAssembly()->GetAppDomain();
     }
 

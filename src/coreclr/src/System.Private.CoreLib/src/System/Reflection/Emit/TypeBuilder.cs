@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -12,7 +13,7 @@ namespace System.Reflection.Emit
 {
     public sealed class TypeBuilder : TypeInfo
     {
-        public override bool IsAssignableFrom(TypeInfo? typeInfo)
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             if (typeInfo == null) return false;
             return IsAssignableFrom(typeInfo.AsType());
@@ -915,7 +916,7 @@ namespace System.Reflection.Emit
             return m_bakedRuntimeType.GetMembers(bindingAttr);
         }
 
-        public override bool IsAssignableFrom(Type? c)
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             if (IsTypeEqual(c, this))
                 return true;

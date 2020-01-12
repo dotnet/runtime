@@ -609,7 +609,7 @@ namespace System.Net.Http
             CancellationTokenSource cancellationWithConnectTimeout = null;
             if (Settings._connectTimeout != Timeout.InfiniteTimeSpan)
             {
-                cancellationWithConnectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default);
+                cancellationWithConnectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 cancellationWithConnectTimeout.CancelAfter(Settings._connectTimeout);
                 cancellationToken = cancellationWithConnectTimeout.Token;
             }
@@ -642,7 +642,7 @@ namespace System.Net.Http
                         break;
                 }
 
-                Socket socket = (stream as ExposedSocketNetworkStream)?.Socket; // TODO: Use NetworkStream when https://github.com/dotnet/corefx/issues/35410 is available.
+                Socket socket = (stream as NetworkStream)?.Socket;
 
                 TransportContext transportContext = null;
                 if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)

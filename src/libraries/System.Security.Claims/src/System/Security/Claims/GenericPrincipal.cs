@@ -10,9 +10,9 @@ namespace System.Security.Principal
     public class GenericPrincipal : ClaimsPrincipal
     {
         private readonly IIdentity m_identity;
-        private readonly string[] m_roles;
+        private readonly string[]? m_roles;
 
-        public GenericPrincipal(IIdentity identity, string[] roles)
+        public GenericPrincipal(IIdentity identity, string[]? roles)
         {
             if (identity == null)
                 throw new ArgumentNullException(nameof(identity));
@@ -33,11 +33,9 @@ namespace System.Security.Principal
         /// <summary>
         /// helper method to add roles
         /// </summary>
-        private void AddIdentityWithRoles(IIdentity identity, string[] roles)
+        private void AddIdentityWithRoles(IIdentity identity, string[]? roles)
         {
-            ClaimsIdentity claimsIdentity = identity as ClaimsIdentity;
-
-            if (claimsIdentity != null)
+            if (identity is ClaimsIdentity claimsIdentity)
             {
                 claimsIdentity = claimsIdentity.Clone();
             }
@@ -70,7 +68,7 @@ namespace System.Security.Principal
             get { return m_identity; }
         }
 
-        public override bool IsInRole(string role)
+        public override bool IsInRole(string? role)
         {
             if (role == null || m_roles == null)
                 return false;

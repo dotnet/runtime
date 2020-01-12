@@ -1,5 +1,4 @@
  
-cmake_minimum_required (VERSION 2.6) 
 project (CriticalHandlesNative) 
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
 set(SOURCES 

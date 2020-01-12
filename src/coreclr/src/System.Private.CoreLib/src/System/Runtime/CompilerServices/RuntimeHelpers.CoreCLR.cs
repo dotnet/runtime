@@ -207,10 +207,6 @@ namespace System.Runtime.CompilerServices
             return rawSize;
         }
 
-        [Intrinsic]
-        internal static ref byte GetRawSzArrayData(this Array array) =>
-            ref Unsafe.As<RawArrayData>(array).Data;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ref byte GetRawArrayData(this Array array) =>
             // See comment on RawArrayData for details
@@ -279,9 +275,9 @@ namespace System.Runtime.CompilerServices
 
     // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
     // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
-    //                 ^               ^                                    ^ returned reference
-    //                 |               \-- ref Unsafe.As<RawData>(array).Data
-    //                 \-- array
+    //                 ^               ^                 ^                  ^ returned reference
+    //                 |               |                 \-- ref Unsafe.As<RawArrayData>(array).Data
+    //                 \-- array       \-- ref Unsafe.As<RawData>(array).Data
     // The BaseSize of an array includes all the fields before the array data,
     // including the sync block and method table. The reference to RawData.Data
     // points at the number of components, skipping over these two pointer-sized fields.

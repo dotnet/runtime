@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Text;
 
 namespace ILCompiler.Reflection.ReadyToRun
@@ -32,6 +33,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
     public abstract class BaseGcSlot
     {
+        public abstract GcSlotFlags WriteTo(StringBuilder sb, Machine machine, GcSlotFlags prevFlags);
     }
 
     public abstract class BaseGcInfo

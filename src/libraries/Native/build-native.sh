@@ -129,9 +129,9 @@ build_native()
     fi
 
     # Regenerate the CMake solution
-    commonDir="$__rootRepo/eng/common"
-    __CMakeExtraArgs="$__CMakeExtraArgs -DCLR_COMMON_DIR=\"$commonDir\""
-    nextCommand="\"$commonDir/cross/gen-buildsys.sh\" \"$__nativeroot\" \"$__nativeroot\" \"$__IntermediatesDir\" $__BuildArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\"  $__BuildType $__CMakeArgs $__CMakeExtraArgs"
+    engNativeDir="$__rootRepo/eng/native"
+    __CMakeExtraArgs="$__CMakeExtraArgs -DCLR_ENG_NATIVE_DIR=\"$engNativeDir\""
+    nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$__nativeroot\" \"$__nativeroot\" \"$__IntermediatesDir\" $__BuildArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\"  $__BuildType $__CMakeArgs $__CMakeExtraArgs"
     echo "Invoking $nextCommand"
     eval "$nextCommand"
 

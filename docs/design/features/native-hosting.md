@@ -18,10 +18,10 @@ App (native or .NET Core both) which needs to use some of the other services pro
 
 ## Existing support
 * **C-style ABI in `coreclr`**
-`coreclr` exposes ABI to host the .NET Core runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/coreclr/blob/master/src/coreclr/hosts/inc/coreclrhost.h) for the exposed functions.
+`coreclr` exposes ABI to host the .NET Core runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/hosts/inc/coreclrhost.h) for the exposed functions.
 This API requires the native host to locate the runtime and to fully specify all startup parameters for the runtime. There's no inherent interoperability between these APIs and the .NET Core SDK.
 * **COM-style ABI in `coreclr`**
-`coreclr` exposes COM-style ABI to host the .NET Core runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/coreclr/blob/master/src/pal/prebuilt/inc/mscoree.h) for more details.
+`coreclr` exposes COM-style ABI to host the .NET Core runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/pal/prebuilt/inc/mscoree.h) for more details.
 Similarly to the C-style ABI the COM-style ABI also requires the native host to locate the runtime and to fully specify all startup parameters.
 There's no inherent interoperability between these APIs and the .NET Core SDK.
 The COM-style ABI is deprecated and should not be used going forward.
@@ -377,7 +377,7 @@ At the same time it gives the native app (`comhost` in this case) the ability to
 
 ### API usage
 The `hostfxr` exports are defined in the [hostfxr.h](https://github.com/dotnet/core-setup/blob/master/src/corehost/cli/hostfxr.h) header file.
-The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](https://github.com/dotnet/core-setup/blob/master/src/corehost/cli/coreclr_delegates.h) header file.
+The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](https://github.com/dotnet/runtime/blob/master/src/installer/corehost/cli/coreclr_delegates.h) header file.
 
 Currently we don't plan to ship these files, but it's possible to take them from the repo and use it.
 

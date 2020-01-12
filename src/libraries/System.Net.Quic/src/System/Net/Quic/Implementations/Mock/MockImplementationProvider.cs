@@ -8,14 +8,14 @@ namespace System.Net.Quic.Implementations.Mock
 {
     internal sealed class MockImplementationProvider : QuicImplementationProvider
     {
-        internal override QuicListenerProvider CreateListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        internal override QuicListenerProvider CreateListener(QuicListenerOptions options)
         {
-            return new MockListener(listenEndPoint, sslServerAuthenticationOptions);
+            return new MockListener(options.ListenEndPoint, options.ServerAuthenticationOptions);
         }
 
-        internal override QuicConnectionProvider CreateConnection(IPEndPoint remoteEndPoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint)
+        internal override QuicConnectionProvider CreateConnection(QuicClientConnectionOptions options)
         {
-            return new MockConnection(remoteEndPoint, sslClientAuthenticationOptions, localEndPoint);
+            return new MockConnection(options.RemoteEndPoint, options.ClientAuthenticationOptions, options.LocalEndPoint);
         }
     }
 }

@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 2.8.12)
 project (WinRTNativeComponent)
 include_directories( ${INC_PLATFORM_DIR} )
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 

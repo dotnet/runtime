@@ -1,5 +1,3 @@
-cmake_minimum_required (VERSION 2.6)
-
 project (ForeignThreadExceptionsNative)
 
 include_directories(${INC_PLATFORM_DIR})

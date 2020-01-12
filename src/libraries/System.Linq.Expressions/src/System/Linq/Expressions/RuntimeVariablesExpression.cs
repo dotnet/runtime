@@ -60,13 +60,13 @@ namespace System.Linq.Expressions
         {
             if (variables != null)
             {
-                if (ExpressionUtils.SameElements(ref variables, Variables))
+                if (ExpressionUtils.SameElements(ref variables!, Variables))
                 {
                     return this;
                 }
             }
 
-            return RuntimeVariables(variables);
+            return RuntimeVariables(variables!);
         }
     }
 

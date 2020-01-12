@@ -19,12 +19,11 @@ namespace System.Dynamic.Utils
         /// </summary>
         public static ReadOnlyCollection<ParameterExpression> ReturnReadOnly(IParameterProvider provider, ref object collection)
         {
-            ParameterExpression tObj = collection as ParameterExpression;
-            if (tObj != null)
+            if (collection is ParameterExpression tObj)
             {
                 // otherwise make sure only one read-only collection ever gets exposed
                 Interlocked.CompareExchange(
-                    ref collection,
+                    ref collection!,
                     new ReadOnlyCollection<ParameterExpression>(new ListParameterProvider(provider, tObj)),
                     tObj
                 );
@@ -39,8 +38,7 @@ namespace System.Dynamic.Utils
             IReadOnlyList<T> value = collection;
 
             // if it's already read-only just return it.
-            ReadOnlyCollection<T> res = value as ReadOnlyCollection<T>;
-            if (res != null)
+            if (value is ReadOnlyCollection<T> res)
             {
                 return res;
             }
@@ -68,12 +66,11 @@ namespace System.Dynamic.Utils
         /// </summary>
         public static ReadOnlyCollection<Expression> ReturnReadOnly(IArgumentProvider provider, ref object collection)
         {
-            Expression tObj = collection as Expression;
-            if (tObj != null)
+            if (collection is Expression tObj)
             {
                 // otherwise make sure only one read-only collection ever gets exposed
                 Interlocked.CompareExchange(
-                    ref collection,
+                    ref collection!,
                     new ReadOnlyCollection<Expression>(new ListArgumentProvider(provider, tObj)),
                     tObj
                 );
@@ -93,8 +90,7 @@ namespace System.Dynamic.Utils
         /// </summary>
         public static T ReturnObject<T>(object collectionOrT) where T : class
         {
-            T t = collectionOrT as T;
-            if (t != null)
+            if (collectionOrT is T t)
             {
                 return t;
             }
@@ -102,7 +98,7 @@ namespace System.Dynamic.Utils
             return ((ReadOnlyCollection<T>)collectionOrT)[0];
         }
 
-        public static void ValidateArgumentTypes(MethodBase method, ExpressionType nodeKind, ref ReadOnlyCollection<Expression> arguments, string methodParamName)
+        public static void ValidateArgumentTypes(MethodBase method, ExpressionType nodeKind, ref ReadOnlyCollection<Expression> arguments, string? methodParamName)
         {
             Debug.Assert(nodeKind == ExpressionType.Invoke || nodeKind == ExpressionType.Call || nodeKind == ExpressionType.Dynamic || nodeKind == ExpressionType.New);
 
@@ -110,7 +106,7 @@ namespace System.Dynamic.Utils
 
             ValidateArgumentCount(method, nodeKind, arguments.Count, pis);
 
-            Expression[] newArgs = null;
+            Expression[]? newArgs = null;
             for (int i = 0, n = pis.Length; i < n; i++)
             {
                 Expression arg = arguments[i];
@@ -156,13 +152,13 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static Expression ValidateOneArgument(MethodBase method, ExpressionType nodeKind, Expression arguments, ParameterInfo pi, string methodParamName, string argumentParamName, int index = -1)
+        public static Expression ValidateOneArgument(MethodBase method, ExpressionType nodeKind, Expression arguments, ParameterInfo pi, string? methodParamName, string argumentParamName, int index = -1)
         {
             RequiresCanRead(arguments, argumentParamName, index);
             Type pType = pi.ParameterType;
             if (pType.IsByRef)
             {
-                pType = pType.GetElementType();
+                pType = pType.GetElementType()!;
             }
 
             TypeUtils.ValidateType(pType, methodParamName, allowByRef: true, allowPointer: true);
@@ -209,8 +205,7 @@ namespace System.Dynamic.Utils
                     break;
                 case ExpressionType.MemberAccess:
                     MemberExpression member = (MemberExpression)expression;
-                    PropertyInfo prop = member.Member as PropertyInfo;
-                    if (prop != null)
+                    if (member.Member is PropertyInfo prop)
                     {
                         if (!prop.CanRead)
                         {
@@ -249,7 +244,7 @@ namespace System.Dynamic.Utils
             return pis;
         }
 
-        internal static bool SameElements<T>(ICollection<T> replacement, IReadOnlyList<T> current) where T : class
+        internal static bool SameElements<T>(ICollection<T>? replacement, IReadOnlyList<T> current) where T : class
         {
             Debug.Assert(current != null);
             if (replacement == current) // Relatively common case, so particularly useful to take the short-circuit.
@@ -265,7 +260,7 @@ namespace System.Dynamic.Utils
             return SameElementsInCollection(replacement, current);
         }
 
-        internal static bool SameElements<T>(ref IEnumerable<T> replacement, IReadOnlyList<T> current) where T : class
+        internal static bool SameElements<T>(ref IEnumerable<T>? replacement, IReadOnlyList<T> current) where T : class
         {
             Debug.Assert(current != null);
             if (replacement == current) // Relatively common case, so particularly useful to take the short-circuit.
@@ -281,7 +276,7 @@ namespace System.Dynamic.Utils
             // Ensure arguments is safe to enumerate twice.
             // If we have to build a collection, build a TrueReadOnlyCollection<T>
             // so it won't be built a second time if used.
-            ICollection<T> replacementCol = replacement as ICollection<T>;
+            ICollection<T>? replacementCol = replacement as ICollection<T>;
             if (replacementCol == null)
             {
                 replacement = replacementCol = replacement.ToReadOnly();

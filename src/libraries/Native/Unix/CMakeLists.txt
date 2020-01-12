@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.14.2)
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
@@ -281,7 +281,7 @@ function(install_library_and_symbols targetName)
 endfunction()
 
 include(configure.cmake)
-include(${CLR_COMMON_DIR}/configuretools.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 

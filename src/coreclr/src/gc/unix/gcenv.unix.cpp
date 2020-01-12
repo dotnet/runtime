@@ -105,6 +105,9 @@ typedef cpuset_t cpu_set_t;
 #include <numa.h>
 #include <numaif.h>
 #include <dlfcn.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 // List of all functions from the numa library that are used
 #define FOR_ALL_NUMA_FUNCTIONS \
@@ -192,8 +195,49 @@ void* g_numaHandle = nullptr;
 #define PER_FUNCTION_BLOCK(fn) decltype(fn)* fn##_ptr;
 FOR_ALL_NUMA_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
-#endif // HAVE_NUMA_H
 
+#if defined(__linux__)
+static bool ShouldOpenLibNuma()
+{
+    // This is a simple heuristic to determine if libnuma.so should be opened.  There's
+    // no point in linking and resolving everything in this library if we're running on
+    // a system that's not NUMA-capable.
+    int fd = open("/sys/devices/system/node/possible", O_RDONLY | O_CLOEXEC);
+
+    if (fd == -1)
+    {
+        // sysfs might not be mounted, not available, or the interface might have
+        // changed.  Return `true' here so NUMASupportInitialize() can try initializing
+        // NUMA support with libnuma.
+        return true;
+    }
+
+    while (true)
+    {
+        char buffer[32];
+        ssize_t bytesRead = read(fd, buffer, 32);
+
+        if (bytesRead == -1 && errno == EINTR)
+        {
+            continue;
+        }
+
+        close(fd);
+
+        // If an unknown error happened (bytesRead < 0), or the file was empty
+        // (bytesRead = 0), let libnuma handle this.  Otherwise, if there's just
+        // one NUMA node, don't bother linking in libnuma.
+        return (bytesRead <= 0) ? true : strncmp(buffer, "0\n", bytesRead) != 0;
+    }
+}
+#else
+static bool ShouldOpenLibNuma()
+{
+    return true;
+}
+#endif // __linux__
+
+#endif // HAVE_NUMA_H
 
 // Initialize data structures for getting and setting thread affinities to processors and
 // querying NUMA related processor information.
@@ -202,6 +246,13 @@ FOR_ALL_NUMA_FUNCTIONS
 void NUMASupportInitialize()
 {
 #if HAVE_NUMA_H
+    if (!ShouldOpenLibNuma())
+    {
+        g_numaAvailable = false;
+        g_highestNumaNode = 0;
+        return;
+    }
+
     g_numaHandle = dlopen("libnuma.so", RTLD_LAZY);
     if (g_numaHandle == 0)
     {
@@ -209,7 +260,6 @@ void NUMASupportInitialize()
     }
     if (g_numaHandle != 0)
     {
-        dlsym(g_numaHandle, "numa_allocate_cpumask");
 #define PER_FUNCTION_BLOCK(fn) \
     fn##_ptr = (decltype(fn)*)dlsym(g_numaHandle, #fn); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from libnuma\n"); abort(); }

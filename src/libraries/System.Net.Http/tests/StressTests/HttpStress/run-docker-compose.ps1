@@ -48,7 +48,7 @@ docker-compose --file "$COMPOSE_FILE" build $BUILD_ARGS.Split()
 
 if (!$buildOnly)
 {
-    $env:SSLSTRESS_CLIENT_ARGS = $clientStressArgs
-    $env:SSLSTRESS_SERVER_ARGS = $serverStressArgs
+    $env:HTTPSTRESS_CLIENT_ARGS = $clientStressArgs
+    $env:HTTPSTRESS_SERVER_ARGS = $serverStressArgs
     docker-compose --file "$COMPOSE_FILE" up --abort-on-container-exit
 }

@@ -156,8 +156,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        // Active issue https://github.com/dotnet/corefx/issues/37739
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotRedHatFamily6))]
+        [Fact]
         [PlatformSpecific(~TestPlatforms.OSX)] // On OSX, ProcessName returns the script interpreter.
         public void ProcessNameMatchesScriptName()
         {

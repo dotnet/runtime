@@ -966,6 +966,27 @@ namespace System.Collections.Concurrent.Tests
             });
         }
 
+        [Fact]
+        public static void Test_LargeSize()
+        {
+            Assert.Equal(0, BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(63), 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(64), 1));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void Test_LargeSize_STA()
+        {
+            Thread t = new Thread(() =>
+            {
+                Assert.Equal(0, BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(62), 1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(63), 1));
+            });
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            t.Join();
+        }
+
         #region Helper Methods / Classes
 
         /// <summary>Initializes an array of blocking collections (if its not null) such that all are full except one in case
@@ -1146,6 +1167,15 @@ namespace System.Collections.Concurrent.Tests
                 blockingCollection = new BlockingCollection<T>(concurrentCollection, boundedCapacity);
             }
             return blockingCollection;
+        }
+
+        /// <summary>Constructs and returns an array of blocking collections.</summary>
+        private static BlockingCollection<T>[] ConstructBlockingCollectionArray<T>(int length)
+        {
+            var blockingCollections = new BlockingCollection<T>[length];
+            for (int i = 0; i < blockingCollections.Length; i++)
+                blockingCollections[i] = new BlockingCollection<T>();
+            return blockingCollections;
         }
 
         /// <summary>Verifies that the elements in sortedElementsInCollection are a sequence from start to end.</summary>
