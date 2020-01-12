@@ -168,7 +168,7 @@ if [ "$CROSSCOMPILE" == "1" ]; then
 fi
 
 if [ "$build_arch" == "armel" ]; then
-  cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
+    cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
 cmake_command=$(command -v cmake)
