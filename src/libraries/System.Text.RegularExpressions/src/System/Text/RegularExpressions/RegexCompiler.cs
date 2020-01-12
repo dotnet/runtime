@@ -8,6 +8,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -60,6 +62,11 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
+        private static readonly MethodInfo s_memoryMarshalGetReference = typeof(MemoryMarshal).GetMethod("GetReference", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_unsafeCharAsByte = typeof(Unsafe).GetMethod("As", new Type[] { Type.MakeGenericMethodParameter(0).MakeByRefType() })!.MakeGenericMethod(typeof(char), typeof(byte));
+        private static readonly MethodInfo s_unsafeAddChar = typeof(Unsafe).GetMethod("Add", new Type[] { Type.MakeGenericMethodParameter(0).MakeByRefType(), typeof(int) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_unsafeReadUnalignedInt32 = typeof(Unsafe).GetMethod("ReadUnaligned", new Type[] { typeof(byte).MakeByRefType() })!.MakeGenericMethod(typeof(int));
+        private static readonly MethodInfo s_unsafeReadUnalignedInt64 = typeof(Unsafe).GetMethod("ReadUnaligned", new Type[] { typeof(byte).MakeByRefType() })!.MakeGenericMethod(typeof(long));
 #if DEBUG
         private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) })!;
 #endif
@@ -263,6 +270,9 @@ namespace System.Text.RegularExpressions
                 _ilg.Emit(OpCodes.Ldc_I4, i);
             }
         }
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldc_I8).</summary>
+        private void LdcI8(long i) => _ilg!.Emit(OpCodes.Ldc_I8, i);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Dup).</summary>
         private void Dup() => _ilg!.Emit(OpCodes.Dup);
@@ -2134,23 +2144,80 @@ namespace System.Text.RegularExpressions
             // Emits the code to handle a multiple-character match.
             void EmitMultiChar(RegexNode node)
             {
-                // if (textSpanPos + node.Str.Length >= textSpan.Length) goto doneLabel;
-                // if (node.Str[0] != textSpan[textSpanPos]) goto doneLabel;
-                // if (node.Str[1] != textSpan[textSpanPos+1]) goto doneLabel;
-                // ...
-                EmitSpanLengthCheck(node.Str!.Length);
-                for (int i = 0; i < node.Str!.Length; i++)
+                ReadOnlySpan<char> s = node.Str;
+
+                // Emit the length check for the whole string.  If the generated code gets past this point,
+                // we know the span is at least textSpanPos + s.Length long.
+                EmitSpanLengthCheck(s.Length);
+
+                // If we're doing a case-insensitive comparison, we need to lower case each character,
+                // so we just go character-by-character.  But if we're not, we try to process multiple
+                // characters at a time; this is helpful not only for throughput but also in reducing
+                // the amount of IL and asm that results from this unrolling.
+                if (!IsCaseInsensitive(node))
                 {
+                    void EmitTextSpanOffsetAsByte()
+                    {
+                        // Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(textSpan), textSpanPos))
+                        Ldloc(textSpanLocal);
+                        Call(s_memoryMarshalGetReference);
+                        if (textSpanPos > 0)
+                        {
+                            Ldc(textSpanPos);
+                            Call(s_unsafeAddChar);
+                        }
+                        Call(s_unsafeCharAsByte);
+                    }
+
+                    // TODO https://github.com/dotnet/corefx/issues/39227:
+                    // If/when we implement CompileToAssembly, this code will either need to be special-cased
+                    // to not be used when saving out the assembly, or it'll need to be augmented to emit an
+                    // endianness check into the IL.  The code below is creating int/long constants based on
+                    // reading the comparison string at compile time, and the machine doing the compilation
+                    // could be of a different endianness than the machine running the compiled assembly.
+
+                    // On 64-bit, process 4 characters at a time until the string isn't at least 4 characters long.
+                    if (IntPtr.Size == 8)
+                    {
+                        const int CharsPerInt64 = 4;
+                        while (s.Length >= CharsPerInt64)
+                        {
+                            // if (Unsafe.ReadUnaligned<long>(ref text) != value) goto doneLabel;
+                            EmitTextSpanOffsetAsByte();
+                            Call(s_unsafeReadUnalignedInt64);
+                            LdcI8(MemoryMarshal.Read<long>(MemoryMarshal.AsBytes(s)));
+                            BneFar(doneLabel);
+                            textSpanPos += CharsPerInt64;
+                            s = s.Slice(CharsPerInt64);
+                        }
+                    }
+
+                    // Of what remains, process 2 characters at a time until the string isn't at least 2 characters long.
+                    const int CharsPerInt32 = 2;
+                    while (s.Length >= CharsPerInt32)
+                    {
+                        // if (Unsafe.ReadUnaligned<int>(ref text) != value) goto doneLabel;
+                        EmitTextSpanOffsetAsByte();
+                        Call(s_unsafeReadUnalignedInt32);
+                        Ldc(MemoryMarshal.Read<int>(MemoryMarshal.AsBytes(s)));
+                        BneFar(doneLabel);
+                        textSpanPos += CharsPerInt32;
+                        s = s.Slice(CharsPerInt32);
+                    }
+                }
+
+                // Finally, process all of the remaining characters one by one.
+                for (int i = 0; i < s.Length; i++)
+                {
+                    // if (s[i] != textSpan[textSpanPos+i]) goto doneLabel;
                     Ldloca(textSpanLocal);
-                    Ldc(textSpanPos + i);
+                    Ldc(textSpanPos++);
                     Call(s_spanGetItemMethod);
                     LdindU2();
                     if (IsCaseInsensitive(node)) CallToLower();
-                    Ldc(node.Str[i]);
+                    Ldc(s[i]);
                     BneFar(doneLabel);
                 }
-
-                textSpanPos += node.Str.Length;
             }
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
@@ -4244,9 +4311,11 @@ namespace System.Text.RegularExpressions
             // We use a const string instead of a byte[] / static data property because
             // it lets IL emit handle all the gory details for us.  It also is ok from an
             // endianness perspective because the compilation happens on the same machine
-            // that runs the compiled code.  If that were to ever change, this would need
-            // to be revisited. String length is 8 chars == 16 bytes == 128 bits.
-            string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) =>
+            // that runs the compiled code.
+            // TODO https://github.com/dotnet/corefx/issues/39227: If that were to ever change,
+            // this would need to be revisited, such as by doubling the string length, and using
+            // just the lower byte of the char, e.g. (byte)lookup[x].
+            string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
                 {
