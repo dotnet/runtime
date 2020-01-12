@@ -80,7 +80,7 @@ namespace System.Threading.Tests
 
         static ManualResetEvent[] CreateManualResetEvents(int length)
         {
-            var handles = new ManualResetEvent[63];
+            var handles = new ManualResetEvent[length];
             for (int i = 0; i < handles.Length; i++)
                 handles[i] = new ManualResetEvent(true);
             return handles;
