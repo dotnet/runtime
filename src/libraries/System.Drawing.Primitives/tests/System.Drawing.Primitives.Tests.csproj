@@ -5,7 +5,6 @@
   <ItemGroup>
     <Compile Include="ColorTranslatorTests.cs" />
     <Compile Include="DataContractSerializerTests.cs" />
-    <Compile Include="Helpers.cs" />
     <Compile Include="PointFTests.cs" />
     <Compile Include="PointTests.cs" />
     <Compile Include="RectangleFTests.cs" />

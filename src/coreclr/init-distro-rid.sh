@@ -26,7 +26,6 @@
 #
 #   |    OS     |           Expected RID            |
 #   -------------------------------------------------
-#   |   rhel6   |           rhel.6-x64              |
 #   |  alpine*  |        linux-musl-(arch)          |
 #   |  freeBSD  |        freebsd.(version)-x64      |
 #
