@@ -89,8 +89,8 @@ namespace System.Threading.Tests
         [Fact]
         public static void WaitAny_MaxHandles()
         {
-            Assert.Equal(0, WaitHandle.WaitAny(CreateManualResetEvents(63)));
-            Assert.Throws<NotSupportedException>(() => WaitHandle.WaitAny(CreateManualResetEvents(64)));
+            Assert.Equal(0, WaitHandle.WaitAny(CreateManualResetEvents(64)));
+            Assert.Throws<NotSupportedException>(() => WaitHandle.WaitAny(CreateManualResetEvents(65)));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -99,8 +99,8 @@ namespace System.Threading.Tests
         {
             Thread t = new Thread(() =>
             {
-                Assert.Equal(0, WaitHandle.WaitAny(CreateManualResetEvents(62)));
-                Assert.Throws<NotSupportedException>(() => WaitHandle.WaitAny(CreateManualResetEvents(63)));
+                Assert.Equal(0, WaitHandle.WaitAny(CreateManualResetEvents(63)));
+                Assert.Throws<NotSupportedException>(() => WaitHandle.WaitAny(CreateManualResetEvents(64)));
             });
             t.SetApartmentState(ApartmentState.STA);
             t.Start();
