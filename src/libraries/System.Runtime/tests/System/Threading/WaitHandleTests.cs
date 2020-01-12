@@ -109,7 +109,7 @@ namespace System.Threading.Tests
         [Fact]
         public static void WaitAll()
         {
-            var handles = CreateManualResetEvents(3);
+            ManualResetEvent[] handles = CreateManualResetEvents(3);
 
             Assert.True(WaitHandle.WaitAll(handles));
             Assert.True(WaitHandle.WaitAll(handles, 1));
