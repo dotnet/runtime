@@ -773,10 +773,23 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
-    assert(binop->OperIs(GT_ADD));
+    assert(binop->OperIs(GT_ADD, GT_AND));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
+
+    if (binop->OperIs(GT_AND))
+    {
+        // For array[x & cns] return [0..cns] range
+        if (op2->IsIntCnsFitsInI32())
+        {
+            int icon = static_cast<int>(op2->AsIntCon()->IconValue());
+            Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, icon));
+            JITDUMP("GT_AND limits range to %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+            return range;
+        }
+        return Range(Limit::keUnknown);
+    }
 
     Range* op1RangeCached = nullptr;
     Range  op1Range       = Limit(Limit::keUndef);
@@ -1032,6 +1045,11 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
+    // GT_AND doesn't overflow
+    else if (expr->OperIs(GT_AND))
+    {
+        overflows = false;
+    }
     // Walk through phi arguments to check if phi arguments involve arithmetic that overflows.
     else if (expr->OperGet() == GT_PHI)
     {
@@ -1118,7 +1136,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // If add, then compute the range for the operands and add them.
-    else if (expr->OperGet() == GT_ADD)
+    else if (expr->OperIs(GT_ADD, GT_AND))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
