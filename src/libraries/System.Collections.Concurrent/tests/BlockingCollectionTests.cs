@@ -974,6 +974,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void Test_LargeSize_STA()
         {
             Thread t = new Thread(() =>
