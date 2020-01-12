@@ -10830,15 +10830,15 @@ GenTree* Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTree* tree)
 
 #endif // FEATURE_SIMD
 
- //------------------------------------------------------------------------
- // fgMorphCommutative: Fold constants in a tree with commutative operators (|, ^, &, +)
- //
- // Arguments:
- //    tree - This node will be checked for patterns where constants can be folded.
- //
- // Return Value:
- //    A GenTree* which points to the new tree with folded constants.
- //
+//------------------------------------------------------------------------
+// fgMorphCommutative: Fold constants in a tree with commutative operators (|, ^, &, +)
+//
+// Arguments:
+//    tree - This node will be checked for patterns where constants can be folded.
+//
+// Return Value:
+//    A GenTree* which points to the new tree with folded constants.
+//
 
 GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
 {
@@ -10856,8 +10856,7 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
         // If a GC happens, the byref won't get updated. This can happen if one
         // of the int components is negative. It also requires the address generation
         // be in a fully-interruptible code region.
-        if (!varTypeIsGC(op1->AsOp()->gtGetOp1()->TypeGet()) &&
-            !varTypeIsGC(op2->AsOp()->gtGetOp1()->TypeGet()))
+        if (!varTypeIsGC(op1->AsOp()->gtGetOp1()->TypeGet()) && !varTypeIsGC(op2->AsOp()->gtGetOp1()->TypeGet()))
         {
             GenTreeIntCon* cns1  = op1->AsOp()->gtGetOp2()->AsIntCon();
             GenTreeIntCon* cns2  = op2->AsOp()->gtGetOp2()->AsIntCon();
@@ -10909,12 +10908,9 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(tree->TypeGet()))
     {
         // Fold "((x <op> icon1) <op> icon2) to (x <op> (icon1 <op> icon2))"
-        if (op1->OperIs(oper) &&
-            !gtIsActiveCSE_Candidate(op1) &&
-            op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
+        if (op1->OperIs(oper) && !gtIsActiveCSE_Candidate(op1) && op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
             (op1->AsOp()->gtGetOp2()->OperGet() == op2->OperGet()) &&
-            !varTypeIsGC(op1->AsOp()->gtGetOp2()->TypeGet()) &&
-            !varTypeIsGC(op2->TypeGet()))
+            !varTypeIsGC(op1->AsOp()->gtGetOp2()->TypeGet()) && !varTypeIsGC(op2->TypeGet()))
         {
             GenTreeIntConCommon* cns1  = op1->AsOp()->gtGetOp2()->AsIntConCommon();
             GenTreeIntConCommon* cns2  = op2->AsIntConCommon();
@@ -10975,8 +10971,7 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
             // Dereferencing the pointer in either case will have the
             // same effect.
 
-            if (!optValnumCSE_phase && varTypeIsGC(op2->TypeGet()) &&
-                ((op1->gtFlags & GTF_ALL_EFFECT) == 0))
+            if (!optValnumCSE_phase && varTypeIsGC(op2->TypeGet()) && ((op1->gtFlags & GTF_ALL_EFFECT) == 0))
             {
                 op2->gtType = tree->gtType;
                 DEBUG_DESTROY_NODE(op1);
@@ -10987,11 +10982,9 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
             // Remove the addition if it won't change the tree type
             // to TYP_REF.
 
-            if (!gtIsActiveCSE_Candidate(op2) &&
-                ((op1->TypeGet() == tree->TypeGet()) || (op1->TypeGet() != TYP_REF)))
+            if (!gtIsActiveCSE_Candidate(op2) && ((op1->TypeGet() == tree->TypeGet()) || (op1->TypeGet() != TYP_REF)))
             {
-                if (fgGlobalMorph && (op2->OperGet() == GT_CNS_INT) &&
-                    (op2->AsIntCon()->gtFieldSeq != nullptr) &&
+                if (fgGlobalMorph && (op2->OperGet() == GT_CNS_INT) && (op2->AsIntCon()->gtFieldSeq != nullptr) &&
                     (op2->AsIntCon()->gtFieldSeq != FieldSeqStore::NotAField()))
                 {
                     fgAddFieldSeqForZeroOffset(op1, op2->AsIntCon()->gtFieldSeq);
