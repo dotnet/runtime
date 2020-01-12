@@ -50,8 +50,7 @@ namespace System
                 }
                 else
                 {
-                   // ActiveIssue(24525) 
-                   return PlatformDetection.IsNotRedHatFamily6 && (NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _));
+                   return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
                 }
 #endif
             }

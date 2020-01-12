@@ -79,7 +79,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), "IsNotRedHatFamily6")]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]  // On Linux, setting the buffer size of the server will also set the buffer size of the client
         public static void Linux_BufferSizeRoundtrips()
         {

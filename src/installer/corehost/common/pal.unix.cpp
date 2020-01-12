@@ -545,7 +545,6 @@ pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
     pal::string_t versionFile(_X("/etc/os-release"));
-    pal::string_t rhelVersionFile(_X("/etc/redhat-release"));
 
     if (pal::file_exists(versionFile))
     {
@@ -623,35 +622,6 @@ pal::string_t pal::get_current_os_rid_platform()
                 // Remove any double-quotes
                 ridOS = trim_quotes(ridOS);
             }
-        }
-    }
-    else if (pal::file_exists(rhelVersionFile))
-    {
-        // Read the file to check if the current OS is RHEL or CentOS 6.x
-        std::fstream fsVersionFile;
-
-        fsVersionFile.open(rhelVersionFile, std::fstream::in);
-
-        // Proceed only if we were able to open the file
-        if (fsVersionFile.good())
-        {
-            pal::string_t line;
-            // Read the first line
-            std::getline(fsVersionFile, line);
-
-            if (!fsVersionFile.eof())
-            {
-                pal::string_t rhel6Prefix(_X("Red Hat Enterprise Linux Server release 6."));
-                pal::string_t centos6Prefix(_X("CentOS release 6."));
-
-                if ((line.find(rhel6Prefix) == 0) || (line.find(centos6Prefix) == 0))
-                {
-                    ridOS = _X("rhel.6");
-                }
-            }
-
-            // Close the file now that we are done with it.
-            fsVersionFile.close();
         }
     }
 
