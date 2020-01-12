@@ -62,8 +62,7 @@ inline void FATAL_GC_ERROR()
 
 #ifdef FEATURE_64BIT_ALIGNMENT
 // We need the following feature as part of keeping 64-bit types aligned in the GC heap.
-#define RESPECT_LARGE_ALIGNMENT //used to keep "double" objects aligned during
-                                //relocation
+#define RESPECT_LARGE_ALIGNMENT //Preserve double alignment of objects during relocation
 #endif //FEATURE_64BIT_ALIGNMENT
 
 #define SHORT_PLUGS //used to keep ephemeral plugs short so they fit better into the oldest generation free items
