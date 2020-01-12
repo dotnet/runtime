@@ -1411,9 +1411,8 @@ nameof(boundedCapacity), boundedCapacity,
                 if (handles.Count == 0 && isTakeOperation) //case#5
                     throw new ArgumentException(SR.BlockingCollection_CantTakeAnyWhenAllDone, nameof(collections));
 
-                else if (handles.Count == 0) //case#4
+                if (handles.Count == 0) //case#4
                     break;
-
 
                 //Wait for any collection to become available.
                 using (CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(collatedCancellationTokens))
@@ -1424,8 +1423,7 @@ nameof(boundedCapacity), boundedCapacity,
                     if (linkedTokenSource.IsCancellationRequested && externalCancellationToken.IsCancellationRequested)//case#3
                         throw new OperationCanceledException(SR.Common_OperationCanceled, externalCancellationToken);
 
-
-                    else if (!linkedTokenSource.IsCancellationRequested) // if neither internal nor external cancellation requested
+                    if (!linkedTokenSource.IsCancellationRequested) // if neither internal nor external cancellation requested
                     {
                         Debug.Assert((index == WaitHandle.WaitTimeout) || (index >= 0 && index < handles.Count));
                         if (index == WaitHandle.WaitTimeout) //case#2
@@ -1704,14 +1702,15 @@ nameof(boundedCapacity), boundedCapacity,
             {
                 throw new ArgumentNullException(nameof(collections));
             }
-            else if (collections.Length < 1)
+            if (collections.Length < 1)
             {
                 throw new ArgumentException(
                     SR.BlockingCollection_ValidateCollectionsArray_ZeroSize, nameof(collections));
             }
-            else if ((!IsSTAThread && collections.Length > 63) || (IsSTAThread && collections.Length > 62))
-            //The number of WaitHandles must be <= 64 for MTA, and <=63 for STA, and we reserve one for CancellationToken
+            if ((collections.Length > 63) ||
+                ((collections.Length == 63) && (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)))
             {
+                //The number of WaitHandles must be <= 64 for MTA, and <=63 for STA, as we reserve one for CancellationToken
                 throw new ArgumentOutOfRangeException(
 nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
             }
@@ -1733,14 +1732,6 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
                     throw new ArgumentException(
                         SR.BlockingCollection_CantAddAnyWhenCompleted, nameof(collections));
                 }
-            }
-        }
-
-        private static bool IsSTAThread
-        {
-            get
-            {
-                return Thread.CurrentThread.GetApartmentState() == ApartmentState.STA;
             }
         }
 
