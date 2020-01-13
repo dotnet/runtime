@@ -380,17 +380,14 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void Match_VaryingLengthStrings()
         {
-            for (int length = 2; length < 32; length++)
+            foreach (int length in new[] { 2, 3, 4, 5, 6, 7, 8, 9, 31, 32, 33, 63, 64, 65, 100_000 })
             {
-                for (int prechars = 0; prechars < 4; prechars++)
+                string text = string.Concat(Enumerable.Range(0, length).Select(i => (char)('A' + (i % 26))));
+                string pattern = "[123]" + text;
+                string input = "2" + text;
+                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant })
                 {
-                    var r = new Random(42);
-                    string pattern = string.Concat(Enumerable.Range(0, length).Select(i => (char)r.Next(0, 1 + char.MaxValue)));
-                    string input = new string('#', prechars) + pattern;
-                    foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
-                    {
-                        Match(pattern, input, options, prechars, length, expectedSuccess: true, expectedValue: pattern);
-                    }
+                    Match(pattern, input, options, 0, input.Length, expectedSuccess: true, expectedValue: input);
                 }
             }
         }

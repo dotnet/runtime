@@ -47,25 +47,28 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_dumpStateM = RegexRunnerMethod("DumpState");
 #endif
 
-        private static readonly MethodInfo s_charToLowerMethod = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) })!;
-        private static readonly MethodInfo s_charToLowerInvariantMethod = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
-        private static readonly MethodInfo s_stringIndexOf = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
-        private static readonly MethodInfo s_spanIndexOf = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
-        private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_charToLowerMethod = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) })!;
+        private static readonly MethodInfo s_charToLowerInvariantMethod = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
-        private static readonly MethodInfo s_memoryMarshalGetReference = typeof(MemoryMarshal).GetMethod("GetReference", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
 #if DEBUG
         private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) })!;
 #endif
+        private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
+        private static readonly MethodInfo s_memoryMarshalGetReference = typeof(MemoryMarshal).GetMethod("GetReference", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOf = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanStartsWithComparison = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison) })!;
+        private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
+        private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_stringIndexOf = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
 
         protected ILGenerator? _ilg;
 
@@ -1322,7 +1325,7 @@ namespace System.Text.RegularExpressions
                             Ldloc(_runtextendLocal);
                             Ldloc(_runtextposLocal);
                             Sub();
-                            Call(s_stringAsSpanMethod);
+                            Call(s_stringAsSpanIntIntMethod);
                             Ldc(setChars[0]);
                             Ldc(setChars[1]);
                             if (setCharsCount == 3)
@@ -1376,7 +1379,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(_runtextendLocal);
                     Ldloc(_runtextposLocal);
                     Sub();
-                    Call(s_stringAsSpanMethod);
+                    Call(s_stringAsSpanIntIntMethod);
                     Stloc(textSpanLocal);
 
                     // for (int i = 0;
@@ -1660,7 +1663,7 @@ namespace System.Text.RegularExpressions
                 Ldthisfld(s_runtextendField);
                 Ldloc(runtextposLocal);
                 Sub();
-                Call(s_stringAsSpanMethod);
+                Call(s_stringAsSpanIntIntMethod);
                 Stloc(textSpanLocal);
             }
 
@@ -2161,17 +2164,51 @@ namespace System.Text.RegularExpressions
             // Emits the code to handle a multiple-character match.
             void EmitMultiChar(RegexNode node)
             {
-                ReadOnlySpan<char> s = node.Str;
+                bool caseInsensitive = IsCaseInsensitive(node);
+
+                // If the multi string's length exceeds the maximum length we want to unroll, instead generate a call to StartsWith.
+                // Each character that we unroll results in code generation that increases the size of both the IL and the resulting asm,
+                // and with a large enough string, that can cause significant overhead as well as even risk stack overflow due to
+                // having an obscenely long method.  Such long string lengths in a pattern are generally quite rare.  However, we also
+                // want to unroll for shorter strings, because the overhead of invoking StartsWith instead of doing a few simple
+                // inline comparisons is very measurable, especially if we're doing a culture-sensitive comparison and StartsWith
+                // accesses CultureInfo.CurrentCulture on each call.  We need to be cognizant not only of the cost if the whole
+                // string matches, but also the cost when the comparison fails early on, and thus we pay for the call overhead
+                // but don't reap the benefits of all the vectorization StartsWith can do.
+                const int MaxUnrollLength = 64;
+                if (node.Str!.Length > MaxUnrollLength)
+                {
+                    // if (!textSpan.Slice(textSpanPos).StartsWith("..."[, StringComparison.XxIgnoreCase])) goto doneLabel;
+                    Ldloca(textSpanLocal);
+                    Ldc(textSpanPos);
+                    Call(s_spanSliceIntMethod);
+                    Ldstr(node.Str);
+                    Call(s_stringAsSpanMethod);
+                    if (!caseInsensitive)
+                    {
+                        Call(s_spanStartsWith);
+                    }
+                    else
+                    {
+                        Ldc((int)(UseToLowerInvariant ? StringComparison.InvariantCultureIgnoreCase : StringComparison.CurrentCultureIgnoreCase));
+                        Call(s_spanStartsWithComparison);
+                    }
+                    BrfalseFar(doneLabel);
+                    textSpanPos += node.Str.Length;
+
+                    return;
+                }
 
                 // Emit the length check for the whole string.  If the generated code gets past this point,
                 // we know the span is at least textSpanPos + s.Length long.
+                ReadOnlySpan<char> s = node.Str;
                 EmitSpanLengthCheck(s.Length);
 
                 // If we're doing a case-insensitive comparison, we need to lower case each character,
                 // so we just go character-by-character.  But if we're not, we try to process multiple
                 // characters at a time; this is helpful not only for throughput but also in reducing
                 // the amount of IL and asm that results from this unrolling.
-                if (!IsCaseInsensitive(node))
+                if (!caseInsensitive)
                 {
                     // TODO https://github.com/dotnet/corefx/issues/39227:
                     // If/when we implement CompileToAssembly, this code will either need to be special-cased
@@ -2219,7 +2256,7 @@ namespace System.Text.RegularExpressions
                     EmitTextSpanOffset();
                     textSpanPos++;
                     LdindU2();
-                    if (IsCaseInsensitive(node)) CallToLower();
+                    if (caseInsensitive) CallToLower();
                     Ldc(s[i]);
                     BneFar(doneLabel);
                 }

@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Linq;
 using System.Tests;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -14,11 +14,13 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>
         /// See https://en.wikipedia.org/wiki/Dotted_and_dotless_I
         /// </summary>
-        [Fact]
-        public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture()
+        [Theory]
+        [InlineData(2)]
+        [InlineData(256)]
+        public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture(int length)
         {
             var turkish = new CultureInfo("tr-TR");
-            string input = "I\u0131\u0130i";
+            string input = string.Concat(Enumerable.Repeat("I\u0131\u0130i", length / 2));
 
             Regex[] cultInvariantRegex = Create(input, CultureInfo.InvariantCulture, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             Regex[] turkishRegex = Create(input, turkish, RegexOptions.IgnoreCase);
