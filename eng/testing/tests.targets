@@ -3,8 +3,8 @@
     <TargetOS Condition="'$(TargetOS)' == ''">$(DefaultOSGroup)</TargetOS>
     <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
 
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.Windows.txt</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.Unix.txt</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
     <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>

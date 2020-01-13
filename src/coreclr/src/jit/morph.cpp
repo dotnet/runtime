@@ -9751,6 +9751,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         GenTreeLclVarCommon* lclVarTree        = nullptr;
         GenTreeLclVarCommon* srcLclVarTree     = nullptr;
         unsigned             destLclNum        = BAD_VAR_NUM;
+        unsigned             modifiedLclNum    = BAD_VAR_NUM;
         LclVarDsc*           destLclVar        = nullptr;
         FieldSeqNode*        destFldSeq        = nullptr;
         bool                 destDoFldAsg      = false;
@@ -9766,10 +9767,11 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         {
             blockWidthIsConst = true;
             destOnStack       = true;
+            modifiedLclNum    = dest->AsLclVarCommon()->GetLclNum();
             if (dest->gtOper == GT_LCL_VAR)
             {
                 lclVarTree = dest->AsLclVarCommon();
-                destLclNum = lclVarTree->GetLclNum();
+                destLclNum = modifiedLclNum;
                 destLclVar = &lvaTable[destLclNum];
                 if (destLclVar->lvType == TYP_STRUCT)
                 {
@@ -9824,26 +9826,27 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 noway_assert(destAddr->TypeGet() == TYP_BYREF || destAddr->TypeGet() == TYP_I_IMPL);
                 if (destAddr->IsLocalAddrExpr(this, &lclVarTree, &destFldSeq))
                 {
-                    destOnStack = true;
-                    destLclNum  = lclVarTree->GetLclNum();
-                    destLclVar  = &lvaTable[destLclNum];
+                    destOnStack    = true;
+                    destLclNum     = lclVarTree->GetLclNum();
+                    modifiedLclNum = destLclNum;
+                    destLclVar     = &lvaTable[destLclNum];
                 }
             }
         }
 
-        if (destLclVar != nullptr)
-        {
 #if LOCAL_ASSERTION_PROP
-            // Kill everything about destLclNum (and its field locals)
-            if (optLocalAssertionProp)
+        // Kill everything about modifiedLclNum (and its field locals)
+        if ((modifiedLclNum != BAD_VAR_NUM) && optLocalAssertionProp)
+        {
+            if (optAssertionCount > 0)
             {
-                if (optAssertionCount > 0)
-                {
-                    fgKillDependentAssertions(destLclNum DEBUGARG(tree));
-                }
+                fgKillDependentAssertions(modifiedLclNum DEBUGARG(tree));
             }
+        }
 #endif // LOCAL_ASSERTION_PROP
 
+        if (destLclVar != nullptr)
+        {
             if (destLclVar->lvPromoted && blockWidthIsConst)
             {
                 noway_assert(varTypeIsStruct(destLclVar));

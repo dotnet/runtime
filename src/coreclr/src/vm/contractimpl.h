@@ -468,7 +468,6 @@ protected:
     HashMap             m_mtMap;
     Crst                m_lock;
     TypeIDProvider      m_idProvider;
-    BOOL                m_fUseFatIdsForUniqueness;
     UINT32              m_entryCount;
 
     //------------------------------------------------------------------------
@@ -502,7 +501,7 @@ public:
     };
 
     //------------------------------------------------------------------------
-    void Init(UINT32 idStartValue, UINT32 idIncrementValue, BOOL fUseFatTokensForUniqueness);
+    void Init(UINT32 idStartValue, UINT32 idIncrementValue);
 
     //------------------------------------------------------------------------
     // Ctor

@@ -13,6 +13,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -84,7 +85,7 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                switch (curNode.NType)
+                switch (curNode.Type)
                 {
                     case RegexNode.Concatenate:
                         if (curNode.ChildCount() > 0)
@@ -94,13 +95,14 @@ namespace System.Text.RegularExpressions
                         }
                         break;
 
-                    case RegexNode.Greedy:
+                    case RegexNode.Atomic:
                     case RegexNode.Capture:
                         curNode = curNode.Child(0);
                         concatNode = null;
                         continue;
 
                     case RegexNode.Oneloop:
+                    case RegexNode.Oneloopatomic:
                     case RegexNode.Onelazy:
 
                         // In release, cutoff at a length to which we can still reasonably construct a string
@@ -165,7 +167,7 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                switch (curNode.NType)
+                switch (curNode.Type)
                 {
                     case RegexNode.Concatenate:
                         if (curNode.ChildCount() > 0)
@@ -175,7 +177,7 @@ namespace System.Text.RegularExpressions
                         }
                         break;
 
-                    case RegexNode.Greedy:
+                    case RegexNode.Atomic:
                     case RegexNode.Capture:
                         curNode = curNode.Child(0);
                         concatNode = null;
@@ -189,7 +191,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Start:
                     case RegexNode.EndZ:
                     case RegexNode.End:
-                        return result | AnchorFromType(curNode.NType);
+                        return result | AnchorFromType(curNode.Type);
 
                     case RegexNode.Empty:
                     case RegexNode.Require:
@@ -225,6 +227,7 @@ namespace System.Text.RegularExpressions
             };
 
 #if DEBUG
+        [ExcludeFromCodeCoverage]
         public static string AnchorDescription(int anchors)
         {
             StringBuilder sb = new StringBuilder();
@@ -295,19 +298,20 @@ namespace System.Text.RegularExpressions
 
             while (true)
             {
-                if (curNode.Children == null)
+                int curNodeChildCount = curNode.ChildCount();
+                if (curNodeChildCount == 0)
                 {
                     // This is a leaf node
-                    CalculateFC(curNode.NType, curNode, 0);
+                    CalculateFC(curNode.Type, curNode, 0);
                 }
-                else if (curChild < curNode.Children.Count && !_skipAllChildren)
+                else if (curChild < curNodeChildCount && !_skipAllChildren)
                 {
                     // This is an interior node, and we have more children to analyze
-                    CalculateFC(curNode.NType | BeforeChild, curNode, curChild);
+                    CalculateFC(curNode.Type | BeforeChild, curNode, curChild);
 
                     if (!_skipchild)
                     {
-                        curNode = curNode.Children[curChild];
+                        curNode = curNode.Child(curChild);
                         // this stack is how we get a depth first walk of the tree.
                         PushInt(curChild);
                         curChild = 0;
@@ -330,7 +334,7 @@ namespace System.Text.RegularExpressions
                 curChild = PopInt();
                 curNode = curNode.Next;
 
-                CalculateFC(curNode!.NType | AfterChild, curNode, curChild);
+                CalculateFC(curNode!.Type | AfterChild, curNode, curChild);
                 if (_failed)
                     return null;
 
@@ -353,16 +357,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void CalculateFC(int NodeType, RegexNode node, int CurIndex)
         {
-            bool ci = false;
-            bool rtl = false;
-
-            if (NodeType <= RegexNode.Ref)
-            {
-                if ((node.Options & RegexOptions.IgnoreCase) != 0)
-                    ci = true;
-                if ((node.Options & RegexOptions.RightToLeft) != 0)
-                    rtl = true;
-            }
+            bool ci = (node.Options & RegexOptions.IgnoreCase) != 0;
+            bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
 
             switch (NodeType)
             {
@@ -426,8 +422,8 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Group | AfterChild:
                 case RegexNode.Capture | BeforeChild:
                 case RegexNode.Capture | AfterChild:
-                case RegexNode.Greedy | BeforeChild:
-                case RegexNode.Greedy | AfterChild:
+                case RegexNode.Atomic | BeforeChild:
+                case RegexNode.Atomic | AfterChild:
                     break;
 
                 case RegexNode.Require | BeforeChild:
@@ -446,11 +442,13 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Oneloop:
+                case RegexNode.Oneloopatomic:
                 case RegexNode.Onelazy:
                     PushFC(new RegexFC(node.Ch, false, node.M == 0, ci));
                     break;
 
                 case RegexNode.Notoneloop:
+                case RegexNode.Notoneloopatomic:
                 case RegexNode.Notonelazy:
                     PushFC(new RegexFC(node.Ch, true, node.M == 0, ci));
                     break;
@@ -469,6 +467,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Setloop:
+                case RegexNode.Setloopatomic:
                 case RegexNode.Setlazy:
                     PushFC(new RegexFC(node.Str!, node.M == 0, ci));
                     break;

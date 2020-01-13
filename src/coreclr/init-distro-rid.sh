@@ -30,7 +30,7 @@
 #   |  alpine*  |        linux-musl-(arch)          |
 #   |  freeBSD  |        freebsd.(version)-x64      |
 #
-# It is important to note that the function does not return anything, but it 
+# It is important to note that the function does not return anything, but it
 # will set __DistroRid if there is a non-portable distro rid to be used.
 #
 initNonPortableDistroRid()
@@ -52,7 +52,7 @@ initNonPortableDistroRid()
             # has been passed as false.
             if (( ${isPortable} == 0 )); then
                 if [ "${ID}" == "rhel" ]; then
-                    # remove the last version digit	
+                    # remove the last version digit
                     VERSION_ID=${VERSION_ID%.*}
                 fi
 
@@ -64,7 +64,7 @@ initNonPortableDistroRid()
                         nonPortableBuildID="${ID}.${VERSION_ID}-${buildArch}"
                 fi
             fi
-            
+
         elif [ -e "${rootfsDir}/etc/redhat-release" ]; then
             local redhatRelease=$(<${rootfsDir}/etc/redhat-release)
 
@@ -124,7 +124,7 @@ initDistroRidGlobal()
     local rootfsDir=$4
 
     # Setup whether this is a crossbuild. We can find this out if rootfsDir
-    # is set. 
+    # is set.
     local isCrossBuild=0
 
     if [ -z "${rootfsDir}" ]; then
@@ -153,13 +153,9 @@ initDistroRidGlobal()
         export __PortableBuild=1
         local distroRid=""
 
-        # Check for alpine. It is the only portable build that will will have
-        # its name in the portable build rid.
-        if [ -e "${rootfsDir}/etc/os-release" ]; then
-            source "${rootfsDir}/etc/os-release"
-            if [ "${ID}" = "alpine" ]; then
-                distroRid="linux-musl-${buildArch}"
-            fi
+        # Check for musl-based distros (e.g Alpine Linux, Void Linux).
+        if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl; then
+            distroRid="linux-musl-${buildArch}"
         fi
 
         if [ "${distroRid}" == "" ]; then
@@ -182,7 +178,7 @@ initDistroRidGlobal()
     else
         echo "__DistroRid: ${__DistroRid}"
         echo "__RuntimeId: ${__DistroRid}"
-        
+
         export __RuntimeId=${__DistroRid}
     fi
 }

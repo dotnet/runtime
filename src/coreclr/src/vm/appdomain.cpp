@@ -766,23 +766,8 @@ void BaseDomain::InitVSD()
 {
     STANDARD_VM_CONTRACT;
 
-    // This is a workaround for gcc, since it fails to successfully resolve
-    // "TypeIDMap::STARTING_SHARED_DOMAIN_ID" when used within the ?: operator.
-    UINT32 startingId;
-    if (IsSharedDomain())
-    {
-        startingId = TypeIDMap::STARTING_SHARED_DOMAIN_ID;
-    }
-    else
-    {
-        startingId = TypeIDMap::STARTING_UNSHARED_DOMAIN_ID;
-    }
-
-    // By passing false as the last parameter, interfaces loaded in the
-    // shared domain will not be given fat type ids if RequiresFatDispatchTokens
-    // is set. This is correct, as the fat dispatch tokens are only needed to solve
-    // uniqueness problems involving domain specific types.
-    m_typeIDMap.Init(startingId, 2, !IsSharedDomain());
+    UINT32 startingId = TypeIDMap::STARTING_UNSHARED_DOMAIN_ID;
+    m_typeIDMap.Init(startingId, 2);
 
 #ifndef CROSSGEN_COMPILE
     GetLoaderAllocator()->InitVirtualCallStubManager(this);

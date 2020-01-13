@@ -4443,6 +4443,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
     // For each physical register that can hold a GC type,
     // if it is occupied by an interval of a GC type, spill that interval.
     regMaskTP candidateRegs = killRefPosition->registerAssignment;
+    INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {
         regMaskTP nextRegBit = genFindLowestBit(candidateRegs);
@@ -4470,11 +4471,12 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
         }
         if (needsKill)
         {
-            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_GC_REF, nullptr, nextReg, nullptr));
+            INDEBUG(killedRegs = true);
             unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
         }
     }
-    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DONE_KILL_GC_REFS, nullptr, REG_NA, nullptr));
+    INDEBUG(dumpLsraAllocationEvent(killedRegs ? LSRA_EVENT_DONE_KILL_GC_REFS : LSRA_EVENT_NO_GC_KILLS, nullptr, REG_NA,
+                                    nullptr));
 }
 
 //------------------------------------------------------------------------
@@ -9716,9 +9718,14 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             dumpRegRecords();
             break;
 
-        // Done with GC Kills
         case LSRA_EVENT_DONE_KILL_GC_REFS:
-            printf(indentFormat, "  DoneKillGC ");
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Done       ");
+            break;
+
+        case LSRA_EVENT_NO_GC_KILLS:
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("None       ");
             break;
 
         // Block boundaries
@@ -9831,7 +9838,9 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             break;
 
         default:
-            unreached();
+            printf("????? %-4s ", getRegName(reg));
+            dumpRegRecords();
+            break;
     }
 }
 

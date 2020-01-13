@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection
@@ -80,7 +81,7 @@ namespace System.Reflection
         public sealed override Type BaseType => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
         public sealed override Type[] GetInterfaces() => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override bool IsAssignableFrom(Type? c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override bool IsAssignableFrom([NotNullWhen(true)] Type? c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override int MetadataToken => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
@@ -129,8 +130,8 @@ namespace System.Reflection
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsContextfulImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsEnum => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override bool IsEquivalentTo(Type? other) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override bool IsInstanceOfType(object? o) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override bool IsEquivalentTo([NotNullWhen(true)] Type? other) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override bool IsInstanceOfType([NotNullWhen(true)] object? o) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsMarshalByRefImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSecurityCritical => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSecuritySafeCritical => throw new NotSupportedException(SR.NotSupported_SignatureType);

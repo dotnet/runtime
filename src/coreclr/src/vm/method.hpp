@@ -3214,7 +3214,7 @@ public:
         WRAPPER_NO_CONTRACT;
 
         return (IsClassConstructorTriggeredAtLinkTime() &&
-                (IsZapped() || GetDomain()->IsSharedDomain() || SystemDomain::GetCurrentDomain()->IsCompilationDomain()));
+                (IsZapped() || SystemDomain::GetCurrentDomain()->IsCompilationDomain()));
     }
 #endif //!DACCESS_COMPILE
 };  //class NDirectMethodDesc

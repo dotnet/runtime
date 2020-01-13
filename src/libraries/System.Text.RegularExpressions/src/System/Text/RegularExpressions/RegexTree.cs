@@ -6,6 +6,7 @@
 // global information attached.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -31,18 +32,11 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        public void Dump()
-        {
-            Root.Dump();
-        }
+        [ExcludeFromCodeCoverage]
+        public void Dump() => Root.Dump();
 
-        public bool Debug
-        {
-            get
-            {
-                return (Options & RegexOptions.Debug) != 0;
-            }
-        }
+        [ExcludeFromCodeCoverage]
+        public bool Debug => (Options & RegexOptions.Debug) != 0;
 #endif
     }
 }

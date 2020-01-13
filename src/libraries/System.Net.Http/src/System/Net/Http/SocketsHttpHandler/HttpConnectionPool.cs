@@ -609,7 +609,7 @@ namespace System.Net.Http
             CancellationTokenSource cancellationWithConnectTimeout = null;
             if (Settings._connectTimeout != Timeout.InfiniteTimeSpan)
             {
-                cancellationWithConnectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default);
+                cancellationWithConnectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 cancellationWithConnectTimeout.CancelAfter(Settings._connectTimeout);
                 cancellationToken = cancellationWithConnectTimeout.Token;
             }

@@ -27,7 +27,7 @@ implements the JIT side of the JIT/EE interfaces:
 * `ICorJitCompiler` – this is the interface that the JIT compiler implements. This interface is defined in
 [src/inc/corjit.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/inc/corjit.h)
 and its implementation is in
-[src/jit/ee_il_dll.cpp](https://github.com/dotnet/dotnet/blob/master/src/coreclr/src/jit/ee_il_dll.cpp).
+[src/jit/ee_il_dll.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/jit/ee_il_dll.cpp).
 The following are the key methods on this interface:
   * `compileMethod` is the main entry point for the JIT. The EE passes it a `ICorJitInfo` object,
   and the "info" containing the IL, the method header, and various other useful tidbits.

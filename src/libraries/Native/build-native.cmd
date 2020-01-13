@@ -25,10 +25,10 @@ if /i [%1] == [Debug]       ( set CMAKE_BUILD_TYPE=Debug&&shift&goto Arg_Loop)
 
 if /i [%1] == [AnyCPU]      ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 if /i [%1] == [x86]         ( set __BuildArch=x86&&set __VCBuildArch=x86&&shift&goto Arg_Loop)
-if /i [%1] == [arm]         ( set __BuildArch=arm&&set __VCBuildArch=x86_arm&&set __SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"&&shift&goto Arg_Loop)
+if /i [%1] == [arm]         ( set __BuildArch=arm&&set __VCBuildArch=x86_arm&&shift&goto Arg_Loop)
 if /i [%1] == [x64]         ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 if /i [%1] == [amd64]       ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
-if /i [%1] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=x86_arm64&&set __SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"&&shift&goto Arg_Loop)
+if /i [%1] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=x86_arm64&&shift&goto Arg_Loop)
 if /i [%1] == [wasm]        ( set __BuildArch=wasm&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
@@ -70,7 +70,7 @@ if "%VisualStudioVersion%"=="16.0" (
 :MissingVersion
 :: Can't find VS 2017, 2019
 echo Error: Visual Studio 2017 or 2019 required
-echo        Please see https://github.com/dotnet/runtime/tree/master/docs/libraries/building for build instructions.
+echo        Please see https://github.com/dotnet/runtime/tree/master/docs/workflow/building/libraries for build instructions.
 exit /b 1
 
 :VS2019

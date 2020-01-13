@@ -12,7 +12,7 @@ namespace System.Reflection.Internal
     internal sealed class ByteArrayMemoryProvider : MemoryBlockProvider
     {
         private readonly ImmutableArray<byte> _array;
-        private PinnedObject _pinned;
+        private PinnedObject? _pinned;
 
         public ByteArrayMemoryProvider(ImmutableArray<byte> array)
         {
@@ -46,7 +46,7 @@ namespace System.Reflection.Internal
             {
                 if (_pinned == null)
                 {
-                    var newPinned = new PinnedObject(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array));
+                    var newPinned = new PinnedObject(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array)!);
 
                     if (Interlocked.CompareExchange(ref _pinned, newPinned, null) != null)
                     {

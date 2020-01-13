@@ -15186,7 +15186,7 @@ allocate_in_free:
 #else // FEATURE_STRUCTALIGN
         if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
+            pad += switch_alignment_size (pad != 0);
             set_node_realigned (old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
                          (size_t)old_loc, (size_t)(result+pad)));

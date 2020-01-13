@@ -32,6 +32,7 @@
     <Compile Include="SendFile.cs" />
     <Compile Include="OSSupport.cs" />
     <Compile Include="SendReceive.cs" />
+    <Compile Include="SendTo.cs" />
     <Compile Include="SocketTestHelper.cs" />
     <Compile Include="SelectAndPollTests.cs" />
     <Compile Include="SocketInformationTest.cs" />

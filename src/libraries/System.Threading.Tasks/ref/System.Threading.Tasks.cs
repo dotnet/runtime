@@ -105,6 +105,7 @@ namespace System.Threading
         public void Cancel(bool throwOnFirstException) { }
         public void CancelAfter(int millisecondsDelay) { }
         public void CancelAfter(System.TimeSpan delay) { }
+        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token1, System.Threading.CancellationToken token2) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.Threading.CancellationToken[] tokens) { throw null; }
         public void Dispose() { }

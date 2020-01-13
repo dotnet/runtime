@@ -53,11 +53,6 @@ function Get-Help() {
   Write-Host "The above arguments can be shortened as much as to be unambiguous (e.g. -con for configuration, -t for test, etc.)."
 }
 
-# Exit if script has been dot-sourced
-if ($MyInvocation.InvocationName -eq ".") {
-  exit 0
-}
-
 if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $properties.Contains('/?')))) {
   Get-Help
   exit 0

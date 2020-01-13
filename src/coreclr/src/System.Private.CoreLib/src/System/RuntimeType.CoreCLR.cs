@@ -5,16 +5,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using Internal.Runtime.CompilerServices;
 using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 using MdToken = System.Reflection.MetadataToken;
-using Internal.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -3082,7 +3082,7 @@ namespace System
 
 #if FEATURE_TYPEEQUIVALENCE
         // Reflexive, symmetric, transitive.
-        public override bool IsEquivalentTo(Type? other)
+        public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
             if (!(other is RuntimeType otherRtType))
             {
