@@ -53,14 +53,10 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     sockaddr_un serverAddress{};
     serverAddress.sun_family = AF_UNIX;
 
-    // A user specified socket location and name supersedes the default
-    // we are in charge of freeing this memory
-    const char *customTransportPath = getenv("COMPlus_DiagnosticsServerTransportPath");
-    if (customTransportPath != nullptr)
+    if (pIpcName != nullptr)
     {
-        int chars = snprintf(serverAddress.sun_path, sizeof(serverAddress.sun_path), "%s", customTransportPath);
+        int chars = snprintf(serverAddress.sun_path, sizeof(serverAddress.sun_path), "%s", pIpcName);
         _ASSERTE(chars > 0 && (unsigned int)chars < sizeof(serverAddress.sun_path));
-        free(customTransportPath);
     }
     else
     {
@@ -69,7 +65,7 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
         PAL_GetTransportName(
             sizeof(serverAddress.sun_path),
             serverAddress.sun_path,
-            pIpcName,
+            "dotnet-diagnostic",
             pd.m_Pid,
             pd.m_ApplicationGroupId,
             "socket");
