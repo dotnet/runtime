@@ -919,46 +919,46 @@ Return Value
 --*/
 static char* match_prefix(const char* name, char** list)
 {
-	if(*name == '\0')
-		return nullptr;
-	
-	for (int i = 0; list[i] != nullptr; ++i)
-	{
-		const char* pch = name;
-		char* p = list[i];
+    if(*name == '\0')
+        return nullptr;
+    
+    for (int i = 0; list[i] != nullptr; ++i)
+    {
+        const char* pch = name;
+        char* p = list[i];
 
-		for (;;) {
-			if (*pch == '\0') {
-				if(*p == '=')
-					return p+1;
-					
-				if(*p == '\0') // no = sign -> empty value
-					return p;
-				
-				break;
-			}
-			
-			if (*pch++ != *p++) break;
-		}
-	}
-	
-	return nullptr;
+        for (;;) {
+            if (*pch == '\0') {
+                if(*p == '=')
+                    return p+1;
+                    
+                if(*p == '\0') // no = sign -> empty value
+                    return p;
+                
+                break;
+            }
+            
+            if (*pch++ != *p++) break;
+        }
+    }
+    
+    return nullptr;
 }
-	
+    
 char* EnvironGetenv(const char* name, BOOL copyValue)
 {
-	CPalThread * pthrCurrent = InternalGetCurrentThread();
-	InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
-	
-	char* retValue = match_prefix(name, palEnvironment);
-	
-	if ((retValue != nullptr) && copyValue)
-	{
-		retValue = strdup(retValue);
-	}
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+    
+    char* retValue = match_prefix(name, palEnvironment);
+    
+    if ((retValue != nullptr) && copyValue)
+    {
+        retValue = strdup(retValue);
+    }
 
-	InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
-	return retValue;
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    return retValue;
 }
 
 
