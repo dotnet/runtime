@@ -30,7 +30,7 @@ bool get_path_from_argv(pal::string_t *path)
     return false;
 }
 
-int host_startup_info_t::parse(
+void host_startup_info_t::parse(
     int argc,
     const pal::char_t* argv[])
 {
@@ -49,7 +49,6 @@ int host_startup_info_t::parse(
     trace::info(_X("Host path: [%s]"), host_path.c_str());
     trace::info(_X("Dotnet path: [%s]"), dotnet_root.c_str());
     trace::info(_X("App path: [%s]"), app_path.c_str());
-    return 0;
 }
 
 bool host_startup_info_t::is_valid(host_mode_t mode) const
