@@ -2668,10 +2668,10 @@ namespace System.Reflection.Metadata.Tests
                 var reader = provider.GetMetadataReader();
                 var mdi = reader.GetMethodDebugInformation(default(MethodDebugInformationHandle));
 
-                AssertEx.Throws<BadImageFormatException>(() => mdi.SequencePointsBlob, _ => { });
-                AssertEx.Throws<BadImageFormatException>(() => mdi.Document, _ => { });
-                AssertEx.Throws<BadImageFormatException>(() => mdi.LocalSignature, _ => { });
-                AssertEx.Throws<BadImageFormatException>(() => mdi.GetSequencePoints(), _ => { });
+                Assert.Throws<BadImageFormatException>(() => mdi.SequencePointsBlob);
+                Assert.Throws<BadImageFormatException>(() => mdi.Document);
+                Assert.Throws<BadImageFormatException>(() => mdi.LocalSignature);
+                Assert.Throws<BadImageFormatException>(() => mdi.GetSequencePoints());
             }
         }
 
