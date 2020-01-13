@@ -367,13 +367,14 @@ BOOL WrapICorJitInfo::isValidStringRef(
     return temp;
 }
 
-int WrapICorJitInfo::getStringLength(
+LPCWSTR WrapICorJitInfo::getStringLiteral(
             CORINFO_MODULE_HANDLE       module,     /* IN  */
-            unsigned                    metaTOK     /* IN  */)
+            unsigned                    metaTOK,    /* IN  */
+            int*                        length      /* OUT */)
 {
-    API_ENTER(getStringLength);
-    int temp = wrapHnd->getStringLength(module, metaTOK);
-    API_LEAVE(getStringLength);
+    API_ENTER(getStringLiteral);
+    LPCWSTR temp = wrapHnd->getStringLiteral(module, metaTOK, length);
+    API_LEAVE(getStringLiteral);
     return temp;
 }
 

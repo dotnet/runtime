@@ -1165,10 +1165,10 @@ namespace Internal.JitInterface
         private bool shouldEnforceCallvirtRestriction(CORINFO_MODULE_STRUCT_* scope)
         { throw new NotImplementedException("shouldEnforceCallvirtRestriction"); }
 
-        private int getStringLength(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
+        private string getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
-            // TODO: get length for string literal
-            return -1;
+            length = -1;
+            return null;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)

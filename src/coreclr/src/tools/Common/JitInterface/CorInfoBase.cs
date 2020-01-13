@@ -84,7 +84,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isValidStringRef(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate int __getStringLength(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK);
+        [return: MarshalAs(UnmanagedType.LPWStr)]delegate string __getStringLiteral(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __shouldEnforceCallvirtRestriction(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* scope);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -862,17 +862,17 @@ namespace Internal.JitInterface
             }
         }
 
-        static int _getStringLength(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK)
+        [return: MarshalAs(UnmanagedType.LPWStr)]static string _getStringLiteral(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getStringLength(module, metaTOK);
+                return _this.getStringLiteral(module, metaTOK, ref length);
             }
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(int);
+                return default(string);
             }
         }
 
@@ -2960,7 +2960,7 @@ namespace Internal.JitInterface
             var d35 = new __isValidStringRef(_isValidStringRef);
             callbacks[35] = Marshal.GetFunctionPointerForDelegate(d35);
             delegates[35] = d35;
-            var d36 = new __getStringLength(_getStringLength);
+            var d36 = new __getStringLiteral(_getStringLiteral);
             callbacks[36] = Marshal.GetFunctionPointerForDelegate(d36);
             delegates[36] = d36;
             var d37 = new __shouldEnforceCallvirtRestriction(_shouldEnforceCallvirtRestriction);

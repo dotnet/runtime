@@ -799,9 +799,10 @@ BOOL CEEInfo::isValidStringRef (
     return result;
 }
 
-int CEEInfo::getStringLength (
+LPCWSTR CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
-        mdToken                     metaTOK)
+        mdToken                     metaTOK,
+        int*                        length)
 {
     CONTRACTL{
         THROWS;
@@ -809,14 +810,15 @@ int CEEInfo::getStringLength (
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    int length = 0;
     Module* module = GetModule(moduleHnd);
+
+    LPCWSTR result = nullptr;
 
     JIT_TO_EE_TRANSITION();
 
     if (IsDynamicScope(moduleHnd))
     {
-        length = GetDynamicResolver(moduleHnd)->GetStringLength(metaTOK);
+        result = GetDynamicResolver(moduleHnd)->GetStringLiteral(metaTOK, length);
     }
     else
     {
@@ -825,17 +827,18 @@ int CEEInfo::getStringLength (
         if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
             // For string.Empty pString will be null
-            length = dwCharCount;
+            *length = dwCharCount;
+            result = pString;
         }
         else
         {
-            length = -1;
+            *length = -1;
         }
     }
 
     EE_TO_JIT_TRANSITION();
 
-    return length;
+    return result;
 }
 
 /* static */

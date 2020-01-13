@@ -3809,11 +3809,12 @@ BOOL ZapInfo::isValidStringRef (
     return m_pEEJitInfo->isValidStringRef(tokenScope, token);
 }
 
-int ZapInfo::getStringLength (
+LPCWSTR ZapInfo::getStringLiteral (
             CORINFO_MODULE_HANDLE       tokenScope,
-            unsigned                    token)
+            unsigned                    token,
+            int*                        length)
 {
-    return m_pEEJitInfo->getStringLength(tokenScope, token);
+    return m_pEEJitInfo->getStringLiteral(tokenScope, token, length);
 }
 
 //

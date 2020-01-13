@@ -1197,15 +1197,26 @@ LCGMethodResolver::IsValidStringRef(mdToken metaTok)
     return GetStringLiteral(metaTok) != NULL;
 }
 
-int
-LCGMethodResolver::GetStringLength(mdToken metaTok)
+LPCWSTR
+LCGMethodResolver::GetStringLiteral(mdToken metaTok, int* length)
 {
     STANDARD_VM_CONTRACT;
 
     GCX_COOP();
 
     STRINGREF str = GetStringLiteral(metaTok);
-    return str == NULL ? - 1 : str->GetStringLength();
+    if (str == NULL)
+    {
+        *length = -1;
+        return NULL;
+    }
+    else
+    {
+        *length = str->GetStringLength();
+        SString sstr;
+        str->GetSString(sstr);
+        return sstr.GetUnicode();
+    }
 }
 
 //---------------------------------------------------------------------------------------

@@ -4606,10 +4606,11 @@ BOOL MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     return value;
 }
 
-void MethodContext::recGetStringLength(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int result)
+
+void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, LPCWSTR result)
 {
-    if (GetStringLength == nullptr)
-        GetStringLength = new LightWeightMap<DLD, DWORD>();
+    if (GetStringLiteral == nullptr)
+        GetStringLiteral = new LightWeightMap<DLD, DD>();
 
     DLD key;
     ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
@@ -4618,16 +4619,31 @@ void MethodContext::recGetStringLength(CORINFO_MODULE_HANDLE module, unsigned me
     key.A = (DWORDLONG)module;
     key.B = (DWORD)metaTOK;
 
-    GetStringLength->Add(key, (DWORD)result);
+    DWORD strBuf = (DWORD)-1;
+    if (result != nullptr)
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)result, (unsigned int)((wcslen(result) * 2) + 2));
+
+    DD value;
+    value.A = (DWORD)length;
+    value.B = (DWORD)strBuf;
+
+    GetStringLiteral->Add(key, value);
 }
 
-void MethodContext::dmpGetStringLength(DLD key, DWORD value)
+void MethodContext::dmpGetStringLiteral(DLD key, DD value)
 {
-    printf("GetStringLength key mod-%016llX tok-%08X, value res-%u", key.A, key.B, value);
+    printf("GetStringLiteral key mod-%016llX tok-%08X, result-%ls, len-%u", key.A, key.B,
+        (LPCWSTR)GetStringLiteral->GetBuffer(value.B), value.A);
 }
 
-int MethodContext::repGetStringLength(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
+LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
 {
+    if (GetStringLiteral == nullptr)
+    {
+        *length = -1;
+        return L"hackishStringLiteral";
+    }
+
     DLD key;
     ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
                                    // out padding too
@@ -4635,8 +4651,18 @@ int MethodContext::repGetStringLength(CORINFO_MODULE_HANDLE module, unsigned met
     key.A = (DWORDLONG)module;
     key.B = (DWORD)metaTOK;
 
-    int value = (int)GetStringLength->Get(key);
-    return value;
+    int itemIndex = GetStringLiteral->GetIndex(key);
+    if (itemIndex < 0)
+    {
+        *length = -1;
+        return L"hackishStringLiteral";
+    }
+    else
+    {
+        DD result = GetStringLiteral->Get(key);
+        *length = (int)result.A;
+        return (LPCWSTR)GetStringLiteral->GetBuffer(itemIndex);
+    }
 }
 
 void MethodContext::recGetHelperName(CorInfoHelpFunc funcNum, const char* result)

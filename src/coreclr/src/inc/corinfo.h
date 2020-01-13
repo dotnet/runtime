@@ -2307,9 +2307,10 @@ public:
             unsigned                    metaTOK     /* IN  */
             ) = 0;
 
-    virtual int getStringLength (
+    virtual LPCWSTR getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
-            unsigned                    metaTOK     /* IN  */
+            unsigned                    metaTOK,    /* IN  */
+            int*                        length      /* OUT */
             ) = 0;
 
     virtual BOOL shouldEnforceCallvirtRestriction(

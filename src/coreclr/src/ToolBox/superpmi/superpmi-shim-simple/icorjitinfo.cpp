@@ -340,11 +340,12 @@ BOOL interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return original_ICorJitInfo->isValidStringRef(module, metaTOK);
 }
 
-int interceptor_ICJI::getStringLength(CORINFO_MODULE_HANDLE module, /* IN  */
-                                      unsigned              metaTOK /* IN  */
-                                      )
+LPCWSTR interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
+                                           unsigned              metaTOK, /* IN  */
+                                           int*                  length   /* OUT */
+                                           )
 {
-    return original_ICorJitInfo->getStringLength(module, metaTOK);
+    return original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
 }
 
 BOOL interceptor_ICJI::shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
