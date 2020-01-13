@@ -927,12 +927,14 @@ static char* match_prefix(const char* name, char** list)
         const char* pch = name;
         char* p = list[i];
 
-        for (;;) {
-            if (*pch == '\0') {
-                if(*p == '=')
+        for (;;) 
+        {
+            if (*pch == '\0') 
+            {
+                if (*p == '=')
                     return p+1;
                     
-                if(*p == '\0') // no = sign -> empty value
+                if (*p == '\0') // no = sign -> empty value
                     return p;
                 
                 break;
