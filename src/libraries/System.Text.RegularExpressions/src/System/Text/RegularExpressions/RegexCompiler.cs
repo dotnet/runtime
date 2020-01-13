@@ -64,7 +64,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanStartsWithComparison = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison) })!;
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
         private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
@@ -2176,26 +2175,18 @@ namespace System.Text.RegularExpressions
                 // string matches, but also the cost when the comparison fails early on, and thus we pay for the call overhead
                 // but don't reap the benefits of all the vectorization StartsWith can do.
                 const int MaxUnrollLength = 64;
-                if (node.Str!.Length > MaxUnrollLength)
+                if (!caseInsensitive && // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
+                    node.Str!.Length > MaxUnrollLength)
                 {
-                    // if (!textSpan.Slice(textSpanPos).StartsWith("..."[, StringComparison.XxIgnoreCase])) goto doneLabel;
+                    // if (!textSpan.Slice(textSpanPos).StartsWith("...") goto doneLabel;
                     Ldloca(textSpanLocal);
                     Ldc(textSpanPos);
                     Call(s_spanSliceIntMethod);
                     Ldstr(node.Str);
                     Call(s_stringAsSpanMethod);
-                    if (!caseInsensitive)
-                    {
-                        Call(s_spanStartsWith);
-                    }
-                    else
-                    {
-                        Ldc((int)(UseToLowerInvariant ? StringComparison.InvariantCultureIgnoreCase : StringComparison.CurrentCultureIgnoreCase));
-                        Call(s_spanStartsWithComparison);
-                    }
+                    Call(s_spanStartsWith);
                     BrfalseFar(doneLabel);
                     textSpanPos += node.Str.Length;
-
                     return;
                 }
 

@@ -377,18 +377,25 @@ namespace System.Text.RegularExpressions.Tests
             VerifyMatch(new Regex(pattern, options).Match(input, beginning, length), expectedSuccess, expectedValue);
         }
 
-        [Fact]
-        public void Match_VaryingLengthStrings()
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+        [InlineData(RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+        public void Match_VaryingLengthStrings(RegexOptions options)
         {
-            foreach (int length in new[] { 2, 3, 4, 5, 6, 7, 8, 9, 31, 32, 33, 63, 64, 65, 100_000 })
+            var lengths = new List<int>() { 2, 3, 4, 5, 6, 7, 8, 9, 31, 32, 33, 63, 64, 65 };
+            if ((options & RegexOptions.IgnoreCase) == 0)
+            {
+                lengths.Add(100_000); // currently produces too large a compiled method for case-insensitive
+            }
+
+            foreach (int length in lengths)
             {
                 string text = string.Concat(Enumerable.Range(0, length).Select(i => (char)('A' + (i % 26))));
                 string pattern = "[123]" + text;
                 string input = "2" + text;
-                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.Compiled | RegexOptions.IgnoreCase, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant })
-                {
-                    Match(pattern, input, options, 0, input.Length, expectedSuccess: true, expectedValue: input);
-                }
+                Match(pattern, input, options, 0, input.Length, expectedSuccess: true, expectedValue: input);
             }
         }
 
