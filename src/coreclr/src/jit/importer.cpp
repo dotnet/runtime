@@ -3637,10 +3637,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     // Optimize `ldstr + String::get_Length()` to CNS_INT
                     // e.g. "Hello".Length => 5
                     int     length = -1;
-                    LPCWSTR str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd, op1->AsStrCon()->gtSconCPX, &length);
+                    LPCWSTR str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd,
+                                                                     op1->AsStrCon()->gtSconCPX, &length);
                     if (length >= 0)
                     {
-                        JITDUMP("Optimizing '\"%ls\".Length' to just '%d'\n", str, length);
+                        JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length);
                         retNode = gtNewIconNode(length);
                         break;
                     }

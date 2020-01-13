@@ -4632,8 +4632,8 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
 
 void MethodContext::dmpGetStringLiteral(DLD key, DD value)
 {
-    printf("GetStringLiteral key mod-%016llX tok-%08X, result-%ls, len-%u", key.A, key.B,
-        (LPCWSTR)GetStringLiteral->GetBuffer(value.B), value.A);
+    printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
+        GetStringLiteral->GetBuffer(value.B), value.A);
 }
 
 LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
@@ -4641,7 +4641,7 @@ LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigne
     if (GetStringLiteral == nullptr)
     {
         *length = -1;
-        return L"hackishStringLiteral";
+        return W("hackishStringLiteral");
     }
 
     DLD key;
@@ -4655,7 +4655,7 @@ LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigne
     if (itemIndex < 0)
     {
         *length = -1;
-        return L"hackishStringLiteral";
+        return W("hackishStringLiteral");
     }
     else
     {
