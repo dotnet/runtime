@@ -115,8 +115,7 @@ namespace System.Net.Sockets
                 Waiting = 0,
                 Running = 1,
                 Complete = 2,
-                Cancelled = 3,
-                Aborted = 4
+                Cancelled = 3
             }
 
             private int _state; // Actually AsyncOperation.State.
@@ -168,25 +167,32 @@ namespace System.Net.Sockets
             public bool TrySetRunning()
             {
                 State oldState = (State)Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
-                Debug.Assert(oldState == State.Waiting || oldState == State.Cancelled || oldState == State.Aborted);
-                return oldState == State.Waiting;
+                if (oldState == State.Cancelled)
+                {
+                    // This operation has already been cancelled, and had its completion processed.
+                    // Simply return false to indicate no further processing is needed.
+                    return false;
+                }
+
+                Debug.Assert(oldState == (int)State.Waiting);
+                return true;
             }
 
-            public bool TrySetComplete()
+            public void SetComplete()
             {
-                State oldState = (State)Interlocked.CompareExchange(ref _state, (int)State.Complete, (int)State.Running);
-                Debug.Assert(oldState == State.Running || oldState == State.Aborted);
-                return oldState == State.Running;
+                Debug.Assert(Volatile.Read(ref _state) == (int)State.Running);
+
+                Volatile.Write(ref _state, (int)State.Complete);
             }
 
-            public bool TrySetWaiting()
+            public void SetWaiting()
             {
-                State oldState = (State)Interlocked.CompareExchange(ref _state, (int)State.Waiting, (int)State.Running);
-                Debug.Assert(oldState == State.Running || oldState == State.Aborted);
-                return oldState == State.Running;
+                Debug.Assert(Volatile.Read(ref _state) == (int)State.Running);
+
+                Volatile.Write(ref _state, (int)State.Waiting);
             }
 
-            public bool TryCancel(bool aborting)
+            public bool TryCancel()
             {
                 Trace("Enter");
 
@@ -195,43 +201,42 @@ namespace System.Net.Sockets
                 // important we clean it up, regardless.
                 CancellationRegistration.Dispose();
 
-                State oldState;
-                if (aborting)
+                // Try to transition from Waiting to Cancelled
+                SpinWait spinWait = default;
+                bool keepWaiting = true;
+                while (keepWaiting)
                 {
-                    oldState = (State)Interlocked.Exchange(ref _state, (int)State.Aborted);
-                }
-                else
-                {
-                    // Cancel operation when it is not completed.
-                    SpinWait spinWait = default;
-                    do
+                    int state = Interlocked.CompareExchange(ref _state, (int)State.Cancelled, (int)State.Waiting);
+                    switch ((State)state)
                     {
-                        oldState = (State)Interlocked.CompareExchange(ref _state, (int)State.Cancelled, (int)State.Waiting);
-
-                        if (oldState == State.Running)
-                        {
+                        case State.Running:
                             // A completion attempt is in progress. Keep busy-waiting.
                             Trace("Busy wait");
                             spinWait.SpinOnce();
-                        }
-                    } while (oldState == State.Running);
+                            break;
+
+                        case State.Complete:
+                            // A completion attempt succeeded. Consider this operation as having completed within the timeout.
+                            Trace("Exit, previously completed");
+                            return false;
+
+                        case State.Waiting:
+                            // This operation was successfully cancelled.
+                            // Break out of the loop to handle the cancellation
+                            keepWaiting = false;
+                            break;
+
+                        case State.Cancelled:
+                            // Someone else cancelled the operation.
+                            // The previous canceller will have fired the completion, etc.
+                            Trace("Exit, previously cancelled");
+                            return false;
+                    }
                 }
 
-                // Exit if the operation had already completed.
-                switch (oldState)
-                {
-                    case State.Complete:
-                        Trace("Exit, previously completed");
-                        return false;
-                    case State.Cancelled:
-                    case State.Aborted:
-                        Trace("Exit, previously cancelled/aborted");
-                        return false;
-                }
+                Trace("Cancelled, processing completion");
 
-                Trace($"{(aborting?"Aborted":"Cancelled")}, processing completion");
-
-                // The operation successfully cancelled/aborted.
+                // The operation successfully cancelled.
                 // It's our responsibility to set the error code and queue the completion.
                 DoAbort();
 
@@ -245,7 +250,7 @@ namespace System.Net.Sockets
 #if DEBUG
                     Debug.Assert(Interlocked.CompareExchange(ref _callbackQueued, 1, 0) == 0, $"Unexpected _callbackQueued: {_callbackQueued}");
 #endif
-                    // We've marked the operation as canceled/aborted, and so should invoke the callback, but
+                    // We've marked the operation as canceled, and so should invoke the callback, but
                     // we can't pool the object, as ProcessQueue may still have a reference to it, due to
                     // using a pattern whereby it takes the lock to grab an item, but then releases the lock
                     // to do further processing on the item that's still in the list.
@@ -255,7 +260,7 @@ namespace System.Net.Sockets
                 Trace("Exit");
 
                 // Note, we leave the operation in the OperationQueue.
-                // When we get around to processing it, we'll see it's cancelled/aborted and skip it.
+                // When we get around to processing it, we'll see it's cancelled and skip it.
                 return true;
             }
 
@@ -788,7 +793,7 @@ namespace System.Net.Sockets
                                 // call TryCancel, so we do this after the op is fully enqueued.
                                 if (cancellationToken.CanBeCanceled)
                                 {
-                                    operation.CancellationRegistration = cancellationToken.UnsafeRegister(s => ((TOperation)s).TryCancel(aborting: false), operation);
+                                    operation.CancellationRegistration = cancellationToken.UnsafeRegister(s => ((TOperation)s).TryCancel(), operation);
                                 }
 
                                 return true;
@@ -919,7 +924,7 @@ namespace System.Net.Sockets
                 while (true)
                 {
                     // Try to change the op state to Running.
-                    // If this fails, it means the operation was previously cancelled/aborted,
+                    // If this fails, it means the operation was previously cancelled,
                     // and we should just remove it from the queue without further processing.
                     if (!op.TrySetRunning())
                     {
@@ -929,17 +934,12 @@ namespace System.Net.Sockets
                     // Try to perform the IO
                     if (op.TryComplete(context))
                     {
-                        if (op.TrySetComplete())
-                        {
-                            wasCompleted = true;
-                        }
+                        op.SetComplete();
+                        wasCompleted = true;
                         break;
                     }
 
-                    if (!op.TrySetWaiting())
-                    {
-                        break;
-                    }
+                    op.SetWaiting();
 
                     // Check for retry and reset queue state.
 
@@ -1106,7 +1106,7 @@ namespace System.Net.Sockets
                         AsyncOperation op = _tail;
                         do
                         {
-                            aborted |= op.TryCancel(aborting: true);
+                            aborted |= op.TryCancel();
                             op = op.Next;
                         } while (op != _tail);
                     }
