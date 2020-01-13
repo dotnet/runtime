@@ -22,7 +22,6 @@ namespace System.Reflection.Metadata
         internal MethodDebugInformation(MetadataReader reader, MethodDebugInformationHandle handle)
         {
             Debug.Assert(reader != null);
-            Debug.Assert(!handle.IsNil);
 
             _reader = reader;
             _rowId = handle.RowId;

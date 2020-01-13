@@ -2661,6 +2661,21 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void GetMethodDebugInformation_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var mdi = reader.GetMethodDebugInformation(default(MethodDebugInformationHandle));
+
+                AssertEx.Throws<BadImageFormatException>(() => mdi.SequencePointsBlob, _ => { });
+                AssertEx.Throws<BadImageFormatException>(() => mdi.Document, _ => { });
+                AssertEx.Throws<BadImageFormatException>(() => mdi.LocalSignature, _ => { });
+                AssertEx.Throws<BadImageFormatException>(() => mdi.GetSequencePoints(), _ => { });
+            }
+        }
+
+        [Fact]
         public void GetCustomDebugInformation()
         {
             using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
