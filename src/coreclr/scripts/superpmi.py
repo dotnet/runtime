@@ -128,6 +128,8 @@ superpmi_common_parser.add_argument("-spmi_location", help=spmi_location_help)
 superpmi_common_parser.add_argument("--break_on_assert", action="store_true", help=break_on_assert_help)
 superpmi_common_parser.add_argument("--break_on_error", action="store_true", help=break_on_error_help)
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
+superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode.")
+superpmi_common_parser.add_argument("-log_file", help=log_file_help)
 
 # subparser for collect
 collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[superpmi_common_parser])
@@ -152,14 +154,14 @@ collect_parser.add_argument("--has_verified_clean_mch", action="store_true", hel
 collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help="Do not collect .MC files")
 
 # Create a set of argument common to all SuperPMI replay commands, namely basic replay and ASM diffs.
+# Note that SuperPMI collection also runs a replay to verify the final MCH file, so many arguments
+# common to replay are also applicable that that replay as well.
 
 replay_common_parser = argparse.ArgumentParser(add_help=False)
 
-replay_common_parser.add_argument("-log_file", help=log_file_help)
 replay_common_parser.add_argument("-mch_file", help=mch_file_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
-replay_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode.")
 replay_common_parser.add_argument("-altjit", nargs='?', const=True, help="Replay with an altjit. If an argument is specified, it is used as the name of the altjit (e.g., 'protojit.dll'). Otherwise, the default altjit name is used.")
 
 # subparser for replay
@@ -1905,6 +1907,20 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set skip_cleanup")
 
+        coreclr_args.verify(args,
+                            "sequential",
+                            lambda unused: True,
+                            "Unable to set sequential.")
+
+        coreclr_args.verify(args,
+                            "log_file",
+                            lambda unused: True,
+                            "Unable to set log_file.")
+
+        if coreclr_args.log_file is not None and not coreclr_args.sequential:
+            print("-log_file requires --sequential")
+            sys.exit(1)
+
     if coreclr_args.mode == "collect":
 
         verify_superpmi_common_args()
@@ -2015,16 +2031,6 @@ def setup_args(args):
                             lambda jit_path: "Error: JIT not found at jit_path {}".format(jit_path),
                             modify_arg=lambda arg: os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args)) if arg is None else os.path.abspath(arg))
 
-        coreclr_args.verify(args,
-                            "log_file",
-                            lambda unused: True,
-                            "Unable to set log_file.")
-
-        coreclr_args.verify(args,
-                            "sequential",
-                            lambda unused: True,
-                            "Unable to set sequential.")
-
         standard_location = False
         if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():
             standard_location = True
@@ -2070,10 +2076,6 @@ def setup_args(args):
                             lambda mch_file: "Incorrect file path to mch_file: {}".format(mch_file),
                             modify_arg=lambda arg: setup_mch_arg(arg))
 
-        if coreclr_args.log_file is not None and not coreclr_args.sequential:
-            print("-log_file requires --sequential")
-            sys.exit(1)
-
     elif coreclr_args.mode == "asmdiffs":
 
         verify_superpmi_common_args()
@@ -2114,11 +2116,6 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set previous_temp_location.")
 
-        coreclr_args.verify(args,
-                            "log_file",
-                            lambda unused: True,
-                            "Unable to set log_file.")
-
         if coreclr_args.diff_with_code_only:
             # Set diff with code if we are not running SuperPMI to regenerate diffs.
             # This avoids having to re-run generating asm diffs.
@@ -2136,11 +2133,6 @@ def setup_args(args):
                             "diff_jit_dump_only",
                             lambda unused: True,
                             "Unable to set diff_jit_dump_only.")
-
-        coreclr_args.verify(args,
-                            "sequential",
-                            lambda unused: True,
-                            "Unable to set sequential.")
 
         if coreclr_args.diff_jit_dump_only:
             coreclr_args.verify(True,                          # force `diff_jit_dump` to True
@@ -2198,10 +2190,6 @@ def setup_args(args):
                             lambda mch_file: os.path.isfile(mch_file),
                             lambda mch_file: "Incorrect file path to mch_file: {}".format(mch_file),
                             modify_arg=lambda arg: setup_mch_arg(arg))
-
-        if coreclr_args.log_file is not None and not coreclr_args.sequential:
-            print("-log_file requires --sequential")
-            sys.exit(1)
 
     elif coreclr_args.mode == "upload":
 
