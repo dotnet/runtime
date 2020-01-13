@@ -23,4 +23,4 @@ else()
     clr_unknown_arch()
 endif()
 
-add_jit(linuxonjit)
+add_jit(linuxnonjit)
