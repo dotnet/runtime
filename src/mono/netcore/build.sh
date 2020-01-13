@@ -123,6 +123,10 @@ if [ "$llvm" = "true" ]; then
   autogen_params="$autogen_params --enable-llvm"
 fi
 
+if [[ "$configuration" == "Debug" ]]; then
+    autogen_params="$autogen_params --enable-checked-build=private_types"
+fi
+
 # run .././autogen.sh only once or if "--rebuild" argument is provided
 if [[ "$force_rebuild" == "true" || ! -f .configured ]]; then
   (cd .. && ./autogen.sh --with-core=only $autogen_params CFLAGS="$EXTRA_CFLAGS" CXXFLAGS="$EXTRA_CXXFLAGS") || (Write-PipelineTelemetryError -c "configure" -e 1 "Error running autogen" && exit 1)

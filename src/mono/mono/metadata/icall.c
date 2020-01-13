@@ -3633,7 +3633,7 @@ init_io_stream_slots (void)
 	int methods_found = 0;
 	for (int i = 0; i < method_count; i++) {
 		// find slots for Begin(End)Read and Begin(End)Write
-		MonoMethod* m = klass->methods [i];
+		MonoMethod* m = klass_methods [i];
 		if (m->slot == -1)
 			continue;
 
@@ -3667,8 +3667,9 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, M
 	// slots can still be -1 and it means Linker removed the methods from the base class (Stream)
 	// in this case we can safely assume the methods are not overridden
 	// otherwise - check vtable
-	gboolean begin_read_is_overriden = io_stream_begin_read_slot != -1 && curr_klass->vtable [io_stream_begin_read_slot]->klass != base_klass;
-	gboolean end_read_is_overriden = io_stream_end_read_slot != -1 && curr_klass->vtable [io_stream_end_read_slot]->klass != base_klass;
+	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
+	gboolean begin_read_is_overriden = io_stream_begin_read_slot != -1 && curr_klass_vtable [io_stream_begin_read_slot]->klass != base_klass;
+	gboolean end_read_is_overriden = io_stream_end_read_slot != -1 && curr_klass_vtable [io_stream_end_read_slot]->klass != base_klass;
 
 	// return true if BeginRead or EndRead were overriden
 	return begin_read_is_overriden || end_read_is_overriden;
@@ -3683,8 +3684,9 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndWrite (MonoObjectHandle stream, 
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	gboolean begin_write_is_overriden = curr_klass->vtable [io_stream_begin_write_slot]->klass != base_klass;
-	gboolean end_write_is_overriden = curr_klass->vtable [io_stream_end_write_slot]->klass != base_klass;
+	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
+	gboolean begin_write_is_overriden = curr_klass_vtable [io_stream_begin_write_slot]->klass != base_klass;
+	gboolean end_write_is_overriden = curr_klass_vtable [io_stream_end_write_slot]->klass != base_klass;
 
 	// return true if BeginWrite or EndWrite were overriden
 	return begin_write_is_overriden || end_write_is_overriden;

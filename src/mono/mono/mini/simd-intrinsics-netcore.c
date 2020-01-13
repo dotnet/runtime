@@ -209,9 +209,9 @@ static gboolean
 is_hw_intrinsics_class (MonoClass *klass, const char *name, gboolean *is_64bit)
 {
 	const char *class_name = m_class_get_name (klass);
-	if ((!strcmp (class_name, "X64") || !strcmp (class_name, "Arm64")) && klass->nested_in) {
+	if ((!strcmp (class_name, "X64") || !strcmp (class_name, "Arm64")) && m_class_get_nested_in (klass)) {
 		*is_64bit = TRUE;
-		return !strcmp (m_class_get_name (klass->nested_in), name); 
+		return !strcmp (m_class_get_name (m_class_get_nested_in (klass)), name);
 	} else {
 		*is_64bit = FALSE;
 		return !strcmp (class_name, name);
@@ -1188,8 +1188,6 @@ static guint16 vector_128_t_methods [] = {
 static MonoInst*
 emit_vector128 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	MonoInst *ins;
-	MonoType *type, *etype;
 	MonoClass *klass;
 	int id;
 
@@ -1338,8 +1336,9 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	class_ns = m_class_get_name_space (cmethod->klass);
 	class_name = m_class_get_name (cmethod->klass);
 
-	if (cmethod->klass->nested_in)
-		class_ns = m_class_get_name_space (cmethod->klass->nested_in), class_name, cmethod->klass->nested_in;
+	// If cmethod->klass is nested, the namespace is on the enclosing class.
+	if (m_class_get_nested_in (cmethod->klass))
+		class_ns = m_class_get_name_space (m_class_get_nested_in (cmethod->klass));
 
 #ifdef TARGET_AMD64 // TODO: test and enable for x86 too
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
