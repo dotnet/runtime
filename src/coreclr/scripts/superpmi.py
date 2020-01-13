@@ -244,7 +244,7 @@ def make_safe_filename(s):
             return "_"
     return "".join(safe_char(c) for c in s)
 
-def _find(name, pathlist, matchFunc=os.path.isfile):
+def find_in_path(name, pathlist, matchFunc=os.path.isfile):
     """ Find a name (e.g., directory name or file name) in the file system by searching the directories
         in a semicolon-separated `pathlist` (e.g., PATH environment variable).
 
@@ -262,7 +262,7 @@ def _find(name, pathlist, matchFunc=os.path.isfile):
             return candidate
     return None
 
-def findFile(filename, pathlist):
+def find_file(filename, pathlist):
     """ Find a filename in the file system by searching the directories
         in a semicolon-separated `pathlist` (e.g., PATH environment variable).
 
@@ -273,9 +273,9 @@ def findFile(filename, pathlist):
     Returns:
         (str) The pathname of the object, or None if not found.
     """
-    return _find(filename, pathlist)
+    return find_in_path(filename, pathlist)
 
-def findDir(dirname, pathlist):
+def find_dir(dirname, pathlist):
     """ Find a directory name in the file system by searching the directories
         in a semicolon-separated `pathlist` (e.g., PATH environment variable).
 
@@ -286,7 +286,7 @@ def findDir(dirname, pathlist):
     Returns:
         (str) The pathname of the object, or None if not found.
     """
-    return _find(dirname, pathlist, matchFunc=os.path.isdir)
+    return find_in_path(dirname, pathlist, matchFunc=os.path.isdir)
 
 def create_unique_directory_name(root_directory, base_name):
     """ Create a unique directory name by joining `root_directory` and `base_name`.
@@ -1435,7 +1435,7 @@ class SuperPMIReplayAsmDiffs:
                     if search_path is not None:
                         search_path = search_path.split(";")
                         jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
-                        jit_analyze_path = findFile(jit_analyze_file, search_path)
+                        jit_analyze_path = find_file(jit_analyze_file, search_path)
                         if jit_analyze_path is not None:
                             # It appears we have a built jit-analyze on the path, so try to run it.
                             command = [ jit_analyze_path, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
