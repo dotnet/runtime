@@ -528,12 +528,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
 #define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
 
-#ifndef FEATURE_PAL
-#define JIT_ChkCastClass            JIT_ChkCastClass
-#define JIT_ChkCastClassSpecial     JIT_ChkCastClassSpecial
-#define JIT_ChkCastInterface        JIT_ChkCastInterface
-#endif // FEATURE_PAL
-
 #define JIT_Stelem_Ref              JIT_Stelem_Ref
 
 #endif // __cgencpu_h__

@@ -374,5 +374,122 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(result != CastResult.CannotCast);
             return objRet;
         }
+
+        //[DebuggerHidden]
+        //[StackTraceHidden]
+        //[DebuggerStepThrough]
+        private static object? ChkCastHelper(void* toTypeHnd, object obj)
+        {
+            CastResult result = TryGet((nint)RuntimeHelpers.GetMethodTable(obj), (nint)toTypeHnd);
+            if (result == CastResult.CanCast)
+            {
+                return obj;
+            }
+
+            // fall through to the slow helper
+            return JITutil_ChkCastAny_NoCacheLookup(toTypeHnd, obj);
+        }
+
+        //[DebuggerHidden]
+        //[StackTraceHidden]
+        //[DebuggerStepThrough]
+        private static object? JIT_ChkCastInterface(void* toTypeHnd, object? obj)
+        {
+            if (obj != null)
+            {
+                MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+                nint interfaceCount = mt->InterfaceCount;
+                if (interfaceCount > 0)
+                {
+                    nuint* interfaceMap = mt->InterfaceMap;
+                    nint i = 0;
+
+                    do
+                    {
+                        if (interfaceMap[i + 0] == (nuint)toTypeHnd)
+                            goto done;
+                        if (interfaceMap[i + 1] == (nuint)toTypeHnd)
+                            goto done;
+                        if (interfaceMap[i + 2] == (nuint)toTypeHnd)
+                            goto done;
+                        if (interfaceMap[i + 3] == (nuint)toTypeHnd)
+                            goto done;
+                    }
+                    while ((i += 4) < interfaceCount);
+                }
+
+                goto slowPath;
+            }
+
+        done:
+            return obj;
+
+        slowPath:
+            return ChkCastHelper(toTypeHnd, obj);
+        }
+
+        //[DebuggerHidden]
+        //[StackTraceHidden]
+        //[DebuggerStepThrough]
+        private static object? JIT_ChkCastClass(void* toTypeHnd, object? obj)
+        {
+            if (obj != null)
+            {
+                MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+                if (mt != toTypeHnd)
+                    goto slowPath;
+            }
+
+            return obj;
+
+        slowPath:
+            return JIT_ChkCastClassSpecial(toTypeHnd, obj);
+        }
+
+        //[DebuggerHidden]
+        //[StackTraceHidden]
+        //[DebuggerStepThrough]
+        private static object? JIT_ChkCastClassSpecial(void* toTypeHnd, object obj)
+        {
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+            for (; ; )
+            {
+                if (mt == toTypeHnd)
+                    goto done;
+
+                mt = mt->BaseMethodTable;
+                if (mt == null)
+                    break;
+
+                if (mt == toTypeHnd)
+                    goto done;
+
+                mt = mt->BaseMethodTable;
+                if (mt == null)
+                    break;
+
+                if (mt == toTypeHnd)
+                    goto done;
+
+                mt = mt->BaseMethodTable;
+                if (mt == null)
+                    break;
+
+                if (mt == toTypeHnd)
+                    goto done;
+
+                mt = mt->BaseMethodTable;
+                if (mt == null)
+                    break;
+            }
+
+            goto slowPath;
+
+        done:
+            return obj;
+
+        slowPath:
+            return ChkCastHelper(toTypeHnd, obj);
+        }
     }
 }

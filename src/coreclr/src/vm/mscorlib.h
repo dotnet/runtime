@@ -1458,6 +1458,9 @@ DEFINE_METHOD(CASTHELPERS, JIT_ISINSTANCEOFANY,  JIT_IsInstanceOfAny,           
 DEFINE_METHOD(CASTHELPERS, JIT_ISINSTANCEOFCLASS,JIT_IsInstanceOfClass,           SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, JIT_ISINSTANCEOFINTERFACE,  JIT_IsInstanceOfInterface, SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, JIT_CHKCASTANY,       JIT_ChkCastAny,                  SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, JIT_CHKCASTINTERFACE, JIT_ChkCastInterface,            SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, JIT_CHKCASTCLASS,     JIT_ChkCastClass,                SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, JIT_CHKCASTCLASSSPECIAL, JIT_ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
 
 DEFINE_CLASS_U(CompilerServices,           LAHashDependentHashTracker,      LAHashDependentHashTrackerObject)
 DEFINE_FIELD_U(_dependentHandle,           LAHashDependentHashTrackerObject,_dependentHandle)

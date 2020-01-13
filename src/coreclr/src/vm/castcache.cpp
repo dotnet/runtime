@@ -128,7 +128,7 @@ void CastCache::Initialize()
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
 
 #ifdef FEATURE_PREJIT
-    // just set ISINSTANCEOFINTERFACE to ISINSTANCEOFANY
+    // When interface table uses indirect references, just set interface casts to "ANY" handler
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
 #else
     pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_ISINSTANCEOFINTERFACE));
@@ -143,6 +143,24 @@ void CastCache::Initialize()
     pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTANY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
+
+#ifdef FEATURE_PREJIT
+    // When interface table uses indirect references, just set interface casts to "ANY" handler
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
+#else
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTINTERFACE));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
+#endif
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTCLASS));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS, pDest);
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTCLASSSPECIAL));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
+
 
     FieldDesc* pTableField = MscorlibBinder::GetField(FIELD__CASTHELPERS__TABLE);
 
