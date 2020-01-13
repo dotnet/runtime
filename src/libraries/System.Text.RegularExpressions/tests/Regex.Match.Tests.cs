@@ -390,11 +390,11 @@ namespace System.Text.RegularExpressions.Tests
                 lengths.Add(100_000); // currently produces too large a compiled method for case-insensitive
             }
 
+            bool caseInsensitive = (options & RegexOptions.IgnoreCase) != 0;
             foreach (int length in lengths)
             {
-                string text = string.Concat(Enumerable.Range(0, length).Select(i => (char)('A' + (i % 26))));
-                string pattern = "[123]" + text;
-                string input = "2" + text;
+                string pattern = "[123]" + string.Concat(Enumerable.Range(0, length).Select(i => (char)('A' + (i % 26))));
+                string input = "2" + string.Concat(Enumerable.Range(0, length).Select(i => (char)((caseInsensitive ? 'a' : 'A') + (i % 26))));
                 Match(pattern, input, options, 0, input.Length, expectedSuccess: true, expectedValue: input);
             }
         }
