@@ -18,18 +18,6 @@ namespace Internal.Cryptography
         internal byte[] CertPolicyConstraints;
         internal byte[] EnhancedKeyUsage;
         internal byte[] InhibitAnyPolicyExtension;
-
-        internal PolicyData(byte[] applicationCertPolicies = null, byte[] certPolicies = null,
-                   byte[] certPolicyMappings = null, byte[] certPolicyConstraints = null,
-                   byte[] enhancedKeyUsage = null, byte[] inhibitAnyPolicyExtension = null)
-        {
-            ApplicationCertPolicies = applicationCertPolicies;
-            CertPolicies = certPolicies;
-            CertPolicyMappings = certPolicyMappings;
-            CertPolicyConstraints = certPolicyConstraints;
-            EnhancedKeyUsage = enhancedKeyUsage;
-            InhibitAnyPolicyExtension = inhibitAnyPolicyExtension;
-        }
     }
 
     /// <summary>Provides specific implementation for X509Certificate2.</summary>
