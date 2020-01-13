@@ -46,7 +46,12 @@ namespace System.Reflection
 		public static extern Assembly GetCallingAssembly ();
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		public static extern Assembly GetEntryAssembly ();
+		internal static extern Assembly GetEntryAssemblyNative ();
+
+		private static Assembly? GetEntryAssemblyInternal ()
+		{
+			return GetEntryAssemblyNative ();
+		}
 
 		[System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
 		public static Assembly Load (string assemblyString)

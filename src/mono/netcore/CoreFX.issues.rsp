@@ -27,14 +27,6 @@
 -nomethod System.Collections.Specialized.Tests.NameValueCollectionCtorTests.Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException
 
 ####################################################################
-##  System.Diagnostics.TraceSource.Tests
-####################################################################
-
-# Object reference not set to an instance of an object on DefaultTraceListenerClassTests.MakeAssemblyGetEntryAssemblyReturnNull
-# https://github.com/mono/mono/issues/14905
--nomethod System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Null_NotIncludedInTrace
-
-####################################################################
 ##  System.Diagnostics.Tracing.Tests
 ####################################################################
 
