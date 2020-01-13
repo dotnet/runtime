@@ -310,7 +310,11 @@ namespace System.Security.Principal
         //       the typecast
         //
 
+#if NETCOREAPP2_0
+        private void CreateFromParts(IdentifierAuthority identifierAuthority, int[] subAuthorities)
+#else
         private void CreateFromParts(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
+#endif
         {
             //
             // Check the number of subauthorities passed in
@@ -342,7 +346,12 @@ namespace System.Security.Principal
             //
 
             _identifierAuthority = identifierAuthority;
+#if NETCOREAPP2_0
+            _subAuthorities = new int[subAuthorities.Length];
+            Array.Copy(subAuthorities, _subAuthorities, subAuthorities.Length);
+#else
             _subAuthorities = subAuthorities.ToArray();
+#endif
 
             //
             // Compute and store the binary form
@@ -431,27 +440,15 @@ namespace System.Security.Principal
             //
             // Insist on the correct number of subauthorities
             //
-
-            if (binaryForm[offset + 1] > MaxSubAuthorities)
+            int subAuthoritiesLength = binaryForm[offset + 1];
+            if (subAuthoritiesLength > MaxSubAuthorities)
             {
                 throw new ArgumentException(SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities), nameof(binaryForm));
             }
 
-
             //
             // Make sure the buffer is big enough
             //
-
-            int subAuthoritiesLength = binaryForm[offset + 1];
-
-            if (subAuthoritiesLength > MaxSubAuthorities)
-            {
-                throw new ArgumentOutOfRangeException(
-                    "subAuthoritiesLength",
-                    subAuthoritiesLength,
-                    SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities)
-                );
-            }
 
             int totalLength = 1 + 1 + 6 + 4 * subAuthoritiesLength;
 
@@ -460,7 +457,11 @@ namespace System.Security.Principal
                 throw new ArgumentException(SR.ArgumentOutOfRange_ArrayTooSmall, nameof(binaryForm));
             }
 
+#if NETCOREAPP2_0
+            int[] subAuthorities = new int[subAuthoritiesLength];
+#else
             Span<int> subAuthorities = stackalloc int[MaxSubAuthorities];
+#endif
 
             IdentifierAuthority authority = (IdentifierAuthority)(
                 (((long)binaryForm[offset + 2]) << 40) +
@@ -486,7 +487,14 @@ namespace System.Security.Principal
                 );
             }
 
-            CreateFromParts(authority, subAuthorities.Slice(0, subAuthoritiesLength));
+            CreateFromParts(
+                authority,
+#if NETCOREAPP2_0
+                subAuthorities
+#else
+                subAuthorities.Slice(0, subAuthoritiesLength)
+#endif
+            );
 
             return;
         }
@@ -642,14 +650,18 @@ namespace System.Security.Principal
             CreateFromBinaryForm(resultSid, 0);
         }
 
+#if NETCOREAPP2_0
+        internal SecurityIdentifier(IdentifierAuthority identifierAuthority, int[] subAuthorities)
+#else
         internal SecurityIdentifier(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
+#endif
         {
             CreateFromParts(identifierAuthority, subAuthorities);
         }
 
-        #endregion
+#endregion
 
-        #region Static Properties
+#region Static Properties
 
         //
         // Revision is always '1'
@@ -657,9 +669,9 @@ namespace System.Security.Principal
 
         internal static byte Revision => 1;
 
-        #endregion
+#endregion
 
-        #region Non-static Properties
+#region Non-static Properties
 
         //
         // This is for internal consumption only, hence it is marked 'internal'
@@ -696,9 +708,9 @@ namespace System.Security.Principal
             }
         }
 
-        #endregion
+#endregion
 
-        #region Inherited properties and methods
+#region Inherited properties and methods
 
         public override bool Equals(object o)
         {

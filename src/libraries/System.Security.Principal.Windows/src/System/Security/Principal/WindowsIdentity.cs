@@ -53,8 +53,8 @@ namespace System.Security.Principal
 
         public new const string DefaultIssuer = @"AD AUTHORITY";
         private readonly string _issuerName = DefaultIssuer;
-        private readonly object _claimsIntiailizedLock = new object();
-        private volatile bool _claimsInitialized;
+        private object _claimsIntiailizedLock;
+        private bool _claimsInitialized;
         private List<Claim> _deviceClaims;
         private List<Claim> _userClaims;
 
@@ -439,7 +439,7 @@ namespace System.Security.Principal
                     {
                         s_authenticatedUserRid = new SecurityIdentifier(
                             IdentifierAuthority.NTAuthority,
-                            stackalloc int[] { Interop.SecurityIdentifier.SECURITY_AUTHENTICATED_USER_RID }
+                            new int[] { Interop.SecurityIdentifier.SECURITY_AUTHENTICATED_USER_RID }
                         );
                     }
                     // This approach will not work correctly for domain guests (will return false
@@ -512,7 +512,7 @@ namespace System.Security.Principal
                 {
                     s_domainRid = new SecurityIdentifier(
                         IdentifierAuthority.NTAuthority,
-                        stackalloc int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, (int)WindowsBuiltInRole.Guest }
+                        new int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, (int)WindowsBuiltInRole.Guest }
                     );
                 }
 
@@ -532,7 +532,7 @@ namespace System.Security.Principal
                 {
                     s_localSystemRid = new SecurityIdentifier(
                         IdentifierAuthority.NTAuthority,
-                        stackalloc int[] { Interop.SecurityIdentifier.SECURITY_LOCAL_SYSTEM_RID }
+                        new int[] { Interop.SecurityIdentifier.SECURITY_LOCAL_SYSTEM_RID }
                     );
                 }
 
@@ -552,7 +552,7 @@ namespace System.Security.Principal
                 {
                     s_anonymousRid = new SecurityIdentifier(
                         IdentifierAuthority.NTAuthority,
-                        stackalloc int[] { Interop.SecurityIdentifier.SECURITY_ANONYMOUS_LOGON_RID }
+                        new int[] { Interop.SecurityIdentifier.SECURITY_ANONYMOUS_LOGON_RID }
                     );
                 }
 
@@ -987,50 +987,50 @@ namespace System.Security.Principal
         /// </summary>
         private void InitializeClaims()
         {
-            if (!_claimsInitialized)
-            {
-                lock (_claimsIntiailizedLock)
+            bool discard = false;
+
+            LazyInitializer.EnsureInitialized(
+                ref discard,
+                ref _claimsInitialized,
+                ref _claimsIntiailizedLock,
+                () =>
                 {
-                    if (!_claimsInitialized)
+                    _userClaims = new List<Claim>();
+                    _deviceClaims = new List<Claim>();
+
+                    if (!string.IsNullOrEmpty(Name))
                     {
-                        _userClaims = new List<Claim>();
-                        _deviceClaims = new List<Claim>();
+                        //
+                        // Add the name claim only if the WindowsIdentity.Name is populated
+                        // WindowsIdentity.Name will be null when it is the fake anonymous user
+                        // with a token value of IntPtr.Zero
+                        //
+                        _userClaims.Add(new Claim(NameClaimType, Name, ClaimValueTypes.String, _issuerName, _issuerName, this));
+                    }
 
-                        if (!string.IsNullOrEmpty(Name))
-                        {
-                            //
-                            // Add the name claim only if the WindowsIdentity.Name is populated
-                            // WindowsIdentity.Name will be null when it is the fake anonymous user
-                            // with a token value of IntPtr.Zero
-                            //
-                            _userClaims.Add(new Claim(NameClaimType, Name, ClaimValueTypes.String, _issuerName, _issuerName, this));
-                        }
+                    // primary sid
+                    AddPrimarySidClaim(_userClaims);
 
-                        // primary sid
-                        AddPrimarySidClaim(_userClaims);
+                    // group sids
+                    AddGroupSidClaims(_userClaims);
 
-                        // group sids
-                        AddGroupSidClaims(_userClaims);
+                    if (!s_ignoreWindows8Properties)
+                    {
+                        // Device group sids (may cause s_ignoreWindows8Properties to be set to true, so must be first in this block)
+                        AddDeviceGroupSidClaims(_deviceClaims, TokenInformationClass.TokenDeviceGroups);
 
                         if (!s_ignoreWindows8Properties)
                         {
-                            // Device group sids (may cause s_ignoreWindows8Properties to be set to true, so must be first in this block)
-                            AddDeviceGroupSidClaims(_deviceClaims, TokenInformationClass.TokenDeviceGroups);
+                            // User token claims
+                            AddTokenClaims(_userClaims, TokenInformationClass.TokenUserClaimAttributes, ClaimTypes.WindowsUserClaim);
 
-                            if (!s_ignoreWindows8Properties)
-                            {
-                                // User token claims
-                                AddTokenClaims(_userClaims, TokenInformationClass.TokenUserClaimAttributes, ClaimTypes.WindowsUserClaim);
-
-                                // Device token claims
-                                AddTokenClaims(_deviceClaims, TokenInformationClass.TokenDeviceClaimAttributes, ClaimTypes.WindowsDeviceClaim);
-                            }
+                            // Device token claims
+                            AddTokenClaims(_deviceClaims, TokenInformationClass.TokenDeviceClaimAttributes, ClaimTypes.WindowsDeviceClaim);
                         }
-
-                        _claimsInitialized = true;
                     }
+                    return true;
                 }
-            }
+            );
         }
 
         /// <summary>

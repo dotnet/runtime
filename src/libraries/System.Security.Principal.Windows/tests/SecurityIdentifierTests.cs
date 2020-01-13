@@ -13,37 +13,37 @@ public class SecurityIdentifierTests
     [Fact]
     public void SecurityIdentifierBinaryCtorThrowsOnNull()
     {
-        Assert.Throws<ArgumentNullException>(() => new SecurityIdentifier(null, 0));
+        Assert.Throws<ArgumentNullException>("binaryForm", () => new SecurityIdentifier(null, 0));
     }
 
     [Fact]
     public void SecurityIdentifierBinaryCtorThrowsOnEmpty()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SecurityIdentifier(Array.Empty<byte>(), 0));
+        Assert.Throws<ArgumentOutOfRangeException>("binaryForm", () => new SecurityIdentifier(Array.Empty<byte>(), 0));
     }
 
     [Fact]
     public void SecurityIdentifierBinaryCtorThrowsOnNegativeOffset()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SecurityIdentifier(new byte[] { 1, 1, 0, 0, 0, 0, 0, 0 }, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("offset", () => new SecurityIdentifier(new byte[] { 1, 1, 0, 0, 0, 0, 0, 0 }, -1));
     }
 
     [Fact]
     public void SecurityIdentifierBinaryCtorThrowsOnExcessiveOffset()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SecurityIdentifier(new byte[] { 1, 1, 0, 0, 0, 0, 0, 0 }, 9));
+        Assert.Throws<ArgumentOutOfRangeException>("binaryForm", () => new SecurityIdentifier(new byte[] { 1, 1, 0, 0, 0, 0, 0, 0 }, 9));
     }
 
     [Fact]
     public void SecurityIdentifierBinaryCtorThrowsOnInvalidRevision()
     {
-        Assert.Throws<ArgumentException>(() => new SecurityIdentifier(new byte[] { 2, 1, 0, 0, 0, 0, 0, 0 }, 0));
+        Assert.Throws<ArgumentException>("binaryForm", () => new SecurityIdentifier(new byte[] { 2, 1, 0, 0, 0, 0, 0, 0 }, 0));
     }
 
     [Fact]
     public void SecurityIdentifierBinaryCtorThrowsOnTooManySubAuthorities()
     {
-        Assert.Throws<ArgumentException>(() => new SecurityIdentifier(new byte[] { 1, 100, 0, 0, 0, 0, 0, 0 }, 0));
+        Assert.Throws<ArgumentException>("binaryForm", () => new SecurityIdentifier(new byte[] { 1, 100, 0, 0, 0, 0, 0, 0 }, 0));
     }
 
     [Fact]

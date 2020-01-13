@@ -126,7 +126,12 @@ namespace System.Security.Principal
             return IsInRole(
                 new SecurityIdentifier(
                     IdentifierAuthority.NTAuthority,
-                    stackalloc int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, rid }
+#if NETCOREAPP2_0
+                    new
+#else
+                    stackalloc
+#endif
+                    int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, rid }
                 )
             );
         }
