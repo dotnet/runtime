@@ -1004,11 +1004,41 @@ MINI_OP(OP_CVTTPS2DQ, "cvttps2dq", XREG, XREG, NONE)
 /* multiply all 4 single precision float elements, add them together, and store the result to the lowest element */
 MINI_OP(OP_DPPS, "dpps", XREG, XREG, XREG)
 
-/* sse 4.1 */
+/* sse 1 */
+/* inst_c1 is target type */
+MINI_OP(OP_SSE_LOADU, "sse_loadu", XREG, XREG, NONE)
+MINI_OP(OP_SSE_MOVMSK, "sse_movmsk", IREG, XREG, NONE)
+MINI_OP(OP_SSE_STORE, "sse_store", NONE, XREG, XREG)
+MINI_OP(OP_SSE_STORES, "sse_stores", NONE, XREG, XREG)
+MINI_OP(OP_SSE_MOVS, "sse_movs", XREG, XREG, NONE)
+MINI_OP(OP_SSE_MOVS2, "sse_movs2", XREG, XREG, XREG)
+MINI_OP(OP_SSE_MOVEHL, "sse_movehl", XREG, XREG, XREG)
+MINI_OP(OP_SSE_MOVELH, "sse_movelh", XREG, XREG, XREG)
+MINI_OP(OP_SSE_UNPACKLO, "sse_unpacklo", XREG, XREG, XREG)
+MINI_OP(OP_SSE_UNPACKHI, "sse_unpackhi", XREG, XREG, XREG)
+MINI_OP(OP_SSE_SHUFFLE, "sse_shuffle", XREG, XREG, XREG)
+MINI_OP(OP_SSE_AND, "sse_and", XREG, XREG, XREG)
+MINI_OP(OP_SSE_OR, "sse_or", XREG, XREG, XREG)
+MINI_OP(OP_SSE_XOR, "sse_xor", XREG, XREG, XREG)
+MINI_OP(OP_SSE_ANDN, "sse_andn", XREG, XREG, XREG)
 
+/* sse 2 */
+MINI_OP(OP_SSE2_PACKUS, "sse2_packus", XREG, XREG, XREG)
+MINI_OP(OP_SSE2_SRLI, "sse2_srli", XREG, XREG, XREG)
+MINI_OP(OP_SSE2_SHUFFLE, "sse2_shuffle", XREG, XREG, XREG)
+
+/* sse 3 */
+MINI_OP(OP_SSE3_MOVDDUP, "sse3_movddup", XREG, XREG, NONE)
+
+/* ssse 3 */
+MINI_OP(OP_SSSE3_SHUFFLE, "ssse3_shuffle", XREG, XREG, XREG)
+
+/* sse 4.1 */
 /* inst_c0 is the rounding mode: 0 = round, 1 = floor, 2 = ceiling */
 MINI_OP(OP_SSE41_ROUNDPD, "roundpd", XREG, XREG, NONE)
 MINI_OP(OP_SSE41_ROUNDSS, "roundss", XREG, XREG, NONE)
+MINI_OP3(OP_SSE41_INSERT, "sse41_insert", XREG, XREG, XREG, IREG)
+MINI_OP(OP_SSE41_PTESTZ, "sse41_ptestz", IREG, XREG, XREG)
 
 /* Intel BMI1 */
 /* Count trailing zeroes, return 32/64 if the input is 0 */
@@ -1030,6 +1060,8 @@ MINI_OP3(OP_MULX_HL32, "mulxhl32", IREG, IREG, IREG, IREG)
 MINI_OP3(OP_MULX_HL64, "mulxhl64", LREG, LREG, LREG, LREG)
 
 #endif
+
+MINI_OP(OP_CREATE_SCALAR_UNSAFE, "create_scalar_unsafe", XREG, XREG, NONE)
 
 MINI_OP(OP_XMOVE,   "xmove", XREG, XREG, NONE)
 MINI_OP(OP_XZERO,   "xzero", XREG, NONE, NONE)

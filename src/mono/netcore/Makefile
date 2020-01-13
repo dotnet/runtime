@@ -274,6 +274,28 @@ run-tests-coreclr: prepare update-tests-coreclr corerun
 	echo "Failed: $$failures"
 endif
 
+run-tests-mono: prepare
+	failures=0; \
+	counter=0; \
+	test_prj_dir=''; \
+	test_prj_name=''; \
+	test_projects=$$(find tests -type f -name "*.csproj"); \
+	for test_prj in $$test_projects; do \
+		counter=$$((counter+1)); \
+		echo "Running $$test_prj_dir"; \
+		test_prj_dir=$$(dirname $$test_prj); \
+		test_prj_name=$$(basename $$test_prj); \
+		test_prj_name=$${test_prj_name%.*}; \
+		$(DOTNET) build -c Release $$test_prj; \
+		MONO_ENV_OPTIONS="--debug $(MONO_ENV_OPTIONS)" COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(NETCOREAPP_VERSION)" $$test_prj_dir/bin/netcoreapp3.0/$$test_prj_name.dll; \
+		if [ $$? -ne 0 ]; then \
+			failures=$$((failures+1)); \
+		fi; \
+	done; \
+	echo "======================"; \
+	echo "Tests Count: $$counter"; \
+	echo "Failed: $$failures"
+
 run-tests-coreclr-%: prepare update-tests-coreclr
 	@echo ""
 	@echo "***************** $* *********************"
