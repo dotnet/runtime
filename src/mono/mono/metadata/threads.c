@@ -1843,12 +1843,12 @@ ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error)
 {
 	return mono_sleep_internal (ms, TRUE, error);
 }
-#endif
 
 void
 ves_icall_System_Threading_Thread_SpinWait_nop (MonoError *error)
 {
 }
+#endif
 
 #ifndef ENABLE_NETCORE
 gint32
