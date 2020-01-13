@@ -26,11 +26,10 @@
 #
 #   |    OS     |           Expected RID            |
 #   -------------------------------------------------
-#   |  alpine*  |        linux-musl-(arch)          |
 #   |  freeBSD  |        freebsd.(version)-x64      |
 #
 # It is important to note that the function does not return anything, but it
-# will set __DistroRid if there is a non-portable distro rid to be used.
+# exports __DistroRid, if there is a non-portable distro rid to be used.
 #
 initNonPortableDistroRid()
 {
@@ -82,7 +81,6 @@ initNonPortableDistroRid()
     fi
 }
 
-
 # initDistroRidGlobal
 #
 # Input:
@@ -96,10 +94,12 @@ initNonPortableDistroRid()
 #
 # Notes:
 #
-# The following out parameters are returned
+# It is important to note that the function does not return anything, but it
+# exports the following variables on success:
 #
 #   __DistroRid
 #   __PortableBuild
+#   __RuntimeId
 #
 initDistroRidGlobal()
 {
