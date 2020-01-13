@@ -279,11 +279,6 @@ public:
     {
         return (cbSize >= 64*1024);
     }
-
-    BOOL IsLarge(MethodTable *mt)
-    {
-        return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
-    }
 };
 
 // Go through and touch (read) each page straddled by a memory block.

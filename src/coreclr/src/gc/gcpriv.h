@@ -4752,14 +4752,14 @@ struct loh_obj_and_pad
     plug        m_plug;
 };
 
-struct uoh_reloc_padding_obj
+struct loh_padding_obj
 {
     uint8_t*    mt;
     size_t      len;
     ptrdiff_t   reloc;
     plug        m_plug;
 };
-#define uoh_reloc_padding_obj_size (sizeof(uoh_reloc_padding_obj))
+#define loh_padding_obj_size (sizeof(loh_padding_obj))
 
 //flags description
 #define heap_segment_flags_readonly     1

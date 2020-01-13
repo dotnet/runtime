@@ -4066,9 +4066,9 @@ public:
         if (fSmallObjectHeapPtr)
         {
 #ifdef FEATURE_BASICFREEZE
-            _ASSERTE(!g_theGCHeap->IsLarge(pMT) || g_theGCHeap->IsInFrozenSegment(this));
+            _ASSERTE(!g_theGCHeap->IsLargeObject(this) || g_theGCHeap->IsInFrozenSegment(this));
 #else
-            _ASSERTE(!g_theGCHeap->IsLarge(pMT));
+            _ASSERTE(!g_theGCHeap->IsLargeObject(this));
 #endif
         }
     }
@@ -12129,7 +12129,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
 #ifdef FEATURE_LOH_COMPACTION
         if (gen_number == loh_generation)
         {
-            old_allocated -= Align (uoh_reloc_padding_obj_size, align_const);
+            old_allocated -= Align (loh_padding_obj_size, align_const);
         }
 #endif //FEATURE_LOH_COMPACTION
 
@@ -12752,7 +12752,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
     allocator* allocator = generation_allocator (gen);
 
 #ifdef FEATURE_LOH_COMPACTION
-    size_t uoh_reloc_pad = gen_number == loh_generation ? Align (uoh_reloc_padding_obj_size, align_const) : 0;
+    size_t loh_pad = gen_number == loh_generation ? Align (loh_padding_obj_size, align_const) : 0;
 #endif //FEATURE_LOH_COMPACTION
 
 #ifdef BACKGROUND_GC
@@ -12774,7 +12774,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 ptrdiff_t diff = free_list_size - size;
 
 #ifdef FEATURE_LOH_COMPACTION
-                diff -= uoh_reloc_pad;
+                diff -= loh_pad;
 #endif //FEATURE_LOH_COMPACTION
 
                 // must fit exactly or leave formattable space
@@ -12793,12 +12793,12 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                                                     gen_number, align_const);
 
 #ifdef FEATURE_LOH_COMPACTION
-                    if (uoh_reloc_pad)
+                    if (loh_pad)
                     {
-                        make_unused_array (free_list, uoh_reloc_pad);
-                        limit -= uoh_reloc_pad;
-                        free_list += uoh_reloc_pad;
-                        free_list_size -= uoh_reloc_pad;
+                        make_unused_array (free_list, loh_pad);
+                        limit -= loh_pad;
+                        free_list += loh_pad;
+                        free_list_size -= loh_pad;
                     }
 #endif //FEATURE_LOH_COMPACTION
 
@@ -12872,10 +12872,10 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
     size_t pad = Align (min_obj_size, align_const);
 
 #ifdef FEATURE_LOH_COMPACTION
-    size_t uoh_reloc_pad = Align (uoh_reloc_padding_obj_size, align_const);
+    size_t loh_pad = Align (loh_padding_obj_size, align_const);
     if (gen_number == loh_generation)
     {
-        pad += uoh_reloc_pad;
+        pad += loh_pad;
     }
 #endif //FEATURE_LOH_COMPACTION
 
@@ -12932,9 +12932,9 @@ found_fit:
 #ifdef FEATURE_LOH_COMPACTION
     if (gen_number == loh_generation)
     {
-        make_unused_array (allocated, uoh_reloc_pad);
-        allocated += uoh_reloc_pad;
-        limit -= uoh_reloc_pad;
+        make_unused_array (allocated, loh_pad);
+        allocated += loh_pad;
+        limit -= loh_pad;
     }
 #endif //FEATURE_LOH_COMPACTION
 
@@ -15761,11 +15761,12 @@ size_t gc_heap::get_total_allocated_since_last_gc()
 // Gets what's allocated on both SOH, LOH, etc that hasn't been collected.
 size_t gc_heap::get_current_allocated()
 {
-    dynamic_data* dd = dynamic_data_of (0);
-    size_t current_alloc = dd_desired_allocation (dd) - dd_new_allocation (dd);
-    dd = dynamic_data_of (loh_generation);
-    current_alloc += dd_desired_allocation (dd) - dd_new_allocation (dd);
-
+    size_t current_alloc = 0;
+    for (int i = max_generation; i < total_generation_count; i++)
+    {
+        dynamic_data* dd = dynamic_data_of (i);
+        current_alloc = dd_desired_allocation (dd) - dd_new_allocation (dd);
+    }
     return current_alloc;
 }
 
@@ -17090,7 +17091,7 @@ void gc_heap::gc1()
                     gc_data_global.final_youngest_desired = desired_per_heap;
                 }
 #if 1 //subsumed by the linear allocation model 
-                if (gen > max_generation)
+                if (gen >= uoh_start_generation)
                 {
                     // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
                     // apply some smoothing.
@@ -20266,10 +20267,7 @@ void gc_heap::background_process_mark_overflow_internal (int condemned_gen_numbe
 
             while (seg)
             {
-                uint8_t* o = hp->background_first_overflow (min_add,
-                    seg,
-                    concurrent_p,
-                    small_object_segments);
+                uint8_t* o = hp->background_first_overflow (min_add, seg, concurrent_p, small_object_segments);
             
                 while ((o < hp->background_seg_end (seg, concurrent_p)) && (o <= max_add))
                 {
@@ -20299,9 +20297,9 @@ void gc_heap::background_process_mark_overflow_internal (int condemned_gen_numbe
                     {
                         total_marked_objects++;
                         go_through_object_cl (method_table(o), o, s, poo,
-                            uint8_t* oo = *poo;
-                        background_mark_object (oo THREAD_NUMBER_ARG);
-                        );
+                                              uint8_t* oo = *poo;
+                                              background_mark_object (oo THREAD_NUMBER_ARG);
+                                             );
                     }
 
                     if (concurrent_p && !small_object_segments)
@@ -20484,12 +20482,16 @@ size_t gc_heap::get_total_heap_size()
     for (hn = 0; hn < gc_heap::n_heaps; hn++)
     {
         gc_heap* hp2 = gc_heap::g_heaps [hn];
-        total_heap_size += (hp2->generation_size (loh_generation) +
-                            hp2->generation_sizes (hp2->generation_of (max_generation)));
+        for (int i = max_generation; i < total_generation_count; i++)
+        {
+            total_heap_size += hp2->generation_sizes (hp2->generation_of (i));
+        }
     }
 #else
-    total_heap_size = generation_size (loh_generation) +
-                      generation_sizes (generation_of (max_generation));
+    for (int i = max_generation; i < total_generation_count; i++)
+    {
+        total_heap_size += generation_sizes (generation_of (i));
+    }
 #endif //MULTIPLE_HEAPS
 
     return total_heap_size;
@@ -20690,13 +20692,13 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
         gc_heap*  hp = 0;
 
 #endif //MULTIPLE_HEAPS
-        int align_const = get_alignment_constant (TRUE);
-        int up_to_generation = full_p ? total_generation_count : condemned_gen_number + 1;
+        int gen_limit = full_p ? total_generation_count : condemned_gen_number + 1;
 
-        for (int i = condemned_gen_number; i < up_to_generation; i++)
+        for (int i = condemned_gen_number; i < gen_limit; i++)
         {
             generation* gen = hp->generation_of (i);
             heap_segment* seg = heap_segment_in_range (generation_start_segment (gen));
+            int align_const = get_alignment_constant (i < uoh_start_generation);
 
             PREFIX_ASSUME(seg != NULL);
             uint8_t*  o = max (heap_segment_mem (seg), min_add);
@@ -20719,8 +20721,6 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
 
                 seg = heap_segment_next_in_range (seg);
             }
-
-            align_const = get_alignment_constant (FALSE);
         }
     }
 }
@@ -21144,8 +21144,11 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             if (!card_mark_done_uoh)
 #endif // MULTIPLE_HEAPS && FEATURE_CARD_MARKING_STEALING
             {
-                dprintf (3, ("Marking cross generation pointers for large objects on heap %d", heap_number));
-                mark_through_cards_for_uoh_objects(mark_object_fn, loh_generation, FALSE THIS_ARG);
+                dprintf (3, ("Marking cross generation pointers for uoh objects on heap %d", heap_number));
+                for(int i = uoh_start_generation; i < total_generation_count; i++)
+                {
+                    mark_through_cards_for_uoh_objects(mark_object_fn, i, FALSE THIS_ARG);
+                }
 
 #if defined(MULTIPLE_HEAPS) && defined(FEATURE_CARD_MARKING_STEALING)
                 card_mark_done_uoh = true;
@@ -21168,7 +21171,10 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
                 if (!hp->card_mark_done_uoh)
                 {
                     dprintf(3, ("Marking cross generation pointers for large objects on heap %d", hp->heap_number));
-                    hp->mark_through_cards_for_uoh_objects(mark_object_fn, loh_generation, FALSE THIS_ARG);
+                    for(int i = uoh_start_generation; i < total_generation_count; i++)
+                    {
+                        hp->mark_through_cards_for_uoh_objects(mark_object_fn, i, FALSE THIS_ARG);
+                    }
 
                     hp->card_mark_done_uoh = true;
                 }
@@ -22204,12 +22210,12 @@ BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* allo
 {
     dprintf (1235, ("trying to fit %Id(%Id) between %Ix and %Ix (%Id)",
         size,
-        (2* AlignQword (uoh_reloc_padding_obj_size) +  size),
+        (2* AlignQword (loh_padding_obj_size) +  size),
         alloc_pointer,
         alloc_limit,
         (alloc_limit - alloc_pointer)));
 
-    return ((alloc_pointer + 2* AlignQword (uoh_reloc_padding_obj_size) +  size) <= alloc_limit);
+    return ((alloc_pointer + 2* AlignQword (loh_padding_obj_size) +  size) <= alloc_limit);
 }
 
 uint8_t* gc_heap::loh_allocate_in_condemned (uint8_t* old_loc, size_t size)
@@ -22264,7 +22270,7 @@ retry:
                 else
                 {
                     if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg)) &&
-                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (uoh_reloc_padding_obj_size)))))
+                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (loh_padding_obj_size)))))
                     {
                         dprintf (1235, ("growing seg from %Ix to %Ix\n", heap_segment_committed (seg),
                                          (generation_allocation_pointer (gen) + size)));
@@ -22335,9 +22341,9 @@ retry:
         assert (generation_allocation_pointer (gen)>=
                 heap_segment_mem (generation_allocation_segment (gen)));
         uint8_t* result = generation_allocation_pointer (gen);
-        size_t uoh_reloc_pad = AlignQword (uoh_reloc_padding_obj_size);
+        size_t loh_pad = AlignQword (loh_padding_obj_size);
 
-        generation_allocation_pointer (gen) += size + uoh_reloc_pad;
+        generation_allocation_pointer (gen) += size + loh_pad;
         assert (generation_allocation_pointer (gen) <= generation_allocation_limit (gen));
 
         dprintf (1235, ("p: %Ix, l: %Ix (%Id)",
@@ -22345,8 +22351,8 @@ retry:
             generation_allocation_limit (gen),
             (generation_allocation_limit (gen) - generation_allocation_pointer (gen))));
 
-        assert (result + uoh_reloc_pad);
-        return result + uoh_reloc_pad;
+        assert (result + loh_pad);
+        return result + loh_pad;
     }
 }
 
@@ -22599,7 +22605,7 @@ void gc_heap::compact_loh()
             free_space_end = o;
             size_t size = AlignQword (size (o));
 
-            size_t uoh_reloc_pad;
+            size_t loh_pad;
             uint8_t* reloc = o;
             clear_marked (o);
 
@@ -22611,18 +22617,18 @@ void gc_heap::compact_loh()
                 uint8_t* plug = pinned_plug (m);
                 assert (plug == o);
 
-                uoh_reloc_pad = pinned_len (m);
+                loh_pad = pinned_len (m);
                 clear_pinned (o);
             }
             else
             {
-                uoh_reloc_pad = AlignQword (uoh_reloc_padding_obj_size);
+                loh_pad = AlignQword (loh_padding_obj_size);
 
                 reloc += loh_node_relocation_distance (o);
                 gcmemcopy (reloc, o, size, TRUE);
             }
 
-            thread_gap ((reloc - uoh_reloc_pad), uoh_reloc_pad, gen);
+            thread_gap ((reloc - loh_pad), loh_pad, gen);
 
             o = o + size;
             free_space_start = o;
@@ -27318,7 +27324,6 @@ void gc_heap::background_mark_phase ()
 
         dprintf (2,("concurrent revisiting dirtied pages"));
 
-        // we revisit written pages twice here. 
         // tuning has shown that there are advantages in doing this 2 times
         revisit_written_pages (TRUE);
         revisit_written_pages (TRUE);
@@ -27959,7 +27964,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
                         ptrdiff_t region_size = high_address - base_address;
                         dprintf (3, ("h%d: gw: [%Ix(%Id)", heap_number, (size_t)base_address, (size_t)region_size));
 
-    #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
                         // When the runtime is not suspended, it's possible for the table to be resized concurrently with the scan
                         // for dirty pages below. Prevent that by synchronizing with grow_brick_card_tables(). When the runtime is
                         // suspended, it's ok to scan for dirty pages concurrently from multiple background GC threads for disjoint
@@ -27968,18 +27973,18 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
                         {
                             enter_spin_lock(&gc_lock);
                         }
-    #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
                         get_write_watch_for_gc_heap (reset_watch_state, base_address, region_size,
                                                      (void**)background_written_addresses,
                                                      &bcount, is_runtime_suspended);
 
-    #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
                         if (!is_runtime_suspended)
                         {
                             leave_spin_lock(&gc_lock);
                         }
-    #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
                         if (bcount != 0)
                         {
@@ -33398,7 +33403,7 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, uint32_t flags, int
     size_t size = AlignQword (jsize);
     int align_const = get_alignment_constant (FALSE);
 #ifdef FEATURE_LOH_COMPACTION
-    size_t pad = Align (uoh_reloc_padding_obj_size, align_const);
+    size_t pad = Align (loh_padding_obj_size, align_const);
 #else
     size_t pad = 0;
 #endif //FEATURE_LOH_COMPACTION
