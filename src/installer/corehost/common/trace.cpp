@@ -60,6 +60,7 @@ bool trace::enable()
 
             if (tracefile)
             {
+                setvbuf(tracefile, nullptr, _IONBF, 0);
                 g_trace_file = tracefile;
             }
             else

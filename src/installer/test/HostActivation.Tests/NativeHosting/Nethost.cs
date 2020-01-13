@@ -241,6 +241,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
+        public void TracingNotBufferedByDefault()
+        {
+            CommandResult result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} false nullptr x")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable("COREHOST_TRACEFILE", "Tracing.out")
+                .MultilevelLookup(true)
+                .DotNetRoot(null)
+                .Execute();
+
+            result.Should().Fail()
+                .And.FileExists("Tracing.out")
+                .And.FileContains("Tracing.out", "Tracing enabled");
+        }
+
+        [Fact]
         public void TestOnlyDisabledByDefault()
         {
             // Intentionally not enabling test-only behavior. This test validates that even if the test-only env. variable is set
