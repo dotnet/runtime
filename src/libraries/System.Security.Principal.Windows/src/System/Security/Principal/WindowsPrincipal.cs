@@ -41,18 +41,11 @@ namespace System.Security.Principal
         //
         // Properties.
         //
-        public override IIdentity Identity
-        {
-            get
-            {
-                return _identity;
-            }
-        }
+        public override IIdentity Identity => _identity;
 
         //
         // Public methods.
         //
-
 
         public override bool IsInRole(string role)
         {
@@ -130,9 +123,12 @@ namespace System.Security.Principal
 
         public virtual bool IsInRole(int rid)
         {
-            ReadOnlySpan<int> subAuthorities = stackalloc int[2] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, rid  };
-            SecurityIdentifier sid = new SecurityIdentifier(IdentifierAuthority.NTAuthority, subAuthorities);
-            return IsInRole(sid);
+            return IsInRole(
+                new SecurityIdentifier(
+                    IdentifierAuthority.NTAuthority,
+                    stackalloc int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, rid }
+                )
+            );
         }
 
         // This method (with a SID parameter) is more general than the 2 overloads that accept a WindowsBuiltInRole or

@@ -134,7 +134,11 @@ namespace System.Security.Principal
 
             set
             {
-                _identities[index] = value ?? throw new ArgumentNullException(nameof(value));
+                if (value is null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+                _identities[index] = value;
             }
         }
 
@@ -393,7 +397,11 @@ namespace System.Security.Principal
 
         internal IdentityReferenceEnumerator(IdentityReferenceCollection collection)
         {
-            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+            if (collection is null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+            _collection = collection;
             _current = -1;
         }
 

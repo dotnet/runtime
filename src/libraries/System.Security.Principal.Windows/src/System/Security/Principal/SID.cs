@@ -312,32 +312,29 @@ namespace System.Security.Principal
 
         private void CreateFromParts(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
         {
-            if (subAuthorities.IsEmpty)
-            {
-                throw new ArgumentNullException(nameof(subAuthorities));
-            }
-
-            int subAuthoritiesLength = subAuthorities.Length;
-
             //
             // Check the number of subauthorities passed in
             //
-            if (subAuthoritiesLength > MaxSubAuthorities)
+            if (subAuthorities.Length > MaxSubAuthorities)
             {
                 throw new ArgumentOutOfRangeException(
                     "subAuthorities.Length",
-                    subAuthoritiesLength,
-                    SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities));
+                    subAuthorities.Length,
+                    SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities)
+                );
             }
 
             //
             // Identifier authority is at most 6 bytes long
             //
 
-            if (identifierAuthority < 0 ||
-                (long)identifierAuthority > MaxIdentifierAuthority)
+            if (identifierAuthority < 0 || (long)identifierAuthority > MaxIdentifierAuthority)
             {
-                throw new ArgumentOutOfRangeException(nameof(identifierAuthority), identifierAuthority, SR.IdentityReference_IdentifierAuthorityTooLarge);
+                throw new ArgumentOutOfRangeException(
+                    nameof(identifierAuthority),
+                    identifierAuthority,
+                    SR.IdentityReference_IdentifierAuthorityTooLarge
+                );
             }
 
             //
@@ -345,8 +342,7 @@ namespace System.Security.Principal
             //
 
             _identifierAuthority = identifierAuthority;
-            _subAuthorities = new int[subAuthoritiesLength];
-            subAuthorities.CopyTo(new Span<int>(_subAuthorities));
+            _subAuthorities = subAuthorities.ToArray();
 
             //
             // Compute and store the binary form
@@ -359,14 +355,14 @@ namespace System.Security.Principal
             // } SID, *PISID;
             //
 
-            _binaryForm = new byte[1 + 1 + 6 + 4 * subAuthoritiesLength];
+            _binaryForm = new byte[1 + 1 + 6 + 4 * subAuthorities.Length];
 
             //
             // First two bytes contain revision and subauthority count
             //
 
             _binaryForm[0] = Revision;
-            _binaryForm[1] = (byte)subAuthoritiesLength;
+            _binaryForm[1] = (byte)subAuthorities.Length;
 
             //
             // Identifier authority takes up 6 bytes
@@ -381,10 +377,9 @@ namespace System.Security.Principal
             // Subauthorities go last, preserving big-endian representation
             //
 
-            for (int i = 0; i < subAuthoritiesLength; i++)
+            for (int i = 0; i < subAuthorities.Length; i++)
             {
-                byte shift;
-                for (shift = 0; shift < 4; shift += 1)
+                for (byte shift = 0; shift < 4; shift += 1)
                 {
                     _binaryForm[8 + 4 * i + shift] = unchecked((byte)(((ulong)_subAuthorities[i]) >> (shift * 8)));
                 }
@@ -420,9 +415,6 @@ namespace System.Security.Principal
                 throw new ArgumentOutOfRangeException(nameof(binaryForm), SR.ArgumentOutOfRange_ArrayTooSmall);
             }
 
-            IdentifierAuthority authority;
-            Span<int> subAuthorities = stackalloc int[MaxSubAuthorities];
-
             //
             // Extract the elements of a SID
             //
@@ -445,43 +437,53 @@ namespace System.Security.Principal
                 throw new ArgumentException(SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities), nameof(binaryForm));
             }
 
+
             //
             // Make sure the buffer is big enough
             //
 
-            int Length = 1 + 1 + 6 + 4 * binaryForm[offset + 1];
+            int subAuthoritiesLength = binaryForm[offset + 1];
 
-            if (binaryForm.Length - offset < Length)
+            if (subAuthoritiesLength > MaxSubAuthorities)
+            {
+                throw new ArgumentOutOfRangeException(
+                    "subAuthoritiesLength",
+                    subAuthoritiesLength,
+                    SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities)
+                );
+            }
+
+            int totalLength = 1 + 1 + 6 + 4 * subAuthoritiesLength;
+
+            if (binaryForm.Length - offset < totalLength)
             {
                 throw new ArgumentException(SR.ArgumentOutOfRange_ArrayTooSmall, nameof(binaryForm));
             }
 
-            authority =
-                (IdentifierAuthority)(
+            Span<int> subAuthorities = stackalloc int[MaxSubAuthorities];
+
+            IdentifierAuthority authority = (IdentifierAuthority)(
                 (((long)binaryForm[offset + 2]) << 40) +
                 (((long)binaryForm[offset + 3]) << 32) +
                 (((long)binaryForm[offset + 4]) << 24) +
                 (((long)binaryForm[offset + 5]) << 16) +
                 (((long)binaryForm[offset + 6]) << 8) +
-                (((long)binaryForm[offset + 7])));
-
-            int subAuthoritiesLength = binaryForm[offset + 1];
+                (((long)binaryForm[offset + 7]))
+            );
 
             //
             // Subauthorities are represented in big-endian format
             //
 
-            for (int i = 0; i < binaryForm[offset + 1]; i++)
+            for (int i = 0; i < subAuthoritiesLength; i++)
             {
-                unchecked
-                {
-                    subAuthorities[i] =
-                        (int)(
-                        (((uint)binaryForm[offset + 8 + 4 * i + 0]) << 0) +
-                        (((uint)binaryForm[offset + 8 + 4 * i + 1]) << 8) +
-                        (((uint)binaryForm[offset + 8 + 4 * i + 2]) << 16) +
-                        (((uint)binaryForm[offset + 8 + 4 * i + 3]) << 24));
-                }
+                subAuthorities[i] =
+                    (int)(
+                    (((uint)binaryForm[offset + 8 + 4 * i + 0]) << 0) +
+                    (((uint)binaryForm[offset + 8 + 4 * i + 1]) << 8) +
+                    (((uint)binaryForm[offset + 8 + 4 * i + 2]) << 16) +
+                    (((uint)binaryForm[offset + 8 + 4 * i + 3]) << 24)
+                );
             }
 
             CreateFromParts(authority, subAuthorities.Slice(0, subAuthoritiesLength));
@@ -537,6 +539,10 @@ namespace System.Security.Principal
 
         public SecurityIdentifier(byte[] binaryForm, int offset)
         {
+            if (binaryForm is null)
+            {
+                throw new ArgumentNullException(nameof(binaryForm));
+            }
             CreateFromBinaryForm(binaryForm, offset);
         }
 
