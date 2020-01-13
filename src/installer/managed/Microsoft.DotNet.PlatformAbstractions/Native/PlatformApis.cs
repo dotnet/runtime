@@ -137,22 +137,6 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
                     }
                 }
             }
-            else if (File.Exists("/etc/redhat-release"))
-            {
-                var lines = File.ReadAllLines("/etc/redhat-release");
-
-                if (lines.Length >= 1)
-                {
-                    string line = lines[0];
-                    if (line.StartsWith("Red Hat Enterprise Linux Server release 6.") ||
-                        line.StartsWith("CentOS release 6."))
-                    {
-                        result = new DistroInfo();
-                        result.Id = "rhel";
-                        result.VersionId = "6";
-                    }
-                }
-            }
 
             if (result != null)
             {
