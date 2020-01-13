@@ -21,7 +21,7 @@ namespace Internal.Cryptography
 
     internal class AppleAsnFormatter : AsnFormatter
     {
-        protected override string FormatNative(Oid oid, byte[] rawData, bool multiLine)
+        protected override string? FormatNative(Oid? oid, byte[] rawData, bool multiLine)
         {
             if (oid == null || string.IsNullOrEmpty(oid.Value))
             {
@@ -37,7 +37,7 @@ namespace Internal.Cryptography
             return null;
         }
 
-        private string FormatSubjectAlternativeName(byte[] rawData)
+        private string? FormatSubjectAlternativeName(byte[] rawData)
         {
             // Because SubjectAlternativeName is a commonly parsed structure, we'll
             // specifically format this one.  And we'll match the OpenSSL format, which

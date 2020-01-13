@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal partial class AsnReader
@@ -54,7 +55,7 @@ namespace System.Security.Cryptography.Asn1
         /// </exception>
         public DateTimeOffset ReadGeneralizedTime(Asn1Tag expectedTag, bool disallowFractions = false)
         {
-            byte[] rented = null;
+            byte[]? rented = null;
 
             // An X.509 time is 15 characters (yyyyMMddHHmmssZ), beyond that is fractions (no limit) or
             // BER specified offset.

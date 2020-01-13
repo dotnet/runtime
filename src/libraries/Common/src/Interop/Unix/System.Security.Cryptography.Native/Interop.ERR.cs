@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
+#nullable enable
 internal static partial class Interop
 {
     internal static partial class Crypto
@@ -35,7 +36,7 @@ internal static partial class Interop
             fixed (byte* buf = &buffer[0])
             {
                 ErrErrorStringN(error, buf, buffer.Length);
-                return Marshal.PtrToStringAnsi((IntPtr)buf);
+                return Marshal.PtrToStringAnsi((IntPtr)buf)!;
             }
         }
 

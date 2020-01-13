@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal partial class AsnReader
@@ -44,6 +47,7 @@ namespace System.Security.Cryptography.Asn1
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
+            Debug.Assert(length.HasValue);
             bool value = ReadBooleanValue(
                 Slice(_data, headerLength, length.Value).Span,
                 RuleSet);

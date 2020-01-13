@@ -6,11 +6,12 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+#nullable enable
 namespace Microsoft.Win32.SafeHandles
 {
     internal abstract class SafeInteriorHandle : SafeHandle
     {
-        private SafeHandle _parent;
+        private SafeHandle? _parent;
 
         protected SafeInteriorHandle(IntPtr invalidHandleValue, bool ownsHandle)
             : base(invalidHandleValue, ownsHandle)
@@ -19,7 +20,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            SafeHandle parent = _parent;
+            SafeHandle? parent = _parent;
 
             if (parent != null)
             {

@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal sealed partial class AsnWriter
@@ -212,7 +213,7 @@ namespace System.Security.Cryptography.Asn1
 
             int savedOffset = _offset;
             Span<byte> scratchSpace;
-            byte[] ensureNoExtraCopy = null;
+            byte[]? ensureNoExtraCopy = null;
             int expectedSize = 0;
 
             // T-REC-X.690-201508 sec 9.2

@@ -7,11 +7,12 @@ using System.Security;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
+#nullable enable
 namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeBioHandle : SafeHandle
     {
-        private SafeHandle _parent;
+        private SafeHandle? _parent;
 
         private SafeBioHandle() :
             base(IntPtr.Zero, ownsHandle: true)
