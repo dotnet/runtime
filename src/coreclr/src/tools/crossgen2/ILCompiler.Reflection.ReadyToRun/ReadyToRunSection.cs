@@ -9,7 +9,7 @@ using System.Text;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
-    public struct R2RSection
+    public struct ReadyToRunSection
     {
         /// <summary>
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h">src/inc/readytorun.h</a> ReadyToRunSectionType
@@ -46,7 +46,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         public int Size { get; set; }
 
-        public R2RSection(SectionType type, int rva, int size)
+        public ReadyToRunSection(SectionType type, int rva, int size)
         {
             Type = type;
             RelativeVirtualAddress = rva;

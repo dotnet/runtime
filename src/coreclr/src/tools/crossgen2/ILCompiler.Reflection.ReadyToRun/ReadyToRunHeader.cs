@@ -13,7 +13,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h">src/inc/readytorun.h</a> READYTORUN_HEADER
     /// </summary>
-    public class R2RHeader
+    public class ReadyToRunHeader
     {
         /// <summary>
         /// The expected signature of a ReadyToRun header
@@ -51,9 +51,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The ReadyToRun section RVAs and sizes
         /// </summary>
-        public IDictionary<R2RSection.SectionType, R2RSection> Sections { get; }
+        public IDictionary<ReadyToRunSection.SectionType, ReadyToRunSection> Sections { get; }
 
-        public R2RHeader() { }
+        public ReadyToRunHeader() { }
 
         /// <summary>
         /// Initializes the fields of the R2RHeader
@@ -62,7 +62,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="rva">Relative virtual address of the ReadyToRun header</param>
         /// <param name="curOffset">Index in the image byte array to the start of the ReadyToRun header</param>
         /// <exception cref="BadImageFormatException">The signature must be 0x00525452</exception>
-        public R2RHeader(byte[] image, int rva, int curOffset)
+        public ReadyToRunHeader(byte[] image, int rva, int curOffset)
         {
             RelativeVirtualAddress = rva;
             int startOffset = curOffset;
@@ -80,18 +80,18 @@ namespace ILCompiler.Reflection.ReadyToRun
             MinorVersion = NativeReader.ReadUInt16(image, ref curOffset);
             Flags = NativeReader.ReadUInt32(image, ref curOffset);
             int nSections = NativeReader.ReadInt32(image, ref curOffset);
-            Sections = new Dictionary<R2RSection.SectionType, R2RSection>();
+            Sections = new Dictionary<ReadyToRunSection.SectionType, ReadyToRunSection>();
 
             for (int i = 0; i < nSections; i++)
             {
                 int type = NativeReader.ReadInt32(image, ref curOffset);
-                var sectionType = (R2RSection.SectionType)type;
-                if (!Enum.IsDefined(typeof(R2RSection.SectionType), type))
+                var sectionType = (ReadyToRunSection.SectionType)type;
+                if (!Enum.IsDefined(typeof(ReadyToRunSection.SectionType), type))
                 {
                     // TODO (refactoring) - what should we do?
                     // R2RDump.WriteWarning("Invalid ReadyToRun section type");
                 }
-                Sections[sectionType] = new R2RSection(sectionType,
+                Sections[sectionType] = new ReadyToRunSection(sectionType,
                     NativeReader.ReadInt32(image, ref curOffset),
                     NativeReader.ReadInt32(image, ref curOffset));
             }

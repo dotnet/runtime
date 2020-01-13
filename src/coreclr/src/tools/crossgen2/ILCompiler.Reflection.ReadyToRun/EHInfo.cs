@@ -84,7 +84,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         /// <param name="reader">R2R image reader<param>
         /// <param name="offset">Offset of the EH clause in the image</param>
-        public EHClause(R2RReader reader, int offset)
+        public EHClause(ReadyToRunReader reader, int offset)
         {
             Flags = (CorExceptionFlag)BitConverter.ToUInt32(reader.Image, offset + 0 * sizeof(uint));
             TryOffset = BitConverter.ToUInt32(reader.Image, offset + 1 * sizeof(uint));
@@ -175,7 +175,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="methodRva">Starting RVA of the runtime function</param>
         /// <param name="offset">File offset of the EH info</param>
         /// <param name="clauseCount">Number of EH info clauses</param>
-        public EHInfo(R2RReader reader, int ehInfoRva, int methodRva, int offset, int clauseCount)
+        public EHInfo(ReadyToRunReader reader, int ehInfoRva, int methodRva, int offset, int clauseCount)
         {
             EHInfoRVA = ehInfoRva;
             MethodRVA = methodRva;

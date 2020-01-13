@@ -20,12 +20,12 @@ namespace R2RDump
         /// <summary>
         /// Left R2R image for the diff.
         /// </summary>
-        private readonly R2RReader _leftFile;
+        private readonly ReadyToRunReader _leftFile;
 
         /// <summary>
         /// Right R2R image for the diff.
         /// </summary>
-        private readonly R2RReader _rightFile;
+        private readonly ReadyToRunReader _rightFile;
 
         /// <summary>
         /// Text writer to receive diff output.
@@ -38,7 +38,7 @@ namespace R2RDump
         /// <param name="leftFile">Left R2R file</param>
         /// <param name="rightFile">Right R2R file</param>
         /// <param name="writer">Output writer to receive the diff</param>
-        public R2RDiff(R2RReader leftFile, R2RReader rightFile, TextWriter writer)
+        public R2RDiff(ReadyToRunReader leftFile, ReadyToRunReader rightFile, TextWriter writer)
         {
             _leftFile = leftFile;
             _rightFile = rightFile;
@@ -157,7 +157,7 @@ namespace R2RDump
         /// </summary>
         /// <param name="reader">R2R image to scan</param>
         /// <returns></returns>
-        private Dictionary<string, int> GetPESectionMap(R2RReader reader)
+        private Dictionary<string, int> GetPESectionMap(ReadyToRunReader reader)
         {
             Dictionary<string, int> sectionMap = new Dictionary<string, int>();
 
@@ -174,11 +174,11 @@ namespace R2RDump
         /// </summary>
         /// <param name="reader">R2R image to scan</param>
         /// <returns></returns>
-        private Dictionary<string, int> GetR2RSectionMap(R2RReader reader)
+        private Dictionary<string, int> GetR2RSectionMap(ReadyToRunReader reader)
         {
             Dictionary<string, int> sectionMap = new Dictionary<string, int>();
 
-            foreach (KeyValuePair<R2RSection.SectionType, R2RSection> typeAndSection in reader.R2RHeader.Sections)
+            foreach (KeyValuePair<ReadyToRunSection.SectionType, ReadyToRunSection> typeAndSection in reader.ReadyToRunHeader.Sections)
             {
                 string name = typeAndSection.Key.ToString();
                 sectionMap.Add(name, typeAndSection.Value.Size);
@@ -192,11 +192,11 @@ namespace R2RDump
         /// </summary>
         /// <param name="reader">R2R image to scan</param>
         /// <returns></returns>
-        private Dictionary<string, int> GetR2RMethodMap(R2RReader reader)
+        private Dictionary<string, int> GetR2RMethodMap(ReadyToRunReader reader)
         {
             Dictionary<string, int> methodMap = new Dictionary<string, int>();
 
-            foreach (R2RMethod method in reader.R2RMethods)
+            foreach (ReadyToRunMethod method in reader.R2RMethods)
             {
                 int size = method.RuntimeFunctions.Sum(rf => rf.Size);
                 methodMap.Add(method.SignatureString, size);

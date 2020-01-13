@@ -57,12 +57,12 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public class GCRefMapDecoder
     {
-        private readonly R2RReader _reader;
+        private readonly ReadyToRunReader _reader;
         private int _offset;
         private int _pendingByte;
         private int _pos;
 
-        public GCRefMapDecoder(R2RReader reader, int offset)
+        public GCRefMapDecoder(ReadyToRunReader reader, int offset)
         {
             _reader = reader;
             _offset = offset;
