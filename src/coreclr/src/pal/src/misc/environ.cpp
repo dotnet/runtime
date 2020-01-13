@@ -893,6 +893,55 @@ done:
     return result;
 }
 
+
+/*++
+Function:
+  FindEnvVarValue
+
+Get the value of environment variable with the given name.
+Caller should take care of locking and releasing palEnvironment.
+
+Parameters
+
+    name
+            [in] The name of the environment variable to get.
+
+Return Value
+
+    A pointer to the value of the environment variable if it exists,
+    or nullptr otherwise.
+
+--*/
+char* FindEnvVarValue(const char* name)
+{
+    if(*name == '\0')
+        return nullptr;
+    
+    for (int i = 0; palEnvironment[i] != nullptr; ++i)
+    {
+        const char* pch = name;
+        char* p = palEnvironment[i];
+
+        do 
+        {
+            if (*pch == '\0') 
+            {
+                if (*p == '=')
+                    return p+1;
+                    
+                if (*p == '\0') // no = sign -> empty value
+                    return p;
+                
+                break;
+            }
+        }
+        while(*pch++ == *p++);
+    }
+    
+    return nullptr;
+}
+
+
 /*++
 Function:
   EnvironGetenv
@@ -917,42 +966,12 @@ Return Value
     or nullptr otherwise.
 
 --*/
-static char* match_prefix(const char* name, char** list)
-{
-    if(*name == '\0')
-        return nullptr;
-    
-    for (int i = 0; list[i] != nullptr; ++i)
-    {
-        const char* pch = name;
-        char* p = list[i];
-
-        for (;;) 
-        {
-            if (*pch == '\0') 
-            {
-                if (*p == '=')
-                    return p+1;
-                    
-                if (*p == '\0') // no = sign -> empty value
-                    return p;
-                
-                break;
-            }
-            
-            if (*pch++ != *p++) break;
-        }
-    }
-    
-    return nullptr;
-}
-    
 char* EnvironGetenv(const char* name, BOOL copyValue)
 {
     CPalThread * pthrCurrent = InternalGetCurrentThread();
     InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
     
-    char* retValue = match_prefix(name, palEnvironment);
+    char* retValue = FindEnvVarValue(name);
     
     if ((retValue != nullptr) && copyValue)
     {
