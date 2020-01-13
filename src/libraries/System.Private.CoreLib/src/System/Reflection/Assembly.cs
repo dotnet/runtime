@@ -190,6 +190,17 @@ namespace System.Reflection
                 return m.Assembly;
         }
 
+        // internal test hook
+        private static bool s_forceNullEntryPoint = false;
+
+        public static Assembly? GetEntryAssembly()
+        {
+            if (s_forceNullEntryPoint)
+                return null;
+
+            return GetEntryAssemblyInternal();
+        }
+
         public static Assembly Load(byte[] rawAssembly) => Load(rawAssembly, rawSymbolStore: null);
 
         // Loads the assembly with a COFF based IMAGE containing

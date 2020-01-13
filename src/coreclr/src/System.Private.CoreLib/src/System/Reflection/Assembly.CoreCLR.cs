@@ -104,14 +104,8 @@ namespace System.Reflection
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 
-        // internal test hook
-        private static bool s_forceNullEntryPoint = false;
-
-        public static Assembly? GetEntryAssembly()
+        private static Assembly? GetEntryAssemblyInternal()
         {
-            if (s_forceNullEntryPoint)
-                return null;
-
             RuntimeAssembly? entryAssembly = null;
             GetEntryAssemblyNative(ObjectHandleOnStack.Create(ref entryAssembly));
             return entryAssembly;
