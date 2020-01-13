@@ -377,6 +377,24 @@ namespace System.Text.RegularExpressions.Tests
             VerifyMatch(new Regex(pattern, options).Match(input, beginning, length), expectedSuccess, expectedValue);
         }
 
+        [Fact]
+        public void Match_VaryingLengthStrings()
+        {
+            for (int length = 2; length < 32; length++)
+            {
+                for (int prechars = 0; prechars < 4; prechars++)
+                {
+                    var r = new Random(42);
+                    string pattern = string.Concat(Enumerable.Range(0, length).Select(i => (char)r.Next(0, 1 + char.MaxValue)));
+                    string input = new string('#', prechars) + pattern;
+                    foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
+                    {
+                        Match(pattern, input, options, prechars, length, expectedSuccess: true, expectedValue: pattern);
+                    }
+                }
+            }
+        }
+
         private static void VerifyMatch(Match match, bool expectedSuccess, string expectedValue)
         {
             Assert.Equal(expectedSuccess, match.Success);

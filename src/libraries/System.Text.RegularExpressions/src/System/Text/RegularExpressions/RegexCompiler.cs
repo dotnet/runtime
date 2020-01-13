@@ -63,10 +63,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
         private static readonly MethodInfo s_memoryMarshalGetReference = typeof(MemoryMarshal).GetMethod("GetReference", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_unsafeCharAsByte = typeof(Unsafe).GetMethod("As", new Type[] { Type.MakeGenericMethodParameter(0).MakeByRefType() })!.MakeGenericMethod(typeof(char), typeof(byte));
-        private static readonly MethodInfo s_unsafeAddChar = typeof(Unsafe).GetMethod("Add", new Type[] { Type.MakeGenericMethodParameter(0).MakeByRefType(), typeof(int) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_unsafeReadUnalignedInt32 = typeof(Unsafe).GetMethod("ReadUnaligned", new Type[] { typeof(byte).MakeByRefType() })!.MakeGenericMethod(typeof(int));
-        private static readonly MethodInfo s_unsafeReadUnalignedInt64 = typeof(Unsafe).GetMethod("ReadUnaligned", new Type[] { typeof(byte).MakeByRefType() })!.MakeGenericMethod(typeof(long));
 #if DEBUG
         private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) })!;
 #endif
@@ -327,6 +323,15 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldind_U2).</summary>
         private void LdindU2() => _ilg!.Emit(OpCodes.Ldind_U2);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldind_I4).</summary>
+        private void LdindI4() => _ilg!.Emit(OpCodes.Ldind_I4);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldind_I8).</summary>
+        private void LdindI8() => _ilg!.Emit(OpCodes.Ldind_I8);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Unaligned).</summary>
+        private void Unaligned(byte alignment) => _ilg!.Emit(OpCodes.Unaligned, alignment);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Stloc_S).</summary>
         private void Stloc(LocalBuilder lt) => _ilg!.Emit(OpCodes.Stloc_S, lt);
@@ -1718,6 +1723,18 @@ namespace System.Text.RegularExpressions
                 BgeUnFar(doneLabel);
             }
 
+            // Emits code to get ref textSpan[textSpanPos]
+            void EmitTextSpanOffset()
+            {
+                Ldloc(textSpanLocal);
+                Call(s_memoryMarshalGetReference);
+                if (textSpanPos > 0)
+                {
+                    Ldc(textSpanPos * sizeof(char));
+                    Add();
+                }
+            }
+
             void TransferTextSpanPosToRunTextPos()
             {
                 if (textSpanPos > 0)
@@ -2156,19 +2173,6 @@ namespace System.Text.RegularExpressions
                 // the amount of IL and asm that results from this unrolling.
                 if (!IsCaseInsensitive(node))
                 {
-                    void EmitTextSpanOffsetAsByte()
-                    {
-                        // Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(textSpan), textSpanPos))
-                        Ldloc(textSpanLocal);
-                        Call(s_memoryMarshalGetReference);
-                        if (textSpanPos > 0)
-                        {
-                            Ldc(textSpanPos);
-                            Call(s_unsafeAddChar);
-                        }
-                        Call(s_unsafeCharAsByte);
-                    }
-
                     // TODO https://github.com/dotnet/corefx/issues/39227:
                     // If/when we implement CompileToAssembly, this code will either need to be special-cased
                     // to not be used when saving out the assembly, or it'll need to be augmented to emit an
@@ -2182,9 +2186,10 @@ namespace System.Text.RegularExpressions
                         const int CharsPerInt64 = 4;
                         while (s.Length >= CharsPerInt64)
                         {
-                            // if (Unsafe.ReadUnaligned<long>(ref text) != value) goto doneLabel;
-                            EmitTextSpanOffsetAsByte();
-                            Call(s_unsafeReadUnalignedInt64);
+                            // if (Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref MemoryMarshal.GetReference(textSpan), textSpanPos)) != value) goto doneLabel;
+                            EmitTextSpanOffset();
+                            Unaligned(1);
+                            LdindI8();
                             LdcI8(MemoryMarshal.Read<long>(MemoryMarshal.AsBytes(s)));
                             BneFar(doneLabel);
                             textSpanPos += CharsPerInt64;
@@ -2196,9 +2201,10 @@ namespace System.Text.RegularExpressions
                     const int CharsPerInt32 = 2;
                     while (s.Length >= CharsPerInt32)
                     {
-                        // if (Unsafe.ReadUnaligned<int>(ref text) != value) goto doneLabel;
-                        EmitTextSpanOffsetAsByte();
-                        Call(s_unsafeReadUnalignedInt32);
+                        // if (Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref MemoryMarshal.GetReference(textSpan), textSpanPos)) != value) goto doneLabel;
+                        EmitTextSpanOffset();
+                        Unaligned(1);
+                        LdindI4();
                         Ldc(MemoryMarshal.Read<int>(MemoryMarshal.AsBytes(s)));
                         BneFar(doneLabel);
                         textSpanPos += CharsPerInt32;
@@ -2209,10 +2215,9 @@ namespace System.Text.RegularExpressions
                 // Finally, process all of the remaining characters one by one.
                 for (int i = 0; i < s.Length; i++)
                 {
-                    // if (s[i] != textSpan[textSpanPos+i]) goto doneLabel;
-                    Ldloca(textSpanLocal);
-                    Ldc(textSpanPos++);
-                    Call(s_spanGetItemMethod);
+                    // if (s[i] != textSpan[textSpanPos++]) goto doneLabel;
+                    EmitTextSpanOffset();
+                    textSpanPos++;
                     LdindU2();
                     if (IsCaseInsensitive(node)) CallToLower();
                     Ldc(s[i]);
