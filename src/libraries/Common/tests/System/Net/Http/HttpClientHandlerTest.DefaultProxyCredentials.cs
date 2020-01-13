@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     public abstract class HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandlerTestBase
@@ -63,7 +63,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    SetCustomProxy(handler, new UseSpecifiedUriWebProxy(proxyUrl, explicitProxyCreds));
+                    handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, explicitProxyCreds);
                     handler.DefaultProxyCredentials = defaultSystemProxyCreds;
                     using (HttpResponseMessage response = await client.GetAsync("http://notatrealserver.com/")) // URL does not matter
                     {

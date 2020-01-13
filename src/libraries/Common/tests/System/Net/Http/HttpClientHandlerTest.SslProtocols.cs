@@ -18,7 +18,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     public abstract partial class HttpClientHandler_SslProtocols_Test : HttpClientHandlerTestBase
@@ -63,7 +63,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
@@ -112,7 +112,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                 if (requestOnlyThisProtocol)
                 {
@@ -216,7 +216,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = SslProtocols.Tls12 };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -244,11 +244,22 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowedClientSslVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedClientProtocols, SslProtocols acceptedServerProtocols)
         {
+            if (IsWinHttpHandler &&
+                allowedClientProtocols == (SslProtocols.Tls11 | SslProtocols.Tls12) &&
+                acceptedServerProtocols == SslProtocols.Tls)
+            {
+                // Native WinHTTP sometimes uses multiple TCP connections to try other TLS protocols when
+                // getting TLS protocol failures as part of its TLS fallback algorithm. The loopback server
+                // doesn't expect this and stops listening for more connections. This causes unexpected test
+                // failures. See dotnet/corefx #8538.
+                return;
+            }
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.SslProtocols = allowedClientProtocols;
-                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedServerProtocols };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>

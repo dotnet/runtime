@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     public abstract class HttpClientHandler_Authentication_Test : HttpClientHandlerTestBase
@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task CreateAndValidateRequest(HttpClientHandler handler, Uri url, HttpStatusCode expectedStatusCode, ICredentials credentials)
         {
-            SetCredentials(handler, credentials);
+            handler.Credentials = credentials;
 
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(url))
@@ -113,7 +113,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                SetUseDefaultCredentials(handler, false);
+                handler.UseDefaultCredentials = false;
 
                 var credentials = new CredentialCache();
                 credentials.Add(url, supportedAuth, new NetworkCredential(Username, Password, Domain));
@@ -177,13 +177,13 @@ namespace System.Net.Http.Functional.Tests
                     switch (credCacheScheme)
                     {
                         case null:
-                            SetCredentials(handler, s_credentials);
+                            handler.Credentials = s_credentials;
                             break;
 
                         default:
                             var cc = new CredentialCache();
                             cc.Add(uri, credCacheScheme, s_credentials);
-                            SetCredentials(handler, cc);
+                            handler.Credentials = cc;
                             break;
                     }
 
@@ -218,13 +218,13 @@ namespace System.Net.Http.Functional.Tests
                     switch (credCacheScheme)
                     {
                         case null:
-                            SetCredentials(handler, s_credentials);
+                            handler.Credentials = s_credentials;
                             break;
 
                         default:
                             var cc = new CredentialCache();
                             cc.Add(uri, credCacheScheme, s_credentials);
-                            SetCredentials(handler, cc);
+                            handler.Credentials = cc;
                             break;
                     }
 
@@ -309,7 +309,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
-                    SetCredentials(handler, s_credentials);
+                    handler.Credentials = s_credentials;
                     client.DefaultRequestHeaders.ExpectContinue = false;
 
                     using (HttpResponseMessage resp = await client.GetAsync(uri))
@@ -353,7 +353,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
-                    SetCredentials(handler, s_credentials);
+                    handler.Credentials = s_credentials;
 
                     Assert.Equal("hello world 1", await client.GetStringAsync(new Uri(uri, originalRelativeUri)));
                     Assert.Equal("hello world 2", await client.GetStringAsync(new Uri(uri, secondRelativeUri)));
@@ -389,7 +389,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
-                    SetCredentials(handler, s_credentials);
+                    handler.Credentials = s_credentials;
 
                     // First two requests: initially without auth header, then with
                     Assert.Equal("hello world", await client.GetStringAsync(uri));
@@ -433,7 +433,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
-                    SetCredentials(handler, s_credentials);
+                    handler.Credentials = s_credentials;
 
                     Assert.Equal("hello world", await client.GetStringAsync(uri));
                     Assert.Equal("hello world", await client.GetStringAsync(uri));
@@ -537,7 +537,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                SetCredentials(handler, DomainCredential);
+                handler.Credentials = DomainCredential;
 
                 string server = $"http://{Configuration.Http.DomainJoinedHttpHost}/test/auth/kerberos/showidentity.ashx";
                 using (HttpResponseMessage response = await client.GetAsync(server))
@@ -555,7 +555,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                SetCredentials(handler, DomainCredential);
+                handler.Credentials = DomainCredential;
 
                 IPAddress[] addresses = Dns.GetHostAddresses(Configuration.Http.DomainJoinedHttpHost);
                 IPAddress hostIP = addresses.Where(a => a.AddressFamily == AddressFamily.InterNetwork).Select(a => a).First();
@@ -582,9 +582,9 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                SetCredentials(handler, new NetworkCredential(
+                handler.Credentials = new NetworkCredential(
                     Configuration.Security.WindowsServerUserName,
-                    Configuration.Security.WindowsServerUserPassword));
+                    Configuration.Security.WindowsServerUserPassword);
 
                 using (HttpResponseMessage response = await client.GetAsync(server))
                 {
@@ -606,7 +606,7 @@ namespace System.Net.Http.Functional.Tests
                     using (HttpClientHandler handler = CreateHttpClientHandler())
                     using (HttpClient client = CreateHttpClient(handler))
                     {
-                        SetCredentials(handler, new NetworkCredential("username", "password"));
+                        handler.Credentials = new NetworkCredential("username", "password");
                         await client.GetAsync(uri);
                     }
                 },

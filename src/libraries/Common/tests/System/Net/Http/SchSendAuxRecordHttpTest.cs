@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 namespace System.Net.Http.Functional.Tests
 {    
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     [ActiveIssue(26539)]    // Flaky test
@@ -31,7 +31,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 server.Start();
 
                 var tasks = new Task[2];

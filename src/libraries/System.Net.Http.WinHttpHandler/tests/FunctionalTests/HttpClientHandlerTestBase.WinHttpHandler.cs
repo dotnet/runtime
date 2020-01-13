@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Reflection;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -11,21 +10,18 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static bool IsWinHttpHandler => true;
 
-        protected WinHttpHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseHttp2);
+        protected WinHttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseHttp2);
 
-        protected static WinHttpHandler CreateHttpClientHandler(string useHttp2LoopbackServerString) =>
+        protected static WinHttpClientHandler CreateHttpClientHandler(string useHttp2LoopbackServerString) =>
             CreateHttpClientHandler(bool.Parse(useHttp2LoopbackServerString));
 
-        protected static WinHttpHandler CreateHttpClientHandler(bool useHttp2LoopbackServer = false)
+        protected static WinHttpClientHandler CreateHttpClientHandler(bool useHttp2LoopbackServer = false)
         {
-            WinHttpHandler handler = new WinHttpHandler();
-            handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
-            handler.CookieContainer = new CookieContainer();
-            handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
+            WinHttpClientHandler handler = new WinHttpClientHandler();
 
             if (useHttp2LoopbackServer)
             {
-                handler.ServerCertificateValidationCallback = TestHelper.AllowAllCertificates;
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
 
             return handler;

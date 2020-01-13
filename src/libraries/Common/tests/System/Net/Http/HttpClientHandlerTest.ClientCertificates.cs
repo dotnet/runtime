@@ -18,37 +18,19 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     public abstract class HttpClientHandler_ClientCertificates_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
 
-        private ClientCertificateOption GetClientCertificateOption(HttpClientHandler handler)
-        {
-#if WINHTTPHANDLER_TEST
-            return handler.ClientCertificateOption;
-#else
-            return handler.ClientCertificateOptions;
-#endif
-        }
-
-        private ClientCertificateOption SetClientCertificateOption(HttpClientHandler handler, ClientCertificateOption options)
-        {
-#if WINHTTPHANDLER_TEST
-            return handler.ClientCertificateOption = options;
-#else
-            return handler.ClientCertificateOptions = options;
-#endif
-        }
-
         [Fact]
         public void ClientCertificateOptions_Default()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                Assert.Equal(ClientCertificateOption.Manual, GetClientCertificateOption(handler));
+                Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOptions);
             }
         }
 
@@ -59,7 +41,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetClientCertificateOption(handler, option));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.ClientCertificateOptions = option);
             }
         }
 
@@ -70,8 +52,8 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                SetClientCertificateOption(handler, option);
-                Assert.Equal(option, GetClientCertificateOption(handler));
+                handler.ClientCertificateOptions = option;
+                Assert.Equal(option, handler.ClientCertificateOptions);
             }
         }
 
@@ -80,7 +62,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                SetClientCertificateOption(handler, ClientCertificateOption.Automatic);
+                handler.ClientCertificateOptions = ClientCertificateOption.Automatic;
                 Assert.Throws<InvalidOperationException>(() => handler.ClientCertificates);
             }
         }
@@ -88,7 +70,7 @@ namespace System.Net.Http.Functional.Tests
         private HttpClient CreateHttpClientWithCert(X509Certificate2 cert)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             Assert.NotNull(cert);
             handler.ClientCertificates.Add(cert);
             Assert.True(handler.ClientCertificates.Contains(cert));
@@ -210,12 +192,8 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-#if WINHTTPHANDLER_TEST
-                handler.ServerCertificateValidationCallback = TestHelper.AllowAllCertificates;
-#else
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-#endif
-                SetClientCertificateOption(handler, mode);
+                handler.ClientCertificateOptions = mode;
 
                 await LoopbackServer.CreateServerAsync(async server =>
                 {

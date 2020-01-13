@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 namespace System.Net.Http.Functional.Tests
 {
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     public abstract class HttpClientHandlerTest_Cookies : HttpClientHandlerTestBase
@@ -71,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     HttpClientHandler handler = CreateHttpClientHandler();
                     handler.CookieContainer = CreateSingleCookieContainer(uri, cookieName, cookieValue);
-                    SetUseCookies(handler, useCookies);
+                    handler.UseCookies = useCookies;
 
                     using (HttpClient client = CreateHttpClient(handler))
                     {
@@ -330,7 +330,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                SetUseCookies(handler, useCookies);
+                handler.UseCookies = useCookies;
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
@@ -540,7 +540,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                SetCredentials(handler, new NetworkCredential("user", "pass"));
+                handler.Credentials = new NetworkCredential("user", "pass");
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {

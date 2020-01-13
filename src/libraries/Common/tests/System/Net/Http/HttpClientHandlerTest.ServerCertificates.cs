@@ -21,7 +21,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     public abstract partial class HttpClientHandler_ServerCertificates_Test : HttpClientHandlerTestBase
@@ -35,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                Assert.Null(GetServerCertificateCustomValidationCallback(handler));
+                Assert.Null(handler.ServerCertificateCustomValidationCallback);
                 Assert.False(handler.CheckCertificateRevocationList);
             }
         }
@@ -45,19 +45,19 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                Assert.Null(GetServerCertificateCustomValidationCallback(handler));
+                Assert.Null(handler.ServerCertificateCustomValidationCallback);
 
                 Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> callback1 = (req, cert, chain, policy) => throw new NotImplementedException("callback1");
                 Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> callback2 = (req, cert, chain, policy) => throw new NotImplementedException("callback2");
 
-                SetServerCertificateCustomValidationCallback(handler, callback1);
-                Assert.Same(callback1, GetServerCertificateCustomValidationCallback(handler));
+                handler.ServerCertificateCustomValidationCallback = callback1;
+                Assert.Same(callback1, handler.ServerCertificateCustomValidationCallback);
 
-                SetServerCertificateCustomValidationCallback(handler, callback2);
-                Assert.Same(callback2, GetServerCertificateCustomValidationCallback(handler));
+                handler.ServerCertificateCustomValidationCallback = callback2;
+                Assert.Same(callback2, handler.ServerCertificateCustomValidationCallback);
 
-                SetServerCertificateCustomValidationCallback(handler, null);
-                Assert.Null(GetServerCertificateCustomValidationCallback(handler));
+                handler.ServerCertificateCustomValidationCallback = null;
+                Assert.Null(handler.ServerCertificateCustomValidationCallback);
             }
         }
 
@@ -73,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
 
-                Assert.Throws<InvalidOperationException>(() => SetServerCertificateCustomValidationCallback(handler, null));
+                Assert.Throws<InvalidOperationException>(() => handler.ServerCertificateCustomValidationCallback = null);
                 Assert.Throws<InvalidOperationException>(() => handler.CheckCertificateRevocationList = false);
             }
         }
@@ -95,11 +95,11 @@ namespace System.Net.Http.Functional.Tests
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
-                SetCustomProxy(handler, new WebProxy(proxyServer.Uri)
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                handler.Proxy = new WebProxy(proxyServer.Uri)
                 {
                     Credentials = new NetworkCredential("rightusername", "rightpassword")
-                });
+                };
 
                 const string content = "This is a test";
 
@@ -131,8 +131,8 @@ namespace System.Net.Http.Functional.Tests
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                SetCustomProxy(handler, new WebProxy(proxyServer.Uri));
-                SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+                handler.Proxy = new WebProxy(proxyServer.Uri);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 using (HttpClient client = CreateHttpClient(handler))
                 using (HttpResponseMessage response = await client.PostAsync(
                     Configuration.Http.SecureRemoteEchoServer,
@@ -151,7 +151,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 bool callbackCalled = false;
-                SetServerCertificateCustomValidationCallback(handler, delegate { callbackCalled = true; return true; });
+                handler.ServerCertificateCustomValidationCallback = delegate { callbackCalled = true; return true; };
 
                 using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                 {
@@ -196,7 +196,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool callbackCalled = false;
                 handler.CheckCertificateRevocationList = checkRevocation;
-                SetServerCertificateCustomValidationCallback(handler, (request, cert, chain, errors) => {
+                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) => {
                     callbackCalled = true;
                     Assert.NotNull(request);
 
@@ -218,7 +218,7 @@ namespace System.Net.Http.Functional.Tests
                         handler.CheckCertificateRevocationList ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
                         chain.ChainPolicy.RevocationMode);
                     return true;
-                });
+                };
 
                 using (HttpResponseMessage response = await client.GetAsync(url))
                 {
@@ -236,7 +236,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = CreateHttpClientHandler();
             using (HttpClient client = CreateHttpClient(handler))
             {
-                SetServerCertificateCustomValidationCallback(handler, delegate { return false; });
+                handler.ServerCertificateCustomValidationCallback = delegate { return false; };
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
             }
         }
@@ -249,7 +249,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 var e = new DivideByZeroException();
-                SetServerCertificateCustomValidationCallback(handler, delegate { throw e; });
+                handler.ServerCertificateCustomValidationCallback = delegate { throw e; };
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
                 Assert.Same(e, ex.GetBaseException());
@@ -311,7 +311,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool callbackCalled = false;
 
-                SetServerCertificateCustomValidationCallback(handler, (request, cert, chain, errors) =>
+                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
                     callbackCalled = true;
                     Assert.NotNull(request);
@@ -319,7 +319,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(chain);
                     Assert.Equal(expectedErrors, errors);
                     return true;
-                });
+                };
 
                 using (HttpResponseMessage response = await client.GetAsync(url))
                 {

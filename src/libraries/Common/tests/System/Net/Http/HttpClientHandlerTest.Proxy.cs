@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     public abstract class HttpClientHandler_Proxy_Test : HttpClientHandlerTestBase
@@ -35,10 +35,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 {
-#if !WINHTTPHANDLER_TEST
                     handler.UseProxy = true;
-#endif
-                    SetCustomProxy(handler, proxy);
+                    handler.Proxy = proxy;
                     using (HttpClient client = CreateHttpClient(handler))
                     {
                         Assert.Equal("hello", await client.GetStringAsync(uri));
@@ -94,7 +92,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    SetCustomProxy(handler, new WebProxy(proxyServer.Uri));
+                    handler.Proxy = new WebProxy(proxyServer.Uri);
                     handler.Proxy.Credentials = new NetworkCredential("username", "password");
                     using (HttpResponseMessage response = await client.GetAsync(serverUri))
                     {
@@ -154,7 +152,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    SetCustomProxy(handler, new WebProxy(proxyServer.Uri) { Credentials = creds });
+                    handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = creds };
 
                     using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                     {
@@ -193,7 +191,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Proxy_BypassTrue_GetRequestDoesntGoesThroughCustomProxy(IWebProxy proxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            SetCustomProxy(handler, proxy);
+            handler.Proxy = proxy;
             using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
@@ -213,7 +211,7 @@ namespace System.Net.Http.Functional.Tests
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                SetCustomProxy(handler, new WebProxy(proxyServer.Uri));
+                handler.Proxy = new WebProxy(proxyServer.Uri);
                 using (HttpClient client = CreateHttpClient(handler))
                 using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                 {
@@ -228,7 +226,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                SetCustomProxy(handler, new WebProxy("https://" + Guid.NewGuid().ToString("N")));
+                handler.Proxy = new WebProxy("https://" + Guid.NewGuid().ToString("N"));
 
                 Type expectedType = IsWinHttpHandler ? typeof(HttpRequestException) : typeof(NotSupportedException);
 
@@ -243,7 +241,7 @@ namespace System.Net.Http.Functional.Tests
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                SetCustomProxy(handler, new WebProxy(proxyServer.Uri));
+                handler.Proxy = new WebProxy(proxyServer.Uri);
                 using (HttpClient client = CreateHttpClient(handler))
                 using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
                 {
@@ -268,7 +266,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    SetCustomProxy(handler, new WebProxy(proxyUrl) { Credentials = proxyCreds });
+                    handler.Proxy = new WebProxy(proxyUrl) { Credentials = proxyCreds };
 
                     // URL does not matter. We will get response from "proxy" code below.
                     Task<HttpResponseMessage> clientTask = client.GetAsync($"http://notarealserver.com/");

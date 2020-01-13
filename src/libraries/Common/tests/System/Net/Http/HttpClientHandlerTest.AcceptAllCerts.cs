@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     public abstract class HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandlerTestBase
@@ -53,11 +53,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-#if WINHTTPHANDLER_TEST
-                SetServerCertificateCustomValidationCallback(handler, delegate { return true; });
-#else
-                SetServerCertificateCustomValidationCallback(handler, HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
-#endif
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
                 if (requestOnlyThisProtocol)
                 {
@@ -97,11 +93,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-#if WINHTTPHANDLER_TEST
-                handler.ServerCertificateValidationCallback = delegate { return true; };
-#else
                 handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-#endif
                 (await client.GetAsync(url)).Dispose();
             }
         }

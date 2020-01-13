@@ -1547,7 +1547,7 @@ namespace System.Net.Http.Functional.Tests
             const int ContentSize = InitialWindowSize + 1;
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
             var content = new ByteAtATimeContent(ContentSize);
 
@@ -2867,7 +2867,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_ProtocolMismatch_Throws()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            SetServerCertificateCustomValidationCallback(handler, TestHelper.AllowAllCertificates);
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
             using (HttpClient client = CreateHttpClient())
             {

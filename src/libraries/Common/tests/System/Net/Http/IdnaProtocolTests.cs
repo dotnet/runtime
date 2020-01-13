@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 namespace System.Net.Http.Functional.Tests
 {
 #if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpHandler;
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
     public abstract class IdnaProtocolTests : HttpClientHandlerTestBase
@@ -35,11 +35,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 // We don't actually want to do DNS lookup on the IDNA host name in the URL.
                 // So instead, configure the loopback server as a proxy so we will send to it.
-                HttpClientHandler handler = CreateHttpClientHandler();                
-#if !WINHTTPHANDLER_TEST
+                HttpClientHandler handler = CreateHttpClientHandler();
                 handler.UseProxy = true;
-#endif
-                SetCustomProxy(handler, new WebProxy(serverUrl.ToString()));
+                handler.Proxy = new WebProxy(serverUrl.ToString());
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
@@ -104,7 +102,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                SetAllowAutoRedirect(handler, false);
+                handler.AllowAutoRedirect = false;
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
