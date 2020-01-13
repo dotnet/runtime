@@ -48,7 +48,7 @@ SET VSWHERE_TOOLS_BIN=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswh
 
 ECHO Make sure to run this from a "x64 Native Tools Command Prompt for VS2019" command prompt.
 IF EXIST "%VSWHERE_TOOLS_BIN%" (
-	FOR /F "tokens=*" %%a IN ('"%VSWHERE_TOOLS_BIN%" -version [16.0^,17.0] -property installationPath') DO (
+	FOR /F "tokens=*" %%a IN ('"%VSWHERE_TOOLS_BIN%" -version [16.0^,17.0] -prerelease -property installationPath') DO (
 		ECHO Setup a "x64 Native Tools Command Prompt for VS2019 command prompt by using "%%a\VC\Auxiliary\Build\vcvars64.bat".
 	)
 )

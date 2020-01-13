@@ -1088,6 +1088,10 @@ EXTRA_DIST = TestDriver.cs \
 	test_op_il_seq_point_headerfooter.sh	\
 	Makefile.am.in
 
+if ENABLE_NETCORE
+version.h: Makefile
+	echo "#define FULL_VERSION \"netcore\"" > version.h
+else
 version.h: Makefile
 	if test -e $(top_srcdir)/.git; then \
 		(cd $(top_srcdir); \
@@ -1107,6 +1111,7 @@ version.h: Makefile
 			echo "#define FULL_VERSION \"$$MONO_BRANCH/$$MONO_BUILD_REVISION\""; \
 		fi \
 	fi > version.h
+endif
 
 # Utility target for patching libtool to speed up linking
 patch-libtool:

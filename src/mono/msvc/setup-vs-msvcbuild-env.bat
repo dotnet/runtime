@@ -51,7 +51,7 @@ set VS_2019_VCINSTALL_DIR=
 
 :: Try to locate installed VS2019 VC environment.
 if exist "%VSWHERE_TOOLS_BIN%" (
-    for /f "tokens=*" %%a in ('"%VSWHERE_TOOLS_BIN%" -version [16.0^,17.0] -property installationPath') do (
+    for /f "tokens=*" %%a in ('"%VSWHERE_TOOLS_BIN%" -version [16.0^,17.0] -prerelease -property installationPath') do (
         set VS_2019_VCINSTALL_DIR=%%a\VC\
     )
 )
