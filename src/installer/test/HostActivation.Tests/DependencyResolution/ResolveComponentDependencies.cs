@@ -154,6 +154,25 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining($"previously found assembly: '{Path.Combine(component.Location, "ComponentDependency.dll")}'");
         }
 
+        [Fact]
+        public void ComponentWithSameDependencyNativeImageShouldFail()
+        {
+            // Add a reference to a package which has asset of the native image of the existing ComponentDependency.
+            var component = sharedTestState.CreateComponentWithDependencies(b => b
+                .WithPackage("ComponentDependency_NI", "1.0.0", p => p
+                    .WithAssemblyGroup(null, g => g
+                        .WithAsset("ComponentDependency.ni.dll"))));
+
+            sharedTestState.RunComponentResolutionTest(component)
+                .Should().Fail()
+                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverResolveFailure.ToString("x")}]")
+                .And.HaveStdOutContaining("corehost reported errors:")
+                .And.HaveStdOutContaining("An assembly specified in the application dependencies manifest (ComponentWithDependencies.deps.json) has already been found but with a different file extension")
+                .And.HaveStdOutContaining("package: 'ComponentDependency_NI', version: '1.0.0'")
+                .And.HaveStdOutContaining("path: 'ComponentDependency.ni.dll'")
+                .And.HaveStdOutContaining($"previously found assembly: '{Path.Combine(component.Location, "ComponentDependency.dll")}'");
+        }
+
         // This test also validates that corehost_set_error_writer custom writer
         // correctly captures errors from hostpolicy.
         [Fact]

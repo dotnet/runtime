@@ -263,7 +263,7 @@ private:
     std::vector<pal::string_t> m_additional_probes;
 
     // Is the deps file for an app using shared frameworks?
-    bool m_is_framework_dependent;
+    const bool m_is_framework_dependent;
 };
 
 #endif // DEPS_RESOLVER_H
