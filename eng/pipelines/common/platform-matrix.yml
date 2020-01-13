@@ -223,21 +223,25 @@ jobs:
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows arm
-
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm'), eq(parameters.platformGroup, 'all')) }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      osGroup: Windows_NT
-      archType: arm
-      platform: Windows_NT_arm
-      jobParameters:
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: Windows_NT
-        ${{ insert }}: ${{ parameters.jobParameters }}
+# Currently down as there's no suitable ARM32 pool at the moment, tracked under
+#   https://github.com/dotnet/runtime/issues/1097
+#   https://github.com/dotnet/runtime/issues/1663
+#   https://github.com/dotnet/core-eng/issues/8490
+#
+# - ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm'), eq(parameters.platformGroup, 'all')) }}:
+#   - template: xplat-setup.yml
+#     parameters:
+#       jobTemplate: ${{ parameters.jobTemplate }}
+#       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+#       osGroup: Windows_NT
+#       archType: arm
+#       platform: Windows_NT_arm
+#       jobParameters:
+#         stagedBuild: ${{ parameters.stagedBuild }}
+#         buildConfig: ${{ parameters.buildConfig }}
+#         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+#         managedTestBuildOsGroup: Windows_NT
+#         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows arm64
 
