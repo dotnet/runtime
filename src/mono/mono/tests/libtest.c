@@ -699,16 +699,6 @@ mono_test_marshal_delegate_struct (DelegateStruct ds)
 	return res;
 }
 
-LIBTEST_API int STDCALL  
-mono_test_marshal_struct (simplestruct ss)
-{
-	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
-	    !strcmp (ss.d, "TEST"))
-		return 0;
-
-	return 1;
-}
-
 LIBTEST_API int STDCALL 
 mono_test_marshal_byref_struct (simplestruct *ss, int a, int b, int c, char *d)
 {
@@ -951,6 +941,16 @@ is_utf16_equals (gunichar2 *s1, const char *s2)
 	g_free (s);
 
 	return res == 0;
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_struct (simplestruct ss)
+{
+	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
+	    !strcmp (ss.d, "TEST") && is_utf16_equals (ss.d2, "OK"))
+		return 0;
+
+	return 1;
 }
 
 LIBTEST_API int STDCALL 

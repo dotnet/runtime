@@ -314,6 +314,9 @@ public unsafe class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_return_vtype")]
 	public static extern SimpleStruct mono_test_return_vtype (IntPtr i);
 
+	[DllImport ("libtest", EntryPoint="mono_test_return_vtype")]
+	public static extern SimpleStructGen<string> mono_test_return_vtype_gen (IntPtr i);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder")]
 	public static extern void mono_test_marshal_stringbuilder (StringBuilder sb, int len);
 
@@ -482,6 +485,7 @@ public unsafe class Tests {
 		SimpleStruct ss = new  SimpleStruct ();
 		ss.b = true;
 		ss.d = "TEST";
+		ss.d2 = "OK";
 		
 		return mono_test_marshal_struct (ss);
 	}
@@ -490,6 +494,7 @@ public unsafe class Tests {
 		SimpleStructGen<string> ss = new  SimpleStructGen<string> ();
 		ss.b = true;
 		ss.d = "TEST";
+		ss.d2 = "OK";
 		
 		return mono_test_marshal_struct_gen (ss);
 	}
@@ -845,6 +850,15 @@ public unsafe class Tests {
 
 	public static int test_0_return_vtype () {
 		SimpleStruct ss = mono_test_return_vtype (new IntPtr (5));
+
+		if (!ss.a && ss.b && !ss.c && ss.d == "TEST" && ss.d2 == "TEST2")
+			return 0;
+
+		return 1;
+	}
+
+	public static int test_0_return_vtype_gen () {
+		SimpleStructGen<string> ss = mono_test_return_vtype_gen (new IntPtr (5));
 
 		if (!ss.a && ss.b && !ss.c && ss.d == "TEST" && ss.d2 == "TEST2")
 			return 0;

@@ -893,7 +893,11 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 		return;
 	case MONO_TYPE_GENERICINST: {
 		if (mono_type_generic_inst_is_valuetype (type)) {
-			mono_value_copy_internal (result->data.vt, data, mono_class_from_mono_type_internal (type));
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+			if (pinvoke)
+				memcpy (result->data.vt, data, mono_class_native_size (klass, NULL));
+			else
+				mono_value_copy_internal (result->data.vt, data, klass);
 			return;
 		}
 		stackval_from_data (m_class_get_byval_arg (type->data.generic_class->container_class), result, data, pinvoke);
@@ -996,7 +1000,11 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 		MonoClass *container_class = type->data.generic_class->container_class;
 
 		if (m_class_is_valuetype (container_class) && !m_class_is_enumtype (container_class)) {
-			mono_value_copy_internal (data, val->data.vt, mono_class_from_mono_type_internal (type));
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+			if (pinvoke)
+				memcpy (data, val->data.vt, mono_class_native_size (klass, NULL));
+			else
+				mono_value_copy_internal (data, val->data.vt, klass);
 			return;
 		}
 		stackval_to_data (m_class_get_byval_arg (type->data.generic_class->container_class), val, data, pinvoke);
