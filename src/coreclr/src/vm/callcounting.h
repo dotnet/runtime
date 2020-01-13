@@ -382,8 +382,6 @@ public:
 
 private:
     static PTR_CallCountingManagerHash s_callCountingManagers;
-    static MethodDescForwarderStubHash *s_methodDescForwarderStubHash;
-    static SArray<CallCountingInfo *> s_callCountingInfosPendingCompletion;
     static COUNT_T s_callCountingStubCount;
     static COUNT_T s_activeCallCountingStubCount;
     static COUNT_T s_completedCallCountingStubCount;
@@ -391,6 +389,8 @@ private:
 private:
     CallCountingInfoByCodeVersionHash m_callCountingInfoByCodeVersionHash;
     CallCountingStubAllocator m_callCountingStubAllocator;
+    MethodDescForwarderStubHash m_methodDescForwarderStubHash;
+    SArray<CallCountingInfo *> m_callCountingInfosPendingCompletion;
 
 public:
     CallCountingManager();
