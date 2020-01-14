@@ -309,7 +309,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // TODO do we want this to be a synchronization mechanism to cancel a pending read
         // If so, we need to complete the read here as well.
-        internal override void AbortRead()
+        internal override void AbortRead(long errorCode)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -320,7 +320,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _readState = ReadState.Aborted;
             }
 
-            MsQuicApi.Api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode: 0);
+            MsQuicApi.Api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.ABORT_RECV, errorCode);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -380,6 +380,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return _shutdownWriteResettableCompletionSource.GetTypelessValueTask();
+        }
+
+        internal override void Shutdown()
+        {
+            MsQuicApi.Api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
         }
 
         // TODO consider removing sync-over-async with blocking calls.
@@ -955,7 +960,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             return _sendResettableCompletionSource.GetTypelessValueTask();
         }
-
 
         private ValueTask<uint> StartWritesAsync()
         {

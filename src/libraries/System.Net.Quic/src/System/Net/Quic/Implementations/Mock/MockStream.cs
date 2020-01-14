@@ -199,7 +199,7 @@ namespace System.Net.Quic.Implementations.Mock
             return Task.CompletedTask;
         }
 
-        internal override void AbortRead()
+        internal override void AbortRead(long errorCode)
         {
             throw new NotImplementedException();
         }
@@ -215,6 +215,13 @@ namespace System.Net.Quic.Implementations.Mock
             CheckDisposed();
 
             return default;
+        }
+
+        internal override void Shutdown()
+        {
+            CheckDisposed();
+
+            _socket.Shutdown(SocketShutdown.Send);
         }
 
         private void CheckDisposed()

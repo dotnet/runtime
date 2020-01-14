@@ -79,18 +79,18 @@ namespace System.Net.Quic
         /// <summary>
         /// Close the connection and terminate any active streams.
         /// </summary>
-        public ValueTask CloseAsync(long shutdownCode, CancellationToken cancellationToken = default) => _provider.CloseAsync(shutdownCode, cancellationToken);
+        public ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default) => _provider.CloseAsync(errorCode, cancellationToken);
 
         public void Dispose() => _provider.Dispose();
 
         /// <summary>
         /// Gets the maximum number of bidirectional streams that can be made to the peer.
         /// </summary>
-        public long GetMaximumBidirectionalStreamCount() => _provider.GetMaximumBidirectionalStreamCount();
+        public long GetRemoteAvailableUnidirectionalStreamCount() => _provider.GetRemoteAvailableUnidirectionalStreamCount();
 
         /// <summary>
         /// Gets the maximum number of unidirectional streams that can be made to the peer.
         /// </summary>
-        public long GetMaximumUnidirectionalStreamCount() => _provider.GetMaximumUnidirectionalStreamCount();
+        public long GetRemoteAvailableBidirectionalStreamCount() => _provider.GetRemoteAvailableBidirectionalStreamCount();
     }
 }

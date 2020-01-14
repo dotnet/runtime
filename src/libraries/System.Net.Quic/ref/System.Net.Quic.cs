@@ -21,11 +21,11 @@ namespace System.Net.Quic
         public IPEndPoint RemoteEndPoint => throw null;
         public QuicStream OpenUnidirectionalStream() => throw null;
         public QuicStream OpenBidirectionalStream() => throw null;
-        public long GetMaximumBidirectionalStreamCount() => throw null;
-        public long GetMaximumUnidirectionalStreamCount() => throw null;
+        public long GetRemoteAvailableUnidirectionalStreamCount() => throw null;
+        public long GetRemoteAvailableBidirectionalStreamCount() => throw null;
         public System.Threading.Tasks.ValueTask<QuicStream> AcceptStreamAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol => throw null;
-        public ValueTask CloseAsync(long shutdownCode, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public ValueTask CloseAsync(long errorCode, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() => throw null;
     }
     public sealed partial class QuicListener : IDisposable
@@ -51,7 +51,7 @@ namespace System.Net.Quic
         public override int Read(byte[] buffer, int offset, int count) => throw null;
         public override void Write(byte[] buffer, int offset, int count) => throw null;
         public long StreamId => throw null;
-        public void AbortRead() => throw null;
+        public void AbortRead(long errorCode) => throw null;
         public void AbortWrite(long errorCode) => throw null;
         public ValueTask WriteAsync(ReadOnlyMemory<byte> data, bool endStream, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public ValueTask WriteAsync(ReadOnlySequence<byte> data, System.Threading.CancellationToken cancellationToken = default) => throw null;
@@ -59,6 +59,7 @@ namespace System.Net.Quic
         public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> data, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> data, bool endStream, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public ValueTask ShutdownWriteCompleted(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void Shutdown() => throw null;
     }
     public class QuicClientConnectionOptions
     {
@@ -84,13 +85,13 @@ namespace System.Net.Quic
     }
     public class QuicConnectionAbortedException : QuicException
     {
-        public QuicConnectionAbortedException(string message, long error) : base(message) { }
+        public QuicConnectionAbortedException(string message, long errorCode) : base(message) { }
         public long ErrorCode { get; }
 
     }
     public class QuicStreamAbortedException : QuicException
     {
-        public QuicStreamAbortedException(string message, long error) : base(message) { }
+        public QuicStreamAbortedException(string message, long errorCode) : base(message) { }
         public long ErrorCode { get; }
     }
 }

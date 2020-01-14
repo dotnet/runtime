@@ -104,7 +104,7 @@ namespace System.Net.Quic
 
         public override Task FlushAsync(CancellationToken cancellationToken) => _provider.FlushAsync(cancellationToken);
 
-        public void AbortRead() => _provider.AbortRead();
+        public void AbortRead(long errorCode) => _provider.AbortRead(errorCode);
 
         public void AbortWrite(long errorCode) => _provider.AbortWrite(errorCode);
 
@@ -119,6 +119,8 @@ namespace System.Net.Quic
         public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, endStream, cancellationToken);
 
         public ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownWriteCompleted(cancellationToken);
+
+        public void Shutdown() => _provider.Shutdown();
 
         protected override void Dispose(bool disposing)
         {

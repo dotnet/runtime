@@ -18,7 +18,7 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default);
 
-        internal abstract void AbortRead();
+        internal abstract void AbortRead(long errorCode);
 
         internal abstract void AbortWrite(long errorCode);
 
@@ -31,12 +31,16 @@ namespace System.Net.Quic.Implementations
         internal abstract ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default);
 
         internal abstract ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default);
+
         internal abstract ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default);
 
         internal abstract ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default);
+
         internal abstract ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default);
 
         internal abstract ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default);
+
+        internal abstract void Shutdown();
 
         internal abstract void Flush();
 

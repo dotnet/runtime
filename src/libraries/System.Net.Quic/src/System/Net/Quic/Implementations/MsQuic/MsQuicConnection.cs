@@ -265,12 +265,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             return StreamOpen(QUIC_STREAM_OPEN_FLAG.NONE);
         }
 
-        internal override long GetMaximumBidirectionalStreamCount()
+        internal override long GetRemoteAvailableUnidirectionalStreamCount()
         {
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.PEER_BIDI_STREAM_COUNT);
         }
 
-        internal override long GetMaximumUnidirectionalStreamCount()
+        internal override long GetRemoteAvailableBidirectionalStreamCount()
         {
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.PEER_UNIDI_STREAM_COUNT);
         }
@@ -391,11 +391,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal override ValueTask CloseAsync(long shutdownCode, CancellationToken cancellationToken = default)
+        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
-            return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, shutdownCode);
+            return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, errorCode);
         }
 
         private void ThrowIfDisposed()
