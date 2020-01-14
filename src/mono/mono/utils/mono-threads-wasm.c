@@ -110,6 +110,12 @@ mono_native_thread_os_id_get (void)
 #endif
 }
 
+gint32
+mono_native_thread_processor_id_get (void)
+{
+	return -1;
+}
+
 MONO_API gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {

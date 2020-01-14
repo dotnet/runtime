@@ -641,6 +641,8 @@ mono_native_thread_id_get (void);
  */
 guint64 mono_native_thread_os_id_get (void);
 
+gint32 mono_native_thread_processor_id_get (void);
+
 MONO_API gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);
 

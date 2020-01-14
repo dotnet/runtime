@@ -6768,4 +6768,10 @@ ves_icall_System_Threading_Thread_GetCurrentOSThreadId (MonoError *error)
 	return mono_native_thread_os_id_get ();
 }
 
+gint32
+ves_icall_System_Threading_Thread_GetCurrentProcessorNumber (MonoError *error)
+{
+	return mono_native_thread_processor_id_get ();
+}
+
 #endif

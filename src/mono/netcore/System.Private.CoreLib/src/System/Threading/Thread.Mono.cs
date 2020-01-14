@@ -163,10 +163,17 @@ namespace System.Threading
 			// no-op
 		}
 
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		extern static int GetCurrentProcessorNumber ();		
+
 		public static int GetCurrentProcessorId ()
 		{
-			// TODO: Implement correctly
-			return Environment.CurrentManagedThreadId;
+			int id = GetCurrentProcessorNumber ();
+
+			if (id < 0)
+				id = Environment.CurrentManagedThreadId;
+
+			return id;
 		}
 
 		public void Interrupt ()
