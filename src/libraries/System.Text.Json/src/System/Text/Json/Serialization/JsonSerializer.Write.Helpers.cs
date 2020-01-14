@@ -128,6 +128,10 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                {
+                    state.ReferenceResolver = new DefaultReferenceResolver(true);
+                }
                 Debug.Assert(type != null);
                 state.Current.Initialize(type, options);
                 state.Current.CurrentValue = value;

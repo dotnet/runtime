@@ -12,6 +12,10 @@ namespace System.Text.Json
             ref Utf8JsonReader reader)
         {
             ReadStack state = default;
+            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            {
+                state.ReferenceResolver = new DefaultReferenceResolver(false);
+            }
             state.Current.Initialize(returnType, options);
 
             ReadCore(options, ref reader, ref state);

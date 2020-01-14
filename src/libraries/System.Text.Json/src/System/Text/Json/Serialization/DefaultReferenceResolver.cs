@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace System.Text.Json
 {
-    internal sealed class DefaultReferenceResolver
+    internal struct DefaultReferenceResolver
     {
         private uint _referenceCount;
         private Dictionary<string, object>? _keyObjectMap;
@@ -14,13 +14,17 @@ namespace System.Text.Json
 
         public DefaultReferenceResolver(bool isWrite)
         {
+            _referenceCount = default;
+
             if (isWrite)
             {
                 _objectKeyMap = new Dictionary<object, string>(ReferenceEqualsEqualityComparer<object>.Comparer);
+                _keyObjectMap = null;
             }
             else
             {
                 _keyObjectMap = new Dictionary<string, object>();
+                _objectKeyMap = null;
             }
         }
 

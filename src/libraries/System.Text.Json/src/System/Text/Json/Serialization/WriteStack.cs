@@ -16,18 +16,7 @@ namespace System.Text.Json
         private int _index;
 
         // The bag of preservable references. It needs to be kept in the state and never in JsonSerializerOptions.
-        private DefaultReferenceResolver _referenceResolver;
-        private DefaultReferenceResolver ReferenceResolver
-        {
-            get {
-                if (_referenceResolver == null)
-                {
-                    _referenceResolver = new DefaultReferenceResolver(true);
-                }
-
-                return _referenceResolver;
-            }
-        }
+        public DefaultReferenceResolver ReferenceResolver;
 
         public void Push()
         {

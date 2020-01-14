@@ -4,11 +4,10 @@
 
 namespace System.Text.Json
 {
-    internal enum MetadataPropertyName
+    internal class JsonPreservedReference<T>
     {
-        NoMetadata,
-        Values,
-        Id,
-        Ref,
+#nullable disable
+        public T Values { get; set; }
+#nullable enable
     }
 }

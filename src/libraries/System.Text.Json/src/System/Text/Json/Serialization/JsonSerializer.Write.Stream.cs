@@ -70,6 +70,10 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                {
+                    state.ReferenceResolver = new DefaultReferenceResolver(true);
+                }
                 state.Current.Initialize(inputType, options);
                 state.Current.CurrentValue = value;
 

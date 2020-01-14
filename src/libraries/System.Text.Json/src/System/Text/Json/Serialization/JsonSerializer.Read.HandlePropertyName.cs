@@ -214,20 +214,26 @@ namespace System.Text.Json
                 // TODO: Hook up JsonPropertyInfoAsString here instead.
                 // in case read of string value for this property fails.
                 JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
-                info.JsonPropertyName = propertyName.ToArray();
+                info.JsonPropertyName = ReadStack.s_idMetadataPropertyName;//propertyName.ToArray();
                 state.Current.JsonPropertyInfo = info;
 
                 state.Current.ReadMetadataValue = true;
             }
             else if (meta == MetadataPropertyName.Values)
             {
+                Debug.Assert(propertyName.SequenceEqual(Encoding.UTF8.GetBytes("$values")));
                 // Preserved JSON arrays are wrapped into JsonPreservedReference<T> where T is the original type of the enumerable
                 // and Values is the actual enumerable instance being preserved.
-
+                Debug.Assert(state.Current.JsonClassInfo!.Type.GetGenericTypeDefinition() == typeof(JsonPreservedReference<>));
                 // TODO: Hook up JsonPropertyInfoAsString
                 // to print $values on the JSON Path in case of failure deeper on the object graph.
                 JsonPropertyInfo info = state.Current.JsonClassInfo!.PropertyCache!["Values"];
-                info.JsonPropertyName = propertyName.ToArray();
+
+                if (info.JsonPropertyName == null)
+                {
+                    info.JsonPropertyName = ReadStack.s_valuesMetadataPropertyName;
+                }
+
                 state.Current.JsonPropertyInfo = info;
 
                 if (state.Current.MetadataProperty != MetadataPropertyName.Id)
@@ -252,7 +258,7 @@ namespace System.Text.Json
                 // in case read of string value for this property fails.
 
                 JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
-                info.JsonPropertyName = propertyName.ToArray();
+                info.JsonPropertyName = ReadStack.s_refMetadataPropertyName;
                 state.Current.JsonPropertyInfo = info;
 
                 state.Current.ReadMetadataValue = true;

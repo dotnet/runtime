@@ -7,13 +7,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
-    internal class JsonPreservedReference<T>
-    {
-        #nullable disable
-        public T Values { get; set; }
-        #nullable enable
-    }
-
     public static partial class JsonSerializer
     {
         [PreserveDependency("get_Values", "System.Text.Json.JsonPreservedReference`1")]

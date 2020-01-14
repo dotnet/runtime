@@ -111,6 +111,10 @@ namespace System.Text.Json
             }
 
             ReadStack readStack = default;
+            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            {
+                readStack.ReferenceResolver = new DefaultReferenceResolver(false);
+            }
             readStack.Current.Initialize(returnType, options);
 
             ReadValueCore(options, ref reader, ref readStack);

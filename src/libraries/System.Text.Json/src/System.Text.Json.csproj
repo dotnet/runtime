@@ -23,6 +23,7 @@
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\Serialization\DefaultReferenceResolver.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonPreservedReference.cs" />
     <Compile Include="System\Text\Json\Serialization\MetadataPropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsEqualityComparer.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandling.cs" />
