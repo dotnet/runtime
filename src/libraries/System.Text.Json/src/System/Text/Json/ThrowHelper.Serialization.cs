@@ -306,9 +306,23 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties_Dictionary(ref ReadStackFrame current)
+        {
+            current.KeyName = null;
+            ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataIdIsNotFirstProperty()
         {
             throw new JsonException(SR.MetadataIdIsNotFirstProperty);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataIdIsNotFirstProperty_Dictionary(ref ReadStackFrame current)
+        {
+            current.KeyName = null;
+            ThrowJsonException_MetadataIdIsNotFirstProperty();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -318,8 +332,21 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataInvalidPropertyWithLeadingSign()
+        public static void ThrowJsonException_MetadataInvalidPropertyWithLeadingSign(ReadOnlySpan<byte> propertyName, ref ReadStack state, in Utf8JsonReader reader)
         {
+            // Set PropertyInfo or KeyName to write down the conflicting property name in JsonException.Path
+            if (state.Current.IsProcessingDictionary())
+            {
+                state.Current.KeyName = reader.GetString();
+            }
+            else
+            {
+                // TODO: Hook up JsonPropertyInfoAsString here instead.
+                JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
+                info.JsonPropertyName = propertyName.ToArray();
+                state.Current.JsonPropertyInfo = info;
+            }
+
             throw new JsonException(SR.MetadataInvalidPropertyWithLeadingSign);
         }
 

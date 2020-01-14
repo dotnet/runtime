@@ -171,8 +171,7 @@ namespace System.Text.Json
 
                 if (state.Current.DictionaryHaveKeys)
                 {
-                    state.Current.KeyName = null;
-                    ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty();
+                    ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty_Dictionary(ref state.Current);
                 }
 
                 state.Current.ReadMetadataValue = true;
@@ -181,8 +180,7 @@ namespace System.Text.Json
             {
                 if (state.Current.DictionaryHaveKeys)
                 {
-                    state.Current.KeyName = null;
-                    ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+                    ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties_Dictionary(ref state.Current);
                 }
 
                 state.Current.ShouldHandleReference = true;

@@ -72,21 +72,7 @@ namespace System.Text.Json
                         break;
                 }
 
-                // Fail state.
-                // Set PropertyInfo or KeyName to write down the conflicting property name in JsonException.Path
-                if (state.Current.IsProcessingDictionary())
-                {
-                    state.Current.KeyName = reader.GetString();
-                }
-                else
-                {
-                    // TODO: Hook up JsonPropertyInfoAsString here instead.
-                    JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
-                    info.JsonPropertyName = propertyName.ToArray();
-                    state.Current.JsonPropertyInfo = info;
-                }
-
-                ThrowHelper.ThrowJsonException_MetadataInvalidPropertyWithLeadingSign();
+                ThrowHelper.ThrowJsonException_MetadataInvalidPropertyWithLeadingSign(propertyName, ref state, in reader);
             }
 
             return MetadataPropertyName.NoMetadata;
