@@ -7231,6 +7231,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
+    // This block is not longer any block's predecessor. If we end up
+    // converting this tail call to a branch, we'll add appropriate
+    // successor information then.
+    fgRemoveBlockAsPred(compCurBB);
+
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
     // We enable shared-ret tail call optimization for recursive calls even if
     // FEATURE_TAILCALL_OPT_SHARED_RETURN is not defined.
@@ -8032,6 +8037,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
     block->bbJumpKind = BBJ_ALWAYS;
     block->bbJumpDest = fgFirstBB->bbNext;
+    block->bbJumpDest->bbFlags |= BBF_JMP_TARGET;
     fgAddRefPred(block->bbJumpDest, block);
     block->bbFlags &= ~BBF_HAS_JMP;
 }
@@ -14884,12 +14890,6 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
             /* Unconditional throw - transform the basic block into a BBJ_THROW */
             fgConvertBBToThrowBB(block);
 
-            /* Remove 'block' from the predecessor list of 'block->bbNext' */
-            fgRemoveRefPred(block->bbNext, block);
-
-            /* Remove 'block' from the predecessor list of 'block->bbJumpDest' */
-            fgRemoveRefPred(block->bbJumpDest, block);
-
 #ifdef DEBUG
             if (verbose)
             {
@@ -15103,19 +15103,6 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
             /* Unconditional throw - transform the basic block into a BBJ_THROW */
             fgConvertBBToThrowBB(block);
 
-            /* update the flow graph */
-
-            unsigned     jumpCnt = block->bbJumpSwt->bbsCount;
-            BasicBlock** jumpTab = block->bbJumpSwt->bbsDstTab;
-
-            for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
-            {
-                BasicBlock* curJump = *jumpTab;
-
-                /* Remove 'block' from the predecessor list of 'curJump' */
-                fgRemoveRefPred(curJump, block);
-            }
-
 #ifdef DEBUG
             if (verbose)
             {
@@ -15214,22 +15201,30 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
     return result;
 }
 
-//*****************************************************************************
+//------------------------------------------------------------------------
+// fgMorphBlockStmt: morph a single statement in a block.
 //
-// Morphs a single statement in a block.
-// Can be called anytime, unlike fgMorphStmts() which should only be called once.
+// Arguments:
+//    block - block containing the statement
+//    stmt - statement to morph
+//    msg - string to identify caller in a dump
 //
-// Returns true  if 'stmt' was removed from the block.
-// Returns false if 'stmt' is still in the block (even if other statements were removed).
+// Returns:
+//    true if 'stmt' was removed from the block.
+//  s false if 'stmt' is still in the block (even if other statements were removed).
 //
-
+// Notes:
+//   Can be called anytime, unlike fgMorphStmts() which should only be called once.
+//
 bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg))
 {
     assert(block != nullptr);
     assert(stmt != nullptr);
 
-    compCurBB   = block;
-    compCurStmt = stmt;
+    // Reset some ambient state
+    fgRemoveRestOfBlock = false;
+    compCurBB           = block;
+    compCurStmt         = stmt;
 
     GenTree* morph = fgMorphTree(stmt->GetRootNode());
 
@@ -15322,10 +15317,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
         }
 
         // The rest of block has been removed and we will always throw an exception.
-
-        // Update succesors of block
-        fgRemoveBlockAsPred(block);
-
+        //
         // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_NONE.
         // We should not convert it to a ThrowBB.
         if ((block != fgFirstBB) || ((fgFirstBB->bbFlags & BBF_INTERNAL) == 0))
@@ -15689,6 +15681,7 @@ void Compiler::fgMorphBlocks()
                     {
                         block->bbJumpKind = BBJ_ALWAYS;
                         block->bbJumpDest = genReturnBB;
+                        fgAddRefPred(genReturnBB, block);
                         fgReturnCount--;
                     }
                     if (genReturnLocal != BAD_VAR_NUM)
@@ -16648,6 +16641,27 @@ void Compiler::fgMorph()
     fgUpdateFinallyTargetFlags();
 
     EndPhase(PHASE_CLONE_FINALLY);
+
+    // Compute bbNum, bbRefs and bbPreds
+    //
+    JITDUMP("\nRenumbering the basic blocks for fgComputePreds\n");
+    fgRenumberBlocks();
+
+    // This is the first time full (not cheap) preds will be computed
+    //
+    noway_assert(!fgComputePredsDone);
+    fgComputePreds();
+
+    // Run an early flow graph simplification pass
+    if (opts.OptimizationEnabled())
+    {
+        fgUpdateFlowGraph();
+    }
+
+    EndPhase(PHASE_COMPUTE_PREDS);
+
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated
 
     /* For x64 and ARM64 we need to mark irregular parameters */
     lvaRefCountState = RCS_EARLY;
@@ -17934,18 +17948,34 @@ bool Compiler::fgCheckStmtAfterTailCall()
 
 #if FEATURE_TAILCALL_OPT_SHARED_RETURN
 
-            // We can have a move from the call result to an lvaInlineeReturnSpillTemp.
-            // However, we can't check that this assignment was created there.
-            if (nextMorphStmt->GetRootNode()->gtOper == GT_ASG)
+            // We can have a chain of assignments from the call result to
+            // various inline return spill temps. These are ok as long
+            // as the last one ultimately provides the return value or is ignored.
+            //
+            // And if we're returning a small type we may see a cast
+            // on the source side.
+            while ((nextMorphStmt != nullptr) && (nextMorphStmt->GetRootNode()->OperIs(GT_ASG)))
             {
                 Statement* moveStmt = nextMorphStmt;
                 GenTree*   moveExpr = nextMorphStmt->GetRootNode();
-                noway_assert(moveExpr->gtGetOp1()->OperIsLocal() && moveExpr->gtGetOp2()->OperIsLocal());
+                GenTree*   moveDest = moveExpr->gtGetOp1();
+                noway_assert(moveDest->OperIsLocal());
 
-                unsigned srcLclNum = moveExpr->gtGetOp2()->AsLclVarCommon()->GetLclNum();
+                // Tunnel through any casts on the source side.
+                GenTree* moveSource = moveExpr->gtGetOp2();
+                while (moveSource->OperIs(GT_CAST))
+                {
+                    noway_assert(!moveSource->gtOverflow());
+                    moveSource = moveSource->gtGetOp1();
+                }
+                noway_assert(moveSource->OperIsLocal());
+
+                // Verify we're just passing the value from one local to another
+                // along the chain.
+                const unsigned srcLclNum = moveSource->AsLclVarCommon()->GetLclNum();
                 noway_assert(srcLclNum == callResultLclNumber);
-                unsigned dstLclNum  = moveExpr->gtGetOp1()->AsLclVarCommon()->GetLclNum();
-                callResultLclNumber = dstLclNum;
+                const unsigned dstLclNum = moveDest->AsLclVarCommon()->GetLclNum();
+                callResultLclNumber      = dstLclNum;
 
                 nextMorphStmt = moveStmt->GetNextStmt();
             }
