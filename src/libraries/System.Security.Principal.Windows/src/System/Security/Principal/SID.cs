@@ -347,8 +347,7 @@ namespace System.Security.Principal
 
             _identifierAuthority = identifierAuthority;
 #if NETCOREAPP2_0
-            _subAuthorities = new int[subAuthorities.Length];
-            Array.Copy(subAuthorities, _subAuthorities, subAuthorities.Length);
+            _subAuthorities = = (int[])subAuthorities.Clone();
 #else
             _subAuthorities = subAuthorities.ToArray();
 #endif
@@ -364,14 +363,14 @@ namespace System.Security.Principal
             // } SID, *PISID;
             //
 
-            _binaryForm = new byte[1 + 1 + 6 + 4 * subAuthorities.Length];
+            _binaryForm = new byte[1 + 1 + 6 + 4 * _subAuthorities.Length];
 
             //
             // First two bytes contain revision and subauthority count
             //
 
             _binaryForm[0] = Revision;
-            _binaryForm[1] = (byte)subAuthorities.Length;
+            _binaryForm[1] = (byte)_subAuthorities.Length;
 
             //
             // Identifier authority takes up 6 bytes
@@ -386,7 +385,7 @@ namespace System.Security.Principal
             // Subauthorities go last, preserving big-endian representation
             //
 
-            for (int i = 0; i < subAuthorities.Length; i++)
+            for (int i = 0; i < _subAuthorities.Length; i++)
             {
                 for (byte shift = 0; shift < 4; shift += 1)
                 {
