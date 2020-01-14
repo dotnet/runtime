@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal ref partial struct AsnValueReader
@@ -408,7 +409,7 @@ namespace System.Security.Cryptography.Asn1
         private int ProcessConstructedBitString(
             ReadOnlySpan<byte> source,
             Span<byte> destination,
-            BitStringCopyAction copyAction,
+            BitStringCopyAction? copyAction,
             bool isIndefinite,
             out int lastUnusedBitCount,
             out int bytesRead)
@@ -419,7 +420,7 @@ namespace System.Security.Cryptography.Asn1
 
             ReadOnlySpan<byte> originalSpan = _data;
             AsnValueReader tmpReader = OpenUnchecked(source, RuleSet);
-            Stack<(int Offset, int Length, bool Indefinite, int BytesRead)> readerStack = null;
+            Stack<(int Offset, int Length, bool Indefinite, int BytesRead)>? readerStack = null;
             int totalLength = 0;
             Asn1Tag tag = Asn1Tag.ConstructedBitString;
             Span<byte> curDest = destination;

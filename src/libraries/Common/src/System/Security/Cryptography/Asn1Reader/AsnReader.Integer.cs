@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Numerics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal ref partial struct AsnValueReader
@@ -564,7 +565,7 @@ namespace System.Security.Cryptography.Asn1
             }
 
             // Slice first so that an out of bounds value triggers a CryptographicException.
-            ReadOnlySpan<byte> contents = Slice(_data, headerLength, length.Value);
+            ReadOnlySpan<byte> contents = Slice(_data, headerLength, length!.Value);
 
             // T-REC-X.690-201508 sec 8.3.2
             if (contents.Length > 1)

@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
+#nullable enable
 namespace System.Security.Cryptography.Pkcs
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -22,7 +23,7 @@ namespace System.Security.Cryptography.Pkcs
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
             {
-                if (usedTags.TryGetValue(tag, out string existing))
+                if (usedTags.TryGetValue(tag, out string? existing))
                 {
                     throw new InvalidOperationException($"Tag '{tag}' is in use by both '{existing}' and '{fieldName}'");
                 }

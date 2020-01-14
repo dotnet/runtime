@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal ref partial struct AsnValueReader
@@ -333,7 +334,7 @@ namespace System.Security.Cryptography.Asn1
 
             ReadOnlySpan<byte> originalSpan = _data;
             AsnValueReader tmpReader = OpenUnchecked(source, RuleSet);
-            Stack<(int Offset, int Length, bool IsIndefinite, int BytesRead)> readerStack = null;
+            Stack<(int Offset, int Length, bool IsIndefinite, int BytesRead)>? readerStack = null;
             int totalLength = 0;
             Asn1Tag tag = Asn1Tag.ConstructedBitString;
             Span<byte> curDest = destination;
@@ -479,7 +480,7 @@ namespace System.Security.Cryptography.Asn1
             Asn1Tag expectedTag,
             UniversalTagNumber universalTagNumber,
             out int bytesRead,
-            ref byte[] rented,
+            ref byte[]? rented,
             Span<byte> tmpSpace = default)
         {
             Debug.Assert(rented == null);

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal ref partial struct AsnValueReader
@@ -217,7 +218,7 @@ namespace System.Security.Cryptography.Asn1
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            ReadOnlySpan<byte> contents = Slice(_data, headerLength, length.Value);
+            ReadOnlySpan<byte> contents = Slice(_data, headerLength, length!.Value);
 
             // Each byte can contribute a 3 digit value and a '.' (e.g. "126."), but usually
             // they convey one digit and a separator.
@@ -299,7 +300,7 @@ namespace System.Security.Cryptography.Asn1
                 }
                 else
                 {
-                    builder.Append(largeValue.Value.ToString());
+                    builder.Append(largeValue!.Value.ToString());
                 }
 
                 contents = contents.Slice(bytesRead);
