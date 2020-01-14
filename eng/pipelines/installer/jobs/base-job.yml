@@ -4,56 +4,68 @@ parameters:
   archType: ''
   osSubgroup: ''
   platform: ''
+  crossrootfsDir: ''
   timeoutInMinutes: 120
   condition: true
   container: ''
-  prepareSteps: []
   buildSteps: []
   dependsOn: []
   variables: []
-  buildVariables: {}
   name: ''
   displayName: ''
   pool: ''
-  workspace:
-    clean: all
-  strategy:
-    matrix:
-      release:
-        _BuildConfig: Release
 
-  buildCommandSourcesDirectory: '$(Build.SourcesDirectory)/'
+  packageDistroList:
+  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
+    imageRid: ubuntu.14.04
+    rids: []
+  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:rhel-7-rpmpkg-c982313-20174116044113
+    imageRid: rhel.7
+    rids:
+    - centos.7
+    - fedora.27
+    - opensuse.42
+    - oraclelinux.7
+    - sles.12
 
   isOfficialBuild: false
   useOfficialAllConfigurations: false
+  buildFullPlatformManifest: false
 
   liveCoreClrBuildConfig: ''
   liveLibrariesBuildConfig: ''
-  upstreamPlatforms: []
+  platforms: []
 
 jobs:
-- job: ${{ format('installer_{0}', coalesce(parameters.name, parameters.platform)) }}
-  displayName: ${{ format('Installer Build and Test {0}', coalesce(parameters.name, parameters.platform)) }}
+- job: ${{ format('installer_{0}_{1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+  displayName: ${{ format('Installer Build and Test {0} {1}', coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
   condition: and(succeeded(), ${{ parameters.condition }})
   pool: ${{ parameters.pool }}
-  strategy: ${{ parameters.strategy }}
   timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
-  ${{ if ne(parameters.workspace, '') }}:
-    workspace: ${{ parameters.workspace }}
+  # Do not attempt to clean workspace on Linux: the agent might not be able to remove the files
+  # because they may be owned by "root" due to the way this job uses Docker. We do our own cleanup
+  # in this case as a prepare step.
+  ${{ if ne(parameters.osGroup, 'Linux') }}:
+    workspace:
+      clean: all
 
   variables:
-  - ${{ parameters.variables }}
-  - ${{ each variable in parameters.buildVariables }}:
-    - name: ${{ variable.key }}
-      value: ${{ variable.value }}
-
-  - name: SkipTests
-    value: ${{ or(parameters.isOfficialBuild, parameters.crossBuild) }}
+  - ${{ each variable in parameters.variables }}:
+    - ${{ variable }}
 
   - name: OfficialBuildArg
     value: ''
+  
+  - name: _BuildConfig
+    value: ${{ parameters.buildConfig }}
+
+  - name: SkipTests
+    value: ${{ or(
+      not(in(parameters.archType, 'x64', 'x86')),
+      eq(parameters.isOfficialBuild, true),
+      ne(parameters.crossrootfsDir, '')) }}
 
   # TODO: (Consolidation) Enable test signing during PR validation. https://github.com/dotnet/runtime/issues/1026
   #
@@ -68,6 +80,155 @@ jobs:
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
     - name: OfficialBuildArg
       value: /p:OfficialBuildId=$(Build.BuildNumber)
+
+  - name: buildCommandSourcesDirectory
+    ${{ if ne(parameters.osGroup, 'Linux') }}:
+      value: '$(Build.SourcesDirectory)/'
+    # This job runs within Docker containers, so Build.SourcesDirectory is not accurate.
+    ${{ if eq(parameters.osGroup, 'Linux') }}:
+      value: '/root/runtime/'
+
+  ###
+  ### Platform-specific variable setup
+  ###
+
+  - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+
+    - name: CommonMSBuildArgs
+      value: >-
+        /p:TargetArchitecture=${{ parameters.archType }}
+        /p:PortableBuild=true
+        /p:SkipTests=$(SkipTests)
+        $(OfficialBuildArg)
+    - name: MsbuildSigningArguments
+      value: >-
+        /p:CertificateId=400
+        /p:DotNetSignType=$(SignType)
+    - name: TargetArchitecture
+      value: ${{ parameters.archType }}
+
+    - name: BaseJobBuildCommand
+      value: >-
+        installer.cmd -restore -build -ci -test
+        -configuration $(_BuildConfig)
+        $(LiveOverridePathArgs)
+        $(CommonMSBuildArgs)
+        $(MsbuildSigningArguments)
+
+  - ${{ if eq(parameters.osGroup, 'OSX') }}:
+
+    - name: CommonMSBuildArgs
+      value: >-
+        /p:PortableBuild=true
+        /p:SkipTests=$(SkipTests)
+
+    - name: BaseJobBuildCommand
+      value: >-
+        $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        -configuration $(_BuildConfig)
+        /p:StripSymbols=true
+        $(LiveOverridePathArgs)
+        $(CommonMSBuildArgs)
+        $(OfficialBuildArg)
+
+  - ${{ if eq(parameters.osGroup, 'Linux') }}:
+
+    # Preserve the NuGet authentication env vars into the Docker container.
+    # The 'NuGetAuthenticate' build step may have set these.
+    - name: PreserveNuGetAuthDockerArgs
+      value: >-
+        -e VSS_NUGET_URI_PREFIXES
+        -e VSS_NUGET_ACCESSTOKEN
+
+    - ${{ if ne(parameters.container, '') }}:
+      - name: RunArguments
+        value: >-
+          docker run --privileged --rm
+          -v "$(Build.SourcesDirectory):/root/runtime"
+          -w="/root/runtime"
+          $(PreserveNuGetAuthDockerArgs)
+          -e ROOTFS_DIR=${{ parameters.crossrootfsDir }}
+          ${{ parameters.container }}
+
+    - ${{ if eq(parameters.name, 'FreeBSD_x64') }}:
+      - name: RunArguments
+        value: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
+
+    - name: BuildScript
+      value: ./installer.sh
+    - name: MSBuildScript
+      value: /root/runtime/eng/common/msbuild.sh
+
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
+      - name: BuildScript
+        value: ./eng/install-nuget-credprovider-then-build.sh --subsetCategory installer
+      - name: MSBuildScript
+        value: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
+
+    - name: CommonMSBuildArgs
+      value: >-
+        /p:Configuration=$(_BuildConfig)
+        /p:TargetArchitecture=${{ parameters.archType }}
+        $(OfficialBuildArg)
+
+    - name: _PortableBuild
+      value: ${{ eq(parameters.osSubgroup, '') }}
+
+    - name: _DisableCrossgen
+      value: false
+
+    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
+      # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
+      # lowercase for RID format. (Detection normally converts, but we're preventing it.)
+      - name: OutputRidArg
+        value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+
+    - name: BuildArguments
+      value: >-
+        --restore --build --ci --test
+        /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+        /p:DisableCrossgen=$(_DisableCrossgen)
+        /p:PortableBuild=$(_PortableBuild)
+        /p:SkipTests=$(SkipTests)
+        $(LiveOverridePathArgs)
+        $(CommonMSBuildArgs)
+        $(OutputRidArg)
+        /p:StripSymbols=true
+
+    - name: PublishArguments
+      value: >-
+        /p:PortableBuild=$(_PortableBuild)
+        $(CommonMSBuildArgs)
+        $(OutputRidArg)
+        /bl:msbuild.publish.binlog
+
+    # Tell the build to package up the bits from the portable build.
+    - name: PackagePortableBitsArgs
+      value: >-
+        /p:PortableBuild=false
+        /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/
+        /p:InstallerSourceOSPlatformConfig=linux-x64.$(_BuildConfig)
+
+    - name: DockerRunMSBuild
+      value: >-
+        docker run
+        -v $(Build.SourcesDirectory):/root/runtime
+        -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/
+        -w=/root/runtime
+        $(PreserveNuGetAuthDockerArgs)
+
+    - name: installersSubsetArg
+      value: --subset Installers
+
+    - name: BaseJobBuildCommand
+      value: |
+        set -x
+        df -h
+        $(RunArguments) $(BuildScript) $(BuildArguments)
+
+  ###
+  ### Common Live build override variable setup
+  ###
 
   - name: LiveOverridePathArgs
     value: >-
@@ -134,9 +295,8 @@ jobs:
     - name: LibrariesArtifactNameAllConfigurations
       value: libraries_bin_official_allconfigurations
 
-  # Download all upstream platforms and incorporate in the platform manifest. Use 'each' as a
-  # makeshift condition because there is no documented way to evaluate this and duplication is ok.
-  - ${{ each platform in parameters.upstreamPlatforms }}:
+  # Download all upstream platforms and incorporate in the platform manifest.
+  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
     - name: AllArtifactsDownloadPath
       value: 'artifacts/transport/AllArtifacts'
     - name: AllArtifactsArgs
@@ -161,13 +321,27 @@ jobs:
         parameters.liveLibrariesBuildConfig) }}
   - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
     - libraries_build_allconfigurations_Windows_NT_x64_Release
-  - ${{ each platform in parameters.upstreamPlatforms }}:
-    - coreclr_product_build_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}
-    - libraries_build_netcoreapp_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
+  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
+    - ${{ each platform in parameters.platforms }}:
+      - coreclr_product_build_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}
+      - libraries_build_netcoreapp_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
 
   steps:
 
-  - ${{ parameters.prepareSteps }}
+  - ${{ if ne(parameters.container, '') }}:
+    # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
+    # Clean up the build dirs ourselves in another Docker container to avoid failures.
+    # Using hosted agents is tracked by https://github.com/dotnet/core-setup/issues/4997
+    - script: |
+        set -x
+        docker run --rm \
+          -v "$(Agent.BuildDirectory):/root/build" \
+          -w /root/build \
+          ${{ parameters.container }} \
+          bash -c '
+            rm -v -rf a b s'
+        mkdir "$(Agent.BuildDirectory)/s"
+      displayName: Clean up old artifacts owned by root
 
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
     - task: NuGetAuthenticate@0
@@ -200,21 +374,22 @@ jobs:
         CoreCLRProduct_*/**
         libraries_bin_*/**
 
-  - ${{ each platform in parameters.upstreamPlatforms }}:
-    - task: ExtractFiles@1
-      displayName: 'Unzip CoreCLR artifacts: ${{ platform }}'
-      inputs:
-        archiveFilePatterns: |
-          $(Build.SourcesDirectory)/__download__/AllPlatforms/CoreCLRProduct_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}.*
-        destinationFolder: $(AllArtifactsDownloadPath)/CoreCLRProduct_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}/
-        cleanUnpackFolder: false
-    - task: ExtractFiles@1
-      displayName: 'Unzip Libraries artifacts: ${{ platform }}'
-      inputs:
-        archiveFilePatterns: |
-          $(Build.SourcesDirectory)/__download__/AllPlatforms/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}.*
-        destinationFolder: $(AllArtifactsDownloadPath)/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}/
-        cleanUnpackFolder: false
+  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
+    - ${{ each platform in parameters.platforms }}:
+      - task: ExtractFiles@1
+        displayName: 'Unzip CoreCLR artifacts: ${{ platform }}'
+        inputs:
+          archiveFilePatterns: |
+            $(Build.SourcesDirectory)/__download__/AllPlatforms/CoreCLRProduct_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}.*
+          destinationFolder: $(AllArtifactsDownloadPath)/CoreCLRProduct_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}/
+          cleanUnpackFolder: false
+      - task: ExtractFiles@1
+        displayName: 'Unzip Libraries artifacts: ${{ platform }}'
+        inputs:
+          archiveFilePatterns: |
+            $(Build.SourcesDirectory)/__download__/AllPlatforms/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}.*
+          destinationFolder: $(AllArtifactsDownloadPath)/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}/
+          cleanUnpackFolder: false
 
   - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -243,13 +418,73 @@ jobs:
         displayName: 'Libraries artifacts (AllConfigurations)'
         cleanUnpackFolder: false
 
-  - ${{ parameters.buildSteps }}
+  - script: $(BaseJobBuildCommand)
+    displayName: Build
+
+  # Only in glibc leg, we produce RPMs and Debs
+  - ${{ if eq(parameters.name, 'Linux_x64_glibc')}}:
+    - task: CopyFiles@2
+      displayName: 'Copy built Portable linux-x64 binaries to staging directory'
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/linux-x64.$(_BuildConfig)/sharedFrameworkPublish'
+        TargetFolder: '$(Build.StagingDirectory)/sharedFrameworkPublish'
+
+    - ${{ each packageBuild in parameters.packageDistroList }}:
+      # This leg's RID matches the build image. Build its distro-dependent packages, as well as
+      # the distro-independent installers. (There's no particular reason to build the distro-
+      # independent installers on this leg, but we need to do it somewhere.)
+      - template: steps/build-linux-package.yml
+        parameters:
+          buildTraversalBuildDependencies: true
+          distroRid: ${{ packageBuild.imageRid }}
+          image: ${{ packageBuild.image }}
+          packageStepDescription: Runtime Deps, Runtime, Framework Packs installers
+          subsetArg: $(installersSubsetArg)
+
+      - ${{ each rid in packageBuild.rids }}:
+        # Build distro-dependent packages.
+        - template: steps/build-linux-package.yml
+          parameters:
+            distroRid: ${{ rid }}
+            image: ${{ packageBuild.image }}
+            outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.archType }}
+            packageStepDescription: Runtime Deps installers
+            packagingArgs: /p:BuildDistroIndependentInstallers=false
+            subsetArg: $(installersSubsetArg)
+
+  - ${{ if ne(parameters.container, '') }}:
+    # Files may be owned by root because builds don't set user ID. Later build steps run 'find' in
+    # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step
+    # prevents the failure by using chown to clean up our source tree.
+    - script: |
+        set -x
+        docker run --rm \
+          -v "$(Agent.BuildDirectory):/root/build" \
+          -w /root/build \
+          ${{ parameters.container }} \
+          bash -c "chown -R $(id -u):$(id -g) *"
+      displayName: Update file ownership from root to build agent account
+      continueOnError: true
+      condition: succeededOrFailed()
+
+  - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.isOfficialBuild, true)) }}:
+    - task: NuGetCommand@2
+      displayName: Push Visual Studio NuPkgs
+      inputs:
+        command: push
+        packagesToPush: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/*/VS.Redist.Common.*.nupkg'
+        nuGetFeedType: external
+        publishFeedCredentials: 'DevDiv - VS package feed'
+      condition: and(
+        succeeded(),
+        eq(variables['_BuildConfig'], 'Release'),
+        ne(variables['DisableVSPublish'], 'true'))
 
   - template: steps/upload-job-artifacts.yml
     parameters:
       name: ${{ coalesce(parameters.name, parameters.platform) }}
-      skipTests: ${{ parameters.skipTests }}
-      isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      skipTests: $(SkipTests)
+      isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
 
   - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
     - script: set -x && df -h
