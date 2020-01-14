@@ -783,27 +783,9 @@ struct MonoCallInst {
 	MonoInst *out_args;
 	MonoInst *vret_var;
 	gconstpointer fptr;
+	MonoJitICallId jit_icall_id;
 	guint stack_usage;
 	guint stack_align_amount;
-	guint is_virtual : 1;
-	// FIXME tailcall field is written after read; prefer MONO_IS_TAILCALL_OPCODE.
-	guint tailcall : 1;
-	/* If this is TRUE, 'fptr' points to a MonoJumpInfo instead of an address. */
-	guint fptr_is_patch : 1;
-	MonoJitICallId jit_icall_id;
-	/*
-	 * If this is true, then the call returns a vtype in a register using the same 
-	 * calling convention as OP_CALL.
-	 */
-	guint vret_in_reg : 1;
-	/* Whenever vret_in_reg returns fp values */
-	guint vret_in_reg_fp : 1;
-	/* Whenever there is an IMT argument and it is dynamic */
-	guint dynamic_imt_arg : 1;
-	/* Whenever there is an RGCTX argument */
-	guint32 rgctx_reg : 1;
-	/* Whenever the call will need an unbox trampoline */
-	guint need_unbox_trampoline : 1;
 	regmask_t used_iregs;
 	regmask_t used_fregs;
 	GSList *out_ireg_args;
@@ -818,6 +800,28 @@ struct MonoCallInst {
 	/* See the comment in mini-arm.c!mono_arch_emit_call for RegTypeFP. */
 	GSList *float_args;
 #endif
+	// Bitfields are at the end due to an unexplained problem with C++ and LLVM.
+	// This is also their ideal place to minimize padding for alignment,
+	// unless there is a placement to increase locality.
+
+	guint is_virtual : 1;
+	// FIXME tailcall field is written after read; prefer MONO_IS_TAILCALL_OPCODE.
+	guint tailcall : 1;
+	/* If this is TRUE, 'fptr' points to a MonoJumpInfo instead of an address. */
+	guint fptr_is_patch : 1;
+	/*
+	 * If this is true, then the call returns a vtype in a register using the same
+	 * calling convention as OP_CALL.
+	 */
+	guint vret_in_reg : 1;
+	/* Whenever vret_in_reg returns fp values */
+	guint vret_in_reg_fp : 1;
+	/* Whenever there is an IMT argument and it is dynamic */
+	guint dynamic_imt_arg : 1;
+	/* Whenever there is an RGCTX argument */
+	guint32 rgctx_reg : 1;
+	/* Whenever the call will need an unbox trampoline */
+	guint need_unbox_trampoline : 1;
 };
 
 struct MonoCallArgParm {

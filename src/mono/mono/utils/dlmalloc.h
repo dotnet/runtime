@@ -28,26 +28,6 @@
 #include <stddef.h>   /* for size_t */
 #include <mono/utils/mono-compiler.h>
 
-// Returning an undefined struct by value from extern "C"
-// is sometimes an error. Mono does not use the code (dlmallinfo)..
-//
-// Other fixes:
-//   - define the struct
-//   - #if __cplusplus
-//   - #if HOST_WASM
-//   - #ifndef HAVE_USR_INCLUDE_MALLOC_H
-//   - Make it not extern "C".
-//   - Return the struct through an out parameter.
-//   - remove extern "C" entirely in dlmalloc.
-//
-// Mono does not use the function (dlmallinfo).
-//
-#define NO_MALLINFO 1 /* mono */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if !ONLY_MSPACES
 
 #ifndef USE_DL_PREFIX
@@ -553,9 +533,5 @@ int mspace_trim(mspace msp, size_t pad);
 int mspace_mallopt(int, int);
 
 #endif  /* MSPACES */
-
-#ifdef __cplusplus
-};  /* end of extern "C" */
-#endif
 
 #endif /* MALLOC_280_H */

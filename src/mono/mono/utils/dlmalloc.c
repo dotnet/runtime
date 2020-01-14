@@ -652,10 +652,6 @@ struct mallinfo {
 #endif /* HAVE_USR_INCLUDE_MALLOC_H */
 #endif /* NO_MALLINFO */
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-
 #if !ONLY_MSPACES
 
 /* ------------------- Declarations of public routines ------------------- */
@@ -1145,10 +1141,6 @@ int mspace_trim(mspace msp, size_t pad);
 int mspace_mallopt(int, int);
 
 #endif /* MSPACES */
-
-#ifdef __cplusplus
-};  /* end of extern "C" */
-#endif /* __cplusplus */
 
 /*
   ========================================================================
