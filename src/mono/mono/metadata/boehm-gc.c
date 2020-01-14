@@ -355,6 +355,18 @@ mono_gc_thread_attach (MonoThreadInfo* info)
 }
 
 void
+mono_gc_thread_detach (MonoThreadInfo *p)
+{
+	/* Detach without threads lock as Boehm
+	 * will take it's own lock internally. Note in
+	 * on_gc_notification we take threads lock after
+	 * Boehm already has it's own lock. For consistency
+	 * always take lock ordering of Boehm then threads.
+	 */
+	GC_unregister_my_thread ();
+}
+
+void
 mono_gc_thread_detach_with_lock (MonoThreadInfo *p)
 {
 	MonoNativeThreadId tid;

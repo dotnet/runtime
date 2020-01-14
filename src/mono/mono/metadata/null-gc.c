@@ -315,6 +315,11 @@ mono_gc_thread_attach (MonoThreadInfo* info)
 }
 
 void
+mono_gc_thread_detach (MonoThreadInfo *p)
+{
+}
+
+void
 mono_gc_thread_detach_with_lock (MonoThreadInfo *p)
 {
 	mono_handle_stack_free (p->handle_stack);

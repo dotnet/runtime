@@ -404,6 +404,9 @@ G_EXTERN_C // due to THREAD_INFO_TYPE varying
 gpointer mono_gc_thread_attach (THREAD_INFO_TYPE *info);
 
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
+void mono_gc_thread_detach (THREAD_INFO_TYPE *info);
+
+G_EXTERN_C // due to THREAD_INFO_TYPE varying
 void mono_gc_thread_detach_with_lock (THREAD_INFO_TYPE *info);
 
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
