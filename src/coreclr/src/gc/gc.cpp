@@ -680,7 +680,7 @@ void GCHeap::ShutDownLogging()
         fwrite(gc_log_buffer, gc_log_buffer_offset, 1, gc_log);
         fflush(gc_log);
         fclose(gc_log);
-        gc_config_log_buffer_offset = 0;
+        gc_log_buffer_offset = 0;
     }
 #endif
 }
