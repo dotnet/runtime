@@ -11,6 +11,42 @@ namespace System.Text.RegularExpressions.Tests
 {
     public class RegexCultureTests
     {
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+        public void CharactersComparedOneByOne(RegexOptions options)
+        {
+            // Regex compares characters one by one.  If that changes, it could impact the behavior of
+            // a case like this, where these characters are not the same, but the strings compare
+            // as equal with the invariant culture (and some other cultures as well).
+            const string S1 = "\u00D6\u200D";
+            const string S2 = "\u004F\u0308";
+
+            Assert.False(S1[0] == S2[0]);
+            Assert.False(S1[1] == S2[1]);
+            Assert.StartsWith(S1, S2, StringComparison.InvariantCulture);
+            Assert.True(S1.Equals(S1, StringComparison.InvariantCulture));
+
+            foreach (int multiple in new[] { 1, 10, 100 })
+            {
+                string pattern = string.Concat(Enumerable.Repeat(S1, multiple));
+                string input = string.Concat(Enumerable.Repeat(S2, multiple));
+                Regex r;
+
+                // Validate when the string is at the beginning of the pattern, as it impacts Boyer-Moore prefix matching.
+                r = new Regex(pattern, options);
+                Assert.False(r.IsMatch(input));
+                Assert.True(r.IsMatch(pattern));
+
+                // Validate when it's not in the pattern, as it impacts "multi" matching.
+                r = new Regex("[abc]" + pattern, options);
+                Assert.False(r.IsMatch("a" + input));
+                Assert.True(r.IsMatch("a" + pattern));
+            }
+        }
+
         /// <summary>
         /// See https://en.wikipedia.org/wiki/Dotted_and_dotless_I
         /// </summary>
