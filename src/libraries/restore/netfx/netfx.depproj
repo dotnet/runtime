@@ -11,6 +11,9 @@
     <FilterFramework>$(TargetFramework)</FilterFramework> <!-- By Default FilterFramework includes the OSGroup for binplacing. -->
     <TargetFrameworks>net45;net451;net46;net461;net462;net47;net471;net472;$(netcoreappCurrent);</TargetFrameworks>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' != ''">
+    <TargetFrameworks Condition="$(TargetFramework.Contains('net4'))">net45;net451;net46;net461;net462;net47;net471;net472;</TargetFrameworks>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetFx)' != 'true'">
     <!-- For things not .NETFramework we need the net472 targeting pack to generate facades -->
     <AssetTargetFallback>$(NetFrameworkCurrent)</AssetTargetFallback>

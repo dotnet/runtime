@@ -11,9 +11,6 @@
     <BuildDependsOn Condition="'$(BuildManaged)' == 'true' and '$(BuildTests)' != 'only'">$(BuildDependsOn);BuildManaged</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildPackages)' == 'true' and '$(BuildTests)' != 'only'">$(BuildDependsOn);Pack</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildTests)' != ''">$(BuildDependsOn);BuildTests</BuildDependsOn>
-
-    <!-- Explicitly set Configuration based on BuildConfiguration for the root projects -->
-    <ProjectProperties>Configuration=$(BuildConfiguration)</ProjectProperties>
   </PropertyGroup>
 
   <Import Project="Directory.Build.targets" />

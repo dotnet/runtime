@@ -405,7 +405,7 @@
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(_TargetFrameworkWithoutProfile)' == '$(NetCoreAppCurrent)' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.ShellExecuteExW.cs">
       <Link>Common\Interop\Windows\Shell32\Interop.ShellExecuteExW.cs</Link>
     </Compile>
@@ -432,7 +432,7 @@
       <Link>Common\Unix\System.Native\Interop.Stat.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" ('$(TargetsUnknownUnix)' == 'true')">
+  <ItemGroup Condition="'$(TargetsUnknownUnix)' == 'true'">
     <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.UnknownUnix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.UnknownUnix.cs" />

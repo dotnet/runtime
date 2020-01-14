@@ -86,10 +86,6 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>66175ebd3756697a3ca515e16cd5ffddc30582cd</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Configuration" Version="5.0.0-beta.19617.1">
-      <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>66175ebd3756697a3ca515e16cd5ffddc30582cd</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="5.0.0-beta.19617.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>66175ebd3756697a3ca515e16cd5ffddc30582cd</Sha>

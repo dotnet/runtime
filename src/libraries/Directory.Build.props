@@ -254,7 +254,7 @@
     <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildConfiguration)'))</RuntimePath>
     <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
     <BuildConfigurationRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(BuildTargetFramework)'))</BuildConfigurationRefPath>
-    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
+    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(_TargetFrameworkWithoutProfile)'))</RefPath>
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
     <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetFrameworkCurrent)'))</NetFxRefPath>
@@ -289,10 +289,9 @@
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
 
   <PropertyGroup Condition="'$(IsReferenceAssembly)' != 'true'">
-    <OutputPath Condition="'$(BuildAllConfigurations)' == 'false'">$(BaseOutputPath)$(TargetFramework)-$(OSGroup)-$(ConfigurationGroup)\</OutputPath>
+    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(ConfigurationGroup)\</OutputPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(ConfigurationGroup)</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(TargetFramework)' == ''">$(BaseIntermediateOutputPath)$(BuildTargetFramework)-$(ConfigurationGroup)</IntermediateOutputPath>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
@@ -371,4 +370,111 @@
     <CLSCompliant Condition="'$(CLSCompliant)' == '' and '$(IsTestProject)' == 'true'">false</CLSCompliant>
     <CLSCompliant Condition="'$(CLSCompliant)' == ''">true</CLSCompliant>
   </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(TargetFramework.Contains('Windows_NT'))">
+      <PropertyGroup>
+        <OSGroup>Windows_NT</OSGroup>
+        <TargetsWindows>true</TargetsWindows>
+        <PackageTargetRuntime>win</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('Unix'))">
+      <PropertyGroup>
+        <OSGroup>Unix</OSGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <PackageTargetRuntime>unix</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('Linux'))">
+      <PropertyGroup>
+        <OSGroup>Linux</OSGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsLinux>true</TargetsLinux>
+        <PackageTargetRuntime>linux</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('OSX'))">
+      <PropertyGroup>
+        <OSGroup>OSX</OSGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsOSX>true</TargetsOSX>
+        <PackageTargetRuntime>osx</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('FreeBSD'))">
+      <PropertyGroup>
+        <OSGroup>FreeBSD</OSGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsFreeBSD>true</TargetsFreeBSD>
+        <PackageTargetRuntime>freebsd</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('NetBSD'))">
+      <PropertyGroup>
+        <OSGroup>NetBSD</OSGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsNetBSD>true</TargetsNetBSD>
+        <PackageTargetRuntime>netbsd</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('WebAssembly'))">
+      <PropertyGroup>
+        <OSGroup>WebAssembly</OSGroup>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsWebAssembly>true</TargetsWebAssembly>
+      </PropertyGroup>
+    </When>
+  </Choose>
+  <PropertyGroup>
+    <RuntimeOS Condition="'$(RuntimeOS)' == ''">win10</RuntimeOS>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(TargetFramework.Contains('net45'))">
+      <PropertyGroup>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('net451'))">
+      <PropertyGroup>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5.1</TargetingPackNugetPackageId>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('net46'))">
+      <PropertyGroup>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6</TargetingPackNugetPackageId>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('net461'))">
+      <PropertyGroup>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('net462'))">
+      <PropertyGroup>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('net463'))">
+      <PropertyGroup>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.3</TargetingPackNugetPackageId>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('net47'))">
+      <PropertyGroup>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7</TargetingPackNugetPackageId>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('net471'))">
+      <PropertyGroup>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.1</TargetingPackNugetPackageId>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(TargetFramework.Contains('net472'))">
+      <PropertyGroup>
+        <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.2</TargetingPackNugetPackageId>
+      </PropertyGroup>
+    </When>
+  </Choose>
 </Project>

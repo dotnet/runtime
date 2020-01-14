@@ -11,15 +11,13 @@
     <IncludePath Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == ''">include\netcoreapp</IncludePath>
     <IncludePath Condition="'$(TargetsNetFx)' == 'true'">include\netfx</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
-    <FilterFramework Condition="'$(TargetFramework)' == ''">$(BuildTargetFramework)</FilterFramework>
-    <P2PTargetFrameworkOSGroup Condition="'$(TargetFramework)' == ''">$(BuildTargetFramework)</P2PTargetFrameworkOSGroup>
-    <TargetFrameworks>netcoreapp5.0;netcoreapp2.0;netstandard2.0;netstandard1.0;net45;netfx;</TargetFrameworks>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(ConfigurationGroup)\</OutputPath>
+    <TargetFrameworks>netcoreapp5.0;netstandard2.0;netstandard1.0;net45;net472;</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
-    <Reference Include="System.Runtime" />
-    <ILResourceReference Condition="'$(TargetFramework)' != ''" Include="$(RefPath)$(TargetFileName)" />
-    <ILResourceReference Condition="'$(TargetFramework)' == ''" Include="$(RefPath)$(BuildTargetFramework)\$(TargetFileName)" />
+    <ILResourceReference Include="C:\git\runtime\artifacts\bin\ref\netcoreapp5.0\$(TargetFileName)" />
   </ItemGroup>
 </Project>

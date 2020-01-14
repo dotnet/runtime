@@ -63,6 +63,8 @@
     <ProjectUrl>https://github.com/dotnet/runtime</ProjectUrl>
     <LicenseUrl>https://github.com/dotnet/runtime/blob/master/LICENSE.TXT</LicenseUrl>
     <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
+    <BuildTargetFramework>netcoreapp5.0</BuildTargetFramework>
+    <RuntimeGraph>C:\git\runtime\src\libraries\pkg\Microsoft.NETCore.Platforms\runtime.json</RuntimeGraph>
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
 
     <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->

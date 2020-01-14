@@ -6,7 +6,7 @@
     <NoWarn>$(NoWarn);8073;CA1810</NoWarn>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.DirectoryServicesAccountManagement_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;;$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent);</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;;$(NetCoreAppCurrent)-Windows_NT;</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="System\DirectoryServices\AccountManagement\ExternDll.cs" />
@@ -118,7 +118,7 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
+  <ItemGroup Condition="'$(_TargetFrameworkWithoutProfile)' == 'netcoreapp2.0'">
     <Reference Include="System.ComponentModel.TypeConverter" />
   </ItemGroup>
 </Project>
