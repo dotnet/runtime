@@ -1,11 +1,7 @@
 <Project>
   <PropertyGroup>
     <PackageDescriptionFile>$(PkgDir)descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
-    <Copyright>$(CopyrightNetFoundation)</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>

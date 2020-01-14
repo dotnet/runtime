@@ -2,9 +2,6 @@
 
   <PropertyGroup>
     <PackageDescriptionFile>$(MSBuildThisFileDirectory)descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
 
     <!-- Defined in Packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(ArchGroup)</PackagePlatform>

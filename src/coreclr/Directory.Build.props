@@ -158,11 +158,6 @@
     <Features>strict;nullablePublicOnly</Features>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
-    <Copyright>$(CopyrightNetFoundation)</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-  </PropertyGroup>
-
   <Import Project="$(MSBuildThisFileDirectory)clr.featuredefines.props" />
 
 </Project>

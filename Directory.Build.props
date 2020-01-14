@@ -62,9 +62,13 @@
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
     <RepositoryUrl>git://github.com/dotnet/runtime</RepositoryUrl>
     <ProjectUrl>https://github.com/dotnet/runtime</ProjectUrl>
-    <LicenseUrl>https://github.com/dotnet/runtime/blob/master/LICENSE.TXT</LicenseUrl>
     <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
+    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
+    <Copyright>$(CopyrightNetFoundation)</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
     <!--
       Indicates this is not an officially supported release. Release branches should set this to false.
