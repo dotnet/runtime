@@ -661,6 +661,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"a*[bcd]+?", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"a*(?>[bcd]+)", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"a*[bcd]{1,3}", "aaab", RegexOptions.None, new string[] { "aaab" } };
+            yield return new object[] { null, @"a*([bcd]ab|[bef]cd){1,3}", "aaababecdcac", RegexOptions.ExplicitCapture, new string[] { "aaababecd" } };
+            yield return new object[] { null, @"a*([bcd]|[aef]){1,3}", "befb", RegexOptions.ExplicitCapture, new string[] { "bef" } }; // can't upgrade
             yield return new object[] { null, @"a*$", "aaa", RegexOptions.None, new string[] { "aaa" } };
             yield return new object[] { null, @"a*$", "aaa", RegexOptions.Multiline, new string[] { "aaa" } };
             yield return new object[] { null, @"a*\b", "aaa bbb", RegexOptions.None, new string[] { "aaa" } };
