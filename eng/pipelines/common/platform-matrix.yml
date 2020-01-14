@@ -223,7 +223,6 @@ jobs:
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows arm
-
 - ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:

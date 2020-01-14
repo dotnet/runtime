@@ -1724,6 +1724,12 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     assert(pAlloc);
     compArenaAllocator = pAlloc;
 
+#if defined(DEBUG) || defined(LATE_DISASM)
+    info.compMethodName = nullptr;
+    info.compClassName  = nullptr;
+    info.compFullName   = nullptr;
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
     // Inlinee Compile object will only be allocated when needed for the 1st time.
     InlineeCompiler = nullptr;
 
@@ -3347,6 +3353,12 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 {
     unsigned hash;
     DWORD    stressLevel;
+
+    // This can be called early, before info is fully set up.
+    if (info.compMethodName == nullptr)
+    {
+        return false;
+    }
 
     if (!bRangeAllowStress)
     {

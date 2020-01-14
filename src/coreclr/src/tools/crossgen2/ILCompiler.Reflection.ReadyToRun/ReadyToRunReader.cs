@@ -69,22 +69,29 @@ namespace ILCompiler.Reflection.ReadyToRun
     public struct InstanceMethod
     {
         public byte Bucket;
-        public R2RMethod Method;
+        public ReadyToRunMethod Method;
 
-        public InstanceMethod(byte bucket, R2RMethod method)
+        public InstanceMethod(byte bucket, ReadyToRunMethod method)
         {
             Bucket = bucket;
             Method = method;
         }
     }
 
-    public sealed class R2RReader
+    public sealed class ReadyToRunReader
     {
-        private IAssemblyResolver _assemblyResolver;
+        private readonly IAssemblyResolver _assemblyResolver;
         private Dictionary<int, MetadataReader> _assemblyCache;
         private Dictionary<int, DebugInfo> _runtimeFunctionToDebugInfo;
         private MetadataReader _manifestReader;
         private List<AssemblyReferenceHandle> _manifestReferences;
+
+        // Header
+        private OperatingSystem _operatingSystem;
+        private Machine _machine;
+        private Architecture _architecture;
+        private ulong _imageBase;
+        private ReadyToRunHeader _readyToRunHeader;
 
         /// <summary>
         /// Underlying PE image reader is used to access raw PE structures like header
@@ -131,38 +138,68 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The type of target machine
         /// </summary>
-        public Machine Machine { get; set; }
+        public Machine Machine
+        {
+            get
+            {
+                EnsureHeader();
+                return _machine;
+            }
+        }
 
         /// <summary>
         /// Targeting operating system for the R2R executable
         /// </summary>
-        public OperatingSystem OS { get; set; }
+        public OperatingSystem OperatingSystem
+        {
+            get
+            {
+                EnsureHeader();
+                return _operatingSystem;
+            }
+        }
 
         /// <summary>
         /// Targeting processor architecture of the R2R executable
         /// </summary>
-        public Architecture Architecture { get; set; }
-
-        /// <summary>
-        /// Pointer size in bytes for the target architecture
-        /// </summary>
-        public int PointerSize { get; set; }
+        public Architecture Architecture
+        {
+            get
+            {
+                EnsureHeader();
+                return _architecture;
+            }
+        }
 
         /// <summary>
         /// The preferred address of the first byte of image when loaded into memory;
         /// must be a multiple of 64K.
         /// </summary>
-        public ulong ImageBase { get; set; }
+        public ulong ImageBase
+        {
+            get
+            {
+                EnsureHeader();
+                return _imageBase;
+            }
+        }
 
         /// <summary>
         /// The ReadyToRun header
         /// </summary>
-        public R2RHeader R2RHeader { get; private set; }
+        public ReadyToRunHeader ReadyToRunHeader
+        {
+            get
+            {
+                EnsureHeader();
+                return _readyToRunHeader;
+            }
+        }
 
         /// <summary>
         /// The runtime functions and method signatures of each method
         /// </summary>
-        public IList<R2RMethod> R2RMethods { get; private set; }
+        public IList<ReadyToRunMethod> R2RMethods { get; private set; }
 
         /// <summary>
         /// Parsed instance entrypoint table entries.
@@ -187,23 +224,33 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// List of import sections present in the R2R executable.
         /// </summary>
-        public IList<R2RImportSection> ImportSections { get; private set; }
+        public IList<ReadyToRunImportSection> ImportSections { get; private set; }
 
         /// <summary>
         /// Map from import cell addresses to their symbolic names.
         /// </summary>
         public Dictionary<int, string> ImportCellNames { get; private set; }
 
+        internal Dictionary<int, DebugInfo> RuntimeFunctionToDebugInfo
+        {
+            get
+            {
+                EnsureRuntimeFunctionToDebugInfo();
+                
+                return _runtimeFunctionToDebugInfo;
+            }
+        }
+
         /// <summary>
         /// Initializes the fields of the R2RHeader and R2RMethods
         /// </summary>
         /// <param name="filename">PE image</param>
         /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
-        public R2RReader(IAssemblyResolver assemblyResolver, MetadataReader metadata, PEReader peReader, string filename)
+        public ReadyToRunReader(IAssemblyResolver assemblyResolver, MetadataReader metadata, PEReader peReader, string filename)
         {
             _assemblyResolver = assemblyResolver;
             MetadataReader = metadata;
-            PEReader = peReader;            
+            PEReader = peReader;
             Filename = filename;
             Initialize();
         }
@@ -213,7 +260,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         /// <param name="filename">PE image</param>
         /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
-        public unsafe R2RReader(IAssemblyResolver assemblyResolver, string filename)
+        public unsafe ReadyToRunReader(IAssemblyResolver assemblyResolver, string filename)
         {
             _assemblyResolver = assemblyResolver;
             Filename = filename;
@@ -246,13 +293,21 @@ namespace ILCompiler.Reflection.ReadyToRun
                 Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
             }
 
-            ParseHeader();
-
-            ParseDebugInfo();
-
-            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA))
+            if ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
             {
-                R2RSection manifestMetadata = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA];
+                throw new BadImageFormatException("The file is not a ReadyToRun image");
+            }
+
+            // This is a work in progress toward lazy initialization.
+            // Ideally, here should be the end of the Initialize() method
+
+            EnsureHeader();
+
+            EnsureRuntimeFunctionToDebugInfo();
+
+            if (ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA))
+            {
+                ReadyToRunSection manifestMetadata = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA];
                 fixed (byte* image = Image)
                 {
                     _manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
@@ -265,23 +320,23 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
             }
 
-            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO))
+            if (ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO))
             {
-                R2RSection exceptionInfoSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO];
+                ReadyToRunSection exceptionInfoSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO];
                 EHLookupTable = new EHLookupTable(Image, GetOffset(exceptionInfoSection.RelativeVirtualAddress), exceptionInfoSection.Size);
             }
 
-            ImportSections = new List<R2RImportSection>();
+            ImportSections = new List<ReadyToRunImportSection>();
             ImportCellNames = new Dictionary<int, string>();
             ParseImportSections();
 
-            R2RMethods = new List<R2RMethod>();
+            R2RMethods = new List<ReadyToRunMethod>();
             InstanceMethods = new List<InstanceMethod>();
 
-            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
+            if (ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
             {
                 int runtimeFunctionSize = CalculateRuntimeFunctionSize();
-                R2RSection runtimeFunctionSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS];
+                ReadyToRunSection runtimeFunctionSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS];
 
                 uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
                 int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
@@ -299,51 +354,46 @@ namespace ILCompiler.Reflection.ReadyToRun
             CompilerIdentifier = ParseCompilerIdentifier();
         }
 
-        private unsafe void ParseHeader()
+        private unsafe void EnsureHeader()
         {
-            if ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
+            if (_readyToRunHeader != null)
             {
-                throw new BadImageFormatException("The file is not a ReadyToRun image");
+                return;
             }
-
             uint machine = (uint)PEReader.PEHeaders.CoffHeader.Machine;
-            OS = OperatingSystem.Unknown;
+            _operatingSystem = OperatingSystem.Unknown;
             foreach (OperatingSystem os in Enum.GetValues(typeof(OperatingSystem)))
             {
-                Machine = (Machine)(machine ^ (uint)os);
-                if (Enum.IsDefined(typeof(Machine), Machine))
+                _machine = (Machine)(machine ^ (uint)os);
+                if (Enum.IsDefined(typeof(Machine), _machine))
                 {
-                    OS = os;
+                    _operatingSystem = os;
                     break;
                 }
             }
-            if (OS == OperatingSystem.Unknown)
+            if (_operatingSystem == OperatingSystem.Unknown)
             {
                 throw new BadImageFormatException($"Invalid Machine: {machine}");
             }
 
-            switch (Machine)
+            switch (_machine)
             {
                 case Machine.I386:
-                    Architecture = Architecture.X86;
-                    PointerSize = 4;
+                    _architecture = Architecture.X86;
                     break;
 
                 case Machine.Amd64:
-                    Architecture = Architecture.X64;
-                    PointerSize = 8;
+                    _architecture = Architecture.X64;
                     break;
 
                 case Machine.Arm:
                 case Machine.Thumb:
                 case Machine.ArmThumb2:
-                    Architecture = Architecture.Arm;
-                    PointerSize = 4;
+                    _architecture = Architecture.Arm;
                     break;
 
                 case Machine.Arm64:
-                    Architecture = Architecture.Arm64;
-                    PointerSize = 8;
+                    _architecture = Architecture.Arm64;
                     break;
 
                 default:
@@ -351,13 +401,13 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
 
-            ImageBase = PEReader.PEHeaders.PEHeader.ImageBase;
+            _imageBase = PEReader.PEHeaders.PEHeader.ImageBase;
 
-            // initialize R2RHeader
+            // Initialize R2RHeader
             DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
             int r2rHeaderOffset = GetOffset(r2rHeaderDirectory.RelativeVirtualAddress);
-            R2RHeader = new R2RHeader(Image, r2rHeaderDirectory.RelativeVirtualAddress, r2rHeaderOffset);
-            if (r2rHeaderDirectory.Size != R2RHeader.Size)
+            _readyToRunHeader = new ReadyToRunHeader(Image, r2rHeaderDirectory.RelativeVirtualAddress, r2rHeaderOffset);
+            if (r2rHeaderDirectory.Size != ReadyToRunHeader.Size)
             {
                 throw new BadImageFormatException("The calculated size of the R2RHeader doesn't match the size saved in the ManagedNativeHeaderDirectory");
             }
@@ -394,11 +444,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         private void ParseMethodDefEntrypoints(bool[] isEntryPoint)
         {
-            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS))
+            if (!ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS))
             {
                 return;
             }
-            int methodDefEntryPointsRVA = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS].RelativeVirtualAddress;
+            int methodDefEntryPointsRVA = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS].RelativeVirtualAddress;
             int methodDefEntryPointsOffset = GetOffset(methodDefEntryPointsRVA);
             NativeArray methodEntryPoints = new NativeArray(Image, (uint)methodDefEntryPointsOffset);
             uint nMethodEntryPoints = methodEntryPoints.GetCount();
@@ -412,7 +462,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     int runtimeFunctionId;
                     FixupCell[] fixups;
                     GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixups);
-                    R2RMethod method = new R2RMethod(R2RMethods.Count, this.MetadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixups: fixups);
+                    ReadyToRunMethod method = new ReadyToRunMethod(R2RMethods.Count, this.MetadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixups: fixups);
 
                     if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= isEntryPoint.Length)
                     {
@@ -429,11 +479,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         private void ParseInstanceMethodEntrypoints(bool[] isEntryPoint)
         {
-            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS))
+            if (!ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS))
             {
                 return;
             }
-            R2RSection instMethodEntryPointSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS];
+            ReadyToRunSection instMethodEntryPointSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS];
             int instMethodEntryPointsOffset = GetOffset(instMethodEntryPointSection.RelativeVirtualAddress);
             NativeParser parser = new NativeParser(Image, (uint)instMethodEntryPointsOffset);
             NativeHashtable instMethodEntryPoints = new NativeHashtable(Image, parser, (uint)(instMethodEntryPointsOffset + instMethodEntryPointSection.Size));
@@ -486,7 +536,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 int runtimeFunctionId;
                 FixupCell[] fixups;
                 GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixups);
-                R2RMethod method = new R2RMethod(
+                ReadyToRunMethod method = new ReadyToRunMethod(
                     R2RMethods.Count,
                     mdReader == null ? MetadataReader : mdReader,
                     methodHandle,
@@ -512,7 +562,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private void ParseRuntimeFunctions(bool[] isEntryPoint, int runtimeFunctionOffset, int runtimeFunctionSize)
         {
             int curOffset = 0;
-            foreach (R2RMethod method in R2RMethods)
+            foreach (ReadyToRunMethod method in R2RMethods)
             {
                 int runtimeFunctionId = method.EntryPointRuntimeFunctionId;
                 if (runtimeFunctionId == -1)
@@ -537,7 +587,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         unwindInfo = new Amd64.UnwindInfo(Image, unwindOffset);
                         if (isEntryPoint[runtimeFunctionId])
                         {
-                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
+                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, ReadyToRunHeader.MajorVersion);
                         }
                     }
                     else if (Machine == Machine.I386)
@@ -545,7 +595,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         unwindInfo = new x86.UnwindInfo(Image, unwindOffset);
                         if (isEntryPoint[runtimeFunctionId])
                         {
-                            gcInfo = new x86.GcInfo(Image, unwindOffset, Machine, R2RHeader.MajorVersion);
+                            gcInfo = new x86.GcInfo(Image, unwindOffset, Machine, ReadyToRunHeader.MajorVersion);
                         }
                     }
                     else if (Machine == Machine.ArmThumb2)
@@ -553,7 +603,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         unwindInfo = new Arm.UnwindInfo(Image, unwindOffset);
                         if (isEntryPoint[runtimeFunctionId])
                         {
-                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion); // Arm and Arm64 use the same GcInfo format as x64
+                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, ReadyToRunHeader.MajorVersion); // Arm and Arm64 use the same GcInfo format as x64
                         }
                     }
                     else if (Machine == Machine.Arm64)
@@ -561,7 +611,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         unwindInfo = new Arm64.UnwindInfo(Image, unwindOffset);
                         if (isEntryPoint[runtimeFunctionId])
                         {
-                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
+                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, ReadyToRunHeader.MajorVersion);
                         }
                     }
 
@@ -572,10 +622,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                         ehInfo = new EHInfo(this, ehInfoLocation.EHInfoRVA, startRva, GetOffset(ehInfoLocation.EHInfoRVA), ehInfoLocation.ClauseCount);
                     }
 
-                    DebugInfo debugInfo;
-                    _runtimeFunctionToDebugInfo.TryGetValue(runtimeFunctionId, out debugInfo);
-
                     RuntimeFunction rtf = new RuntimeFunction(
+                        this,
                         runtimeFunctionId,
                         startRva,
                         endRva,
@@ -584,8 +632,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         method,
                         unwindInfo,
                         gcInfo,
-                        ehInfo,
-                        debugInfo);
+                        ehInfo);
 
                     method.RuntimeFunctions.Add(rtf);
                     runtimeFunctionId++;
@@ -600,12 +647,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         private void ParseAvailableTypes()
         {
-            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES))
+            if (!ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES))
             {
                 return;
             }
 
-            R2RSection availableTypesSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES];
+            ReadyToRunSection availableTypesSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES];
             int availableTypesOffset = GetOffset(availableTypesSection.RelativeVirtualAddress);
             NativeParser parser = new NativeParser(Image, (uint)availableTypesOffset);
             NativeHashtable availableTypes = new NativeHashtable(Image, parser, (uint)(availableTypesOffset + availableTypesSection.Size));
@@ -640,11 +687,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         private string ParseCompilerIdentifier()
         {
-            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER))
+            if (!ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER))
             {
                 return "";
             }
-            R2RSection compilerIdentifierSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER];
+            ReadyToRunSection compilerIdentifierSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER];
             byte[] identifier = new byte[compilerIdentifierSection.Size - 1];
             int identifierOffset = GetOffset(compilerIdentifierSection.RelativeVirtualAddress);
             Array.Copy(Image, identifierOffset, identifier, 0, compilerIdentifierSection.Size - 1);
@@ -656,11 +703,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         private void ParseImportSections()
         {
-            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS))
+            if (!ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS))
             {
                 return;
             }
-            R2RSection importSectionsSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS];
+            ReadyToRunSection importSectionsSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS];
             int offset = GetOffset(importSectionsSection.RelativeVirtualAddress);
             int endOffset = offset + importSectionsSection.Size;
             while (offset < endOffset)
@@ -702,7 +749,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     signatureOffset = GetOffset(signatureRVA);
                 }
-                List<R2RImportSection.ImportSectionEntry> entries = new List<R2RImportSection.ImportSectionEntry>();
+                List<ReadyToRunImportSection.ImportSectionEntry> entries = new List<ReadyToRunImportSection.ImportSectionEntry>();
                 for (int i = 0; i < entryCount; i++)
                 {
                     int entryOffset = sectionOffset - startOffset;
@@ -710,7 +757,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     uint sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
                     string cellName = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);
-                    entries.Add(new R2RImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, cellName));
+                    entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, cellName));
                     ImportCellNames.Add(rva + entrySize * i, cellName);
                 }
 
@@ -720,19 +767,23 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     auxDataOffset = GetOffset(auxDataRVA);
                 }
-                ImportSections.Add(new R2RImportSection(ImportSections.Count, this, rva, size, flags, type, entrySize, signatureRVA, entries, auxDataRVA, auxDataOffset, Machine, R2RHeader.MajorVersion));
+                ImportSections.Add(new ReadyToRunImportSection(ImportSections.Count, this, rva, size, flags, type, entrySize, signatureRVA, entries, auxDataRVA, auxDataOffset, Machine, ReadyToRunHeader.MajorVersion));
             }
         }
 
-        private void ParseDebugInfo()
+        private void EnsureRuntimeFunctionToDebugInfo()
         {
+            if (_runtimeFunctionToDebugInfo != null)
+            {
+                return;
+            }
             _runtimeFunctionToDebugInfo = new Dictionary<int, DebugInfo>();
-            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_DEBUG_INFO))
+            if (!ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_DEBUG_INFO))
             {
                 return;
             }
 
-            R2RSection debugInfoSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_DEBUG_INFO];
+            ReadyToRunSection debugInfoSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_DEBUG_INFO];
             int debugInfoSectionOffset = GetOffset(debugInfoSection.RelativeVirtualAddress);
 
             NativeArray debugInfoArray = new NativeArray(Image, (uint)debugInfoSectionOffset);
@@ -744,7 +795,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     continue;
                 }
 
-                var debugInfo = new DebugInfo(Image, offset, Machine);
+                var debugInfo = new DebugInfo(this, offset);
                 _runtimeFunctionToDebugInfo.Add((int)i, debugInfo);
             }
         }
@@ -831,8 +882,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 while (true)
                 {
-                    R2RImportSection importSection = ImportSections[(int)curTableIndex];
-                    R2RImportSection.ImportSectionEntry entry = importSection.Entries[(int)fixupIndex];
+                    ReadyToRunImportSection importSection = ImportSections[(int)curTableIndex];
+                    ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)fixupIndex];
                     cells.Add(new FixupCell(cells.Count, curTableIndex, fixupIndex, entry.Signature));
 
                     uint delta = reader.ReadUInt();
@@ -881,7 +932,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 metadataReader = _manifestReader;
                 assemblyReferenceHandle = _manifestReferences[refAsmIndex - assemblyRefCount - 2];
             }
-            
+
 
             MetadataReader result;
             if (!_assemblyCache.TryGetValue(refAsmIndex, out result))

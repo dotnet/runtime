@@ -39,7 +39,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return formatter.EmitHandleName(handle, namespaceQualified, owningTypeOverride, signaturePrefix);
         }
 
-        public static string FormatSignature(IAssemblyResolver assemblyResolver, R2RReader r2rReader, int imageOffset)
+        public static string FormatSignature(IAssemblyResolver assemblyResolver, ReadyToRunReader r2rReader, int imageOffset)
         {
             SignatureDecoder decoder = new SignatureDecoder(assemblyResolver, r2rReader, imageOffset);
             string result = decoder.ReadR2RSignature();
@@ -353,7 +353,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// ECMA reader representing the top-level signature context.
         /// </summary>
-        private readonly R2RReader _contextReader;
+        private readonly ReadyToRunReader _contextReader;
 
         /// <summary>
         /// Dump options are used to specify details of signature formatting.
@@ -381,7 +381,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="options">Dump options and paths</param>
         /// <param name="r2rReader">R2RReader object representing the PE file containing the ECMA metadata</param>
         /// <param name="offset">Signature offset within the PE file byte array</param>
-        public SignatureDecoder(IAssemblyResolver options, R2RReader r2rReader, int offset)
+        public SignatureDecoder(IAssemblyResolver options, ReadyToRunReader r2rReader, int offset)
         {
             _metadataReader = r2rReader.MetadataReader;
             _options = options;
@@ -398,7 +398,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="signature">Signature to parse</param>
         /// <param name="offset">Signature offset within the signature byte array</param>
         /// <param name="contextReader">Top-level signature context reader</param>
-        private SignatureDecoder(IAssemblyResolver options, MetadataReader metadataReader, byte[] signature, int offset, R2RReader contextReader)
+        private SignatureDecoder(IAssemblyResolver options, MetadataReader metadataReader, byte[] signature, int offset, ReadyToRunReader contextReader)
         {
             _metadataReader = metadataReader;
             _options = options;

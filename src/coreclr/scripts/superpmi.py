@@ -8,10 +8,10 @@
 # Title               : superpmi.py
 #
 # Notes:
-#  
+#
 # Script to handle running SuperPMI Collections, and replays. In addition, this
 # script provides support for SuperPMI ASM diffs. Note that some of the options
-# provided by this script are also provided in our SuperPMI collect test. The 
+# provided by this script are also provided in our SuperPMI collect test. The
 # test can be found here: https://github.com/dotnet/coreclr/blob/master/tests/src/JIT/superpmi/superpmicollect.cs.
 #
 ################################################################################
@@ -47,18 +47,40 @@ from coreclr_arguments import *
 # Argument Parser
 ################################################################################
 
-description = ("""Script to handle running SuperPMI collections and replays. In addition, this
-script provides support for SuperPMI ASM diffs. Note that some of the options
-provided by this script are also provided in our SuperPMI collect test.
-
+description = """\
+Script to run SuperPMI replay, ASM diffs, and collections.
+The script also manages the Azure store of precreated SuperPMI collection files.
 Help for each individual command can be shown by asking for help on the individual command, for example
-`superpmi.py collect --help`.""")
+`superpmi.py collect --help`.
+"""
+
+collect_description = """\
+Automate a SuperPMI collection.
+"""
+
+replay_description = """\
+Run SuperPMI replay on one or more collections.
+"""
+
+asm_diff_description = """\
+Run SuperPMI ASM diffs on one or more collections.
+"""
+
+upload_description = """\
+Upload a collection to SuperPMI Azure storage.
+"""
+
+list_collections_description = """\
+List the existing collections in the SuperPMI Azure storage.
+"""
 
 collection_help = "Which collection type to use for replays. Default is to run everything. Use 'superpmi.py list-collections' to find available collections."
 
-log_file_help = "Write output to a log file."
+log_file_help = "Write output to a log file. Requires --sequential."
 
-arch_help = "Architecture (x86, x64, arm32, arm64). Default: x64."
+host_os_help = "OS (Windows_NT, OSX, Linux). Default: current OS."
+
+arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
@@ -66,18 +88,19 @@ core_root_help = "Core_Root location. Optional; it will be deduced if possible f
 
 product_location_help = "Built Product directory location. Optional; it will be deduced if possible from runtime repo root."
 
-superpmi_collect_help = """ Command to run SuperPMI collect over. Note that there
-cannot be any dotnet cli command invoked inside this command, as they will fail due
-to the shim altjit being set.
+spmi_location_help = """\
+Directory in which to put SuperPMI files, such as downloaded MCH files, asm diffs, and repro .MC file.
+Optional. Default is 'spmi' within the repo 'artifacts' directory.
 """
 
-mch_file_help = """ Location of the MCH file to use for replay. Note
-that this may either be a path on disk or a URI to a MCH file to download.
-Use this MCH file instead of a named collection set in the cloud MCH file store.
+superpmi_collect_help = """\
+Command to run SuperPMI collect over. Note that there cannot be any dotnet CLI commands
+invoked inside this command, as they will fail due to the shim altjit being set.
 """
 
-runtime_repo_root_help = """ Path of the dotnet/runtime repo root directory.
-Optional; by default, assumes this script is in a well-known location in a clone of the repo.
+mch_file_help = """\
+Location of the MCH file to use for replay. Note that this may either be a path on disk or a URI to a MCH file to download.
+Use this MCH file instead of a named collection set from the cloud MCH file store.
 """
 
 skip_cleanup_help = "Skip intermediate file removal."
@@ -88,121 +111,96 @@ break_on_error_help = "Enable break on error during SuperPMI replay."
 
 force_download_help = "If downloading an MCH file, always download it. Don't use an existing file in the download location."
 
+# Start of parser object creation.
 
 parser = argparse.ArgumentParser(description=description)
 
-subparsers = parser.add_subparsers(dest='mode')
+subparsers = parser.add_subparsers(dest='mode', help="Command to invoke")
+
+# Create a set of argument common to all commands that run SuperPMI.
+
+superpmi_common_parser = argparse.ArgumentParser(add_help=False)
+
+superpmi_common_parser.add_argument("-arch", default=CoreclrArguments.provide_default_arch(), help=arch_help)
+superpmi_common_parser.add_argument("-build_type", default="Checked", help=build_type_help)
+superpmi_common_parser.add_argument("-core_root", help=core_root_help)
+superpmi_common_parser.add_argument("-spmi_location", help=spmi_location_help)
+superpmi_common_parser.add_argument("--break_on_assert", action="store_true", help=break_on_assert_help)
+superpmi_common_parser.add_argument("--break_on_error", action="store_true", help=break_on_error_help)
+superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
+superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode.")
+superpmi_common_parser.add_argument("-log_file", help=log_file_help)
 
 # subparser for collect
-collect_parser = subparsers.add_parser("collect")
+collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[superpmi_common_parser])
 
 # Add required arguments
 collect_parser.add_argument("collection_command", nargs='?', help=superpmi_collect_help)
 collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command.")
 
-collect_parser.add_argument("-log_file", dest="log_file", default=None, help=log_file_help)
-
-collect_parser.add_argument("-arch", dest="arch", nargs='?', default="x64", help=arch_help) 
-collect_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked", help=build_type_help)
-collect_parser.add_argument("-core_root", dest="core_root", nargs='?', default=None, help=core_root_help)
-collect_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None, help=product_location_help)
-collect_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help=runtime_repo_root_help)
-
-collect_parser.add_argument("--break_on_assert", dest="break_on_assert", default=False, action="store_true", help=break_on_assert_help)
-collect_parser.add_argument("--break_on_error", dest="break_on_error", default=False, action="store_true", help=break_on_error_help)
-
-collect_parser.add_argument("--pmi", dest="pmi", default=False, action="store_true", help="Use PMI on a set of directories or assemblies")
+collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("-pmi_assemblies", dest="pmi_assemblies", nargs="+", default=[], help="Pass a sequence of managed dlls or directories to recursively run PMI over while collecting. Required if --pmi is specified.")
-collect_parser.add_argument("-pmi_location", dest="pmi_location", nargs="?", default=None, help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure storage if necessary.")
-
-collect_parser.add_argument("-output_mch_path", dest="output_mch_path", default=None, help="Location to drop the final MCH file. By default it will drop to artifacts/mch/$(os).$(arch).$(build_type)/$(os).$(arch).$(build_type).mch")
-
-collect_parser.add_argument("--merge_mch_files", dest="merge_mch_files", default=False, action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
-collect_parser.add_argument("-mch_files", dest="mch_files", nargs='+', default=None, help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
-
-collect_parser.add_argument("--use_zapdisable", dest="use_zapdisable", default=False, action="store_true", help="Sets COMPlus_ZapDisable=1 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
+collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure storage if necessary.")
+collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file. By default it will be placed at artifacts/mch/$(os).$(arch).$(build_type)/$(os).$(arch).$(build_type).mch")
+collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
+collect_parser.add_argument("-mch_files", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
+collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets COMPlus_ZapDisable=1 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 
 # Allow for continuing a collection in progress
-collect_parser.add_argument("-existing_temp_dir", dest="existing_temp_dir", default=None, nargs="?", help="Specify an existing temporary directory to use. Useful if continuing an ongoing collection process, or forcing a temporary directory to a particular hard drive. Optional; default is to create a temporary directory in the usual TEMP location.")
-collect_parser.add_argument("--has_run_collection_command", dest="has_run_collection_command", default=False, action="store_true", help="Specify to not run the collection step")
-collect_parser.add_argument("--has_merged_mch", dest="has_merged_mch", default=False, action="store_true", help="Specify to not run the merge step")
-collect_parser.add_argument("--has_verified_clean_mch", dest="has_verified_clean_mch", default=False, action="store_true", help="Specify to not run the collection cleaning step")
+collect_parser.add_argument("-existing_temp_dir", help="Specify an existing temporary directory to use. Useful if continuing an ongoing collection process, or forcing a temporary directory to a particular hard drive. Optional; default is to create a temporary directory in the usual TEMP location.")
+collect_parser.add_argument("--has_run_collection_command", action="store_true", help="Do not run the collection step.")
+collect_parser.add_argument("--has_merged_mch", action="store_true", help="Do not run the merge step.")
+collect_parser.add_argument("--has_verified_clean_mch", action="store_true", help="Do not run the collection cleaning step.")
+collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help="Do not collect .MC files")
 
-collect_parser.add_argument("--skip_collect_mc_files", dest="skip_collect_mc_files", default=False, action="store_true", help="Specify to not collect .MC files")
-collect_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False, action="store_true", help=skip_cleanup_help)
+# Create a set of argument common to all SuperPMI replay commands, namely basic replay and ASM diffs.
+# Note that SuperPMI collection also runs a replay to verify the final MCH file, so many arguments
+# common to replay are also applicable that that replay as well.
+
+replay_common_parser = argparse.ArgumentParser(add_help=False)
+
+replay_common_parser.add_argument("-mch_file", help=mch_file_help)
+replay_common_parser.add_argument("-product_location", help=product_location_help)
+replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
+replay_common_parser.add_argument("-altjit", nargs='?', const=True, help="Replay with an altjit. If an argument is specified, it is used as the name of the altjit (e.g., 'protojit.dll'). Otherwise, the default altjit name is used.")
 
 # subparser for replay
-replay_parser = subparsers.add_parser("replay")
+replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[superpmi_common_parser, replay_common_parser])
 
 # Add required arguments
 replay_parser.add_argument("collection", nargs='?', default="default", help=collection_help)
 
-replay_parser.add_argument("-jit_path", nargs='?', help="Path to clrjit. Defaults to Core_Root JIT.")
-replay_parser.add_argument("-mch_file", nargs=1, help=mch_file_help)
-replay_parser.add_argument("-log_file", dest="log_file", default=None, help=log_file_help)
-
-replay_parser.add_argument("-arch", dest="arch", nargs='?', default="x64", help=arch_help) 
-replay_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked", help=build_type_help)
-replay_parser.add_argument("-core_root", dest="core_root", nargs='?', default=None, help=core_root_help)
-replay_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None, help=product_location_help)
-replay_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help=runtime_repo_root_help)
-
-replay_parser.add_argument("--break_on_assert", dest="break_on_assert", default=False, action="store_true", help=break_on_assert_help)
-replay_parser.add_argument("--break_on_error", dest="break_on_error", default=False, action="store_true", help=break_on_error_help)
-
-replay_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False, action="store_true", help=skip_cleanup_help)
-replay_parser.add_argument("--force_download", dest="force_download", default=False, action="store_true", help=force_download_help)
+replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
 
 # subparser for asmDiffs
-asm_diff_parser = subparsers.add_parser("asmdiffs")
+asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[superpmi_common_parser, replay_common_parser])
 
 # Add required arguments
-asm_diff_parser.add_argument("base_jit_path", nargs=1, help="Path to baseline clrjit.")
-asm_diff_parser.add_argument("diff_jit_path", nargs=1, help="Path to diff clrjit.")
+asm_diff_parser.add_argument("base_jit_path", help="Path to baseline clrjit.")
+asm_diff_parser.add_argument("diff_jit_path", nargs='?', help="Path to diff clrjit. Defaults to Core_Root JIT.")
+
 asm_diff_parser.add_argument("collection", nargs='?', default="default", help=collection_help)
-
-asm_diff_parser.add_argument("-mch_file", nargs=1, help=mch_file_help)
-
-asm_diff_parser.add_argument("-log_file", dest="log_file", default=None, help=log_file_help)
-
-asm_diff_parser.add_argument("-arch", dest="arch", nargs='?', default="x64", help=arch_help) 
-asm_diff_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked", help=build_type_help)
-asm_diff_parser.add_argument("-core_root", dest="core_root", nargs='?', default=None, help=core_root_help)
-asm_diff_parser.add_argument("-product_location", dest="product_location", nargs='?', default=None, help=product_location_help)
-asm_diff_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help=runtime_repo_root_help)
-
-asm_diff_parser.add_argument("--break_on_assert", dest="break_on_assert", default=False, action="store_true", help=break_on_assert_help)
-asm_diff_parser.add_argument("--break_on_error", dest="break_on_error", default=False, action="store_true", help=break_on_error_help)
-
-asm_diff_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False, action="store_true", help=skip_cleanup_help)
-asm_diff_parser.add_argument("--force_download", dest="force_download", default=False, action="store_true", help=force_download_help)
-
-asm_diff_parser.add_argument("--diff_with_code", dest="diff_with_code", default=False, action="store_true", help="Invoke Visual Studio Code to view any diffs.")
-asm_diff_parser.add_argument("--diff_with_code_only", dest="diff_with_code_only", default=False, action="store_true", help="Invoke Visual Studio Code to view any diffs. Only run the diff command, do not run SuperPMI to regenerate diffs.")
-
-asm_diff_parser.add_argument("--diff_jit_dump", dest="diff_jit_dump", default=False, action="store_true", help="Generate JitDump output for diffs.")
-asm_diff_parser.add_argument("--diff_jit_dump_only", dest="diff_jit_dump_only", default=False, action="store_true", help="Only diff JitDump output, not asm.")
+asm_diff_parser.add_argument("--diff_with_code", action="store_true", help="Invoke Visual Studio Code to view any diffs.")
+asm_diff_parser.add_argument("--diff_with_code_only", action="store_true", help="Invoke Visual Studio Code to view any diffs. Only run the diff command, do not run SuperPMI to regenerate diffs.")
+asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
+asm_diff_parser.add_argument("--diff_jit_dump_only", action="store_true", help="Only diff JitDump output, not asm.")
+asm_diff_parser.add_argument("-previous_temp_location", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results.")
 
 # subparser for upload
-upload_parser = subparsers.add_parser("upload")
-
+upload_parser = subparsers.add_parser("upload", description=upload_description)
 upload_parser.add_argument("az_storage_key", nargs='?', help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
-
 upload_parser.add_argument("-mch_files", nargs='+', help="MCH files to pass")
-upload_parser.add_argument("-jit_location", nargs=1, default=None, help="Location for the base clrjit. If not passed this will be assumed to be from the Core_Root.")
-
-upload_parser.add_argument("-arch", dest="arch", nargs='?', default="x64", help=arch_help) 
-upload_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked", help=build_type_help)
-upload_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help=runtime_repo_root_help)
-
-upload_parser.add_argument("--skip_cleanup", dest="skip_cleanup", default=False, action="store_true", help=skip_cleanup_help)
+upload_parser.add_argument("-jit_location", help="Location for the base clrjit. If not passed this will be assumed to be from the Core_Root.")
+upload_parser.add_argument("-arch", default=CoreclrArguments.provide_default_arch(), help=arch_help)
+upload_parser.add_argument("-build_type", default="Checked", help=build_type_help)
+upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
 # subparser for list-collections
-list_parser = subparsers.add_parser("list-collections")
+list_collections_parser = subparsers.add_parser("list-collections", description=list_collections_description)
 
-list_parser.add_argument("-arch", dest="arch", nargs='?', default="x64", help=arch_help) 
-list_parser.add_argument("-build_type", dest="build_type", nargs='?', default="Checked", help=build_type_help)
-list_parser.add_argument("-runtime_repo_root", dest="runtime_repo_root", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), help=runtime_repo_root_help)
+list_collections_parser.add_argument("-host_os", default=CoreclrArguments.provide_default_host_os(), help=host_os_help)
+list_collections_parser.add_argument("-arch", default=CoreclrArguments.provide_default_arch(), help=arch_help)
+list_collections_parser.add_argument("-build_type", default="Checked", help=build_type_help)
 
 ################################################################################
 # Helper functions
@@ -246,6 +244,75 @@ def make_safe_filename(s):
             return "_"
     return "".join(safe_char(c) for c in s)
 
+def find_in_path(name, pathlist, matchFunc=os.path.isfile):
+    """ Find a name (e.g., directory name or file name) in the file system by searching the directories
+        in a semicolon-separated `pathlist` (e.g., PATH environment variable).
+
+    Args:
+        name (str)              : name to search for
+        pathlist (str)          : semicolon-separated string of directory names to search
+        matchFunc (str -> bool) : determines if the name is a match
+
+    Returns:
+        (str) The pathname of the object, or None if not found.
+    """
+    for dirname in pathlist:
+        candidate = os.path.join(dirname, name)
+        if matchFunc(candidate):
+            return candidate
+    return None
+
+def find_file(filename, pathlist):
+    """ Find a filename in the file system by searching the directories
+        in a semicolon-separated `pathlist` (e.g., PATH environment variable).
+
+    Args:
+        filename (str)          : name to search for
+        pathlist (str)          : semicolon-separated string of directory names to search
+
+    Returns:
+        (str) The pathname of the object, or None if not found.
+    """
+    return find_in_path(filename, pathlist)
+
+def find_dir(dirname, pathlist):
+    """ Find a directory name in the file system by searching the directories
+        in a semicolon-separated `pathlist` (e.g., PATH environment variable).
+
+    Args:
+        dirname (str)           : name to search for
+        pathlist (str)          : semicolon-separated string of directory names to search
+
+    Returns:
+        (str) The pathname of the object, or None if not found.
+    """
+    return find_in_path(dirname, pathlist, matchFunc=os.path.isdir)
+
+def create_unique_directory_name(root_directory, base_name):
+    """ Create a unique directory name by joining `root_directory` and `base_name`.
+        If this name already exists, append ".1", ".2", ".3", etc., to the final
+        name component until the full directory name is not found.
+
+    Args:
+        root_directory (str)     : root directory in which a new directory will be created
+        base_name (str)          : the base name of the new directory name component to be added
+
+    Returns:
+        (str) The full absolute path of the new directory. The directory has been created.
+    """
+
+    root_directory = os.path.abspath(root_directory)
+    full_path = os.path.join(root_directory, base_name)
+
+    count = 1
+    while os.path.isdir(full_path):
+        new_full_path = os.path.join(root_directory, base_name + "." + str(count))
+        count += 1
+        full_path = new_full_path
+
+    os.makedirs(full_path)
+    return full_path
+
 ################################################################################
 # Helper classes
 ################################################################################
@@ -258,11 +325,13 @@ class TempDir:
     def __enter__(self):
         self.cwd = os.getcwd()
         os.chdir(self.dir)
-
         return self.dir
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
+        # Note: we are using the global `args`, not coreclr_args. This works because
+        # the `skip_cleanup` argument is not processed by CoreclrArguments, but is
+        # just copied there.
         if not args.skip_cleanup:
             shutil.rmtree(self.dir)
 
@@ -351,7 +420,7 @@ class AsyncSubprocessHelper:
 
              Notes:
             Acts as a wrapper to abstract the async calls to
-            async_callback. Note that this will allow cpu_count 
+            async_callback. Note that this will allow cpu_count
             amount of running subprocesses. Each time the queue
             is emptied, another process will start. Note that
             the python code is single threaded, it will just
@@ -371,54 +440,48 @@ class SuperPMICollect:
     """ SuperPMI Collect class
 
     Notes:
-        The object is responsible for setting up a super pmi collection given
+        The object is responsible for setting up a SuperPMI collection given
         the arguments passed into the script.
     """
 
-    def __init__(self, args):
+    def __init__(self, coreclr_args):
         """ Constructor
 
         Args:
-            args (CoreclrArguments): parsed args
+            coreclr_args (CoreclrArguments) : parsed args
 
         """
 
-        if args.host_os == "OSX":
-            self.standalone_jit_name = "libclrjit.dylib"
+        if coreclr_args.host_os == "OSX":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
-            self.superpmi_tool_name = "superpmi"
             self.mcs_tool_name = "mcs"
             self.corerun_tool_name = "corerun"
-        elif args.host_os == "Linux":
-            self.standalone_jit_name = "libclrjit.so"
+        elif coreclr_args.host_os == "Linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
-            self.superpmi_tool_name = "superpmi"
             self.mcs_tool_name = "mcs"
             self.corerun_tool_name = "corerun"
-        elif args.host_os == "Windows_NT":
-            self.standalone_jit_name = "clrjit.dll"
+        elif coreclr_args.host_os == "Windows_NT":
             self.collection_shim_name = "superpmi-shim-collector.dll"
-            self.superpmi_tool_name = "superpmi.exe"
             self.mcs_tool_name = "mcs.exe"
             self.corerun_tool_name = "corerun.exe"
         else:
             raise RuntimeError("Unsupported OS.")
 
-        self.coreclr_args = args
+        self.jit_path = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
+        self.superpmi_path = os.path.join(coreclr_args.core_root, determine_superpmi_tool_name(coreclr_args))
+        self.mcs_path = os.path.join(coreclr_args.core_root, self.mcs_tool_name)
 
-        self.jit_path = os.path.join(args.core_root, self.standalone_jit_name)
-        self.superpmi_path = os.path.join(args.core_root, self.superpmi_tool_name)
-        self.mcs_path = os.path.join(args.core_root, self.mcs_tool_name)
+        self.core_root = coreclr_args.core_root
 
-        self.core_root = args.core_root
+        self.collection_command = coreclr_args.collection_command
+        self.collection_args = coreclr_args.collection_args
 
-        self.command = args.collection_command
-        self.args = args.collection_args
-
-        if args.pmi:
-            self.pmi_location = determine_pmi_location(args)
-            self.pmi_assemblies = args.pmi_assemblies
+        if coreclr_args.pmi:
+            self.pmi_location = determine_pmi_location(coreclr_args)
+            self.pmi_assemblies = coreclr_args.pmi_assemblies
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
+
+        self.coreclr_args = coreclr_args
 
     ############################################################################
     # Instance Methods
@@ -430,9 +493,6 @@ class SuperPMICollect:
 
         # Pathname for a temporary .MCL file used for noticing SuperPMI replay failures against base MCH.
         self.base_fail_mcl_file = None
-
-        # Pathname for a temporary .MCL file used for noticing SuperPMI replay failures against final MCH.
-        self.final_fail_mcl_file = None
 
         # The base .MCH file path
         self.base_mch_file = None
@@ -467,24 +527,24 @@ class SuperPMICollect:
             with TempDir(self.coreclr_args.existing_temp_dir) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
-                self.final_fail_mcl_file = os.path.join(temp_location, "finalfail.mcl")
-                
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
                 self.nodup_mch_file = os.path.join(temp_location, "nodup.mch")
 
                 self.temp_location = temp_location
 
                 if self.coreclr_args.output_mch_path is not None:
-                    self.save_the_final_mch_file = True
                     self.final_mch_file = os.path.abspath(self.coreclr_args.output_mch_path)
-                    self.toc_file = self.final_mch_file + ".mct"
+                    final_mch_dir = os.path.dirname(self.final_mch_file)
+                    if not os.path.isdir(final_mch_dir):
+                        os.makedirs(final_mch_dir)
                 else:
-                    self.save_the_final_mch_file = True
+                    default_coreclr_bin_mch_location = os.path.join(coreclr_args.spmi_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+                    if not os.path.isdir(default_coreclr_bin_mch_location):
+                        os.makedirs(default_coreclr_bin_mch_location)
+                    self.final_mch_file = os.path.abspath(os.path.join(default_coreclr_bin_mch_location, "{}.{}.{}.mch".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type)))
 
-                    default_coreclr_bin_mch_location = self.coreclr_args.default_coreclr_bin_mch_location
-
-                    self.final_mch_file = os.path.join(default_coreclr_bin_mch_location, "{}.{}.{}.mch".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
-                    self.toc_file = "{}.mct".format(self.final_mch_file)
+                self.save_the_final_mch_file = True
+                self.toc_file = "{}.mct".format(self.final_mch_file)
 
                 # If we have passed existing_temp_dir, then we have a few flags we need
                 # to check to see where we are in the collection process. Note that this
@@ -495,7 +555,7 @@ class SuperPMICollect:
 
                 if not self.coreclr_args.has_run_collection_command:
                     self.__collect_mc_files__()
-                
+
                 if not self.coreclr_args.has_merged_mch:
                     if not self.coreclr_args.merge_mch_files:
                         self.__merge_mc_files__()
@@ -521,7 +581,7 @@ class SuperPMICollect:
 
     def __collect_mc_files__(self):
         """ Do the actual SuperPMI collection for a command
-        
+
         Returns:
             None
         """
@@ -547,17 +607,14 @@ class SuperPMICollect:
             print_platform_specific_environment_vars(self.coreclr_args, "COMPlus_AltJitName", self.collection_shim_name)
             print("")
 
-            if self.command != None:
-                print("%s %s" % (self.command, " ".join(self.args)))
+            if self.collection_command != None:
+                print("%s %s" % (self.collection_command, " ".join(self.collection_args)))
 
-                assert isinstance(self.command, str)
-                assert isinstance(self.args, list)
+                assert isinstance(self.collection_command, str)
+                assert isinstance(self.collection_args, list)
 
-                return_code = 1
-
-                self.command = [self.command,] + self.args
+                self.command = [self.collection_command,] + self.collection_args
                 proc = subprocess.Popen(self.command, env=env_copy)
-
                 proc.communicate()
                 return_code = proc.returncode
 
@@ -579,7 +636,7 @@ class SuperPMICollect:
                         for item in valid_extensions:
                             if location.endswith(item):
                                 assemblies.append(location)
-                    
+
                     return assemblies
 
                 async def run_pmi(print_prefix, assembly, self):
@@ -659,16 +716,14 @@ class SuperPMICollect:
                 os.remove(item)
 
     def __merge_mch_files__(self):
-        """ Merge the mch files that were passed
+        """ Merge the MCH files that were passed
 
         Notes:
             mcs -concat <s_baseMchFile> [self.coreclr_args.mch_files]
 
         """
 
-        mch_files = self.coreclr_args.mch_files
-
-        for item in mch_files:
+        for item in self.coreclr_args.mch_files:
             command = [self.mcs_path, "-concat", self.base_mch_file, item]
             print("Invoking: " + " ".join(command))
             proc = subprocess.Popen(command)
@@ -679,7 +734,7 @@ class SuperPMICollect:
 
     def __create_thin_unique_mch__(self):
         """  Create a thin unique MCH
-        
+
         Notes:
             <mcl> -removeDup -thin <s_baseMchFile> <s_nodupMchFile>
         """
@@ -695,7 +750,7 @@ class SuperPMICollect:
         if not self.coreclr_args.skip_cleanup:
             os.remove(self.base_mch_file)
             self.base_mch_file = None
-    
+
     def __create_clean_mch_file__(self):
         """ Create a clean mch file
 
@@ -733,10 +788,10 @@ class SuperPMICollect:
             if os.path.isfile(self.nodup_mch_file):
                 os.remove(self.nodup_mch_file)
                 self.nodup_mch_file = None
-        
+
     def __create_toc__(self):
         """ Create a TOC file
-        
+
         Notes:
             <mcl> -toc <s_finalMchFile>
         """
@@ -751,9 +806,9 @@ class SuperPMICollect:
 
     def __verify_final_mch__(self):
         """ Verify the resulting MCH file is error-free when running SuperPMI against it with the same JIT used for collection.
-        
+
         Notes:
-            <superPmiPath> -p -f <s_finalFailMclFile> <s_finalMchFile> <jitPath>
+            <SuperPmiPath> -p -f <s_finalFailMclFile> <s_finalMchFile> <jitPath>
         """
 
         spmi_replay = SuperPMIReplay(self.coreclr_args, self.final_mch_file, self.jit_path)
@@ -770,7 +825,7 @@ class SuperPMIReplay:
     """ SuperPMI Replay class
 
     Notes:
-        The object is responsible for replaying the mch final given to the
+        The object is responsible for replaying the MCH file given to the
         instance of the class
     """
 
@@ -778,15 +833,15 @@ class SuperPMIReplay:
         """ Constructor
 
         Args:
-            args (CoreclrArguments) : parsed args
-            mch_file (str)          : final mch file from the collection
-            jit_path (str)          : path to clrjit/libclrjit
+            coreclr_args (CoreclrArguments) : parsed args
+            mch_file (str)                  : MCH file to replay
+            jit_path (str)                  : path to clrjit/libclrjit.
 
         """
 
         self.jit_path = jit_path
         self.mch_file = mch_file
-        self.superpmi_path = os.path.join(coreclr_args.core_root, "superpmi")
+        self.superpmi_path = os.path.join(coreclr_args.core_root, determine_superpmi_tool_name(coreclr_args))
 
         self.coreclr_args = coreclr_args
 
@@ -810,9 +865,8 @@ class SuperPMIReplay:
         # -2 : JIT failed to initialize
         # 1  : there were compilation failures
         # 2  : there were assembly diffs
-        
+
         with TempDir() as temp_location:
-            print("Starting SuperPMI replay.")
             print("")
             print("Temp Location: {}".format(temp_location))
             print("")
@@ -820,26 +874,29 @@ class SuperPMIReplay:
             self.fail_mcl_file = os.path.join(temp_location, "fail.mcl")
 
             flags = [
-                "-p", # Parallel
                 "-f", # Failing mc List
                 self.fail_mcl_file,
                 "-r", # Repro name, create .mc repro files
                 os.path.join(temp_location, "repro")
             ]
 
-            # TODO: add aljit support
-            #
-            # Set: -jitoption force AltJit=* -jitoption force AltJitNgen=*
-            flags += [
-                "-jitoption", "force", "AltJit=",
-                "-jitoption", "force", "AltJitNgen="
+            altjit_string = "*" if self.coreclr_args.altjit else ""
+            altjit_flags = [
+                "-jitoption", "force", "AltJit=" + altjit_string,
+                "-jitoption", "force", "AltJitNgen=" + altjit_string
             ]
+            flags += altjit_flags
+
+            if not self.coreclr_args.sequential:
+                flags += [
+                    "-p" # parallel
+                ]
 
             if self.coreclr_args.break_on_assert:
                 flags += [
                     "-boa" # break on assert
                 ]
-            
+
             if self.coreclr_args.break_on_error:
                 flags += [
                     "-boe" # break on error
@@ -860,10 +917,10 @@ class SuperPMIReplay:
             return_code = proc.returncode
 
             if return_code == 0:
-                print("Clean SuperPMI Replay")
+                print("Clean SuperPMI replay")
                 return_code = True
 
-            if is_nonzero_length_file(self.fail_mcl_file):  
+            if is_nonzero_length_file(self.fail_mcl_file):
                 # Unclean replay.
                 #
                 # Save the contents of the fail.mcl file to dig into failures.
@@ -876,30 +933,30 @@ class SuperPMIReplay:
                     print("Jit failed to initialize.")
                 elif return_code == 1:
                     print("Compilation failures.")
+                elif return_code == 139 and self.coreclr_args != "Windows_NT":
+                    print("Fatal error, SuperPMI has returned SIG_SEV (segmentation fault).")
                 else:
                     print("Unknown error code.")
 
                 self.fail_mcl_contents = None
+                mcl_lines = []
                 with open(self.fail_mcl_file) as file_handle:
-                    self.fail_mcl_contents = file_handle.read()
+                    mcl_lines = file_handle.readlines()
+                    mcl_lines = [item.strip() for item in mcl_lines]
+                    self.fail_mcl_contents = os.linesep.join(mcl_lines)
+                    print("Method numbers with compilation failures:")
+                    print(self.fail_mcl_contents)
 
                 # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
                 mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
 
                 if len(mc_files) > 0:
-                    repro_location = os.path.join(self.coreclr_args.runtime_repo_root, "artifacts", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
+                    repro_location = create_unique_directory_name(self.coreclr_args.spmi_location, "repro.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
 
-                    # Delete existing repro location
-                    if os.path.isdir(repro_location):
-                        shutil.rmtree(repro_location)
-
-                    assert(not os.path.isdir(repro_location))
-
-                    os.makedirs(repro_location)
-                    
                     repro_files = []
                     for item in mc_files:
                         repro_files.append(os.path.join(repro_location, os.path.basename(item)))
+                        print("Copying {} -> {}".format(item, repro_location))
                         shutil.copy2(item, repro_location)
 
                     print("")
@@ -908,23 +965,18 @@ class SuperPMIReplay:
 
                     for item in repro_files:
                         print(item)
-                    
+
                     print("")
 
-                    print("To run an specific failure:")
+                    print("To run a specific failure (replace .mc filename as needed):")
                     print("")
-                    print("<SuperPMI_path>/superpmi <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <repo_root>/artifacts/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
+                    print("{} {} {} {}{}xxxxx.mc".format(self.superpmi_path, " ".join(altjit_flags), self.jit_path, os.path.sep, repro_location))
                     print("")
-
-                else:
-                    print(self.fail_mcl_contents)
 
             if not self.coreclr_args.skip_cleanup:
                 if os.path.isfile(self.fail_mcl_file):
                     os.remove(self.fail_mcl_file)
                     self.fail_mcl_file = None
-
-                return_code == False
 
         return return_code
 
@@ -944,18 +996,17 @@ class SuperPMIReplayAsmDiffs:
         """ Constructor
 
         Args:
-            args (CoreclrArguments) : parsed args
-            mch_file (str)          : final mch file from the collection
-            base_jit_path (str)     : path to clrjit/libclrjit
-            diff_jit_path (str)     : path to clrjit/libclrjit
+            coreclr_args (CoreclrArguments) : parsed args
+            mch_file (str)                  : MCH file to replay
+            base_jit_path (str)             : path to baselin clrjit/libclrjit
+            diff_jit_path (str)             : path to diff clrjit/libclrjit
 
         """
 
         self.base_jit_path = base_jit_path
         self.diff_jit_path = diff_jit_path
-
         self.mch_file = mch_file
-        self.superpmi_path = os.path.join(coreclr_args.core_root, "superpmi")
+        self.superpmi_path = os.path.join(coreclr_args.core_root, determine_superpmi_tool_name(coreclr_args))
 
         self.coreclr_args = coreclr_args
 
@@ -963,7 +1014,7 @@ class SuperPMIReplayAsmDiffs:
     # Instance Methods
     ############################################################################
 
-    def replay_with_asm_diffs(self, previous_temp_location=None):
+    def replay_with_asm_diffs(self):
         """ Replay the given SuperPMI collection
 
         Returns:
@@ -980,8 +1031,7 @@ class SuperPMIReplayAsmDiffs:
         # 1  : there were compilation failures
         # 2  : there were assembly diffs
 
-        with TempDir(previous_temp_location) as temp_location:
-            print("Starting SuperPMI AsmDiffs.")
+        with TempDir(self.coreclr_args.previous_temp_location) as temp_location:
             print("")
             print("Temp Location: {}".format(temp_location))
             print("")
@@ -989,11 +1039,10 @@ class SuperPMIReplayAsmDiffs:
             self.fail_mcl_file = os.path.join(temp_location, "fail.mcl")
             self.diff_mcl_file = os.path.join(temp_location, "diff.mcl")
 
-            if previous_temp_location is None:
+            if self.coreclr_args.previous_temp_location is None:
 
                 flags = [
                     "-a", # Asm diffs
-                    "-p", # Parallel
                     "-f", # Failing mc List
                     self.fail_mcl_file,
                     "-diffMCList", # Create all of the diffs in an mcl file
@@ -1002,21 +1051,25 @@ class SuperPMIReplayAsmDiffs:
                     os.path.join(temp_location, "repro")
                 ]
 
-                # TODO: add aljit support
-                #
-                # Set: -jitoption force AltJit=* -jitoption force AltJitNgen=*
-                flags += [
-                    "-jitoption", "force", "AltJit=",
-                    "-jitoption", "force", "AltJitNgen=",
-                    "-jit2option", "force", "AltJit=",
-                    "-jit2option", "force", "AltJitNgen="
+                altjit_string = "*" if self.coreclr_args.altjit else ""
+                altjit_flags = [
+                    "-jitoption", "force", "AltJit=" + altjit_string,
+                    "-jitoption", "force", "AltJitNgen=" + altjit_string,
+                    "-jit2option", "force", "AltJit=" + altjit_string,
+                    "-jit2option", "force", "AltJitNgen=" + altjit_string
                 ]
+                flags += altjit_flags
+
+                if not self.coreclr_args.sequential:
+                    flags += [
+                        "-p" # parallel
+                    ]
 
                 if self.coreclr_args.break_on_assert:
                     flags += [
                         "-boa" # break on assert
                     ]
-                
+
                 if self.coreclr_args.break_on_error:
                     flags += [
                         "-boe" # break on error
@@ -1039,7 +1092,7 @@ class SuperPMIReplayAsmDiffs:
                         proc.communicate()
                         return_code = proc.returncode
                         if return_code == 0:
-                            print("Clean SuperPMI Replay")
+                            print("Clean SuperPMI replay")
                 else:
                     return_code = 2
             else:
@@ -1069,20 +1122,14 @@ class SuperPMIReplayAsmDiffs:
                     mcl_lines = file_handle.readlines()
                     mcl_lines = [item.strip() for item in mcl_lines]
                     self.fail_mcl_contents = os.linesep.join(mcl_lines)
+                    print("Method numbers with compilation failures:")
+                    print(self.fail_mcl_contents)
 
                 # If there are any .mc files, drop them into artifacts/repro/<host_os>.<arch>.<build_type>/*.mc
                 mc_files = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
 
                 if len(mc_files) > 0:
-                    repro_location = os.path.join(self.coreclr_args.runtime_repo_root, "artifacts", "repro", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
-
-                    # Delete existing repro location
-                    if os.path.isdir(repro_location):
-                        shutil.rmtree(repro_location)
-
-                    assert(not os.path.isdir(repro_location))
-
-                    os.makedirs(repro_location)
+                    repro_location = create_unique_directory_name(self.coreclr_args.spmi_location, "repro.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
 
                     repro_files = []
                     for item in mc_files:
@@ -1096,15 +1143,13 @@ class SuperPMIReplayAsmDiffs:
 
                     for item in repro_files:
                         print(item)
-                    
+
                     print("")
 
-                    print("To run an specific failure:")
+                    print("To run a specific failure (replace JIT path and .mc filename as needed):")
                     print("")
-                    print("<SuperPMI_path>/superpmi <core_root|product_dir>/clrjit.dll|libclrjit.so|libclrjit.dylib <repo_root>/artifacts/repro/<host_os>.<arch>.<build_type>/1xxxx.mc")
+                    print("{} {} {} {}{}xxxxx.mc".format(self.superpmi_path, " ".join(altjit_flags), self.diff_jit_path, os.path.sep, repro_location))
                     print("")
-
-                print(self.fail_mcl_contents)
 
             # There were diffs. Go through each method that created diffs and
             # create a base/diff asm file with diffable asm. In addition, create
@@ -1113,7 +1158,7 @@ class SuperPMIReplayAsmDiffs:
                 # AsmDiffs.
                 #
                 # Save the contents of the fail.mcl file to dig into failures.
-                
+
                 assert(return_code != 0)
 
                 if return_code == -1:
@@ -1136,66 +1181,58 @@ class SuperPMIReplayAsmDiffs:
                         mcl_lines = [item.strip() for item in mcl_lines]
                         self.diff_mcl_contents = mcl_lines
 
-                bin_asm_location = os.path.join(self.coreclr_args.artifacts_location, "asm", "asm")
-
-                count = 0
-                while os.path.isdir(bin_asm_location):
-                    new_bin_asm_location = os.path.join(self.coreclr_args.artifacts_location, "asm", "asm" + str(count))
-                    count += 1
-                    print("{} location exists. Attempting to create: {}".format(bin_asm_location, new_bin_asm_location))
-                    bin_asm_location = new_bin_asm_location
-
+                bin_asm_location = create_unique_directory_name(self.coreclr_args.spmi_location, "asm.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
                 base_asm_location = os.path.join(bin_asm_location, "base")
                 diff_asm_location = os.path.join(bin_asm_location, "diff")
 
                 if not self.coreclr_args.diff_with_code_only:
-                    # Delete the old asm.
-                    
                     # Create a diff and baseline directory
-                    if os.path.isdir(base_asm_location):
-                        shutil.rmtree(base_asm_location)
-                    if os.path.isdir(diff_asm_location):
-                        shutil.rmtree(diff_asm_location)
+                    assert(not os.path.isdir(base_asm_location))
+                    assert(not os.path.isdir(diff_asm_location))
 
                     os.makedirs(base_asm_location)
                     os.makedirs(diff_asm_location)
 
-                    assert(os.path.isdir(base_asm_location))
-                    assert(os.path.isdir(diff_asm_location))
-
-                    assert(len(os.listdir(base_asm_location)) == 0)
-                    assert(len(os.listdir(diff_asm_location)) == 0)
-
                     if self.coreclr_args.diff_jit_dump:
                         # Create a diff and baseline directory for jit_dumps
-                        bin_dump_location = os.path.join(self.coreclr_args.artifacts_location, "jit_dump", "jit_dump")
-
-                        count = 0
-                        while os.path.isdir(bin_dump_location):
-                            new_base_dump_location = os.path.join(self.coreclr_args.artifacts_location, "jit_dump", "jit_dump" + str(count))
-                            count += 1
-                            print("{} location exists. Attempting to create: {}".format(bin_dump_location, new_base_dump_location))
-                            bin_dump_location = new_base_dump_location
-
+                        bin_dump_location = create_unique_directory_name(self.coreclr_args.spmi_location, "jitdump.{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
                         base_dump_location = os.path.join(bin_dump_location, "base")
                         diff_dump_location = os.path.join(bin_dump_location, "diff")
 
-                        if os.path.isdir(base_dump_location):
-                            shutil.rmtree(base_dump_location)
-                        if os.path.isdir(diff_dump_location):
-                            shutil.rmtree(diff_dump_location)
+                        assert(not os.path.isdir(base_dump_location))
+                        assert(not os.path.isdir(diff_dump_location))
 
                         os.makedirs(base_dump_location)
                         os.makedirs(diff_dump_location)
 
-                        assert(os.path.isdir(base_dump_location))
-                        assert(os.path.isdir(diff_dump_location))
-
-                        assert(len(os.listdir(base_dump_location)) == 0)
-                        assert(len(os.listdir(diff_dump_location)) == 0)
-
                 text_differences = asyncio.Queue()
                 jit_dump_differences = asyncio.Queue()
+
+                asm_complus_vars = {
+                        "COMPlus_JitDisasm": "*",
+                        "COMPlus_JitUnwindDump": "*",
+                        "COMPlus_JitEHDump": "*",
+                        "COMPlus_JitDiffableDasm": "1",
+                        "COMPlus_NgenDisasm": "*",
+                        "COMPlus_NgenDump": "*",
+                        "COMPlus_NgenUnwindDump": "*",
+                        "COMPlus_NgenEHDump": "*",
+                        "COMPlus_JitEnableNoWayAssert": "1",
+                        "COMPlus_JitNoForceFallback": "1",
+                        "COMPlus_JitRequired": "1",
+                        "COMPlus_TieredCompilation": "0" }
+
+                jit_dump_complus_vars = {
+                        "COMPlus_JitEnableNoWayAssert": "1",
+                        "COMPlus_JitNoForceFallback": "1",
+                        "COMPlus_JitRequired": "1",
+                        "COMPlus_JitDump": "*" }
+
+                altjit_string = "*" if self.coreclr_args.altjit else ""
+                altjit_flags = [
+                    "-jitoption", "force", "AltJit=" + altjit_string,
+                    "-jitoption", "force", "AltJitNgen=" + altjit_string
+                ]
 
                 async def create_asm(print_prefix, item, self, text_differences, base_asm_location, diff_asm_location):
                     """ Run superpmi over an mc to create dasm for the method.
@@ -1209,27 +1246,10 @@ class SuperPMIReplayAsmDiffs:
                         "q" # only log from the jit.
                     ]
 
-                    # TODO: add aljit support
-                    #
-                    # Set: -jitoption force AltJit=* -jitoption force AltJitNgen=*
-                    flags += [
-                        "-jitoption", "force", "AltJit=",
-                        "-jitoption", "force", "AltJitNgen="
-                    ]
-                    
-                    asm_env = os.environ.copy()
-                    asm_env["COMPlus_JitDisasm"] = "*"
-                    asm_env["COMPlus_JitUnwindDump"] = "*"
-                    asm_env["COMPlus_JitEHDump"] = "*"
-                    asm_env["COMPlus_JitDiffableDasm"] = "1"
-                    asm_env["COMPlus_NgenDisasm"] = "*"
-                    asm_env["COMPlus_NgenDump"] = "*"
-                    asm_env["COMPlus_NgenUnwindDump"] = "*"
-                    asm_env["COMPlus_NgenEHDump"] = "*"
-                    asm_env["COMPlus_JitEnableNoWayAssert"] = "1"
-                    asm_env["COMPlus_JitNoForceFallback"] = "1"
-                    asm_env["COMPlus_JitRequired"] = "1"
-                    asm_env["COMPlus_TieredCompilation"] = "0"
+                    flags += altjit_flags
+
+                    # Add in all the COMPlus variables we need to generate asm.
+                    os.environ.update(asm_complus_vars)
 
                     # Change the working directory to the core root we will call SuperPMI from.
                     # This is done to allow libcorcedistools to be loaded correctly on unix
@@ -1242,7 +1262,6 @@ class SuperPMIReplayAsmDiffs:
                         command = [self.superpmi_path] + flags + [self.base_jit_path, self.mch_file]
 
                         with open(os.path.join(base_asm_location, "{}.dasm".format(item)), 'w') as file_handle:
-                            os.environ.update(asm_env)
                             print("{}Invoking: {}".format(print_prefix, " ".join(command)))
                             proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE)
                             await proc.communicate()
@@ -1253,7 +1272,6 @@ class SuperPMIReplayAsmDiffs:
                         command = [self.superpmi_path] + flags + [self.diff_jit_path, self.mch_file]
 
                         with open(os.path.join(diff_asm_location, "{}.dasm".format(item)), 'w') as file_handle:
-                            os.environ.update(asm_env)
                             print("Invoking: ".format(print_prefix) + " ".join(command))
                             proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE)
                             await proc.communicate()
@@ -1285,20 +1303,11 @@ class SuperPMIReplayAsmDiffs:
                         "q" # only log from the jit.
                     ]
 
-                    # TODO: add aljit support
-                    #
-                    # Set: -jitoption force AltJit=* -jitoption force AltJitNgen=*
-                    flags += [
-                        "-jitoption", "force", "AltJit=",
-                        "-jitoption", "force", "AltJitNgen="
-                    ]
-                    
-                    jit_dump_env = os.environ.copy()
-                    jit_dump_env["COMPlus_JitEnableNoWayAssert"] = "1"
-                    jit_dump_env["COMPlus_JitNoForceFallback"] = "1"
-                    jit_dump_env["COMPlus_JitRequired"] = "1"
-                    jit_dump_env["COMPlus_JitDump"] = "*"
-                    
+                    flags += altjit_flags
+
+                    # Add in all the COMPlus variables we need to generate JitDump.
+                    os.environ.update(jit_dump_complus_vars)
+
                     # Generate jit dumps
                     base_txt = None
                     diff_txt = None
@@ -1311,7 +1320,6 @@ class SuperPMIReplayAsmDiffs:
                         command = [self.superpmi_path] + flags + [self.base_jit_path, self.mch_file]
 
                         with open(os.path.join(base_dump_location, "{}.txt".format(item)), 'w') as file_handle:
-                            os.environ.update(jit_dump_env)
                             print("{}Invoking: ".format(print_prefix) + " ".join(command))
                             proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE)
                             await proc.communicate()
@@ -1322,11 +1330,10 @@ class SuperPMIReplayAsmDiffs:
                         command = [self.superpmi_path] + flags + [self.diff_jit_path, self.mch_file]
 
                         with open(os.path.join(diff_dump_location, "{}.txt".format(item)), 'w') as file_handle:
-                            os.environ.update(jit_dump_env)
                             print("{}Invoking: ".format(print_prefix) + " ".join(command))
                             proc = await asyncio.create_subprocess_shell(" ".join(command), stdout=file_handle, stderr=asyncio.subprocess.PIPE)
                             await proc.communicate()
-                        
+
                         with open(os.path.join(diff_dump_location, "{}.txt".format(item)), 'r') as file_handle:
                             diff_txt = file_handle.read()
 
@@ -1346,10 +1353,12 @@ class SuperPMIReplayAsmDiffs:
                     for item in self.diff_mcl_contents:
                         diff_items.append(item)
 
+                    print("Creating asm files")
                     subproc_helper = AsyncSubprocessHelper(diff_items, verbose=True)
                     subproc_helper.run_to_completion(create_asm, self, text_differences, base_asm_location, diff_asm_location)
 
                     if self.coreclr_args.diff_jit_dump:
+                        print("Creating JitDump files")
                         subproc_helper.run_to_completion(create_jit_dump, self, jit_dump_differences, base_dump_location, diff_dump_location)
 
                 else:
@@ -1394,10 +1403,19 @@ class SuperPMIReplayAsmDiffs:
                                 jit_dump_differences.append(item[:-4])
 
                 if not self.coreclr_args.diff_with_code_only:
-                    print("Differences found, to replay SuperPMI use <path_to_SuperPMI> -jitoption force AltJit= -jitoption force AltJitNgen= -c ### <path_to_jit> <path_to_mcl>")
+                    print("Differences found. To replay SuperPMI use:")
                     print("")
-                    print("Binary differences found with superpmi -a")
+                    for var, value in asm_complus_vars.items():
+                        print_platform_specific_environment_vars(self.coreclr_args, var, value)
+                    print("{} {} -c ### {} {}".format(self.superpmi_path, " ".join(altjit_flags), self.diff_jit_path, self.mch_file))
                     print("")
+                    if self.coreclr_args.diff_jit_dump:
+                        print("To generate JitDump with SuperPMI use:")
+                        print("")
+                        for var, value in jit_dump_complus_vars.items():
+                            print_platform_specific_environment_vars(self.coreclr_args, var, value)
+                        print("{} {} -c ### {} {}".format(self.superpmi_path, " ".join(altjit_flags), self.diff_jit_path, self.mch_file))
+                        print("")
                     print("Method numbers with binary differences:")
                     print(self.diff_mcl_contents)
                     print("")
@@ -1408,7 +1426,24 @@ class SuperPMIReplayAsmDiffs:
                     current_text_diff = None
 
                 if current_text_diff is not None:
-                    print("Textual differences found, the asm is located under %s and %s" % (base_asm_location, diff_asm_location))
+                    print("Textual differences found. Asm is located under %s %s" % (base_asm_location, diff_asm_location))
+                    print("Generate a diff analysis report by building jit-analyze from https://github.com/dotnet/jitutils and running:")
+                    print("    jit-analyze -r --base %s --diff %s" % (base_asm_location, diff_asm_location))
+
+                    # Find jit-analyze.bat/sh on PATH, if it exists, then invoke it.
+                    search_path = os.environ.get("PATH")
+                    if search_path is not None:
+                        search_path = search_path.split(";")
+                        jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
+                        jit_analyze_path = find_file(jit_analyze_file, search_path)
+                        if jit_analyze_path is not None:
+                            # It appears we have a built jit-analyze on the path, so try to run it.
+                            command = [ jit_analyze_path, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
+                            print("Invoking: " + " ".join(command))
+                            proc = subprocess.Popen(command)
+                            proc.communicate()
+
+                    # Open VS Code on the diffs.
 
                     if self.coreclr_args.diff_with_code and not self.coreclr_args.diff_jit_dump_only:
                         batch_command = ["cmd", "/c"] if platform.system() == "Windows" else []
@@ -1442,11 +1477,11 @@ class SuperPMIReplayAsmDiffs:
                     current_jit_dump_diff = None
 
                 if current_jit_dump_diff is not None:
-                    print("Diffs found in the JitDump generated. These files are located under <repo_root>/artifacts/jit_dump/base and <repo_root>/artifacts/jit_dump/diff")
+                    print("Textual differences found in JitDump. JitDump is located under %s %s" % (base_dump_location, diff_dump_location))
 
                     if self.coreclr_args.diff_with_code:
                         batch_command = ["cmd", "/c"] if platform.system() == "Windows" else []
-                        
+
                         index = 0
                         while current_jit_dump_diff is not None:
                             command = batch_command + [
@@ -1527,6 +1562,8 @@ def determine_pmi_location(coreclr_args):
 
     Notes:
         If unable to find pmi.dll, download it from Azure storage.
+
+        TODO: look for pmi.dll on PATH?
     """
     if coreclr_args.pmi_location is not None:
         pmi_location = os.path.abspath(coreclr_args.pmi_location)
@@ -1566,17 +1603,42 @@ def determine_jit_name(coreclr_args):
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
-    
+
     Return:
         jit_name(str) : name of the jit for this os
     """
 
+    jit_base_name = "clrjit"
+    if isinstance(coreclr_args.altjit, str):
+        jit_base_name = coreclr_args.altjit
+    elif coreclr_args.altjit == True:
+        jit_base_name = "protononjit"
+
     if coreclr_args.host_os == "OSX":
-        return "libclrjit.dylib"
+        return "lib" + jit_base_name + ".dylib"
     elif coreclr_args.host_os == "Linux":
-        return "libclrjit.so"
+        return "lib" + jit_base_name + ".so"
     elif coreclr_args.host_os == "Windows_NT":
-        return "clrjit.dll"
+        return jit_base_name + ".dll"
+    else:
+        raise RuntimeError("Unknown OS.")
+
+def determine_superpmi_tool_name(coreclr_args):
+    """ Determine the superpmi tool name based on the OS
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+
+    Return:
+        superpmi_tool_name(str) : name of the jit for this OS
+    """
+
+    if coreclr_args.host_os == "OSX":
+        return "superpmi"
+    elif coreclr_args.host_os == "Linux":
+        return "superpmi"
+    elif coreclr_args.host_os == "Windows_NT":
+        return "superpmi.exe"
     else:
         raise RuntimeError("Unknown OS.")
 
@@ -1599,7 +1661,7 @@ def list_superpmi_container_via_rest_api(coreclr_args, filter=lambda unused: Tru
 
     Args:
         filter (lambda: string): filter to apply to the list
-    
+
     Notes:
         This method does not require installing the azure storage python
         package.
@@ -1612,7 +1674,7 @@ def list_superpmi_container_via_rest_api(coreclr_args, filter=lambda unused: Tru
     urls = []
     for item in urls_split:
         url = item.split("</Url>")[0].strip()
-        
+
         if "{}/{}/{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type) in url and filter(url):
             urls.append(url)
 
@@ -1634,15 +1696,21 @@ def download_index(coreclr_args):
         Example:
 
         {
-            "frameworks": "Windows_NT.x64.Checked.frameworks.mch", 
-            "default": "Windows_NT.x64.Checked.mch", 
+            "frameworks": "Windows_NT.x64.Checked.frameworks.mch",
+            "default": "Windows_NT.x64.Checked.mch",
             "tests": "Windows_NT.x64.Checked.tests.mch"
         }
     """
 
     urls = list_superpmi_container_via_rest_api(coreclr_args, lambda url: "index.json" in url)
 
-    assert(len(urls) == 1)
+    if len(urls) == 0:
+        print("Didn't find any index.json for the specified configuration.")
+        sys.exit(1)
+    elif len(urls) > 1:
+        print("Error: found {} index.json files (expected 1).".format(len(urls)))
+        sys.exit(1)
+
     json_string = urllib.request.urlopen(urls[0]).read().decode('utf-8')
 
     json_obj = json.loads(json_string)
@@ -1658,19 +1726,19 @@ def download_mch(coreclr_args, specific_mch=None, include_baseline_jit=False):
 
     Returns:
         index (defaultdict(lambda: None)): collection type -> name
-    
+
     """
 
     urls = list_superpmi_container_via_rest_api(coreclr_args)
-    default_mch_dir = os.path.join(coreclr_args.artifacts_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+    default_mch_dir = os.path.join(coreclr_args.spmi_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
 
     if not os.path.isdir(default_mch_dir):
         os.makedirs(default_mch_dir)
 
     with TempDir() as temp_location:
         for url in urls:
-            temp_location_jtems = [os.path.join(temp_location, item) for item in os.listdir(temp_location)]
-            for item in temp_location_jtems:
+            temp_location_items = [os.path.join(temp_location, item) for item in os.listdir(temp_location)]
+            for item in temp_location_items:
                 if os.path.isdir(item):
                     shutil.rmtree(item)
                 else:
@@ -1702,15 +1770,15 @@ def download_mch(coreclr_args, specific_mch=None, include_baseline_jit=False):
             items = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if not item.endswith(".zip")]
 
             for item in items:
+                print("Copying: {} -> {}".format(item, default_mch_dir))
                 shutil.copy2(item, default_mch_dir)
-    
+
 
 def upload_mch(coreclr_args):
     """ Upload the mch files
 
     Args:
         coreclr_args (CoreclrArguments): parsed args
-    
     """
 
     try:
@@ -1720,7 +1788,7 @@ def upload_mch(coreclr_args):
         print("Please install:")
         print("pip install azure-storage-blob")
         print("pip install cffi")
-        
+
         raise RuntimeError("Missing azure storage package.")
 
     block_blob_service = BlockBlobService(account_name="clrjit", account_key=coreclr_args.az_storage_key)
@@ -1773,33 +1841,31 @@ def upload_mch(coreclr_args):
         assert os.path.isfile(jit_location)
         print("Uploading: {} -> {}".format(jit_location, "https://clrjit.blob.core.windows.net/superpmi/" + os.path.basename(jit_location)))
         block_blob_service.create_blob_from_path(container_name, container_path, jit_location)
-    
+
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
 
     Args:
         args (ArgParse): args parsed by arg parser
-    
+
     Returns:
         args (CoreclrArguments)
 
     """
-    coreclr_args = CoreclrArguments(args, require_built_core_root=True, require_built_product_dir=False, require_built_test_dir=False, default_build_type="Checked")
+    coreclr_args = CoreclrArguments(args, require_built_core_root=False, require_built_product_dir=False, require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
-                        "skip_cleanup",
+                        "mode", # "mode" is from the `parser.add_subparsers(dest='mode')` call
                         lambda unused: True,
-                        "Unable to set skip_cleanup")
+                        "Unable to set mode")
 
-    coreclr_args.verify(args,
-                        "mode",
-                        lambda mode: mode in ["collect", "replay", "asmdiffs", "upload", "list-collections"],
-                        'Incorrect mode passed, please choose from ["collect", "replay", "asmdiffs", "upload", "list-collections"]')
+    def setup_mch_arg(mch_file):
+        if mch_file is not None:
+            return mch_file
 
-    default_coreclr_bin_mch_location = os.path.join(coreclr_args.artifacts_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
-
-    def setup_mch_arg(arg):
-        default_mch_location = os.path.join(coreclr_args.artifacts_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type), "{}.{}.{}.mch".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+        mch_directory = os.path.join(coreclr_args.spmi_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type))
+        mch_filename = "{}.{}.{}.mch".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type)
+        default_mch_location = os.path.join(mch_directory, mch_filename)
 
         if os.path.isfile(default_mch_location) and not args.force_download and coreclr_args.collection == "default":
             return default_mch_location
@@ -1807,27 +1873,63 @@ def setup_args(args):
         # Download the mch
         else:
             index = download_index(coreclr_args)
-            
-            mch_location = os.path.join(coreclr_args.artifacts_location, "mch", "{}.{}.{}".format(coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type), index[coreclr_args.collection])
+
+            mch_filename = index[coreclr_args.collection]
+            mch_location = os.path.join(mch_directory, mch_filename)
 
             if not os.path.isfile(mch_location):
                 download_mch(coreclr_args, specific_mch=index[coreclr_args.collection], include_baseline_jit=True)
 
             return mch_location
 
-    if not os.path.isdir(default_coreclr_bin_mch_location):
-        os.makedirs(default_coreclr_bin_mch_location)
+    def verify_superpmi_common_args():
 
-    coreclr_args.verify(default_coreclr_bin_mch_location,
-                        "default_coreclr_bin_mch_location",
-                        lambda unused: True,
-                        "Error setting default_coreclr_bin_mch_location")
+        # core_root has already been verified in CoreclrArguments() initialization.
+
+        coreclr_args.verify(args,
+                            "break_on_assert",
+                            lambda unused: True,
+                            "Unable to set break_on_assert")
+
+        coreclr_args.verify(args,
+                            "break_on_error",
+                            lambda unused: True,
+                            "Unable to set break_on_error")
+
+        coreclr_args.verify(args,
+                            "spmi_location",
+                            lambda unused: True,
+                            "Unable to set spmi_location",
+                            modify_arg=lambda spmi_location: os.path.abspath(os.path.join(coreclr_args.artifacts_location, "spmi")) if spmi_location is None else spmi_location)
+
+        coreclr_args.verify(args,
+                            "skip_cleanup",
+                            lambda unused: True,
+                            "Unable to set skip_cleanup")
+
+        coreclr_args.verify(args,
+                            "sequential",
+                            lambda unused: True,
+                            "Unable to set sequential.")
+
+        coreclr_args.verify(args,
+                            "log_file",
+                            lambda unused: True,
+                            "Unable to set log_file.")
+
+        if coreclr_args.log_file is not None and not coreclr_args.sequential:
+            print("-log_file requires --sequential")
+            sys.exit(1)
 
     if coreclr_args.mode == "collect":
+
+        verify_superpmi_common_args()
+
         coreclr_args.verify(args,
                             "collection_command",
                             lambda command: command is None or os.path.isfile(command),
                             "Unable to find script.")
+
         coreclr_args.verify(args,
                             "collection_args",
                             lambda unused: True,
@@ -1838,7 +1940,7 @@ def setup_args(args):
                             "pmi",
                             lambda unused: True,
                             "Unable to set pmi")
-        
+
         coreclr_args.verify(args,
                             "pmi_assemblies",
                             lambda items: args.pmi is False or len(items) > 0,
@@ -1849,21 +1951,11 @@ def setup_args(args):
                             "pmi_location",
                             lambda unused: True,
                             "Unable to set pmi_location")
-        
-        coreclr_args.verify(args,
-                            "log_file",
-                            lambda unused: True,
-                            "Unable to set log_file.")
 
         coreclr_args.verify(args,
                             "output_mch_path",
-                            lambda unused: True,
-                            "Unable to set output_mch_path")
-        
-        coreclr_args.verify(args,
-                            "log_file",
-                            lambda unused: True,
-                            "Unable to set log_file.")
+                            lambda output_mch_path: output_mch_path is None or (not os.path.isdir(os.path.abspath(output_mch_path)) and not os.path.isfile(os.path.abspath(output_mch_path))),
+                            "Invalid output_mch_path; is it an existing directory or file?")
 
         coreclr_args.verify(args,
                             "merge_mch_files",
@@ -1901,65 +1993,43 @@ def setup_args(args):
                             "Unable to set has_verified_clean_mch.")
 
         coreclr_args.verify(args,
-                            "break_on_assert",
-                            lambda unused: True,
-                            "Unable to set break_on_assert")
-
-        coreclr_args.verify(args,
-                            "break_on_error",
-                            lambda unused: True,
-                            "Unable to set break_on_error")
-
-        coreclr_args.verify(args,
                             "use_zapdisable",
                             lambda unused: True,
                             "Unable to set use_zapdisable")
 
-        jit_location = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
-        assert(os.path.isfile(jit_location))
+        coreclr_args.verify(False,          # Force it to false. TODO: support altjit collections?
+                            "altjit",
+                            lambda unused: True,
+                            "Unable to set altjit.")
 
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
-
             assert args.pmi is True
             assert len(args.pmi_assemblies) > 0
 
         if coreclr_args.merge_mch_files:
             assert len(coreclr_args.mch_files) > 0
             coreclr_args.has_run_collection_command = True
-    
+
     elif coreclr_args.mode == "replay":
+
+        verify_superpmi_common_args()
+
         coreclr_args.verify(args,
                             "collection",
                             lambda collection_name: collection_name in download_index(coreclr_args),
                             "Invalid collection. Please run 'superpmi.py list-collections' to see valid options.")
 
         coreclr_args.verify(args,
-                            "mch_file",
-                            lambda mch_file: os.path.isfile(mch_file),
-                            lambda mch_file: "Incorrect file path to mch_file: {}".format(mch_file),
-                            modify_arg=lambda arg: arg[0] if arg is not None else setup_mch_arg(arg))
-        
+                            "altjit",                   # Must be set before `jit_path` (determine_jit_name() depends on it)
+                            lambda unused: True,
+                            "Unable to set altjit.")
+
         coreclr_args.verify(args,
                             "jit_path",
                             lambda jit_path: os.path.isfile(jit_path),
-                            "Unable to set jit_path",
-                            modify_arg=lambda arg: os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args)) if arg is None else arg)
-
-        coreclr_args.verify(args,
-                            "log_file",
-                            lambda unused: True,
-                            "Unable to set log_file.")
-
-        coreclr_args.verify(args,
-                            "break_on_assert",
-                            lambda unused: True,
-                            "Unable to set break_on_assert")
-
-        coreclr_args.verify(args,
-                            "break_on_error",
-                            lambda unused: True,
-                            "Unable to set break_on_error")
+                            lambda jit_path: "Error: JIT not found at jit_path {}".format(jit_path),
+                            modify_arg=lambda arg: os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args)) if arg is None else os.path.abspath(arg))
 
         standard_location = False
         if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():
@@ -1994,7 +2064,7 @@ def setup_args(args):
                                 "arch",
                                 lambda unused: True,
                                 "Unable to set arch")
-            
+
             coreclr_args.verify(determined_build_type,
                                 "build_type",
                                 coreclr_args.check_build_type,
@@ -2004,40 +2074,32 @@ def setup_args(args):
                             "mch_file",
                             lambda mch_file: os.path.isfile(mch_file),
                             lambda mch_file: "Incorrect file path to mch_file: {}".format(mch_file),
-                            modify_arg=lambda arg: arg[0] if arg is not None else setup_mch_arg(arg))
+                            modify_arg=lambda arg: setup_mch_arg(arg))
 
     elif coreclr_args.mode == "asmdiffs":
+
+        verify_superpmi_common_args()
+
         coreclr_args.verify(args,
                             "base_jit_path",
                             lambda unused: True,
-                            "Unable to set base_jit_path",
-                            modify_arg=lambda arg: arg[0])
+                            "Unable to set base_jit_path")
+
+        coreclr_args.verify(args,
+                            "altjit",                   # Must be set before `jit_path` (determine_jit_name() depends on it)
+                            lambda unused: True,
+                            "Unable to set altjit.")
 
         coreclr_args.verify(args,
                             "diff_jit_path",
-                            lambda jit_path: True,
-                            "Unable to set base_jit_path",
-                            modify_arg=lambda arg: arg[0])
+                            lambda jit_path: os.path.isfile(jit_path),
+                            "Unable to set diff_jit_path",
+                            modify_arg=lambda arg: os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args)) if arg is None else os.path.abspath(arg))
 
         coreclr_args.verify(args,
                             "collection",
                             lambda collection_name: collection_name in download_index(coreclr_args),
                             "Invalid collection. Please run 'superpmi.py list-collections' to see valid options.")
-
-        coreclr_args.verify(args,
-                            "log_file",
-                            lambda unused: True,
-                            "Unable to set log_file.")
-
-        coreclr_args.verify(args,
-                            "break_on_assert",
-                            lambda unused: True,
-                            "Unable to set break_on_assert")
-
-        coreclr_args.verify(args,
-                            "break_on_error",
-                            lambda unused: True,
-                            "Unable to set break_on_error")
 
         coreclr_args.verify(args,
                             "diff_with_code",
@@ -2048,7 +2110,7 @@ def setup_args(args):
                             "diff_with_code_only",
                             lambda unused: True,
                             "Unable to set diff_with_code_only.")
-        
+
         coreclr_args.verify(args,
                             "previous_temp_location",
                             lambda unused: True,
@@ -2073,7 +2135,7 @@ def setup_args(args):
                             "Unable to set diff_jit_dump_only.")
 
         if coreclr_args.diff_jit_dump_only:
-            coreclr_args.verify(True,
+            coreclr_args.verify(True,                          # force `diff_jit_dump` to True
                                 "diff_jit_dump",
                                 lambda unused: True,
                                 "Unable to set diff_jit_dump.")
@@ -2127,9 +2189,10 @@ def setup_args(args):
                             "mch_file",
                             lambda mch_file: os.path.isfile(mch_file),
                             lambda mch_file: "Incorrect file path to mch_file: {}".format(mch_file),
-                            modify_arg=lambda arg: arg[0] if arg is not None else setup_mch_arg(arg))
+                            modify_arg=lambda arg: setup_mch_arg(arg))
 
     elif coreclr_args.mode == "upload":
+
         coreclr_args.verify(args,
                             "az_storage_key",
                             lambda item: item is not None,
@@ -2145,7 +2208,12 @@ def setup_args(args):
                             "jit_location",
                             lambda unused: True,
                             "Unable to set jit_location.")
-    
+
+        coreclr_args.verify(False,          # Force `altjit` to false. TODO: support altjit uploads?
+                            "altjit",
+                            lambda unused: True,
+                            "Unable to set altjit.")
+
     return coreclr_args
 
 ################################################################################
@@ -2163,7 +2231,7 @@ def main(args):
 
         return 1
 
-    # Force tieried compilation off. It will effect both collection and replay
+    # Force tiered compilation off. It will affect both collection and replay.
     os.environ["COMPlus_TieredCompilation"] = "0"
 
     coreclr_args = setup_args(args)
@@ -2174,7 +2242,7 @@ def main(args):
 
         begin_time = datetime.datetime.now()
 
-        print("SuperPMI Collect")
+        print("SuperPMI collect")
         print("------------------------------------------------------------")
         print("Start time: {}".format(begin_time.strftime("%H:%M:%S")))
 
@@ -2184,18 +2252,20 @@ def main(args):
         print("Finished SuperPMI collect")
 
         if coreclr_args.output_mch_path != None:
-            print("mch path: {}".format(coreclr_args.output_mch_path))
+            print("MCH path: {}".format(coreclr_args.output_mch_path))
 
         end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
 
         print("Finish time: {}".format(end_time.strftime("%H:%M:%S")))
+        print("Elapsed time: {}".format(elapsed_time))
 
     elif coreclr_args.mode == "replay":
         # Start a new SuperPMI Replay
 
         begin_time = datetime.datetime.now()
 
-        print("SuperPMI Replay")
+        print("SuperPMI replay")
         print("------------------------------------------------------------")
         print("Start time: {}".format(begin_time.strftime("%H:%M:%S")))
 
@@ -2203,7 +2273,6 @@ def main(args):
         jit_path = coreclr_args.jit_path
 
         print("")
-
         print("MCH Path: {}".format(mch_file))
         print("JIT Path: {}".format(jit_path))
 
@@ -2213,8 +2282,10 @@ def main(args):
         print("Finished SuperPMI replay")
 
         end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
 
         print("Finish time: {}".format(end_time.strftime("%H:%M:%S")))
+        print("Elapsed time: {}".format(elapsed_time))
 
     elif coreclr_args.mode == "asmdiffs":
         # Start a new SuperPMI Replay with AsmDiffs
@@ -2230,19 +2301,20 @@ def main(args):
         diff_jit_path = coreclr_args.diff_jit_path
 
         print("")
-
         print("MCH Path: {}".format(mch_file))
         print("Base JIT Path: {}".format(base_jit_path))
         print("Diff JIT Path: {}".format(diff_jit_path))
 
         asm_diffs = SuperPMIReplayAsmDiffs(coreclr_args, mch_file, base_jit_path, diff_jit_path)
-        success = asm_diffs.replay_with_asm_diffs(coreclr_args.previous_temp_location)
+        success = asm_diffs.replay_with_asm_diffs()
 
         print("Finished SuperPMI replay")
 
         end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
 
         print("Finish time: {}".format(end_time.strftime("%H:%M:%S")))
+        print("Elapsed time: {}".format(elapsed_time))
 
     elif coreclr_args.mode == "upload":
         begin_time = datetime.datetime.now()
@@ -2256,7 +2328,11 @@ def main(args):
         print("Finished SuperPMI upload")
 
         end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
+
         print("Finish time: {}".format(end_time.strftime("%H:%M:%S")))
+        print("Elapsed time: {}".format(elapsed_time))
+
     elif coreclr_args.mode == "list-collections":
         index = download_index(coreclr_args)
 
@@ -2265,14 +2341,14 @@ def main(args):
         print("")
         print("{} different collections".format(index_count))
         print("")
-        
-        for item in index:
-            print(item)
-        
+
+        for item, value in index.items():
+            print("{} : {}".format(item, value))
+
         print("")
     else:
         raise NotImplementedError(coreclr_args.mode)
-    
+
     return 0 if success else 1
 
 ################################################################################

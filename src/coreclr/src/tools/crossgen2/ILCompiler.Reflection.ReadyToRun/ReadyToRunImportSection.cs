@@ -13,7 +13,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h">src/inc/readytorun.h</a> READYTORUN_IMPORT_SECTION
     /// </summary>
-    public struct R2RImportSection
+    public struct ReadyToRunImportSection
     {
         public class ImportSectionEntry
         {
@@ -76,9 +76,9 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public int AuxiliaryDataSize { get; set; }
 
-        public R2RImportSection(
+        public ReadyToRunImportSection(
             int index,
-            R2RReader reader,
+            ReadyToRunReader reader,
             int rva,
             int size,
             CorCompileImportFlags flags,

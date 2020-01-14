@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -45,24 +48,27 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_dumpStateM = RegexRunnerMethod("DumpState");
 #endif
 
-        private static readonly MethodInfo s_charToLowerMethod = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) })!;
-        private static readonly MethodInfo s_charToLowerInvariantMethod = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
-        private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
-        private static readonly MethodInfo s_stringIndexOf = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
-        private static readonly MethodInfo s_spanIndexOf = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
-        private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_charToLowerMethod = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) })!;
+        private static readonly MethodInfo s_charToLowerInvariantMethod = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
 #if DEBUG
         private static readonly MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string) })!;
 #endif
+        private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
+        private static readonly MethodInfo s_memoryMarshalGetReference = typeof(MemoryMarshal).GetMethod("GetReference", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOf = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
+        private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
+        private static readonly MethodInfo s_stringIndexOf = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
 
         protected ILGenerator? _ilg;
 
@@ -264,6 +270,9 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldc_I8).</summary>
+        private void LdcI8(long i) => _ilg!.Emit(OpCodes.Ldc_I8, i);
+
         /// <summary>A macro for _ilg.Emit(OpCodes.Dup).</summary>
         private void Dup() => _ilg!.Emit(OpCodes.Dup);
 
@@ -317,6 +326,15 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldind_U2).</summary>
         private void LdindU2() => _ilg!.Emit(OpCodes.Ldind_U2);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldind_I4).</summary>
+        private void LdindI4() => _ilg!.Emit(OpCodes.Ldind_I4);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Ldind_I8).</summary>
+        private void LdindI8() => _ilg!.Emit(OpCodes.Ldind_I8);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Unaligned).</summary>
+        private void Unaligned(byte alignment) => _ilg!.Emit(OpCodes.Unaligned, alignment);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Stloc_S).</summary>
         private void Stloc(LocalBuilder lt) => _ilg!.Emit(OpCodes.Stloc_S, lt);
@@ -1299,15 +1317,16 @@ namespace System.Text.RegularExpressions
                             Ret();
                             break;
 
-                        case 2:
-                        case 3:
+                        default:
+                            Debug.Assert(setCharsCount == 2 || setCharsCount == 3, $"Unexpected setCharsCount: {setCharsCount}");
+
                             // int i = this.runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOfAny(setChars[0], setChars[1]{, setChars[2]});
                             Ldthisfld(s_runtextField);
                             Ldloc(_runtextposLocal);
                             Ldloc(_runtextendLocal);
                             Ldloc(_runtextposLocal);
                             Sub();
-                            Call(s_stringAsSpanMethod);
+                            Call(s_stringAsSpanIntIntMethod);
                             Ldc(setChars[0]);
                             Ldc(setChars[1]);
                             if (setCharsCount == 3)
@@ -1335,10 +1354,6 @@ namespace System.Text.RegularExpressions
                             Ldc(1);
                             Ret();
                             break;
-
-                        default:
-                            Debug.Fail("Unexpected setCharsCount: " + setCharsCount);
-                            break;
                     }
                 }
                 else
@@ -1361,7 +1376,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(_runtextendLocal);
                     Ldloc(_runtextposLocal);
                     Sub();
-                    Call(s_stringAsSpanMethod);
+                    Call(s_stringAsSpanIntIntMethod);
                     Stloc(textSpanLocal);
 
                     // for (int i = 0;
@@ -1415,19 +1430,10 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Generates a very simple method that sets the _trackcount field.</summary>
-        protected void GenerateInitTrackCount()
-        {
-            Ldthis();
-            Ldc(_trackcount);
-            Stfld(s_runtrackcountField);
-            Ret();
-        }
-
         private bool TryGenerateNonBacktrackingGo(RegexNode node)
         {
-            Debug.Assert(node.Type == RegexNode.Capture && node.ChildCount() == 1,
-                "Every generated tree should begin with a capture node that has a single child.");
+            Debug.Assert(node.Type == RegexNode.Capture, "Every generated tree should begin with a capture node");
+            Debug.Assert(node.ChildCount() == 1, "Capture nodes should have one child");
 
             // RightToLeft is rare and not worth adding a lot of custom code to handle in this path.
             if ((node.Options & RegexOptions.RightToLeft) != 0)
@@ -1435,8 +1441,11 @@ namespace System.Text.RegularExpressions
                 return false;
             }
 
-            // Skip the Capture node.  This path only supports the implicit capture of the whole match,
-            // which we handle implicitly at the end of the generated code in one location.
+            // We use an empty bit from the node's options to store data on whether a node contains captures.
+            Debug.Assert(Regex.MaxOptionShift == 10);
+            const RegexOptions HasCapturesFlag = (RegexOptions)(1 << 31);
+
+            // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
             if (!NodeSupportsNonBacktrackingImplementation(node, level: 0))
             {
@@ -1510,9 +1519,36 @@ namespace System.Text.RegularExpressions
             Ldthisfld(s_runtextposField);
             Callvirt(s_captureMethod);
 
-            // Done:
+            // If the graph contained captures, undo any remaining to handle failed matches.
+            if ((node.Options & HasCapturesFlag) != 0)
+            {
+                // while (Crawlpos() != 0) Uncapture();
+
+                Label finalReturnLabel = DefineLabel();
+                Br(finalReturnLabel);
+
+                MarkLabel(doneLabel);
+                Label condition = DefineLabel();
+                Label body = DefineLabel();
+                Br(condition);
+                MarkLabel(body);
+                Ldthis();
+                Callvirt(s_uncaptureMethod);
+                MarkLabel(condition);
+                Ldthis();
+                Callvirt(s_crawlposMethod);
+                Brtrue(body);
+
+                // Done:
+                MarkLabel(finalReturnLabel);
+            }
+            else
+            {
+                // Done:
+                MarkLabel(doneLabel);
+            }
+
             // return;
-            MarkLabel(doneLabel);
             Ret();
 
             // Generated code successfully with non-backtracking implementation.
@@ -1532,6 +1568,7 @@ namespace System.Text.RegularExpressions
                     level < 20) // arbitrary cut-off to limit stack dives
                 {
                     int childCount = node.ChildCount();
+                    Debug.Assert((node.Options & HasCapturesFlag) == 0);
 
                     switch (node.Type)
                     {
@@ -1623,6 +1660,48 @@ namespace System.Text.RegularExpressions
                                 }
                             }
                             break;
+
+                        case RegexNode.Capture:
+                            // Currently we only support capnums without uncapnums
+                            supported = node.N == -1;
+                            if (supported)
+                            {
+                                // And we only support them in certain places in the tree, e.g. we don't support
+                                // them inside of lookaheads.
+                                RegexNode? parent = node.Next;
+                                while (parent != null)
+                                {
+                                    if (parent.Type != RegexNode.Concatenate &&
+                                        parent.Type != RegexNode.Alternate &&
+                                        parent.Type != RegexNode.Capture &&
+                                        parent.Type != RegexNode.Require) // a positive look* node is already checked to ensure it's lookahead rather than lookbehind
+                                    {
+                                        supported = false;
+                                        break;
+                                    }
+
+                                    parent = parent.Next;
+                                }
+
+                                if (supported)
+                                {
+                                    // And we only support them if their children are supported.
+                                    supported = NodeSupportsNonBacktrackingImplementation(node.Child(0), level + 1);
+
+                                    // If we've found a supported capture, mark all of the nodes in its parent
+                                    // hierarchy as containing a capture.
+                                    if (supported)
+                                    {
+                                        parent = node;
+                                        while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
+                                        {
+                                            parent.Options |= HasCapturesFlag;
+                                            parent = parent.Next;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
                     }
                 }
 #if DEBUG
@@ -1645,7 +1724,7 @@ namespace System.Text.RegularExpressions
                 Ldthisfld(s_runtextendField);
                 Ldloc(runtextposLocal);
                 Sub();
-                Call(s_stringAsSpanMethod);
+                Call(s_stringAsSpanIntIntMethod);
                 Stloc(textSpanLocal);
             }
 
@@ -1679,6 +1758,7 @@ namespace System.Text.RegularExpressions
                 spanLocals.Push(spanLocal);
             }
 
+            // Emits the sum of a constant and a value from a local.
             void EmitSum(int constant, LocalBuilder? local)
             {
                 if (local == null)
@@ -1708,6 +1788,20 @@ namespace System.Text.RegularExpressions
                 BgeUnFar(doneLabel);
             }
 
+            // Emits code to get ref textSpan[textSpanPos]
+            void EmitTextSpanOffset()
+            {
+                Ldloc(textSpanLocal);
+                Call(s_memoryMarshalGetReference);
+                if (textSpanPos > 0)
+                {
+                    Ldc(textSpanPos * sizeof(char));
+                    Add();
+                }
+            }
+
+            // Adds the value of textSpanPos into the runtextpos local, slices textspan by the corresponding amount,
+            // and zeros out textSpanPos.
             void TransferTextSpanPosToRunTextPos()
             {
                 if (textSpanPos > 0)
@@ -1761,6 +1855,19 @@ namespace System.Text.RegularExpressions
                 Stloc(startingRunTextPos);
                 int startingTextSpanPos = textSpanPos;
 
+                // If the alternation's branches contain captures, save off the relevant
+                // state.  Note that this is only about subexpressions within the alternation,
+                // as the alternation is atomic, so we're not concerned about captures after
+                // the alternation.
+                LocalBuilder? startingCrawlpos = null;
+                if ((node.Options & HasCapturesFlag) != 0)
+                {
+                    startingCrawlpos = RentInt32Local();
+                    Ldthis();
+                    Callvirt(s_crawlposMethod);
+                    Stloc(startingCrawlpos);
+                }
+
                 // Label to jump to when any branch completes successfully.
                 Label doneAlternate = DefineLabel();
 
@@ -1784,26 +1891,115 @@ namespace System.Text.RegularExpressions
                     TransferTextSpanPosToRunTextPos();
                     BrFar(doneAlternate);
 
-                    // Reset state for next branch and loop around to generate it.
+                    // Reset state for next branch and loop around to generate it.  This includes
+                    // setting runtextpos back to what it was at the beginning of the alternation,
+                    // updating textSpan to be the full length it was, and if there's a capture that
+                    // needs to be reset, uncapturing it.
                     MarkLabel(nextBranch);
                     Ldloc(startingRunTextPos);
                     Stloc(runtextposLocal);
                     LoadTextSpanLocal();
                     textSpanPos = startingTextSpanPos;
+                    if (startingCrawlpos != null)
+                    {
+                        EmitUncaptureUntil(startingCrawlpos);
+                    }
                 }
 
-                // If the final branch fails, that's like any other failure, and we jump to done.
-                doneLabel = postAlternateDone;
-                EmitNode(node.Child(childCount - 1));
-                TransferTextSpanPosToRunTextPos();
+                // If the final branch fails, that's like any other failure, and we jump to
+                // done (unless we have captures we need to unwind first, in which case we uncapture
+                // them and then jump to done).
+                if (startingCrawlpos != null)
+                {
+                    Label uncapture = DefineLabel();
+                    doneLabel = uncapture;
+                    EmitNode(node.Child(childCount - 1));
+                    doneLabel = postAlternateDone;
+                    TransferTextSpanPosToRunTextPos();
+                    Br(doneAlternate);
+
+                    MarkLabel(uncapture);
+                    EmitUncaptureUntil(startingCrawlpos);
+                    BrFar(doneLabel);
+                }
+                else
+                {
+                    doneLabel = postAlternateDone;
+                    EmitNode(node.Child(childCount - 1));
+                    TransferTextSpanPosToRunTextPos();
+                }
 
                 // Successfully completed the alternate.
                 MarkLabel(doneAlternate);
                 ReturnInt32Local(startingRunTextPos);
 
+                if (startingCrawlpos != null)
+                {
+                    ReturnInt32Local(startingCrawlpos);
+                }
+
                 Debug.Assert(textSpanPos == 0);
             }
 
+            // Emits the code for a Capture node.
+            void EmitCapture(RegexNode node)
+            {
+                Debug.Assert(node.N == -1);
+
+                // Get the capture number.  This needs to be kept
+                // in sync with MapCapNum in RegexWriter.
+                Debug.Assert(node.Type == RegexNode.Capture);
+                Debug.Assert(node.N == -1, "Currently only support capnum, not uncapnum");
+                int capnum = node.M;
+                if (capnum != -1 && _code!.Caps != null)
+                {
+                    capnum = (int)_code.Caps[capnum]!;
+                }
+
+                // runtextpos += textSpanPos;
+                // textSpan = textSpan.Slice(textSpanPos);
+                // startingRunTextPos = runtextpos;
+                TransferTextSpanPosToRunTextPos();
+                LocalBuilder startingRunTextPos = RentInt32Local();
+                Ldloc(runtextposLocal);
+                Stloc(startingRunTextPos);
+
+                // Emit child node.
+                EmitNode(node.Child(0));
+
+                // runtextpos += textSpanPos;
+                // textSpan = textSpan.Slice(textSpanPos);
+                // Capture(capnum, startingRunTextPos, runtextpos);
+                TransferTextSpanPosToRunTextPos();
+                Ldthis();
+                Ldc(capnum);
+                Ldloc(startingRunTextPos);
+                Ldloc(runtextposLocal);
+                Callvirt(s_captureMethod);
+
+                ReturnInt32Local(startingRunTextPos);
+            }
+
+            // Emits code to unwind the capture stack until the crawl position specified in the provided local.
+            void EmitUncaptureUntil(LocalBuilder startingCrawlpos)
+            {
+                Debug.Assert(startingCrawlpos != null);
+
+                // while (Crawlpos() != startingCrawlpos) Uncapture();
+                Label condition = DefineLabel();
+                Label body = DefineLabel();
+                Br(condition);
+                MarkLabel(body);
+                Ldthis();
+                Callvirt(s_uncaptureMethod);
+                MarkLabel(condition);
+                Ldthis();
+                Callvirt(s_crawlposMethod);
+                Ldloc(startingCrawlpos);
+                Bne(body);
+            }
+
+            // Emits the code to handle a positive lookahead assertion.
             void EmitPositiveLookaheadAssertion(RegexNode node)
             {
                 // Save off runtextpos.  We'll need to reset this upon successful completion of the lookahead.
@@ -1816,6 +2012,7 @@ namespace System.Text.RegularExpressions
                 EmitNode(node.Child(0));
 
                 // After the child completes successfully, reset the text positions.
+                // Do not reset captures, which persist beyond the lookahead.
                 Ldloc(startingRunTextPos);
                 Stloc(runtextposLocal);
                 LoadTextSpanLocal();
@@ -1824,6 +2021,7 @@ namespace System.Text.RegularExpressions
                 ReturnInt32Local(startingRunTextPos);
             }
 
+            // Emits the code to handle a negative lookahead assertion.
             void EmitNegativeLookaheadAssertion(RegexNode node)
             {
                 // Save off runtextpos.  We'll need to reset this upon successful completion of the lookahead.
@@ -1930,6 +2128,10 @@ namespace System.Text.RegularExpressions
                         {
                             EmitNode(node.Child(i));
                         }
+                        break;
+
+                    case RegexNode.Capture:
+                        EmitCapture(node);
                         break;
 
                     case RegexNode.Require:
@@ -2134,23 +2336,94 @@ namespace System.Text.RegularExpressions
             // Emits the code to handle a multiple-character match.
             void EmitMultiChar(RegexNode node)
             {
-                // if (textSpanPos + node.Str.Length >= textSpan.Length) goto doneLabel;
-                // if (node.Str[0] != textSpan[textSpanPos]) goto doneLabel;
-                // if (node.Str[1] != textSpan[textSpanPos+1]) goto doneLabel;
-                // ...
-                EmitSpanLengthCheck(node.Str!.Length);
-                for (int i = 0; i < node.Str!.Length; i++)
+                bool caseInsensitive = IsCaseInsensitive(node);
+
+                // If the multi string's length exceeds the maximum length we want to unroll, instead generate a call to StartsWith.
+                // Each character that we unroll results in code generation that increases the size of both the IL and the resulting asm,
+                // and with a large enough string, that can cause significant overhead as well as even risk stack overflow due to
+                // having an obscenely long method.  Such long string lengths in a pattern are generally quite rare.  However, we also
+                // want to unroll for shorter strings, because the overhead of invoking StartsWith instead of doing a few simple
+                // inline comparisons is very measurable, especially if we're doing a culture-sensitive comparison and StartsWith
+                // accesses CultureInfo.CurrentCulture on each call.  We need to be cognizant not only of the cost if the whole
+                // string matches, but also the cost when the comparison fails early on, and thus we pay for the call overhead
+                // but don't reap the benefits of all the vectorization StartsWith can do.
+                const int MaxUnrollLength = 64;
+                if (!caseInsensitive && // StartsWith(..., XxIgnoreCase) won't necessarily be the same as char-by-char comparison
+                    node.Str!.Length > MaxUnrollLength)
                 {
+                    // if (!textSpan.Slice(textSpanPos).StartsWith("...") goto doneLabel;
                     Ldloca(textSpanLocal);
-                    Ldc(textSpanPos + i);
-                    Call(s_spanGetItemMethod);
-                    LdindU2();
-                    if (IsCaseInsensitive(node)) CallToLower();
-                    Ldc(node.Str[i]);
-                    BneFar(doneLabel);
+                    Ldc(textSpanPos);
+                    Call(s_spanSliceIntMethod);
+                    Ldstr(node.Str);
+                    Call(s_stringAsSpanMethod);
+                    Call(s_spanStartsWith);
+                    BrfalseFar(doneLabel);
+                    textSpanPos += node.Str.Length;
+                    return;
                 }
 
-                textSpanPos += node.Str.Length;
+                // Emit the length check for the whole string.  If the generated code gets past this point,
+                // we know the span is at least textSpanPos + s.Length long.
+                ReadOnlySpan<char> s = node.Str;
+                EmitSpanLengthCheck(s.Length);
+
+                // If we're doing a case-insensitive comparison, we need to lower case each character,
+                // so we just go character-by-character.  But if we're not, we try to process multiple
+                // characters at a time; this is helpful not only for throughput but also in reducing
+                // the amount of IL and asm that results from this unrolling.
+                if (!caseInsensitive)
+                {
+                    // TODO https://github.com/dotnet/corefx/issues/39227:
+                    // If/when we implement CompileToAssembly, this code will either need to be special-cased
+                    // to not be used when saving out the assembly, or it'll need to be augmented to emit an
+                    // endianness check into the IL.  The code below is creating int/long constants based on
+                    // reading the comparison string at compile time, and the machine doing the compilation
+                    // could be of a different endianness than the machine running the compiled assembly.
+
+                    // On 64-bit, process 4 characters at a time until the string isn't at least 4 characters long.
+                    if (IntPtr.Size == 8)
+                    {
+                        const int CharsPerInt64 = 4;
+                        while (s.Length >= CharsPerInt64)
+                        {
+                            // if (Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref MemoryMarshal.GetReference(textSpan), textSpanPos)) != value) goto doneLabel;
+                            EmitTextSpanOffset();
+                            Unaligned(1);
+                            LdindI8();
+                            LdcI8(MemoryMarshal.Read<long>(MemoryMarshal.AsBytes(s)));
+                            BneFar(doneLabel);
+                            textSpanPos += CharsPerInt64;
+                            s = s.Slice(CharsPerInt64);
+                        }
+                    }
+
+                    // Of what remains, process 2 characters at a time until the string isn't at least 2 characters long.
+                    const int CharsPerInt32 = 2;
+                    while (s.Length >= CharsPerInt32)
+                    {
+                        // if (Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref MemoryMarshal.GetReference(textSpan), textSpanPos)) != value) goto doneLabel;
+                        EmitTextSpanOffset();
+                        Unaligned(1);
+                        LdindI4();
+                        Ldc(MemoryMarshal.Read<int>(MemoryMarshal.AsBytes(s)));
+                        BneFar(doneLabel);
+                        textSpanPos += CharsPerInt32;
+                        s = s.Slice(CharsPerInt32);
+                    }
+                }
+
+                // Finally, process all of the remaining characters one by one.
+                for (int i = 0; i < s.Length; i++)
+                {
+                    // if (s[i] != textSpan[textSpanPos++]) goto doneLabel;
+                    EmitTextSpanOffset();
+                    textSpanPos++;
+                    LdindU2();
+                    if (caseInsensitive) CallToLower();
+                    Ldc(s[i]);
+                    BneFar(doneLabel);
+                }
             }
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
@@ -4244,9 +4517,11 @@ namespace System.Text.RegularExpressions
             // We use a const string instead of a byte[] / static data property because
             // it lets IL emit handle all the gory details for us.  It also is ok from an
             // endianness perspective because the compilation happens on the same machine
-            // that runs the compiled code.  If that were to ever change, this would need
-            // to be revisited. String length is 8 chars == 16 bytes == 128 bits.
-            string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) =>
+            // that runs the compiled code.
+            // TODO https://github.com/dotnet/corefx/issues/39227: If that were to ever change,
+            // this would need to be revisited, such as by doubling the string length, and using
+            // just the lower byte of the char, e.g. (byte)lookup[x].
+            string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
                 {

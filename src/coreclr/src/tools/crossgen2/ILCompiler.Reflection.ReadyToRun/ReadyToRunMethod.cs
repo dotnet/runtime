@@ -50,6 +50,9 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public class RuntimeFunction
     {
+        private ReadyToRunReader _readyToRunReader;
+        private DebugInfo _debugInfo;
+
         /// <summary>
         /// The index of the runtime function
         /// </summary>
@@ -82,34 +85,42 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The method that this runtime function belongs to
         /// </summary>
-        public R2RMethod Method { get; }
+        public ReadyToRunMethod Method { get; }
 
         public BaseUnwindInfo UnwindInfo { get; }
 
         public EHInfo EHInfo { get; }
 
-        public DebugInfo DebugInfo { get; }
-
-        public RuntimeFunction() { }
+        public DebugInfo DebugInfo
+        {
+            get
+            {
+                if (_debugInfo == null)
+                {
+                    _readyToRunReader.RuntimeFunctionToDebugInfo.TryGetValue(Id, out _debugInfo);
+                }
+                return _debugInfo;
+            }
+        }
 
         public RuntimeFunction(
+            ReadyToRunReader readyToRunReader,
             int id,
             int startRva,
             int endRva,
             int unwindRva,
             int codeOffset,
-            R2RMethod method,
+            ReadyToRunMethod method,
             BaseUnwindInfo unwindInfo,
             BaseGcInfo gcInfo,
-            EHInfo ehInfo,
-            DebugInfo debugInfo)
+            EHInfo ehInfo)
         {
+            _readyToRunReader = readyToRunReader;
             Id = id;
             StartAddress = startRva;
             UnwindRVA = unwindRva;
             Method = method;
             UnwindInfo = unwindInfo;
-            DebugInfo = debugInfo;
 
             if (endRva != -1)
             {
@@ -141,7 +152,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
     }
 
-    public class R2RMethod
+    public class ReadyToRunMethod
     {
         private const int _mdtMethodDef = 0x06000000;
 
@@ -196,12 +207,10 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public FixupCell[] Fixups { get; set; }
 
-        public R2RMethod() { }
-
         /// <summary>
         /// Extracts the method signature from the metadata by rid
         /// </summary>
-        public R2RMethod(
+        public ReadyToRunMethod(
             int index,
             MetadataReader metadataReader,
             EntityHandle methodHandle,
