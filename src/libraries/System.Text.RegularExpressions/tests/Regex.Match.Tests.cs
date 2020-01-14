@@ -410,6 +410,29 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(expectedValue, match.Groups[0].Value);
         }
 
+        [Theory]
+        [InlineData(RegexOptions.None, 1)]
+        [InlineData(RegexOptions.None, 10)]
+        [InlineData(RegexOptions.None, 100)]
+        [InlineData(RegexOptions.Compiled, 1)]
+        [InlineData(RegexOptions.Compiled, 10)]
+        [InlineData(RegexOptions.Compiled, 100)]
+        public void Match_DeepNesting(RegexOptions options, int count)
+        {
+            const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
+            const string Match = "defg";
+
+            string pattern = string.Concat(Enumerable.Repeat(Start, count)) + string.Concat(Enumerable.Repeat(End, count));
+            string input = string.Concat(Enumerable.Repeat(Match, count));
+
+            var r = new Regex(pattern, options);
+            Match m = r.Match(input);
+
+            Assert.True(m.Success);
+            Assert.Equal(input, m.Value);
+            Assert.Equal(count + 1, m.Groups.Count);
+        }
+
         [Fact]
         public void Match_Timeout()
         {

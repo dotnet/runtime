@@ -70,6 +70,12 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_stringIndexOf = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
 
+        /// <summary>
+        /// The max recursion depth used for computations that can recover for not walking the entire node tree.
+        /// This is used to avoid stack overflows on degenerate expressions.
+        /// </summary>
+        private const int MaxRecursionDepth = 20;
+
         protected ILGenerator? _ilg;
 
         // tokens representing local variables
@@ -868,10 +874,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // !!!! This function must be kept synchronized with FindFirstChar in      !!!!
-        // !!!! RegexInterpreter.cs                                                !!!!
-        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         /// <summary>
         /// Generates FindFirstChar.
         /// </summary>
@@ -894,6 +896,51 @@ namespace System.Text.RegularExpressions
                 }
             }
 
+            // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
+            int minRequiredLength = _code!.Tree.MinRequiredLength;
+            if (minRequiredLength > 0)
+            {
+                Label finishedLengthCheck = DefineLabel();
+                if (!_code.RightToLeft)
+                {
+                    // if (this.runtextpos > this.runtextend - _code.Tree.MinRequiredLength)
+                    // {
+                    //     this.runtextpos = this.runtextend;
+                    //     return false;
+                    // }
+                    Ldthisfld(s_runtextposField);
+                    Ldthisfld(s_runtextendField);
+                    Ldc(minRequiredLength);
+                    Sub();
+                    Ble(finishedLengthCheck);
+                    Ldthis();
+                    Ldthisfld(s_runtextendField);
+                    Stfld(s_runtextposField);
+                    Ldc(0);
+                    Ret();
+                }
+                else
+                {
+                    // if (this.runtextpos - _code.Tree.MinRequiredLength < this.runtextbeg)
+                    // {
+                    //     this.runtextpos = this.runtextbeg;
+                    //     return false;
+                    // }
+                    Ldthisfld(s_runtextposField);
+                    Ldc(minRequiredLength);
+                    Sub();
+                    Ldthisfld(s_runtextbegField);
+                    Bge(finishedLengthCheck);
+                    Ldthis();
+                    Ldthisfld(s_runtextbegField);
+                    Stfld(s_runtextposField);
+                    Ldc(0);
+                    Ret();
+                }
+                MarkLabel(finishedLengthCheck);
+            }
+
+            // Generate anchor checks.
             if ((_anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)) != 0)
             {
                 if (!_code!.RightToLeft)
@@ -1285,7 +1332,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(_runtextposLocal);
                 BleFar(returnFalseLabel);
 
-                Span<char> setChars = stackalloc char[3];
+                Span<char> setChars = stackalloc char[3]; // up to 3 characters handled by IndexOf{Any} below
                 int setCharsCount;
                 if (!_fcPrefix.GetValueOrDefault().CaseInsensitive &&
                     (setCharsCount = RegexCharClass.GetSetChars(_fcPrefix.GetValueOrDefault().Prefix, setChars)) > 0)
@@ -1447,7 +1494,7 @@ namespace System.Text.RegularExpressions
 
             // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
-            if (!NodeSupportsNonBacktrackingImplementation(node, level: 0))
+            if (!NodeSupportsNonBacktrackingImplementation(node, maxDepth: MaxRecursionDepth))
             {
                 return false;
             }
@@ -1481,12 +1528,12 @@ namespace System.Text.RegularExpressions
             Ldthisfld(s_runtextField);
             Stloc(runtextLocal);
 
-            // int originalruntextpos, runtextpos;
-            // runtextpos = originalruntextpos = this.runtextpos;
+            // int runtextpos;
+            // int originalruntextpos = runtextpos = this.runtextpos;
             Ldthisfld(s_runtextposField);
             Dup();
-            Stloc(originalruntextposLocal);
             Stloc(runtextposLocal);
+            Stloc(originalruntextposLocal);
 
             // The implementation tries to use const indexes into the span wherever possible, which we can do
             // in all places except for variable-length loops.  For everything else, we know at any point in
@@ -1555,7 +1602,7 @@ namespace System.Text.RegularExpressions
             return true;
 
             // Determines whether the node supports an optimized implementation that doesn't allow for backtracking.
-            static bool NodeSupportsNonBacktrackingImplementation(RegexNode node, int level)
+            static bool NodeSupportsNonBacktrackingImplementation(RegexNode node, int maxDepth)
             {
                 bool supported = false;
 
@@ -1564,8 +1611,7 @@ namespace System.Text.RegularExpressions
                 // We also limit the recursion involved to prevent stack dives; this limitation can be removed by switching
                 // away from a recursive implementation (done for convenience) to an iterative one that's more complicated
                 // but within the same problems.
-                if ((node.Options & RegexOptions.RightToLeft) == 0 &&
-                    level < 20) // arbitrary cut-off to limit stack dives
+                if ((node.Options & RegexOptions.RightToLeft) == 0 && maxDepth > 0)
                 {
                     int childCount = node.ChildCount();
                     Debug.Assert((node.Options & HasCapturesFlag) == 0);
@@ -1622,7 +1668,7 @@ namespace System.Text.RegularExpressions
                         case RegexNode.Lazyloop:
                             supported =
                                 (node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic)) &&
-                                NodeSupportsNonBacktrackingImplementation(node.Child(0), level + 1);
+                                NodeSupportsNonBacktrackingImplementation(node.Child(0), maxDepth - 1);
                             break;
 
                         // We can handle atomic as long as we can handle making its child atomic, or
@@ -1633,7 +1679,7 @@ namespace System.Text.RegularExpressions
                         // which is not supported.
                         case RegexNode.Require:
                         case RegexNode.Prevent:
-                            supported = NodeSupportsNonBacktrackingImplementation(node.Child(0), level + 1);
+                            supported = NodeSupportsNonBacktrackingImplementation(node.Child(0), maxDepth - 1);
                             break;
 
                         // We can handle alternates as long as they're atomic (a root / global alternate is
@@ -1653,7 +1699,7 @@ namespace System.Text.RegularExpressions
                             supported = true;
                             for (int i = 0; i < childCount; i++)
                             {
-                                if (supported && !NodeSupportsNonBacktrackingImplementation(node.Child(i), level + 1))
+                                if (supported && !NodeSupportsNonBacktrackingImplementation(node.Child(i), maxDepth - 1))
                                 {
                                     supported = false;
                                     break;
@@ -1662,7 +1708,7 @@ namespace System.Text.RegularExpressions
                             break;
 
                         case RegexNode.Capture:
-                            // Currently we only support capnums without uncapnums
+                            // Currently we only support capnums without uncapnums (for balancing groups)
                             supported = node.N == -1;
                             if (supported)
                             {
@@ -1686,7 +1732,7 @@ namespace System.Text.RegularExpressions
                                 if (supported)
                                 {
                                     // And we only support them if their children are supported.
-                                    supported = NodeSupportsNonBacktrackingImplementation(node.Child(0), level + 1);
+                                    supported = NodeSupportsNonBacktrackingImplementation(node.Child(0), maxDepth - 1);
 
                                     // If we've found a supported capture, mark all of the nodes in its parent
                                     // hierarchy as containing a capture.
