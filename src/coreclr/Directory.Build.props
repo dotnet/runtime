@@ -148,7 +148,6 @@
   -->
   <PropertyGroup>
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'linux-musl-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
-    <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'rhel.6-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
   </PropertyGroup>
 
   <PropertyGroup>
