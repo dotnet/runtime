@@ -33,7 +33,7 @@ int __cdecl main(int argc, char *argv[]) {
         return FAIL;
     }
   
-    /* Recieve and allocate the correct amount of memory for the buffer */
+    /* Receive and allocate the correct amount of memory for the buffer */
     size = ReturnValueForLargeBuffer = GetEnvironmentVariable("PATH",        
                                                               pResultBuffer,  
                                                               0);             
