@@ -4634,13 +4634,12 @@ set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame)
 	gpointer builder = get_async_method_builder (frame);
 	g_assert (builder);
 
-	void* args [1];
-	gboolean arg = TRUE;
-	ERROR_DECL (error);
-	args [0] = &arg;
 	MonoMethod* method = get_set_notification_method (mono_class_from_mono_type_internal (builder_field->type));
 	if (method == NULL)
 		return FALSE;
+	gboolean arg = TRUE;
+	ERROR_DECL (error);
+	void *args [ ] = { &arg };
 	mono_runtime_invoke_checked (method, builder, args, error);
 	mono_error_assert_ok (error);
 	return TRUE;

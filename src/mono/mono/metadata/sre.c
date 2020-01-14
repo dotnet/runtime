@@ -4476,8 +4476,7 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 			mono_memory_barrier ();
 			resolve_method = m;
 		}
-		void *args [16];
-		args [0] = obj;
+		void *args [ ] = { obj };
 		obj = mono_runtime_invoke_checked (resolve_method, NULL, args, error);
 		goto_if_nok (error, return_null);
 		g_assert (obj);

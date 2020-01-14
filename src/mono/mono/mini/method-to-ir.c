@@ -2519,11 +2519,10 @@ mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean i
 static MonoInst*
 emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
 {
-	MonoInst *args [16];
 	MonoInst *call;
 
 	// FIXME: No fastpath since the slot is not a compile time constant
-	args [0] = rgctx;
+	MonoInst *args [2] = { rgctx };
 	EMIT_NEW_AOTCONST (cfg, args [1], MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
 	if (entry->in_mrgctx)
 		call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
@@ -3216,7 +3215,6 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 	if (context_used) {
 		MonoInst *data;
 		MonoRgctxInfoType rgctx_info;
-		MonoInst *iargs [2];
 		gboolean known_instance_size = !mini_is_gsharedvt_klass (klass);
 
 		MonoMethod *managed_alloc = mono_gc_get_managed_allocator (klass, for_box, known_instance_size);
@@ -3673,7 +3671,7 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 		}
 	}
 	if (supported) {
-		MonoInst *args [16];
+		MonoInst *args [5];
 
 		/*
 		 * This case handles calls to
@@ -5250,12 +5248,11 @@ handle_call_res_devirt (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *call_re
 		MonoType *param_type = mono_class_get_generic_class (cmethod->klass)->context.class_inst->type_argv [0];
 		MonoClass *inst;
 		MonoGenericContext ctx;
-		MonoType *args [16];
 		ERROR_DECL (error);
 
 		memset (&ctx, 0, sizeof (ctx));
 
-		args [0] = param_type;
+		MonoType *args [ ] = { param_type };
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 
 		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
@@ -5825,10 +5822,9 @@ emit_setret (MonoCompile *cfg, MonoInst *val)
 	} else {
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 		if (COMPILE_SOFT_FLOAT (cfg) && !ret_type->byref && ret_type->type == MONO_TYPE_R4) {
-			MonoInst *iargs [1];
 			MonoInst *conv;
 
-			iargs [0] = val;
+			MonoInst *iargs [ ] = { val };
 			conv = mono_emit_jit_icall (cfg, mono_fload_r4_arg, iargs);
 			mono_arch_emit_setret (cfg, cfg->method, conv);
 		} else {
@@ -7745,11 +7741,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoInst *val = sp [fsig->param_count];
 
 					if (val->type == STACK_OBJ) {
-						MonoInst *iargs [2];
-
-						iargs [0] = sp [0];
-						iargs [1] = val;
-
+						MonoInst *iargs [ ] = { sp [0], val };
 						mono_emit_jit_icall (cfg, mono_helper_stelem_ref_check, iargs);
 					}
 

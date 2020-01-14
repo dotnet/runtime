@@ -5308,13 +5308,12 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		MonoClass *tclass = mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoClass *icomparable, *gcomparer, *icomparable_inst;
 		MonoGenericContext ctx;
-		MonoType *args [16];
 
 		memset (&ctx, 0, sizeof (ctx));
 
 		icomparable = mono_class_load_from_name (mono_defaults.corlib, "System", "IComparable`1");
 
-		args [0] = m_class_get_byval_arg (tclass);
+		MonoType *args [ ] = { m_class_get_byval_arg (tclass) };
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 
 		icomparable_inst = mono_class_inflate_generic_class_checked (icomparable, &ctx, error);
@@ -5336,13 +5335,12 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		MonoClass *tclass = mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoClass *iface, *gcomparer, *iface_inst;
 		MonoGenericContext ctx;
-		MonoType *args [16];
 
 		memset (&ctx, 0, sizeof (ctx));
 
 		iface = mono_class_load_from_name (mono_defaults.corlib, "System", "IEquatable`1");
 		g_assert (iface);
-		args [0] = m_class_get_byval_arg (tclass);
+		MonoType *args [ ] = { m_class_get_byval_arg (tclass) };
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 
 		iface_inst = mono_class_inflate_generic_class_checked (iface, &ctx, error);
@@ -5364,14 +5362,13 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		MonoClass *enum_comparer;
 		MonoClass *tclass = mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoGenericContext ctx;
-		MonoType *args [16];
 
 		if (m_class_is_enumtype (tclass)) {
 			MonoClass *enum_comparer_inst;
 			ERROR_DECL (error);
 
 			memset (&ctx, 0, sizeof (ctx));
-			args [0] = m_class_get_byval_arg (tclass);
+			MonoType *args [ ] = { m_class_get_byval_arg (tclass) };
 			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 
 			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
@@ -5386,14 +5383,13 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		MonoClass *comparer;
 		MonoClass *tclass = mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoGenericContext ctx;
-		MonoType *args [16];
 
 		if (m_class_is_enumtype (tclass)) {
 			MonoClass *comparer_inst;
 			ERROR_DECL (error);
 
 			memset (&ctx, 0, sizeof (ctx));
-			args [0] = m_class_get_byval_arg (tclass);
+			MonoType *args [ ] = { m_class_get_byval_arg (tclass) };
 			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 
 			comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "ObjectComparer`1");
@@ -5409,7 +5405,6 @@ add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int 
 {
 	int i;
 	MonoGenericContext ctx;
-	MonoType *args [16];
 
 	if (acfg->aot_opts.no_instances)
 		return;
@@ -5419,7 +5414,7 @@ add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int 
 	for (i = 0; i < ninsts; ++i) {
 		ERROR_DECL (error);
 		MonoClass *generic_inst;
-		args [0] = insts [i];
+		MonoType *args [ ] = { insts [i] };
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 		generic_inst = mono_class_inflate_generic_class_checked (klass, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
@@ -10384,7 +10379,6 @@ mono_aot_get_array_helper_from_wrapper (MonoMethod *method)
 	MonoMethod *m;
 	const char *prefix;
 	MonoGenericContext ctx;
-	MonoType *args [16];
 	char *mname, *iname, *s, *s2, *helper_name = NULL;
 
 	prefix = "System.Collections.Generic";
@@ -10409,7 +10403,7 @@ mono_aot_get_array_helper_from_wrapper (MonoMethod *method)
 	if (m->is_generic) {
 		ERROR_DECL (error);
 		memset (&ctx, 0, sizeof (ctx));
-		args [0] = m_class_get_byval_arg (m_class_get_element_class (method->klass));
+		MonoType *args [ ] = { m_class_get_byval_arg (m_class_get_element_class (method->klass)) };
 		ctx.method_inst = mono_metadata_get_generic_inst (1, args);
 		m = mono_class_inflate_generic_method_checked (m, &ctx, error);
 		g_assert (is_ok (error)); /* FIXME don't swallow the error */
