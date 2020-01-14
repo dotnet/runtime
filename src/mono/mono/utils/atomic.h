@@ -16,6 +16,7 @@
 #include "config.h"
 #include <glib.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-compiler.h>
 
 /*
 The current Nexus 7 arm-v7a fails with:

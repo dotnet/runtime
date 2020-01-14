@@ -13,7 +13,6 @@
 #include <glib.h>
 
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-compiler.h>
 
 #if defined (WAPI_NO_ATOMIC_ASM) || defined (BROKEN_64BIT_ATOMICS_INTRINSIC)
 #define NEED_64BIT_CMPXCHG_FALLBACK
