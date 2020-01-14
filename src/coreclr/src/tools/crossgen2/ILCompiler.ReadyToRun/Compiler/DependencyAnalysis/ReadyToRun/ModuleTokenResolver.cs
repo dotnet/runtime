@@ -130,12 +130,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 methodSpec.DecodeSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
                 token = new ModuleToken(token.Module, methodSpec.Method);
             }
+
             if (token.TokenType == CorTokenType.mdtMemberRef)
             {
                 MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
                 EntityHandle owningTypeHandle = memberRef.Parent;
                 AddModuleTokenForType(method.OwningType, new ModuleToken(token.Module, owningTypeHandle));
                 memberRef.DecodeMethodSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
+            }
+            else if (token.TokenType == CorTokenType.mdtMethodDef)
+            {
+                MethodDefinition methodDef = token.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)token.Handle);
+                TypeDefinitionHandle owningTypeHandle = methodDef.GetDeclaringType();
+                AddModuleTokenForType(method.OwningType, new ModuleToken(token.Module, owningTypeHandle));
+                methodDef.DecodeSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
             }
         }
 

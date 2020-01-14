@@ -311,10 +311,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TypeFlags.Nullable:
                 case TypeFlags.Enum:
                     {
-                        ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
-                        EmitModuleOverride(token.Module, context);
-                        EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
-                        EmitToken(token.Token);
+                        if (typeDesc == typeDesc.Context.GetWellKnownType(WellKnownType.TypedReference))
+                        {
+                            EmitElementType(CorElementType.ELEMENT_TYPE_TYPEDBYREF);
+                        }
+                        else
+                        {
+                            ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
+                            EmitModuleOverride(token.Module, context);
+                            EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
+                            EmitToken(token.Token);
+                        }
                         return;
                     }
 
