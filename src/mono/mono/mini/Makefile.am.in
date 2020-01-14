@@ -779,6 +779,20 @@ libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS) @CXX_ADD_CFLAGS@
 libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags) 
 
+noinst_LIBRARIES += libmaintest.a
+
+libmaintest_a_SOURCES = interp/whitebox.c
+libmaintest_a_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@
+
+WHITEBOX_ASSEMBLY=interp/whitebox-snippets.exe
+test_mono_interp_whitebox_SOURCES =
+test_mono_interp_whitebox_CFLAGS = $(AM_CFLAGS) @CXX_REMOVE_CFLAGS@
+test_mono_interp_whitebox_LDADD = interp/libmaintest_a-whitebox.$(OBJEXT) libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs)
+test_mono_interp_whitebox_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
+test_mono_interp_whitebox_DEPENDENCIES = $(WHITEBOX_ASSEMBLY)
+
+check_PROGRAMS = test-mono-interp-whitebox
+
 endif # !ENABLE_MSVC_ONLY
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
@@ -899,6 +913,9 @@ rcheck: mono $(regtests)
 
 richeck: mono $(regtests)
 	$(INTERP_RUNTIME) --regression $(regtests)
+
+interp-whitebox: test-mono-interp-whitebox
+	MONO_PATH=$(CLASS) ./$< $(WHITEBOX_ASSEMBLY)
 
 mixedcheck: mono mixed.exe
 	$(MINI_RUNTIME) --interp=jit=JitClass mixed.exe

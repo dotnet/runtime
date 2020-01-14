@@ -34,3 +34,4 @@
 /buildver-sgen.h
 /buildver-boehm.h
 /regressiontests.out
+/test-mono-interp-whitebox
