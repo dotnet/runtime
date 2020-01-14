@@ -67,7 +67,6 @@ public class WindowsIdentityFixture : IDisposable
     public WindowsIdentityFixture()
     {
         TestAccount = new WindowsTestAccount("CorFxTstWiIde01kiu");
-        TestAccount.Create();
     }
 
     public void Dispose()
@@ -81,18 +80,15 @@ public sealed class WindowsTestAccount : IDisposable
     private readonly string _userName;
     private SafeAccessTokenHandle _accountTokenHandle;
     public SafeAccessTokenHandle AccountTokenHandle => _accountTokenHandle;
-    public string AccountName
-    {
-        get
-        {
-            // We should not use System.Security.Principal.Windows classes that we'are testing.
-            // To avoid too much pinvoke plumbing to get userName from OS for now we concat machine name.
-            return Environment.MachineName + "\\" + _userName;
-        }
-    }
-    public WindowsTestAccount(string userName) => _userName = userName;
+    public string AccountName { get; private set; }
 
-    public void Create()
+    public WindowsTestAccount(string userName)
+    {
+        _userName = userName;
+        CreateUser();
+    }
+
+    private void CreateUser()
     {
         string testAccountPassword;
         using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
@@ -136,6 +132,19 @@ public sealed class WindowsTestAccount : IDisposable
             {
                 _accountTokenHandle = null;
                 throw new Exception($"Failed to get SafeAccessTokenHandle for test account {_userName}", new Win32Exception());
+            }
+
+            bool gotRef = false;
+            try
+            {
+                _accountTokenHandle.DangerousAddRef(ref gotRef);
+                IntPtr logonToken = _accountTokenHandle.DangerousGetHandle();
+                AccountName = new WindowsIdentity(logonToken).Name;
+            }
+            finally
+            {
+                if (gotRef)
+                    _accountTokenHandle.DangerousRelease();
             }
         }
     }

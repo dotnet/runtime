@@ -673,14 +673,27 @@ namespace System.Security.Principal
             if (func == null)
                 throw new ArgumentNullException(nameof(func));
 
-            T result = default(T);
+            T result = default;
             RunImpersonatedInternal(safeAccessTokenHandle, () => result = func());
             return result;
         }
 
+        /// <summary>
+        /// Runs the specified asynchronous action as the impersonated Windows identity
+        /// </summary>
+        /// <param name="safeAccessTokenHandle">The SafeAccessTokenHandle of the impersonated Windows identity.</param>
+        /// <param name="func">The <see cref="System.Func{System.Threading.Tasks.Task}"/> to run.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous operation of the provided <see cref="System.Func{System.Threading.Tasks.Task}"/>.</returns>
         public static Task RunImpersonatedAsync(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task> func)
             => RunImpersonated(safeAccessTokenHandle, func);
 
+        /// <summary>
+        /// Runs the specified asynchronous action as the impersonated Windows identity
+        /// </summary>
+        /// <typeparam name="T">The type of the object to return.</typeparam>
+        /// <param name="safeAccessTokenHandle">The SafeAccessTokenHandle of the impersonated Windows identity.</param>
+        /// <param name="func">The <see cref="System.Func{System.Threading.Tasks.Task{T}}"/> to run.</param>
+        /// <returns>A <see cref="Task{T}"/> that represents the asynchronous operation of the provided <see cref="System.Func{System.Threading.Tasks.Task{T}}"/>.</returns>
         public static Task<T> RunImpersonatedAsync<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task<T>> func)
             => RunImpersonated(safeAccessTokenHandle, func);
 
