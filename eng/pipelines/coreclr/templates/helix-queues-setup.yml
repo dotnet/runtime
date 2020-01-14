@@ -119,10 +119,10 @@ jobs:
     #   https://github.com/dotnet/runtime/issues/1097
     #   https://github.com/dotnet/runtime/issues/1663
     #   https://github.com/dotnet/core-eng/issues/8490
-    #  - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
-    #    - Windows.10.Arm64.Open
-    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      - Windows.10.Arm64
+    # - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+    #   - Windows.10.Arm64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.10.Arm64
 
     # Windows_NT arm64
     - ${{ if eq(parameters.platform, 'Windows_NT_arm64') }}:
