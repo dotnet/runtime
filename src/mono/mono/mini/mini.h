@@ -800,8 +800,7 @@ struct MonoCallInst {
 	/* See the comment in mini-arm.c!mono_arch_emit_call for RegTypeFP. */
 	GSList *float_args;
 #endif
-	// Bitfields are at the end due to an unexplained problem with C++ and LLVM.
-	// This is also their ideal place to minimize padding for alignment,
+	// Bitfields are at the end to minimize padding for alignment,
 	// unless there is a placement to increase locality.
 
 	guint is_virtual : 1;
