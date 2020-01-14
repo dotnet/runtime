@@ -392,7 +392,7 @@ mono_arm_get_exception_trampolines (gboolean aot)
 	MonoTrampInfo *info;
 	GSList *tramps = NULL;
 
-	// FIXME Macro to make one line per trampoline and less repitition of names.
+	// FIXME Macro to make one line per trampoline and less repetition of names.
 
 	/* LLVM uses the normal trampolines, but with a different name */
 	get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", &info, aot, FALSE);

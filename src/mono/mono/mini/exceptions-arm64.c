@@ -139,7 +139,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	/* Load ctx */
 	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, ctx_offset);
 	/* Save registers back to ctx */
-	/* This isn't strictly neccessary since we don't allocate variables used in eh clauses to registers */
+	/* This isn't strictly necessary since we don't allocate variables used in eh clauses to registers */
 	code = mono_arm_emit_store_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoContext, regs));
 
 	/* Restore regs */

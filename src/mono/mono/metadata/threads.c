@@ -2070,7 +2070,7 @@ byte_array_to_domain (MonoArrayHandle arr, MonoDomain *domain, MonoError *error)
 
 	// Capture arrays into common representation for repetitious code.
 	// These two variables could also be an array of size 2 and
-	// repitition implemented with a loop.
+	// repetition implemented with a loop.
 	struct {
 		MonoArrayHandle handle;
 		gpointer p;

@@ -779,7 +779,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 				cfailed++;
 				g_print ("Test '%s' execution failed.\n", method->name);
 			} else if (exc != NULL) {
-				g_print ("Exception in Test '%s' occured:\n", method->name);
+				g_print ("Exception in Test '%s' occurred:\n", method->name);
 				mono_object_describe (exc);
 				run++;
 				failed++;

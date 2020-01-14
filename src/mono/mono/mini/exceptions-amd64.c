@@ -1105,7 +1105,7 @@ mono_arch_unwindinfo_add_alloc_stack (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 		if (codesneeded == 3) {
 			/*the unscaled size of the allocation is recorded
 			  in the next two slots in little-endian format.
-			  NOTE, unwind codes are allocated from end to begining of list so
+			  NOTE, unwind codes are allocated from end to beginning of list so
 			  unwind code will have right execution order. List is sorted on CodeOffset
 			  using descending sort order.*/
 			unwindcode->UnwindOp = UWOP_ALLOC_LARGE;
@@ -1115,7 +1115,7 @@ mono_arch_unwindinfo_add_alloc_stack (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 		else {
 			/*the size of the allocation divided by 8
 			  is recorded in the next slot.
-			  NOTE, unwind codes are allocated from end to begining of list so
+			  NOTE, unwind codes are allocated from end to beginning of list so
 			  unwind code will have right execution order. List is sorted on CodeOffset
 			  using descending sort order.*/
 			unwindcode->UnwindOp = UWOP_ALLOC_LARGE;

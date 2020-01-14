@@ -4299,7 +4299,7 @@ mono_save_args (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **sp)
 		 */
 		temp = mono_compile_create_var (cfg, argtype, OP_LOCAL);
 		cfg->args [i] = temp;
-		/* This uses cfg->args [i] which is set by the preceeding line */
+		/* This uses cfg->args [i] which is set by the preceding line */
 		EMIT_NEW_ARGSTORE (cfg, store, i, *sp);
 		store->cil_code = sp [0]->cil_code;
 		sp++;
@@ -5690,7 +5690,7 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		if (mono_class_is_interface (cmethod->klass) && mono_class_is_ginst (cmethod->klass) &&
 		    (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 			/*
-			 * The parent classes implement no generic interfaces, so the called method will be a vtype method, so no boxing neccessary.
+			 * The parent classes implement no generic interfaces, so the called method will be a vtype method, so no boxing necessary.
 			 */
 			/* If the method is not abstract, it's a default interface method, and we need to box */
 			need_box = FALSE;
@@ -7924,7 +7924,7 @@ calli_end:
 				/* return from inlined method */
 				/* 
 				 * If in_count == 0, that means the ret is unreachable due to
-				 * being preceeded by a throw. In that case, inline_method () will
+				 * being preceded by a throw. In that case, inline_method () will
 				 * handle setting the return value 
 				 * (test case: test_0_inline_throw ()).
 				 */
@@ -12815,7 +12815,7 @@ NOTES
 
 - When to decompose opcodes:
   - earlier: this makes some optimizations hard to implement, since the low level IR
-  no longer contains the neccessary information. But it is easier to do.
+  no longer contains the necessary information. But it is easier to do.
   - later: harder to implement, enables more optimizations.
 - Branches inside bblocks:
   - created when decomposing complex opcodes. 
