@@ -28,20 +28,20 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
                 usedTags.Add(tag, fieldName);
             };
-            
+
             ensureUniqueTag(new Asn1Tag((UniversalTagNumber)16), "Certificate");
         }
 #endif
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false; 
-            
+            bool wroteValue = false;
+
             if (Certificate.HasValue)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 // Validator for tag constraint for Certificate
                 {
                     if (!Asn1Tag.TryDecode(Certificate.Value.Span, out Asn1Tag validateTag, out _) ||
@@ -63,24 +63,25 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         internal static CertificateChoiceAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, out CertificateChoiceAsn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, encoded, out CertificateChoiceAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out CertificateChoiceAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out CertificateChoiceAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
+
             if (tag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
-                decoded.Certificate = reader.ReadEncodedValue();
+                tmpSpan = reader.ReadEncodedValue();
+                decoded.Certificate = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
             }
             else
             {

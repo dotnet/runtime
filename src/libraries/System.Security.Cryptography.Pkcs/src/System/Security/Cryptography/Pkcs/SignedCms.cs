@@ -165,10 +165,13 @@ namespace System.Security.Cryptography.Pkcs
 
         internal void Decode(ReadOnlyMemory<byte> encodedMessage)
         {
+            AsnValueReader reader = new AsnValueReader(encodedMessage.Span, AsnEncodingRules.BER);
+
             // Windows (and thus NetFx) reads the leading data and ignores extra.
             // So use the Decode overload which doesn't throw on extra data.
             ContentInfoAsn.Decode(
-                new AsnReader(encodedMessage, AsnEncodingRules.BER),
+                ref reader,
+                encodedMessage,
                 out ContentInfoAsn contentInfo);
 
             if (contentInfo.ContentType != Oids.Pkcs7Signed)

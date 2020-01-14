@@ -67,15 +67,11 @@ namespace System.Security.Cryptography.Pkcs
             out int bytesRead,
             bool skipCopy = false)
         {
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
-
-            if (!skipCopy)
-            {
-                reader = new AsnReader(reader.ReadEncodedValue().ToArray(), AsnEncodingRules.BER);
-            }
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+            ReadOnlyMemory<byte> rebind = skipCopy ? source : default;
 
             int localRead = reader.PeekEncodedValue().Length;
-            PrivateKeyInfoAsn.Decode(reader, out PrivateKeyInfoAsn privateKeyInfo);
+            PrivateKeyInfoAsn.Decode(ref reader, rebind, out PrivateKeyInfoAsn privateKeyInfo);
             bytesRead = localRead;
 
             return new Pkcs8PrivateKeyInfo(
