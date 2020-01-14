@@ -341,8 +341,7 @@ namespace System.Linq
             return Expression.MakeGoto(node.Kind, target, value, GetEquivalentType(typeof(EnumerableQuery).IsAssignableFrom(type) ? value.Type : type));
         }
 
-        [return: NotNullIfNotNull("node")]
-        protected override LabelTarget? VisitLabelTarget(LabelTarget? node)
+        protected override LabelTarget VisitLabelTarget(LabelTarget? node)
         {
             LabelTarget? newTarget;
             if (_targetCache == null)
