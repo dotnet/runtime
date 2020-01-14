@@ -1992,6 +1992,7 @@ void SystemDomain::LoadBaseSystemClasses()
     // initialize cast cache here.
 #ifndef CROSSGEN_COMPILE
     CastCache::Initialize();
+    ECall::PopulateManagedCastHelpers();
 #endif // CROSSGEN_COMPILE
 
     // unfortunately, the following cannot be delay loaded since the jit
