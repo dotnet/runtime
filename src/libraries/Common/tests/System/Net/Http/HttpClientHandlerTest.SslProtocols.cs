@@ -43,13 +43,11 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Tls11 | SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12)]
-#if NETCOREAPP
         [InlineData(SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls11 | SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13)]
-#endif
         public void SetGetProtocols_Roundtrips(SslProtocols protocols)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
