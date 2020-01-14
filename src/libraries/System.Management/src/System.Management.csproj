@@ -4,7 +4,7 @@
     <NoWarn>$(NoWarn);0618</NoWarn>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_SystemManagement</GeneratePlatformNotSupportedAssemblyMessage>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;;$(NetCoreAppCurrent)-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;;$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent);</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">

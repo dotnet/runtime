@@ -4,7 +4,8 @@
     <RootNamespace>Microsoft.CSharp</RootNamespace>
     <!-- dotnet/corefx#3128 tracks removing this exclusion -->
     <ExcludeLocalizationImport Condition="'$(TargetsWindows)' != 'true'">true</ExcludeLocalizationImport>
-    <TargetFrameworks>netstandard2.0;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;_$(NetFrameworkCurrent);</TargetFrameworks>
+    <ExcludeTargetFrameworksFromPackages>_$(NetFrameworkCurrent)</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
