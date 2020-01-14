@@ -23,8 +23,7 @@ namespace System.Linq
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
-            IQueryable? queryable = source as IQueryable;
-            if (queryable != null) return queryable;
+            if (source is IQueryable queryable) return queryable;
             Type? enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
             if (enumType == null)
                 throw Error.ArgumentNotIEnumerableGeneric(nameof(source));
