@@ -225,11 +225,15 @@ namespace ILCompiler
                     EcmaModule ecmaModule = (EcmaModule)module;
                     foreach (var typeRefHandle in ecmaModule.MetadataReader.TypeReferences)
                     {
-                        TypeDesc typeFromTypeRef = ecmaModule.GetType(typeRefHandle);
-                        if (!_typeRefsInCompilationModuleSet.ContainsKey(typeFromTypeRef))
+                        try
                         {
-                            _typeRefsInCompilationModuleSet.Add(typeFromTypeRef, new ModuleToken(ecmaModule, typeRefHandle));
+                            TypeDesc typeFromTypeRef = ecmaModule.GetType(typeRefHandle);
+                            if (!_typeRefsInCompilationModuleSet.ContainsKey(typeFromTypeRef))
+                            {
+                                _typeRefsInCompilationModuleSet.Add(typeFromTypeRef, new ModuleToken(ecmaModule, typeRefHandle));
+                            }
                         }
+                        catch (TypeSystemException) { }
                     }
                 }
             }
