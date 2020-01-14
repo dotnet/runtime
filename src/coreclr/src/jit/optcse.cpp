@@ -1697,8 +1697,8 @@ public:
         // Iterate over the sorted list of tracked local variables
         // these are the register candidates for LSRA
         // We normally vist the LclVar in order of their weighted ref counts
-        // and our hueristic assumes that the highest weighted ref count 
-        // LclVars will be enregistered and that the lowest weighted ref count 
+        // and our hueristic assumes that the highest weighted ref count
+        // LclVars will be enregistered and that the lowest weighted ref count
         // are likely be allocated in the stack frame.
         // The value of enregCount is incremented when we visit a LclVar
         // that can be enregistered.
