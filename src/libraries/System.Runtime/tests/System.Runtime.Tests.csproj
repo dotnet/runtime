@@ -277,9 +277,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.11.0.txt">
-      <Link>System\Text\Unicode\UnicodeData.11.0.txt</Link>
-      <LogicalName>UnicodeData.11.0.txt</LogicalName>
+    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.12.1.txt">
+      <Link>System\Text\Unicode\UnicodeData.12.1.txt</Link>
+      <LogicalName>UnicodeData.12.1.txt</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="$(CommonTestPath)Data\CaseFolding-12.1.0.txt">
       <Link>System\Text\Unicode\CaseFolding-12.1.0.txt</Link>
