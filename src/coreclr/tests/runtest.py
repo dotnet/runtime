@@ -1023,7 +1023,7 @@ def setup_args(args):
                                       "Unsupported configuration: %s.\nSupported configurations: %s" % (corrected_build_type, ", ".join(coreclr_setup_args.valid_build_types)))
 
     if coreclr_setup_args.test_location is not None and coreclr_setup_args.test_location != normal_location:
-        print ("Error, msbuild currently expects tests in artifacts/tests/...")
+        print("Error, msbuild currently expects tests in {} (got test_location {})".format(normal_location, coreclr_setup_args.test_location))
         raise Exception("Error, msbuild currently expects tests in artifacts/tests/...")
 
     coreclr_setup_args.verify(args,
@@ -1391,6 +1391,7 @@ def parse_test_results(args):
             print("It could also mean there was a problem logging. Please run the tests again.")
             return
 
+    print("Analyzing {}".format(test_run_location))
     assemblies = xml.etree.ElementTree.parse(test_run_location).getroot()
 
     tests = defaultdict(lambda: None)
@@ -1531,10 +1532,10 @@ def print_summary(tests):
             test_output = item["test_output"]
 
             # XUnit results are captured as escaped characters.
-            test_output = test_output.replace("\\r", "\r")
-            test_output = test_output.replace("\\n", "\n")
-            test_output = test_output.replace("/r", "\r")
-            test_output = test_output.replace("/n", "\n")
+            #test_output = test_output.replace("\\r", "\r")
+            #test_output = test_output.replace("\\n", "\n")
+            #test_output = test_output.replace("/r", "\r")
+            #test_output = test_output.replace("/n", "\n")
 
             # Replace CR/LF by just LF; Python "print", below, will map as necessary on the platform.
             # If we don't do this, then Python on Windows will convert \r\n to \r\r\n on output.
@@ -1596,7 +1597,7 @@ def create_repro(args, env, tests):
     # Now that the repro_location exists under <runtime>/artifacts/repro
     # create wrappers which will simply run the test with the correct environment
     for test in failed_tests:
-        debug_env = DebugEnv(args.host_os, args.arch, args.build_type, args.env, args.core_root, args.runtime_repo_location, test)
+        debug_env = DebugEnv(args, env, test)
         debug_env.write_repro()
 
     print("Repro files written.")
