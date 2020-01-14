@@ -1,15 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
     <UnicodeUcdVersion>12.1</UnicodeUcdVersion>
   </PropertyGroup>
-
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\Common\tests\CoreFx.Private.TestUtilities.Unicode\**\*.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeData.cs" />
+    <Compile Include="System\Text\Unicode\Resources.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeDataFileEntry.cs" />
+    <Compile Include="System\Text\Unicode\PropsFileEntry.cs" />
+    <Compile Include="System\Text\Unicode\ParsedUnicodeData.cs" />
+    <Compile Include="System\Text\Unicode\CodePointFlags.cs" />
+    <Compile Include="System\Text\Unicode\GraphemeClusterBreakProperty.cs" />
+    <Compile Include="System\Text\Unicode\BidiClass.cs" />
+    <Compile Include="System\Text\Unicode\CodePoint.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
     <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\CaseFolding.txt">
@@ -41,12 +46,10 @@
       <LogicalName>emoji-data.txt</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="$(MicrosoftDotNetPlatformAbstractionsVersion)" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
     <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
   </ItemGroup>
-
 </Project>

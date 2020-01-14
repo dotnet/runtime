@@ -4,358 +4,165 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Text.Unicode;
 
 namespace GenUnicodeProp
 {
     internal static class Program
     {
+        internal static bool Verbose = false;
+        internal static bool IncludeCasingData = false;
+
+        private const string SOURCE_NAME = "CharUnicodeInfoData.cs";
+
         private static void Main(string[] args)
         {
-            Verbose = false;
-            // TODO: parse args
+            Verbose = args.Contains("-Verbose", StringComparer.OrdinalIgnoreCase);
+            IncludeCasingData = args.Contains("-IncludeCasingData", StringComparer.OrdinalIgnoreCase);
 
-            var defaultCategoryValues = "Cn,L";
+            // First, read the data files and build up a list of all
+            // assigned code points.
 
-            // Create a 12:4:4 table for Unicode category
-            // "Cn", Not assigned.  The value is 1 byte to indicate Unicode category
-            // Make sure to put the default value into the slot 0 in $categoriesValueTable
-            var categoriesIndexTable = new DataTable();
-            // Create a 12:4:4 table for decimal digit value/digit value/numeric value
-            var numericIndexTable = new DataTable();
-            // Create a flat table for Unicode category and BiDi category
-            var categoriesValueTable = new FlatDataTable(defaultCategoryValues, GetCategoriesValueBytes);
-            // Create a flat table.
-            // GetNumericValueBytes() is the callback used to generate the bytes of each item.
-            var numericValueTable = new FlatDataTable("-1", GetNumericValueBytes);
-            // Create a flat table for digit values
-            // GetDigitValueBytes() is the callback used to generate the bytes of each item.
-            var digitValueTable = new FlatDataTable("255,255", GetDigitValueBytes);
+            Console.WriteLine("Reading Unicode data files...");
 
-            // Add a default item into the category value table.  This will be the item 0 in the category value table.
-            GetCategoryValueItem(categoriesValueTable, defaultCategoryValues);
-            NumberValues.Add("-1,255,255", 0);
-            numericValueTable.AddData(0, "-1");
-            digitValueTable.AddData(0, "255,255");
+            _ = UnicodeData.GetData(0); // processes files
 
-            ReadSourceFile("UnicodeData.txt", categoriesIndexTable, categoriesValueTable, numericIndexTable, numericValueTable, digitValueTable);
+            Console.WriteLine("Finished.");
+            Console.WriteLine();
 
-            categoriesIndexTable.GenerateTable(nameof(categoriesIndexTable), 5, 4);
-            //categoriesIndexTable.CalculateTableVariants();
-            numericIndexTable.GenerateTable(nameof(numericIndexTable), 4, 4, cutOff: true);
-            //numericIndexTable.CalculateTableVariants(cutOff: true);
+            Console.WriteLine("Initializing maps...");
+            Dictionary<CategoryCasingInfo, byte> categoryCasingMap = new Dictionary<CategoryCasingInfo, byte>();
+            Dictionary<NumericGraphemeInfo, byte> numericGraphemeMap = new Dictionary<NumericGraphemeInfo, byte>();
 
-            // generate the data C# source
+            // Next, iterate though all assigned code points, populating
+            // the category casing & numeric grapheme maps. Also put the
+            // data into the the DataTable structure, which will compute
+            // the tiered offset tables.
+
+            DataTable categoryCasingTable = new DataTable();
+            DataTable numericGraphemeTable = new DataTable();
+
+            for (int i = 0; i <= 0x10_FFFF; i++)
+            {
+                CodePoint thisCodePoint = UnicodeData.GetData(i);
+
+                CategoryCasingInfo categoryCasingInfo = new CategoryCasingInfo(thisCodePoint);
+                if (!categoryCasingMap.TryGetValue(categoryCasingInfo, out byte cciValue))
+                {
+                    cciValue = (byte)categoryCasingMap.Count;
+                    categoryCasingMap[categoryCasingInfo] = cciValue;
+                }
+                categoryCasingTable.AddData((uint)i, cciValue);
+
+                NumericGraphemeInfo numericGraphemeInfo = new NumericGraphemeInfo(thisCodePoint);
+                if (!numericGraphemeMap.TryGetValue(numericGraphemeInfo, out byte ngiValue))
+                {
+                    ngiValue = (byte)numericGraphemeMap.Count;
+                    numericGraphemeMap[numericGraphemeInfo] = ngiValue;
+                }
+                numericGraphemeTable.AddData((uint)i, ngiValue);
+            }
+
+            // Did anything overflow?
+
+            Console.WriteLine($"CategoryCasingMap contains {categoryCasingMap.Count} entries.");
+            if (categoryCasingMap.Count > 256)
+            {
+                throw new Exception("CategoryCasingMap exceeds max count of 256 entries!");
+            }
+
+            Console.WriteLine($"NumericGraphemeMap contains {numericGraphemeMap.Count} entries.");
+            if (numericGraphemeMap.Count > 256)
+            {
+                throw new Exception("NumericGraphemeMap exceeds max count of 256 entries!");
+            }
+
+            Console.WriteLine();
+
+            // Choose default ratios for the data tables we'll be generating.
+
+            TableLevels categoryCasingTableLevelBits = new TableLevels(5, 4);
+            TableLevels numericGraphemeTableLevelBits = new TableLevels(5, 4);
+
+            // Now generate the tables.
+
+            categoryCasingTable.GenerateTable("CategoryCasingTable", categoryCasingTableLevelBits.Level2Bits, categoryCasingTableLevelBits.Level3Bits);
+            numericGraphemeTable.GenerateTable("NumericGraphemeTable", numericGraphemeTableLevelBits.Level2Bits, numericGraphemeTableLevelBits.Level3Bits);
+
+            // If you want to see if a different ratio would have better compression
+            // statistics, uncomment the lines below and re-run the application.
+            // categoryCasingTable.CalculateTableVariants();
+            // numericGraphemeTable.CalculateTableVariants();
+
+            // Now generate the C# source file.
+
             using (StreamWriter file = File.CreateText(SOURCE_NAME))
             {
                 file.Write("// Licensed to the .NET Foundation under one or more agreements.\n");
                 file.Write("// The .NET Foundation licenses this file to you under the MIT license.\n");
                 file.Write("// See the LICENSE file in the project root for more information.\n\n");
 
+                file.Write("using System.Diagnostics;\n\n");
+
                 file.Write("namespace System.Globalization\n");
                 file.Write("{\n");
                 file.Write("    public static partial class CharUnicodeInfo\n    {\n");
 
                 file.Write("        // THE FOLLOWING DATA IS AUTO GENERATED BY GenUnicodeProp program UNDER THE TOOLS FOLDER\n");
-                file.Write("        // PLEASE DON'T MODIFY BY HAND\n\n\n");
+                file.Write("        // PLEASE DON'T MODIFY BY HAND\n");
 
-                file.Write("        // 11:5:4 index table of the Unicode category data.");
-                PrintSourceIndexArray("CategoryLevel1Index", categoriesIndexTable, file);
+                PrintAssertTableLevelsBitCountRoutine("CategoryCasing", file, categoryCasingTableLevelBits);
 
-                PrintValueArray("CategoriesValue", categoriesValueTable, file);
+                file.Write($"\n        // {categoryCasingTableLevelBits} index table of the Unicode category & casing data.");
+                PrintSourceIndexArray("CategoryCasingLevel1Index", categoryCasingTable, file);
 
-                file.Write("\n        // 12:4:4 index table of the Unicode numeric data.");
-                PrintSourceIndexArray("NumericLevel1Index", numericIndexTable, file);
+                file.Write("\n        // Contains Unicode category & bidi class information");
+                PrintValueArray("CategoriesValues", categoryCasingMap, CategoryCasingInfo.ToCategoryBytes, file);
 
-                file.Write("\n        // Every item contains the value for numeric value.");
-                PrintValueArray("NumericValues", numericValueTable, file);
-
-                PrintValueArray("DigitValues", digitValueTable, file);
-
-                file.Write("\n    }\n}");
-            }
-        }
-
-        private static bool Verbose;
-
-        private const string SOURCE_NAME = "CharUnicodeInfoData.cs";
-
-        private static readonly Dictionary<string, byte> UnicodeCategoryMap = new Dictionary<string, byte>
-        {
-            ["Lu"] = (byte)UnicodeCategory.UppercaseLetter,
-            ["Ll"] = (byte)UnicodeCategory.LowercaseLetter,
-            ["Lt"] = (byte)UnicodeCategory.TitlecaseLetter,
-            ["Lm"] = (byte)UnicodeCategory.ModifierLetter,
-            ["Lo"] = (byte)UnicodeCategory.OtherLetter,
-            ["Mn"] = (byte)UnicodeCategory.NonSpacingMark,
-            ["Mc"] = (byte)UnicodeCategory.SpacingCombiningMark,
-            ["Me"] = (byte)UnicodeCategory.EnclosingMark,
-            ["Nd"] = (byte)UnicodeCategory.DecimalDigitNumber,
-            ["Nl"] = (byte)UnicodeCategory.LetterNumber,
-            ["No"] = (byte)UnicodeCategory.OtherNumber,
-            ["Zs"] = (byte)UnicodeCategory.SpaceSeparator,
-            ["Zl"] = (byte)UnicodeCategory.LineSeparator,
-            ["Zp"] = (byte)UnicodeCategory.ParagraphSeparator,
-            ["Cc"] = (byte)UnicodeCategory.Control,
-            ["Cf"] = (byte)UnicodeCategory.Format,
-            ["Cs"] = (byte)UnicodeCategory.Surrogate,
-            ["Co"] = (byte)UnicodeCategory.PrivateUse,
-            ["Pc"] = (byte)UnicodeCategory.ConnectorPunctuation,
-            ["Pd"] = (byte)UnicodeCategory.DashPunctuation,
-            ["Ps"] = (byte)UnicodeCategory.OpenPunctuation,
-            ["Pe"] = (byte)UnicodeCategory.ClosePunctuation,
-            ["Pi"] = (byte)UnicodeCategory.InitialQuotePunctuation,
-            ["Pf"] = (byte)UnicodeCategory.FinalQuotePunctuation,
-            ["Po"] = (byte)UnicodeCategory.OtherPunctuation,
-            ["Sm"] = (byte)UnicodeCategory.MathSymbol,
-            ["Sc"] = (byte)UnicodeCategory.CurrencySymbol,
-            ["Sk"] = (byte)UnicodeCategory.ModifierSymbol,
-            ["So"] = (byte)UnicodeCategory.OtherSymbol,
-            ["Cn"] = (byte)UnicodeCategory.OtherNotAssigned,
-        };
-
-        /// <summary>
-        /// Map BiDi symbols in UnicodeData.txt to their numeric values stored in the output table.
-        /// </summary>
-        private static readonly Dictionary<string, byte> BiDiCategory = new Dictionary<string, byte>
-        {
-            ["L"] = 0,    // Left-to-Right
-            ["LRE"] = 1,  // Left-to-Right Embedding
-            ["LRO"] = 2,  // Left-to-Right Override
-            ["R"] = 3,    // Right-to-Left
-            ["AL"] = 4,   // Right-to-Left Arabic
-            ["RLE"] = 5,  // Right-to-Left Embedding
-            ["RLO"] = 6,  // Right-to-Left Override
-            ["PDF"] = 7,  // Pop Directional Format
-            ["EN"] = 8,   // European Number
-            ["ES"] = 9,   // European Number Separator
-            ["ET"] = 10,  // European Number Terminator
-            ["AN"] = 11,  // Arabic Number
-            ["CS"] = 12,  // Common Number Separator
-            ["NSM"] = 13, // Non-Spacing Mark
-            ["BN"] = 14,  // Boundary Neutral
-            ["B"] = 15,   // Paragraph Separator
-            ["S"] = 16,   // Segment Separator
-            ["WS"] = 17,  // Whitespace
-            ["ON"] = 18,  // Other Neutrals
-            ["LRI"] = 19, // LeftToRightIsolate
-            ["RLI"] = 20, // RightToLeftIsolate
-            ["FSI"] = 21, // FirstStrongIsolate
-            ["PDI"] = 22, // PopDirectionIsolate
-        };
-
-        // Store the current combinations of categories (Unicode category, BiDi category)
-        private static readonly Dictionary<string, byte> CategoryValues = new Dictionary<string, byte>();
-
-        private static readonly Dictionary<string, byte> NumberValues = new Dictionary<string, byte>();
-
-        /// <summary>
-        /// Check if we need to add a new item in the categoriesValueTable.  If yes,
-        /// add one item and return the new item number.  Otherwise, return the existing
-        /// item number.
-        /// </summary>
-        /// <param name="categoriesValueTable"></param>
-        /// <param name="allCategoryValues">The combination of Unicode category and BiDi category.
-        /// They should use the original form in UnicodeData.txt (such as "Cn" for not assigned and "L" for Left-To-Right")
-        /// and are separated by a comma.</param>
-        /// <returns>The item number in the categoriesValueTable</returns>
-        private static byte GetCategoryValueItem(FlatDataTable categoriesValueTable, string allCategoryValues)
-        {
-            if (!CategoryValues.TryGetValue(allCategoryValues, out var categoryItem))
-            {
-                // This combination of Unicode category and BiDi category has not shown up before.
-                if (CategoryValues.Count >= 255)
-                    throw new InvalidOperationException("The possible number of values exceeds 255.");
-
-                // Get the current element count of the hash table and update the category item
-                categoryItem = (byte)CategoryValues.Count;
-                CategoryValues.Add(allCategoryValues, categoryItem);
-                // Add the category values.
-                categoriesValueTable.AddData(categoryItem, allCategoryValues);
-            }
-            return categoryItem;
-        }
-
-        /// <summary>
-        /// Read UnicodeData.txt and call DataTable.AddData() to add values for codepoints.
-        /// </summary>
-        private static void ReadSourceFile(string sourceFileName, DataTable categoriesIndexTable, FlatDataTable categoriesValueTable, DataTable numericIndexTable, FlatDataTable numericValueTable, FlatDataTable digitValueTable)
-        {
-            var lineCount = 0; // The line count
-            var codePointCount = 0; // The count of the total characters in the file.
-
-            Console.Write($"Read {sourceFileName}");
-
-            // Field	Name in UnicodeData.txt
-            // 0	Code value
-            // 1	Character name
-            // 2	General Category
-            //
-            // 3	Canonical Combining Classes
-            // 4	Bidirectional Category
-            // 5	Character Decomposition Mapping
-            // 6	Decimal digit value
-            // 7	Digit value
-            // 8	Numeric value
-            // 9	Mirrored
-            // 10	Unicode 1.0 Name
-            // 11	10646 comment field
-            // 12	Uppercase Mapping
-            // 13	Lowercase Mapping
-            // 14	Titlecase Mapping
-
-            using (StreamReader sourceFile = File.OpenText(sourceFileName))
-                while (sourceFile.ReadLine() is string line)
+                if (IncludeCasingData)
                 {
-                    var fields = line.Split(';');
-                    var code = uint.Parse(fields[0], NumberStyles.HexNumber);
-                    var comments = fields[1];
-                    var category = fields[2];
+                    // Only write out the casing data if we have been asked to do so.
 
-                    var bidiCategory = fields[4];
-                    var decimalDigitValue = fields[6];
-                    var digitValue = fields[7];
-                    var numericValue = fields[8];
+                    file.Write("\n        // Contains simple culture-invariant uppercase mappings");
+                    PrintValueArray("UppercaseValues", categoryCasingMap, CategoryCasingInfo.ToUpperBytes, file);
 
-                    var allCategoryValues = category + "," + bidiCategory;
-                    var allDigitValue = (decimalDigitValue == "" ? "255" : decimalDigitValue) + "," + (digitValue == "" ? "255" : digitValue);
-                    var allNumValues = numericValue == "" ? "-1" : numericValue;
-                    var allValues = allNumValues + "," + allDigitValue;
+                    file.Write("\n        // Contains simple culture-invariant lowercase mappings");
+                    PrintValueArray("LowercaseValues", categoryCasingMap, CategoryCasingInfo.ToLowerBytes, file);
 
-                    if (Verbose)
-                    {
-                        Console.WriteLine($"[{code:X4}]- Cat: [{category}], BiDi Category: [{bidiCategory}], Numeric: [{numericValue}], Comments: [{comments}]");
-                    }
+                    file.Write("\n        // Contains simple culture-invariant titlecase mappings");
+                    PrintValueArray("TitlecaseValues", categoryCasingMap, CategoryCasingInfo.ToTitleBytes, file);
 
-                    if (!NumberValues.TryGetValue(allValues, out var numItem))
-                    {
-                        if (NumberValues.Count >= 255)
-                            throw new InvalidOperationException("The possible number of values exceeds 255.");
-                        // Get the current element count of the hash table
-                        numItem = (byte)NumberValues.Count;
-                        NumberValues[allValues] = numItem;
-                        numericValueTable.AddData(numItem, allNumValues);
-                        digitValueTable.AddData(numItem, allDigitValue);
-                    }
-
-                    var categoryItem = GetCategoryValueItem(categoriesValueTable, allCategoryValues);
-
-                    if (comments[0] == '<' && comments.EndsWith(", First>", StringComparison.Ordinal))
-                    {
-                        if (Verbose)
-                        {
-                            Console.WriteLine($"Range start: {code:X4} [{category}] [{comments}]");
-                        }
-
-                        // Read the next line to get the end of the range.
-                        var endFields = sourceFile.ReadLine().Split(';');
-                        var codeEndRange = uint.Parse(endFields[0], NumberStyles.HexNumber);
-                        var valueEndRange = endFields[2];
-                        var commentsEndRange = endFields[1];
-
-                        if (Verbose)
-                        {
-                            Console.WriteLine($"Range   end: {codeEndRange:X4} [{valueEndRange}] [{commentsEndRange}]");
-                        }
-
-                        if (category != valueEndRange)
-                        {
-                            Console.WriteLine("Different categories in the beginning of the range and the end of the range");
-                            Environment.Exit(1);
-                        }
-
-                        // Add data for a range of code points
-                        for (var i = code; i <= codeEndRange; i++)
-                        {
-                            categoriesIndexTable.AddData(i, categoryItem);
-                            numericIndexTable.AddData(i, numItem);
-                            codePointCount++;
-                            if (Verbose)
-                            {
-                                Console.WriteLine($"Read: {i:X8} [{allCategoryValues}]");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Add data for a single code point.
-                        categoriesIndexTable.AddData(code, categoryItem);
-                        numericIndexTable.AddData(code, numItem);
-                        codePointCount++;
-                        if (Verbose)
-                        {
-                            Console.WriteLine($"Read: {code:X8} [{allCategoryValues}]");
-                        }
-                    }
-                    lineCount++;
-                    if (lineCount % 256 == 0)
-                    {
-                        Console.Write('.');
-                    }
+                    file.Write("\n        // Contains simple culture-invariant case fold mappings");
+                    PrintValueArray("CaseFoldValues", categoryCasingMap, CategoryCasingInfo.ToCaseFoldBytes, file);
                 }
 
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine($"    Total lines in the file: {lineCount}");
-            Console.WriteLine($"    Total characters: {codePointCount}");
+                PrintAssertTableLevelsBitCountRoutine("NumericGrapheme", file, numericGraphemeTableLevelBits);
 
-            var allValueCount = CategoryValues.Count;
-            Console.WriteLine($"    Total possible categories values: {allValueCount + 1}.  Maximum allowed: 256");
+                file.Write($"\n        // {numericGraphemeTableLevelBits} index table of the Unicode numeric & text segmentation data.");
+                PrintSourceIndexArray("NumericGraphemeLevel1Index", numericGraphemeTable, file);
 
-            allValueCount = NumberValues.Count;
-            Console.WriteLine($"    Total possible number values: {allValueCount + 1}.  Maximum allowed: 256");
-            Console.WriteLine($"    Finish reading {sourceFileName}.");
-        }
+                file.Write("\n        // Contains decimal digit values in high nibble; digit values in low nibble");
+                PrintValueArray("DigitValues", numericGraphemeMap, NumericGraphemeInfo.ToDigitBytes, file);
 
-        private static byte[] GetCategoriesValueBytes(string value)
-        {
-            if (Verbose)
-                Console.WriteLine($"[{value}]");
+                file.Write("\n        // Contains numeric values");
+                PrintValueArray("NumericValues", numericGraphemeMap, NumericGraphemeInfo.ToNumericBytes, file);
 
-            var values = value.Split(',');
-            var unicodeCategoryValue = values[0];
-            var bidiCategoryValue = values[1];
+                file.Write("\n        // Contains grapheme cluster segmentation values");
+                PrintValueArray("GraphemeSegmentationValues", numericGraphemeMap, NumericGraphemeInfo.ToGraphemeBytes, file);
 
-            return new[] { GetUnicodeCategoryValue(unicodeCategoryValue), GetBiDiCategoryValue(bidiCategoryValue) };
-        }
+                file.Write("\n    }\n}\n");
+            }
 
-        private static byte[] GetNumericValueBytes(string value)
-        {
-            double d;
-            var i = value.IndexOf('/');
-            if (i < 0)
-                d = double.Parse(value, CultureInfo.InvariantCulture);
-            else
-                d = double.Parse(value.Substring(0, i), CultureInfo.InvariantCulture) / double.Parse(value.Substring(i + 1), CultureInfo.InvariantCulture);
-            return BitConverter.GetBytes(d);
-        }
+            // Quick fixup: Replace \n with \r\n on Windows.
 
-        private static byte[] GetDigitValueBytes(string value)
-        {
-            if (Verbose)
-                Console.WriteLine($"[{value}]");
+            if (Environment.NewLine != "\n")
+            {
+                File.WriteAllText(SOURCE_NAME, File.ReadAllText(SOURCE_NAME).Replace("\n", Environment.NewLine));
+            }
 
-            var values = value.Split(',');
-            var decimalDigitValue = values[0];
-            var digitValue = values[1];
-
-            return new[] { byte.Parse(decimalDigitValue), byte.Parse(digitValue) };
-        }
-
-        /// <summary>
-        /// Map a Unicode category symbol in UnicodeData.txt to a numeric value
-        /// </summary>
-        /// <param name="str">A two-letter abbreviation of Unicode category</param>
-        /// <returns>A numeric value for the corresponding two-letter Unicode category</returns>
-        private static byte GetUnicodeCategoryValue(string str)
-        {
-            return UnicodeCategoryMap.TryGetValue(str, out var v) ? v : throw new ArgumentException($"The str [{str}] is not a valid two-letter Unicode category.");
-        }
-
-        private static byte GetBiDiCategoryValue(string str)
-        {
-            return BiDiCategory.TryGetValue(str, out var v) ? v : throw new ArgumentException($"The str [{str}] is not a valid BiDi category.");
+            Console.WriteLine("Completed!");
         }
 
         private static void PrintSourceIndexArray(string tableName, DataTable d, StreamWriter file)
@@ -369,10 +176,31 @@ namespace GenUnicodeProp
             PrintByteArray(tableName.Replace('1', '3'), file, levels[2]);
         }
 
-        private static void PrintValueArray(string tableName, FlatDataTable d, StreamWriter file)
+        private static void PrintValueArray<T>(string tableName, Dictionary<T, byte> d, Func<T, byte[]> getBytesCallback, StreamWriter file)
         {
             Console.WriteLine("    ******************************** .");
-            PrintByteArray(tableName, file, d.GetBytesFlat());
+
+            // Create reverse mapping of byte -> T,
+            // then dump each T to the response (as binary).
+
+            byte highestByteSeen = 0;
+            Dictionary<byte, T> reverseMap = new Dictionary<byte, T>();
+            foreach (var entry in d)
+            {
+                reverseMap.Add(entry.Value, entry.Key);
+                if (entry.Value > highestByteSeen)
+                {
+                    highestByteSeen = entry.Value;
+                }
+            }
+
+            List<byte> binaryOutput = new List<byte>();
+            for (int i = 0; i <= highestByteSeen; i++)
+            {
+                binaryOutput.AddRange(getBytesCallback(reverseMap[(byte)i]));
+            }
+
+            PrintByteArray(tableName, file, binaryOutput.ToArray());
         }
 
         private static void PrintByteArray(string tableName, StreamWriter file, byte[] str)
@@ -385,6 +213,19 @@ namespace GenUnicodeProp
                 file.Write("0x{0:x2}", str[i]);
             }
             file.Write("\n        };\n");
+        }
+
+        private static void PrintAssertTableLevelsBitCountRoutine(string tableName, StreamWriter file, TableLevels expectedLevels)
+        {
+            file.Write("\n");
+            file.Write("        [Conditional(\"DEBUG\")]\n");
+            file.Write($"        private static void Assert{tableName}TableLevels(int level1BitCount, int level2BitCount, int level3BitCount)\n");
+            file.Write("        {\n");
+            file.Write("            // Ensures that the caller expects the same L1:L2:L3 count as the actual backing data.\n");
+            file.Write($"            Debug.Assert(level1BitCount == {expectedLevels.Level1Bits}, \"Unexpected level 1 bit count.\");\n");
+            file.Write($"            Debug.Assert(level2BitCount == {expectedLevels.Level2Bits}, \"Unexpected level 2 bit count.\");\n");
+            file.Write($"            Debug.Assert(level3BitCount == {expectedLevels.Level3Bits}, \"Unexpected level 3 bit count.\");\n");
+            file.Write("        }\n");
         }
     }
 }
