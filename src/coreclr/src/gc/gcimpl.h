@@ -311,6 +311,8 @@ public:
     int GetLastGCPercentTimeInGC();
 
     size_t GetLastGCGenerationSize(int gen);
+
+    virtual void ShutDownLogging();
 };
 
 #endif  // GCIMPL_H_
