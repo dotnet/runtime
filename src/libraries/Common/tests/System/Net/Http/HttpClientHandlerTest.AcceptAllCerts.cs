@@ -34,7 +34,6 @@ namespace System.Net.Http.Functional.Tests
         }
 #endif
 
-        [ConditionalTheory]
         [InlineData(SslProtocols.Tls, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
         [InlineData(SslProtocols.Tls, true)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]

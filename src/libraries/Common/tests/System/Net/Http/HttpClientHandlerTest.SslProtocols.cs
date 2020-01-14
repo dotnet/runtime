@@ -105,7 +105,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory]
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
