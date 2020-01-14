@@ -1432,15 +1432,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Generates a very simple method that sets the _trackcount field.</summary>
-        protected void GenerateInitTrackCount()
-        {
-            Ldthis();
-            Ldc(_trackcount);
-            Stfld(s_runtrackcountField);
-            Ret();
-        }
-
         private bool TryGenerateNonBacktrackingGo(RegexNode node)
         {
             Debug.Assert(node.Type == RegexNode.Capture && node.ChildCount() == 1,
