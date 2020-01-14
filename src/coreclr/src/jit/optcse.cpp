@@ -2402,8 +2402,8 @@ public:
         //
         if (candidate->LiveAcrossCall())
         {
-            // If we don't have a lot of variable to enregister or we  have a floating point tye
-            // then we likely need to spill an additional caller save register
+            // If we don't have a lot of variables to enregister or we have a floating point type
+            // then we will likely need to spill an additional caller save register.
             //
             if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()->TypeGet()))
             {
