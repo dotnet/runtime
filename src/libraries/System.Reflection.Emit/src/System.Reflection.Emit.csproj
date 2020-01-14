@@ -4,6 +4,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_RefEmit</GeneratePlatformNotSupportedAssemblyMessage>
     <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;netstandard2.0;netstandard1.1;;</TargetFrameworks>
+    <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;;</ExcludeTargetFrameworksFromPackages>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">

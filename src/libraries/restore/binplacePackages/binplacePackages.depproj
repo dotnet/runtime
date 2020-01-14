@@ -5,7 +5,6 @@
     <NETStandardVersion Condition="'$(TargetsNetStandard)' == 'true'">$(TargetFramework.SubString(11))</NETStandardVersion>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <TargetsNetStandardLowerThan21 Condition="'$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &lt; 2.1">true</TargetsNetStandardLowerThan21>
-    <FilterFramework>$(TargetFramework)</FilterFramework> <!-- By Default FilterFramework includes the OSGroup for binplacing. -->
     <TargetFrameworks>net461;net472;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0;netstandard2.0;netcoreapp2.0;netcoreapp3.0;$(netcoreappCurrent);</TargetFrameworks>    
   </PropertyGroup>
 

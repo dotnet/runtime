@@ -5,4 +5,5 @@
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 
+  <Import Project="C:\git\runtime\src\libraries\restore\runtime\referenceFromRuntime.targets" Condition="'$(TargetFramework)' == 'netcoreapp3.0-Windows_NT'"/>
 </Project>

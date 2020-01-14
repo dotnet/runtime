@@ -5,18 +5,10 @@
     <RuntimeIdentifier Condition="'$(RuntimeOS)' == 'webassembly'">$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(ConfigurationGroup)' == 'Debug' or '$(Coverage)' == 'true')">true</SwapNativeForIL>
-    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(DefaultOSGroup)</CoreCLROSGroup>
+    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(BuildOS)</CoreCLROSGroup>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(ConfigurationGroup)</CoreCLRConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
     <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix;</TargetFrameworks>
-
-    <!-- In a vertical build the TargetFramework is not getting overloaded -->
-    <FilterFramework Condition="'$(TargetFramework)' != ''">$(TargetFramework)-$(OSGroup)</FilterFramework>
-    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(OSGroup)-$(ConfigurationGroup)</OutputPath>
-    
-    <!-- In all Configurations TargetFramework can consist of the OSGroup -->
-    <FilterFramework Condition="$(TargetFramework.Contains('-'))">$(TargetFramework)</FilterFramework>
-    <OutputPath Condition="$(TargetFramework.Contains('-'))">$(BaseOutputPath)$(TargetFramework)-$(ConfigurationGroup)</OutputPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -95,5 +87,4 @@
         <ReferenceCopyLocalPaths Include="@(CoreCLRILFiles)" />
       </ItemGroup>
   </Target>
-
 </Project>

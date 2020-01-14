@@ -1,9 +1,9 @@
 <Project>
 
   <PropertyGroup>
-    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(OSGroup)</CoreCLROSGroup>
+    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(BuildOS)</CoreCLROSGroup>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(ConfigurationGroup)</CoreCLRConfiguration>
-    <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(OSGroup)</LibrariesOSGroup>
+    <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(BuildOS)</LibrariesOSGroup>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(ConfigurationGroup)</LibrariesConfiguration>
 
     <CoreCLRArtifactsPath Condition="'$(CoreCLROverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)'))</CoreCLRArtifactsPath>

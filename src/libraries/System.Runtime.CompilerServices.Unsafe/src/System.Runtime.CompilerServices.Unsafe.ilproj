@@ -18,6 +18,6 @@
 
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
-    <ILResourceReference Include="C:\git\runtime\artifacts\bin\ref\netcoreapp5.0\$(TargetFileName)" />
+    <ILResourceReference Include="$(Refpath)\$(TargetFileName)" />
   </ItemGroup>
 </Project>

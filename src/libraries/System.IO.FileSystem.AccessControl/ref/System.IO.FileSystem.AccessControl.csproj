@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent);net461;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkCurrent);net461;</TargetFrameworks>
+    <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent)</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.FileSystem.AccessControl.cs" />

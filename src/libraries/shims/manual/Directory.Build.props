@@ -12,8 +12,8 @@
   <PropertyGroup>
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
     <!-- Use runtime assemblies for the TargetFramework, using build configuration OSGroup -->
-    <RefPath>$(ArtifactsBinDir)runtime/$(TargetFramework)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)/</RefPath>
-    <CoreCLROSGroup>$(OSGroup)</CoreCLROSGroup>
+    <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(BuildOS)-$(ConfigurationGroup)-$(ArchGroup)/</RefPath>
+    <CoreCLROSGroup>$(BuildOS)</CoreCLROSGroup>
     <CoreCLRConfiguration>$(ConfigurationGroup)</CoreCLRConfiguration>
     <TargetFrameworks>netcoreapp5.0</TargetFrameworks>
     <!-- This is a temporary workaround and should be removed. -->
@@ -23,7 +23,7 @@
   <ItemGroup>
     <ReferencePath
       Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
-      Exclude="$(RefPath)$(MSBuildProjectName).dll" />
+      Exclude="$(RefPath)$(MSBuildProjectName).dll;$(RefPath)System.Private.CoreLib.dll" />
   </ItemGroup>
 
   <Target Name="AddSystemPrivateCoreLibReferencePath" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="ResolveReferences">

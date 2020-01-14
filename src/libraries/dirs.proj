@@ -9,11 +9,12 @@
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
     <!-- <Project Include="ref.builds" />
     <Project Include="shims\generated\*.csproj" />
-    <Project Include="Native\native-binplace.proj" /> -->
-    <Project Include="src.builds" />
-    <!-- <Project Include="shims\manual\*.csproj" />
+    <Project Include="Native\native-binplace.proj" />
+    <Project Include="src.builds" />-->
+    <Project Include="shims\manual\*.csproj" />
+    <Project Remove="shims\manual\mscorlib.csproj" />
     <Project Include="shims\ApiCompat.proj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
-    <Project Include="pretest.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" /> -->
+    <Project Include="pretest.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' != ''">

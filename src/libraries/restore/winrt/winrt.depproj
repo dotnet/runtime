@@ -6,7 +6,6 @@
          implemented by all frameworks that support it.  Instead require projectreference to this project -->
     <BinPlaceRef Condition="'$(TargetsNetStandard)' != 'true'">true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <FilterFramework>$(TargetFramework)</FilterFramework>
     <TargetFrameworks>netcoreapp3.0;$(netcoreappCurrent);netstandard1.0;</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>

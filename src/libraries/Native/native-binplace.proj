@@ -1,4 +1,8 @@
 <Project DefaultTargets="Build">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent);</TargetFrameworks>
+  </PropertyGroup>
+
   <Import Project="..\Directory.Build.props" />
   <Target Name="Build" DependsOnTargets="BinPlace" />
   <Target Name="Clean" />
@@ -7,9 +11,8 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 
   <PropertyGroup>
-    <!-- No outer build is run here so we can't set filter framework property using Target Framework. Target Framework is a global property and is set by the outer build. -->
-    <FilterFramework>$(NetCoreAppCurrent)</FilterFramework>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent);</TargetFrameworks>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
   </PropertyGroup>
 
   <Target Name="GetBinPlaceItems">

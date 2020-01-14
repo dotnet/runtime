@@ -7,6 +7,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>
     <NoWarn Condition="'$(TargetsUnix)' == 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
     <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Unix;netstandard2.0;net461-Windows_NT;;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
+    <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetFramework)' != 'netstandard2.0'">
     <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegistryConstants.cs">

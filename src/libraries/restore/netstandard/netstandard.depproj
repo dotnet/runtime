@@ -6,7 +6,6 @@
     <BinPlaceRef>true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <_NETStandardTFMFolder Condition="'$(TargetFramework)' == 'netstandard2.0'">netstandard2.0</_NETStandardTFMFolder>
-    <FilterFramework>$(TargetFramework)</FilterFramework> <!-- By Default FilterFramework includes the OSGroup for binplacing. -->
     <TargetFrameworks>netstandard1.0;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 

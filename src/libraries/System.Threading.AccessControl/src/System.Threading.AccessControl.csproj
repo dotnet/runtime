@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OSGroup Condition="'$(OSGroup)' == ''">Windows_NT</OSGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <TargetFrameworks>net461-Windows_NT;netstandard2.0-Windows_NT;netstandard2.0;$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
+    <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
