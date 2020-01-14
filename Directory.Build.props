@@ -63,8 +63,8 @@
     <RepositoryUrl>git://github.com/dotnet/runtime</RepositoryUrl>
     <ProjectUrl>https://github.com/dotnet/runtime</ProjectUrl>
     <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
+    <!-- Used by Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk -->
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
-    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
     <Copyright>$(CopyrightNetFoundation)</Copyright>
