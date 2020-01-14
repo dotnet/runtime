@@ -10085,6 +10085,24 @@ field_access_end:
 					MonoClass *tclass = mono_class_from_mono_type_internal ((MonoType *)handle);
 
 					mono_class_init_internal (tclass);
+
+					// Optimize to true/false if next instruction is `call instance bool Type::get_IsValueType()`
+					guchar *is_vt_ip;
+					guint32 is_vt_token;
+					if ((is_vt_ip = il_read_call (next_ip + 5, end, &is_vt_token)) && ip_in_bb (cfg, cfg->cbb, is_vt_ip)) {
+						MonoMethod *is_vt_method = mini_get_method (cfg, method, is_vt_token, NULL, generic_context);
+						if (is_vt_method->klass == mono_defaults.systemtype_class &&
+							!mini_is_gsharedvt_variable_klass (tclass) &&
+							!mono_class_is_open_constructed_type (m_class_get_byval_arg (tclass)) &&
+							!strcmp ("get_IsValueType", is_vt_method->name)) {
+							next_ip = is_vt_ip;
+							EMIT_NEW_ICONST (cfg, ins, m_class_is_valuetype (tclass) ? 1 : 0);
+							ins->type = STACK_I4;
+							*sp++ = ins;
+							break;
+						}
+					}
+
 					if (context_used) {
 						ins = mini_emit_get_rgctx_klass (cfg, context_used,
 							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
