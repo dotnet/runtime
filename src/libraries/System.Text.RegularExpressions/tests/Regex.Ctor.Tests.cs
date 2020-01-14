@@ -56,9 +56,15 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(RegexOptions.Compiled)]
         public void CtorDebugInvoke(RegexOptions options)
         {
-            var r = new Regex("[abc]def(ghi|jkl)", options | (RegexOptions)0x80 /*RegexOptions.Debug*/);
+            Regex r;
+
+            r = new Regex("[abc]def(ghi|jkl)", options | (RegexOptions)0x80 /*RegexOptions.Debug*/);
             Assert.False(r.Match("a").Success);
             Assert.True(r.Match("adefghi").Success);
+
+            r = new Regex("(ghi|jkl)*ghi", options | (RegexOptions)0x80 /*RegexOptions.Debug*/);
+            Assert.False(r.Match("jkl").Success);
+            Assert.True(r.Match("ghi").Success);
         }
 
         [Fact]
