@@ -1724,7 +1724,7 @@ public:
             //
             // We could track floating point register usage seperately
             // but it isn't worth the additional complexity as floating point CSEs
-            // are rare and we typically have planty of floating point register available.
+            // are rare and we typically have plenty of floating point register available.
             //
             if (!varTypeIsFloating(varTyp))
             {
@@ -1878,7 +1878,7 @@ public:
         unsigned m_Size;
 
         // When this Candidate is successfully promoted to a CSE we record
-        // the following information about what catagory was used when promoting it.
+        // the following information about what category was used when promoting it.
         //
         //  We will set m_Aggressive:
         //    When we believe that the CSE very valuable in terms of weighted ref counts,
@@ -1890,7 +1890,7 @@ public:
         //
         //  We will set m_Conservative:
         //    When we didn't set m_Aggressive or  m_Moderate.
-        //    Such candidates are typically are expensive to compute and thus are
+        //    Such candidates typically are expensive to compute and thus are
         //    always profitable to promote even when they aren't enregistered.
         //
         //  We will set  m_StressCSE:
@@ -2191,7 +2191,7 @@ public:
         {
             // Note that when optimizing for SMALL_CODE we set the cse_def_cost/cse_use_cost based
             // upon the code size and we use unweighted ref counts instead of weighted ref counts.
-            // Also notethat optimizing for SMALL_CODE is rare, we typically only optimize this way
+            // Also note that optimizing for SMALL_CODE is rare, we typically only optimize this way
             // for class constructors, because we know that they will only run once.
             //
             if (cseRefCnt >= aggressiveRefCnt)
