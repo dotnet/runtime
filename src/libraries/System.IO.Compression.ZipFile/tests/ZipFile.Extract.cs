@@ -34,7 +34,7 @@ namespace System.IO.Compression.Tests
             AssertExtensions.Throws<ArgumentNullException>("sourceArchiveFileName", () => ZipFile.ExtractToDirectory(null, GetTestFilePath()));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMacOsHighSierraOrHigher))]
+        [Fact]
         public void ExtractToDirectoryUnicode()
         {
             string zipFileName = zfile("unicode.zip");
