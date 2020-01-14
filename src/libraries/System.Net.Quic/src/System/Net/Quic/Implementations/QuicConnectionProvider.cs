@@ -21,11 +21,15 @@ namespace System.Net.Quic.Implementations
 
         internal abstract QuicStreamProvider OpenBidirectionalStream();
 
+        internal abstract long GetMaximumBidirectionalStreamCount();
+
+        internal abstract long GetMaximumUnidirectionalStreamCount();
+
         internal abstract ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default);
 
         internal abstract System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get; }
 
-        internal abstract ValueTask CloseAsync(int shutdownCode, CancellationToken cancellationToken = default);
+        internal abstract ValueTask CloseAsync(long shutdownCode, CancellationToken cancellationToken = default);
 
         public abstract void Dispose();
     }

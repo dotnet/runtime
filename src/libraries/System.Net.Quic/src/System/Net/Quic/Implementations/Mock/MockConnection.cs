@@ -128,6 +128,16 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockStream(this, streamId, bidirectional: true);
         }
 
+        internal override long GetMaximumBidirectionalStreamCount()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override long GetMaximumUnidirectionalStreamCount()
+        {
+            throw new NotImplementedException();
+        }
+
         internal async Task<Socket> CreateOutboundMockStreamAsync(long streamId)
         {
             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
@@ -168,7 +178,7 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockStream(socket, streamId, bidirectional: bidirectional);
         }
 
-        internal override ValueTask CloseAsync(int shutdownCode, CancellationToken cancellationToken = default)
+        internal override ValueTask CloseAsync(long shutdownCode, CancellationToken cancellationToken = default)
         {
             Dispose();
             return default;
