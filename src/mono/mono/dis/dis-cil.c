@@ -145,7 +145,7 @@ disassemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContainer *conta
 		case MonoInlineI8: {
 			gint64 top = read64 (ptr);
 
-			fprintf (output, "0x%llx", (long long) top);
+			fprintf (output, "0x%" PRIx64, (guint64)top);
 			ptr += 8;
 			break;
 		}

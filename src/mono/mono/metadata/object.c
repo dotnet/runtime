@@ -6438,7 +6438,7 @@ mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr
 		o = (MonoObject *)mono_gc_alloc_vector (vtable, byte_len, len);
 
 	if (G_UNLIKELY (!o)) {
-		mono_error_set_out_of_memory (error, "Could not allocate %zd bytes", (gsize) byte_len);
+		mono_error_set_out_of_memory (error, "Could not allocate %" G_GSIZE_FORMAT "d bytes", (gsize) byte_len);
 		return NULL;
 	}
 
@@ -6551,7 +6551,7 @@ mono_array_new_specific_checked (MonoVTable *vtable, uintptr_t n, MonoError *err
 	o = (MonoObject *)mono_gc_alloc_vector (vtable, byte_len, n);
 
 	if (G_UNLIKELY (!o)) {
-		mono_error_set_out_of_memory (error, "Could not allocate %zd bytes", (gsize) byte_len);
+		mono_error_set_out_of_memory (error, "Could not allocate %" G_GSIZE_FORMAT "d bytes", (gsize) byte_len);
 		return NULL;
 	}
 

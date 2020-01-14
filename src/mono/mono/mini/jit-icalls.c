@@ -358,7 +358,7 @@ mono_lshl (guint64 a, gint32 shamt)
 {
 	const guint64 res = a << (shamt & 0x7f);
 
-	/*printf ("TESTL %lld << %d = %lld\n", a, shamt, res);*/
+	/*printf ("TESTL %" PRId64 " << %d = %" PRId64 "\n", a, shamt, (guint64)res);*/
 
 	return res;
 }
@@ -368,7 +368,7 @@ mono_lshr_un (guint64 a, gint32 shamt)
 {
 	const guint64 res = a >> (shamt & 0x7f);
 
-	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
+	/*printf ("TESTR %" PRId64 " >> %d = %" PRId64 "\n", a, shamt, (guint64)res);*/
 
 	return res;
 }
@@ -378,7 +378,7 @@ mono_lshr (gint64 a, gint32 shamt)
 {
 	const gint64 res = a >> (shamt & 0x7f);
 
-	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
+	/*printf ("TESTR %" PRId64 " >> %d = %" PRId64 "\n", a, shamt, (guint64)res);*/
 
 	return res;
 }

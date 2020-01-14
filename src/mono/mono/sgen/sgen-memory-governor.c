@@ -391,7 +391,7 @@ sgen_assert_memory_alloc (void *ptr, size_t requested_size, const char *assert_d
 {
 	if (ptr || !assert_description)
 		return;
-	fprintf (stderr, "Error: Garbage collector could not allocate %zu bytes of memory for %s.\n", requested_size, assert_description);
+	fprintf (stderr, "Error: Garbage collector could not allocate %" G_GSIZE_FORMAT "u bytes of memory for %s.\n", requested_size, assert_description);
 	exit (1);
 }
 

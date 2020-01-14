@@ -107,10 +107,8 @@ declsec_20_write_value (GString *str, char type, const char *value)
 		g_string_append_printf (str, "%d", (gint32)read32 (value));
 		return value + 4;
 	case MONO_TYPE_U8:
-		g_string_append_printf (str, "%lld", (long long)read64 (value));
-		return value + 8;
 	case MONO_TYPE_I8:
-		g_string_append_printf (str, "%lld", (long long)read64 (value));
+		g_string_append_printf (str, "%" PRId64, (gint64)read64 (value));
 		return value + 8;
 	case MONO_TYPE_R4: {
 		float val;

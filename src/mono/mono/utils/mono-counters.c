@@ -535,16 +535,16 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		if ((counter->type & MONO_COUNTER_UNIT_MASK) == MONO_COUNTER_TIME)
 			fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(gint64*)buffer) / 10000.0);
 		else
-			fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, *(long long *)buffer);
+			fprintf (outfile, ENTRY_FMT "%" PRId64 "\n", counter->name, *(gint64 *)buffer);
 		break;
 	case MONO_COUNTER_ULONG:
 		if ((counter->type & MONO_COUNTER_UNIT_MASK) == MONO_COUNTER_TIME)
 			fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(guint64*)buffer) / 10000.0);
 		else
-			fprintf (outfile, ENTRY_FMT "%llu\n", counter->name, *(unsigned long long *)buffer);
+			fprintf (outfile, ENTRY_FMT "%" PRIu64 "\n", counter->name, *(guint64 *)buffer);
 		break;
 	case MONO_COUNTER_WORD:
-		fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, (long long)*(gssize*)buffer);
+		fprintf (outfile, ENTRY_FMT "%" PRId64 "\n", counter->name, (gint64)*(gssize*)buffer);
 		break;
 	case MONO_COUNTER_DOUBLE:
 		fprintf (outfile, ENTRY_FMT "%.4f\n", counter->name, *(double*)buffer);

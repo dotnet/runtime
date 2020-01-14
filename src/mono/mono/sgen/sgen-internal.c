@@ -252,8 +252,8 @@ sgen_dump_internal_mem_usage (FILE *heap_dump_file)
 	/*
 	int i;
 
-	fprintf (heap_dump_file, "<other-mem-usage type=\"large-internal\" size=\"%lld\"/>\n", large_internal_bytes_alloced);
-	fprintf (heap_dump_file, "<other-mem-usage type=\"pinned-chunks\" size=\"%lld\"/>\n", pinned_chunk_bytes_alloced);
+	fprintf (heap_dump_file, "<other-mem-usage type=\"large-internal\" size=\"%" PRIx64 "\"/>\n", large_internal_bytes_alloced);
+	fprintf (heap_dump_file, "<other-mem-usage type=\"pinned-chunks\" size=\"%" PRIx64 "\"/>\n", pinned_chunk_bytes_alloced);
 	for (i = 0; i < INTERNAL_MEM_MAX; ++i) {
 		fprintf (heap_dump_file, "<other-mem-usage type=\"%s\" size=\"%ld\"/>\n",
 				description_for_type (i), unmanaged_allocator.small_internal_mem_bytes [i]);

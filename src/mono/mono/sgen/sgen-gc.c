@@ -1014,7 +1014,7 @@ alloc_nursery (gboolean dynamic, size_t min_size, size_t max_size)
 	}
 
 	SGEN_ASSERT (0, !sgen_nursery_section, "Why are we allocating the nursery twice?");
-	SGEN_LOG (2, "Allocating nursery size: %zu, initial %zu", max_size, min_size);
+	SGEN_LOG (2, "Allocating nursery size: %" G_GSIZE_FORMAT "u, initial %" G_GSIZE_FORMAT "u", max_size, min_size);
 
 	/* FIXME: handle OOM */
 	sgen_nursery_section = (GCMemSection *)sgen_alloc_internal (INTERNAL_MEM_SECTION);
@@ -1225,7 +1225,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	sgen_client_clear_togglerefs (start_addr, end_addr, ctx);
 
 	TV_GETTIME (btv);
-	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %lld usecs %d ephemeron rounds", generation_name (generation), (long long)(TV_ELAPSED (atv, btv) / 10), ephemeron_rounds);
+	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %" PRId64 " usecs %d ephemeron rounds", generation_name (generation), (gint64)(TV_ELAPSED (atv, btv) / 10), ephemeron_rounds);
 
 	/*
 	 * handle disappearing links
@@ -1808,8 +1808,8 @@ collect_nursery (const char *reason, gboolean is_overflow)
 
 	TV_GETTIME (atv);
 	time_minor_pinning += TV_ELAPSED (btv, atv);
-	SGEN_LOG (2, "Finding pinned pointers: %zd in %lld usecs", sgen_get_pinned_count (), (long long)(TV_ELAPSED (btv, atv) / 10));
-	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
+	SGEN_LOG (2, "Finding pinned pointers: %" G_GSIZE_FORMAT "d in %" PRId64 " usecs", sgen_get_pinned_count (), (gint64)(TV_ELAPSED (btv, atv) / 10));
+	SGEN_LOG (4, "Start scan with %" G_GSIZE_FORMAT "d pinned objects", sgen_get_pinned_count ());
 	sgen_client_pinning_end ();
 
 	remset.start_scan_remsets ();
@@ -1823,7 +1823,7 @@ collect_nursery (const char *reason, gboolean is_overflow)
 
 	if (!is_parallel) {
 		time_minor_scan_remsets += TV_ELAPSED (atv, btv);
-		SGEN_LOG (2, "Minor scan remsets: %lld usecs", (long long)(TV_ELAPSED (atv, btv)/10));
+		SGEN_LOG (2, "Old generation scan: %" PRId64 " usecs", (gint64)(TV_ELAPSED (atv, btv) / 10));
 	}
 
 	sgen_pin_stats_report ();
@@ -1909,7 +1909,7 @@ collect_nursery (const char *reason, gboolean is_overflow)
 	sgen_client_binary_protocol_reclaim_end (GENERATION_NURSERY);
 	TV_GETTIME (btv);
 	time_minor_fragment_creation += TV_ELAPSED (atv, btv);
-	SGEN_LOG (2, "Fragment creation: %lld usecs, %lu bytes available", (long long)(TV_ELAPSED (atv, btv) / 10), (unsigned long)fragment_total);
+	SGEN_LOG (2, "Fragment creation: %" PRId64 " usecs, %lu bytes available", (gint64)TV_ELAPSED (atv, btv), (unsigned long)fragment_total);
 
 	if (remset_consistency_checks)
 		sgen_check_major_refs ();
@@ -2062,8 +2062,8 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED (atv, btv);
-	SGEN_LOG (2, "Finding pinned pointers: %zd in %lld usecs", sgen_get_pinned_count (), (long long)(TV_ELAPSED (atv, btv) / 10));
-	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
+	SGEN_LOG (2, "Finding pinned pointers: %" G_GSIZE_FORMAT "d in %" PRId64 " usecs", sgen_get_pinned_count (), (gint64)(TV_ELAPSED (atv, btv) / 10));
+	SGEN_LOG (4, "Start scan with %" G_GSIZE_FORMAT "d pinned objects", sgen_get_pinned_count ());
 	sgen_client_pinning_end ();
 
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT)
@@ -2618,7 +2618,7 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 	/* this also sets the proper pointers for the next allocation */
 	if (generation_to_collect == GENERATION_NURSERY && !sgen_can_alloc_size (requested_size)) {
 		/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
-		SGEN_LOG (1, "nursery collection didn't find enough room for %zd alloc (%zd pinned)", requested_size, sgen_get_pinned_count ());
+		SGEN_LOG (1, "nursery collection didn't find enough room for %" G_GSIZE_FORMAT "d alloc (%" G_GSIZE_FORMAT "d pinned)", requested_size, sgen_get_pinned_count ());
 		sgen_dump_pin_queue ();
 		sgen_degraded_mode = 1;
 	}
@@ -2867,7 +2867,7 @@ sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_typ
 	sgen_hash_table_replace (&sgen_roots_hash [root_type], start, &new_root, NULL);
 	roots_size += size;
 
-	SGEN_LOG (3, "Added root for range: %p-%p, descr: %llx  (%d/%d bytes)", start, new_root.end_root, (long long)descr, (int)size, (int)roots_size);
+	SGEN_LOG (3, "Added root for range: %p-%p, descr: %" PRIx64 "  (%d/%d bytes)", start, new_root.end_root, (gint64)descr, (int)size, (int)roots_size);
 
 	UNLOCK_GC;
 	return TRUE;
@@ -3508,7 +3508,7 @@ sgen_gc_init (void)
 #ifdef SGEN_MAX_NURSERY_SIZE
 					if (val > SGEN_MAX_NURSERY_SIZE) {
 						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.",
-								"`nursery-size` must be smaller than %lld bytes.", SGEN_MAX_NURSERY_SIZE);
+								"`nursery-size` must be smaller than %" PRId64 " bytes.", SGEN_MAX_NURSERY_SIZE);
 						continue;
 					}
 #endif
@@ -3726,7 +3726,7 @@ sgen_gc_init (void)
 					}
 					*colon = '\0';
 				}
-				sgen_binary_protocol_init (filename, (long long)limit);
+				sgen_binary_protocol_init (filename, (gint64)limit);
 			} else if (!strcmp (opt, "nursery-canaries")) {
 				do_verify_nursery = TRUE;
 				enable_nursery_canaries = TRUE;

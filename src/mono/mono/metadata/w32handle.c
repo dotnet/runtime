@@ -1004,7 +1004,7 @@ mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waital
 	alerted = FALSE;
 
 	if (nhandles > MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_HANDLE, "%s: too many handles: %zd",
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_HANDLE, "%s: too many handles: %" G_GSIZE_FORMAT "d",
 			__func__, nhandles);
 
 		return MONO_W32HANDLE_WAIT_RET_FAILED;

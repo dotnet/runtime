@@ -405,7 +405,7 @@ dump_counters_value (Counter *counter, const char *key_format, const char *key, 
 			}
 			break;
 		case MONO_COUNTER_ULONG:
-			snprintf (format, sizeof (format), "%s : %%llu\n", key_format);
+			snprintf (format, sizeof (format), "%s : %%" PRIu64 "\n", (guint64)key_format);
 			fprintf (outfile, format, key, *(uint64_t*)value);
 			break;
 		case MONO_COUNTER_DOUBLE:
@@ -475,12 +475,12 @@ dump_counters (void)
 		}
 	} else if (counters_sort_mode == COUNTERS_SORT_TIME) {
 		for (ctimestamp = counters_timestamps; ctimestamp; ctimestamp = ctimestamp->next) {
-			fprintf (outfile, "\t%llu:%02llu:%02llu:%02llu.%03llu:\n",
-				(unsigned long long) (ctimestamp->value / 1000 / 60 / 60 / 24 % 1000),
-				(unsigned long long) (ctimestamp->value / 1000 / 60 / 60 % 24),
-				(unsigned long long) (ctimestamp->value / 1000 / 60 % 60),
-				(unsigned long long) (ctimestamp->value / 1000 % 60),
-				(unsigned long long) (ctimestamp->value % 1000));
+			fprintf (outfile, "\t%" PRIu64 ":%02" PRIu64 ":%02" PRIu64 ":%02" PRIu64 ".%03" PRIu64 ":\n",
+				(guint64) (ctimestamp->value / 1000 / 60 / 60 / 24 % 1000),
+				(guint64) (ctimestamp->value / 1000 / 60 / 60 % 24),
+				(guint64) (ctimestamp->value / 1000 / 60 % 60),
+				(guint64) (ctimestamp->value / 1000 % 60),
+				(guint64) (ctimestamp->value % 1000));
 
 			for (csection = ctimestamp->sections; csection; csection = csection->next) {
 				fprintf (outfile, "\t\t%s:\n", csection->value);
@@ -506,12 +506,12 @@ dump_counters (void)
 					counter->name, type_name (counter->type), unit_name (counter->unit), variance_name (counter->variance));
 
 				for (cvalue = counter->values; cvalue; cvalue = cvalue->next) {
-					snprintf (strtimestamp, sizeof (strtimestamp), "%llu:%02llu:%02llu:%02llu.%03llu",
-						(unsigned long long) (cvalue->timestamp / 1000 / 60 / 60 / 24 % 1000),
-						(unsigned long long) (cvalue->timestamp / 1000 / 60 / 60 % 24),
-						(unsigned long long) (cvalue->timestamp / 1000 / 60 % 60),
-						(unsigned long long) (cvalue->timestamp / 1000 % 60),
-						(unsigned long long) (cvalue->timestamp % 1000));
+					snprintf (strtimestamp, sizeof (strtimestamp), "%" PRIu64 ":%02" PRIu64 ":%02" PRIu64 ":%02" PRIu64 ".%03" PRIu64,
+						(guint64) (cvalue->timestamp / 1000 / 60 / 60 / 24 % 1000),
+						(guint64) (cvalue->timestamp / 1000 / 60 / 60 % 24),
+						(guint64) (cvalue->timestamp / 1000 / 60 % 60),
+						(guint64) (cvalue->timestamp / 1000 % 60),
+						(guint64) (cvalue->timestamp % 1000));
 
 					dump_counters_value (counter, "\t\t\t%s", strtimestamp, cvalue->buffer);
 				}
@@ -1458,7 +1458,7 @@ heap_shot_mark_objects (HeapShot *hs)
 			fprintf (outfile, "object %p (%s) unmarked\n", (void*)hs->objects_hash [i], hs->objects_hash [i]->hklass->klass->name);
 		}
 	}
-	fprintf (outfile, "Total unmarked: %zd/%zd\n", num_unmarked, hs->objects_count);
+	fprintf (outfile, "Total unmarked: %" G_GSIZE_FORMAT "d/%" G_GSIZE_FORMAT "d\n", num_unmarked, hs->objects_count);
 	g_free (marks);
 }
 
@@ -2099,7 +2099,7 @@ tracked_creation (uintptr_t obj, ClassDesc *cd, uint64_t size, BackTrace *bt, ui
 	for (i = 0; i < num_tracked_objects; ++i) {
 		if (tracked_objects [i] != obj)
 			continue;
-		fprintf (outfile, "Object %p created (%s, %llu bytes) at %.3f secs.\n", (void*)obj, cd->name, (unsigned long long) size, (timestamp - startup_time)/1000000000.0);
+		fprintf (outfile, "Object %p created (%s, %" PRIu64 " bytes) at %.3f secs.\n", (void*)obj, cd->name, (guint64) size, (timestamp - startup_time)/1000000000.0);
 		if (bt && bt->count) {
 			int k;
 			for (k = 0; k < bt->count; ++k)
@@ -2187,7 +2187,7 @@ code_buffer_desc (int type)
 }
 
 #define OBJ_ADDR(diff) ((obj_base + diff) << 3)
-#define LOG_TIME(base,diff) /*fprintf("outfile, time %llu + %llu near offset %d\n", base, diff, p - ctx->buf)*/
+#define LOG_TIME(base,diff) /*fprintf("outfile, time %" PRIu64 " + %" PRIu64 " near offset %d\n", base, diff, p - ctx->buf)*/
 
 
 /* Stats */
@@ -2248,7 +2248,7 @@ decode_buffer (ProfContext *ctx)
 	thread_id = read_int64 (p + 32);
 	method_base = read_int64 (p + 40);
 	if (debug)
-		fprintf (outfile, "buf: thread:%zx, len: %d, time: %llu, file offset: %llu\n", thread_id, len, (unsigned long long) time_base, (unsigned long long) file_offset);
+		fprintf (outfile, "buf: thread:%" G_GSIZE_FORMAT "x, len: %d, time: %" PRIu64 ", file offset: %" PRIu64 "\n", thread_id, len, (guint64) time_base, (guint64) file_offset);
 	thread = load_thread (ctx, thread_id);
 	if (!load_data (ctx, len))
 		return 0;
@@ -2278,7 +2278,7 @@ decode_buffer (ProfContext *ctx)
 			if (subtype == TYPE_GC_RESIZE) {
 				uint64_t new_size = decode_uleb128 (p, &p);
 				if (debug)
-					fprintf (outfile, "gc heap resized to %llu\n", (unsigned long long) new_size);
+					fprintf (outfile, "gc heap resized to %" PRIu64 "\n", (guint64) new_size);
 				gc_resizes++;
 				if (new_size > max_heap_size)
 					max_heap_size = new_size;
@@ -2294,7 +2294,7 @@ decode_buffer (ProfContext *ctx)
 				else
 					gen = decode_uleb128 (p, &p);
 				if (debug)
-					fprintf (outfile, "gc event for gen%d: %s at %llu (thread: 0x%zx)\n", gen, gc_event_name (ev), (unsigned long long) time_base, thread->thread_id);
+					fprintf (outfile, "gc event for gen%d: %s at %" PRIu64 " (thread: 0x%" G_GSIZE_FORMAT "x)\n", gen, gc_event_name (ev), (guint64) time_base, thread->thread_id);
 				if (gen > 2) {
 					fprintf (outfile, "incorrect gc gen: %d\n", gen);
 					break;
@@ -2389,18 +2389,18 @@ decode_buffer (ProfContext *ctx)
 			} else if (subtype == TYPE_GC_FINALIZE_START) {
 				// TODO: Generate a finalizer report based on these events.
 				if (debug)
-					fprintf (outfile, "gc finalizer queue being processed at %llu\n", (unsigned long long) time_base);
+					fprintf (outfile, "gc finalizer queue being processed at %" PRIu64 "\n", (guint64) time_base);
 			} else if (subtype == TYPE_GC_FINALIZE_END) {
 				if (debug)
-					fprintf (outfile, "gc finalizer queue finished processing at %llu\n", (unsigned long long) time_base);
+					fprintf (outfile, "gc finalizer queue finished processing at %" PRIu64 "\n", (guint64) time_base);
 			} else if (subtype == TYPE_GC_FINALIZE_OBJECT_START) {
 				intptr_t objdiff = decode_sleb128 (p, &p);
 				if (debug)
-					fprintf (outfile, "gc finalizing object %p at %llu\n", (void *) OBJ_ADDR (objdiff), (unsigned long long) time_base);
+					fprintf (outfile, "gc finalizing object %p at %" PRIu64 "\n", (void *) OBJ_ADDR (objdiff), (guint64) time_base);
 			} else if (subtype == TYPE_GC_FINALIZE_OBJECT_END) {
 				intptr_t objdiff = decode_sleb128 (p, &p);
 				if (debug)
-					fprintf (outfile, "gc finalized object %p at %llu\n", (void *) OBJ_ADDR (objdiff), (unsigned long long) time_base);
+					fprintf (outfile, "gc finalized object %p at %" PRIu64 "\n", (void *) OBJ_ADDR (objdiff), (guint64) time_base);
 			}
 			break;
 		}
@@ -2417,7 +2417,7 @@ decode_buffer (ProfContext *ctx)
 				if (ctx->data_version < 13)
 					decode_uleb128 (p, &p); /* flags */
 				if (debug)
-					fprintf (outfile, "%s class %p (%s in %p) at %llu\n", load_str, (void*)(ptr_base + ptrdiff), p, (void*)(ptr_base + imptrdiff), (unsigned long long) time_base);
+					fprintf (outfile, "%s class %p (%s in %p) at %" PRIu64 "\n", load_str, (void*)(ptr_base + ptrdiff), p, (void*)(ptr_base + imptrdiff), (guint64) time_base);
 				add_class (ptr_base + ptrdiff, (char*)p);
 				while (*p) p++;
 				p++;
@@ -2425,7 +2425,7 @@ decode_buffer (ProfContext *ctx)
 				if (ctx->data_version < 13)
 					decode_uleb128 (p, &p); /* flags */
 				if (debug)
-					fprintf (outfile, "%s image %p (%s) at %llu\n", load_str, (void*)(ptr_base + ptrdiff), p, (unsigned long long) time_base);
+					fprintf (outfile, "%s image %p (%s) at %" PRIu64 "\n", load_str, (void*)(ptr_base + ptrdiff), p, (guint64) time_base);
 				if (subtype == TYPE_END_LOAD)
 					add_image (ptr_base + ptrdiff, (char*)p);
 				while (*p) p++;
@@ -2440,7 +2440,7 @@ decode_buffer (ProfContext *ctx)
 				if (ctx->data_version < 13)
 					decode_uleb128 (p, &p); /* flags */
 				if (debug)
-					fprintf (outfile, "%s assembly %p (%s) at %llu\n", load_str, (void*)(ptr_base + ptrdiff), p, (unsigned long long) time_base);
+					fprintf (outfile, "%s assembly %p (%s) at %" PRIu64 "\n", load_str, (void*)(ptr_base + ptrdiff), p, (guint64) time_base);
 				if (subtype == TYPE_END_LOAD)
 					add_assembly (ptr_base + ptrdiff, (char*)p);
 				while (*p) p++;
@@ -2454,9 +2454,9 @@ decode_buffer (ProfContext *ctx)
 					nd->friendly_name = pstrdup ((char *) p);
 				if (debug) {
 					if (subtype == 0)
-						fprintf (outfile, "domain %p named at %llu: %s\n", (void *) (ptr_base + ptrdiff), (unsigned long long) time_base, p);
+						fprintf (outfile, "domain %p named at %" PRIu64 ": %s\n", (void *) (ptr_base + ptrdiff), (guint64) time_base, p);
 					else
-						fprintf (outfile, "%s thread %p at %llu\n", load_str, (void *) (ptr_base + ptrdiff), (unsigned long long) time_base);
+						fprintf (outfile, "%s thread %p at %" PRIu64 "\n", load_str, (void *) (ptr_base + ptrdiff), (guint64) time_base);
 				}
 				if (subtype == 0) {
 					while (*p) p++;
@@ -2467,7 +2467,7 @@ decode_buffer (ProfContext *ctx)
 					decode_uleb128 (p, &p); /* flags */
 				intptr_t domaindiff = decode_sleb128 (p, &p);
 				if (debug)
-					fprintf (outfile, "%s context %p (%p) at %llu\n", load_str, (void*)(ptr_base + ptrdiff), (void *) (ptr_base + domaindiff), (unsigned long long) time_base);
+					fprintf (outfile, "%s context %p (%p) at %" PRIu64 "\n", load_str, (void*)(ptr_base + ptrdiff), (void *) (ptr_base + domaindiff), (guint64) time_base);
 				if (subtype == TYPE_END_LOAD)
 					get_remctx (ctx, ptr_base + ptrdiff)->domain_id = ptr_base + domaindiff;
 			} else if (mtype == TYPE_THREAD) {
@@ -2479,9 +2479,9 @@ decode_buffer (ProfContext *ctx)
 					nt->name = pstrdup ((char*)p);
 				if (debug) {
 					if (subtype == 0)
-						fprintf (outfile, "thread %p named at %llu: %s\n", (void*)(ptr_base + ptrdiff), (unsigned long long) time_base, p);
+						fprintf (outfile, "thread %p named at %" PRIu64 ": %s\n", (void*)(ptr_base + ptrdiff), (guint64) time_base, p);
 					else
-						fprintf (outfile, "%s thread %p at %llu\n", load_str, (void *) (ptr_base + ptrdiff), (unsigned long long) time_base);
+						fprintf (outfile, "%s thread %p at %" PRIu64 "\n", load_str, (void *) (ptr_base + ptrdiff), (guint64) time_base);
 				}
 				if (subtype == 0) {
 					while (*p) p++;
@@ -2491,7 +2491,7 @@ decode_buffer (ProfContext *ctx)
 				intptr_t domaindiff = decode_sleb128 (p, &p);
 				intptr_t classdiff = decode_sleb128 (p, &p);
 				if (debug)
-					fprintf (outfile, "vtable %p for class %p in domain %p at %llu\n", (void *) (ptrdiff + ptr_base), (void *) (classdiff + ptr_base), (void *) (domaindiff + ptr_base), (unsigned long long) time_base);
+					fprintf (outfile, "vtable %p for class %p in domain %p at %" PRIu64 "\n", (void *) (ptrdiff + ptr_base), (void *) (classdiff + ptr_base), (void *) (domaindiff + ptr_base), (guint64) time_base);
 				add_vtable (ptr_base + ptrdiff, ptr_base + classdiff);
 			}
 			break;
@@ -2515,7 +2515,7 @@ decode_buffer (ProfContext *ctx)
 			LOG_TIME (time_base, tdiff);
 			time_base += tdiff;
 			if (debug)
-				fprintf (outfile, "alloced object %p, size %llu (%s) at %llu\n", (void*)OBJ_ADDR (objdiff), (unsigned long long) len, cd->name, (unsigned long long) time_base);
+				fprintf (outfile, "alloced object %p, size %" PRIu64 " (%s) at %" PRIu64 "\n", (void*)OBJ_ADDR (objdiff), (guint64) len, cd->name, (guint64) time_base);
 			if (has_bt) {
 				num_bt = 8;
 				frames = decode_bt (ctx, sframes, &num_bt, p, &p, ptr_base, &method_base);
@@ -2631,7 +2631,7 @@ decode_buffer (ProfContext *ctx)
 						track_obj_reference (OBJ_ADDR (obj1diff), OBJ_ADDR (objdiff), cd);
 				}
 				if (debug && size)
-					fprintf (outfile, "traced object %p, size %llu (%s), refs: %zd\n", (void*)OBJ_ADDR (objdiff), (unsigned long long) size, cd->name, num);
+					fprintf (outfile, "traced object %p, size %" PRIu64 " (%s), refs: %" G_GSIZE_FORMAT "d\n", (void*)OBJ_ADDR (objdiff), (guint64) size, cd->name, num);
 			} else if (subtype == TYPE_HEAP_ROOT) {
 				uintptr_t num;
 				if (ctx->data_version > 14) {
@@ -2687,7 +2687,7 @@ decode_buffer (ProfContext *ctx)
 				while (*p++);
 
 				if (debug)
-					fprintf (outfile, "root register address %p size %lld type %d key %p name %s\n", (void *) (ptr_base + ptrdiff), (unsigned long long) size, type, (void *) (ptr_base + keydiff), desc);
+					fprintf (outfile, "root register address %p size %" PRId64 " type %d key %p name %s\n", (void *) (ptr_base + ptrdiff), (guint64) size, type, (void *) (ptr_base + keydiff), desc);
 			} else if (subtype == TYPE_HEAP_ROOT_UNREGISTER) {
 				uint64_t tdiff = decode_uleb128 (p + 1, &p);
 				LOG_TIME (time_base, tdiff);
@@ -3194,7 +3194,7 @@ decode_buffer (ProfContext *ctx)
 			break;
 		}
 		default:
-			fprintf (outfile, "unhandled profiler event: 0x%x at file offset: %llu + %lld (len: %d\n)\n", *p, (unsigned long long) file_offset, (long long) (p - ctx->buf), len);
+			fprintf (outfile, "unhandled profiler event: 0x%x at file offset: %" PRIu64 " + %" PRId64 " (len: %d\n)\n", *p, (guint64) file_offset, (gint64) (p - ctx->buf), len);
 			exit (1);
 		}
 		record_event_stats (event, p - start);
@@ -3344,7 +3344,7 @@ dump_traces (TraceDesc *traces, const char *desc)
 		bt = traces->traces [j].bt;
 		if (!bt->count)
 			continue;
-		fprintf (outfile, "\t%llu %s from:\n", (unsigned long long) traces->traces [j].count, desc);
+		fprintf (outfile, "\t%" PRIu64 " %s from:\n", (guint64) traces->traces [j].count, desc);
 		for (k = 0; k < bt->count; ++k)
 			fprintf (outfile, "\t\t%s\n", bt->methods [k]->name);
 	}
@@ -3385,12 +3385,12 @@ dump_exceptions (void)
 {
 	int i;
 	fprintf (outfile, "\nException summary\n");
-	fprintf (outfile, "\tThrows: %llu\n", (unsigned long long) throw_count);
+	fprintf (outfile, "\tThrows: %" PRIu64 "\n", (guint64) throw_count);
 	dump_traces (&exc_traces, "throws");
 	for (i = 0; i <= MONO_EXCEPTION_CLAUSE_FAULT; ++i) {
 		if (!clause_summary [i])
 			continue;
-		fprintf (outfile, "\tExecuted %s clauses: %llu\n", clause_name (i), (unsigned long long) clause_summary [i]);
+		fprintf (outfile, "\tExecuted %s clauses: %" PRIu64 "\n", clause_name (i), (guint64) clause_summary [i]);
 	}
 }
 
@@ -3430,9 +3430,9 @@ dump_monitors (void)
 			mdesc->wait_time/1000000000.0, mdesc->max_wait_time/1000000000.0, mdesc->wait_time/1000000000.0/mdesc->contentions);
 		dump_traces (&mdesc->traces, "contentions");
 	}
-	fprintf (outfile, "\tLock contentions: %llu\n", (unsigned long long) monitor_contention);
-	fprintf (outfile, "\tLock acquired: %llu\n", (unsigned long long) monitor_acquired);
-	fprintf (outfile, "\tLock failures: %llu\n", (unsigned long long) monitor_failed);
+	fprintf (outfile, "\tLock contentions: %" PRIu64 "\n", (guint64) monitor_contention);
+	fprintf (outfile, "\tLock acquired: %" PRIu64 "\n", (guint64) monitor_acquired);
+	fprintf (outfile, "\tLock failures: %" PRIu64 "\n", (guint64) monitor_failed);
 }
 
 static void
@@ -3441,25 +3441,25 @@ dump_gcs (void)
 	int i;
 	fprintf (outfile, "\nGC summary\n");
 	fprintf (outfile, "\tGC resizes: %d\n", gc_resizes);
-	fprintf (outfile, "\tMax heap size: %llu\n", (unsigned long long) max_heap_size);
-	fprintf (outfile, "\tObject moves: %llu\n", (unsigned long long) gc_object_moves);
+	fprintf (outfile, "\tMax heap size: %" PRIu64 "\n", (guint64) max_heap_size);
+	fprintf (outfile, "\tObject moves: %" PRIu64 "\n", (guint64) gc_object_moves);
 	for (i = 0; i < 3; ++i) {
 		if (!gc_info [i].count)
 			continue;
-		fprintf (outfile, "\tGen%d collections: %d, max time: %lluus, total time: %lluus, average: %lluus\n",
+		fprintf (outfile, "\tGen%d collections: %d, max time: %" PRIu64 "us, total time: %" PRIu64 "us, average: %" PRIu64 "us\n",
 			i, gc_info [i].count,
-			(unsigned long long) (gc_info [i].max_time / 1000),
-			(unsigned long long) (gc_info [i].total_time / 1000),
-			(unsigned long long) (gc_info [i].total_time / gc_info [i].count / 1000));
+			(guint64) (gc_info [i].max_time / 1000),
+			(guint64) (gc_info [i].total_time / 1000),
+			(guint64) (gc_info [i].total_time / gc_info [i].count / 1000));
 	}
 	for (i = 0; i < 3; ++i) {
 		if (!handle_info [i].max_live)
 			continue;
-		fprintf (outfile, "\tGC handles %s: created: %llu, destroyed: %llu, max: %llu\n",
+		fprintf (outfile, "\tGC handles %s: created: %" PRIu64 ", destroyed: %" PRIu64 ", max: %" PRIu64 "\n",
 			get_handle_name (i),
-			(unsigned long long) (handle_info [i].created),
-			(unsigned long long) (handle_info [i].destroyed),
-			(unsigned long long) (handle_info [i].max_live));
+			(guint64) (handle_info [i].created),
+			(guint64) (handle_info [i].destroyed),
+			(guint64) (handle_info [i].max_live));
 		dump_traces (&handle_info [i].traces, "created");
 		dump_traces (&handle_info [i].destroy_traces, "destroyed");
 	}
@@ -3516,15 +3516,15 @@ dump_allocations (void)
 			fprintf (outfile, "\nAllocation summary\n");
 			fprintf (outfile, "%10s %10s %8s Type name\n", "Bytes", "Count", "Average");
 		}
-		fprintf (outfile, "%10llu %10zd %8llu %s\n",
-			(unsigned long long) (cd->alloc_size),
+		fprintf (outfile, "%10" PRIu64 " %10zd %8" PRIu64 " %s\n",
+			(guint64) (cd->alloc_size),
 			cd->allocs,
-			(unsigned long long) (cd->alloc_size / cd->allocs),
+			(guint64) (cd->alloc_size / cd->allocs),
 			cd->name);
 		dump_traces (&cd->traces, "bytes");
 	}
 	if (allocs)
-		fprintf (outfile, "Total memory allocated: %llu bytes in %zd objects\n", (unsigned long long) size, allocs);
+		fprintf (outfile, "Total memory allocated: %" PRIu64 " bytes in %" G_GSIZE_FORMAT "d objects\n", (guint64) size, allocs);
 }
 
 enum {
@@ -3621,15 +3621,15 @@ dump_methods (void)
 			fprintf (outfile, "\nMethod call summary\n");
 			fprintf (outfile, "%8s %8s %10s Method name\n", "Total(ms)", "Self(ms)", "Calls");
 		}
-		fprintf (outfile, "%8llu %8llu %10llu %s\n",
-			(unsigned long long) (msecs),
-			(unsigned long long) (smsecs),
-			(unsigned long long) (cd->calls),
+		fprintf (outfile, "%8" PRIu64 " %8" PRIu64 " %10" PRIu64 " %s\n",
+			(guint64) (msecs),
+			(guint64) (smsecs),
+			(guint64) (cd->calls),
 			cd->name);
 		dump_traces (&cd->traces, "calls");
 	}
 	if (calls)
-		fprintf (outfile, "Total calls: %llu\n", (unsigned long long) calls);
+		fprintf (outfile, "Total calls: %" PRIu64 "\n", (guint64) calls);
 }
 
 static int
@@ -3674,8 +3674,8 @@ dump_rev_claases (HeapClassRevRef *revs, int count)
 		return;
 	for (j = 0; j < count; ++j) {
 		HeapClassDesc *cd = revs [j].klass;
-		fprintf (outfile, "\t\t%llu references from: %s\n",
-			(unsigned long long) (revs [j].count),
+		fprintf (outfile, "\t\t%" PRIu64 " references from: %s\n",
+			(guint64) (revs [j].count),
 			cd->klass->name);
 	}
 }
@@ -3700,11 +3700,11 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 	}
 	hs->sorted = sorted;
 	mono_qsort (sorted, ccount, sizeof (void*), compare_heap_class);
-	fprintf (outfile, "\n\tHeap shot %d at %.3f secs: size: %llu, object count: %llu, class count: %d, roots: %zd\n",
+	fprintf (outfile, "\n\tHeap shot %d at %.3f secs: size: %" PRIu64 ", object count: %" PRIu64 ", class count: %d, roots: %" G_GSIZE_FORMAT "d\n",
 		hs_num,
 		(hs->timestamp - startup_time)/1000000000.0,
-		(unsigned long long) (size),
-		(unsigned long long) (count),
+		(guint64) (size),
+		(guint64) (count),
 		ccount, hs->num_roots);
 	if (!verbose && ccount > 30)
 		ccount = 30;
@@ -3716,15 +3716,15 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 		cd = sorted [i];
 		if (last_hs)
 			ocd = heap_class_lookup (last_hs, cd->klass);
-		fprintf (outfile, "\t%10llu %10llu %8llu %s",
-			(unsigned long long) (cd->total_size),
-			(unsigned long long) (cd->count),
-			(unsigned long long) (cd->total_size / cd->count),
+		fprintf (outfile, "\t%10" PRIu64 " %10" PRIu64 " %8" PRIu64 " %s",
+			(guint64) (cd->total_size),
+			(guint64) (cd->count),
+			(guint64) (cd->total_size / cd->count),
 			cd->klass->name);
 		if (ocd) {
 			int64_t bdiff = cd->total_size - ocd->total_size;
 			int64_t cdiff = cd->count - ocd->count;
-			fprintf (outfile, " (bytes: %+lld, count: %+lld)\n", (long long) bdiff, (long long) cdiff);
+			fprintf (outfile, " (bytes: %+" PRId64 ", count: %+" PRId64 ")\n", (gint64) bdiff, (gint64) cdiff);
 		} else {
 			fprintf (outfile, "\n");
 		}
@@ -3739,7 +3739,7 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 		assert (cd->rev_count == k);
 		mono_qsort (rev_sorted, cd->rev_count, sizeof (HeapClassRevRef), compare_rev_class);
 		if (cd->root_references)
-			fprintf (outfile, "\t\t%zd root references (%zd pinning)\n", cd->root_references, cd->pinned_references);
+			fprintf (outfile, "\t\t%" G_GSIZE_FORMAT "d root references (%" G_GSIZE_FORMAT "d pinning)\n", cd->root_references, cd->pinned_references);
 		dump_rev_claases (rev_sorted, cd->rev_count);
 		g_free (rev_sorted);
 	}

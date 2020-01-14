@@ -17,7 +17,7 @@ test_swap (void)
 
 	res64 = GUINT64_SWAP_LE_BE(b);
 	if (res64 != b_expect)
-		return FAILED ("GUINT64_SWAP_LE_BE returned 0x%llx (had=0x%llx)", res64, b);
+		return FAILED ("GUINT64_SWAP_LE_BE returned 0x%" PRIx64 " (had=0x%" PRIx64 ")", (guint64)res64, (guint64)b);
 	res16 = GUINT16_SWAP_LE_BE(c);
 	if (res16 != 0xcdab)
 		return FAILED ("GUINT16_SWAP_LE_BE returned 0x%x", (guint32) res16);	

@@ -479,7 +479,7 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	sgen_array_list_add (&sgen_los_object_array_list, LOS_OBJECT_TAG (obj), 0, FALSE);
 	sgen_los_memory_usage += size;
 	los_num_objects++;
-	SGEN_LOG (4, "Allocated large object %p, vtable: %p (%s), size: %zd", obj->data, vtable, sgen_client_vtable_get_name (vtable), size);
+	SGEN_LOG (4, "Allocated large object %p, vtable: %p (%s), size: %" G_GSIZE_FORMAT "d", obj->data, vtable, sgen_client_vtable_get_name (vtable), size);
 	sgen_binary_protocol_alloc (obj->data, vtable, size, sgen_client_get_provenance ());
 
 #ifdef LOS_CONSISTENCY_CHECK
@@ -659,7 +659,7 @@ mono_sgen_los_describe_pointer (char *ptr)
 		if ((char*)obj->data == ptr) {
 			SGEN_LOG (0, "%s (size %d pin %d)\n", los_kind, (int)size, pinned ? 1 : 0);
 		} else {
-			SGEN_LOG (0, "%s (interior-ptr offset %zd size %d pin %d)",
+			SGEN_LOG (0, "%s (interior-ptr offset %" G_GSIZE_FORMAT "d size %d pin %d)",
 					los_kind, ptr - (char*)obj->data, (int)size, pinned ? 1 : 0);
 		}
 

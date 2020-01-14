@@ -125,7 +125,7 @@ sgen_find_section_pin_queue_start_end (GCMemSection *section)
 	sgen_find_optimized_pin_queue_area (section->data, section->end_data,
 			&section->pin_queue_first_entry, &section->pin_queue_last_entry);
 
-	SGEN_LOG (6, "Found %zd pinning addresses in section %p",
+	SGEN_LOG (6, "Found %" G_GSIZE_FORMAT "d pinning addresses in section %p",
 			section->pin_queue_last_entry - section->pin_queue_first_entry, section);
 }
 

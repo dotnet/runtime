@@ -875,7 +875,7 @@ handle_enum:
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-			g_string_append_printf (res, "%lld", (long long)read64 (p));
+			g_string_append_printf (res, "%" PRId64, (gint64)read64 (p));
 			p += 8;
 			break;
 		case MONO_TYPE_R4: {

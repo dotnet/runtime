@@ -1072,7 +1072,7 @@ mono_pe_file_map (const gunichar2 *filename, gint32 *map_size, void **handle)
 
 	/* Check basic file size */
 	if (statbuf.st_size < sizeof(IMAGE_DOS_HEADER)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: File %s is too small: %lld", __func__, filename_ext, (long long) statbuf.st_size);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: File %s is too small: %" PRId64, __func__, filename_ext, (gint64) statbuf.st_size);
 
 		goto exit;
 	}

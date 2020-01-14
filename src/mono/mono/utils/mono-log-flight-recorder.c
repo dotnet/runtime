@@ -71,7 +71,7 @@ handle_command (gpointer state, gpointer payload, gboolean at_shutdown)
 		dump.num_messages = 0;
 		dump.max_num_messages = MAX_RECORDER_LOG_LEN;
 		mono_log_dump_recorder_internal (recorder, &dump);
-		fprintf (stderr, "%zu messages\n", dump.num_messages);
+		fprintf (stderr, "%" G_GSIZE_FORMAT "u messages\n", dump.num_messages);
 
 		for (int i=0; i < dump.num_messages; i++)
 			fprintf (stderr, "\t(%d): %s\n", i, dump.messages [i].message);
@@ -199,7 +199,7 @@ mono_log_dump_recorder (void)
 
 	if (success) {
 		fprintf (stderr, "Recent Logs Inserted\n");
-		fprintf (stderr, "%zu messages\n", dump.num_messages);
+		fprintf (stderr, "%" G_GSIZE_FORMAT "u messages\n", dump.num_messages);
 
 		for (int i=0; i < dump.num_messages; i++)
 			fprintf (stderr, "\t(%d): %s\n", i, dump.messages [i].message);

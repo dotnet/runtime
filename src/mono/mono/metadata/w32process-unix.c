@@ -937,6 +937,7 @@ mono_w32process_module_get_filename (gpointer handle, gpointer module, gunichar2
 		return FALSE;
 
 	proc_path = mono_unicode_from_external (path, &bytes);
+
 	if (proc_path == NULL) {
 		g_free (path);
 		return FALSE;

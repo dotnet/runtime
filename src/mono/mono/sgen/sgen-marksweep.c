@@ -310,11 +310,11 @@ static int
 ms_find_block_obj_size_index (size_t size)
 {
 	int i;
-	SGEN_ASSERT (9, size <= SGEN_MAX_SMALL_OBJ_SIZE, "size %zd is bigger than max small object size %d", size, SGEN_MAX_SMALL_OBJ_SIZE);
+	SGEN_ASSERT (9, size <= SGEN_MAX_SMALL_OBJ_SIZE, "size %" G_GSIZE_FORMAT "d is bigger than max small object size %d", size, SGEN_MAX_SMALL_OBJ_SIZE);
 	for (i = 0; i < num_block_obj_sizes; ++i)
 		if (block_obj_sizes [i] >= size)
 			return i;
-	g_error ("no object of size %zd\n", size);
+	g_error ("no object of size %" G_GSIZE_FORMAT "d\n", size);
 	return -1;
 }
 
@@ -1037,9 +1037,9 @@ major_describe_pointer (char *ptr)
 				SGEN_LOG (0, "dead-object");
 		} else {
 			if (live)
-				SGEN_LOG (0, "interior-ptr offset %zd", ptr - obj);
+				SGEN_LOG (0, "interior-ptr offset %" G_GSIZE_FORMAT "d", ptr - obj);
 			else
-				SGEN_LOG (0, "dead-interior-ptr offset %zd", ptr - obj);
+				SGEN_LOG (0, "dead-interior-ptr offset %" G_GSIZE_FORMAT "d", ptr - obj);
 		}
 
 		SGEN_LOG (0, " marked %d)\n", marked ? 1 : 0);
@@ -1089,7 +1089,7 @@ major_dump_heap (FILE *heap_dump_file)
 		int i;
 		int start = -1;
 
-		fprintf (heap_dump_file, "<section type=\"%s\" size=\"%zu\">\n", "old", (size_t)MS_BLOCK_FREE);
+		fprintf (heap_dump_file, "<section type=\"%s\" size=\"%" G_GSIZE_FORMAT "u\">\n", "old", (size_t)MS_BLOCK_FREE);
 
 		for (i = 0; i <= count; ++i) {
 			if ((i < count) && MS_OBJ_ALLOCED (MS_BLOCK_OBJ (block, i), block)) {

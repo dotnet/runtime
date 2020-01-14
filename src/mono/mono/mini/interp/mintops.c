@@ -126,7 +126,7 @@ mono_interp_dis_mintop (gint32 ins_offset, gboolean native_offset, const guint16
 		g_string_append_printf (str, " %d", (gint32)READ32 (ip));
 		break;
 	case MintOpLongInt:
-		g_string_append_printf (str, " %lld", (long long)READ64 (ip));
+		g_string_append_printf (str, " %" PRId64, (gint64)READ64 (ip));
 		break;
 	case MintOpFloat: {
 		gint32 tmp = READ32 (ip);

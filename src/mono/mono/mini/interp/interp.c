@@ -1380,7 +1380,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 			int_i++;
 			margs->iargs [int_i] = (gpointer) sarg->data.pair.hi;
 #if DEBUG_INTERP
-			g_print ("build_args_from_sig: margs->iargs [%d/%d]: 0x%016llx, hi=0x%08x lo=0x%08x (frame @ %d)\n", int_i - 1, int_i, *((guint64 *) &margs->iargs [int_i - 1]), sarg->data.pair.hi, sarg->data.pair.lo, i);
+			g_print ("build_args_from_sig: margs->iargs [%d/%d]: 0x%016" PRIx64 ", hi=0x%08x lo=0x%08x (frame @ %d)\n", int_i - 1, int_i, *((guint64 *) &margs->iargs [int_i - 1]), sarg->data.pair.hi, sarg->data.pair.lo, i);
 #endif
 			int_i++;
 			break;
@@ -1714,7 +1714,7 @@ dump_stack (stackval *stack, stackval *sp)
 		return g_string_free (str, FALSE);
 	
 	while (s < sp) {
-		g_string_append_printf (str, "[%p (%lld)] ", s->data.l, s->data.l);
+		g_string_append_printf (str, "[%p (%" PRId64 ")] ", s->data.l, (gint64)s->data.l);
 		++s;
 	}
 	return g_string_free (str, FALSE);
@@ -1761,7 +1761,7 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 	default: {
 		GString *res = g_string_new ("");
 		mono_type_get_desc (res, type, TRUE);
-		g_string_append_printf (str, "[{%s} %lld/0x%0llx] ", res->str, s->data.l, s->data.l);
+		g_string_append_printf (str, "[{%s} %" PRId64 "/0x%0" PRIx64 "] ", res->str, (gint64)s->data.l, (guint64)s->data.l);
 		g_string_free (res, TRUE);
 		break;
 	}

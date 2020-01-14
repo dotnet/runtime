@@ -913,12 +913,12 @@ mono_native_state_add_memory (MonoStateWriter *writer)
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
 	mono_state_writer_object_key (writer, "minor_gc_time");
-	mono_state_writer_printf(writer, "\"%lld\",\n", stats.minor_gc_time);
+	mono_state_writer_printf(writer, "\"%" PRId64 "\",\n", (gint64)stats.minor_gc_time);
 
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
 	mono_state_writer_object_key (writer, "major_gc_time");
-	mono_state_writer_printf(writer, "\"%lld\",\n", stats.major_gc_time);
+	mono_state_writer_printf(writer, "\"%" PRId64 "\",\n", (gint64)stats.major_gc_time);
 
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
@@ -933,7 +933,7 @@ mono_native_state_add_memory (MonoStateWriter *writer)
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
 	mono_state_writer_object_key (writer, "major_gc_time_concurrent");
-	mono_state_writer_printf(writer, "\"%lld\"\n", stats.major_gc_time_concurrent);
+	mono_state_writer_printf(writer, "\"%" PRId64 "\"\n", (gint64)stats.major_gc_time_concurrent);
 
 	writer->indent--;
 	mono_state_writer_indent (writer);

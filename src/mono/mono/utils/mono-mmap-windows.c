@@ -221,7 +221,7 @@ exit:
 				0, win32_error, 0, win32_error_string, 99, NULL);
 			// Win32 error messages end with an unsightly newline.
 			remove_trailing_whitespace_utf16 (win32_error_string);
-			*error_message = g_strdup_printf ("%s failed file:%s length:0x%IX offset:0x%I64X function:%s error:%ls(0x%X)\n",
+			*error_message = g_strdup_printf ("%s failed file:%s length:0x%IX offset:0x%" PRIX64 " function:%s error:%ls(0x%X)\n",
 				__func__, filepath ? filepath : "", length, offset, failed_function, win32_error_string, win32_error);
 		}
 		SetLastError (win32_error);

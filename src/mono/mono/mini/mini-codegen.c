@@ -576,7 +576,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 		g_string_append_printf (sbuf, " [%d]", (int)(gssize)ins->inst_p1);
 		break;
 	case OP_I8CONST:
-		g_string_append_printf (sbuf, " [%lld]", (long long)ins->inst_l);
+		g_string_append_printf (sbuf, " [%" PRId64 "]", (gint64)ins->inst_l);
 		break;
 	case OP_R8CONST:
 		g_string_append_printf (sbuf, " [%f]", *(double*)ins->inst_p0);
@@ -854,7 +854,7 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 
 	g_assert (bank < MONO_NUM_REGBANKS);
 
-	DEBUG (printf ("\tstart regmask to assign R%d: 0x%08llu (R%d <- R%d R%d R%d)\n", reg, (unsigned long long)regmask, ins->dreg, ins->sreg1, ins->sreg2, ins->sreg3));
+	DEBUG (printf ("\tstart regmask to assign R%d: 0x%08" PRIu64 " (R%d <- R%d R%d R%d)\n", reg, (guint64)regmask, ins->dreg, ins->sreg1, ins->sreg2, ins->sreg3));
 	/* exclude the registers in the current instruction */
 	num_sregs = mono_inst_get_src_registers (ins, sregs);
 	for (i = 0; i < num_sregs; ++i) {
@@ -871,7 +871,7 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 		DEBUG (printf ("\t\texcluding dreg %s\n", mono_regname_full (ins->dreg, bank)));
 	}
 
-	DEBUG (printf ("\t\tavailable regmask: 0x%08llu\n", (unsigned long long)regmask));
+	DEBUG (printf ("\t\tavailable regmask: 0x%08" PRIu64 "\n", (guint64)regmask));
 	g_assert (regmask); /* need at least a register we can free */
 	sel = 0;
 	/* we should track prev_use and spill the register that's farther */

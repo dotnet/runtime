@@ -634,7 +634,7 @@ sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx)
 			if (!key || key == tombstone)
 				continue;
 
-			SGEN_LOG (5, "[%zd] key %p (%s) value %p (%s)", cur - mono_array_addr_internal (array, Ephemeron, 0),
+			SGEN_LOG (5, "[%" G_GSIZE_FORMAT "d] key %p (%s) value %p (%s)", cur - mono_array_addr_internal (array, Ephemeron, 0),
 				key, sgen_is_object_alive_for_current_gen (key) ? "reachable" : "unreachable",
 				cur->value, cur->value && sgen_is_object_alive_for_current_gen (cur->value) ? "reachable" : "unreachable");
 
@@ -686,7 +686,7 @@ sgen_client_mark_ephemerons (ScanCopyContext ctx)
 			if (!key || key == tombstone)
 				continue;
 
-			SGEN_LOG (5, "[%zd] key %p (%s) value %p (%s)", cur - mono_array_addr_internal (array, Ephemeron, 0),
+			SGEN_LOG (5, "[%" G_GSIZE_FORMAT "d] key %p (%s) value %p (%s)", cur - mono_array_addr_internal (array, Ephemeron, 0),
 				key, sgen_is_object_alive_for_current_gen (key) ? "reachable" : "unreachable",
 				cur->value, cur->value && sgen_is_object_alive_for_current_gen (cur->value) ? "reachable" : "unreachable");
 
@@ -2307,10 +2307,10 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 		void *aligned_stack_start;
 
 		if (info->client_info.skip) {
-			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %zd", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start);
+			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %" G_GSIZE_FORMAT "d", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start);
 			skip_reason = 1;
 		} else if (!mono_thread_info_is_live (info)) {
-			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %zd (state %x)", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start, info->client_info.info.thread_state.raw);
+			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %" G_GSIZE_FORMAT "d (state %x)", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start, info->client_info.info.thread_state.raw);
 			skip_reason = 3;
 		} else if (!info->client_info.stack_start) {
 			SGEN_LOG (3, "Skipping starting or detaching thread %p", info);
@@ -2336,7 +2336,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 
 		aligned_stack_start = get_aligned_stack_start (info);
 		g_assert (info->client_info.suspend_done);
-		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %zd, pinned=%zd", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start, sgen_get_pinned_count ());
+		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %" G_GSIZE_FORMAT "d, pinned=%" G_GSIZE_FORMAT "d", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start, sgen_get_pinned_count ());
 		if (mono_gc_get_gc_callbacks ()->thread_mark_func && !conservative_stack_mark) {
 			mono_gc_get_gc_callbacks ()->thread_mark_func (info->client_info.runtime_data, (guint8 *)aligned_stack_start, (guint8 *)info->client_info.info.stack_end, precise, &ctx);
 		} else if (!precise) {

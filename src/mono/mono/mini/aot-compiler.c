@@ -13153,10 +13153,10 @@ mono_dedup_log_stats (MonoAotCompile *acfg)
 		}
 	}
 
-	aot_printf (acfg, "Dedup Pass: Size Saved From Deduped Wrappers:\t%d methods, %zu bytes\n", wrappers_saved, wrappers_size_saved);
-	aot_printf (acfg, "Dedup Pass: Size Saved From Inflated Methods:\t%d methods, %zu bytes\n", instances_saved, inflated_size_saved);
+	aot_printf (acfg, "Dedup Pass: Size Saved From Deduped Wrappers:\t%d methods, %" G_GSIZE_FORMAT "u bytes\n", wrappers_saved, wrappers_size_saved);
+	aot_printf (acfg, "Dedup Pass: Size Saved From Inflated Methods:\t%d methods, %" G_GSIZE_FORMAT "u bytes\n", instances_saved, inflated_size_saved);
 	if (acfg->dedup_emit_mode)
-		aot_printf (acfg, "Dedup Pass: Size of Moved But Not Deduped (only 1 copy) Methods:\t%d methods, %zu bytes\n", copied, copied_singles);
+		aot_printf (acfg, "Dedup Pass: Size of Moved But Not Deduped (only 1 copy) Methods:\t%d methods, %" G_GSIZE_FORMAT "u bytes\n", copied, copied_singles);
 
 	g_hash_table_destroy (acfg->dedup_stats);
 	acfg->dedup_stats = NULL;
