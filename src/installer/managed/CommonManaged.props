@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
 
   <PropertyGroup>
     <IsPackable>true</IsPackable>
@@ -8,11 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
-    <PackageLicenseFile>LICENSE.TXT</PackageLicenseFile>
-    <PackageProjectUrl>https://dot.net</PackageProjectUrl>
     <Authors>Microsoft</Authors>
-    <NugetLicenseFile>$(RepoRoot)$(PackageLicenseFile)</NugetLicenseFile>
-    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Managed API isn't completely documented yet. TODO: https://github.com/dotnet/core-setup/issues/5108 -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
@@ -24,7 +19,7 @@
       If this Arcade SDK feature is desired in the future, this will need to be worked through. No
       issue tracks this as of writing.
     -->
-    <NeutralLanguage></NeutralLanguage>
+    <NeutralLanguage />
   </PropertyGroup>
 
   <PropertyGroup>
@@ -38,11 +33,6 @@
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>git://github.com/dotnet/core-setup</RepositoryUrl>
-  </PropertyGroup>
-
   <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -50,10 +40,6 @@
 
   <!-- Add required legal files to packages -->
   <ItemGroup>
-    <Content Condition="Exists('$(NugetLicenseFile)')"
-             Include="$(NugetLicenseFile)">
-      <PackagePath />
-    </Content>
     <Content Condition="Exists('$(PackageThirdPartyNoticesFile)')"
              Include="$(PackageThirdPartyNoticesFile)">
       <PackagePath />
