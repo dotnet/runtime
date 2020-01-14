@@ -304,8 +304,15 @@ get_los_section_memory (size_t size)
 		return randomize_los_object_start (free_chunks, obj_size, size, LOS_CHUNK_SIZE);
 	}
 
-	if (!sgen_memgov_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
-		return NULL;
+	if (!sgen_memgov_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS)) {
+		/*
+		 * We failed to allocate a section due to exceeding max_heap_size.
+		 * Trigger a major collection and try again.
+		 */
+		sgen_ensure_free_space (LOS_SECTION_SIZE, GENERATION_OLD);
+		if (!sgen_memgov_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
+			return NULL;
+	}
 
 	section = (LOSSection *)sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, (SgenAllocFlags)(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE), NULL, MONO_MEM_ACCOUNT_SGEN_LOS);
 

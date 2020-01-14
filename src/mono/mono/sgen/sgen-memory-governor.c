@@ -519,7 +519,7 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Setting to minimum.", "`max-heap-size` must be at least 4 times as large as `nursery size`.");
 		max_heap = SGEN_DEFAULT_NURSERY_SIZE * 4;
 	}
-	max_heap_size = max_heap - SGEN_DEFAULT_NURSERY_SIZE;
+	max_heap_size = max_heap;
 
 	sgen_gc_info.total_available_memory_bytes = max_heap;
 
