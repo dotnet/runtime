@@ -681,22 +681,23 @@ namespace Internal.JitInterface
             {
                 object resultDef = methodILDef.GetObject((int)pResolvedToken.token);
 
-                if (resultDef is MethodDesc)
+                if (resultDef is MethodDesc resultMethod)
                 {
-                    if (resultDef is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
-                        resultDef = rawPinvoke.Target;
-
-                    Debug.Assert(resultDef is EcmaMethod);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultDef).OwningType));
-                    token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultDef).Handle);
-                    module = ((EcmaMethod)resultDef).Module;
+                    if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                        resultMethod = rawPinvoke.Target;
+                    resultMethod = resultMethod.GetTypicalMethodDefinition();
+                    Debug.Assert(resultMethod is EcmaMethod);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType));
+                    token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
+                    module = ((EcmaMethod)resultMethod).Module;
                 }
-                else if (resultDef is FieldDesc)
+                else if (resultDef is FieldDesc resultField)
                 {
-                    Debug.Assert(resultDef is EcmaField);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaField)resultDef).OwningType));
-                    token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultDef).Handle);
-                    module = ((EcmaField)resultDef).Module;
+                    resultField = resultField.GetTypicalFieldDefinition();
+                    Debug.Assert(resultField is EcmaField);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaField)resultField).OwningType));
+                    token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultField).Handle);
+                    module = ((EcmaField)resultField).Module;
                 }
                 else
                 {
