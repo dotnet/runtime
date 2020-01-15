@@ -5815,6 +5815,9 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 // Return Value:
 //   Number of IL bytes matched and imported, -1 otherwise
 //
+// Notes:
+//   pResolvedToken is known to be a value type; ref type boxing
+//   is handled in the CEE_BOX clause.
 
 int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const BYTE* codeAddr, const BYTE* codeEndp)
 {
@@ -5854,15 +5857,44 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
             // box + br_true/false
             if ((codeAddr + ((codeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
             {
-                if (!(impStackTop().val->gtFlags & GTF_SIDE_EFFECT))
+                GenTree* const treeToBox       = impStackTop().val;
+                bool           canOptimize     = true;
+                GenTree*       treeToNullcheck = nullptr;
+
+                // Can the thing being boxed cause a side effect?
+                if ((treeToBox->gtFlags & GTF_SIDE_EFFECT) != 0)
+                {
+                    // Is this a side effect we can replicate cheaply?
+                    if (((treeToBox->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) &&
+                        treeToBox->OperIs(GT_OBJ, GT_BLK, GT_IND))
+                    {
+                        // Yes, we just need to perform a null check.
+                        treeToNullcheck = treeToBox->AsOp()->gtOp1;
+                    }
+                    else
+                    {
+                        canOptimize = false;
+                    }
+                }
+
+                if (canOptimize)
                 {
                     CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
                     if (boxHelper == CORINFO_HELP_BOX)
                     {
-                        JITDUMP("\n Importing BOX; BR_TRUE/FALSE as constant\n");
+                        JITDUMP("\n Importing BOX; BR_TRUE/FALSE as %sconstant\n",
+                                treeToNullcheck == nullptr ? "" : "nullcheck+");
                         impPopStack();
 
-                        impPushOnStack(gtNewIconNode(1), typeInfo(TI_INT));
+                        GenTree* result = gtNewIconNode(1);
+
+                        if (treeToNullcheck != nullptr)
+                        {
+                            GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, treeToNullcheck);
+                            result             = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
+                        }
+
+                        impPushOnStack(result, typeInfo(TI_INT));
                         return 0;
                     }
                 }
