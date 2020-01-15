@@ -77,7 +77,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddFontFile_SameNameMultipleTimes_FamiliesContainsFirstFontOnly()
         {
@@ -101,7 +101,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddFontFile_NullFileName_ThrowsArgumentNullException()
         {
@@ -158,7 +158,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddFontFile_Disposed_ThrowsArgumentException()
         {
@@ -200,7 +200,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0)]
         [InlineData(-1)]
@@ -229,7 +229,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddMemoryFont_Disposed_ThrowsArgumentException()
         {

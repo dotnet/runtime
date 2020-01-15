@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void InstanceArgumentInsteadOfTypeForStaticCall()
         {
             CallSite<Func<CallSite, object, object, object, object>> site =
@@ -62,7 +62,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void InstanceArgumentInsteadOfTypeForStaticCallNamedArgument()
         {
             CallSite<Func<CallSite, object, object, object, object>> site =
@@ -80,7 +80,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void NullArgumentInsteadOfTypeForStaticCallNamedArgument()
         {
             CallSite<Func<CallSite, object, object, object, object>> site =
@@ -98,7 +98,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void NonTypeToCtor()
         {
             CallSite<Func<CallSite, object, object>> site = CallSite<Func<CallSite, object, object>>.Create(

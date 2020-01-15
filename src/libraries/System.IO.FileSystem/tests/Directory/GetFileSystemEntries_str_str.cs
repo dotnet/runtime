@@ -218,7 +218,7 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue(20779, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20779", TestPlatforms.AnyUnix)]
         [Theory,
             // Question marks collapse (right) to periods
             InlineData(
@@ -243,8 +243,8 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue(20779, TestPlatforms.AnyUnix)]
-        [ActiveIssue(20780, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20779", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20780", TestPlatforms.AnyUnix)]
         [Theory,
             // Periods are optional if left of ? and end of match
             InlineData(
@@ -284,7 +284,7 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue(20780, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20780", TestPlatforms.AnyUnix)]
         [Theory,
             // Periods are optional if left of * and end of match
             InlineData(
@@ -304,7 +304,7 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue(20780, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20780", TestPlatforms.AnyUnix)]
         // Can't do these without extended path support on Windows, UsingNewNormalization filters appropriately
         [ConditionalTheory(nameof(UsingNewNormalization)),
             // Periods are optional if left of * or ? and end of match
@@ -349,7 +349,7 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue(20781, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20781", TestPlatforms.AnyUnix)]
         [Theory,
             InlineData(
                 "foo*.",
@@ -363,7 +363,7 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue(20781, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20781", TestPlatforms.AnyUnix)]
         // Can't do these without extended path support on Windows, UsingNewNormalization filters appropriately
         [ConditionalTheory(nameof(UsingNewNormalization)),
             InlineData(
@@ -409,7 +409,7 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ActiveIssue(20781, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20781", TestPlatforms.AnyUnix)]
         [OuterLoop("These are pretty corner, don't need to run all the time.")]
         [Theory,
             // "foo*." actually becomes "foo<" when passed to NT. It matches all characters up to, and including, the final period.

@@ -11,7 +11,7 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
     [OuterLoop("These tests run serially at about 1 second each, and the code shouldn't change that often.")]
-    [ActiveIssue(41974, TestPlatforms.OSX)]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/41974", TestPlatforms.OSX)]
     public static class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
@@ -522,7 +522,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         chain.ChainPolicy.ApplicationPolicy.Add(s_tlsServerOid);
                         leafProblems |= X509ChainStatusFlags.NotValidForUsage;
 
-                        // [ActiveIssue(41969)]
+                        // [ActiveIssue("https://github.com/dotnet/corefx/issues/41969")]
                         // Linux reports this code at more levels than Windows does.
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                         {
@@ -605,7 +605,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         chain.ChainPolicy.ApplicationPolicy.Add(s_tlsServerOid);
                         leafProblems |= X509ChainStatusFlags.NotValidForUsage;
 
-                        // [ActiveIssue(41969)]
+                        // [ActiveIssue("https://github.com/dotnet/corefx/issues/41969")]
                         // Linux reports this code at more levels than Windows does.
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                         {
