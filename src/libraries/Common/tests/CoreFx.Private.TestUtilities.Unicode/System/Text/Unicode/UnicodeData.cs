@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.Threading;
 
 namespace System.Text.Unicode
@@ -36,5 +37,20 @@ namespace System.Text.Unicode
         public static CodePoint GetData(uint codePoint) => GetData((int)codePoint);
 
         public static CodePoint GetData(Rune rune) => GetData(rune.Value);
+
+        /*
+         * Helper methods
+         */
+
+        private static bool IsInRangeInclusive(UnicodeCategory value, UnicodeCategory minInclusive, UnicodeCategory maxInclusive)
+        {
+            return (uint)value - (uint)minInclusive <= (uint)maxInclusive - (uint)minInclusive;
+        }
+
+        public static UnicodeCategory GetUnicodeCategory(int codePoint) => GetData(codePoint).GeneralCategory;
+
+        public static bool IsLetter(int codePoint) => IsInRangeInclusive(GetUnicodeCategory(codePoint), UnicodeCategory.UppercaseLetter, UnicodeCategory.OtherLetter);
+
+        public static bool IsWhiteSpace(int codePoint) => (GetData(codePoint).Flags & CodePointFlags.White_Space) != 0;
     }
 }
