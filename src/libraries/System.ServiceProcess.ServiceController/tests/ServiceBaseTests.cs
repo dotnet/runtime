@@ -136,6 +136,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1724")]
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnExecuteCustomCommand()
         {

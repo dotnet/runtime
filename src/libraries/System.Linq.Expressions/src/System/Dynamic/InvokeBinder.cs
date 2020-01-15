@@ -49,7 +49,7 @@ namespace System.Dynamic
         /// <param name="args">The arguments of the dynamic invoke operation.</param>
         /// <param name="errorSuggestion">The binding result to use if binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public abstract DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject? errorSuggestion);
 
         /// <summary>
         /// Performs the binding of the dynamic invoke operation.

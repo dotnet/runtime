@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
@@ -266,8 +267,27 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             sb.AppendLine($"\tSafePointOffsets:");
             foreach (SafePointOffset offset in SafePointOffsets)
             {
-                sb.AppendLine($"\t\t{offset.Value}");
-                sb.AppendLine($"\t\tLive slots: {String.Join(", ", LiveSlotsAtSafepoints[offset.Index])}");
+                IEnumerable<BaseGcSlot> liveSlotsForOffset = (LiveSlotsAtSafepoints != null ? LiveSlotsAtSafepoints[offset.Index] : Enumerable.Empty<BaseGcSlot>());
+                sb.Append($"\t\t0x{offset.Value:X4}: ");
+                bool haveLiveSlots = false;
+                GcSlotFlags slotFlags = GcSlotFlags.GC_SLOT_INVALID;
+                foreach (BaseGcSlot slot in liveSlotsForOffset)
+                {
+                    if (haveLiveSlots)
+                    {
+                        sb.Append("; ");
+                    }
+                    else
+                    {
+                        haveLiveSlots = true;
+                    }
+                    slotFlags = slot.WriteTo(sb, _machine, slotFlags);
+                }
+                if (!haveLiveSlots)
+                {
+                    sb.Append("no live slots");
+                }
+                sb.AppendLine();
             }
             sb.AppendLine($"\tInterruptibleRanges:");
             foreach (InterruptibleRange range in InterruptibleRanges)

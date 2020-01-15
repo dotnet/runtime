@@ -299,6 +299,37 @@ namespace BinderTracingTests
             };
         }
 
+        // Successful load through satellite assembly resolution logic:
+        //   ResolutionAttempted : FindInLoadContext        (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : AssemblyLoadContextLoad  (CustomALC)     [AssemblyNotFound]
+        //   ResolutionAttempted : ResolveSatelliteAssembly (CustomALC)     [Success]
+        [BinderTest]
+        public static BindOperation ResolveSatelliteAssembly()
+        {
+            AssemblyName assemblyName = new AssemblyName($"{DependentAssemblyName}.resources");
+            assemblyName.CultureInfo = SatelliteCulture;
+
+            CustomALC alc = new CustomALC(nameof(ResolveSatelliteAssembly));
+            alc.LoadFromAssemblyPath(Helpers.GetAssemblyInAppPath(DependentAssemblyName));
+            Assembly asm = alc.LoadFromAssemblyName(assemblyName);
+
+            return new BindOperation()
+            {
+                AssemblyName = assemblyName,
+                AssemblyLoadContext = alc.ToString(),
+                Success = true,
+                ResultAssemblyName = asm.GetName(),
+                ResultAssemblyPath = asm.Location,
+                Cached = false,
+                ResolutionAttempts = new List<ResolutionAttempt>()
+                {
+                    GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, alc, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.AssemblyLoadContextLoad, alc, ResolutionResult.AssemblyNotFound),
+                    GetResolutionAttempt(assemblyName, ResolutionStage.ResolveSatelliteAssembly, alc, ResolutionResult.Success, asm)
+                }
+            };
+        }
+
         // Successful load through AssemblyLoadContext.Resolving event (Custom ALC):
         //   ResolutionAttempted : FindInLoadContext                    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextLoad              (CustomALC)     [AssemblyNotFound]

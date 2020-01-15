@@ -9,7 +9,7 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal abstract class MulInstruction : Instruction
     {
-        private static Instruction s_Int16, s_Int32, s_Int64, s_UInt16, s_UInt32, s_UInt64, s_Single, s_Double;
+        private static Instruction? s_Int16, s_Int32, s_Int64, s_UInt16, s_UInt32, s_UInt64, s_Single, s_Double;
 
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
@@ -22,11 +22,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)unchecked((short)((short)left * (short)right));
                 }
 
@@ -40,11 +40,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : ScriptingRuntimeHelpers.Int32ToObject(unchecked((int)left * (int)right));
                 }
 
@@ -58,11 +58,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)unchecked((long)left * (long)right);
                 }
 
@@ -76,11 +76,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)unchecked((ushort)((ushort)left * (ushort)right));
                 }
 
@@ -94,11 +94,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)unchecked((uint)left * (uint)right);
                 }
 
@@ -112,11 +112,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)unchecked((ulong)left * (ulong)right);
                 }
 
@@ -130,11 +130,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)((float)left * (float)right);
                 }
 
@@ -148,11 +148,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)((double)left * (double)right);
                 }
 
@@ -182,7 +182,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class MulOvfInstruction : Instruction
     {
-        private static Instruction s_Int16, s_Int32, s_Int64, s_UInt16, s_UInt32, s_UInt64;
+        private static Instruction? s_Int16, s_Int32, s_Int64, s_UInt16, s_UInt32, s_UInt64;
 
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
@@ -195,11 +195,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)checked((short)((short)left * (short)right));
                 }
 
@@ -213,11 +213,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : ScriptingRuntimeHelpers.Int32ToObject(checked((int)left * (int)right));
                 }
 
@@ -231,11 +231,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)checked((long)left * (long)right);
                 }
 
@@ -249,11 +249,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)checked((ushort)((ushort)left * (ushort)right));
                 }
 
@@ -267,11 +267,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)checked((uint)left * (uint)right);
                 }
 
@@ -285,11 +285,11 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
-                object[] stack = frame.Data;
-                object left = stack[index - 2];
+                object?[] stack = frame.Data;
+                object? left = stack[index - 2];
                 if (left != null)
                 {
-                    object right = stack[index - 1];
+                    object? right = stack[index - 1];
                     stack[index - 2] = right == null ? null : (object)checked((ulong)left * (ulong)right);
                 }
 

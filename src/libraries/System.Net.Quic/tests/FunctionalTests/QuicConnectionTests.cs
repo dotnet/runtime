@@ -20,6 +20,7 @@ namespace System.Net.Quic.Tests
         {
             using (QuicListener listener = new QuicListener(QuicImplementationProviders.Mock, new IPEndPoint(IPAddress.Loopback, 0), sslServerAuthenticationOptions: null))
             {
+                listener.Start();
                 IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
                 await Task.WhenAll(
@@ -57,6 +58,8 @@ namespace System.Net.Quic.Tests
         {
             using (QuicListener listener = new QuicListener(QuicImplementationProviders.Mock, new IPEndPoint(IPAddress.Loopback, 0), sslServerAuthenticationOptions: null))
             {
+                listener.Start();
+
                 IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
                 using (QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.Mock, listenEndPoint, sslClientAuthenticationOptions: null))
@@ -170,7 +173,9 @@ namespace System.Net.Quic.Tests
         {
             byte[] readBuffer = new byte[1];
 
-            s1.ShutdownWrite();
+            await s1.WriteAsync(Memory<byte>.Empty, endStream: true);
+
+            await s1.ShutdownWriteCompleted();
 
             int bytesRead = await s2.ReadAsync(readBuffer);
             Assert.Equal(0, bytesRead);

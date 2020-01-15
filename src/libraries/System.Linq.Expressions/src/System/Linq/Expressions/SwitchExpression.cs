@@ -16,7 +16,7 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(SwitchExpressionProxy))]
     public sealed class SwitchExpression : Expression
     {
-        internal SwitchExpression(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, ReadOnlyCollection<SwitchCase> cases)
+        internal SwitchExpression(Type type, Expression switchValue, Expression? defaultBody, MethodInfo? comparison, ReadOnlyCollection<SwitchCase> cases)
         {
             Type = type;
             SwitchValue = switchValue;
@@ -51,12 +51,12 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the test for the switch.
         /// </summary>
-        public Expression DefaultBody { get; }
+        public Expression? DefaultBody { get; }
 
         /// <summary>
         /// Gets the equality comparison method, if any.
         /// </summary>
-        public MethodInfo Comparison { get; }
+        public MethodInfo? Comparison { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -88,9 +88,9 @@ namespace System.Linq.Expressions
         /// <param name="cases">The <see cref="Cases"/> property of the result.</param>
         /// <param name="defaultBody">The <see cref="DefaultBody"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public SwitchExpression Update(Expression switchValue, IEnumerable<SwitchCase> cases, Expression defaultBody)
+        public SwitchExpression Update(Expression switchValue, IEnumerable<SwitchCase>? cases, Expression? defaultBody)
         {
-            if (switchValue == SwitchValue & defaultBody == DefaultBody & cases != null)
+            if (switchValue == SwitchValue && defaultBody == DefaultBody && cases != null)
             {
                 if (ExpressionUtils.SameElements(ref cases, Cases))
                 {
@@ -109,9 +109,9 @@ namespace System.Linq.Expressions
         /// <param name="switchValue">The value to be tested against each case.</param>
         /// <param name="cases">The valid cases for this switch.</param>
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
-        public static SwitchExpression Switch(Expression switchValue, params SwitchCase[] cases)
+        public static SwitchExpression Switch(Expression switchValue, params SwitchCase[]? cases)
         {
-            return Switch(switchValue, null, null, (IEnumerable<SwitchCase>)cases);
+            return Switch(switchValue, null, null, (IEnumerable<SwitchCase>?)cases);
         }
 
         /// <summary>
@@ -121,9 +121,9 @@ namespace System.Linq.Expressions
         /// <param name="defaultBody">The result of the switch if no cases are matched.</param>
         /// <param name="cases">The valid cases for this switch.</param>
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
-        public static SwitchExpression Switch(Expression switchValue, Expression defaultBody, params SwitchCase[] cases)
+        public static SwitchExpression Switch(Expression switchValue, Expression? defaultBody, params SwitchCase[]? cases)
         {
-            return Switch(switchValue, defaultBody, null, (IEnumerable<SwitchCase>)cases);
+            return Switch(switchValue, defaultBody, null, (IEnumerable<SwitchCase>?)cases);
         }
 
         /// <summary>
@@ -134,9 +134,9 @@ namespace System.Linq.Expressions
         /// <param name="comparison">The equality comparison method to use.</param>
         /// <param name="cases">The valid cases for this switch.</param>
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
-        public static SwitchExpression Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, params SwitchCase[] cases)
+        public static SwitchExpression Switch(Expression switchValue, Expression? defaultBody, MethodInfo? comparison, params SwitchCase[]? cases)
         {
-            return Switch(switchValue, defaultBody, comparison, (IEnumerable<SwitchCase>)cases);
+            return Switch(switchValue, defaultBody, comparison, (IEnumerable<SwitchCase>?)cases);
         }
 
         /// <summary>
@@ -148,9 +148,9 @@ namespace System.Linq.Expressions
         /// <param name="comparison">The equality comparison method to use.</param>
         /// <param name="cases">The valid cases for this switch.</param>
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
-        public static SwitchExpression Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, params SwitchCase[] cases)
+        public static SwitchExpression Switch(Type? type, Expression switchValue, Expression? defaultBody, MethodInfo? comparison, params SwitchCase[]? cases)
         {
-            return Switch(type, switchValue, defaultBody, comparison, (IEnumerable<SwitchCase>)cases);
+            return Switch(type, switchValue, defaultBody, comparison, (IEnumerable<SwitchCase>?)cases);
         }
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace System.Linq.Expressions
         /// <param name="comparison">The equality comparison method to use.</param>
         /// <param name="cases">The valid cases for this switch.</param>
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
-        public static SwitchExpression Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable<SwitchCase> cases)
+        public static SwitchExpression Switch(Expression switchValue, Expression? defaultBody, MethodInfo? comparison, IEnumerable<SwitchCase>? cases)
         {
             return Switch(null, switchValue, defaultBody, comparison, cases);
         }
@@ -175,7 +175,7 @@ namespace System.Linq.Expressions
         /// <param name="comparison">The equality comparison method to use.</param>
         /// <param name="cases">The valid cases for this switch.</param>
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
-        public static SwitchExpression Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable<SwitchCase> cases)
+        public static SwitchExpression Switch(Type? type, Expression switchValue, Expression? defaultBody, MethodInfo? comparison, IEnumerable<SwitchCase>? cases)
         {
             ExpressionUtils.RequiresCanRead(switchValue, nameof(switchValue));
             if (switchValue.Type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid(nameof(switchValue));

@@ -138,6 +138,10 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>
     </Dependency>
+    <Dependency Name="System.Private.Runtime.UnicodeData" Version="5.0.0-beta.19610.1">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>4e8d82a2bdc31db2a3d392b4021b0c9ab19a4228</Sha>
+    </Dependency>
     <Dependency Name="System.Security.Cryptography.X509Certificates.TestData" Version="5.0.0-beta.19608.5">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>daf9b36c71391c47d4bebae35071a5e7ac2cdc5a</Sha>

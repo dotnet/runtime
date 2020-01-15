@@ -283,7 +283,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (!field.IsStatic)
                 {
-                    GcScanRoots(field.FieldType, argDest, field.Offset.AsInt, frame);
+                    GcScanRoots(field.FieldType, argDest, delta + field.Offset.AsInt, frame);
                 }
             }
         }

@@ -2348,7 +2348,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 
 //------------------------------------------------------------------------------
 // optVNConstantPropOnTree: Substitutes tree with an evaluated constant while
-//                          managing ref-counts and side-effects.
+//                          managing side-effects.
 //
 // Arguments:
 //    block -  The block containing the tree.
@@ -2373,10 +2373,6 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //    For JTrue nodes, side effects are not put into a comma separated list. If
 //    the relop will evaluate to "true" or "false" statically, then the side-effects
 //    will be put into new statements, presuming the JTrue will be folded away.
-//
-//    The ref-counts of any variables in the tree being replaced, will be
-//    appropriately decremented. The ref-counts of variables in the side-effect
-//    nodes will be retained.
 //
 GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 {
@@ -2444,6 +2440,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         case TYP_LONG:
         {
             INT64 value = vnStore->ConstantValue<INT64>(vnCns);
+
 #ifdef _TARGET_64BIT_
             if (vnStore->IsVNHandle(vnCns))
             {
@@ -2581,21 +2578,33 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     }
 }
 
-/*******************************************************************************************************
- *
- * Perform constant propagation on a tree given the "curAssertion" is true at the point of the "tree."
- *
- */
-GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
-                                            GenTree*      tree,
+//------------------------------------------------------------------------------
+// optConstantAssertionProp: Possibly substitute a constant for a local use
+//
+// Arguments:
+//    curAssertion - assertion to propagate
+//    tree         - tree to possibly modify
+//    stmt         - statement containing the tree
+//    index        - index of this assertion in the assertion table
+//
+// Returns:
+//    Updated tree (may be the input tree, modified in place), or nullptr
+//
+// Notes:
+//    stmt may be nullptr during local assertion prop
+//
+GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
+                                            GenTreeLclVarCommon* tree,
                                             Statement* stmt DEBUGARG(AssertionIndex index))
 {
-    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+    const unsigned lclNum = tree->GetLclNum();
 
+#if FEATURE_ANYCSE
     if (lclNumIsCSE(lclNum))
     {
         return nullptr;
     }
+#endif
 
     GenTree* newTree = tree;
 
@@ -2614,6 +2623,14 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
             break;
 
         case O2K_CONST_LONG:
+
+#ifdef _TARGET_64BIT_
+            // Don't propagate handles if we need to report relocs.
+            if (opts.compReloc && ((curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) != 0))
+            {
+                return nullptr;
+            }
+#endif
             if (newTree->gtType == TYP_LONG)
             {
                 newTree->ChangeOperConst(GT_CNS_NATIVELONG);
@@ -2628,6 +2645,15 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
             break;
 
         case O2K_CONST_INT:
+
+#ifndef _TARGET_64BIT_
+            // Don't propagate handles if we need to report relocs.
+            if (opts.compReloc && ((curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) != 0))
+            {
+                return nullptr;
+            }
+#endif
+
             if (curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK)
             {
                 // Here we have to allocate a new 'large' node to replace the old one
@@ -2717,12 +2743,20 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
     return optAssertionProp_Update(newTree, tree, stmt);
 }
 
-/*******************************************************************************************************
- *
- *  Called in the context of an existing copy assertion which makes an "==" assertion on "lclVar" and
- *  "copyVar." Before substituting "copyVar" for "lclVar", we make sure using "copy" doesn't widen access.
- *
- */
+//------------------------------------------------------------------------------
+// optAssertionProp_LclVarTypeCheck: verify compatible types for copy prop
+//
+// Arguments:
+//    tree         - tree to possibly modify
+//    lclVarDsc    - local accessed by tree
+//    copyVarDsc   - local to possibly copy prop into tree
+//
+// Returns:
+//    True if copy prop is safe.
+//
+// Notes:
+//    Before substituting copyVar for lclVar, make sure using copyVar doesn't widen access.
+//
 bool Compiler::optAssertionProp_LclVarTypeCheck(GenTree* tree, LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc)
 {
     /*
@@ -2769,14 +2803,23 @@ bool Compiler::optAssertionProp_LclVarTypeCheck(GenTree* tree, LclVarDsc* lclVar
     return true;
 }
 
-/**********************************************************************************
- *
- *  Perform copy assertion propagation when the lclNum and ssaNum of the "tree" match
- *  the "curAssertion."
- *
- */
-GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
-                                        GenTree*      tree,
+//------------------------------------------------------------------------
+// optCopyAssertionProp: copy prop use of one local with another
+//
+// Arguments:
+//    curAssertion - assertion triggering the possible copy
+//    tree         - tree use to consider replacing
+//    stmt         - statment containing the tree
+//    index        - index of the assertion
+//
+// Returns:
+//    Updated tree, or nullptr
+//
+// Notes:
+//    stmt may be nullptr during local assertion prop
+//
+GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
+                                        GenTreeLclVarCommon* tree,
                                         Statement* stmt DEBUGARG(AssertionIndex index))
 {
     const AssertionDsc::AssertionDscOp1& op1 = curAssertion->op1;
@@ -2784,7 +2827,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
 
     noway_assert(op1.lcl.lclNum != op2.lcl.lclNum);
 
-    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+    const unsigned lclNum = tree->GetLclNum();
 
     // Make sure one of the lclNum of the assertion matches with that of the tree.
     if (op1.lcl.lclNum != lclNum && op2.lcl.lclNum != lclNum)
@@ -2793,22 +2836,22 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
     }
 
     // Extract the matching lclNum and ssaNum.
-    unsigned copyLclNum = (op1.lcl.lclNum == lclNum) ? op2.lcl.lclNum : op1.lcl.lclNum;
-    unsigned copySsaNum = BAD_VAR_NUM;
+    const unsigned copyLclNum = (op1.lcl.lclNum == lclNum) ? op2.lcl.lclNum : op1.lcl.lclNum;
+    unsigned       copySsaNum = BAD_VAR_NUM;
     if (!optLocalAssertionProp)
     {
         // Extract the ssaNum of the matching lclNum.
         unsigned ssaNum = (op1.lcl.lclNum == lclNum) ? op1.lcl.ssaNum : op2.lcl.ssaNum;
         copySsaNum      = (op1.lcl.lclNum == lclNum) ? op2.lcl.ssaNum : op1.lcl.ssaNum;
 
-        if (ssaNum != tree->AsLclVarCommon()->GetSsaNum())
+        if (ssaNum != tree->GetSsaNum())
         {
             return nullptr;
         }
     }
 
-    LclVarDsc* copyVarDsc = &lvaTable[copyLclNum];
-    LclVarDsc* lclVarDsc  = &lvaTable[lclNum];
+    LclVarDsc* const copyVarDsc = lvaGetDesc(copyLclNum);
+    LclVarDsc* const lclVarDsc  = lvaGetDesc(lclNum);
 
     // Make sure the types are compatible.
     if (!optAssertionProp_LclVarTypeCheck(tree, lclVarDsc, copyVarDsc))
@@ -2822,8 +2865,8 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
         return nullptr;
     }
 
-    tree->AsLclVarCommon()->SetSsaNum(copySsaNum);
-    tree->AsLclVarCommon()->SetLclNum(copyLclNum);
+    tree->SetSsaNum(copySsaNum);
+    tree->SetLclNum(copyLclNum);
 
 #ifdef DEBUG
     if (verbose)
@@ -2838,17 +2881,22 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc* curAssertion,
     return optAssertionProp_Update(tree, tree, stmt);
 }
 
-/*****************************************************************************
- *
- *  Given a tree consisting of a just a LclVar and a set of available assertions
- *  we try to propagate an assertion and modify the LclVar tree if we can.
- *  We pass in the root of the tree via 'stmt', for local copy prop 'stmt' will
- *  be nullptr. Returns the modified tree, or nullptr if no assertion prop took place.
- */
-
-GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
+//------------------------------------------------------------------------
+// optAssertionProp_LclVar: try and optimize a local var use via assertions
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - local use to optimize
+//    stmt       - statement containing the tree
+//
+// Returns:
+//    Updated tree, or nullptr
+//
+// Notes:
+//   stmt may be nullptr during local assertion prop
+//
+GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt)
 {
-    assert(tree->gtOper == GT_LCL_VAR);
     // If we have a var definition then bail or
     // If this is the address of the var then it will have the GTF_DONT_CSE
     // flag set and we don't want to to assertion prop on it.
@@ -2884,40 +2932,43 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTree*
             {
                 // Perform copy assertion prop.
                 GenTree* newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
-                if (newTree == nullptr)
+                if (newTree != nullptr)
                 {
-                    // Skip and try next assertion.
-                    continue;
+                    return newTree;
                 }
-                return newTree;
             }
+
+            continue;
         }
-        // Constant prop (for local assertion prop.)
+
+        // Constant prop.
+        //
         // The case where the tree type could be different than the LclVar type is caused by
         // gtFoldExpr, specifically the case of a cast, where the fold operation changes the type of the LclVar
         // node.  In such a case is not safe to perform the substitution since later on the JIT will assert mismatching
         // types between trees.
-        else if (curAssertion->op1.lcl.lclNum == tree->AsLclVarCommon()->GetLclNum() &&
-                 tree->gtType == lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvType)
+        const unsigned lclNum = tree->GetLclNum();
+        if (curAssertion->op1.lcl.lclNum == lclNum)
         {
-            // If local assertion prop just, perform constant prop.
-            if (optLocalAssertionProp)
+            LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+            // Verify types match
+            if (tree->TypeGet() == lclDsc->lvType)
             {
-                return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
-            }
-            // If global assertion, perform constant propagation only if the VN's match and the lcl is non-CSE.
-            else if (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(tree->gtVNPair))
-            {
-#if FEATURE_ANYCSE
-                // Don't perform constant prop for CSE LclVars
-                if (!lclNumIsCSE(tree->AsLclVarCommon()->GetLclNum()))
-#endif
+                // If local assertion prop, just perform constant prop.
+                if (optLocalAssertionProp)
+                {
+                    return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
+                }
+
+                // If global assertion, perform constant propagation only if the VN's match.
+                if (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(tree->gtVNPair))
                 {
                     return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
                 }
             }
         }
     }
+
     return nullptr;
 }
 
@@ -4003,21 +4054,27 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
     return newTree;
 }
 
-/*****************************************************************************
- *
- *  Given a tree and a set of available assertions we try to propagate an
- *  assertion and modify 'tree' if we can. We pass in the root of the tree
- *  via 'stmt', for local copy prop 'stmt' will be nullptr.
- *
- *  Returns the modified tree, or nullptr if no assertion prop took place.
- */
-
+//------------------------------------------------------------------------
+// optAssertionProp: try and optimize a tree via assertion propagation
+//
+// Arguments:
+//   assertions  - set of live assertions
+//   tree        - tree to possibly optimize
+//   stmt        - statement containing the tree
+//   block       - block containing the statement
+//
+// Returns:
+//   The modified tree, or nullptr if no assertion prop took place.
+//
+// Notes:
+//   stmt may be nullptr during local assertion prop
+//
 GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block)
 {
     switch (tree->gtOper)
     {
         case GT_LCL_VAR:
-            return optAssertionProp_LclVar(assertions, tree, stmt);
+            return optAssertionProp_LclVar(assertions, tree->AsLclVarCommon(), stmt);
 
         case GT_OBJ:
         case GT_BLK:

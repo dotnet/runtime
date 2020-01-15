@@ -5314,6 +5314,8 @@ void emitter::emitIns_R_R_R(
         case INS_uzp2:
         case INS_zip1:
         case INS_zip2:
+        case INS_trn1:
+        case INS_trn2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -12907,6 +12909,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_zip2:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_trn1:
+                case INS_trn2:
+                    if (id->idInsOpt() == INS_OPTS_2D)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    }
+
+                    result.insLatency = PERFSCORE_LATENCY_2C;
                     break;
 
                 case INS_cmtst:

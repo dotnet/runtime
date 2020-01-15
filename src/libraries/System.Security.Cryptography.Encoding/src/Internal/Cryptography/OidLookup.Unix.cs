@@ -16,7 +16,7 @@ namespace Internal.Cryptography
             return true;
         }
 
-        private static string NativeOidToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
+        private static string? NativeOidToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             IntPtr friendlyNamePtr = IntPtr.Zero;
             int result = Interop.Crypto.LookupFriendlyNameByOid(oid, ref friendlyNamePtr);
@@ -39,7 +39,7 @@ namespace Internal.Cryptography
             }
         }
 
-        private static string NativeFriendlyNameToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
+        private static string? NativeFriendlyNameToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             IntPtr sharedObject = Interop.Crypto.GetObjectDefinitionByName(friendlyName);
 

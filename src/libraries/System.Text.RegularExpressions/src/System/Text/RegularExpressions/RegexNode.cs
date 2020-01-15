@@ -110,7 +110,7 @@ namespace System.Text.RegularExpressions
         public char Ch { get; private set; }
         public int M { get; private set; }
         public int N { get; private set; }
-        public readonly RegexOptions Options;
+        public RegexOptions Options;
         public RegexNode? Next;
 
         public RegexNode(int type, RegexOptions options)
@@ -177,6 +177,7 @@ namespace System.Text.RegularExpressions
         internal RegexNode FinalOptimize()
         {
             RegexNode rootNode = this;
+            Debug.Assert(rootNode.Type == Capture && rootNode.ChildCount() == 1);
 
             // If we find backtracking construct at the end of the regex, we can instead make it non-backtracking,
             // since nothing would ever backtrack into it anyway.  Doing this then makes the construct available
@@ -184,7 +185,8 @@ namespace System.Text.RegularExpressions
             if ((Options & RegexOptions.RightToLeft) == 0 && // only apply optimization when LTR to avoid needing additional code for the rarer RTL case
                 (Options & RegexOptions.Compiled) != 0) // only apply when we're compiling, as that's the only time it would make a meaningful difference
             {
-                RegexNode node = rootNode;
+                // Walk the tree, starting from the sole child of the root implicit capture.
+                RegexNode node = rootNode.Child(0);
                 while (true)
                 {
                     switch (node.Type)
@@ -227,6 +229,13 @@ namespace System.Text.RegularExpressions
 
                     break;
                 }
+            }
+
+            // If the root node under the implicit Capture is an Atomic, the Atomic is useless as there's nothing
+            // to backtrack into it, so we can remove it.
+            if (rootNode.Child(0).Type == Atomic)
+            {
+                rootNode.ReplaceChild(0, rootNode.Child(0).Child(0));
             }
 
             // Done optimizing.  Return the final tree.
@@ -711,8 +720,8 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Finds oneloop and setloop nodes in the concatenation that can be automatically upgraded
-        /// to oneloopatomic and setloopatomic nodes.  Such changes avoid potential useless backtracking.
+        /// Finds one/notone/setloop nodes in the concatenation that can be automatically upgraded
+        /// to one/notone/setloopatomic nodes.  Such changes avoid potential useless backtracking.
         /// This looks for cases like A*B, where A and B are known to not overlap: in such cases,
         /// we can effectively convert this to (?>A*)B.
         /// </summary>
@@ -727,116 +736,262 @@ namespace System.Text.RegularExpressions
             {
                 RegexNode node = children[i], subsequent = children[i + 1];
 
-                // Skip down the node past irrelevant capturing groups.  We don't need to
+                // Skip down the node past irrelevant nodes.  We don't need to
                 // skip Groups, as they should have already been reduced away.
-                while (node.Type == Capture)
+                // If there's a concatenation, we can jump to the last element of it.
+                while (node.Type == Capture || node.Type == Concatenate)
                 {
-                    Debug.Assert(node.ChildCount() == 1);
-                    node = node.Child(0);
+                    node = node.Child(node.ChildCount() - 1);
                 }
                 Debug.Assert(node.Type != Group);
 
-                // Skip the successor down to the guaranteed next node.
-                while (subsequent.ChildCount() > 0)
-                {
-                    Debug.Assert(subsequent.Type != Group);
-                    switch (subsequent.Type)
-                    {
-                        case Capture:
-                        case Atomic:
-                        case Require:
-                        case Concatenate:
-                        case Loop when subsequent.M > 0:
-                        case Lazyloop when subsequent.M > 0:
-                            subsequent = subsequent.Child(0);
-                            continue;
-                    }
-
-                    break;
-                }
-
-                // If the two nodes don't agree on case-insensitivity, don't try to optimize.
-                // If they're both case sensitive or both case insensitive, then their tokens
-                // will be comparable.
-                if ((node.Options & RegexOptions.IgnoreCase) != (subsequent.Options & RegexOptions.IgnoreCase))
-                {
-                    continue;
-                }
-
-                // If this node is a one/notone/setloop, see if it overlaps with its successor in the concatenation.
-                // If it doesn't, then we can upgrade it to being a one/notone/setloopatomic.
-                // Doing so avoids unnecessary backtracking.
+                // If the node can be changed to atomic based on what comes after it, do so.
                 switch (node.Type)
                 {
-                    case Oneloop:
+                    case Oneloop when CanBeMadeAtomic(node, subsequent):
+                        node.Type = Oneloopatomic;
+                        break;
+                    case Notoneloop when CanBeMadeAtomic(node, subsequent):
+                        node.Type = Notoneloopatomic;
+                        break;
+                    case Setloop when CanBeMadeAtomic(node, subsequent):
+                        node.Type = Setloopatomic;
+                        break;
+                }
+
+                // Determines whether node can be switched to an atomic loop.  Subsequent is the node
+                // immediately after 'node'.
+                static bool CanBeMadeAtomic(RegexNode node, RegexNode subsequent, int maxDepth = 20)
+                {
+                    if (maxDepth <= 0)
+                    {
+                        // We hit our recursion limit.  Just don't apply the optimization.
+                        return false;
+                    }
+
+                    // Skip the successor down to the guaranteed next node.
+                    while (subsequent.ChildCount() > 0)
+                    {
+                        Debug.Assert(subsequent.Type != Group);
                         switch (subsequent.Type)
                         {
-                            case One when node.Ch != subsequent.Ch:
-                            case Onelazy when subsequent.M > 0 && node.Ch != subsequent.Ch:
-                            case Oneloop when subsequent.M > 0 && node.Ch != subsequent.Ch:
-                            case Oneloopatomic when subsequent.M > 0 && node.Ch != subsequent.Ch:
-                            case Notone when node.Ch == subsequent.Ch:
-                            case Notonelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                            case Notoneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                            case Notoneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                            case Multi when node.Ch != subsequent.Str![0]:
-                            case Set when !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                            case Setlazy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                            case Setloop when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                            case Setloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                            case End:
-                            case EndZ when node.Ch != '\n':
-                            case Eol when node.Ch != '\n':
-                            case Boundary when RegexCharClass.IsWordChar(node.Ch):
-                            case Nonboundary when !RegexCharClass.IsWordChar(node.Ch):
-                            case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
-                            case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
-                                node.Type = Oneloopatomic;
-                                break;
+                            case Concatenate:
+                            case Capture:
+                            case Atomic:
+                            case Require:
+                            case Loop when subsequent.M > 0:
+                            case Lazyloop when subsequent.M > 0:
+                                subsequent = subsequent.Child(0);
+                                continue;
                         }
-                        break;
 
+                        break;
+                    }
+
+                    // If the two nodes don't agree on case-insensitivity, don't try to optimize.
+                    // If they're both case sensitive or both case insensitive, then their tokens
+                    // will be comparable.
+                    if ((node.Options & RegexOptions.IgnoreCase) != (subsequent.Options & RegexOptions.IgnoreCase))
+                    {
+                        return false;
+                    }
+
+                    // If the successor is an alternation, all of its children need to be evaluated, since any of them
+                    // could come after this node.  If any of them fail the optimization, then the whole node fails.
+                    if (subsequent.Type == Alternate)
+                    {
+                        int childCount = subsequent.ChildCount();
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            if (!CanBeMadeAtomic(node, subsequent.Child(i), maxDepth - 1))
+                            {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    }
+
+                    // If this node is a one/notone/setloop, see if it overlaps with its successor in the concatenation.
+                    // If it doesn't, then we can upgrade it to being a one/notone/setloopatomic.
+                    // Doing so avoids unnecessary backtracking.
+                    switch (node.Type)
+                    {
+                        case Oneloop:
+                            switch (subsequent.Type)
+                            {
+                                case One when node.Ch != subsequent.Ch:
+                                case Onelazy when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                                case Oneloop when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                                case Oneloopatomic when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                                case Notone when node.Ch == subsequent.Ch:
+                                case Notonelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                                case Notoneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                                case Notoneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                                case Multi when node.Ch != subsequent.Str![0]:
+                                case Set when !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                                case Setlazy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                                case Setloop when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                                case Setloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                                case End:
+                                case EndZ when node.Ch != '\n':
+                                case Eol when node.Ch != '\n':
+                                case Boundary when RegexCharClass.IsWordChar(node.Ch):
+                                case Nonboundary when !RegexCharClass.IsWordChar(node.Ch):
+                                case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
+                                case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
+                                    return true;
+                            }
+                            break;
+
+                        case Notoneloop:
+                            switch (subsequent.Type)
+                            {
+                                case One when node.Ch == subsequent.Ch:
+                                case Onelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                                case Oneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                                case Oneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                                case Multi when node.Ch == subsequent.Str![0]:
+                                case End:
+                                    return true;
+                            }
+                            break;
+
+                        case Setloop:
+                            switch (subsequent.Type)
+                            {
+                                case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                                case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                                case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                                case Oneloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                                case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                                case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                                case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                                case Notoneloopatomic when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                                case Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
+                                case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                                case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                                case Setloop when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                                case Setloopatomic when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                                case End:
+                                case EndZ when !RegexCharClass.CharInClass('\n', node.Str!):
+                                case Eol when !RegexCharClass.CharInClass('\n', node.Str!):
+                                case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass: // TODO: Expand these with a more inclusive overlap check that considers categories
+                                case Nonboundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
+                                case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
+                                case NonECMABoundary when node.Str == RegexCharClass.NotECMAWordClass || node.Str == RegexCharClass.NotDigitClass:
+                                    return true;
+                            }
+                            break;
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>Computes a min bound on the required length of any string that could possibly match.</summary>
+        /// <returns>The min computed length.  If the result is 0, there is no minimum we can enforce.</returns>
+        public int ComputeMinLength()
+        {
+            return ComputeMinLength(this, 20); // arbitrary cut-off to avoid stack overflow with degenerate expressions
+
+            static int ComputeMinLength(RegexNode node, int maxDepth)
+            {
+                if (maxDepth == 0)
+                {
+                    return 0;
+                }
+
+                switch (node.Type)
+                {
+                    case One:
+                    case Notone:
+                    case Set:
+                        // Single character.
+                        return 1;
+
+                    case Multi:
+                        // Every character in the string needs to match.
+                        return node.Str!.Length;
+
+                    case Notonelazy:
                     case Notoneloop:
-                        switch (subsequent.Type)
-                        {
-                            case One when node.Ch == subsequent.Ch:
-                            case Onelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                            case Oneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                            case Oneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                            case Multi when node.Ch == subsequent.Str![0]:
-                            case End:
-                                node.Type = Notoneloopatomic;
-                                break;
-                        }
-                        break;
-
+                    case Notoneloopatomic:
+                    case Onelazy:
+                    case Oneloop:
+                    case Oneloopatomic:
+                    case Setlazy:
                     case Setloop:
-                        switch (subsequent.Type)
+                    case Setloopatomic:
+                        // One character repeated at least M times.
+                        return node.M;
+
+                    case Lazyloop:
+                    case Loop:
+                        // A node graph repeated at least M times.
+                        return node.M * ComputeMinLength(node.Child(0), maxDepth - 1);
+
+                    case Alternate:
+                        // The minimum required length for any of the alternation's branches.
                         {
-                            case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Oneloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Notoneloopatomic when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
-                            case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                            case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                            case Setloop when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                            case Setloopatomic when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                            case End:
-                            case EndZ when !RegexCharClass.CharInClass('\n', node.Str!):
-                            case Eol when !RegexCharClass.CharInClass('\n', node.Str!):
-                            case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass: // TODO: Expand these with a more inclusive overlap check that considers categories
-                            case Nonboundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
-                            case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
-                            case NonECMABoundary when node.Str == RegexCharClass.NotECMAWordClass || node.Str == RegexCharClass.NotDigitClass:
-                                node.Type = Setloopatomic;
-                                break;
+                            int childCount = node.ChildCount();
+                            Debug.Assert(childCount >= 2);
+                            int min = ComputeMinLength(node.Child(0), maxDepth - 1);
+                            for (int i = 1; i < childCount && min > 0; i++)
+                            {
+                                min = Math.Min(min, ComputeMinLength(node.Child(i), maxDepth - 1));
+                            }
+                            return min;
                         }
-                        break;
+
+                    case Concatenate:
+                        // The sum of all of the concatenation's children.
+                        {
+                            int sum = 0;
+                            int childCount = node.ChildCount();
+                            for (int i = 0; i < childCount; i++)
+                            {
+                                sum += ComputeMinLength(node.Child(i), maxDepth - 1);
+                            }
+                            return sum;
+                        }
+
+                    case Atomic:
+                    case Capture:
+                    case Group:
+                        // For groups, we just delegate to the sole child.
+                        Debug.Assert(node.ChildCount() == 1);
+                        return ComputeMinLength(node.Child(0), maxDepth - 1);
+
+                    case Empty:
+                    case Nothing:
+                    // Nothing to match.
+                    case Beginning:
+                    case Bol:
+                    case Boundary:
+                    case ECMABoundary:
+                    case End:
+                    case EndZ:
+                    case Eol:
+                    case Nonboundary:
+                    case NonECMABoundary:
+                    case Start:
+                    // Difficult to glean anything meaningful from boundaries or results only known at run time.
+                    case Prevent:
+                    case Require:
+                    // Lookaheads/behinds could potentially be included in the future, but that will require
+                    // a different structure, as they can't be added as part of a concatenation, since they overlap
+                    // with what comes after.
+                    case Ref:
+                    case Testgroup:
+                    case Testref:
+                        // Constructs requiring data at runtime from the matching pattern can't influence min length.
+                        return 0;
+
+                    default:
+                        Debug.Fail($"Unknown node: {node.Type}");
+                        return 0;
                 }
             }
         }
@@ -958,6 +1113,9 @@ namespace System.Text.RegularExpressions
                 Setloopatomic => nameof(Setloopatomic),
                 Nothing => nameof(Nothing),
                 Empty => nameof(Empty),
+                Alternate => nameof(Alternate),
+                Concatenate => nameof(Concatenate),
+                Loop => nameof(Loop),
                 Lazyloop => nameof(Lazyloop),
                 Capture => nameof(Capture),
                 Group => nameof(Group),
@@ -966,7 +1124,7 @@ namespace System.Text.RegularExpressions
                 Atomic => nameof(Atomic),
                 Testref => nameof(Testref),
                 Testgroup => nameof(Testgroup),
-                _ => "(unknown)"
+                _ => $"(unknown {Type})"
             };
 
             var argSb = new StringBuilder().Append(typeStr);
@@ -1062,5 +1220,5 @@ namespace System.Text.RegularExpressions
             }
         }
 #endif
-        }
+    }
 }

@@ -60,6 +60,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return token;
             }
 
+            // If the token was not lazily mapped, search the input compilation set for a type reference token
+            if (_compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
+            {
+                return token;
+            }
+
             // Reverse lookup failed
             if (throwIfNotFound)
             {

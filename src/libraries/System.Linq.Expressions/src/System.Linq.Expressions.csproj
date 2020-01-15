@@ -3,6 +3,7 @@
     <!-- Enabling the interpreter for RC1 in all builds, see https://github.com/dotnet/corefx/issues/4033 -->
     <FeatureInterpret>true</FeatureInterpret>
     <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+	<Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyName>System.Linq.Expressions</AssemblyName>

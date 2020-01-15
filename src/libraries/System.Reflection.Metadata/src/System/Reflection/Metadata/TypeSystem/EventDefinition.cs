@@ -63,7 +63,7 @@ namespace System.Reflection.Metadata
             int adder = 0;
             int remover = 0;
             int fire = 0;
-            ImmutableArray<MethodDefinitionHandle>.Builder other = null;
+            ImmutableArray<MethodDefinitionHandle>.Builder? other = null;
 
             ushort methodCount;
             int firstRowId = _reader.MethodSemanticsTable.FindSemanticMethodsForEvent(Handle, out methodCount);

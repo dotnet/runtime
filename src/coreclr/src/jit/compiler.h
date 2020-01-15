@@ -6761,16 +6761,16 @@ public:
 
     // Assertion prop for lcl var functions.
     bool optAssertionProp_LclVarTypeCheck(GenTree* tree, LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc);
-    GenTree* optCopyAssertionProp(AssertionDsc* curAssertion,
-                                  GenTree*      tree,
+    GenTree* optCopyAssertionProp(AssertionDsc*        curAssertion,
+                                  GenTreeLclVarCommon* tree,
                                   Statement* stmt DEBUGARG(AssertionIndex index));
-    GenTree* optConstantAssertionProp(AssertionDsc* curAssertion,
-                                      GenTree*      tree,
+    GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
+                                      GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
 
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
-    GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);

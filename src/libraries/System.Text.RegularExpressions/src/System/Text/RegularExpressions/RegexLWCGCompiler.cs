@@ -35,10 +35,7 @@ namespace System.Text.RegularExpressions
             DynamicMethod findFirstCharMethod = DefineDynamicMethod("FindFirstChar" + regexnumString, typeof(bool), typeof(CompiledRegexRunner));
             GenerateFindFirstChar();
 
-            DynamicMethod initTrackCountMethod = DefineDynamicMethod("InitTrackCount" + regexnumString, null, typeof(CompiledRegexRunner));
-            GenerateInitTrackCount();
-
-            return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, initTrackCountMethod);
+            return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, _trackcount);
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>

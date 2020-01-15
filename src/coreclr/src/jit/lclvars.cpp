@@ -7286,6 +7286,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     switch (oper)
     {
         case GT_LCL_VAR:
+        case GT_LCL_VAR_ADDR:
             lcl = tree;
             break;
 
@@ -7301,12 +7302,13 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_CONTINUE;
     }
 
-    Compiler* pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_pCompiler;
-    bool      bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
-    noway_assert(lcl->gtOper == GT_LCL_VAR);
-    unsigned   lclNum = lcl->AsLclVarCommon()->GetLclNum();
-    var_types  type   = lcl->TypeGet();
-    LclVarDsc* varDsc = &pComp->lvaTable[lclNum];
+    noway_assert(lcl->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR));
+
+    Compiler* const  pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_pCompiler;
+    const bool       bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
+    const unsigned   lclNum     = lcl->AsLclVarCommon()->GetLclNum();
+    var_types        type       = lcl->TypeGet();
+    LclVarDsc* const varDsc     = pComp->lvaGetDesc(lclNum);
 
     if (varDsc->lvNoLclFldStress)
     {
@@ -7388,6 +7390,11 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             /* Change lclVar(lclNum) to lclFld(lclNum,padding) */
 
             tree->ChangeOper(GT_LCL_FLD);
+            tree->AsLclFld()->SetLclOffs(padding);
+        }
+        else if (oper == GT_LCL_VAR_ADDR)
+        {
+            tree->ChangeOper(GT_LCL_FLD_ADDR);
             tree->AsLclFld()->SetLclOffs(padding);
         }
         else
