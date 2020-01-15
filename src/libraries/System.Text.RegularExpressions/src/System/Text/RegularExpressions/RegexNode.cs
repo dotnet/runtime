@@ -890,6 +890,112 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Computes a min bound on the required length of any string that could possibly match.</summary>
+        /// <returns>The min computed length.  If the result is 0, there is no minimum we can enforce.</returns>
+        public int ComputeMinLength()
+        {
+            return ComputeMinLength(this, 20); // arbitrary cut-off to avoid stack overflow with degenerate expressions
+
+            static int ComputeMinLength(RegexNode node, int maxDepth)
+            {
+                if (maxDepth == 0)
+                {
+                    return 0;
+                }
+
+                switch (node.Type)
+                {
+                    case One:
+                    case Notone:
+                    case Set:
+                        // Single character.
+                        return 1;
+
+                    case Multi:
+                        // Every character in the string needs to match.
+                        return node.Str!.Length;
+
+                    case Notonelazy:
+                    case Notoneloop:
+                    case Notoneloopatomic:
+                    case Onelazy:
+                    case Oneloop:
+                    case Oneloopatomic:
+                    case Setlazy:
+                    case Setloop:
+                    case Setloopatomic:
+                        // One character repeated at least M times.
+                        return node.M;
+
+                    case Lazyloop:
+                    case Loop:
+                        // A node graph repeated at least M times.
+                        return node.M * ComputeMinLength(node.Child(0), maxDepth - 1);
+
+                    case Alternate:
+                        // The minimum required length for any of the alternation's branches.
+                        {
+                            int childCount = node.ChildCount();
+                            Debug.Assert(childCount >= 2);
+                            int min = ComputeMinLength(node.Child(0), maxDepth - 1);
+                            for (int i = 1; i < childCount && min > 0; i++)
+                            {
+                                min = Math.Min(min, ComputeMinLength(node.Child(i), maxDepth - 1));
+                            }
+                            return min;
+                        }
+
+                    case Concatenate:
+                        // The sum of all of the concatenation's children.
+                        {
+                            int sum = 0;
+                            int childCount = node.ChildCount();
+                            for (int i = 0; i < childCount; i++)
+                            {
+                                sum += ComputeMinLength(node.Child(i), maxDepth - 1);
+                            }
+                            return sum;
+                        }
+
+                    case Atomic:
+                    case Capture:
+                    case Group:
+                        // For groups, we just delegate to the sole child.
+                        Debug.Assert(node.ChildCount() == 1);
+                        return ComputeMinLength(node.Child(0), maxDepth - 1);
+
+                    case Empty:
+                    case Nothing:
+                    // Nothing to match.
+                    case Beginning:
+                    case Bol:
+                    case Boundary:
+                    case ECMABoundary:
+                    case End:
+                    case EndZ:
+                    case Eol:
+                    case Nonboundary:
+                    case NonECMABoundary:
+                    case Start:
+                    // Difficult to glean anything meaningful from boundaries or results only known at run time.
+                    case Prevent:
+                    case Require:
+                    // Lookaheads/behinds could potentially be included in the future, but that will require
+                    // a different structure, as they can't be added as part of a concatenation, since they overlap
+                    // with what comes after.
+                    case Ref:
+                    case Testgroup:
+                    case Testref:
+                        // Constructs requiring data at runtime from the matching pattern can't influence min length.
+                        return 0;
+
+                    default:
+                        Debug.Fail($"Unknown node: {node.Type}");
+                        return 0;
+                }
+            }
+        }
+
         public RegexNode MakeQuantifier(bool lazy, int min, int max)
         {
             if (min == 0 && max == 0)
