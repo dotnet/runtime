@@ -4,7 +4,7 @@
     {
         public int Major { get; }
         public int Minor { get; }
-        public int? Patch { get; }
+        public int Patch { get; }
 
         public bool HasCustomErrorWriter { get; }
 
