@@ -133,7 +133,6 @@ namespace System.Net.Mail
             {
                 if (!MailAddressParser.TryNormalizeOrThrow(displayName, out displayName, throwExceptionIfFail))
                 {
-                    Debug.Assert(!throwExceptionIfFail);
                     return false;
                 }
 
@@ -146,7 +145,6 @@ namespace System.Net.Mail
 
             if (!MailAddressParser.TryParseAddress(address, out ParseAddressInfo info, throwExceptionIfFail))
             {
-                Debug.Assert(!throwExceptionIfFail);
                 return false;
             }
 

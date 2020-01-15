@@ -49,7 +49,6 @@ namespace System.Net.Mail
                 // Check for valid whitespace
                 if (!WhitespaceReader.TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
                 {
-                    Debug.Assert(!throwExceptionIfFail);
                     return false;
                 }
 
@@ -61,7 +60,6 @@ namespace System.Net.Mail
                 // Check for escaped characters
                 if (!QuotedPairReader.TryCountQuotedChars(data, index, permitUnicode, out int quotedCharCount, throwExceptionIfFail))
                 {
-                    Debug.Assert(!throwExceptionIfFail);
                     return false;
                 }
 
@@ -135,7 +133,6 @@ namespace System.Net.Mail
                 // Check for valid whitespace
                 if (!WhitespaceReader.TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
                 {
-                    Debug.Assert(!throwExceptionIfFail);
                     return false;
                 }
 
@@ -146,7 +143,6 @@ namespace System.Net.Mail
                 // Check for escaped characters
                 if (!QuotedPairReader.TryCountQuotedChars(data, index, permitUnicode, out int quotedCharCount, throwExceptionIfFail))
                 {
-                    Debug.Assert(!throwExceptionIfFail);
                     return false;
                 }
 
