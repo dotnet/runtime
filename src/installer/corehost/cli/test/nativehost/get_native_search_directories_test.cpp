@@ -13,7 +13,7 @@ bool get_native_search_directories_test::get_for_command_line(
     const pal::char_t* argv[],
     pal::stringstream_t& test_output)
 {
-    int32_t rc = StatusCode::Success;
+    int rc = StatusCode::Success;
     hostfxr_exports hostfxr{ hostfxr_path };
 
     error_writer_redirector errors{ hostfxr.set_error_writer };
@@ -35,7 +35,7 @@ bool get_native_search_directories_test::get_for_command_line(
     else
     {
         rc = hostfxr.get_native_search_directories(argc, argv, nullptr, 0, &buffer_size);
-        if (rc != StatusCode::HostApiBufferTooSmall)
+        if (rc != (int)StatusCode::HostApiBufferTooSmall)
         {
             test_output << _X("get_native_search_directories (null,0) returned unexpected error code ") << std::hex << std::showbase << rc << _X(" expected HostApiBufferTooSmall (0x80008098).") << std::endl;
             test_output << _X("buffer_size: ") << buffer_size << std::endl;
@@ -45,7 +45,7 @@ bool get_native_search_directories_test::get_for_command_line(
         std::vector<pal::char_t> buffer;
         buffer.reserve(buffer_size);
         rc = hostfxr.get_native_search_directories(argc, argv, buffer.data(), buffer_size, &buffer_size);
-        if (rc != StatusCode::Success)
+        if (rc != (int)StatusCode::Success)
         {
             test_output << _X("get_native_search_directories returned unexpected error code ") << std::hex << std::showbase << rc << _X(" .") << std::endl;
             goto Exit;
