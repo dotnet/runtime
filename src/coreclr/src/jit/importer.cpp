@@ -16246,11 +16246,21 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE 
 }
 #endif // FEATURE_MULTIREG_RET
 
-// do import for a return
-// returns false if inlining was aborted
-// opcode can be ret or call in the case of a tail.call
+//------------------------------------------------------------------------
+// impReturnInstruction: import a return or an explicit tail call
+//
+// Arguments:
+//     block -- call returning a struct in a registers
+//     prefixFlags -- active IL prefixes
+//     opcode -- [in, out] IL opcode
+//
+// Returns:
+//     True if import was successful (may fail for some inlinees)
+//
 bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& opcode)
 {
+    const bool isTailCall = (prefixFlags & PREFIX_TAILCALL) != 0;
+
     if (tiVerificationNeeded)
     {
         verVerifyThisPtrInitialised();
@@ -16302,7 +16312,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                       (varTypeIsStruct(op2) && varTypeIsStruct(info.compRetType)));
 
 #ifdef DEBUG
-            if (opts.compGcChecks && info.compRetType == TYP_REF)
+            if (!isTailCall && opts.compGcChecks && (info.compRetType == TYP_REF))
             {
                 // DDB 3483  : JIT Stress: early termination of GC ref's life time in exception code path
                 // VSW 440513: Incorrect gcinfo on the return value under COMPlus_JitGCChecks=1 for methods with
@@ -16709,7 +16719,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
     }
 
     // We must have imported a tailcall and jumped to RET
-    if (prefixFlags & PREFIX_TAILCALL)
+    if (isTailCall)
     {
 #if defined(FEATURE_CORECLR) || !defined(_TARGET_AMD64_)
         // Jit64 compat:
