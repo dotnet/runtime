@@ -714,7 +714,11 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 }
 
                 // Ensure every modification is undone and signature verifies
-                test.UpdateHash();
+                if (IsOperatingOnData())
+                {
+                    test.UpdateHash();
+                }
+
                 Assert.True(Verify(test, signature, DSASignatureFormat.Rfc3279DerSequence), "Data/hash is not the same as original after undoing tampering");
             }
 
