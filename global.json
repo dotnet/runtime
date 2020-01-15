@@ -12,10 +12,10 @@
     "python": "2.7.15"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20057.5",
-    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.20057.5",
-    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.20057.5",
-    "Microsoft.DotNet.Build.Tasks.Configuration": "5.0.0-beta.20057.5",
+    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20063.2",
+    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.20063.2",
+    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.20063.2",
+    "Microsoft.DotNet.Build.Tasks.Configuration": "5.0.0-beta.20063.2",
     "FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
     "Microsoft.NET.Sdk.IL": "5.0.0-alpha1.19563.3",
     "Microsoft.Build.NoTargets": "1.0.53",
