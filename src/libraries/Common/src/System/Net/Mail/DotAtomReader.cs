@@ -29,7 +29,7 @@ namespace System.Net.Mail
         // - -1 if the dot-atom section terminated at the start of the data string.
         //   e.g. "user.name@domain.com", starting at index 8 (e) returns -1.
         //
-        // A FormatException will be thrown or false is returned if:
+        // Throws FormatException or returns false if:
         // - The initial character at data[index] is invalid in a dot-atom.
         //   e.g. "a@b.com", starting at index 1 (@).
         // - The leading character is a dot.
