@@ -68,6 +68,13 @@ namespace System.Security.Cryptography.Csp.Tests
                 "TryExportSubjectPublicKeyInfo",
                 "TryExportPkcs8PrivateKey",
                 "TryExportEncryptedPkcs8PrivateKey",
+                // SignatureFormat overloads default to sane implementation and can't be forwarded
+                "CreateSignatureCore",
+                "SignDataCore",
+                "TryCreateSignatureCore",
+                "TrySignDataCore",
+                "VerifyDataCore",
+                "VerifySignatureCore",
             };
 
             IEnumerable<MethodInfo> baseMethods = shimType.
