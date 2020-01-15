@@ -6,6 +6,13 @@
 //
 // ===========================================================================
 
+// Exceptions (OOM)
+// - On foreground threads, exceptions are propagated unless they can be handled without any compromise
+// - On background threads, exceptions are caught and logged. The scope of an exception is limited to one per method or code
+//   version such that if there is a loop over many, an exception would not abort the entire loop, rather just one iteration of
+//   the loop.
+// - Exceptions may lead to one or more methods to not be promoted anymore, and perhaps, though rarely, with no further chance
+//   of promotion
 
 #ifndef TIERED_COMPILATION_H
 #define TIERED_COMPILATION_H

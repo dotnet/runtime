@@ -1253,6 +1253,11 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_TC_AggressiveTiering) != 0)
         {
+            // TC_AggressiveTiering may be used in some benchmarks to have methods be tiered up more quickly, for example when
+            // the measurement is sensitive to GC allocations or activity. Methods tiered up more quickly may have different
+            // performance characteristics, as timing of the rejit may play a role. If there are multiple tiers before the final
+            // tier, the expectation is that the method progress through all tiers as quickly as possible, ideally running the
+            // code for each tier at least once before progressing to the next tier.
             tieredCompilation_CallCountThreshold = 1;
             tieredCompilation_CallCountingDelayMs = 0;
         }

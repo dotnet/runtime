@@ -8,6 +8,60 @@
 
 #ifdef FEATURE_TIERED_COMPILATION
 
+/*******************************************************************************************************************************
+** Summary
+
+Outline of phases
+-----------------
+
+When starting call counting for a method (see CallCountingManager::SetCodeEntryPoint):
+- A CallCountingInfo is created (associated with the NativeCodeVersion to be counted), which initializes a remaining call count
+  with a threshold
+- A CallCountingStub is created. It contains a small amount of code that decrements the remaining call count and checks for
+  zero. When nonzero, it jumps to the code version's native code entry point. When zero, it forwards to a helper function that
+  handles tier promotion.
+- For tiered methods that don't have a precode (virtual and interface methods when slot backpatching is enabled), a forwarder
+  stub (a precode) is created and it forwards to the call counting stub. This is so that the call counting stub can be safely
+  and easily deleted. The forwarder stubs are only used when counting calls, there is one per method (not per code version), and
+  they are not deleted.
+- The method's code entry point is set to the forwarder stub or the call counting stub to count calls to the code version
+
+When the call count threshold is reached (see CallCountingManager::OnCallCountThresholdReached):
+- The helper call enqueues completion of call counting for background processing
+- When completing call counting in the background, the code version is enqueued for promotion, and the call counting stub is
+  removed from the call chain
+
+After all work queued for promotion is completed and methods transitioned to optimized tier, some cleanup follows
+(see CallCountingManager::StopAndDeleteAllCallCountingStubs):
+- Some heuristics are checked and if cleanup will be done, the runtime is suspended
+- All call counting stubs are deleted. For code versions that have not completed counting, the method's code entry point is
+  reset such that call counting would be reestablished on the next call.
+- Completed call counting infos are deleted
+- For methods that no longer have any code versions that need to be counted, the forwarder stubs are no longer tracked. If a
+  new IL code version is added thereafter (perhaps by a profiler), a new forwarder stub may be created.
+
+Miscellaneous
+-------------
+
+- The CallCountingManager is the main class with most of the logic. Its private subclasses are just simple data structures.
+- The code versioning lock is used for data structures used for call counting. Installing a call counting stub requires that we
+  know what the currently active code version is, it made sense to use the same lock.
+- Call counting stubs have hardcoded code. x64 has short and long stubs, short stubs are used when possible (often) and use
+  IP-relative branches to the method's code and helper stub. Other archs have only one type of stub (a short stub).
+  - Call counting stubs pass a stub-identifying token to the threshold-reached helper function. The stub's address can be
+    determined from it. On x64, it also indicates whether the stub is a short or long stub.
+  - From a call counting stub, the call counting info can be determined using the remaining call count cell, and from the call
+    counting info the code version and method can be determined
+- Call counting is not stopped when the tiering delay is reactivated (often happens in larger and more realistic scenarios). The
+  overhead necessary to stop and restart call counting (among other things, many methods will have to go through the prestub
+  again) is greater than the overhead of completing call counting + calling the threshold-reached helper function, even for very
+  high call count thresholds. While it may at times be desirable to not count method calls during startup phases, there would be
+  a fair bit of additional overhead to stop counting. On the other hand, it may at times be beneficial to rejit some methods
+  during startup. So for now, only newly called methods during the current tiering delay would not be counted, any that already
+  started counting will continue (their delay already expired).
+
+*******************************************************************************************************************************/
+
 #define DISABLE_COPY(T) \
     T(const T &) = delete; \
     T &operator =(const T &) = delete
