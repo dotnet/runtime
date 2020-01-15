@@ -1278,5 +1278,16 @@ namespace JIT.HardwareIntrinsics.Arm
         public static uint AbsoluteDifference(uint left, uint right) => (uint)Math.Abs((long)left - (long)right);
         public static float AbsoluteDifference(float left, float right) => Math.Abs(left - right);
         public static double AbsoluteDifference(double left, double right) => Math.Abs(left - right);
+
+        public static sbyte Add(sbyte left, sbyte right) => (sbyte)(left + right);
+        public static byte Add(byte left, byte right) => (byte)(left + right);
+        public static short Add(short left, short right) => (short)(left + right);
+        public static ushort Add(ushort left, ushort right) => (ushort)(left + right);
+        public static int Add(int left, int right) => (int)(left + right);
+        public static uint Add(uint left, uint right) => (uint)(left + right);
+        public static long Add(long left, long right) => (long)(left + right);
+        public static ulong Add(ulong left, ulong right) => (ulong)(left + right);
+        public static float Add(float left, float right) => (float)(left + right);
+        public static double Add(double left, double right) => (double)(left + right);
     }
 }
