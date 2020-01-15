@@ -5,6 +5,7 @@
 using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
@@ -90,20 +91,16 @@ namespace R2RDump
 
         private static unsafe MetadataReader Open(string filename)
         {
-            byte[] Image = File.ReadAllBytes(filename);
+            byte[] image = File.ReadAllBytes(filename);
 
-            fixed (byte* p = Image)
+            PEReader peReader = new PEReader(ImmutableArray.Create(image));
+
+            if (!peReader.HasMetadata)
             {
-                IntPtr ptr = (IntPtr)p;
-                PEReader peReader = new PEReader(p, Image.Length);
-
-                if (!peReader.HasMetadata)
-                {
-                    throw new Exception($"ECMA metadata not found in file '{filename}'");
-                }
-
-                return peReader.GetMetadataReader();
+                throw new Exception($"ECMA metadata not found in file '{filename}'");
             }
+
+            return peReader.GetMetadataReader();
         }
     }
 
