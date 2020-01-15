@@ -4021,7 +4021,7 @@ private:
     }
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
-    bool impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& opcode);
+    bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
 
 #ifdef _TARGET_ARM_
     void impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* op, CORINFO_CLASS_HANDLE hClass);

@@ -11476,7 +11476,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_RET:
                 prefixFlags &= ~PREFIX_TAILCALL; // ret without call before it
             RET:
-                if (!impReturnInstruction(block, prefixFlags, opcode))
+                if (!impReturnInstruction(prefixFlags, opcode))
                 {
                     return; // abort
                 }
@@ -16222,7 +16222,7 @@ GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HAND
 //    registers return values to suitable temps.
 //
 // Arguments:
-//     op -- call returning a struct in a registers
+//     op -- call returning a struct in registers
 //     hClass -- class handle for struct
 //
 // Returns:
@@ -16250,14 +16250,13 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE 
 // impReturnInstruction: import a return or an explicit tail call
 //
 // Arguments:
-//     block -- call returning a struct in a registers
 //     prefixFlags -- active IL prefixes
 //     opcode -- [in, out] IL opcode
 //
 // Returns:
 //     True if import was successful (may fail for some inlinees)
 //
-bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& opcode)
+bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 {
     const bool isTailCall = (prefixFlags & PREFIX_TAILCALL) != 0;
 
