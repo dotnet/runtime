@@ -287,6 +287,7 @@ TESTS_CS_SRC=		\
 	assembly-loadfile-bindingredirect.cs	\
 	assembly-loadfrom-bindingredirect.cs	\
 	assembly-loadfrom-simplename.cs	\
+	assembly-refonly-load-bytes-bindingredirect.cs \
 	assemblyresolve_event.cs	\
 	assemblyresolve_event3.cs	\
 	assemblyresolve_event4.cs	\
@@ -2997,8 +2998,11 @@ assembly-loadfile-bindingredirect.exe: assembly-load-dir1/LibStrongName.dll asse
 
 assembly-load-bytes-bindingredirect.exe: assembly-load-dir1/LibStrongName.dll assembly-load-dir2/LibStrongName.dll assembly-load-bytes-bindingredirect.exe.config
 
-EXTRA_DIST += assembly-loadfrom-bindingredirect.exe.config assembly-loadfile-bindingredirect.exe.config assembly-load-bytes-bindingredirect.exe.config
+assembly-refonly-load-bytes-bindingredirect.exe: assembly-load-dir1/LibStrongName.dll assembly-load-dir2/LibStrongName.dll assembly-refonly-load-bytes-bindingredirect.exe.config
 
+
+EXTRA_DIST += assembly-loadfrom-bindingredirect.exe.config assembly-loadfile-bindingredirect.exe.config assembly-load-bytes-bindingredirect.exe.config
+EXTRA_DIST += assembly-refonly-load-bytes-bindingredirect.exe.config
 
 assembly-load-dir1/LibSimpleName.dll: assembly-load-dir1/LibSimpleName.cs
 	$(MKDIR_P) $(dir $@)
