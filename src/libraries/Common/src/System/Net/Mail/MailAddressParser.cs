@@ -198,7 +198,7 @@ namespace System.Net.Mail
         // - data[index] should refer to the '@' symbol
         // - returns the parsed domain, including any square brackets for domain-literals
         //
-        // Throws a FormatException or false is returned:
+        // Throws a FormatException or returns false:
         // - For invalid un-escaped chars, including Unicode
         // - If the start of the data string is reached
         private static bool TryParseDomain(string data, ref int index, out string domain, bool throwExceptionIfFail)
