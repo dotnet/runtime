@@ -30,7 +30,7 @@ dotnet run -- "path_to_Blocks.txt" ../../src/System/Text/Unicode/UnicodeRanges.g
 
 5. Update the __ref__ APIs to reflect any new `UnicodeRanges` static properties which were added in the previous step, otherwise the unit test project will not be able to reference them. See https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/updating-ref-source.md for instructions on how to update the reference assemblies.
 
-6. Update the __src/libraries/System.Text.Encodings.Web/tests/System.Text.Encodings.Web.Tests.csproj__ file to reference the new __UnicodeData.txt__ file that was added to the _runtime-assets_ repo in step (1). Open the .csproj file in a text editor and replace the `<UnicodeUcdVersion>` element near the top of the file to reference the new UCD version being consumed.
+6. Update the __src/libraries/System.Text.Encodings.Web/tests/System.Text.Encodings.Web.Tests.csproj__ file to reference the new __UnicodeData.txt__ file that was added to the [runtime-assets](https://github.com/dotnet/runtime-assets) repo in step (1). Open the .csproj file in a text editor and replace the `<UnicodeUcdVersion>` property value near the top of the file to reference the new UCD version being consumed.
 
 7. Finally, update the _Current implementation_ section at the beginning of this markdown file to reflect the version of the Unicode data files which were given to the tools. Remember also to update the URL within that section so that these data files can be easily accessed in the future.
 

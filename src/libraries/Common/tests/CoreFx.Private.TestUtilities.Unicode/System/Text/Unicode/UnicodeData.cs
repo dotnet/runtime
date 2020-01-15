@@ -14,7 +14,7 @@ namespace System.Text.Unicode
 
         public static CodePoint GetData(int codePoint)
         {
-            if ((uint)codePoint >= _codePointData.Length)
+            if ((uint)codePoint >= (uint)_codePointData.Length)
             {
                 throw new ArgumentOutOfRangeException(
                     message: FormattableString.Invariant($"Value U+{(uint)codePoint:X4} is not a valid code point."),
@@ -42,14 +42,23 @@ namespace System.Text.Unicode
          * Helper methods
          */
 
-        private static bool IsInRangeInclusive(UnicodeCategory value, UnicodeCategory minInclusive, UnicodeCategory maxInclusive)
-        {
-            return (uint)value - (uint)minInclusive <= (uint)maxInclusive - (uint)minInclusive;
-        }
-
         public static UnicodeCategory GetUnicodeCategory(int codePoint) => GetData(codePoint).GeneralCategory;
 
-        public static bool IsLetter(int codePoint) => IsInRangeInclusive(GetUnicodeCategory(codePoint), UnicodeCategory.UppercaseLetter, UnicodeCategory.OtherLetter);
+        public static bool IsLetter(int codePoint)
+        {
+            switch (GetUnicodeCategory(codePoint))
+            {
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.ModifierLetter:
+                case UnicodeCategory.OtherLetter:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
 
         public static bool IsWhiteSpace(int codePoint) => (GetData(codePoint).Flags & CodePointFlags.White_Space) != 0;
     }

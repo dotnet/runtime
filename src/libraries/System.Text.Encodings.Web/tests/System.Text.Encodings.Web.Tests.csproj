@@ -51,8 +51,6 @@
       <Link>CharUnicodeInfo\UnicodeData.$(UnicodeUcdVersion).txt</Link>
       <LogicalName>UnicodeData.txt</LogicalName>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs">
       <Link>System\Text\UnicodeDebug.cs</Link>
     </Compile>
