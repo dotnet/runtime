@@ -914,7 +914,7 @@ Return Value
 --*/
 char* FindEnvVarValue(const char* name)
 {
-    if(*name == '\0')
+    if (*name == '\0')
         return nullptr;
     
     for (int i = 0; palEnvironment[i] != nullptr; ++i)
@@ -927,7 +927,7 @@ char* FindEnvVarValue(const char* name)
             if (*pch == '\0') 
             {
                 if (*p == '=')
-                    return p+1;
+                    return p + 1;
                     
                 if (*p == '\0') // no = sign -> empty value
                     return p;
@@ -935,7 +935,7 @@ char* FindEnvVarValue(const char* name)
                 break;
             }
         }
-        while(*pch++ == *p++);
+        while (*pch++ == *p++);
     }
     
     return nullptr;
