@@ -16,21 +16,21 @@ namespace System
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
+    public readonly partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
     {
         public static readonly Guid Empty = default;
 
-        private int _a;   // Do not rename (binary serialization)
-        private short _b; // Do not rename (binary serialization)
-        private short _c; // Do not rename (binary serialization)
-        private byte _d;  // Do not rename (binary serialization)
-        private byte _e;  // Do not rename (binary serialization)
-        private byte _f;  // Do not rename (binary serialization)
-        private byte _g;  // Do not rename (binary serialization)
-        private byte _h;  // Do not rename (binary serialization)
-        private byte _i;  // Do not rename (binary serialization)
-        private byte _j;  // Do not rename (binary serialization)
-        private byte _k;  // Do not rename (binary serialization)
+        private readonly int _a;   // Do not rename (binary serialization)
+        private readonly short _b; // Do not rename (binary serialization)
+        private readonly short _c; // Do not rename (binary serialization)
+        private readonly byte _d;  // Do not rename (binary serialization)
+        private readonly byte _e;  // Do not rename (binary serialization)
+        private readonly byte _f;  // Do not rename (binary serialization)
+        private readonly byte _g;  // Do not rename (binary serialization)
+        private readonly byte _h;  // Do not rename (binary serialization)
+        private readonly byte _i;  // Do not rename (binary serialization)
+        private readonly byte _j;  // Do not rename (binary serialization)
+        private readonly byte _k;  // Do not rename (binary serialization)
 
         // Creates a new guid from an array of bytes.
         public Guid(byte[] b) :
@@ -135,7 +135,7 @@ namespace System
         private struct GuidResult
         {
             private readonly GuidParseThrowStyle _throwStyle;
-            internal Guid _parsedGuid;
+            internal MutableGuid _parsedGuid;
 
             internal GuidResult(GuidParseThrowStyle canThrow) : this()
             {
@@ -163,6 +163,24 @@ namespace System
             }
         }
 
+        // A struct that's identical in its structure to System.Guid.
+        // This is to work around not being able to mutate the fields once the type is marked readonly by reinterpret-casting.
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MutableGuid
+        {
+            public int _a;
+            public short _b;
+            public short _c;
+            public byte _d;
+            public byte _e;
+            public byte _f;
+            public byte _g;
+            public byte _h;
+            public byte _i;
+            public byte _j;
+            public byte _k;
+        }
+
         // Creates a new guid based on the value in the string.  The value is made up
         // of hex digits speared by the dash ("-"). The string may begin and end with
         // brackets ("{", "}").
@@ -181,7 +199,7 @@ namespace System
             bool success = TryParseGuid(g, ref result);
             Debug.Assert(success, "GuidParseThrowStyle.All means throw on all failures");
 
-            this = result._parsedGuid;
+            this = Unsafe.As<MutableGuid, Guid>(ref result._parsedGuid);
         }
 
         public static Guid Parse(string input) =>
@@ -193,7 +211,7 @@ namespace System
             bool success = TryParseGuid(input, ref result);
             Debug.Assert(success, "GuidParseThrowStyle.AllButOverflow means throw on all failures");
 
-            return result._parsedGuid;
+            return Unsafe.As<MutableGuid, Guid>(ref result._parsedGuid);
         }
 
         public static bool TryParse(string? input, out Guid result)
@@ -212,7 +230,7 @@ namespace System
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
             if (TryParseGuid(input, ref parseResult))
             {
-                result = parseResult._parsedGuid;
+                result = Unsafe.As<MutableGuid, Guid>(ref parseResult._parsedGuid);
                 return true;
             }
             else
@@ -248,7 +266,7 @@ namespace System
                 _ => throw new FormatException(SR.Format_InvalidGuidFormatSpecification),
             };
             Debug.Assert(success, "GuidParseThrowStyle.AllButOverflow means throw on all failures");
-            return result._parsedGuid;
+            return Unsafe.As<MutableGuid, Guid>(ref result._parsedGuid);
         }
 
         public static bool TryParseExact(string? input, string? format, out Guid result)
@@ -299,7 +317,7 @@ namespace System
 
             if (success)
             {
-                result = parseResult._parsedGuid;
+                result = Unsafe.As<MutableGuid, Guid>(ref parseResult._parsedGuid);
                 return true;
             }
             else
@@ -372,7 +390,7 @@ namespace System
                 return false;
             }
 
-            ref Guid g = ref result._parsedGuid;
+            ref MutableGuid g = ref result._parsedGuid;
 
             uint uintTmp;
             if (TryParseHex(guidString.Slice(0, 8), out Unsafe.As<int, uint>(ref g._a)) && // _a
@@ -422,7 +440,7 @@ namespace System
                 return false;
             }
 
-            ref Guid g = ref result._parsedGuid;
+            ref MutableGuid g = ref result._parsedGuid;
 
             uint uintTmp;
             if (uint.TryParse(guidString.Slice(0, 8), NumberStyles.AllowHexSpecifier, null, out Unsafe.As<int, uint>(ref g._a)) && // _a
@@ -732,7 +750,7 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite<Guid>(g, ref this);
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(this));
             }
             else
             {
@@ -746,7 +764,7 @@ namespace System
         {
             if (BitConverter.IsLittleEndian)
             {
-                return MemoryMarshal.TryWrite(destination, ref this);
+                return MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(this));
             }
 
             // slower path for BigEndian
@@ -778,7 +796,7 @@ namespace System
         public override int GetHashCode()
         {
             // Simply XOR all the bits of the GUID 32 bits at a time.
-            return _a ^ Unsafe.Add(ref _a, 1) ^ Unsafe.Add(ref _a, 2) ^ Unsafe.Add(ref _a, 3);
+            return _a ^ Unsafe.Add(ref Unsafe.AsRef(_a), 1) ^ Unsafe.Add(ref Unsafe.AsRef(_a), 2) ^ Unsafe.Add(ref Unsafe.AsRef(_a), 3);
         }
 
         // Returns true if and only if the guid represented
@@ -793,18 +811,18 @@ namespace System
 
             // Now compare each of the elements
             return g._a == _a &&
-                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
-                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
-                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
+                Unsafe.Add(ref Unsafe.AsRef(g._a), 1) == Unsafe.Add(ref Unsafe.AsRef(_a), 1) &&
+                Unsafe.Add(ref Unsafe.AsRef(g._a), 2) == Unsafe.Add(ref Unsafe.AsRef(_a), 2) &&
+                Unsafe.Add(ref Unsafe.AsRef(g._a), 3) == Unsafe.Add(ref Unsafe.AsRef(_a), 3);
         }
 
         public bool Equals(Guid g)
         {
             // Now compare each of the elements
             return g._a == _a &&
-                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
-                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
-                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
+                Unsafe.Add(ref Unsafe.AsRef(g._a), 1) == Unsafe.Add(ref Unsafe.AsRef(_a), 1) &&
+                Unsafe.Add(ref Unsafe.AsRef(g._a), 2) == Unsafe.Add(ref Unsafe.AsRef(_a), 2) &&
+                Unsafe.Add(ref Unsafe.AsRef(g._a), 3) == Unsafe.Add(ref Unsafe.AsRef(_a), 3);
         }
 
         private int GetResult(uint me, uint them) => me < them ? -1 : 1;
@@ -941,16 +959,16 @@ namespace System
 
         public static bool operator ==(Guid a, Guid b) =>
             a._a == b._a &&
-                Unsafe.Add(ref a._a, 1) == Unsafe.Add(ref b._a, 1) &&
-                Unsafe.Add(ref a._a, 2) == Unsafe.Add(ref b._a, 2) &&
-                Unsafe.Add(ref a._a, 3) == Unsafe.Add(ref b._a, 3);
+                Unsafe.Add(ref Unsafe.AsRef(a._a), 1) == Unsafe.Add(ref Unsafe.AsRef(b._a), 1) &&
+                Unsafe.Add(ref Unsafe.AsRef(a._a), 2) == Unsafe.Add(ref Unsafe.AsRef(b._a), 2) &&
+                Unsafe.Add(ref Unsafe.AsRef(a._a), 3) == Unsafe.Add(ref Unsafe.AsRef(b._a), 3);
 
         public static bool operator !=(Guid a, Guid b) =>
             // Now compare each of the elements
             a._a != b._a ||
-                Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1) ||
-                Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2) ||
-                Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3);
+                Unsafe.Add(ref Unsafe.AsRef(a._a), 1) != Unsafe.Add(ref Unsafe.AsRef(b._a), 1) ||
+                Unsafe.Add(ref Unsafe.AsRef(a._a), 2) != Unsafe.Add(ref Unsafe.AsRef(b._a), 2) ||
+                Unsafe.Add(ref Unsafe.AsRef(a._a), 3) != Unsafe.Add(ref Unsafe.AsRef(b._a), 3);
 
         public string ToString(string? format)
         {
