@@ -530,9 +530,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <see cref="Enum"/> (encoded as the underlying integer value).
         /// </param>
         /// <exception cref="ArgumentException">Unexpected constant type.</exception>
-        public void Constant(object value)
+        public void Constant(object? value)
         {
-            string str = value as string;
+            string? str = value as string;
             if (str != null || value == null)
             {
                 String(str);
@@ -548,7 +548,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="serializedTypeName">The name of the type, or null.</param>
         /// <exception cref="ArgumentException"><paramref name="serializedTypeName"/> is empty.</exception>
-        public void SystemType(string serializedTypeName)
+        public void SystemType(string? serializedTypeName)
         {
             if (serializedTypeName != null && serializedTypeName.Length == 0)
             {
@@ -558,7 +558,7 @@ namespace System.Reflection.Metadata.Ecma335
             String(serializedTypeName);
         }
 
-        private void String(string value)
+        private void String(string? value)
         {
             Builder.WriteSerializedString(value);
         }

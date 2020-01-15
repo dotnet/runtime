@@ -31,14 +31,14 @@ namespace System.Reflection.PortableExecutable
         // the image contents without being lazy.
         //
         // _lazyPEHeaders are not null in that case.
-        private MemoryBlockProvider _peImage;
+        private MemoryBlockProvider? _peImage;
 
         // If we read the data from the image lazily (peImage != null) we defer reading the PE headers.
-        private PEHeaders _lazyPEHeaders;
+        private PEHeaders? _lazyPEHeaders;
 
-        private AbstractMemoryBlock _lazyMetadataBlock;
-        private AbstractMemoryBlock _lazyImageBlock;
-        private AbstractMemoryBlock[] _lazyPESectionBlocks;
+        private AbstractMemoryBlock? _lazyMetadataBlock;
+        private AbstractMemoryBlock? _lazyImageBlock;
+        private AbstractMemoryBlock?[]? _lazyPESectionBlocks;
 
         /// <summary>
         /// Creates a Portable Executable reader over a PE image stored in memory.
@@ -295,6 +295,7 @@ namespace System.Reflection.PortableExecutable
                 if (_lazyPEHeaders == null)
                 {
                     InitializePEHeaders();
+                    Debug.Assert(_lazyPEHeaders != null);
                 }
 
                 return _lazyPEHeaders;
@@ -416,7 +417,7 @@ namespace System.Reflection.PortableExecutable
                 newBlock.Dispose();
             }
 
-            return _lazyPESectionBlocks[index];
+            return _lazyPESectionBlocks[index]!;
         }
 
         /// <summary>
@@ -526,6 +527,8 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="InvalidOperationException">PE image not available.</exception>
         public ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
         {
+            Debug.Assert(PEHeaders.PEHeader != null);
+
             var debugDirectory = PEHeaders.PEHeader.DebugTableDirectory;
             if (debugDirectory.Size == 0)
             {
@@ -650,7 +653,7 @@ namespace System.Reflection.PortableExecutable
             var reader = block.GetReader();
 
             var algorithmName = reader.ReadUtf8NullTerminated();
-            var checksum = reader.ReadBytes(reader.RemainingBytes);
+            byte[]? checksum = reader.ReadBytes(reader.RemainingBytes);
             if (algorithmName.Length == 0 || checksum.Length == 0)
             {
                 throw new BadImageFormatException(SR.InvalidPdbChecksumDataFormat);
@@ -697,7 +700,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="InvalidOperationException">The stream returned from <paramref name="pdbFileStreamProvider"/> doesn't support read and seek operations.</exception>
         /// <exception cref="BadImageFormatException">No matching PDB file is found due to an error: The PE image or the PDB is invalid.</exception>
         /// <exception cref="IOException">No matching PDB file is found due to an error: An IO error occurred while reading the PE image or the PDB.</exception>
-        public bool TryOpenAssociatedPortablePdb(string peImagePath, Func<string, Stream> pdbFileStreamProvider, out MetadataReaderProvider pdbReaderProvider, out string pdbPath)
+        public bool TryOpenAssociatedPortablePdb(string peImagePath, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? pdbReaderProvider, out string? pdbPath)
         {
             if (peImagePath == null)
             {
@@ -712,7 +715,7 @@ namespace System.Reflection.PortableExecutable
             pdbReaderProvider = null;
             pdbPath = null;
 
-            string peImageDirectory;
+            string? peImageDirectory;
             try
             {
                 peImageDirectory = Path.GetDirectoryName(peImagePath);
@@ -722,14 +725,14 @@ namespace System.Reflection.PortableExecutable
                 throw new ArgumentException(e.Message, nameof(peImagePath));
             }
 
-            Exception errorToReport = null;
+            Exception? errorToReport = null;
             var entries = ReadDebugDirectory();
 
             // First try .pdb file specified in CodeView data (we prefer .pdb file on disk over embedded PDB
             // since embedded PDB needs decompression which is less efficient than memory-mapping the file).
             var codeViewEntry = entries.FirstOrDefault(e => e.IsPortableCodeView);
             if (codeViewEntry.DataSize != 0 &&
-                TryOpenCodeViewPortablePdb(codeViewEntry, peImageDirectory, pdbFileStreamProvider, out pdbReaderProvider, out pdbPath, ref errorToReport))
+                TryOpenCodeViewPortablePdb(codeViewEntry, peImageDirectory!, pdbFileStreamProvider, out pdbReaderProvider, out pdbPath, ref errorToReport))
             {
                 return true;
             }
@@ -756,7 +759,7 @@ namespace System.Reflection.PortableExecutable
             return false;
         }
 
-        private bool TryOpenCodeViewPortablePdb(DebugDirectoryEntry codeViewEntry, string peImageDirectory, Func<string, Stream> pdbFileStreamProvider, out MetadataReaderProvider provider, out string pdbPath, ref Exception errorToReport)
+        private bool TryOpenCodeViewPortablePdb(DebugDirectoryEntry codeViewEntry, string peImageDirectory, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? provider, out string? pdbPath, ref Exception? errorToReport)
         {
             pdbPath = null;
             provider = null;
@@ -791,14 +794,14 @@ namespace System.Reflection.PortableExecutable
             return false;
         }
 
-        private bool TryOpenPortablePdbFile(string path, BlobContentId id, Func<string, Stream> pdbFileStreamProvider, out MetadataReaderProvider provider, ref Exception errorToReport)
+        private bool TryOpenPortablePdbFile(string path, BlobContentId id, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? provider, ref Exception? errorToReport)
         {
             provider = null;
-            MetadataReaderProvider candidate = null;
+            MetadataReaderProvider? candidate = null;
 
             try
             {
-                Stream pdbStream;
+                Stream? pdbStream;
 
                 try
                 {
@@ -823,7 +826,7 @@ namespace System.Reflection.PortableExecutable
                 candidate = MetadataReaderProvider.FromPortablePdbStream(pdbStream);
 
                 // Validate that the PDB matches the assembly version
-                if (new BlobContentId(candidate.GetMetadataReader().DebugMetadataHeader.Id) != id)
+                if (new BlobContentId(candidate.GetMetadataReader().DebugMetadataHeader!.Id) != id)
                 {
                     return false;
                 }
@@ -845,6 +848,6 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-        partial void TryOpenEmbeddedPortablePdb(DebugDirectoryEntry embeddedPdbEntry, ref bool openedEmbeddedPdb, ref MetadataReaderProvider provider, ref Exception errorToReport);
+        partial void TryOpenEmbeddedPortablePdb(DebugDirectoryEntry embeddedPdbEntry, ref bool openedEmbeddedPdb, ref MetadataReaderProvider? provider, ref Exception? errorToReport);
     }
 }

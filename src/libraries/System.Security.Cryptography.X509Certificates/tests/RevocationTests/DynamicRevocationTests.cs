@@ -22,11 +22,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         private static readonly X509ChainStatusFlags ThisOsRevocationStatusUnknown =
                 X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
 
-        // RHEL6 uses a version of OpenSSL that (empirically) doesn't support designated responders.
-        // (There's a chance that we should be passing in extra stuff, but RHEL6 is the only platform
-        // still on OpenSSL 1.0.0/1.0.1 in 2019, so it seems OpenSSL-related)
-        private static readonly bool s_supportsDesignatedResponder = PlatformDetection.IsNotRedHatFamily6;
-
         [Flags]
         public enum PkiOptions
         {
@@ -57,9 +52,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             get
             {
-                int designationLimit = s_supportsDesignatedResponder ? 4 : 1;
-
-                for (int designation = 0; designation < designationLimit; designation++)
+                for (int designation = 0; designation < 4; designation++)
                 {
                     PkiOptions designationOptions = (PkiOptions)(designation << 16);
 

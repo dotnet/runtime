@@ -85,7 +85,7 @@ namespace System.Linq.Expressions
 
         private static void ValidateSettableFieldOrPropertyMember(MemberInfo member, out Type memberType)
         {
-            Type decType = member.DeclaringType;
+            Type? decType = member.DeclaringType;
             if (decType == null)
             {
                 throw Error.NotAMemberOfAnyType(member, nameof(member));

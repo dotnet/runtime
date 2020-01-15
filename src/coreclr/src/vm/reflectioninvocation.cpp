@@ -670,7 +670,7 @@ void CallDescrWorkerReflectionWrapper(CallDescrData * pCallDescrData, Frame * pF
     PAL_ENDTRY
 } // CallDescrWorkerReflectionWrapper
 
-OBJECTREF InvokeArrayConstructor(ArrayTypeDesc* arrayDesc, MethodDesc* pMeth, PTRARRAYREF* objs, int argCnt)
+OBJECTREF InvokeArrayConstructor(TypeHandle th, MethodDesc* pMeth, PTRARRAYREF* objs, int argCnt)
 {
     CONTRACTL {
         THROWS;
@@ -679,15 +679,9 @@ OBJECTREF InvokeArrayConstructor(ArrayTypeDesc* arrayDesc, MethodDesc* pMeth, PT
     }
     CONTRACTL_END;
 
-    DWORD i;
-
-    // If we're trying to create an array of pointers or function pointers,
-    // check that the caller has skip verification permission.
-    CorElementType et = arrayDesc->GetArrayElementTypeHandle().GetVerifierCorElementType();
-
     // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
-    _ASSERTE(argCnt == (int) arrayDesc->GetRank() || argCnt == (int) arrayDesc->GetRank() * 2 ||
-             arrayDesc->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
+    _ASSERTE(argCnt == (int) th.GetRank() || argCnt == (int) th.GetRank() * 2 ||
+             th.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 
     // Validate all of the parameters.  These all typed as integers
     int allocSize = 0;
@@ -697,7 +691,7 @@ OBJECTREF InvokeArrayConstructor(ArrayTypeDesc* arrayDesc, MethodDesc* pMeth, PT
     INT32* indexes = (INT32*) _alloca((size_t)allocSize);
     ZeroMemory(indexes, allocSize);
 
-    for (i=0; i<(DWORD)argCnt; i++)
+    for (DWORD i=0; i<(DWORD)argCnt; i++)
     {
         if (!(*objs)->m_Array[i])
             COMPlusThrowArgumentException(W("parameters"), W("Arg_NullIndex"));
@@ -711,7 +705,7 @@ OBJECTREF InvokeArrayConstructor(ArrayTypeDesc* arrayDesc, MethodDesc* pMeth, PT
         memcpy(&indexes[i],(*objs)->m_Array[i]->UnBox(),pMT->GetNumInstanceFieldBytes());
     }
 
-    return AllocateArrayEx(TypeHandle(arrayDesc), indexes, argCnt);
+    return AllocateArrayEx(th, indexes, argCnt);
 }
 
 static BOOL IsActivationNeededForMethodInvoke(MethodDesc * pMD)
@@ -1002,7 +996,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         // handle this specially.  String objects allocate themselves
         // so they are a special case.
         if (ownerType.IsArray()) {
-            gc.retVal = InvokeArrayConstructor(ownerType.AsArray(),
+            gc.retVal = InvokeArrayConstructor(ownerType,
                                                pMeth,
                                                &gc.args,
                                                gc.pSig->NumFixedArgs());
@@ -2354,7 +2348,7 @@ FCIMPL2(void, ReflectionInvocation::GetGUID, ReflectClassBaseObject* refThisUNSA
         COMPlusThrow(kNullReferenceException);
 
     TypeHandle type = refThis->GetType();
-    if (type.IsTypeDesc()) {
+    if (type.IsTypeDesc() || type.IsArray()) {
         memset(result,0,sizeof(GUID));
         goto lExit;
     }
@@ -2408,10 +2402,10 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
     TypeHandle type = objType->GetType();
 
     // Don't allow arrays, pointers, byrefs or function pointers.
-    if (type.IsTypeDesc())
+    if (type.IsTypeDesc() || type.IsArray())
         COMPlusThrow(kArgumentException, W("Argument_InvalidValue"));
 
-    MethodTable *pMT = type.GetMethodTable();
+    MethodTable *pMT = type.AsMethodTable();
     PREFIX_ASSUME(pMT != NULL);
 
     //We don't allow unitialized Strings or Utf8Strings.

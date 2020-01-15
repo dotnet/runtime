@@ -346,6 +346,9 @@ namespace Internal.JitInterface
 #if !READYTORUN
             _sequencePoints = null;
             _variableToTypeDesc = null;
+
+            _parameterIndexToNameMap = null;
+            _localSlotToInfoMap = null;
 #endif
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -677,7 +680,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             // Check for SIMD intrinsics
             DefType owningDefType = method.OwningType as DefType;
-            if (owningDefType != null && VectorFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+            if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
             {
                 throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
             }
@@ -2423,6 +2426,7 @@ namespace Internal.JitInterface
                 new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = TargetABI;
+            pEEInfoOut.osType = _compilation.NodeFactory.Target.IsWindows ? CORINFO_OS.CORINFO_WINNT : CORINFO_OS.CORINFO_UNIX;
         }
 
         private string getJitTimeLogFilename()

@@ -334,7 +334,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     // Check if we have a var + const.
     if (op2->OperGet() == GT_LCL_VAR)
     {
-        jitstd::swap(op1, op2);
+        std::swap(op1, op2);
     }
     if (op1->OperGet() != GT_LCL_VAR)
     {

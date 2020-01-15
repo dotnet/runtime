@@ -12,6 +12,7 @@ using static Interop;
 using static Interop.BCrypt;
 using Microsoft.Win32.SafeHandles;
 
+#nullable enable
 namespace Internal.NativeCrypto
 {
     internal static partial class BCryptNative
@@ -70,7 +71,7 @@ namespace Internal.NativeCrypto
 
         public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(string pszAlgId, string pszImplementation, OpenAlgorithmProviderFlags dwFlags)
         {
-            SafeAlgorithmHandle hAlgorithm = null;
+            SafeAlgorithmHandle hAlgorithm;
             NTSTATUS ntStatus = Interop.BCryptOpenAlgorithmProvider(out hAlgorithm, pszAlgId, pszImplementation, (int)dwFlags);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 throw CreateCryptographicException(ntStatus);
@@ -137,7 +138,7 @@ namespace Internal.NativeCrypto
         }
 
         // Note: input and output are allowed to be the same buffer. BCryptEncrypt will correctly do the encryption in place according to CNG documentation.
-        public static int BCryptEncrypt(this SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, byte[] iv, byte[] output, int outputOffset, int outputCount)
+        public static int BCryptEncrypt(this SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, byte[]? iv, byte[] output, int outputOffset, int outputCount)
         {
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
@@ -165,7 +166,7 @@ namespace Internal.NativeCrypto
         }
 
         // Note: input and output are allowed to be the same buffer. BCryptDecrypt will correctly do the decryption in place according to CNG documentation.
-        public static int BCryptDecrypt(this SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, byte[] iv, byte[] output, int outputOffset, int outputCount)
+        public static int BCryptDecrypt(this SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, byte[]? iv, byte[] output, int outputOffset, int outputCount)
         {
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
@@ -222,10 +223,10 @@ namespace Internal.NativeCrypto
             public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, string pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern unsafe NTSTATUS BCryptEncrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
+            public static extern unsafe NTSTATUS BCryptEncrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[]? pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern unsafe NTSTATUS BCryptDecrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
+            public static extern unsafe NTSTATUS BCryptDecrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[]? pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
         }
     }
 
@@ -243,7 +244,7 @@ namespace Internal.NativeCrypto
 
     internal sealed class SafeKeyHandle : SafeBCryptHandle
     {
-        private SafeAlgorithmHandle _parentHandle = null;
+        private SafeAlgorithmHandle? _parentHandle = null;
 
         public void SetParentHandle(SafeAlgorithmHandle parentHandle)
         {

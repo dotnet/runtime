@@ -193,9 +193,6 @@ namespace BinderTracingTests
             AssemblyName assemblyName = new AssemblyName($"{SubdirectoryAssemblyName}.resources");
             assemblyName.CultureInfo = SatelliteCulture;
 
-            // https://github.com/dotnet/corefx/issues/42477
-            _ = AssemblyLoadContext.Default;
-
             Assembly OnAppDomainAssemblyResolve(object sender, ResolveEventArgs args)
             {
                 AssemblyName requested = new AssemblyName(args.Name);

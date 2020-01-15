@@ -40,14 +40,6 @@ else()
         message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
         return()
     endif()
-
-    add_custom_command(TARGET System.Globalization.Native POST_BUILD
-        COMMENT "Verifying System.Globalization.Native.so dependencies"
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh 
-            $<TARGET_FILE:System.Globalization.Native> 
-            "Verification failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
-        VERBATIM
-    )
 endif()
 
 include(configure.cmake)
@@ -90,3 +82,13 @@ set_target_properties(System.Globalization.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Globalization.Native-Static DESTINATION .)
+
+if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    add_custom_command(TARGET System.Globalization.Native POST_BUILD
+        COMMENT "Verifying System.Globalization.Native.so dependencies"
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+            $<TARGET_FILE:System.Globalization.Native>
+            "Verification failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
+        VERBATIM
+    )
+endif()

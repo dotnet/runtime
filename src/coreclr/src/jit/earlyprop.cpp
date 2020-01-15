@@ -79,7 +79,6 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
         if (call->gtCallType == CT_HELPER)
         {
             if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_R2R_DIRECT) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
@@ -120,7 +119,6 @@ GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree)
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8_VC) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_R2R_DIRECT) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))

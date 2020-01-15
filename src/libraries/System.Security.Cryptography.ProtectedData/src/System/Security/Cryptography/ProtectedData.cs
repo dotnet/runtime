@@ -102,7 +102,7 @@ namespace System.Security.Cryptography
         private static bool ErrorMayBeCausedByUnloadedProfile(int errorCode)
         {
             // CAPI returns a file not found error if the user profile is not yet loaded
-            return errorCode == Interop.Errors.E_FILENOTFOUND ||
+            return errorCode == HResults.E_FILENOTFOUND ||
                    errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND;
         }
     }

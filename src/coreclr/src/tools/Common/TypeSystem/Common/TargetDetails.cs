@@ -305,6 +305,17 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Returns True if compiling for OSX
+        /// </summary>
+        public bool IsOSX
+        {
+            get
+            {
+                return OperatingSystem == TargetOS.OSX;
+            }
+        }
+
+        /// <summary>
         /// Maximum number of elements in a HFA type.
         /// </summary>
         public int MaximumHfaElementCount

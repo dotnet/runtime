@@ -230,7 +230,7 @@ public:	// FIX
     PER_HEAP_ISOLATED   size_t  totalSurvivedSize;
 
     // Use only for GC tracing.
-    PER_HEAP    unsigned int GcDuration;
+    PER_HEAP    uint64_t GcDuration;
 
     size_t  GarbageCollectGeneration (unsigned int gen=0, gc_reason reason=reason_empty);
     // Interface with gc_heap

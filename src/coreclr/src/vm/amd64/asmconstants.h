@@ -532,10 +532,6 @@ ASMCONSTANTS_RUNTIME_ASSERT(STRING_BASE_SIZE == StringObject::GetBaseSize());
 ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
                     == offsetof(StringObject, m_StringLength));
 
-#define               OFFSETOF__ArrayTypeDesc__m_Arg 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__ArrayTypeDesc__m_Arg
-                    == offsetof(ArrayTypeDesc, m_Arg));
-
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               OFFSETOF__InlinedCallFrame__m_Datum 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_Datum

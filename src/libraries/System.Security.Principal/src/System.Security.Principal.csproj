@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;</TargetFrameworks>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="System\Security\Principal\TokenImpersonationLevel.cs" />
   </ItemGroup>

@@ -380,6 +380,37 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        public static void CreateLinkedTokenSource_OneToken()
+        {
+            CancellationTokenSource original;
+
+            original = new CancellationTokenSource();
+            using (CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(original.Token))
+            {
+                Assert.False(linked.Token.IsCancellationRequested);
+                original.Cancel();
+                Assert.True(linked.Token.IsCancellationRequested);
+            }
+
+            original = new CancellationTokenSource();
+            using (CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(original.Token))
+            {
+                Assert.False(linked.Token.IsCancellationRequested);
+                linked.Cancel();
+                Assert.True(linked.Token.IsCancellationRequested);
+                Assert.False(original.IsCancellationRequested);
+            }
+
+            original = new CancellationTokenSource();
+            using (CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(original.Token))
+            {
+                Assert.False(linked.Token.IsCancellationRequested);
+                original.Dispose();
+                Assert.False(linked.Token.IsCancellationRequested);
+            }
+        }
+
+        [Fact]
         public static void CreateLinkedTokenSource_Simple_TwoToken()
         {
             CancellationTokenSource signal1 = new CancellationTokenSource();
@@ -413,7 +444,20 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        public static void CreateLinkedToken_SourceTokenAlreadySignalled()
+        public static void CreateLinkedToken_SourceTokenAlreadySignalled_OneToken()
+        {
+            //creating a combined token, when a source token is already signaled.
+            CancellationTokenSource signal = new CancellationTokenSource();
+
+            signal.Cancel(); //early signal.
+
+            CancellationTokenSource combined = CancellationTokenSource.CreateLinkedTokenSource(signal.Token);
+            Assert.True(combined.IsCancellationRequested,
+                "CreateLinkedToken_SourceTokenAlreadySignalled:  The combined token should immediately be in the signalled state.");
+        }
+
+        [Fact]
+        public static void CreateLinkedToken_SourceTokenAlreadySignalled_TwoTokens()
         {
             //creating a combined token, when a source token is already signalled.
             CancellationTokenSource signal1 = new CancellationTokenSource();

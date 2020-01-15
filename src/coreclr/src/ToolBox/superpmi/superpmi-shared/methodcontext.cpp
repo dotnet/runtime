@@ -3988,7 +3988,12 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->osPageSize                                 = (size_t)0x1000;
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
         pEEInfoOut->targetAbi                                  = CORINFO_DESKTOP_ABI;
-        pEEInfoOut->osType                                     = (CORINFO_OS)0;
+#ifdef FEATURE_PAL
+        pEEInfoOut->osType                                     = CORINFO_UNIX;
+#else
+        pEEInfoOut->osType                                     = CORINFO_WINNT;
+#endif
+
         pEEInfoOut->osMajor                                    = (unsigned)0;
         pEEInfoOut->osMinor                                    = (unsigned)0;
         pEEInfoOut->osBuild                                    = (unsigned)0;

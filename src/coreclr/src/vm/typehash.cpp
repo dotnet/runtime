@@ -234,7 +234,7 @@ static DWORD HashTypeHandle(DWORD level, TypeHandle t)
 
     if (t.HasTypeParam())
     {
-        retVal =  HashParamType(level, t.GetInternalCorElementType(), t.GetTypeParam());
+        retVal = HashParamType(level, t.GetInternalCorElementType(), t.GetTypeParam());
     }
     else if (t.IsGenericVariable())
     {
@@ -380,59 +380,46 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
             if (pSearch->GetTypeHandle().GetTypeParam() != pKey->GetElementType())
                 continue;
 
-            if (pSearch->GetTypeHandle().IsTypeDesc() == pKey->IsTemplateMethodTable())
-                continue;
-
             if (kind == ELEMENT_TYPE_ARRAY)
             {
-                if (pKey->IsTemplateMethodTable())
+                TypeHandle th = pSearch->GetTypeHandle();
+#ifdef FEATURE_PREJIT
+                // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
+                ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
+
+                TADDR fixup = dac_cast<TADDR>(th.GetMethodTable());
+                if (!CORCOMPILE_IS_POINTER_TAGGED(fixup))
                 {
-                    if (pSearch->GetTypeHandle().AsMethodTable()->GetRank() != pKey->GetRank())
+                    TADDR canonFixup = th.GetMethodTable()->GetCanonicalMethodTableFixup();
+                    if (CORCOMPILE_IS_POINTER_TAGGED(canonFixup))
+                        fixup = canonFixup;
+                }
+
+                if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
+                {
+                    Module *pDefiningModule;
+                    PCCOR_SIGNATURE pSig = GetModule()->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
+                    if (pDefiningModule == NULL)
+                        break;
+
+                    _ASSERTE(*pSig == ELEMENT_TYPE_ARRAY);
+                    pSig++;
+                    SigPointer sp(pSig);
+                    if (FAILED(sp.SkipExactlyOne()))
+                        break; // return NULL;
+
+                    ULONG data;
+                    if (FAILED(sp.GetData(&data)))
+                        break; // return NULL;
+
+                    if (data != pKey->GetRank())
                         continue;
                 }
                 else
-                {
-                    ArrayTypeDesc *pATD = pSearch->GetTypeHandle().AsArray();
-#ifdef FEATURE_PREJIT
-                    // This ensures that GetAssemblyIfLoaded operations that may be triggered by signature walks will succeed if at all possible.
-                    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
-
-                    TADDR fixup = pATD->GetTemplateMethodTableMaybeTagged();
-                    if (!CORCOMPILE_IS_POINTER_TAGGED(fixup))
-                    {
-                        TADDR canonFixup = pATD->GetTemplateMethodTable()->GetCanonicalMethodTableFixup();
-                        if (CORCOMPILE_IS_POINTER_TAGGED(canonFixup))
-                            fixup = canonFixup;
-                    }
-
-                    if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
-                    {
-                        Module *pDefiningModule;
-                        PCCOR_SIGNATURE pSig = GetModule()->GetEncodedSigIfLoaded(CORCOMPILE_UNTAG_TOKEN(fixup), &pDefiningModule);
-                        if (pDefiningModule == NULL)
-                            break;
-
-                        _ASSERTE(*pSig == ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
-                        pSig++;
-                        _ASSERTE(*pSig == ELEMENT_TYPE_ARRAY);
-                        pSig++;
-                        SigPointer sp(pSig);
-                        if (FAILED(sp.SkipExactlyOne()))
-                            break; // return NULL;
-
-                        ULONG data;
-                        if (FAILED(sp.GetData(&data)))
-                            break; // return NULL;
-
-                        if (data != pKey->GetRank())
-                            continue;
-                    }
-                    else
 #endif //FEATURE_PREJIT
-                    {
-                        if (pATD->GetRank() != pKey->GetRank())
-                            continue;
-                    }
+                {
+                    if (th.GetRank() != pKey->GetRank())
+                        continue;
                 }
             }
 

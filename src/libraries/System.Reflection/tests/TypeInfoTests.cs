@@ -1186,17 +1186,40 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, type.GetTypeInfo().ContainsGenericParameters);
         }
 
-        [Theory]
-        [InlineData(typeof(int), "System.Int32")]
-        public void FullName(Type type, string expected)
+        [Fact]
+        public void FullName()
         {
-            Assert.Equal(expected, type.GetTypeInfo().FullName);
+            Assert.Equal("System.Int32", typeof(int).GetTypeInfo().FullName);
+
+            Type t = typeof(TI_FullNameTest<>);
+
+            // a generic type parameter
+            Assert.Null(t.GetMethod("TypeParam").ReturnType.GetTypeInfo().FullName);
+
+            // an array type, pointer type, or byref type based on a type parameter
+            Assert.Null(t.GetMethod("ArrayTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Null(t.GetMethod("PointerTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Null(t.GetMethod("ByRefTypeParam").ReturnType.GetTypeInfo().FullName);
+
+            // a generic type that is not a generic type definition but contains unresolved type parameters
+            Assert.Null(t.GetMethod("ListTypeParam").ReturnType.GetTypeInfo().FullName);
+
+            t = typeof(TI_FullNameTest<int>);
+
+            Assert.Equal("System.Int32", t.GetMethod("TypeParam").ReturnType.GetTypeInfo().FullName);
+
+            Assert.Equal("System.Int32[]", t.GetMethod("ArrayTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Equal("System.Int32*", t.GetMethod("PointerTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Equal("System.Int32&", t.GetMethod("ByRefTypeParam").ReturnType.GetTypeInfo().FullName);
+
+            Assert.NotNull(t.GetMethod("ListTypeParam").ReturnType.GetTypeInfo().FullName);
         }
 
         [Fact]
         public void Guid()
         {
             Assert.Equal(new Guid("FD80F123-BEDD-4492-B50A-5D46AE94DD4E"), typeof(TypeInfoTests).GetTypeInfo().GUID);
+            Assert.Equal(System.Guid.Empty, typeof(int[]).GetTypeInfo().GUID);
         }
 
         [Theory]
@@ -1775,5 +1798,14 @@ namespace System.Reflection.Tests
     public class OutsideTypeInfoTests<T>
     {
         public class InsideTypeInfoTests<U> { }
+    }
+
+    public class TI_FullNameTest<T> where T : unmanaged
+    {
+        public static T TypeParam() => throw new Exception();
+        public static T[] ArrayTypeParam() => throw new Exception();
+        public static unsafe T* PointerTypeParam() => throw new Exception();
+        public static ref T ByRefTypeParam() => throw new Exception();
+        public static List<T> ListTypeParam() => throw new Exception();
     }
 }

@@ -3632,7 +3632,7 @@ CorInfoHelpFunc ZapInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
 CorInfoHelpFunc ZapInfo::getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
 {
     if (IsReadyToRunCompilation())
-        return CORINFO_HELP_NEWARR_1_R2R_DIRECT;
+        return CORINFO_HELP_NEWARR_1_DIRECT;
 
     return m_pEEJitInfo->getNewArrHelper(arrayCls);
 }

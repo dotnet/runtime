@@ -8,8 +8,8 @@
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' == 'true')">
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>

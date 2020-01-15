@@ -45,6 +45,7 @@ namespace System
          */
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char[])", "System.String")]
         public extern String(char[] value);
 
 #if !CORECLR
@@ -65,6 +66,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char[],System.Int32,System.Int32)", "System.String")]
         public extern String(char[] value, int startIndex, int length);
 
 #if !CORECLR
@@ -98,6 +100,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char*)", "System.String")]
         public extern unsafe String(char* value);
 
 #if !CORECLR
@@ -120,6 +123,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char*,System.Int32,System.Int32)", "System.String")]
         public extern unsafe String(char* value, int startIndex, int length);
 
 #if !CORECLR
@@ -153,6 +157,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.SByte*)", "System.String")]
         public extern unsafe String(sbyte* value);
 
 #if !CORECLR
@@ -171,6 +176,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32)", "System.String")]
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
 #if !CORECLR
@@ -230,6 +236,7 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)", "System.String")]
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
 #if !CORECLR
@@ -264,6 +271,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.Char,System.Int32)", "System.String")]
         public extern String(char c, int count);
 
 #if !CORECLR
@@ -313,6 +321,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [PreserveDependency("Ctor(System.ReadOnlySpan`1<System.Char>)", "System.String")]
         public extern String(ReadOnlySpan<char> value);
 
 #if !CORECLR

@@ -713,6 +713,7 @@ namespace ReadyToRun.SuperIlc
             logWriter.WriteLine($"Version bubble:   {(_options.LargeBubble ? "input + all reference assemblies" : "single assembly")}");
             logWriter.WriteLine($"Input folder:     {_options.InputDirectory?.FullName}");
             logWriter.WriteLine($"CORE_ROOT:        {_options.CoreRootDirectory?.FullName}");
+            logWriter.WriteLine($"GC stress mode:   {(!string.IsNullOrEmpty(_options.GCStress) ? _options.GCStress : "None")}");
             logWriter.WriteLine($"Total folders:    {_buildFolders.Count()}");
             logWriter.WriteLine($"Blocked w/issues: {_buildFolders.Count(folder => folder.IsBlockedWithIssue)}");
             int foldersToBuild = FoldersToBuild.Count();

@@ -22,9 +22,9 @@ namespace System.Security.Claims
         }
 
         private readonly List<ClaimsIdentity> _identities = new List<ClaimsIdentity>();
-        private readonly byte[] _userSerializationData;
+        private readonly byte[]? _userSerializationData;
 
-        private static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity> s_identitySelector = SelectPrimaryIdentity;
+        private static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity?> s_identitySelector = SelectPrimaryIdentity;
         private static Func<ClaimsPrincipal> s_principalSelector = ClaimsPrincipalSelector;
 
         protected ClaimsPrincipal(SerializationInfo info, StreamingContext context)
@@ -35,7 +35,7 @@ namespace System.Security.Claims
         /// <summary>
         /// This method iterates through the collection of ClaimsIdentities and chooses an identity as the primary.
         /// </summary>
-        private static ClaimsIdentity SelectPrimaryIdentity(IEnumerable<ClaimsIdentity> identities)
+        private static ClaimsIdentity? SelectPrimaryIdentity(IEnumerable<ClaimsIdentity> identities)
         {
             if (identities == null)
             {
@@ -53,7 +53,7 @@ namespace System.Security.Claims
             return null;
         }
 
-        public static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity> PrimaryIdentitySelector
+        public static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity?> PrimaryIdentitySelector
         {
             get
             {
@@ -111,8 +111,7 @@ namespace System.Security.Claims
                 throw new ArgumentNullException(nameof(identity));
             }
 
-            ClaimsIdentity ci = identity as ClaimsIdentity;
-            if (ci != null)
+            if (identity is ClaimsIdentity ci)
             {
                 _identities.Add(ci);
             }
@@ -138,7 +137,7 @@ namespace System.Security.Claims
             // If IPrincipal is a ClaimsPrincipal add all of the identities
             // If IPrincipal is not a ClaimsPrincipal, create a new identity from IPrincipal.Identity
             //
-            ClaimsPrincipal cp = principal as ClaimsPrincipal;
+            ClaimsPrincipal? cp = principal as ClaimsPrincipal;
             if (null == cp)
             {
                 _identities.Add(new ClaimsIdentity(principal.Identity));
@@ -242,7 +241,7 @@ namespace System.Security.Claims
         /// <summary>
         /// Contains any additional data provided by derived type, typically set when calling <see cref="WriteTo(BinaryWriter, byte[])"/>.
         /// </summary>
-        protected virtual byte[] CustomSerializationData
+        protected virtual byte[]? CustomSerializationData
         {
             get
             {
@@ -277,7 +276,7 @@ namespace System.Security.Claims
         /// <summary>
         /// Returns the Current Principal by calling a delegate.  Users may specify the delegate.
         /// </summary>
-        public static ClaimsPrincipal Current
+        public static ClaimsPrincipal? Current
         {
             // just accesses the current selected principal selector, doesn't set
             get
@@ -350,14 +349,14 @@ namespace System.Security.Claims
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
         /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindFirst(string)"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
-        public virtual Claim FindFirst(Predicate<Claim> match)
+        public virtual Claim? FindFirst(Predicate<Claim> match)
         {
             if (match == null)
             {
                 throw new ArgumentNullException(nameof(match));
             }
 
-            Claim claim = null;
+            Claim? claim = null;
 
             foreach (ClaimsIdentity identity in Identities)
             {
@@ -381,14 +380,14 @@ namespace System.Security.Claims
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
         /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindFirst(Predicate{Claim})"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
-        public virtual Claim FindFirst(string type)
+        public virtual Claim? FindFirst(string type)
         {
             if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            Claim claim = null;
+            Claim? claim = null;
 
             for (int i = 0; i < _identities.Count; i++)
             {
@@ -482,7 +481,7 @@ namespace System.Security.Claims
         /// <summary>
         /// Gets the identity of the current principal.
         /// </summary>
-        public virtual System.Security.Principal.IIdentity Identity
+        public virtual System.Security.Principal.IIdentity? Identity
         {
             get
             {
@@ -535,7 +534,7 @@ namespace System.Security.Claims
         /// <param name="writer">the <see cref="BinaryWriter"/> to use for data storage.</param>
         /// <param name="userData">additional data provided by derived type.</param>
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
-        protected virtual void WriteTo(BinaryWriter writer, byte[] userData)
+        protected virtual void WriteTo(BinaryWriter writer, byte[]? userData)
         {
             if (writer == null)
             {
@@ -569,7 +568,7 @@ namespace System.Security.Claims
 
             if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
             {
-                writer.Write(userData.Length);
+                writer.Write(userData!.Length);
                 writer.Write(userData);
             }
 

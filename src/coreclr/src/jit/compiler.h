@@ -327,7 +327,7 @@ public:
         }
 
         unsigned ssaNum    = GetMinSsaNum() + m_count;
-        m_array[m_count++] = T(jitstd::forward<Args>(args)...);
+        m_array[m_count++] = T(std::forward<Args>(args)...);
 
         // Ensure that the first SSA number we allocate is SsaConfig::FIRST_SSA_NUM
         assert((ssaNum == SsaConfig::FIRST_SSA_NUM) || (m_count > 1));
@@ -1001,8 +1001,8 @@ public:
     TempDsc(int _tdNum, unsigned _tdSize, var_types _tdType) : tdNum(_tdNum), tdSize((BYTE)_tdSize), tdType(_tdType)
     {
 #ifdef DEBUG
-        assert(tdNum <
-               0); // temps must have a negative number (so they have a different number from all local variables)
+        // temps must have a negative number (so they have a different number from all local variables)
+        assert(tdNum < 0);
         tdOffs = BAD_TEMP_OFFSET;
 #endif // DEBUG
         if (tdNum != _tdNum)
@@ -4021,7 +4021,7 @@ private:
     }
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
-    bool impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& opcode);
+    bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
 
 #ifdef _TARGET_ARM_
     void impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* op, CORINFO_CLASS_HANDLE hClass);
@@ -5578,6 +5578,7 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     void fgMarkAddressExposedLocals();
+    void fgMarkAddressExposedLocals(Statement* stmt);
 
     static fgWalkPreFn  fgUpdateSideEffectsPre;
     static fgWalkPostFn fgUpdateSideEffectsPost;
@@ -6143,8 +6144,8 @@ protected:
 
         unsigned csdHashKey; // the orginal hashkey
 
-        unsigned csdIndex;          // 1..optCSECandidateCount
-        char     csdLiveAcrossCall; // 0 or 1
+        unsigned csdIndex; // 1..optCSECandidateCount
+        bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count
         unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
@@ -6241,7 +6242,7 @@ protected:
     unsigned optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
     unsigned optCSEstart;          // The first local variable number that is a CSE
     unsigned optCSEcount;          // The total count of CSE's introduced.
-    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCS
+    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
 
@@ -6300,8 +6301,8 @@ public:
     INDEBUG(void optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName));
 
     /**************************************************************************
-    *               Early value propagation
-    *************************************************************************/
+     *               Early value propagation
+     *************************************************************************/
     struct SSAName
     {
         unsigned m_lvNum;
@@ -6760,16 +6761,16 @@ public:
 
     // Assertion prop for lcl var functions.
     bool optAssertionProp_LclVarTypeCheck(GenTree* tree, LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc);
-    GenTree* optCopyAssertionProp(AssertionDsc* curAssertion,
-                                  GenTree*      tree,
+    GenTree* optCopyAssertionProp(AssertionDsc*        curAssertion,
+                                  GenTreeLclVarCommon* tree,
                                   Statement* stmt DEBUGARG(AssertionIndex index));
-    GenTree* optConstantAssertionProp(AssertionDsc* curAssertion,
-                                      GenTree*      tree,
+    GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
+                                      GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
 
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
-    GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
@@ -10588,8 +10589,12 @@ const instruction INS_SQRT = INS_vsqrt;
 
 #ifdef _TARGET_ARM64_
 
-const instruction INS_MULADD     = INS_madd;
+const instruction INS_MULADD = INS_madd;
+#if defined(_TARGET_UNIX_)
+const instruction INS_BREAKPOINT = INS_brk;
+#else
 const instruction INS_BREAKPOINT = INS_bkpt;
+#endif
 
 const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;

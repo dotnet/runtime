@@ -5,7 +5,6 @@
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);</TargetFrameworks>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="System\IO\Compression\ZipFile.Create.cs" />
     <Compile Include="System\IO\Compression\ZipFile.Extract.cs" />

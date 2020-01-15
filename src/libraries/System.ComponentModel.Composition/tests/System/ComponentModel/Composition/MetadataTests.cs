@@ -417,7 +417,7 @@ namespace System.ComponentModel.Composition
             throw new NotImplementedException();
             //var result = container.TryCompose();
 
-            //Assert.True(result.Succeeded, "Composition should be successfull because one of two exports meets both the contract name and metadata requirement");
+            //Assert.True(result.Succeeded, "Composition should be successful because one of two exports meets both the contract name and metadata requirement");
             //Assert.Equal(1, result.Issues.Count);
             //Assert.True(result.Issues[0].Description.Contains("Foo"), "The missing required metadata is 'Foo'");
             //Assert.NotNull(importer.ValueInfo, "The import should really get bound");
@@ -439,7 +439,7 @@ namespace System.ComponentModel.Composition
 
             //var result = container.TryCompose();
 
-            //Assert.True(result.Succeeded, "Composition should be successfull in anyway for collection import");
+            //Assert.True(result.Succeeded, "Composition should be successful in anyway for collection import");
             //Assert.Equal(1, result.Issues.Count);
             //Assert.True(result.Issues[0].Description.Contains("Foo"), "The missing required metadata is 'Foo'");
             //Assert.Equal(1, importer.ValueInfoCol.Count);

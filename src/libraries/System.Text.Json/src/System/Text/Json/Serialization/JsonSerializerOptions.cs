@@ -22,7 +22,7 @@ namespace System.Text.Json
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
         private static readonly ConcurrentDictionary<string, ImmutableCollectionCreator> s_createRangeDelegates = new ConcurrentDictionary<string, ImmutableCollectionCreator>();
         private MemberAccessor? _memberAccessorStrategy;
-        private JsonNamingPolicy? _dictionayKeyPolicy;
+        private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private JavaScriptEncoder? _encoder;
@@ -121,12 +121,12 @@ namespace System.Text.Json
         {
             get
             {
-                return _dictionayKeyPolicy;
+                return _dictionaryKeyPolicy;
             }
             set
             {
                 VerifyMutable();
-                _dictionayKeyPolicy = value;
+                _dictionaryKeyPolicy = value;
             }
         }
 

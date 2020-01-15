@@ -46,7 +46,7 @@ HELPER(READYTORUN_HELPER_NewMultiDimArr,            CORINFO_HELP_NEW_MDARR,     
 HELPER(READYTORUN_HELPER_NewMultiDimArr_NonVarArg,  CORINFO_HELP_NEW_MDARR_NONVARARG,               )
 
 HELPER(READYTORUN_HELPER_NewObject,                 CORINFO_HELP_NEWFAST,                           )
-HELPER(READYTORUN_HELPER_NewArray,                  CORINFO_HELP_NEWARR_1_R2R_DIRECT,               )
+HELPER(READYTORUN_HELPER_NewArray,                  CORINFO_HELP_NEWARR_1_DIRECT,                   )
 HELPER(READYTORUN_HELPER_CheckCastAny,              CORINFO_HELP_CHKCASTANY,                        )
 HELPER(READYTORUN_HELPER_CheckInstanceAny,          CORINFO_HELP_ISINSTANCEOFANY,                   )
 

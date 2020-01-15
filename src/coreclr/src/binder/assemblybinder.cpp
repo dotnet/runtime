@@ -51,83 +51,66 @@ namespace BINDER_SPACE
         //
         // This defines the assembly equivalence relation
         //
-        HRESULT IsValidAssemblyVersion(/* in */ AssemblyName *pRequestedName,
-                                       /* in */ AssemblyName *pFoundName,
-                                       /* in */ ApplicationContext *pApplicationContext)
+        bool IsCompatibleAssemblyVersion(/* in */ AssemblyName *pRequestedName,
+                                         /* in */ AssemblyName *pFoundName)
         {
-            HRESULT hr = S_OK;
             AssemblyVersion *pRequestedVersion = pRequestedName->GetVersion();
             AssemblyVersion *pFoundVersion = pFoundName->GetVersion();
 
-            do
+            if (!pRequestedVersion->HasMajor())
             {
-                if (!pRequestedVersion->HasMajor())
-                {
-                    // An unspecified requested version component matches any value for the same component in the found version,
-                    // regardless of lesser-order version components
-                    break;
-                }
-                if (!pFoundVersion->HasMajor() || pRequestedVersion->GetMajor() > pFoundVersion->GetMajor())
-                {
-                    // - A specific requested version component does not match an unspecified value for the same component in
-                    //   the found version, regardless of lesser-order version components
-                    // - Or, the requested version is greater than the found version
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-                if (pRequestedVersion->GetMajor() < pFoundVersion->GetMajor())
-                {
-                    // The requested version is less than the found version
-                    break;
-                }
-
-                if (!pRequestedVersion->HasMinor())
-                {
-                    break;
-                }
-                if (!pFoundVersion->HasMinor() || pRequestedVersion->GetMinor() > pFoundVersion->GetMinor())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-                if (pRequestedVersion->GetMinor() < pFoundVersion->GetMinor())
-                {
-                    break;
-                }
-
-                if (!pRequestedVersion->HasBuild())
-                {
-                    break;
-                }
-                if (!pFoundVersion->HasBuild() || pRequestedVersion->GetBuild() > pFoundVersion->GetBuild())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-                if (pRequestedVersion->GetBuild() < pFoundVersion->GetBuild())
-                {
-                    break;
-                }
-
-                if (!pRequestedVersion->HasRevision())
-                {
-                    break;
-                }
-                if (!pFoundVersion->HasRevision() || pRequestedVersion->GetRevision() > pFoundVersion->GetRevision())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    break;
-                }
-            } while (false);
-
-            if (pApplicationContext->IsTpaListProvided() && hr == FUSION_E_APP_DOMAIN_LOCKED)
+                // An unspecified requested version component matches any value for the same component in the found version,
+                // regardless of lesser-order version components
+                return true;
+            }
+            if (!pFoundVersion->HasMajor() || pRequestedVersion->GetMajor() > pFoundVersion->GetMajor())
             {
-                // For our new binding models, use a more descriptive error code than APP_DOMAIN_LOCKED for bind
-                // failures.
-                hr = FUSION_E_REF_DEF_MISMATCH;
+                // - A specific requested version component does not match an unspecified value for the same component in
+                //   the found version, regardless of lesser-order version components
+                // - Or, the requested version is greater than the found version
+                return false;
+            }
+            if (pRequestedVersion->GetMajor() < pFoundVersion->GetMajor())
+            {
+                // The requested version is less than the found version
+                return true;
             }
 
-            return hr;
+            if (!pRequestedVersion->HasMinor())
+            {
+                return true;
+            }
+            if (!pFoundVersion->HasMinor() || pRequestedVersion->GetMinor() > pFoundVersion->GetMinor())
+            {
+                return false;
+            }
+            if (pRequestedVersion->GetMinor() < pFoundVersion->GetMinor())
+            {
+                return true;
+            }
+
+            if (!pRequestedVersion->HasBuild())
+            {
+                return true;
+            }
+            if (!pFoundVersion->HasBuild() || pRequestedVersion->GetBuild() > pFoundVersion->GetBuild())
+            {
+                return false;
+            }
+            if (pRequestedVersion->GetBuild() < pFoundVersion->GetBuild())
+            {
+                return true;
+            }
+
+            if (!pRequestedVersion->HasRevision())
+            {
+                return true;
+            }
+            if (!pFoundVersion->HasRevision() || pRequestedVersion->GetRevision() > pFoundVersion->GetRevision())
+            {
+                return false;
+            }
+            return true;
         }
 
         HRESULT URLToFullPath(PathString &assemblyPath)
@@ -613,6 +596,7 @@ namespace BINDER_SPACE
     {
         HRESULT hr = S_OK;
 
+        bool isTpaListProvided = pApplicationContext->IsTpaListProvided();
 #ifndef CROSSGEN_COMPILE
         ContextEntry *pContextEntry = NULL;
         hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
@@ -624,26 +608,29 @@ namespace BINDER_SPACE
         IF_FAIL_GO(hr);
         if (pContextEntry != NULL)
         {
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-            if (skipVersionCompatibilityCheck)
-            {
-                // Skip RefDef matching if we have been asked to.
-            }
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-            else
+            if (!skipVersionCompatibilityCheck)
             {
                 // Can't give higher version than already bound
-                hr = IsValidAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName(), pApplicationContext);
+                bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName());
+                hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
+                pBindResult->SetAttemptResult(hr, pContextEntry);
+
+                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
+                    hr = FUSION_E_REF_DEF_MISMATCH;
+            }
+            else
+            {
+                pBindResult->SetAttemptResult(hr, pContextEntry);
             }
 
-            pBindResult->SetAttemptResult(hr, pContextEntry);
             IF_FAIL_GO(hr);
 
             pBindResult->SetResult(pContextEntry);
         }
         else
 #endif // !CROSSGEN_COMPILE
-        if (pApplicationContext->IsTpaListProvided())
+        if (isTpaListProvided)
         {
             // BindByTpaList handles setting attempt results on the bind result
             hr = BindByTpaList(pApplicationContext,
@@ -652,8 +639,13 @@ namespace BINDER_SPACE
                                      pBindResult);
             if (SUCCEEDED(hr) && pBindResult->HaveResult())
             {
-                hr = IsValidAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName(), pApplicationContext);
+                bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName());
+                hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
                 pBindResult->SetAttemptResult(hr, pBindResult->GetAsAssembly());
+
+                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
+                    hr = FUSION_E_REF_DEF_MISMATCH;
             }
 
             if (FAILED(hr))
@@ -1304,13 +1296,14 @@ HRESULT AssemblyBinder::BindUsingPEImage(/* in */  ApplicationContext *pApplicat
 
     // Attempt the actual bind (eventually more than once)
 Retry:
+    bool mvidMismatch = false;
     {
         // Lock the application context
         CRITSEC_Holder contextLock(pApplicationContext->GetCriticalSectionCookie());
 
         // Attempt uncached bind and register stream if possible
         // We skip version compatibility check - so assemblies with same simple name will be reported
-        // as a successfull bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
+        // as a successful bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
         hr = BindByName(pApplicationContext,
                         pAssemblyName,
                         true,  // skipFailureCaching
@@ -1318,7 +1311,6 @@ Retry:
                         false, // excludeAppPaths
                         &bindResult);
 
-        tracer.TraceBindResult(bindResult);
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
         {
             IF_FAIL_GO(CreateImageAssembly(pIMetaDataAssemblyImport,
@@ -1349,14 +1341,15 @@ Retry:
                 // load.
                 IF_FAIL_GO(bindResult.GetAsAssembly()->GetMVID(&boundMVID));
 
-                if (incomingMVID != boundMVID)
+                mvidMismatch = incomingMVID != boundMVID;
+                if (mvidMismatch)
                 {
                     // MVIDs do not match, so fail the load.
                     IF_FAIL_GO(COR_E_FILELOAD);
                 }
 
                 // MVIDs match - request came in for the same assembly that was previously loaded.
-                // Let is through...
+                // Let it through...
             }
         }
 
@@ -1377,6 +1370,8 @@ Retry:
 
         if (hr == S_FALSE)
         {
+            tracer.TraceBindResult(bindResult);
+
             // Another bind interfered. We need to retry entire bind.
             // This by design loops as long as needed because by construction we eventually
             // will succeed or fail the bind.
@@ -1390,6 +1385,7 @@ Retry:
     }
 
 Exit:
+    tracer.TraceBindResult(bindResult, mvidMismatch);
     return hr;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

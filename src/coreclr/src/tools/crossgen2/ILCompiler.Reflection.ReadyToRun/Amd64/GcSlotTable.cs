@@ -36,29 +36,55 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 }
             }
 
-            public override string ToString()
+            public override GcSlotFlags WriteTo(StringBuilder sb, Machine machine, GcSlotFlags prevFlags)
             {
-                StringBuilder sb = new StringBuilder();
+                if (prevFlags != Flags)
+                {
+                    sb.Append(Flags.ToString());
+                    sb.Append(' ');
+                }
 
                 if (StackSlot != null)
                 {
-                    sb.AppendLine($"\t\t\tStack:");
-                    sb.AppendLine(StackSlot.ToString());
+                    sb.Append(StackSlot.ToString());
                 }
                 else
                 {
-                    sb.AppendLine($"\t\t\tRegisterNumber: {RegisterNumber}");
+                    sb.Append(GetRegisterName(RegisterNumber, machine));
                 }
-                sb.AppendLine($"\t\t\tFlags: {Flags}");
 
-                return sb.ToString();
+                return Flags;
             }
+
+            private static string GetRegisterName(int registerNumber, Machine machine)
+            {
+                switch (machine)
+                {
+                    case Machine.I386:
+                        return ((x86.Registers)registerNumber).ToString();
+
+                    case Machine.Amd64:
+                        return ((Amd64.Registers)registerNumber).ToString();
+
+                    case Machine.ArmThumb2:
+                        return ((Arm.Registers)registerNumber).ToString();
+
+                    case Machine.Arm64:
+                        return ((Arm64.Registers)registerNumber).ToString();
+
+                    default:
+                        throw new NotImplementedException(machine.ToString());
+                }
+            }
+
         }
 
         public uint NumRegisters { get; set; }
         public uint NumStackSlots { get; set; }
         public uint NumUntracked { get; set; }
         public uint NumSlots { get; set; }
+
+        private Machine _machine;
 
         public uint NumTracked
         {
@@ -78,6 +104,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         /// </summary>
         public GcSlotTable(byte[] image, Machine machine, GcInfoTypes gcInfoTypes, ref int bitOffset)
         {
+            _machine = machine;
+
             if (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)
             {
                 NumRegisters = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NUM_REGISTERS_ENCBASE, ref bitOffset);
@@ -110,11 +138,11 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             sb.AppendLine($"\t\tNumSlots({NumSlots}) = NumRegisters({NumRegisters}) + NumStackSlots({NumStackSlots}) + NumUntracked({NumUntracked})");
             sb.AppendLine($"\t\tGcSlots:");
-            sb.AppendLine($"\t\t\t-------------------------");
             foreach (GcSlot slot in GcSlots)
             {
-                sb.Append(slot.ToString());
-                sb.AppendLine($"\t\t\t-------------------------");
+                sb.Append("\t\t\t");
+                slot.WriteTo(sb, _machine, GcSlotFlags.GC_SLOT_INVALID);
+                sb.AppendLine();
             }
 
             return sb.ToString();

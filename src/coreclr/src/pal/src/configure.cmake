@@ -1098,6 +1098,10 @@ int main(int argc, char **argv)
     return 0;
 }" HAVE_PUBLIC_XSTATE_STRUCT)
 
+if(HAVE_PUBLIC_XSTATE_STRUCT)
+    check_struct_has_member ("struct _fpx_sw_bytes" xstate_bv "signal.h" HAVE__FPX_SW_BYTES_WITH_XSTATE_BV)
+endif()
+
 check_cxx_source_compiles("
 #include <sys/prctl.h>
 

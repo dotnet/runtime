@@ -172,7 +172,7 @@ namespace System.Net.Http
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
             SerializeToStreamAsyncCore(stream, context, default);
 
-        internal override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(MultipartContent) ? SerializeToStreamAsyncCore(stream, context, cancellationToken) :
@@ -206,7 +206,16 @@ namespace System.Net.Http
             }
         }
 
-        protected override async Task<Stream> CreateContentReadStreamAsync()
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            CreateContentReadStreamAsyncCore(CancellationToken.None);
+
+        protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
+            // Only skip the original protected virtual CreateContentReadStreamAsync if this
+            // isn't a derived type that may have overridden the behavior.
+            GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(cancellationToken) :
+            base.CreateContentReadStreamAsync(cancellationToken);
+
+        private async Task<Stream> CreateContentReadStreamAsyncCore(CancellationToken cancellationToken)
         {
             try
             {
@@ -220,16 +229,20 @@ namespace System.Net.Http
                 // Each nested content.
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     HttpContent nestedContent = _nestedContent[contentIndex];
                     streams[streamIndex++] = EncodeStringToNewStream(SerializeHeadersToString(scratch, contentIndex, nestedContent));
 
-                    Stream readStream = (await nestedContent.ReadAsStreamAsync().ConfigureAwait(false)) ?? new MemoryStream();
+                    Stream readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false) ?? new MemoryStream();
                     if (!readStream.CanSeek)
                     {
                         // Seekability impacts whether HttpClientHandlers are able to rewind.  To maintain compat
                         // and to allow such use cases when a nested stream isn't seekable (which should be rare),
                         // we fall back to the base behavior.  We don't dispose of the streams already obtained
                         // as we don't necessarily own them yet.
+
+                        // Do not pass a cancellationToken to base as it would trigger an infinite loop => StackOverflow
                         return await base.CreateContentReadStreamAsync().ConfigureAwait(false);
                     }
                     streams[streamIndex++] = readStream;

@@ -8,7 +8,10 @@ Environment
 
 These instructions were validated on macOS 10.13 High Sierra.
 
-If your machine has Command Line Tools for XCode 6.3 installed, you'll need to update them to the 6.3.1 version or higher in order to successfully build. There was an issue with the headers that shipped with version 6.3 that was subsequently fixed in 6.3.1.
+Xcode
+-----
+
+Install Apple Xcode developer tools from the Mac App Store ([link](https://apps.apple.com/us/app/xcode/id497799835)).
 
 CMake
 -----
@@ -23,6 +26,7 @@ brew install cmake
 
 ICU
 ---
+
 ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](http://brew.sh/).
 
 ```sh

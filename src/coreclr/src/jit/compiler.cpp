@@ -1724,6 +1724,12 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     assert(pAlloc);
     compArenaAllocator = pAlloc;
 
+#if defined(DEBUG) || defined(LATE_DISASM)
+    info.compMethodName = nullptr;
+    info.compClassName  = nullptr;
+    info.compFullName   = nullptr;
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
     // Inlinee Compile object will only be allocated when needed for the 1st time.
     InlineeCompiler = nullptr;
 
@@ -3348,6 +3354,12 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
     unsigned hash;
     DWORD    stressLevel;
 
+    // This can be called early, before info is fully set up.
+    if (info.compMethodName == nullptr)
+    {
+        return false;
+    }
+
     if (!bRangeAllowStress)
     {
         return false;
@@ -4119,7 +4131,7 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 // code:CILJit::compileMethod function.
 //
 // For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/runtime/blob/master/docs/coreclr/botr/ryujit-overview.md
+//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md
 //
 void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
 {
@@ -4287,22 +4299,15 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     }
     EndPhase(PHASE_GS_COOKIE);
 
-    /* Compute bbNum, bbRefs and bbPreds */
-
-    JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
+    // GC Poll marking assumes block bbnums match lexical block order,
+    // so make sure this is the case.
     fgRenumberBlocks();
-
-    noway_assert(!fgComputePredsDone); // This is the first time full (not cheap) preds will be computed.
-    fgComputePreds();
-    EndPhase(PHASE_COMPUTE_PREDS);
 
     /* If we need to emit GC Poll calls, mark the blocks that need them now.  This is conservative and can
      * be optimized later. */
+
     fgMarkGCPollBlocks();
     EndPhase(PHASE_MARK_GC_POLL_BLOCKS);
-
-    /* From this point on the flowgraph information such as bbNum,
-     * bbRefs or bbPreds has to be kept updated */
 
     // Compute the block and edge weights
     fgComputeBlockAndEdgeWeights();
@@ -4894,14 +4899,19 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
+    // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
+    //
     // Do we have a matched VM? Or are we "abusing" the VM to help us do JIT work (such as using an x86 native VM
     // with an ARM-targeting "altjit").
+    // Match CPU/ABI for compMatchedVM
     info.compMatchedVM = IMAGE_FILE_MACHINE_TARGET == info.compCompHnd->getExpectedTargetArchitecture();
 
-#if (defined(_TARGET_UNIX_) && !defined(_HOST_UNIX_)) || (!defined(_TARGET_UNIX_) && defined(_HOST_UNIX_))
-    // The host and target platforms don't match. This info isn't handled by the existing
-    // getExpectedTargetArchitecture() JIT-EE interface method.
-    info.compMatchedVM = false;
+    // Match OS for compMatchedVM
+    CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
+#ifdef _TARGET_UNIX_
+    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
+#else
+    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
 #endif
 
     // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target

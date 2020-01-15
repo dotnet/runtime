@@ -67,8 +67,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.Alerts.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">

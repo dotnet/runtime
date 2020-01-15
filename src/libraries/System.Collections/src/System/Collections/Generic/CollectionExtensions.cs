@@ -11,11 +11,10 @@ namespace System.Collections.Generic
         [return: MaybeNull]
         public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key)
         {
-            return dictionary.GetValueOrDefault(key, default);
+            return dictionary.GetValueOrDefault(key, default!);
         }
 
-        [return: MaybeNull]
-        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, [AllowNull] TValue defaultValue)
+        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue)
         {
             if (dictionary == null)
             {
