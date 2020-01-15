@@ -156,6 +156,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         emitSize = EA_SIZE(node->gtSIMDSize);
         opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
+
+        if ((opt == INS_OPTS_1D) && (intrin.category == HW_Category_SimpleSIMD))
+        {
+            opt = INS_OPTS_NONE;
+        }
     }
 
     genConsumeHWIntrinsicOperands(node);
