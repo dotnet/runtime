@@ -95,7 +95,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>3.0.0-preview9-190909-1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <ILLinkTasksVersion>0.1.6-prerelease.20062.1</ILLinkTasksVersion>
+    <ILLinkTasksVersion>0.1.6-prerelease.19567.1</ILLinkTasksVersion>
   </PropertyGroup>
   <!-- Package names -->
   <PropertyGroup>
