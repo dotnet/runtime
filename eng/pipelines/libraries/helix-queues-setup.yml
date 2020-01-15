@@ -106,9 +106,12 @@ jobs:
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-          - Windows.7.Amd64.Open
-          - Windows.81.Amd64.Open
-          - Windows.10.Amd64.Server19H1.ES.Open
+          - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
+            - Windows.7.Amd64.Open
+            - Windows.81.Amd64.Open
+            - Windows.10.Amd64.Server19H1.ES.Open
+          - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
+            - Windows.10.Amd64.Server19H1.Open
 
       # NETFX
       - ${{ if eq(parameters.jobParameters.framework, 'netfx') }}:

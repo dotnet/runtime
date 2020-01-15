@@ -33,6 +33,7 @@ pr:
     - '*'
     - docs/manpages/*
     exclude:
+    - eng/Version.Details.xml
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -56,6 +57,7 @@ jobs:
       include:
       - src/libraries/System.Private.CoreLib/*
       exclude:
+      - eng/Version.Details.xml
       - '*.md'
       - LICENSE.TXT
       - PATENTS.TXT
@@ -67,6 +69,7 @@ jobs:
       - eng/pipelines/libraries/*
     - subset: libraries
       exclude:
+      - eng/Version.Details.xml
       - '*.md'
       - LICENSE.TXT
       - PATENTS.TXT
@@ -80,6 +83,7 @@ jobs:
       include:
       - docs/manpages/*
       exclude:
+      - eng/Version.Details.xml
       - '*.md'
       - LICENSE.TXT
       - PATENTS.TXT
@@ -99,7 +103,6 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
     - Linux_x64
     - Linux_arm
     - Linux_arm64
@@ -110,8 +113,28 @@ jobs:
     - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
+#
+# Build CoreCLR OSX_x64 checked
+# Only when CoreCLR or Libraries is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    jobParameters:
+      testGroup: innerloop
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Build CoreCLR release
@@ -147,7 +170,10 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     jobParameters:
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Build libraries using live CoreLib
@@ -189,10 +215,15 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - WebAssembly_wasm
+    - ${{ if eq(variables['isFullMatrix'], false) }}:
+      - Windows_NT_x86
     jobParameters:
       framework: netcoreapp
       liveCoreClrBuildConfig: release
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -208,7 +239,10 @@ jobs:
       framework: netfx
       runTests: true
       testScope: innerloop
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -222,7 +256,10 @@ jobs:
       framework: allConfigurations
       runTests: true
       liveCoreClrBuildConfig: release
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Installer Build and Test
@@ -271,7 +308,11 @@ jobs:
       isOfficialBuild: false
       liveCoreClrBuildConfig: release
       testScope: innerloop
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true), eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >- 
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Crossgen-comparison jobs
@@ -287,7 +328,10 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       liveLibrariesBuildConfig: Release
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # CoreCLR Test builds using live libraries release build
@@ -305,7 +349,10 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # CoreCLR Test builds using live libraries debug build
@@ -318,14 +365,18 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_x64
+    - Linux_arm64
     - Windows_NT_x64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
-# CoreCLR Test executions using live libraries release build
+# CoreCLR Test executions using live libraries
 # Only when CoreCLR is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -342,12 +393,11 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
-#
-# CoreCLR Test executions using live libraries debug build
-# Only when CoreCLR is changed
-#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
@@ -355,13 +405,17 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_x64
+    - Linux_arm64
     - Windows_NT_x64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Libraries Release Test Execution against a release runtime
@@ -382,7 +436,10 @@ jobs:
       liveCoreClrBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Libraries Debug Test Execution against a release runtime
@@ -401,6 +458,8 @@ jobs:
       - Linux_arm
       - Linux_arm64
       - Linux_musl_arm64
+    - ${{ if eq(variables['isFullMatrix'], false) }}:
+      - Windows_NT_x86
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
@@ -410,7 +469,10 @@ jobs:
       liveCoreClrBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Libraries Test Execution against a checked runtime
@@ -433,7 +495,10 @@ jobs:
       liveCoreClrBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -441,7 +506,6 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - Windows_NT_x64
-    - OSX_x64
     - Linux_x64
     - Linux_musl_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
@@ -452,4 +516,31 @@ jobs:
       liveCoreClrBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
-      condition: or(eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true), eq(variables['isFullMatrix'], true))
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Libraries Test Execution against a checked runtime
+# Only if CoreCLR or Libraries is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    - OSX_x64
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueueGroup: libraries
+    jobParameters:
+      framework: netcoreapp
+      testScope: innerloop
+      liveCoreClrBuildConfig: checked
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
