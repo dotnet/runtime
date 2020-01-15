@@ -43,6 +43,7 @@ class EventPipe
 
 public:
     static const uint32_t MaxNumberOfSessions = 64;
+    static const bool EnableSampleProfilerOnStartup = false;
 
     // Initialize the event pipe.
     static void Initialize();

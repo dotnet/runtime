@@ -130,12 +130,12 @@ void EventPipe::EnableViaEnvironmentVariables()
         while(t_configToParse != nullptr)
         {
             cnt += 1;
-            auto end = wcschr(configToParse, comma);
+            auto end = wcschr(t_configToParse, comma);
             if (end == nullptr)
             {
                 break;
             }
-            configToParse = end + 1;
+            t_configToParse = end + 1;
         }
 
         EventPipeProviderConfiguration* pProviders = new EventPipeProviderConfiguration[cnt]; 
@@ -146,13 +146,21 @@ void EventPipe::EnableViaEnvironmentVariables()
             auto end = wcschr(configToParse, comma);
             configuration.Parse(configToParse);
 
-            pProviders[i++] = EventPipeProviderConfiguration(
-                configuration.GetProviderName(),
-                configuration.GetEnabledKeywordsMask(),
-                configuration.GetLevel(),
-                nullptr
-                // TODO: Add arguments here
-            );
+            // SampleProfiler can't be enabled on startup.
+            if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
+            {
+                cnt -= 1;
+            }
+            else
+            {
+                pProviders[i++] = EventPipeProviderConfiguration(
+                    configuration.GetProviderName(),
+                    configuration.GetEnabledKeywordsMask(),
+                    configuration.GetLevel(),
+                    nullptr
+                    // TODO: Add arguments here
+                );
+            }
 
             if (end == nullptr)
             {
