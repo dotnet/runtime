@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using ILCompiler.Reflection.ReadyToRun;
 
 namespace R2RDump
 {
@@ -93,7 +93,7 @@ namespace R2RDump
         {
             byte[] image = File.ReadAllBytes(filename);
 
-            PEReader peReader = new PEReader(ImmutableArray.Create(image));
+            PEReader peReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
 
             if (!peReader.HasMetadata)
             {
