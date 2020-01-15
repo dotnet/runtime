@@ -472,7 +472,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 }
                 else
                 {
-                    Assert.True(result);
+                    Assert.True(result, "TrySign* unexpectedly returned false");
                 }
             }
 
@@ -597,7 +597,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                     foreach (DSASignatureFormat signatureFormat in signatureFormats)
                     {
                         byte[] sig = Sign(test, signatureFormat);
-                        Assert.True(Verify(test, sig, signatureFormat));
+                        Assert.True(Verify(test, sig, signatureFormat), $"Signature did not verify. Signature format: {signatureFormat}");
                     }
                 }
             }

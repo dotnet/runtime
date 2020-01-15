@@ -115,10 +115,10 @@ namespace System.Security.Cryptography
         protected virtual byte[] SignDataCore(ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
             int size = GetMaxSignatureSize(signatureFormat);
-            Debug.Assert(size <= 256, "GetMaxSignatureSize returned more than expected");
+            Debug.Assert(size <= 256, $"GetMaxSignatureSize returned more than expected ({size}) for {signatureFormat}.");
             Span<byte> signature = stackalloc byte[size];
             bool result = TrySignDataCore(data, signature, hashAlgorithm, signatureFormat, out int bytesWritten);
-            Debug.Assert(result, "GetMaxSignatureSize returned insufficient size");
+            Debug.Assert(result, $"GetMaxSignatureSize returned insufficient size ({size}) for {signatureFormat}.");
             return signature.Slice(0, bytesWritten).ToArray();
         }
 
@@ -193,10 +193,10 @@ namespace System.Security.Cryptography
         protected virtual byte[] CreateSignatureCore(ReadOnlySpan<byte> hash, DSASignatureFormat signatureFormat)
         {
             int size = GetMaxSignatureSize(signatureFormat);
-            Debug.Assert(size <= 256, "GetMaxSignatureSize returned more than expected");
+            Debug.Assert(size <= 256, $"GetMaxSignatureSize returned more than expected ({size}) for {signatureFormat}.");
             Span<byte> signature = stackalloc byte[size];
             bool result = TryCreateSignatureCore(hash, signature, signatureFormat, out int bytesWritten);
-            Debug.Assert(result, "TryCreateSignatureCore unexpectedly returned false");
+            Debug.Assert(result, $"GetMaxSignatureSize returned insufficient size ({size}) for {signatureFormat}.");
             return signature.Slice(0, bytesWritten).ToArray();
         }
 
@@ -251,10 +251,19 @@ namespace System.Security.Cryptography
                 throw HashAlgorithmNameNullOrEmpty();
             }
 
-            if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
-                TryCreateSignatureCore(destination.Slice(0, hashLength), destination, signatureFormat, out bytesWritten))
+            if (hashAlgorithm.TryGetSizeInBytes(out int hashSize))
             {
-                return true;
+                Span<byte> hash = stackalloc byte[hashSize];
+                if (TryHashData(data, hash, hashAlgorithm, out int hashLength))
+                {
+                    return TryCreateSignatureCore(hash.Slice(0, hashLength), destination, signatureFormat, out bytesWritten);
+                }
+            }
+            else
+            {
+                // This will likely fail but since HashData is virtual we will attempt the slow path
+                byte[] hash = HashData(data.ToArray(), 0, data.Length, hashAlgorithm);
+                return TryCreateSignatureCore(hash, destination, signatureFormat, out bytesWritten);
             }
 
             bytesWritten = 0;

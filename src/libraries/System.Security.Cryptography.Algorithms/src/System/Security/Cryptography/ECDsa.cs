@@ -176,14 +176,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
             }
 
-            if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
-                TrySignHash(destination.Slice(0, hashLength), destination, out bytesWritten))
-            {
-                return true;
-            }
-
-            bytesWritten = 0;
-            return false;
+            return TrySignDataCore(data, destination, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out bytesWritten);
         }
 
         public bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat, out int bytesWritten)
@@ -198,10 +191,19 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
             }
 
-            if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
-                TrySignHashCore(destination.Slice(0, hashLength), destination, signatureFormat, out bytesWritten))
+            if (hashAlgorithm.TryGetSizeInBytes(out int hashSize))
             {
-                return true;
+                Span<byte> hash = stackalloc byte[hashSize];
+                if (TryHashData(data, hash, hashAlgorithm, out int hashLength))
+                {
+                    return TrySignHashCore(hash.Slice(0, hashLength), destination, signatureFormat, out bytesWritten);
+                }
+            }
+            else
+            {
+                // This will likely fail but since HashData is virtual we will attempt the slow path
+                byte[] hash = HashData(data.ToArray(), 0, data.Length, hashAlgorithm);
+                return TrySignHashCore(hash, destination, signatureFormat, out bytesWritten);
             }
 
             bytesWritten = 0;
