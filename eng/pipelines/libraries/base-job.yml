@@ -63,7 +63,7 @@ jobs:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
-          - _finalFrameworkArg: -allConfigurations
+          - _finalFrameworkArg: -allConfigurations '-verbosity detailed'
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - _skipTestHostCopy: true
