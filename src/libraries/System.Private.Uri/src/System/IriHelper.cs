@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
@@ -26,57 +25,33 @@ namespace System
         // it checks if the combined char is in the range
         // Takes in isQuery because iri restrictions for query are different
         //
-        internal static bool CheckIriUnicodeRange(char highSurr, char lowSurr, ref bool surrogatePair, bool isQuery)
+        internal static bool CheckIriUnicodeRange(char highSurr, char lowSurr, out bool isSurrogatePair, bool isQuery)
         {
-            bool inRange = false;
-            surrogatePair = false;
-
             Debug.Assert(char.IsHighSurrogate(highSurr));
 
-            if (char.IsSurrogatePair(highSurr, lowSurr))
+            if (isSurrogatePair = char.IsLowSurrogate(lowSurr))
             {
-                surrogatePair = true;
-                ReadOnlySpan<char> chars = stackalloc char[2] { highSurr, lowSurr };
-                string surrPair = new string(chars);
-                if (((string.CompareOrdinal(surrPair, "\U00010000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0001FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00020000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0002FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00030000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0003FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00040000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0004FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00050000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0005FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00060000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0006FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00070000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0007FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00080000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0008FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00090000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0009FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000A0000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000AFFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000B0000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000BFFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000C0000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000CFFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000D0000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000DFFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000E1000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000EFFFD") <= 0)) ||
-                    (isQuery &&
-                        (((string.CompareOrdinal(surrPair, "\U000F0000") >= 0)
-                            && (string.CompareOrdinal(surrPair, "\U000FFFFD") <= 0)) ||
-                            ((string.CompareOrdinal(surrPair, "\U00100000") >= 0)
-                            && (string.CompareOrdinal(surrPair, "\U0010FFFD") <= 0)))))
-                {
-                    inRange = true;
-                }
-            }
+                uint utf32 = (uint)char.ConvertToUtf32(highSurr, lowSurr);
 
-            return inRange;
+                return ((utf32 - 0x10000) <= (0x1FFFD - 0x10000) ||
+                    (utf32 - 0x20000) <= (0x2FFFD - 0x20000) ||
+                    (utf32 - 0x30000) <= (0x3FFFD - 0x30000) ||
+                    (utf32 - 0x40000) <= (0x4FFFD - 0x40000) ||
+                    (utf32 - 0x50000) <= (0x5FFFD - 0x50000) ||
+                    (utf32 - 0x60000) <= (0x6FFFD - 0x60000) ||
+                    (utf32 - 0x70000) <= (0x7FFFD - 0x70000) ||
+                    (utf32 - 0x80000) <= (0x8FFFD - 0x80000) ||
+                    (utf32 - 0x90000) <= (0x9FFFD - 0x90000) ||
+                    (utf32 - 0xA0000) <= (0xAFFFD - 0xA0000) ||
+                    (utf32 - 0xB0000) <= (0xBFFFD - 0xB0000) ||
+                    (utf32 - 0xC0000) <= (0xCFFFD - 0xC0000) ||
+                    (utf32 - 0xD0000) <= (0xDFFFD - 0xD0000) ||
+                    (utf32 - 0xE1000) <= (0xEFFFD - 0xE1000) ||
+                    (isQuery &&
+                        ((utf32 - 0xF0000) <= (0xFFFFD - 0xF0000) ||
+                        (utf32 - 0x100000) <= (0x10FFFD - 0x100000))));
+            }
+            return false;
         }
 
         //
@@ -156,7 +131,7 @@ namespace System
                             int startSeq = next;
                             int byteCount = 1;
                             // lazy initialization of max size, will reuse the array for next sequences
-                            if ((object?)bytes == null)
+                            if (bytes is null)
                                 bytes = new byte[end - next];
 
                             bytes[0] = (byte)ch;
@@ -231,7 +206,7 @@ namespace System
                     if ((char.IsHighSurrogate(ch)) && (next + 1 < end))
                     {
                         ch2 = pInput[next + 1];
-                        escape = !CheckIriUnicodeRange(ch, ch2, ref surrogatePair, component == UriComponents.Query);
+                        escape = !CheckIriUnicodeRange(ch, ch2, out surrogatePair, component == UriComponents.Query);
                         if (!escape)
                         {
                             // copy the two chars
