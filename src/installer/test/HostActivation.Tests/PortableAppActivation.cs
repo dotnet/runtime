@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.Diagnostics;
@@ -402,6 +403,48 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
                     .And.HaveStdErrContaining($"apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+            }
+        }
+
+        [Fact]
+        public void AppHost_GUI_NoCustomErrorWriter_FrameworkMissing_ErrorReportedInDialog()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return;
+            }
+
+            var fixture = sharedTestState.PortableAppFixture_Built
+                .Copy();
+
+            string appExe = fixture.TestProject.AppExe;
+            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            AppHostExtensions.BindAppHost(appExe);
+            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+
+            string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
+            using (new TestArtifact(dotnetWithMockHostFxr))
+            {
+                Directory.CreateDirectory(dotnetWithMockHostFxr);
+                string expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
+
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "hostfxrFrameworkMissingFailure");
+                var dotnet = dotnetBuilder.Build();
+                dotnetBuilder.UseMockHostFxr();
+
+                Command command = Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(dotnet.BinPath)
+                    .MultilevelLookup(false)
+                    .Start();
+
+                WaitForPopupFromProcess(command.Process);
+                command.Process.Kill();
+
+                command.WaitForExit(true)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
+                    .And.HaveStdErrContaining("To run this application, you need to install a newer version of .NET Core");
             }
         }
 

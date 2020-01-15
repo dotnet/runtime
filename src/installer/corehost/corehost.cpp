@@ -220,10 +220,8 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
             if (trace::get_error_writer() != nullptr && rc == StatusCode::FrameworkMissingFailure && !set_error_writer_fn)
             {
-                fx_ver_t apphost_ver;
-                fx_ver_t::parse(get_filename(_STRINGIFY(CUREXE_PKG_VER)), &apphost_ver, false);
                 pal::string_t url = get_download_url();
-                trace::error(_X("  _ This application seems to require at least .NET Core %d.%d."), apphost_ver.get_major(), apphost_ver.get_minor());
+                trace::error(_X("  _ To run this application, you need to install a newer version of .NET Core."));
                 trace::error(_X(""));
                 trace::error(_X("  - %s"), url.c_str());
             }
@@ -281,6 +279,7 @@ int main(const int argc, const pal::char_t* argv[])
     }
 
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
+    // Buffer errors to use them later.
     apphost::buffer_errors();
 #endif
 

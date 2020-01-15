@@ -17,6 +17,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
     /// </remarks>
     public class DotNetBuilder
     {
+        private readonly string _hostfxrVersion;
         private readonly string _path;
         private readonly RepoDirectoriesProvider _repoDirectories;
 
@@ -31,6 +32,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // ./dotnet.exe - used as a convenient way to load and invoke hostfxr. May change in the future to use test-specific executable
             var builtDotNetCli = new DotNetCli(builtDotnet);
+            _hostfxrVersion = new DirectoryInfo(builtDotNetCli.GreatestVersionHostFxrPath).Name;
             File.Copy(
                 builtDotNetCli.DotnetExecutablePath,
                 Path.Combine(_path, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet")),
@@ -39,7 +41,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // ./host/fxr/<version>/hostfxr.dll - this is the component being tested
             SharedFramework.CopyDirectory(
                 builtDotNetCli.GreatestVersionHostFxrPath,
-                Path.Combine(_path, "host", "fxr", Path.GetFileName(builtDotNetCli.GreatestVersionHostFxrPath)));
+                Path.Combine(_path, "host", "fxr", _hostfxrVersion));
         }
 
         /// <summary>
@@ -60,6 +62,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             File.Copy(
                 Path.Combine(_repoDirectories.Artifacts, "corehost_test", mockHostPolicyFileName),
                 Path.Combine(netCoreAppPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy")),
+                true);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Use a mock version of HostFxr.
+        /// </summary>
+        public DotNetBuilder UseMockHostFxr()
+        {
+            string hostfxrPath = Path.Combine(_path, "host", "fxr", _hostfxrVersion);
+
+            string mockHostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockhostfxr");
+            File.Copy(
+                Path.Combine(_repoDirectories.Artifacts, "corehost_test", mockHostFxrFileName),
+                Path.Combine(hostfxrPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
                 true);
 
             return this;
