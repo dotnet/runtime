@@ -6,6 +6,13 @@ using System.Collections.Generic;
 
 namespace System.Text.Json
 {
+    /// <summary>
+    /// Our ReferenceResolver implementation to handle references.
+    /// </summary>
+    /// <remarks>
+    /// It is currently a struct to save one unnecessary allcation while (de)serializing.
+    /// If we choose to expose the ReferenceResolver in a future, we may need to create an abstract class and change this type to become a class that inherits from such abstract.
+    /// </remarks>
     internal struct DefaultReferenceResolver
     {
         private uint _referenceCount;

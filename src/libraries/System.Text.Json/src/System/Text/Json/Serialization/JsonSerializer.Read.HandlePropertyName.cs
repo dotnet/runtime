@@ -197,7 +197,7 @@ namespace System.Text.Json
             {
                 if (state.Current.IsPreservedArray)
                 {
-                    ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(state.Current.JsonClassInfo!.PropertyCache!["Values"].DeclaredPropertyType);
+                    ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(GetValuesFromJsonPreservedReference(ref state.Current).DeclaredPropertyType);
                 }
                 // Regular property, call main logic for HandlePropertyName.
                 HandlePropertyNameDefault(propertyName, ref state, ref reader, options);
@@ -225,7 +225,7 @@ namespace System.Text.Json
                 Debug.Assert(state.Current.JsonClassInfo!.Type.GetGenericTypeDefinition() == typeof(JsonPreservedReference<>));
                 // TODO: Hook up JsonPropertyInfoAsString
                 // to print $values on the JSON Path in case of failure deeper on the object graph.
-                JsonPropertyInfo info = state.Current.JsonClassInfo!.PropertyCache!["Values"];
+                JsonPropertyInfo info = GetValuesFromJsonPreservedReference(ref state.Current);
 
                 if (info.JsonPropertyName == null)
                 {

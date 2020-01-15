@@ -3,14 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Reflection;
-using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
+    /// <summary>
+    /// Passed to the <see cref="DefaultReferenceResolver._objectKeyMap"/> meant for serialization.
+    /// It forces the dictionary to do a ReferenceEquals comparison when comparing the TKey object.
+    /// </summary>
     internal class ReferenceEqualsEqualityComparer<T> : IEqualityComparer<T>
     {
-        public static ReferenceEqualsEqualityComparer<T> Comparer => new ReferenceEqualsEqualityComparer<T>();
+        public static ReferenceEqualsEqualityComparer<T> Comparer = new ReferenceEqualsEqualityComparer<T>();
 
         bool IEqualityComparer<T>.Equals(T x, T y)
         {

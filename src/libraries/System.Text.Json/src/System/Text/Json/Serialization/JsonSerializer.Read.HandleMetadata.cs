@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
@@ -93,6 +95,12 @@ namespace System.Text.Json
             }
 
             state.Current.ShouldHandleReference = false;
+        }
+
+        private static JsonPropertyInfo GetValuesFromJsonPreservedReference(ref ReadStackFrame current)
+        {
+            Debug.Assert(current.JsonClassInfo!.PropertyCacheArray![0] == current.JsonClassInfo.PropertyCache!["Values"]);
+            return current.JsonClassInfo.PropertyCacheArray[0];
         }
     }
 }

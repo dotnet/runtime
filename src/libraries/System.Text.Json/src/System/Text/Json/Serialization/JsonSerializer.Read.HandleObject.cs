@@ -114,7 +114,7 @@ namespace System.Text.Json
         {
             // Preserved JSON arrays are wrapped into JsonPreservedReference<T> where T is the original type of the enumerable
             // and Values is the actual enumerable instance being preserved.
-            JsonPropertyInfo info = state.Current.JsonClassInfo!.PropertyCache!["Values"];
+            JsonPropertyInfo info = GetValuesFromJsonPreservedReference(ref state.Current);
             object? value = info.GetValueAsObject(state.Current.ReturnValue);
 
             if (value == null)
