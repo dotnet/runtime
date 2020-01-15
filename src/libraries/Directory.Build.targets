@@ -48,20 +48,15 @@
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
     <TargetFrameworksList>net45;net451;net46;net461;net462;net47;net471;net472;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0;netstandard2.0;netcoreapp2.0;netcoreapp2.1;netcoreapp3.0;$(netcoreappCurrent);</TargetFrameworksList>
   </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(OSGroup)' != 'AnyOS'">
-    <BinPlaceOSGroup>-$(OSGroup)</BinPlaceOSGroup>
-  </PropertyGroup>
-
-  
+    
   <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
     <!-- binplace to directories for the target vertical -->
-    <BinPlaceTargetFrameworks Include="$(BuildTargetFramework)$(BinPlaceOSGroup)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
+    <BinPlaceTargetFrameworks Include="$(BuildTargetFramework)-$(BuildOS)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceTargetFrameworks>
     <!-- binplace to directories for packages -->
-    <BinPlaceTargetFrameworks Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)$(BinPlaceOSGroup)">
+    <BinPlaceTargetFrameworks Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)-$(BuildOS)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
       <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(BuildOS)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
@@ -71,7 +66,7 @@
     </BinPlaceTargetFrameworks>
 
     <!-- Setup the shared framework directory for testing -->
-    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)$(BinPlaceOSGroup)">
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(BuildOS)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
     <BinPlaceTargetFrameworks Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="$(NetFrameworkCurrent)-Windows_NT">
@@ -95,7 +90,7 @@
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceTargetFrameworks>
     <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
-    <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or '$(TargetFramework)' != '$(NetCoreAppCurrent)')" Include="$(NetCoreAppCurrent)-$(OSGroup)">
+    <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or '$(TargetFramework)' != '$(NetCoreAppCurrent)')" Include="$(NetCoreAppCurrent)-$(BuildOS)">
       <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
     </BinPlaceTargetFrameworks>
 

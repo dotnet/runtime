@@ -49,8 +49,10 @@
     -->
     <BuildOS Condition="'$(BuildOS)' == ''">$(DefaultOSGroup)</BuildOS>
   </PropertyGroup>
-   
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
+  
   <PropertyGroup>
+    <OSGroup>$(TargetFrameworkSuffix)</OSGroup>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm'">arm</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm64'">arm64</ArchGroup>
@@ -70,8 +72,6 @@
     <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' and '$(BuildConfigurations)' == ''">package</BuildConfigurations>
   </PropertyGroup>
-
-  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
   
   <Choose>
     <When Condition="'$(OSGroup)' == 'Windows_NT'">

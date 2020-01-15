@@ -11,6 +11,8 @@
 
   <PropertyGroup>
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(OutDirName)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(ConfigurationGroup)</IntermediateOutputPath>
     <!-- Use runtime assemblies for the TargetFramework, using build configuration OSGroup -->
     <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(BuildOS)-$(ConfigurationGroup)-$(ArchGroup)/</RefPath>
     <CoreCLROSGroup>$(BuildOS)</CoreCLROSGroup>

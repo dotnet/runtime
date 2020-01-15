@@ -1,13 +1,9 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   
-  <PropertyGroup>
-    <CustomTargetFramework>$(NetCoreAppCurrent)</CustomTargetFramework>
-  </PropertyGroup>
-  
   <ItemGroup>
     <!-- identity project, runtime specific projects are included through netcoreapp.rids.props -->
-    <Project Include="$(MSBuildProjectName).pkgproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Project Include="$(MSBuildProjectName).pkgproj" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.traversal.targets))" />
