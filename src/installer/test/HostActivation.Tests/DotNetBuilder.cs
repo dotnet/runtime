@@ -5,6 +5,7 @@
 using Microsoft.DotNet.Cli.Build;
 using System;
 using System.IO;
+using TestUtils;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
@@ -17,7 +18,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
     /// </remarks>
     public class DotNetBuilder
     {
-        private readonly string _hostfxrVersion;
         private readonly string _path;
         private readonly RepoDirectoriesProvider _repoDirectories;
 
@@ -32,7 +32,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // ./dotnet.exe - used as a convenient way to load and invoke hostfxr. May change in the future to use test-specific executable
             var builtDotNetCli = new DotNetCli(builtDotnet);
-            _hostfxrVersion = new DirectoryInfo(builtDotNetCli.GreatestVersionHostFxrPath).Name;
             File.Copy(
                 builtDotNetCli.DotnetExecutablePath,
                 Path.Combine(_path, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet")),
@@ -41,7 +40,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // ./host/fxr/<version>/hostfxr.dll - this is the component being tested
             SharedFramework.CopyDirectory(
                 builtDotNetCli.GreatestVersionHostFxrPath,
-                Path.Combine(_path, "host", "fxr", _hostfxrVersion));
+                Path.Combine(_path, "host", "fxr", Path.GetFileName(builtDotNetCli.GreatestVersionHostFxrPath)));
         }
 
         /// <summary>
@@ -70,15 +69,41 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         /// <summary>
         /// Use a mock version of HostFxr.
         /// </summary>
-        public DotNetBuilder UseMockHostFxr()
+        /// <param name="version">Version to add</param>
+        /// <remarks>
+        /// Currently, the only mock version of HostFxr that we have is mockhostfxr_2_2.
+        /// </remarks>
+        public DotNetBuilder AddMockHostFxr(HostFxrVersion version)
         {
-            string hostfxrPath = Path.Combine(_path, "host", "fxr", _hostfxrVersion);
+            string hostfxrPath = Path.Combine(_path, "host", "fxr", version.ToString());
+            Directory.CreateDirectory(hostfxrPath);
 
-            string mockHostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockhostfxr");
+            string mockHostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform(version.HasCustomErrorWriter ? "mockhostfxr" : "mockhostfxr_2_2");
             File.Copy(
                 Path.Combine(_repoDirectories.Artifacts, "corehost_test", mockHostFxrFileName),
                 Path.Combine(hostfxrPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
                 true);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Removes the specified HostFxr version. If no version is set, it'll delete all versions found.
+        /// </summary>
+        /// <param name="version">Version to remove</param>
+        public DotNetBuilder RemoveHostFxr(HostFxrVersion version = null)
+        {
+            if (version != null)
+            {
+                new DirectoryInfo(Path.Combine(_path, "host", "fxr", version.ToString())).Delete(recursive: true);
+            }
+            else
+            {
+                foreach (var dir in new DirectoryInfo(Path.Combine(_path, "host", "fxr")).GetDirectories())
+                {
+                    dir.Delete(recursive: true);
+                }
+            }
 
             return this;
         }

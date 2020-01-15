@@ -61,11 +61,10 @@ namespace
         if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &gui_errors_disabled) && pal::xtoi(gui_errors_disabled.c_str()) == 1)
             return;
 
-        pal::string_t dialogMsg;
+        pal::string_t dialogMsg = _X("To run this application, you must install .NET Core.\n\n");
         pal::string_t url;
         if (error_code == StatusCode::CoreHostLibMissingFailure)
         {
-            dialogMsg = _X("To run this application, you must install .NET Core.\n\n");
             url = get_download_url();
         }
         else if (error_code == StatusCode::FrameworkMissingFailure)
@@ -86,6 +85,7 @@ namespace
                 }
                 else if (starts_with(line, custom_prefix, true))
                 {
+                    dialogMsg.erase();
                     dialogMsg.append(line.substr(custom_prefix.length()));
                     dialogMsg.append(_X("\n\n"));
                 }
