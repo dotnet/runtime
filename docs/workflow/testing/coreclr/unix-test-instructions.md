@@ -26,7 +26,7 @@ Please note that this builds the Priority 0 tests. To build priority 1:
 
 ## Building Individual Tests
 
-During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under `coreclr`. It is possible to use `runtime/dotnet msbuild` as you would normally use MSBuild with a few caveats.
+During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under `coreclr`. It is possible to use `~/runtime/dotnet msbuild` as you would normally use MSBuild with a few caveats.
 
 **!! Note !! -- Passing /p:__BuildOs=[OSX|Linux] is required.**
 
