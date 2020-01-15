@@ -22,7 +22,7 @@ namespace System.Net.Mail
     {
         // Parse a single MailAddress from the given string.
         //
-        // Throws a FormatException or false is returned if any part of the MailAddress is invalid.
+        // Throws a FormatException or returns false if any part of the MailAddress is invalid.
         internal static bool TryParseAddress(string data, out ParseAddressInfo parsedAddress, bool throwExceptionIfFail)
         {
             int index = data.Length - 1;
