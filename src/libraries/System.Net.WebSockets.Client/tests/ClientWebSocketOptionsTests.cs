@@ -62,7 +62,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(28027)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/28027")]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Proxy_ConnectThruProxy_Success(Uri server)
@@ -162,7 +162,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(27846)]
+                return; // [ActiveIssue("https://github.com/dotnet/corefx/issues/27846")]
             }
 
             bool callbackInvoked = false;
@@ -198,7 +198,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(27846)]
+                return; // [ActiveIssue("https://github.com/dotnet/corefx/issues/27846")]
             }
 
             using (X509Certificate2 clientCert = Test.Common.Configuration.Certificates.GetClientCertificate())
@@ -234,7 +234,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(27846)]
+                return; // [ActiveIssue("https://github.com/dotnet/corefx/issues/27846")]
             }
 
             bool connectionAccepted = false;

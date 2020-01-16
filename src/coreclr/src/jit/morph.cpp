@@ -6975,15 +6975,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
-#ifdef DEBUG
-    // DDB 99324: Just disable tailcall under compGcChecks stress mode.
-    if (opts.compGcChecks)
-    {
-        failTailCall("GcChecks");
-        return nullptr;
-    }
-#endif
-
     // We have to ensure to pass the incoming retValBuf as the
     // outgoing one. Using a temp will not do as this function will
     // not regain control to do the copy. This can happen when inlining

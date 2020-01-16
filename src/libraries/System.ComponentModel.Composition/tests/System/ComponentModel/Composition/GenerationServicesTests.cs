@@ -144,7 +144,7 @@ namespace Microsoft.Internal
         }
 
         [Fact]
-        [ActiveIssue(507696)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/507696")]
         public void EnumTypeEnumerable()
         {
             TestEnum[] enumerable = new TestEnum[] { TestEnum.First, TestEnum.Second };

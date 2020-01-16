@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
         private static readonly Lazy<List<CharUnicodeInfoTestCase>> s_testCases = new Lazy<List<CharUnicodeInfoTestCase>>(() =>
         {
             List<CharUnicodeInfoTestCase> testCases = new List<CharUnicodeInfoTestCase>();
-            string fileName = "UnicodeData.12.1.txt";
+            string fileName = "UnicodeData.txt";
             Stream stream = typeof(CharUnicodeInfoTestData).GetTypeInfo().Assembly.GetManifestResourceStream(fileName);
             using (StreamReader reader = new StreamReader(stream))
             {

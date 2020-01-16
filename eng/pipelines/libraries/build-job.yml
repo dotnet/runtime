@@ -17,6 +17,7 @@ parameters:
   timeoutInMinutes: 150
   preBuildSteps: []
   container: ''
+  condition: true
   variables: {}
   pool: ''
   runTests: false
@@ -36,6 +37,7 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
+      condition: ${{ parameters.condition }}
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
       name: build
@@ -62,9 +64,6 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
-          displayName: Restore
-
         # TODO: (Consolidation) Fix internal tool restore and re-enable. https://github.com/dotnet/runtime/issues/1024
         # - ${{ if eq(parameters.isOfficialBuild, true) }}:
         #   - task: DotNetCoreCLI@2
@@ -96,6 +95,9 @@ jobs:
               ./emsdk install ${EMSCRIPTEN_VERSION}-upstream
               ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
             displayName: Install Emscripten
+
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
+          displayName: Restore
 
         - script: $(_buildScript)
                 $(_buildAction)

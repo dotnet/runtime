@@ -134,7 +134,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [ActiveIssue(10041)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/10041")]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
         [InlineData(true)]
@@ -156,7 +156,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [ActiveIssue(10041)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/10041")]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithNoCredentials_ProxyAuthenticationRequired()
         {
@@ -171,7 +171,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [ActiveIssue(10041)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/10041")]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithDefaultCredentials_OK()
         {

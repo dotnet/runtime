@@ -23,27 +23,27 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'Linux_arm') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - \(Debian.9.Arm32.Open\)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-74c9941-20190620155841
+        - (Debian.9.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-74c9941-20190620155841
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - \(Ubuntu.1804.ArmArch.Open\)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-a45aeeb-20190620160300
+        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-a45aeeb-20190620160300
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-        - \(Alpine.311.Amd64.Open\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-08e8e40-20200107182408
+        - (Alpine.311.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-08e8e40-20200107182408
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - \(Alpine.38.Amd64.Open\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-09ca40b-20190620184125
-        - \(Alpine.39.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-helix-09ca40b-20190620184719
-        - \(Alpine.310.Amd64.Open\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-3043688-20190918214010
-        - \(Alpine.311.Amd64.Open\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-08e8e40-20200107182408
+        - (Alpine.38.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-09ca40b-20190620184125
+        - (Alpine.39.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-helix-09ca40b-20190620184719
+        - (Alpine.310.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-3043688-20190918214010
+        - (Alpine.311.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-08e8e40-20200107182408
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - \(Alpine.38.Arm64.Open\)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
+        - (Alpine.38.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
@@ -55,9 +55,9 @@ jobs:
         - Ubuntu.1804.Amd64.Open
         - SLES.12.Amd64.Open
         - SLES.15.Amd64.Open
-        - \(Fedora.29.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-09ca40b-20190508143249
-        - \(Ubuntu.1910.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64-cfcfd50-20191030180623
-        - \(Debian.10.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-7c6abd3-20190620155928
+        - (Fedora.29.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-09ca40b-20190508143249
+        - (Ubuntu.1910.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64-cfcfd50-20191030180623
+        - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-7c6abd3-20190620155928
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
         - Centos.7.Amd64.Open
         - RedHat.7.Amd64.Open
@@ -65,7 +65,7 @@ jobs:
         - Ubuntu.1604.Amd64.Open
         - Ubuntu.1804.Amd64.Open
         - SLES.15.Amd64.Open
-        - \(Fedora.29.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-09ca40b-20190508143249
+        - (Fedora.29.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-09ca40b-20190508143249
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
@@ -81,12 +81,12 @@ jobs:
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
-          - "`(Windows.Nano.1809.Amd64.Open`)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-61052b7-20190723211353"
+          - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-61052b7-20190723211353
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
           - Windows.7.Amd64.Open
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.Server19H1.ES.Open
-          - "`(Windows.Nano.1809.Amd64.Open`)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-61052b7-20190723211353"
+          - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-61052b7-20190723211353
 
       # NETFX
       - ${{ if eq(parameters.jobParameters.framework, 'netfx') }}:
@@ -106,9 +106,12 @@ jobs:
           - Windows.10.Amd64.ServerRS5.Open
           - Windows.10.Amd64.Server19H1.Open
         - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-          - Windows.7.Amd64.Open
-          - Windows.81.Amd64.Open
-          - Windows.10.Amd64.Server19H1.ES.Open
+          - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
+            - Windows.7.Amd64.Open
+            - Windows.81.Amd64.Open
+            - Windows.10.Amd64.Server19H1.ES.Open
+          - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
+            - Windows.10.Amd64.Server19H1.Open
 
       # NETFX
       - ${{ if eq(parameters.jobParameters.framework, 'netfx') }}:

@@ -535,7 +535,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue(33249)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/33249")]
         public static void Constructor_String_LoadVersionTest()
         {
             string assemblyNamePrefix = "System.Reflection.Tests.Assembly_";

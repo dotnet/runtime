@@ -55,7 +55,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void MissingOptionalConstructorParametersAreSuppliedTheirDefaultValue()
         {
             var cc = CreateContainer(typeof(Supplied), typeof(HasOptionalConstructorParameter));
@@ -65,7 +65,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void MissingOptionalPropertyImportsAreIgnored()
         {
             var cc = CreateContainer(typeof(Supplied), typeof(HasOptionalProperty));

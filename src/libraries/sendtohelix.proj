@@ -1,10 +1,5 @@
-<Project InitialTargets="BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
+<Project InitialTargets="PrintHelixQueues;BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
   <PropertyGroup>
-    <!-- Set helix source -->
-    <HelixSourcePrefix>pr/</HelixSourcePrefix>
-    <HelixSource Condition="'$(HelixSource)' == ''">$(HelixSourcePrefix)dotnet/runtime</HelixSource>
-    <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)</HelixSource>
-    
     <!-- Set helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
@@ -31,6 +26,7 @@
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
     test run name will be displayed as $(BuildConfiguration)-$(HelixTargetQueue) -->
     <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
+    <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
   </PropertyGroup>
@@ -106,5 +102,9 @@
       </HelixWorkItem>
     </ItemGroup>
 
+  </Target>
+
+  <Target Name="PrintHelixQueues">
+    <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
   </Target>
 </Project>
