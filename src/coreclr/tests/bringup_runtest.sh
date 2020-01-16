@@ -489,7 +489,7 @@ function create_testhost
     echo "${dotnetExe} $resetCommandArgs"
     "${dotnetExe}" $resetCommandArgs
 
-    buildCommandArgs=("msbuild ${coreFXTestSetupUtility} /p:OutputPath=${coreFXTestSetupUtilityOutputPath} /p:Platform=${_arch} /p:ConfigurationGroup=Release")
+    buildCommandArgs=("msbuild ${coreFXTestSetupUtility} /p:OutputPath=${coreFXTestSetupUtilityOutputPath} /p:Platform=${_arch} /p:Configuration=Release")
     echo "${dotnetExe} $buildCommandArgs"
     "${dotnetExe}" $buildCommandArgs
     

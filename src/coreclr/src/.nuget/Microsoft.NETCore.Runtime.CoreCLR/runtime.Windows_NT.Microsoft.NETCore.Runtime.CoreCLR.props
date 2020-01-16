@@ -21,7 +21,7 @@
     <File Include="$(BinDir)SOS_README.md">
       <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath>
     </File>
-    <NativeBinary Include="$(BinDir)Redist\ucrt\DLLs\$(Platform)\*.dll" Condition="'$(ConfigurationGroup)' == 'Release' and '$(Platform)' != 'arm64'" />
+    <NativeBinary Include="$(BinDir)Redist\ucrt\DLLs\$(Platform)\*.dll" Condition="'$(Configuration)' == 'Release' and '$(Platform)' != 'arm64'" />
     <CrossGenBinary Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen.exe" />
     <CrossArchitectureSpecificToolFile Include="$(BinDir)$(CrossTargetComponentFolder)\crossgen.exe" />

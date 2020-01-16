@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
-    <Configuration Condition=" '$(ConfigurationGroup)' == '' ">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{9d304b80-696f-4873-85ca-cbd2fdb900af}</ProjectGuid>
     <ProjectHome />
@@ -15,8 +15,8 @@
     <CommandLineArguments>--man c:\src\coreclr\src\vm\clretwall.man --intermediate c:\work\runtimeeventsource</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'" />
-  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Release'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
   <PropertyGroup>
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
   </PropertyGroup>

@@ -14,38 +14,11 @@
     <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">AnyOS</OSGroup>
-  </PropertyGroup>
 
-  <!--
-    If Configuration is empty that means we are not being built in VS and so folks need to explicitly pass the different
-    values for $(ConfigurationGroup) or $(OSGroup) or accept the defaults for them.
-  -->
-  <PropertyGroup Condition="'$(Configuration)' == ''">
-    <ConfigurationGroup Condition="'$(__BuildType)' != ''">$(__BuildType)</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == '' or '$(ConfigurationGroup)' == 'debug'">Debug</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == 'release'">Release</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == 'checked'">Checked</ConfigurationGroup>
-    <Configuration>$(ConfigurationGroup)</Configuration>
-  </PropertyGroup>
-
-  <!--
-    If Configuration is set then someone explicitly passed it in or we building from VS. In either case
-    default $(ConfigurationGroup) or $(OSGroup) from the Configuration if they aren't
-    already explicitly set.
-  -->
-  <PropertyGroup Condition="'$(Configuration)' != ''">
-    <ConfigurationGroup Condition="'$(__BuildType)' != ''">$(__BuildType)</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == '' and $(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == '' and $(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == '' and $(Configuration.EndsWith('Checked'))">Checked</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
-
-    <OSGroup Condition="$(Configuration.StartsWith('Windows'))">Windows_NT</OSGroup>
-    <OSGroup Condition="$(Configuration.StartsWith('Unix'))">Unix</OSGroup>
-    <OSGroup Condition="$(Configuration.StartsWith('Linux'))">Linux</OSGroup>
-    <OSGroup Condition="$(Configuration.StartsWith('OSX'))">OSX</OSGroup>
-    <OSGroup Condition="$(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
-    <OSGroup Condition="$(Configuration.StartsWith('NetBSD'))">NetBSD</OSGroup>
+    <Configuration Condition="'$(__BuildType)' != ''">$(__BuildType)</Configuration>
+    <Configuration Condition="'$(Configuration)' == '' or '$(Configuration)' == 'debug'">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'release'">Release</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'checked'">Checked</Configuration>
   </PropertyGroup>
 
   <!-- Setup Default symbol and optimization for Configuration -->
@@ -57,15 +30,15 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64</Platforms>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
     <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Checked'">
+  <PropertyGroup Condition="'$(Configuration)' == 'Checked'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Release'">
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
   </PropertyGroup>
 
@@ -127,7 +100,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
+    <OSPlatformConfig>$(OSGroup).$(Platform).$(Configuration)</OSPlatformConfig>
 
     <BinDir>$(ArtifactsBinDir)coreclr\$(OSPlatformConfig)\</BinDir>
     <SourceDir>$(MSBuildThisFileDirectory)src\</SourceDir>

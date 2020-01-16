@@ -2,7 +2,7 @@
 
   <!-- List the projects that need to be restored only -->
  <ItemGroup Condition="'$(IncludeRestoreOnlyProjects)' == 'true'">
-    <ProjectReference Condition="'$(ConfigurationGroup)' == 'Release'" Include="$(SourceDir).nuget/optdata/optdata.csproj" />
+    <ProjectReference Condition="'$(Configuration)' == 'Release'" Include="$(SourceDir).nuget/optdata/optdata.csproj" />
  </ItemGroup>
 
   <!-- List the projects that need to be built -->
@@ -20,7 +20,7 @@
       <UcrtFilesToCopy Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(Platform)\*.dll" />
     </ItemGroup>
 
-    <Copy Condition="'$(ConfigurationGroup)' == 'Release' and '$(Platform)' != 'arm64'"
+    <Copy Condition="'$(Configuration)' == 'Release' and '$(Platform)' != 'arm64'"
         SourceFiles="@(UcrtFilesToCopy)"
         DestinationFolder="$(BinDir)Redist\ucrt\DLLs\$(Platform)" />
   </Target>
