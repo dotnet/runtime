@@ -131,7 +131,7 @@ logFile=$__RepoRootDir/artifacts/log/build-packages.binlog
 $__RepoRootDir/eng/common/build.sh -r -b -projects $__ProjectRoot/src/.nuget/packages.builds \
                                    -verbosity minimal -bl:$logFile \
                                    /p:__BuildOS=$__BuildOS \
-                                   /p:PortableBuild=true /p:__DistroRid=$__DistroRid \
+                                   /p:__DistroRid=$__DistroRid \
                                    $buildArgs $unprocessedBuildArgs
 if [ $? -ne 0 ]
 then

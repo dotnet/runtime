@@ -39,7 +39,7 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%eng\
   -r -b -projects %__ProjectDir%src\.nuget\packages.builds^
   -verbosity minimal /bl:%logFile% /nodeReuse:false^
   /p:__BuildOS=Windows_NT^
-  /p:PortableBuild=true /p:FilterToOSGroup=Windows_NT^
+  /p:FilterToOSGroup=Windows_NT^
   %__MSBuildArgs% %unprocessedArgs%
 
 if NOT [!ERRORLEVEL!]==[0] (

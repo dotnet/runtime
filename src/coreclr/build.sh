@@ -336,7 +336,7 @@ build_CoreLib()
 
     "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj /t:Restore \
-                                           /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true \
+                                           /maxcpucount /p:IncludeRestoreOnlyProjects=true \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
                                            /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
                                            $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
@@ -349,7 +349,7 @@ build_CoreLib()
 
     "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj \
-                                           /p:PortableBuild=true /maxcpucount \
+                                           /maxcpucount \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
                                            /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
                                            $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
@@ -443,7 +443,6 @@ generate_NugetPackages()
     # Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
     $__RepoRootDir/eng/common/build.sh -r -b -projects $__SourceDir/.nuget/packages.builds \
                                        -verbosity minimal -bl:$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.binlog \
-                                       /p:PortableBuild=true \
                                        /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:__DoCrossArchBuild=$__CrossBuild \
                                        $__CommonMSBuildArgs $__UnprocessedBuildArgs
 

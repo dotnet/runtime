@@ -283,7 +283,7 @@ set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!'
 REM Disable warnAsError - coreclr issue 19922
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__ProjectDir%\tests\build.proj -warnAsError:0 /t:BatchRestorePackages /nodeReuse:false^
-  /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+  /p:RestoreDefaultOptimizationDataPackage=false^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__UnprocessedBuildArgs%
 
@@ -446,7 +446,7 @@ set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__ProjectDir%\tests\src\runtest.proj /t:CreateTestOverlay /nodeReuse:false^
-  /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+  /p:RestoreDefaultOptimizationDataPackage=false^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (

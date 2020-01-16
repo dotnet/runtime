@@ -634,7 +634,7 @@ if %__BuildCoreLib% EQU 1 (
 
         powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj /t:Restore^
-            /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true^
+            /nodeReuse:false /maxcpucount /p:IncludeRestoreOnlyProjects=true^
             !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies restore failed. Refer to the build log files for details.
@@ -646,7 +646,7 @@ if %__BuildCoreLib% EQU 1 (
         )
 
         powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-            %__ProjectDir%\src\build.proj /nodeReuse:false /p:PortableBuild=true /maxcpucount^
+            %__ProjectDir%\src\build.proj /nodeReuse:false /maxcpucount^
             '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies build failed. Refer to the build log files for details.
@@ -880,8 +880,7 @@ if %__BuildPackages% EQU 1 (
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\build.ps1"^
         -r -b -projects %__SourceDir%\.nuget\packages.builds^
         -verbosity minimal /clp:nosummary /nodeReuse:false /bl:!__BuildLog!^
-        /p:PortableBuild=true^
-        /p:ArchGroup=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
+        %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: Nuget package generation failed. Refer to the build log file for details.
         echo     !__BuildLog!

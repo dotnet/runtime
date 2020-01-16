@@ -397,7 +397,7 @@ build_MSBuild_projects()
 
             # Generate build command
             buildArgs=("$projectName")
-            buildArgs+=("/p:RestoreDefaultOptimizationDataPackage=false" "/p:PortableBuild=true")
+            buildArgs+=("/p:RestoreDefaultOptimizationDataPackage=false")
             buildArgs+=("/p:UsePartialNGENOptimization=false" "/maxcpucount")
 
             buildArgs+=("${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
@@ -431,7 +431,7 @@ build_MSBuild_projects()
 
         # Generate build command
         buildArgs=("$projectName")
-        buildArgs+=("/p:RestoreDefaultOptimizationDataPackage=false" "/p:PortableBuild=true")
+        buildArgs+=("/p:RestoreDefaultOptimizationDataPackage=false")
         buildArgs+=("/p:UsePartialNGENOptimization=false" "/maxcpucount")
 
         buildArgs+=("${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
