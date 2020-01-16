@@ -266,6 +266,7 @@ struct _DebuggerTlsData {
 	MonoStopwatch step_time;
 
 	gboolean gc_finalizing;
+	gboolean invalid_state;
 };
 
 typedef struct {
@@ -2750,6 +2751,8 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 		 * Attached thread which died without detaching.
 		 */
 		tls->terminated = TRUE;
+		//sometimes there is no valid_info but the ctx is valid and the debug can continue
+		tls->invalid_state = TRUE;
 	}
 }
 
@@ -3346,8 +3349,10 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 	user_data.tls = tls;
 	user_data.frames = NULL;
 	if (tls->terminated) {
-		tls->frame_count = 0;
-		return;
+		if (!(tls->invalid_state && tls->context.valid)) {
+			tls->frame_count = 0;
+			return;
+		}
 	} if (!tls->really_suspended && tls->async_state.valid) {
 		/* Have to use the state saved by the signal handler */
 		process_frame (&tls->async_last_frame, NULL, &user_data);
