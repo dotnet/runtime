@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
     <CommonPathXPath>$(CommonPath)System\Xml\XPath</CommonPathXPath>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <CommonPathXPath>$(CommonTestPath)System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
   <ItemGroup>
@@ -193,5 +193,5 @@
     <EmbeddedResource Include="$(CommonPathXPath)\TestData\xpC001.xml">
       <Link>TestData\xpC001.xml</Link>
     </EmbeddedResource>
-  </ItemGroup>
+   </ItemGroup>
 </Project>
