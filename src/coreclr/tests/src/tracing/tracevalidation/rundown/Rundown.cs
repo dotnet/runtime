@@ -22,6 +22,7 @@ namespace Tracing.Tests
                 "Common",
                 "Rundown", // this assembly
                 "System.Runtime",
+                "Microsoft.Diagnostics.Tracing.TraceEvent",
                 "System.Private.CoreLib"
             };
 
@@ -68,13 +69,6 @@ namespace Tracing.Tests
                 {
                     Assert.True($"Assembly {expected} in loaded assemblies", assembliesLoaded.Any(loaded => String.Equals(loaded, expected, StringComparison.OrdinalIgnoreCase)));
                 }
-
-                // In R2R, depending on whether the test was built with or without large version bubble enabled for the test and the runtime, one or both of the following assemblies 
-                // will be present
-                Assert.True("Assembly System.Diagnostics.Tracing or Microsoft.Diagnostics.Tracing.TraceEvent expected in loaded assemblies", 
-                            assembliesLoaded.Any(loaded => String.Equals(loaded, "System.Diagnostics.Tracing", StringComparison.OrdinalIgnoreCase)) ||
-                            assembliesLoaded.Any(loaded => String.Equals(loaded, "Microsoft.Diagnostics.Tracing.TraceEvent", StringComparison.OrdinalIgnoreCase)));
-
                 Assert.Equal(nameof(nonMatchingEventCount), nonMatchingEventCount, 0);
             }
 
