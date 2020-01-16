@@ -670,7 +670,12 @@ namespace Internal.JitInterface
             // an EcmaMethodIL), the tokens in the MethodIL are not actual tokens: they're just
             // "per-MethodIL unique cookies". For ready to run, we need to be able to get to an actual
             // token to refer to the result of token lookup in the R2R fixups; we replace the token
-            // with the token of the ECMA entity.
+            // token to refer to the result of token lookup in the R2R fixups.
+            //
+            // We replace the token with the token of the ECMA entity. This only works for **types/members
+            // within the current version bubble**, but this happens to be good enough because
+            // we only do this replacement within CoreLib to replace method bodies in places
+            // that we cannot express in C# right now and for p/invokes in large version bubbles).
             MethodIL methodILDef = methodIL.GetMethodILDefinition();
             bool isFauxMethodIL = !(methodILDef is EcmaMethodIL);
             if (isFauxMethodIL)
@@ -694,9 +699,9 @@ namespace Internal.JitInterface
                 }
                 else if (resultDef is FieldDesc resultField)
                 {
-                    // It's okay to strip the instantiation away because we don't need a FieldSpec
-                    // token - SignatureBuilder will generate the generic field signature
-                    // using instantiation parameters from the FieldDesc entity.
+                    // It's okay to strip the instantiation away because we don't need the
+                    // instantiated MemberRef token - SignatureBuilder will generate the generic
+                    // field signature using instantiation parameters from the FieldDesc entity.
                     resultField = resultField.GetTypicalFieldDefinition();
 
                     Debug.Assert(resultField is EcmaField);
