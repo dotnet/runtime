@@ -800,8 +800,16 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         else if (binop->OperIs(GT_RSH) && op1->OperIs(GT_AND) && op1->AsOp()->gtGetOp2()->IsIntCnsFitsInI32())
         {
             // (x & cns1) >> cns2 -> [0..cns1>>cns2]
-            icon = static_cast<int>(op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue()) >>
-                   static_cast<int>(op2->AsIntCon()->IconValue());
+            int icon1 = static_cast<int>(op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue());
+            int icon2 = static_cast<int>(op2->AsIntCon()->IconValue());
+            if (icon1 >= 0 && icon2 >= 0 && icon2 < 32)
+            {
+                icon = icon1 >> icon2;
+            }
+            else
+            {
+                return Range(Limit::keUnknown);
+            }
         }
 
         if (icon < 0)
