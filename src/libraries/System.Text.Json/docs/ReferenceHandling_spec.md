@@ -81,14 +81,14 @@ See also the [internal implementation details](https://gist.github.com/Jozkee/b0
    * **On Deserialize**: Metadata properties will not be consumed, therefore they will be treated as regular properties that can map to a real property using `JsonPropertyName` or be added to the `JsonExtensionData` overflow dictionary.
 
 * **Preserve**:
-  * **On Serialize**: When writing complex types (i.e. POCOs/non-primitive types), the serializer also writes the metadata (`$id`, `$values` and `$ref`) properties in order to reference them later by writing a reference to the previously written JSON object or array.
+  * **On Serialize**: When writing complex types (e.g. POCOs/non-primitive types), the serializer also writes the metadata (`$id`, `$values` and `$ref`) properties in order to reference them later by writing a reference to the previously written JSON object or array.
   * **On Deserialize**: While the other options have no effect on deserialization, `Preserve` does affect its behavior, as follows: Metadata will be expected (although is not mandatory) and the deserializer will try to understand it. 
 
 * **Ignore**:
   * **On Serialize**: Ignores (skips writing) the property/element where the reference loop is detected.
   * **On Deserialize**: Metadata properties will not be consumed, therefore they will be treated as regular properties that can map to a real property using `JsonPropertyName` or be added to the `JsonExtensionData` dictionary.
 
-For `System.Text.Json`, the goal is to stick to the same *metadata* syntax used when preserving references using `Newtonsoft.Json` and provide a similar usage in `JsonSerializerOptions` that encompasses the needed options (i.e. provide reference preservation). This way, JSON output produced by `Newtonsoft.Json` can be deserialized by `System.Text.Json` and vice versa.
+For `System.Text.Json`, the goal is to stick to the same *metadata* syntax used when preserving references using `Newtonsoft.Json` and provide a similar usage in `JsonSerializerOptions` that encompasses the needed options (e.g. provide reference preservation). This way, JSON output produced by `Newtonsoft.Json` can be deserialized by `System.Text.Json` and vice versa.
 
 This API is exposing the `ReferenceHandling` property as a class, to be extensible in the future; and provide built-in static instances of `Default` and `Preserve` that are useful to enable the most common behaviors by just setting those in `JsonSerializerOptions.ReferenceHandling`.
 
@@ -372,7 +372,7 @@ Similar: https://www.npmjs.com/package/json-cyclic
   * It does not uses `$id` nor `$values` metadata, therefore, everything can be referenced.
   * Pros
     * It looks cleaner. 
-    * Only disruptive (weird) edge case would be a reference to an array i.e: { "MyArray": { "$ref": "#manager.subordinates" } }.
+    * Only disruptive (weird) edge case would be a reference to an array e.g: { "MyArray": { "$ref": "#manager.subordinates" } }.
   * Cons
     * Path value will become too long on very deep objects.
     * Storing all the complex types could become very expensive, are we going to store also primitive types?
@@ -401,7 +401,7 @@ https://www.baeldung.com/jackson-bidirectional-relationships-and-infinite-recurs
 
 # Ground rules
 
-As a rule of thumb, we throw on all cases where the JSON payload being read contains any metadata that is impossible to create with the `JsonSerializer` (i.e. it was hand modified). Since `System.Text.Json` is more strict, it means that certain payloads that `Newtonsoft.Json` could process, will fail with `System.Text.Json`. Specific example scenarios where that could happen are described below.
+As a rule of thumb, we throw on all cases where the JSON payload being read contains any metadata that is impossible to create with the `JsonSerializer` (e.g. it was hand modified). Since `System.Text.Json` is more strict, it means that certain payloads that `Newtonsoft.Json` could process, will fail with `System.Text.Json`. Specific example scenarios where that could happen are described below.
 
 ## Reference objects ($ref)
 
@@ -665,13 +665,13 @@ On deserialization, metadata will be digested by using only the raw bytes, so no
 ## Immutable types
 Since these types are created with the help of an internal converter, and they are not parsed until the entire block of JSON finishes; nested reference to these types is impossible to identify, unless you re-scan the resulting object, which is too expensive.
 
-With that said, the deserializer will throw when it reads `$id` on any of these types. When serializing (i.e. writing) those types, however, they are going to be preserved as any other collection type (`{ "$id": "1", "$values": [...] }`) since those types can still be parsed into a collection type that is supported.
+With that said, the deserializer will throw when it reads `$id` on any of these types. When serializing (e.g. writing) those types, however, they are going to be preserved as any other collection type (`{ "$id": "1", "$values": [...] }`) since those types can still be parsed into a collection type that is supported.
 
 Note: By the same principle, `Newtonsoft.Json` does not support parsing JSON arrays into immutables as well.
 Note 2: When using immutable types and `ReferenceHandling.Preserve`, you will not be able to generate payloads that are capables of round-tripping.
 
-* **Immutable types**: i.e: `ImmutableList` and `ImmutableDictionary`
-* **System.Array**: i.e: `Array<T>` and `T[]`
+* **Immutable types**: e.g: `ImmutableList` and `ImmutableDictionary`
+* **System.Array**: e.g: `Array<T>` and `T[]`
 
 ## Value types
 
