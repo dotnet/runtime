@@ -1323,7 +1323,7 @@ namespace Internal.TypeSystem.Interop
             ILCodeLabel lNullArray = emitter.NewCodeLabel();
 
             MethodDesc getArrayDataReferenceGenericMethod = InteropTypes.GetMemoryMarshal(Context).GetKnownMethod("GetArrayDataReference", null);
-            MethodDesc getArrayDataReferenceMethod = getArrayDataReferenceGenericMethod.MakeInstantiatedMethod(new Instantiation(ManagedElementType));
+            MethodDesc getArrayDataReferenceMethod = getArrayDataReferenceGenericMethod.MakeInstantiatedMethod(ManagedElementType);
 
             // Check for null array
             LoadManagedValue(codeStream);

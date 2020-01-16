@@ -669,12 +669,8 @@ namespace Internal.JitInterface
             // If the method body is synthetized by the compiler (the definition of the MethodIL is not
             // an EcmaMethodIL), the tokens in the MethodIL are not actual tokens: they're just
             // "per-MethodIL unique cookies". For ready to run, we need to be able to get to an actual
-            // token to refer to the result of token lookup in the R2R fixups.
-            //
-            // We replace the token with the token of the ECMA entity. This only works for **non-generic
-            // types/members within the current version bubble**, but this happens to be good enough because
-            // we only do this replacement within CoreLib to replace method bodies in places
-            // that we cannot express in C# right now and for p/invokes in large version bubbles).
+            // token to refer to the result of token lookup in the R2R fixups; we replace the token
+            // with the token of the ECMA entity.
             MethodIL methodILDef = methodIL.GetMethodILDefinition();
             bool isFauxMethodIL = !(methodILDef is EcmaMethodIL);
             if (isFauxMethodIL)
@@ -685,7 +681,12 @@ namespace Internal.JitInterface
                 {
                     if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                         resultMethod = rawPinvoke.Target;
+
+                    // It's okay to strip the instantiation away because we don't need a MethodSpec
+                    // token - SignatureBuilder will generate the generic method signature
+                    // using instantiation parameters from the MethodDesc entity.
                     resultMethod = resultMethod.GetTypicalMethodDefinition();
+
                     Debug.Assert(resultMethod is EcmaMethod);
                     Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType));
                     token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
@@ -693,7 +694,11 @@ namespace Internal.JitInterface
                 }
                 else if (resultDef is FieldDesc resultField)
                 {
+                    // It's okay to strip the instantiation away because we don't need a FieldSpec
+                    // token - SignatureBuilder will generate the generic field signature
+                    // using instantiation parameters from the FieldDesc entity.
                     resultField = resultField.GetTypicalFieldDefinition();
+
                     Debug.Assert(resultField is EcmaField);
                     Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaField)resultField).OwningType));
                     token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultField).Handle);

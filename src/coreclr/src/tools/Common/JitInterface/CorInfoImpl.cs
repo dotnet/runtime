@@ -1039,9 +1039,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
-            bool recordToken = _compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(owningType) &&
-                owningType is EcmaType &&
-                methodIL.GetMethodILDefinition() is EcmaMethodIL; // Don't record pseudo-tokens generated for IL stubs
+            bool recordToken = _compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(owningType) && owningType is EcmaType;
 #endif
 
             if (result is MethodDesc)
