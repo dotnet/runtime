@@ -2572,7 +2572,7 @@ namespace System.Data.SqlTypes
         (
         ReadOnlySpan<uint> rgulU,      // In    | U
         int ciulU,      // In    | # of digits in U
-        Span<uint> rgulD,      // In    | D // this is written to, should is also be InOut ?
+        Span<uint> rgulD,      // InOut    | D
         int ciulD,      // In    | # of digits in D
         Span<uint> rgulQ,      // Out    | Q
         out int ciulQ,      // Out    | # of digits in Q
