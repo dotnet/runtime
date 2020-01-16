@@ -68,7 +68,7 @@ namespace Microsoft.Internal.Collections
 
             foreach (var weakItem in _items)
             {
-                T item = weakItem.Target as T;
+                T? item = weakItem.Target as T;
 
                 if (item != null)
                 {

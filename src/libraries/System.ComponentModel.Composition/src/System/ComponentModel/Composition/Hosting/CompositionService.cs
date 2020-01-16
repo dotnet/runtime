@@ -15,8 +15,8 @@ namespace System.ComponentModel.Composition.Hosting
     /// </remarks>
     public class CompositionService : ICompositionService, IDisposable
     {
-        private readonly CompositionContainer _compositionContainer = null;
-        private readonly INotifyComposablePartCatalogChanged _notifyCatalog = null;
+        private readonly CompositionContainer? _compositionContainer = null;
+        private readonly INotifyComposablePartCatalogChanged? _notifyCatalog = null;
 
         internal CompositionService(ComposablePartCatalog composablePartCatalog)
         {
@@ -73,7 +73,7 @@ namespace System.ComponentModel.Composition.Hosting
             _compositionContainer.Dispose();
         }
 
-        private void OnCatalogChanging(object sender, ComposablePartCatalogChangeEventArgs e)
+        private void OnCatalogChanging(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             throw new ChangeRejectedException(SR.NotSupportedCatalogChanges);
         }

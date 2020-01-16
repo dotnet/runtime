@@ -4,6 +4,7 @@
 
 using System.Linq;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Internal
 {
@@ -19,12 +20,12 @@ namespace Microsoft.Internal
             return (T[])attributeProvider.GetCustomAttributes(typeof(T), inherit);
         }
 
-        public static T GetFirstAttribute<T>(this ICustomAttributeProvider attributeProvider) where T : class
+        public static T? GetFirstAttribute<T>(this ICustomAttributeProvider attributeProvider) where T : class
         {
             return GetAttributes<T>(attributeProvider).FirstOrDefault();
         }
 
-        public static T GetFirstAttribute<T>(this ICustomAttributeProvider attributeProvider, bool inherit) where T : class
+        public static T? GetFirstAttribute<T>(this ICustomAttributeProvider attributeProvider, bool inherit) where T : class
         {
             return GetAttributes<T>(attributeProvider, inherit).FirstOrDefault();
         }

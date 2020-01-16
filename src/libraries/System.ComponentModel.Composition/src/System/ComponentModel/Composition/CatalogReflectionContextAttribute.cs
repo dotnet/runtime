@@ -24,17 +24,17 @@ namespace System.ComponentModel.Composition
             _reflectionContextType = reflectionContextType;
         }
 
-        public ReflectionContext CreateReflectionContext()
+        public ReflectionContext? CreateReflectionContext()
         {
             if (_reflectionContextType == null)
             {
                 throw new ArgumentNullException(nameof(_reflectionContextType));
             }
 
-            ReflectionContext reflectionContext = null;
+            ReflectionContext? reflectionContext;
             try
             {
-                reflectionContext = (ReflectionContext)Activator.CreateInstance(_reflectionContextType);
+                reflectionContext = (ReflectionContext?)Activator.CreateInstance(_reflectionContextType);
             }
             catch (InvalidCastException invalidCastException)
             {

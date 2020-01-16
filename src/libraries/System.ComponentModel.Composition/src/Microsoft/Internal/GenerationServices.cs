@@ -15,7 +15,7 @@ namespace Microsoft.Internal
     internal static class GenerationServices
     {
         // Type.GetTypeFromHandle
-        private static readonly MethodInfo _typeGetTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle");
+        private static readonly MethodInfo _typeGetTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle")!;
 
         // typeofs are pretty expensive, so we cache them statically
         private static readonly Type TypeType = typeof(System.Type);
@@ -35,9 +35,9 @@ namespace Microsoft.Internal
         private static readonly Type IEnumerableTypeofT = typeof(System.Collections.Generic.IEnumerable<>);
         private static readonly Type IEnumerableType = typeof(System.Collections.IEnumerable);
 
-        private static readonly MethodInfo ExceptionGetData = typeof(Exception).GetProperty("Data").GetGetMethod();
-        private static readonly MethodInfo DictionaryAdd = typeof(IDictionary).GetMethod("Add");
-        private static readonly ConstructorInfo ObjectCtor = typeof(object).GetConstructor(Type.EmptyTypes);
+        private static readonly MethodInfo ExceptionGetData = typeof(Exception).GetProperty("Data")!.GetGetMethod()!;
+        private static readonly MethodInfo DictionaryAdd = typeof(IDictionary).GetMethod("Add")!;
+        private static readonly ConstructorInfo ObjectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
 
         public static ILGenerator CreateGeneratorForPublicConstructor(this TypeBuilder typeBuilder, Type[] ctrArgumentTypes)
         {
@@ -67,7 +67,7 @@ namespace Microsoft.Internal
         /// Everything else cannot be represented as literals
         /// <param name="ilGenerator"></param>
         /// <param name="value"></param>
-        public static void LoadValue(this ILGenerator ilGenerator, object value)
+        public static void LoadValue(this ILGenerator ilGenerator, object? value)
         {
             Debug.Assert(ilGenerator != null);
 
@@ -251,9 +251,8 @@ namespace Microsoft.Internal
             }
 
             // We load enumerable as an array - this is the most compact and efficient way of representing it
-            Type elementType = null;
-            Type closedType = null;
-            if (ReflectionServices.TryGetGenericInterfaceType(enumerable.GetType(), GenerationServices.IEnumerableTypeofT, out closedType))
+            Type elementType;
+            if (ReflectionServices.TryGetGenericInterfaceType(enumerable.GetType(), GenerationServices.IEnumerableTypeofT, out Type? closedType))
             {
                 elementType = closedType.GetGenericArguments()[0];
             }
@@ -273,7 +272,7 @@ namespace Microsoft.Internal
             ilGenerator.Emit(OpCodes.Stloc, generatedArrayLocal);
 
             int index = 0;
-            foreach (object value in enumerable)
+            foreach (object? value in enumerable)
             {
                 //
                 //array[<index>] = value;
@@ -283,7 +282,7 @@ namespace Microsoft.Internal
                 ilGenerator.LoadValue(value);
                 if (GenerationServices.IsBoxingRequiredForValue(value) && !elementType.IsValueType)
                 {
-                    ilGenerator.Emit(OpCodes.Box, value.GetType());
+                    ilGenerator.Emit(OpCodes.Box, value!.GetType());
                 }
                 ilGenerator.Emit(OpCodes.Stelem, elementType);
                 index++;
@@ -292,7 +291,7 @@ namespace Microsoft.Internal
             ilGenerator.Emit(OpCodes.Ldloc, generatedArrayLocal);
         }
 
-        private static bool IsBoxingRequiredForValue(object value)
+        private static bool IsBoxingRequiredForValue(object? value)
         {
             if (value == null)
             {
