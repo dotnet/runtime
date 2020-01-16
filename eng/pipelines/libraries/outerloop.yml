@@ -101,6 +101,6 @@ jobs:
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
           isFullMatrix: ${{ variables['isFullMatrix'] }}
-          framework: netfx
+          framework: net472
           runTests: true
           testScope: outerloop
