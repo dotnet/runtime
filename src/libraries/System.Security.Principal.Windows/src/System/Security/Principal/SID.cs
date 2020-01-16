@@ -347,7 +347,7 @@ namespace System.Security.Principal
 
             _identifierAuthority = identifierAuthority;
 #if NETCOREAPP2_0
-            _subAuthorities = = (int[])subAuthorities.Clone();
+            _subAuthorities = (int[])subAuthorities.Clone();
 #else
             _subAuthorities = subAuthorities.ToArray();
 #endif
