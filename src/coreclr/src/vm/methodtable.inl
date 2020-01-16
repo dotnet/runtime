@@ -1097,14 +1097,6 @@ inline BOOL MethodTable::IsWinRTDelegate()
 #endif // FEATURE_COMINTEROP
 
 //==========================================================================================
-inline UINT32 MethodTable::GetNativeSize()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetClass());
-    return GetClass()->GetNativeSize();
-}
-
-//==========================================================================================
 inline PTR_MethodTable MethodTable::GetCanonicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;

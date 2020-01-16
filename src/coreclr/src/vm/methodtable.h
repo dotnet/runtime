@@ -56,6 +56,7 @@ class   AllocMemTracker;
 class   SimpleRWLock;
 class   MethodDataCache;
 class   EEClassLayoutInfo;
+class   EEClassNativeLayoutInfo;
 #ifdef FEATURE_COMINTEROP
 class   ComCallWrapperTemplate;
 #endif
@@ -892,6 +893,7 @@ public:
 #if defined(UNIX_AMD64_ABI_ITF)
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
+    bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
     // Copy m_dwFlags from another method table
@@ -931,7 +933,6 @@ private:
     void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel) const;
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
-    bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
     DWORD   GetClassIndexFromToken(mdTypeDef typeToken)
@@ -1710,7 +1711,11 @@ public:
 
     inline BOOL HasLayout();
 
-    inline EEClassLayoutInfo *GetLayoutInfo();
+    inline EEClassLayoutInfo* GetLayoutInfo();
+
+    EEClassNativeLayoutInfo const* GetNativeLayoutInfo();
+
+    void EnsureNativeLayoutInfoInitialized();
 
     inline BOOL IsBlittable();
 
@@ -2751,22 +2756,17 @@ public:
         _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         SetFlag(enum_flag_Category_Nullable);
     }
-
-    inline BOOL IsStructMarshalable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        PRECONDITION(!IsInterface());
-        return GetFlag(enum_flag_IfNotInterfaceThenMarshalable);
-    }
-
-    inline void SetStructMarshalable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        PRECONDITION(!IsInterface());
-        SetFlag(enum_flag_IfNotInterfaceThenMarshalable);
-    }
     
-    // The following methods are only valid for the method tables for array types.  
+    // The following methods are only valid for the 
+    // method tables for array types.  These MTs may 
+    // be shared between array types and thus GetArrayElementTypeHandle
+    // may only be approximate.  If you need the exact element type handle then
+    // you should probably be calling GetArrayElementTypeHandle on a TypeHandle,
+    // or an ArrayTypeDesc, or on an object reference that is known to be an array,
+    // e.g. a BASEARRAYREF.
+    //
+    // At the moment only the object[] MethodTable is shared between array types.
+    // In the future the amount of sharing of method tables is likely to be increased.
     CorElementType GetArrayElementType();
     DWORD GetRank();
 
@@ -2839,6 +2839,8 @@ public:
                                ULONG *pcbData);
 
     mdTypeDef GetEnclosingCl();
+
+    bool GetCharSet(CorNativeLinkType* pCharSet);
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -3699,7 +3701,6 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-        enum_flag_IfNotInterfaceThenMarshalable = 0x00200000, // Is this type marshalable by the pinvoke marshalling layer
 #ifdef FEATURE_COMINTEROP
         enum_flag_IfInterfaceThenHasGuidInfo    = 0x00200000, // Does the type has optional GuidInfo
 #endif // FEATURE_COMINTEROP

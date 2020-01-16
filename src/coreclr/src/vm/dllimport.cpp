@@ -3652,8 +3652,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                 TRUE,
                                 isInstanceMethod,
                                 pMD,
-                                TRUE,
-                                FALSE
+                                TRUE
                                 DEBUG_ARG(pDebugName)
                                 DEBUG_ARG(pDebugClassName)
                                 DEBUG_ARG(0)
@@ -4043,8 +4042,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                                  TRUE,
                                                  isInstanceMethod ? TRUE : FALSE,
                                                  pMD,
-                                                 TRUE,
-                                                 FALSE
+                                                 TRUE
                                                  DEBUG_ARG(pSigDesc->m_pDebugName)
                                                  DEBUG_ARG(pSigDesc->m_pDebugClassName)
                                                  DEBUG_ARG(i + 1));
@@ -4291,31 +4289,7 @@ static CorNativeLinkType GetLinkTypeOfMethodTable(MethodTable* pMT)
 {
     CorNativeLinkType nltType;
 
-    IMDInternalImport* pInternalImport = pMT->GetModule()->GetMDImport();
-
-    DWORD clFlags;
-    if (FAILED(pInternalImport->GetTypeDefProps(pMT->GetTypeDefRid(), &clFlags, NULL)))
-    {
-        UNREACHABLE_MSG("Structs that are generating interop marshalling stubs have already been verified to have valid metadata");
-    }
-
-    if (IsTdAnsiClass(clFlags))
-    {
-        nltType = nltAnsi;
-    }
-    else if (IsTdUnicodeClass(clFlags))
-    {
-        nltType = nltUnicode;
-    }
-    else if (IsTdAutoClass(clFlags))
-    {
-#ifdef PLATFORM_WINDOWS
-        nltType = nltUnicode;
-#else
-        nltType = nltAnsi; // We don't have a utf8 charset in metadata yet, but ANSI == UTF-8 off-Windows
-#endif
-    }
-    else
+    if (!pMT->GetCharSet(&nltType))
     {
         UNREACHABLE_MSG("Structs that are generating interop marshalling stubs have already been verified to have valid metadata");
     }
@@ -4363,7 +4337,13 @@ static void CreateStructStub(ILStubState* pss,
     }
 #endif // FEATURE_COMINTEROP
 
-    int numFields = pMT->GetNumInstanceFields();
+    // We need to manually initialize the native layout info here
+    // since we need to access the non-const pointer to be able to call Restore
+    // on the native field descriptors.
+    pMT->EnsureNativeLayoutInfoInitialized();
+    EEClassNativeLayoutInfo* pNativeLayoutInfo = pMT->GetClass()->GetNativeLayoutInfo();
+
+    int numFields = pNativeLayoutInfo->GetNumFields();
     // Build up marshaling information for each of the method's parameters
     SIZE_T cbFieldMarshalInfo;
     if (!ClrSafeInt<SIZE_T>::multiply(sizeof(MarshalInfo), numFields, cbFieldMarshalInfo))
@@ -4372,7 +4352,8 @@ static void CreateStructStub(ILStubState* pss,
     }
 
     CorNativeLinkType nlType = GetLinkTypeOfMethodTable(pMT);
-    NativeFieldDescriptor* pFieldDescriptors = pMT->GetLayoutInfo()->GetNativeFieldDescriptors();
+
+    NativeFieldDescriptor* pFieldDescriptors = pNativeLayoutInfo->GetNativeFieldDescriptors();
 
     for (int i = 0; i < numFields; ++i)
     {
@@ -4401,8 +4382,7 @@ static void CreateStructStub(ILStubState* pss,
             TRUE,
             FALSE,
             pMD,
-            TRUE,
-            FALSE
+            TRUE
             DEBUG_ARG(pSigDesc->m_pDebugName)
             DEBUG_ARG(pSigDesc->m_pDebugClassName)
             DEBUG_ARG(-1 /* field */));
@@ -4847,7 +4827,9 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
         if (argit.HasRetBuffArg())
         {
             MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
-            if (IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
+            // The System.DateTime type itself technically doesn't have a native representation,
+            // so we have to special-case it here.
+            if (pRetMT != MscorlibBinder::GetClass(CLASS__DATE_TIME) && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
             {
                 ndirectflags |= NDirectMethodDesc::kStdCallWithRetBuf;
             }

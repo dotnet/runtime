@@ -1423,8 +1423,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                          BOOL fEmitsIL,
                          BOOL onInstanceMethod,
                          MethodDesc* pMD,
-                         BOOL fLoadCustomMarshal,
-                         BOOL fCalculatingFieldMetadata
+                         BOOL fLoadCustomMarshal
 #ifdef _DEBUG
                          ,
                          LPCUTF8 pDebugName,
@@ -1595,55 +1594,52 @@ MarshalInfo::MarshalInfo(Module* pModule,
         }
 #endif // FEATURE_COMINTEROP
 
-        if (!fCalculatingFieldMetadata) // When calculating field metadata, we don't need to check the subtype of the pointer.
+        SigPointer sigtmp = sig;
+        IfFailGoto(sigtmp.GetElemType(NULL), lFail);
+
+        // Peek closed elem type here to prevent ELEMENT_TYPE_VALUETYPE turning into a primitive. 
+        CorElementType mtype2 = sigtmp.PeekElemTypeClosed(pModule, pTypeContext);
+
+        if (mtype2 == ELEMENT_TYPE_VALUETYPE)
         {
-            SigPointer sigtmp = sig;
-            IfFailGoto(sigtmp.GetElemType(NULL), lFail);
+            TypeHandle th = sigtmp.GetTypeHandleThrowing(pModule, pTypeContext);
+            _ASSERTE(!th.IsNull());
 
-            // Peek closed elem type here to prevent ELEMENT_TYPE_VALUETYPE turning into a primitive.
-            CorElementType mtype2 = sigtmp.PeekElemTypeClosed(pModule, pTypeContext);
-
-            if (mtype2 == ELEMENT_TYPE_VALUETYPE)
+            // We want to leave out enums as they surely don't have copy constructors
+            // plus they are not marked as blittable.
+            if (!th.IsEnum())
             {
-                TypeHandle th = sigtmp.GetTypeHandleThrowing(pModule, pTypeContext);
-                _ASSERTE(!th.IsNull());
-
-                // We want to leave out enums as they surely don't have copy constructors
-                // plus they are not marked as blittable.
-                if (!th.IsEnum())
+                // It should be blittable
+                if (!th.IsBlittable())
                 {
-                    // It should be blittable
-                    if (!th.IsBlittable())
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_PTRNONBLITTABLE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-
-                    // Check for Copy Constructor Modifier
-                    if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-                        sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
-                    {
-                        mtype = mtype2;
-
-                        // Keep the sig pointer in sync with mtype (skip ELEMENT_TYPE_PTR) because for the rest
-                        // of this method we are pretending that the parameter is a value type passed by-value.
-                        IfFailGoto(sig.GetElemType(NULL), lFail);
-
-                        fNeedsCopyCtor = TRUE;
-                        m_byref = FALSE;
-                    }
-                }
-            }
-            else
-            {
-                if (!(mtype2 != ELEMENT_TYPE_CLASS &&
-                    mtype2 != ELEMENT_TYPE_STRING &&
-                    mtype2 != ELEMENT_TYPE_OBJECT &&
-                    mtype2 != ELEMENT_TYPE_SZARRAY))
-                {
-                    m_resID = IDS_EE_BADMARSHAL_PTRSUBTYPE;
+                    m_resID = IDS_EE_BADMARSHAL_PTRNONBLITTABLE;
                     IfFailGoto(E_FAIL, lFail);
                 }
+
+                // Check for Copy Constructor Modifier
+                if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+                    sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
+                {
+                    mtype = mtype2;
+
+                    // Keep the sig pointer in sync with mtype (skip ELEMENT_TYPE_PTR) because for the rest
+                    // of this method we are pretending that the parameter is a value type passed by-value.
+                    IfFailGoto(sig.GetElemType(NULL), lFail);
+
+                    fNeedsCopyCtor = TRUE;
+                    m_byref = FALSE;
+                }
+            }
+        }
+        else
+        {
+            if (!(mtype2 != ELEMENT_TYPE_CLASS &&
+                mtype2 != ELEMENT_TYPE_STRING &&
+                mtype2 != ELEMENT_TYPE_OBJECT &&
+                mtype2 != ELEMENT_TYPE_SZARRAY))
+            {
+                m_resID = IDS_EE_BADMARSHAL_PTRSUBTYPE;
+                IfFailGoto(E_FAIL, lFail);
             }
         }
     }
@@ -2005,12 +2001,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_VAR:
         {
-            TypeHandle sigTH = sig.GetTypeHandleThrowing(
-                pModule,
-                pTypeContext,
-                ClassLoader::LoadTypes,
-                fCalculatingFieldMetadata ? CLASS_LOAD_APPROXPARENTS : CLASS_LOADED,
-                fCalculatingFieldMetadata ? TRUE : FALSE);
+            TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
 
             // Disallow marshaling generic types except for WinRT interfaces.
             if (sigTH.HasInstantiation())
@@ -2756,12 +2747,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             }
             else
             {
-                m_pMT =  sig.GetTypeHandleThrowing(
-                    pModule,
-                    pTypeContext,
-                    ClassLoader::LoadTypes,
-                    fCalculatingFieldMetadata ? CLASS_LOAD_APPROXPARENTS : CLASS_LOADED,
-                    fCalculatingFieldMetadata ? TRUE : FALSE).GetMethodTable();
+                m_pMT =  sig.GetTypeHandleThrowing(pModule, pTypeContext).GetMethodTable();
                 if (m_pMT == NULL)
                     break;
 
@@ -2817,6 +2803,12 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     ))
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
+                    IfFailGoto(E_FAIL, lFail);
+                }
+
+                if (!m_pMT->HasLayout())
+                {
+                    m_resID = IDS_EE_BADMARSHAL_NOTMARSHALABLE;
                     IfFailGoto(E_FAIL, lFail);
                 }
 
@@ -2892,7 +2884,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         }
                     }
                 }
-                else if (m_pMT->HasLayout())
+                else
                 {
                     if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_STRUCT))
                     {
@@ -2916,12 +2908,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         case ELEMENT_TYPE_ARRAY:
         {
             // Get class info from array.
-            TypeHandle arrayTypeHnd = sig.GetTypeHandleThrowing(
-                pModule,
-                pTypeContext,
-                ClassLoader::LoadTypes,
-                fCalculatingFieldMetadata ? CLASS_LOAD_APPROXPARENTS : CLASS_LOADED,
-                fCalculatingFieldMetadata ? TRUE : FALSE);
+            TypeHandle arrayTypeHnd = sig.GetTypeHandleThrowing(pModule, pTypeContext);
             _ASSERTE(!arrayTypeHnd.IsNull());
 
             TypeHandle thElement = arrayTypeHnd.GetArrayElementTypeHandle();
@@ -3161,6 +3148,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     CONTRACTL
     {
         STANDARD_VM_CHECK;
+        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pParamInfo));
     }
     CONTRACTL_END;
@@ -3592,8 +3580,8 @@ void MarshalInfo::SetupArgumentSizes()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3617,8 +3605,8 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype)
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3957,6 +3945,7 @@ HRESULT MarshalInfo::TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, BOOL fIn
     CONTRACTL
     {
         STANDARD_VM_CHECK;
+        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!th.IsNull());
         PRECONDITION(CheckPointer(pInfo));
     }
@@ -5034,6 +5023,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
     CONTRACT_VOID
     {
         STANDARD_VM_CHECK;
+        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thElement.IsNull());
         POSTCONDITION(!IsValid() || !m_thElement.IsNull());
     }
