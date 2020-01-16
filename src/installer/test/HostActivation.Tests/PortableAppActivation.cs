@@ -7,7 +7,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using TestUtils;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -430,7 +429,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "hostfxrFrameworkMissingFailure")
                     .RemoveHostFxr()
-                    .AddMockHostFxr(new HostFxrVersion(2, 2, 0));
+                    .AddMockHostFxr(new Version(2, 2, 0));
                 var dotnet = dotnetBuilder.Build();
 
                 Command command = Command.Create(appExe)

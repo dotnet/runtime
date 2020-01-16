@@ -5,7 +5,6 @@
 using Microsoft.DotNet.Cli.Build;
 using System;
 using System.IO;
-using TestUtils;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
@@ -73,12 +72,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         /// <remarks>
         /// Currently, the only mock version of HostFxr that we have is mockhostfxr_2_2.
         /// </remarks>
-        public DotNetBuilder AddMockHostFxr(HostFxrVersion version)
+        public DotNetBuilder AddMockHostFxr(Version version)
         {
             string hostfxrPath = Path.Combine(_path, "host", "fxr", version.ToString());
             Directory.CreateDirectory(hostfxrPath);
+            bool hasCustomErrorWriter = version.Major >= 3;
 
-            string mockHostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform(version.HasCustomErrorWriter ? "mockhostfxr" : "mockhostfxr_2_2");
+            string mockHostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform(hasCustomErrorWriter ? "mockhostfxr" : "mockhostfxr_2_2");
             File.Copy(
                 Path.Combine(_repoDirectories.Artifacts, "corehost_test", mockHostFxrFileName),
                 Path.Combine(hostfxrPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
@@ -91,7 +91,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         /// Removes the specified HostFxr version. If no version is set, it'll delete all versions found.
         /// </summary>
         /// <param name="version">Version to remove</param>
-        public DotNetBuilder RemoveHostFxr(HostFxrVersion version = null)
+        public DotNetBuilder RemoveHostFxr(Version version = null)
         {
             if (version != null)
             {
