@@ -67,6 +67,8 @@ namespace System.Linq
                         return true;
                     }
                 }
+
+                return false;
             }
 
             if (source is TSource[] array)
@@ -78,6 +80,8 @@ namespace System.Linq
                         return true;
                     }
                 }
+
+                return false;
             }
 
             foreach (TSource element in source)
@@ -113,6 +117,8 @@ namespace System.Linq
                         return false;
                     }
                 }
+
+                return true;
             }
 
             if (source is TSource[] array)
@@ -124,6 +130,8 @@ namespace System.Linq
                         return false;
                     }
                 }
+
+                return true;
             }
 
             foreach (TSource element in source)
