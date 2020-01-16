@@ -21,6 +21,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void SameResultsRepeatCallsIntArray() {
+            var array = new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 };
+
+            Func<int, bool> predicate = IsEven;
+            Assert.Equal(array.All(predicate), array.All(predicate));
+        }
+
+        [Fact]
+        public void SameResultsRepeatCallsListOfInt() {
+            var list = new List<int>() { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 };
+
+            Func<int, bool> predicate = IsEven;
+            Assert.Equal(list.All(predicate), list.All(predicate));
+        }
+
+        [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
             var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
@@ -55,6 +71,18 @@ namespace System.Linq.Tests
         public void All(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
         {
             Assert.Equal(expected, source.All(predicate));
+        }
+
+        [Theory]
+        [MemberData(nameof(All_TestData))]
+        public void AllList(IEnumerable<int> source, Func<int, bool> predicate, bool expected) {
+            Assert.Equal(expected, source.ToList().All(predicate));
+        }
+
+        [Theory]
+        [MemberData(nameof(All_TestData))]
+        public void AllArray(IEnumerable<int> source, Func<int, bool> predicate, bool expected) {
+            Assert.Equal(expected, source.ToArray().All(predicate));
         }
 
         [Theory, MemberData(nameof(All_TestData))]

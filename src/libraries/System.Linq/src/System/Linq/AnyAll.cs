@@ -57,6 +57,16 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
+            if (source is List<TSource> list)
+            {
+                return !list.TrueForAll(element => !predicate(element));
+            }
+
+            if (source is TSource[] array)
+            {
+                return !Array.TrueForAll(array, element => !predicate(element));
+            }
+
             foreach (TSource element in source)
             {
                 if (predicate(element))
@@ -78,6 +88,16 @@ namespace System.Linq
             if (predicate == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (source is List<TSource> list)
+            {
+                return list.TrueForAll(element => predicate(element));
+            }
+
+            if (source is TSource[] array)
+            {
+                return Array.TrueForAll(array, element => predicate(element));
             }
 
             foreach (TSource element in source)
