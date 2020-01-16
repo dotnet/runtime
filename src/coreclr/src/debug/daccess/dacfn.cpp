@@ -246,7 +246,7 @@ static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
 }
 
 HRESULT
-DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
+DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
     if (!g_dacImpl)
     {
