@@ -126,8 +126,8 @@ namespace System.Diagnostics.Tests
         {
             using (var cts = new CancellationTokenSource(milliseconds))
             {
-                var token = cts.Token;
-                var process = Process.GetCurrentProcess();
+                CancellationToken token = cts.Token;
+                Process process = Process.GetCurrentProcess();
                 OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.WaitForExitAsync(token));
                 Assert.Equal(token, ex.CancellationToken);
                 Assert.False(process.HasExited);
@@ -161,15 +161,17 @@ namespace System.Diagnostics.Tests
             p.Start();
 
             // Verify we can try to wait for the process to exit multiple times
-            using (var cts = new CancellationTokenSource(millisecondsDelay: 0))
+            var token = new CancellationToken(canceled: true);
+            for (int i = 0; i < 2; i++)
             {
-                var token = cts.Token;
-                for (int i = 0; i < 2; i++)
-                {
-                    OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(token));
-                    Assert.Equal(token, ex.CancellationToken);
-                    Assert.False(p.HasExited);
-                }
+                Task t = p.WaitForExitAsync(token);
+
+                // The token is already canceled, so WaitForExitAsync should complete synchronously
+                Assert.Equal(TaskStatus.Canceled, t.Status);
+
+                OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+                Assert.Equal(token, ex.CancellationToken);
+                Assert.False(p.HasExited);
             }
 
             // Then wait until it exits and concurrently kill it.
@@ -184,11 +186,9 @@ namespace System.Diagnostics.Tests
                 await p.WaitForExitAsync(cts.Token);
                 Assert.True(p.HasExited);
             }
-            using (var cts = new CancellationTokenSource(millisecondsDelay: 0))
-            {
-                await p.WaitForExitAsync(cts.Token);
-                Assert.True(p.HasExited);
-            }
+
+            await p.WaitForExitAsync(token);
+            Assert.True(p.HasExited);
         }
 
         [Theory]
@@ -240,16 +240,12 @@ namespace System.Diagnostics.Tests
             p.Kill();
             Assert.True(await tcs.Task);
 
-            using (var cts = new CancellationTokenSource(millisecondsDelay: 0))
-            {
-                await p.WaitForExitAsync(cts.Token);
-                Assert.True(p.HasExited);
-            }
+            var token = new CancellationToken(canceled: true);
+            await p.WaitForExitAsync(token);
+            Assert.True(p.HasExited);
 
-            {
-                await p.WaitForExitAsync();
-                Assert.True(p.HasExited);
-            }
+            await p.WaitForExitAsync();
+            Assert.True(p.HasExited);
         }
 
         [Theory]
@@ -298,7 +294,7 @@ namespace System.Diagnostics.Tests
 
             using (var cts = new CancellationTokenSource(millisecondsDelay: 0))
             {
-                var token = cts.Token;
+                CancellationToken token = cts.Token;
                 OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => p.WaitForExitAsync(token));
                 Assert.Equal(token, ex.CancellationToken);
                 Assert.False(p.HasExited);
@@ -389,8 +385,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void WaitForSignal()
         {
-            const string expectedSignal = "Signal";
-            const string successResponse = "Success";
+            const string ExpectedSignal = "Signal";
+            const string SuccessResponse = "Success";
             const int timeout = 30 * 1000; // 30 seconds, to allow for very slow machines
 
             Process p = CreateProcessPortable(RemotelyInvokable.WriteLineReadLine);
@@ -405,7 +401,7 @@ namespace System.Diagnostics.Tests
                 {
                     linesReceived++;
 
-                    if (e.Data == expectedSignal)
+                    if (e.Data == ExpectedSignal)
                     {
                         mre.Set();
                     }
@@ -424,7 +420,7 @@ namespace System.Diagnostics.Tests
 
             using (StreamWriter writer = p.StandardInput)
             {
-                writer.WriteLine(successResponse);
+                writer.WriteLine(SuccessResponse);
             }
 
             Assert.True(p.WaitForExit(timeout), "Process has not exited");
@@ -464,7 +460,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, linesReceived);
 
             // Wait a little bit to make sure process didn't exit on itself
-            Thread.Sleep(100);
+            Thread.Sleep(1);
             Assert.False(p.HasExited, "Process has prematurely exited");
 
             using (StreamWriter writer = p.StandardInput)
