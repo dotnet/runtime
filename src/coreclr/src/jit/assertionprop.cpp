@@ -2624,13 +2624,6 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
         case O2K_CONST_LONG:
 
-#ifdef _TARGET_64BIT_
-            // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && ((curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) != 0))
-            {
-                return nullptr;
-            }
-#endif
             if (newTree->gtType == TYP_LONG)
             {
                 newTree->ChangeOperConst(GT_CNS_NATIVELONG);
@@ -2646,13 +2639,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
         case O2K_CONST_INT:
 
-#ifndef _TARGET_64BIT_
             // Don't propagate handles if we need to report relocs.
             if (opts.compReloc && ((curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) != 0))
             {
                 return nullptr;
             }
-#endif
 
             if (curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK)
             {

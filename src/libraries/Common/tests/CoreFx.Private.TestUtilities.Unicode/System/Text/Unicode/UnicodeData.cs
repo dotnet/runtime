@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.Threading;
 
 namespace System.Text.Unicode
@@ -13,7 +14,7 @@ namespace System.Text.Unicode
 
         public static CodePoint GetData(int codePoint)
         {
-            if ((uint)codePoint >= _codePointData.Length)
+            if ((uint)codePoint >= (uint)_codePointData.Length)
             {
                 throw new ArgumentOutOfRangeException(
                     message: FormattableString.Invariant($"Value U+{(uint)codePoint:X4} is not a valid code point."),
@@ -36,5 +37,29 @@ namespace System.Text.Unicode
         public static CodePoint GetData(uint codePoint) => GetData((int)codePoint);
 
         public static CodePoint GetData(Rune rune) => GetData(rune.Value);
+
+        /*
+         * Helper methods
+         */
+
+        public static UnicodeCategory GetUnicodeCategory(int codePoint) => GetData(codePoint).GeneralCategory;
+
+        public static bool IsLetter(int codePoint)
+        {
+            switch (GetUnicodeCategory(codePoint))
+            {
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.ModifierLetter:
+                case UnicodeCategory.OtherLetter:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        public static bool IsWhiteSpace(int codePoint) => (GetData(codePoint).Flags & CodePointFlags.White_Space) != 0;
     }
 }

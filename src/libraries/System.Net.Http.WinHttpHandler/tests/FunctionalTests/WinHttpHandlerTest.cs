@@ -98,7 +98,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ActiveIssue(17234)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/17234")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [OuterLoop]

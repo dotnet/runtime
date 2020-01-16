@@ -9,6 +9,7 @@ parameters:
   stagedBuild: false
   variables: {}
   pool: ''
+  condition: true
 
 ### Format job
 jobs:
@@ -27,6 +28,7 @@ jobs:
     helixType: 'format'
     pool: ${{ parameters.pool }}
     variables: ${{ parameters.variables }}
+    condition: ${{ parameters.condition }}
     steps:
     - task: UseDotNet@2
       # This should match what jitutils YML uses to build.

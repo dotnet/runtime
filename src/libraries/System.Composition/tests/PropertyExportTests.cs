@@ -20,7 +20,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void CanExportProperty()
         {
             var cc = CreateContainer(typeof(Messenger));
@@ -45,7 +45,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void ExportedPropertiesShareTheSameSharedPartInstance()
         {
             var cc = CreateContainer(typeof(SelfObsessed), typeof(Selfless));

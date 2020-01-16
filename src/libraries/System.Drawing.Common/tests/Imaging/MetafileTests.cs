@@ -43,7 +43,7 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(IntPtr.Zero, false));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_IntPtrToWmf_ThrowsExternalException()
         {
@@ -111,7 +111,7 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Metafile((Stream)null));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_EmptyStream_ThrowsExternalException()
         {
@@ -190,7 +190,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(InvalidPath_TestData))]
         public void Ctor_ZeroPointerEmfTypeInvalidString_ThrowsArgumentException(string description)
@@ -955,7 +955,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Throws<NullReferenceException>(() => Metafile.GetMetafileHeader((Stream)null));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Static_GetMetafileHeader_EmptyStream_ArgumentException()
         {
@@ -995,7 +995,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHenhmetafile_Disposed_ThrowsArgumentException()
         {

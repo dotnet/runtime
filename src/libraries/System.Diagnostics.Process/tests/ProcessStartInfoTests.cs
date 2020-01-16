@@ -350,7 +350,7 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ActiveIssue(12696)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/12696")]
         [Fact, PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {

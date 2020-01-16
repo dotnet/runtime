@@ -86,7 +86,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [ActiveIssue(12716)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/12716")]
         [PlatformSpecific(~TestPlatforms.OSX)] // Unhandled exception on a separate process causes xunit to crash on osx
         [Fact]
         public void UnhandledException_Called()
