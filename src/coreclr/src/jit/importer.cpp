@@ -5962,8 +5962,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                                                           pResolvedToken->hClass);
 
                             // If so, box/unbox.any is a nop.
-                            if (compareBoxIsInst == TypeCompareState::Must &&
-                                compareBoxUnbox == TypeCompareState::Must)
+                            if (compareBoxIsInst == TypeCompareState::Must && compareBoxUnbox == TypeCompareState::Must)
                             {
                                 JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
                                 return 2 + sizeof(mdToken) * 2;
