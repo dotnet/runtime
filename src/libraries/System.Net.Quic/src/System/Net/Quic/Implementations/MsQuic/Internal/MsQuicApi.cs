@@ -210,10 +210,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     SecCfgCreateCallbackHandler);
             }
 
-            if (!MsQuicStatusHelper.SuccessfulStatusCode(createConfigStatus))
-            {
-                throw new QuicException($"Could not create security configuration. Error code: {MsQuicStatusCodes.GetError(createConfigStatus)}");
-            }
+            QuicExceptionHelpers.ThrowIfFailed(
+                createConfigStatus,
+                "Could not create security configuration.");
 
             void SecCfgCreateCallbackHandler(
                 IntPtr context,
@@ -227,10 +226,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             await tcs.Task.ConfigureAwait(false);
 
-            if (!MsQuicStatusHelper.SuccessfulStatusCode(secConfigCreateStatus))
-            {
-                throw new QuicException($"Could not create security configuration. Error code: {MsQuicStatusCodes.GetError(secConfigCreateStatus)}");
-            }
+            QuicExceptionHelpers.ThrowIfFailed(
+                secConfigCreateStatus,
+                "Could not create security configuration.");
 
             return secConfig;
         }

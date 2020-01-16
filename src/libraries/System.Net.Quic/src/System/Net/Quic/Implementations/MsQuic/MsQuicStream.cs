@@ -128,11 +128,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken);
 
-            await SendAsync(buffers, endStream ? QUIC_SEND_FLAG.FIN : QUIC_SEND_FLAG.NONE);
+            await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAG.FIN : QUIC_SEND_FLAG.NONE);
 
             HandleWriteCompletedState();
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);        }
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
         {
@@ -147,7 +148,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken);
 
-            await SendAsync(buffers, endStream ? QUIC_SEND_FLAG.FIN : QUIC_SEND_FLAG.NONE);
+            await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAG.FIN : QUIC_SEND_FLAG.NONE);
 
             HandleWriteCompletedState();
 
@@ -162,7 +163,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken);
 
-            await SendAsync(buffer, endStream ? QUIC_SEND_FLAG.FIN : QUIC_SEND_FLAG.NONE);
+            await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAG.FIN : QUIC_SEND_FLAG.NONE);
 
             HandleWriteCompletedState();
 
@@ -801,7 +802,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // TODO prevent overlapping sends or consider supporting it.
-        private unsafe ValueTask SendAsync(
+        private unsafe ValueTask SendReadOnlyMemoryAsync(
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAG flags)
         {
@@ -844,7 +845,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _sendResettableCompletionSource.GetTypelessValueTask();
         }
 
-        private unsafe ValueTask SendAsync(
+        private unsafe ValueTask SendReadOnlySequenceAsync(
            ReadOnlySequence<byte> buffers,
            QUIC_SEND_FLAG flags)
         {
@@ -905,7 +906,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _sendResettableCompletionSource.GetTypelessValueTask();
         }
 
-        private unsafe ValueTask SendAsync(
+        private unsafe ValueTask SendReadOnlyMemoryListAsync(
            ReadOnlyMemory<ReadOnlyMemory<byte>> buffers,
            QUIC_SEND_FLAG flags)
         {
