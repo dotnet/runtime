@@ -313,7 +313,7 @@ namespace Internal.Cryptography.Pal
         {
             HashSet<string> oids = new HashSet<string>();
 
-            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.BER);
+            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
             AsnReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 
