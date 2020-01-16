@@ -29,15 +29,15 @@ public:
 
     static uint64_t get_rand()
     {
-	    x = (314159269*x+278281) & 0x7FFFFFFF;
-	    return x;
+        x = (314159269*x+278281) & 0x7FFFFFFF;
+        return x;
     }
 
     // obtain random number in the range 0 .. r-1
     static uint64_t get_rand(uint64_t r) {
-	    // require r >= 0
-	    uint64_t x = (uint64_t)((get_rand() * r) >> 31);
-	    return x;
+        // require r >= 0
+        uint64_t x = (uint64_t)((get_rand() * r) >> 31);
+        return x;
     }
 };
 
@@ -1601,29 +1601,6 @@ BOOL recursive_gc_sync::allow_foreground()
 
 #endif //BACKGROUND_GC
 #endif //DACCESS_COMPILE
-
-
-#if  defined(COUNT_CYCLES)
-#ifdef _MSC_VER
-#pragma warning(disable:4035)
-#endif //_MSC_VER
-
-static
-unsigned        GetCycleCount32()        // enough for about 40 seconds
-{
-__asm   push    EDX
-__asm   _emit   0x0F
-__asm   _emit   0x31
-__asm   pop     EDX
-};
-
-#pragma warning(default:4035)
-
-#endif //COUNT_CYCLES
-
-#ifdef TIME_GC
-int mark_time, plan_time, sweep_time, reloc_time, compact_time;
-#endif //TIME_GC
 
 #ifndef MULTIPLE_HEAPS
 
@@ -10015,10 +9992,6 @@ void gc_heap::rearrange_heap_segments(BOOL compacting)
 
 uint8_t* g_addresses [array_size+2]; // to get around the bug in GetWriteWatch
 
-#ifdef TIME_WRITE_WATCH
-static unsigned int tot_cycles = 0;
-#endif //TIME_WRITE_WATCH
-
 #ifdef CARD_BUNDLE
 
 inline void gc_heap::verify_card_bundle_bits_set(size_t first_card_word, size_t last_card_word)
@@ -10235,21 +10208,9 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
         if (base_address < high_address)
         {
             region_size = high_address - base_address;
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_start = GetCycleCount32();
-#endif //TIME_WRITE_WATCH
             dprintf (3, ("h%d: soh ww: [%Ix(%Id)", heap_number, (size_t)base_address, region_size));
             //reset_ww_by_chunk (base_address, region_size);
             reset_write_watch_for_gc_heap(base_address, region_size);
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_stop = GetCycleCount32();
-            tot_cycles += time_stop - time_start;
-            printf ("ResetWriteWatch Duration: %d, total: %d\n",
-                    time_stop - time_start, tot_cycles);
-#endif //TIME_WRITE_WATCH
-
             switch_on_reset (concurrent_p, &reset_size, region_size);
         }
 
@@ -10275,21 +10236,9 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
         if (base_address < high_address)
         {
             region_size = high_address - base_address;
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_start = GetCycleCount32();
-#endif //TIME_WRITE_WATCH
             dprintf (3, ("h%d: loh ww: [%Ix(%Id)", heap_number, (size_t)base_address, region_size));
             //reset_ww_by_chunk (base_address, region_size);
             reset_write_watch_for_gc_heap(base_address, region_size);
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_stop = GetCycleCount32();
-            tot_cycles += time_stop - time_start;
-            printf ("ResetWriteWatch Duration: %d, total: %d\n",
-                    time_stop - time_start, tot_cycles);
-#endif //TIME_WRITE_WATCH
-
             switch_on_reset (concurrent_p, &reset_size, region_size);
         }
 
@@ -10297,10 +10246,6 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
 
         concurrent_print_time_delta ("CRWW loh");
     }
-
-#ifdef DEBUG_WRITE_WATCH
-    debug_write_watch = (uint8_t**)~0;
-#endif //DEBUG_WRITE_WATCH
 }
 
 #endif //WRITE_WATCH
@@ -16704,10 +16649,6 @@ void gc_heap::gc1()
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
 #endif //BACKGROUND_GC
 
-#ifdef TIME_GC
-    mark_time = plan_time = reloc_time = compact_time = sweep_time = 0;
-#endif //TIME_GC
-
     verify_soh_segment_list();
 
     int n = settings.condemned_generation;
@@ -16975,11 +16916,6 @@ void gc_heap::gc1()
         g_GCStatistics.AddGCStats(settings,
             dd_gc_elapsed_time(dynamic_data_of(settings.condemned_generation)));
 #endif // GC_STATS
-
-#ifdef TIME_GC
-    fprintf (stdout, "%d,%d,%d,%d,%d,%d\n",
-             n, mark_time, plan_time, reloc_time, compact_time, sweep_time);
-#endif //TIME_GC
 
 #ifdef BACKGROUND_GC
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
@@ -18118,54 +18054,54 @@ void gc_heap::garbage_collect (int n)
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
 
-    BOOL should_evaluate_elevation = TRUE;
-    BOOL should_do_blocking_collection = FALSE;
+        BOOL should_evaluate_elevation = TRUE;
+        BOOL should_do_blocking_collection = FALSE;
 
 #ifdef MULTIPLE_HEAPS
-    int gen_max = condemned_generation_num;
-    for (int i = 0; i < n_heaps; i++)
-    {
-        if (gen_max < g_heaps[i]->condemned_generation_num)
-            gen_max = g_heaps[i]->condemned_generation_num;
-        if (should_evaluate_elevation && !(g_heaps[i]->elevation_requested))
-            should_evaluate_elevation = FALSE;
-        if ((!should_do_blocking_collection) && (g_heaps[i]->blocking_collection))
-            should_do_blocking_collection = TRUE;
-    }
+        int gen_max = condemned_generation_num;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            if (gen_max < g_heaps[i]->condemned_generation_num)
+                gen_max = g_heaps[i]->condemned_generation_num;
+            if (should_evaluate_elevation && !(g_heaps[i]->elevation_requested))
+                should_evaluate_elevation = FALSE;
+            if ((!should_do_blocking_collection) && (g_heaps[i]->blocking_collection))
+                should_do_blocking_collection = TRUE;
+        }
 
-    settings.condemned_generation = gen_max;
+        settings.condemned_generation = gen_max;
 #else //MULTIPLE_HEAPS
-    settings.condemned_generation = generation_to_condemn (n,
-                                                        &blocking_collection,
-                                                        &elevation_requested,
-                                                        FALSE);
-    should_evaluate_elevation = elevation_requested;
-    should_do_blocking_collection = blocking_collection;
+        settings.condemned_generation = generation_to_condemn (n,
+                                                            &blocking_collection,
+                                                            &elevation_requested,
+                                                            FALSE);
+        should_evaluate_elevation = elevation_requested;
+        should_do_blocking_collection = blocking_collection;
 #endif //MULTIPLE_HEAPS
 
-    settings.condemned_generation = joined_generation_to_condemn (
-                                        should_evaluate_elevation,
-                                        n,
-                                        settings.condemned_generation,
-                                        &should_do_blocking_collection
-                                        STRESS_HEAP_ARG(n)
-                                        );
+        settings.condemned_generation = joined_generation_to_condemn (
+                                            should_evaluate_elevation,
+                                            n,
+                                            settings.condemned_generation,
+                                            &should_do_blocking_collection
+                                            STRESS_HEAP_ARG(n)
+                                            );
 
-    STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10,
-            "condemned generation num: %d\n", settings.condemned_generation);
+        STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10,
+                "condemned generation num: %d\n", settings.condemned_generation);
 
-    record_gcs_during_no_gc();
+        record_gcs_during_no_gc();
 
-    if (settings.condemned_generation > 1)
-        settings.promotion = TRUE;
+        if (settings.condemned_generation > 1)
+            settings.promotion = TRUE;
 
 #ifdef HEAP_ANALYZE
-    // At this point we've decided what generation is condemned
-    // See if we've been requested to analyze survivors after the mark phase
-    if (GCToEEInterface::AnalyzeSurvivorsRequested(settings.condemned_generation))
-    {
-        heap_analyze_enabled = TRUE;
-    }
+        // At this point we've decided what generation is condemned
+        // See if we've been requested to analyze survivors after the mark phase
+        if (GCToEEInterface::AnalyzeSurvivorsRequested(settings.condemned_generation))
+        {
+            heap_analyze_enabled = TRUE;
+        }
 #endif // HEAP_ANALYZE
 
         GCToEEInterface::DiagGCStart(settings.condemned_generation, settings.reason == reason_induced);
@@ -19965,7 +19901,7 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                     //we are finished with this object
                     *place = 0;
                     *(place+1) = 0;
-                
+
                 more_to_do:;
                 }
                 else
@@ -21014,12 +20950,6 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     dprintf(2,("---- Mark Phase condemning %d ----", condemned_gen_number));
     BOOL  full_p = (condemned_gen_number == max_generation);
 
-#ifdef TIME_GC
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#endif //TIME_GC
-
     int gen_to_init = condemned_gen_number;
     if (condemned_gen_number == max_generation)
     {
@@ -21533,11 +21463,6 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //BACKGROUND_GC
 
     promoted_bytes (heap_number) -= promoted_bytes_live;
-
-#ifdef TIME_GC
-        finish = GetCycleCount32();
-        mark_time = finish - start;
-#endif //TIME_GC
 
     dprintf(2,("---- End of mark phase ----"));
 }
@@ -22996,11 +22921,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
     assert (settings.concurrent == FALSE);
 
     // %type%  category = quote (plan);
-#ifdef TIME_GC
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#endif //TIME_GC
 
     dprintf (2,("---- Plan Phase ---- Condemned generation %d, promotion: %d",
                 condemned_gen_number, settings.promotion ? 1 : 0));
@@ -23955,11 +23875,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
     dprintf (2,("Fragmentation: %Id", fragmentation));
     dprintf (2,("---- End of Plan phase ----"));
 
-#ifdef TIME_GC
-    finish = GetCycleCount32();
-    plan_time = finish - start;
-#endif //TIME_GC
-
     // We may update write barrier code.  We assume here EE has been suspended if we are on a GC thread.
     assert(IsGCInProgress());
 
@@ -24668,12 +24583,6 @@ uint8_t* gc_heap::allocate_at_end (size_t size)
 
 void gc_heap::make_free_lists (int condemned_gen_number)
 {
-#ifdef TIME_GC
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#endif //TIME_GC
-
     //Promotion has to happen in sweep case.
     assert (settings.promotion);
 
@@ -24788,11 +24697,6 @@ void gc_heap::make_free_lists (int condemned_gen_number)
         uint8_t* start2 = generation_allocation_start (youngest_generation);
         alloc_allocated = start2 + Align (size (start2));
     }
-
-#ifdef TIME_GC
-    finish = GetCycleCount32();
-    sweep_time = finish - start;
-#endif //TIME_GC
 }
 
 void gc_heap::make_free_list_in_brick (uint8_t* tree, make_free_args* args)
@@ -25947,13 +25851,6 @@ void gc_heap::relocate_phase (int condemned_gen_number,
     sc.promotion = FALSE;
     sc.concurrent = FALSE;
 
-
-#ifdef TIME_GC
-        unsigned start;
-        unsigned finish;
-        start = GetCycleCount32();
-#endif //TIME_GC
-
 //  %type%  category = quote (relocate);
     dprintf (2,("---- Relocate phase -----"));
 
@@ -26104,13 +26001,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
     //join all threads to make sure they are synchronized
     dprintf(3, ("Joining after end of relocation"));
     gc_t_join.join(this, gc_join_relocate_phase_done);
-
 #endif //MULTIPLE_HEAPS
-
-#ifdef TIME_GC
-        finish = GetCycleCount32();
-        reloc_time = finish - start;
-#endif //TIME_GC
 
     dprintf(2,( "---- End of Relocate phase ----"));
 }
@@ -26468,11 +26359,6 @@ void gc_heap::compact_phase (int condemned_gen_number,
                              BOOL clear_cards)
 {
 //  %type%  category = quote (compact);
-#ifdef TIME_GC
-        unsigned start;
-        unsigned finish;
-        start = GetCycleCount32();
-#endif //TIME_GC
     generation*   condemned_gen = generation_of (condemned_gen_number);
     uint8_t*  start_address = first_condemned_address;
     size_t   current_brick = brick_of (start_address);
@@ -26590,11 +26476,6 @@ void gc_heap::compact_phase (int condemned_gen_number,
     }
 
     recover_saved_pinned_info();
-
-#ifdef TIME_GC
-    finish = GetCycleCount32();
-    compact_time = finish - start;
-#endif //TIME_GC
 
     concurrent_print_time_delta ("compact end");
 
@@ -27296,12 +27177,6 @@ void gc_heap::background_mark_phase ()
 
     assert (settings.concurrent);
 
-#ifdef TIME_GC
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#endif //TIME_GC
-
     if (gen0_must_clear_bricks > 0)
         gen0_must_clear_bricks--;
 
@@ -27824,11 +27699,6 @@ void gc_heap::background_mark_phase ()
     // We need to void alloc contexts here 'cause while background_ephemeral_sweep is running
     // we can't let the user code consume the left over parts in these alloc contexts.
     repair_allocation_contexts (FALSE);
-
-#ifdef TIME_GC
-        finish = GetCycleCount32();
-        mark_time = finish - start;
-#endif //TIME_GC
 
     dprintf (2, ("end of bgc mark: gen2 free list space: %d, free obj space: %d",
         generation_free_list_space (generation_of (max_generation)),
@@ -30529,7 +30399,7 @@ bool card_marking_enumerator::move_next(heap_segment* seg, uint8_t*& low, uint8_
                 // our caller should still be in one of the previous segments
 #ifdef _DEBUG
                 for (heap_segment* cur_seg = seg; cur_seg != segment; cur_seg = heap_segment_next_in_range(cur_seg))
-                {                    
+                {
                     assert(cur_seg);
                 }
 #endif //_DEBUG
@@ -37014,9 +36884,6 @@ bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
     return !!hs;
 }
 
-#ifdef STRESS_PINNING
-static n_promote = 0;
-#endif //STRESS_PINNING
 // promote an object
 void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 {
@@ -37449,16 +37316,6 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 
     Object* newAlloc = NULL;
 
-#ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocStart = GetCycleCount32();
-    unsigned finish;
-#elif defined(ENABLE_INSTRUMENTATION)
-    unsigned AllocStart = GetInstLogTime();
-    unsigned finish;
-#endif //COUNT_CYCLES
-#endif //TRACE_GC
-
     if (size < loh_size_threshold)
     {
 #ifdef TRACE_GC
@@ -37536,13 +37393,6 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    finish = GetCycleCount32();
-    AllocDuration += finish - AllocStart;
-#elif defined(ENABLE_INSTRUMENTATION)
-    finish = GetInstLogTime();
-    AllocDuration += finish - AllocStart;
-#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
@@ -37568,16 +37418,6 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
 
     Object* newAlloc = NULL;
 
-#ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocStart = GetCycleCount32();
-    unsigned finish;
-#elif defined(ENABLE_INSTRUMENTATION)
-    unsigned AllocStart = GetInstLogTime();
-    unsigned finish;
-#endif //COUNT_CYCLES
-#endif //TRACE_GC
-
 #ifdef MULTIPLE_HEAPS
     //take the first heap....
     gc_heap* hp = gc_heap::g_heaps[0];
@@ -37599,13 +37439,6 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    finish = GetCycleCount32();
-    AllocDuration += finish - AllocStart;
-#elif defined(ENABLE_INSTRUMENTATION)
-    finish = GetInstLogTime();
-    AllocDuration += finish - AllocStart;
-#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
@@ -37623,16 +37456,6 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 
     Object* newAlloc = NULL;
     alloc_context* acontext = static_cast<alloc_context*>(context);
-
-#ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocStart = GetCycleCount32();
-    unsigned finish;
-#elif defined(ENABLE_INSTRUMENTATION)
-    unsigned AllocStart = GetInstLogTime();
-    unsigned finish;
-#endif //COUNT_CYCLES
-#endif //TRACE_GC
 
 #ifdef MULTIPLE_HEAPS
     if (acontext->get_alloc_heap() == 0)
@@ -37673,13 +37496,6 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    finish = GetCycleCount32();
-    AllocDuration += finish - AllocStart;
-#elif defined(ENABLE_INSTRUMENTATION)
-    finish = GetInstLogTime();
-    AllocDuration += finish - AllocStart;
-#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
@@ -38311,11 +38127,7 @@ void gc_heap::do_post_gc()
     }
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocStart = GetCycleCount32();
-#else
     AllocStart = GCToOSInterface::QueryPerformanceCounter();
-#endif //COUNT_CYCLES
 #endif //TRACE_GC
 
 #ifdef MULTIPLE_HEAPS
@@ -38526,16 +38338,8 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
          }
     }
 
-#ifdef COUNT_CYCLES
-    int gc_start = GetCycleCount32();
-#endif //COUNT_CYCLES
-
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocDuration += GetCycleCount32() - AllocStart;
-#else
     AllocDuration += GCToOSInterface::QueryPerformanceCounter() - AllocStart;
-#endif //COUNT_CYCLES
 #endif //TRACE_GC
 
         gc_heap::g_low_memory_status = (reason == reason_lowmemory) ||
@@ -38578,15 +38382,9 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 // MAP_EVENT_MONITORS(EE_MONITOR_GARBAGE_COLLECTIONS, NotifyEvent(EE_EVENT_TYPE_GC_STARTED, 0));
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#else
     int64_t start;
     int64_t finish;
     start = GCToOSInterface::QueryPerformanceCounter();
-#endif //COUNT_CYCLES
     PromotedObjectCount = 0;
 #endif //TRACE_GC
 
@@ -38611,24 +38409,20 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 
     condemned_generation_number = GcCondemnedGeneration;
 #else
-        if (gc_heap::proceed_with_gc_p)
+    if (gc_heap::proceed_with_gc_p)
+    {
+        BEGIN_TIMING(gc_during_log);
+        pGenGCHeap->garbage_collect (condemned_generation_number);
+        if (gc_heap::pm_trigger_full_gc)
         {
-            BEGIN_TIMING(gc_during_log);
-            pGenGCHeap->garbage_collect (condemned_generation_number);
-            if (gc_heap::pm_trigger_full_gc)
-            {
-                pGenGCHeap->garbage_collect_pm_full_gc();
-            }
-            END_TIMING(gc_during_log);
+            pGenGCHeap->garbage_collect_pm_full_gc();
         }
+        END_TIMING(gc_during_log);
+    }
 #endif //MULTIPLE_HEAPS
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    finish = GetCycleCount32();
-#else
     finish = GCToOSInterface::QueryPerformanceCounter();
-#endif //COUNT_CYCLES
     GcDuration += finish - start;
     dprintf (3,
              ("<GC# %d> Condemned: %d, Duration: %d, total: %d Alloc Avg: %d, Small Objects:%d Large Objects:%d",
@@ -38663,11 +38457,6 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
     }
 #endif //BACKGROUND_GC
 #endif //!MULTIPLE_HEAPS
-
-#ifdef COUNT_CYCLES
-    printf ("GC: %d Time: %d\n", GcCondemnedGeneration,
-            GetCycleCount32() - gc_start);
-#endif //COUNT_CYCLES
 
 #ifndef MULTIPLE_HEAPS
     process_sync_log_stats();
