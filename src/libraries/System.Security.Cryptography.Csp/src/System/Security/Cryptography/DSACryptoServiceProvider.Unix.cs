@@ -5,6 +5,7 @@
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using System.IO;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -50,8 +51,21 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of DSACryptoServiceProvider")]
         public override byte[] CreateSignature(byte[] rgbHash) => _impl.CreateSignature(rgbHash);
 
+        protected override byte[] CreateSignatureCore(ReadOnlySpan<byte> hash, DSASignatureFormat signatureFormat)
+        {
+            Span<byte> sig = stackalloc byte[GetMaxSignatureSize(signatureFormat)];
+            bool result = TryCreateSignature(hash, sig, signatureFormat, out int bytesWritten);
+            Debug.Assert(result, $"TryCreateSignature failed. GetMaxSignaturesize returned {sig.Length}");
+            return sig.Slice(0, bytesWritten).ToArray();
+        }
+
         public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten) =>
             _impl.TryCreateSignature(hash, destination, out bytesWritten);
+
+        protected override bool TryCreateSignatureCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
+        {
+            return _impl.TryCreateSignature(hash, destination, signatureFormat, out bytesWritten);
+        }
 
         public CspKeyContainerInfo CspKeyContainerInfo
         {
@@ -196,12 +210,30 @@ namespace System.Security.Cryptography
             return _impl.SignData(data, hashAlgorithm);
         }
 
+        protected override byte[] SignDataCore(ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        {
+            Span<byte> sig = stackalloc byte[GetMaxSignatureSize(signatureFormat)];
+            bool result = _impl.TrySignData(data, sig, hashAlgorithm, signatureFormat, out int bytesWritten);
+            Debug.Assert(result, $"TrySignData failed. GetMaxSignaturesize returned {sig.Length}");
+            return sig.Slice(0, bytesWritten).ToArray();
+        }
+
+        protected override byte[] SignDataCore(Stream data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        {
+            return _impl.SignData(data, hashAlgorithm, signatureFormat);
+        }
+
         public override bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
             return _impl.TrySignData(data, destination, hashAlgorithm, out bytesWritten);
+        }
+
+        protected override bool TrySignDataCore(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat, out int bytesWritten)
+        {
+            return _impl.TrySignData(data, destination, hashAlgorithm, signatureFormat, out bytesWritten);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of DSACryptoServiceProvider")]
@@ -248,6 +280,15 @@ namespace System.Security.Cryptography
             return _impl.VerifyData(data, offset, count, signature, hashAlgorithm);
         }
 
+        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        {
+            return _impl.VerifyData(data, signature, hashAlgorithm, signatureFormat);
+        }
+
+        protected override bool VerifyDataCore(Stream data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        {
+            return _impl.VerifyData(data, signature.ToArray(), hashAlgorithm, signatureFormat);
+        }
         public override bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
             if (hashAlgorithm != HashAlgorithmName.SHA1)
@@ -269,6 +310,11 @@ namespace System.Security.Cryptography
 
         public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
             _impl.VerifySignature(hash, signature);
+
+        protected override bool VerifySignatureCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+        {
+            return VerifySignature(hash, signature, signatureFormat);
+        }
 
         // UseMachineKeyStore has no effect in Unix
         public static bool UseMachineKeyStore { get; set; }
