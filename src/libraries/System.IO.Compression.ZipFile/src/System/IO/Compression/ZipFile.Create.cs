@@ -146,7 +146,7 @@ namespace System.IO.Compression
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]  // See comment in the body.
-        public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode, Encoding entryNameEncoding)
+        public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode, Encoding? entryNameEncoding)
         {
             // Relies on FileStream's ctor for checking of archiveFileName
 
@@ -351,11 +351,11 @@ namespace System.IO.Compression
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
-                                               CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding entryNameEncoding) =>
+                                               CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding) =>
             DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding: null);
 
         private static void DoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
-                                                  CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding entryNameEncoding)
+                                                  CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding)
 
         {
             // Rely on Path.GetFullPath for validation of sourceDirectoryName and destinationArchive
@@ -402,8 +402,7 @@ namespace System.IO.Compression
                         else
                         {
                             // Entry marking an empty dir:
-                            DirectoryInfo possiblyEmpty = file as DirectoryInfo;
-                            if (possiblyEmpty != null && ZipFileUtils.IsDirEmpty(possiblyEmpty))
+                            if (file is DirectoryInfo possiblyEmpty && ZipFileUtils.IsDirEmpty(possiblyEmpty))
                             {
                                 // FullName never returns a directory separator character on the end,
                                 // but Zip archives require it to specify an explicit directory:
