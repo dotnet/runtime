@@ -436,12 +436,10 @@ namespace Internal.JitInterface
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
 
-#if READYTORUN
             if (method.IsPInvoke && method.IsSuppressGCTransition())
             {
                 sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
             }
-#endif
 
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
