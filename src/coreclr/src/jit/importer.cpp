@@ -5902,13 +5902,13 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
             break;
 
         case CEE_ISINST:
-            // box + isinst + br_true/false
             if (codeAddr + 1 + sizeof(mdToken) + 1 <= codeEndp)
             {
                 const BYTE* nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
 
                 switch (nextCodeAddr[0])
                 {
+                    // box + isinst + br_true/false
                     case CEE_BRTRUE:
                     case CEE_BRTRUE_S:
                     case CEE_BRFALSE:
@@ -5941,6 +5941,27 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                 }
                             }
                         }
+                        break;
+
+                    // box + isinst + unbox.any
+                    case CEE_UNBOX_ANY:
+                        if ((nextCodeAddr + 5) <= codeEndp)
+                        {
+                            CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
+                            impResolveToken(codeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
+
+                            // See if the resolved tokens describe types that are equal.
+                            const TypeCompareState compare =
+                                info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, pResolvedToken->hClass);
+
+                            // If so, box/unbox.any is a nop.
+                            if (compare == TypeCompareState::Must)
+                            {
+                                JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
+                                return 6 + sizeof(mdToken);
+                            }
+                        }
+                        break;
                 }
             }
             break;
