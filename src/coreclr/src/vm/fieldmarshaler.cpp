@@ -156,7 +156,7 @@ VOID ParseNativeType(Module*                     pModule,
         case MarshalInfo::MARSHAL_TYPE_BSTR:
         case MarshalInfo::MARSHAL_TYPE_ANSIBSTR:
             *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
-            break;      
+            break;
 #ifdef FEATURE_COMINTEROP
         case MarshalInfo::MARSHAL_TYPE_HSTRING:
             *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(HSTRING), sizeof(HSTRING));
@@ -373,8 +373,7 @@ BOOL IsStructMarshalable(TypeHandle th)
 
 NativeFieldDescriptor::NativeFieldDescriptor()
     :m_offset(0),
-    m_category(NativeFieldCategory::ILLEGAL),
-    m_isNestedType(false)
+    m_category(NativeFieldCategory::ILLEGAL)
 {
     nativeSizeAndAlignment.m_nativeSize = 1;
     nativeSizeAndAlignment.m_alignmentRequirement = 1;
@@ -383,17 +382,16 @@ NativeFieldDescriptor::NativeFieldDescriptor()
 
 NativeFieldDescriptor::NativeFieldDescriptor(NativeFieldCategory flags, ULONG nativeSize, ULONG alignment)
     :m_offset(0),
-    m_category(flags),
-    m_isNestedType(false)
+    m_category(flags)
 {
+    _ASSERTE(flags != NativeFieldCategory::NESTED);
     nativeSizeAndAlignment.m_nativeSize = nativeSize;
     nativeSizeAndAlignment.m_alignmentRequirement = alignment;
     m_pFD.SetValueMaybeNull(nullptr);
 }
 
 NativeFieldDescriptor::NativeFieldDescriptor(PTR_MethodTable pMT, int numElements)
-    :m_isNestedType(true),
-    m_category(NativeFieldCategory::NESTED)
+    :m_category(NativeFieldCategory::NESTED)
 {
     CONTRACTL
     {
@@ -409,11 +407,10 @@ NativeFieldDescriptor::NativeFieldDescriptor(PTR_MethodTable pMT, int numElement
 
 NativeFieldDescriptor::NativeFieldDescriptor(const NativeFieldDescriptor& other)
     :m_offset(other.m_offset),
-    m_category(other.m_category),
-    m_isNestedType(other.m_isNestedType)
+    m_category(other.m_category)
 {
     m_pFD.SetValueMaybeNull(other.m_pFD.GetValueMaybeNull());
-    if (m_isNestedType)
+    if (IsNestedType())
     {
         nestedTypeAndCount.m_pNestedType.SetValueMaybeNull(other.nestedTypeAndCount.m_pNestedType.GetValueMaybeNull());
         nestedTypeAndCount.m_numElements = other.nestedTypeAndCount.m_numElements;
@@ -429,10 +426,9 @@ NativeFieldDescriptor& NativeFieldDescriptor::operator=(const NativeFieldDescrip
 {
     m_offset = other.m_offset;
     m_category = other.m_category;
-    m_isNestedType = other.m_isNestedType;
     m_pFD.SetValueMaybeNull(other.m_pFD.GetValueMaybeNull());
 
-    if (m_isNestedType)
+    if (IsNestedType())
     {
         nestedTypeAndCount.m_pNestedType.SetValueMaybeNull(other.nestedTypeAndCount.m_pNestedType.GetValueMaybeNull());
         nestedTypeAndCount.m_numElements = other.nestedTypeAndCount.m_numElements;
@@ -448,7 +444,7 @@ NativeFieldDescriptor& NativeFieldDescriptor::operator=(const NativeFieldDescrip
 
 UINT32 NativeFieldDescriptor::AlignmentRequirement() const
 {
-    if (m_isNestedType)
+    if (IsNestedType())
     {
         MethodTable* pMT = GetNestedNativeMethodTable();
         if (pMT->IsBlittable())
@@ -471,7 +467,7 @@ PTR_MethodTable NativeFieldDescriptor::GetNestedNativeMethodTable() const
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(IsRestored());
-        PRECONDITION(m_isNestedType);
+        PRECONDITION(IsNestedType());
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -514,7 +510,7 @@ void NativeFieldDescriptor::Restore()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(!m_isNestedType || CheckPointer(nestedTypeAndCount.m_pNestedType.GetValue()));
+        PRECONDITION(!IsNestedType() || CheckPointer(nestedTypeAndCount.m_pNestedType.GetValue()));
     }
     CONTRACTL_END;
 
@@ -523,7 +519,7 @@ void NativeFieldDescriptor::Restore()
     Module::RestoreFieldDescPointer(&m_pFD);
 #endif // FEATURE_PREJIT
 
-    if (m_isNestedType)
+    if (IsNestedType())
     {
 
 #ifdef FEATURE_PREJIT

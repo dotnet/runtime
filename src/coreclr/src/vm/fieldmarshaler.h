@@ -103,7 +103,7 @@ public:
 
         image->FixupFieldDescPointer(this, &m_pFD);
 
-        if (m_isNestedType)
+        if (IsNestedType())
         {
             image->FixupMethodTablePointer(this, &nestedTypeAndCount.m_pNestedType);
         }
@@ -127,7 +127,7 @@ public:
     {
         CONTRACTL
         {
-            PRECONDITION(m_isNestedType);
+            PRECONDITION(IsNestedType());
         }
         CONTRACTL_END;
 
@@ -136,7 +136,7 @@ public:
 
     UINT32 NativeSize() const
     {
-        if (m_isNestedType)
+        if (IsNestedType())
         {
             MethodTable* pMT = GetNestedNativeMethodTable();
             return pMT->GetNativeSize() * GetNumElements();
@@ -169,6 +169,11 @@ public:
     }
 
 private:
+    bool IsNestedType() const
+    {
+        return m_category == NativeFieldCategory::NESTED;
+    }
+
     RelativeFixupPointer<PTR_FieldDesc> m_pFD;
     union
     {
@@ -185,7 +190,6 @@ private:
     };
     UINT32 m_offset;
     NativeFieldCategory m_category;
-    bool m_isNestedType;
 };
 
 VOID ParseNativeType(Module* pModule,
@@ -281,7 +285,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_nativeFieldDescriptors[0];
     }
-    
+
     CorElementType GetNativeHFATypeRaw() const;
 
 #ifdef FEATURE_HFA
