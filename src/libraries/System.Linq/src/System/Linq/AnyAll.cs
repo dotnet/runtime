@@ -45,33 +45,32 @@ namespace System.Linq
             }
         }
 
-        public static bool Any<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) {
-            if (source == null) {
+        public static bool Any<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        {
+            if (source == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null) {
+            if (predicate == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (source is List<TSource> list) {
-                for (var i = 0; i < list.Count; i++) {
-                    if (predicate(list[i])) {
-                        return true;
-                    }
-                }
+            if (source is List<TSource> list)
+            {
+                return !list.TrueForAll(element => !predicate(element));
             }
 
-            if (source is TSource[] array) {
-                foreach (TSource element in array) {
-                    if (predicate(element)) {
-                        return true;
-                    }
-                }
+            if (source is TSource[] array)
+            {
+                return !Array.TrueForAll(array, element => !predicate(element));
             }
 
-            foreach (TSource element in source) {
-                if (predicate(element)) {
+            foreach (TSource element in source)
+            {
+                if (predicate(element))
+                {
                     return true;
                 }
             }
@@ -79,33 +78,32 @@ namespace System.Linq
             return false;
         }
 
-        public static bool All<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) {
-            if (source == null) {
+        public static bool All<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        {
+            if (source == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null) {
+            if (predicate == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (source is List<TSource> list) {
-                for (var i = 0; i < list.Count; i++) {
-                    if (!predicate(list[i])) {
-                        return false;
-                    }
-                }
+            if (source is List<TSource> list)
+            {
+                return list.TrueForAll(element => predicate(element));
             }
 
-            if (source is TSource[] array) {
-                foreach (TSource element in array) {
-                    if (!predicate(element)) {
-                        return false;
-                    }
-                }
+            if (source is TSource[] array)
+            {
+                return Array.TrueForAll(array, element => predicate(element));
             }
 
-            foreach (TSource element in source) {
-                if (!predicate(element)) {
+            foreach (TSource element in source)
+            {
+                if (!predicate(element))
+                {
                     return false;
                 }
             }
