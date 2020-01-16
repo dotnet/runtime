@@ -677,23 +677,45 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Eliminate empties and concat adjacent strings/chars.
-        /// Basic optimization. Adjacent strings can be concatenated.
-        ///
-        /// (?:abc)(?:def) -> abcdef
+        /// Eliminate empties and concat adjacent entries.
         /// </summary>
         private RegexNode ReduceConcatenation()
         {
-            int childCount = ChildCount();
-            if (childCount == 0)
+            // If the concat node has zero or only one child, get rid of the concat.
+            switch (ChildCount())
             {
-                return new RegexNode(Empty, Options);
+                case 0:
+                    return new RegexNode(Empty, Options);
+                case 1:
+                    return Child(0);
             }
 
-            if (childCount == 1)
+            // Coalesce adjacent characters/strings.
+            ReduceConcatenationWithAdjacentStrings();
+
+            // Coalesce adjacent loops.  This helps to minimize work done by the interpreter, minimize code gen,
+            // and also help to reduce catastrophic backtracking.
+            ReduceConcatenationWithAdjacentLoops();
+
+            // Now convert as many loops as possible to be atomic to avoid unnecessary backtracking.
+            if ((Options & RegexOptions.RightToLeft) == 0)
             {
-                return Child(0);
+                ReduceConcatenateWithAutoAtomic();
             }
+
+            // If the concatenation is now empty, return an empty node, or if it's got a single child, return that child.
+            // Otherwise, return this.
+            return StripEnation(Empty);
+        }
+
+        /// <summary>
+        /// Combine adjacent characters/strings.
+        /// (?:abc)(?:def) -> abcdef
+        /// </summary>
+        private void ReduceConcatenationWithAdjacentStrings()
+        {
+            Debug.Assert(Type == Concatenate);
+            Debug.Assert(Children is List<RegexNode>);
 
             bool wasLastString = false;
             RegexOptions optionsLast = 0;
@@ -771,23 +793,134 @@ namespace System.Text.RegularExpressions
             {
                 children.RemoveRange(j, i - j);
             }
+        }
 
-            // Now try to convert as many loops as possible to be atomic to avoid unnecessary backtracking.
-            if ((Options & RegexOptions.RightToLeft) == 0)
+        /// <summary>
+        /// Combine adjacent loops.
+        /// a*a*a* => a*
+        /// </summary>
+        private void ReduceConcatenationWithAdjacentLoops()
+        {
+            Debug.Assert(Type == Concatenate);
+            Debug.Assert(Children is List<RegexNode>);
+
+            var children = (List<RegexNode>)Children!;
+            int current = 0, next = 1, nextSave = 1;
+
+            while (next < children.Count)
             {
-                ReduceConcatenateWithAutoAtomic();
+                RegexNode currentNode = children[current];
+                RegexNode nextNode = children[next];
+
+                if (currentNode.Options == nextNode.Options)
+                {
+                    static bool CanCombineCounts(int nodeMin, int nodeMax, int nextMin, int nextMax)
+                    {
+                        // We shouldn't have an infinite minimum; bail if we find one. Also check for the
+                        // degenerate case where we'd make the min overflow or go infinite when it wasn't already.
+                        if (nodeMin == int.MaxValue ||
+                            nextMin == int.MaxValue ||
+                            (uint)nodeMin + (uint)nextMin >= int.MaxValue)
+                        {
+                            return false;
+                        }
+
+                        // Similar overflow / go infinite check for max (which can be infinite).
+                        if (nodeMax != int.MaxValue &&
+                            nextMax != int.MaxValue &&
+                            (uint)nodeMax + (uint)nextMax >= int.MaxValue)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    }
+
+                    switch (currentNode.Type)
+                    {
+                        // Coalescing a loop with its same type
+                        case Oneloop when nextNode.Type == Oneloop && currentNode.Ch == nextNode.Ch:
+                        case Oneloopatomic when nextNode.Type == Oneloopatomic && currentNode.Ch == nextNode.Ch:
+                        case Onelazy when nextNode.Type == Onelazy && currentNode.Ch == nextNode.Ch:
+                        case Notoneloop when nextNode.Type == Notoneloop && currentNode.Ch == nextNode.Ch:
+                        case Notoneloopatomic when nextNode.Type == Notoneloopatomic && currentNode.Ch == nextNode.Ch:
+                        case Notonelazy when nextNode.Type == Notonelazy && currentNode.Ch == nextNode.Ch:
+                        case Setloop when nextNode.Type == Setloop && currentNode.Str == nextNode.Str:
+                        case Setloopatomic when nextNode.Type == Setloopatomic && currentNode.Str == nextNode.Str:
+                        case Setlazy when nextNode.Type == Setlazy && currentNode.Str == nextNode.Str:
+                            if (CanCombineCounts(currentNode.M, currentNode.N, nextNode.M, nextNode.N))
+                            {
+                                currentNode.M += nextNode.M;
+                                if (currentNode.N != int.MaxValue)
+                                {
+                                    currentNode.N = nextNode.N == int.MaxValue ? int.MaxValue : currentNode.N + nextNode.N;
+                                }
+                                next++;
+                                continue;
+                            }
+                            break;
+
+                        // Coalescing a loop with an additional item of the same type
+                        case Oneloop when nextNode.Type == One && currentNode.Ch == nextNode.Ch:
+                        case Oneloopatomic when nextNode.Type == One && currentNode.Ch == nextNode.Ch:
+                        case Onelazy when nextNode.Type == One && currentNode.Ch == nextNode.Ch:
+                        case Notoneloop when nextNode.Type == Notone && currentNode.Ch == nextNode.Ch:
+                        case Notoneloopatomic when nextNode.Type == Notone && currentNode.Ch == nextNode.Ch:
+                        case Notonelazy when nextNode.Type == Notone && currentNode.Ch == nextNode.Ch:
+                        case Setloop when nextNode.Type == Set && currentNode.Str == nextNode.Str:
+                        case Setloopatomic when nextNode.Type == Set && currentNode.Str == nextNode.Str:
+                        case Setlazy when nextNode.Type == Set && currentNode.Str == nextNode.Str:
+                            if (CanCombineCounts(currentNode.M, currentNode.N, 1, 1))
+                            {
+                                currentNode.M++;
+                                if (currentNode.N != int.MaxValue)
+                                {
+                                    currentNode.N++;
+                                }
+                                next++;
+                                continue;
+                            }
+                            break;
+
+                        // Coalescing an individual item with a loop.
+                        case One when (nextNode.Type == Oneloop || nextNode.Type == Oneloopatomic || nextNode.Type == Onelazy) && currentNode.Ch == nextNode.Ch:
+                        case Notone when (nextNode.Type == Notoneloop || nextNode.Type == Notoneloopatomic || nextNode.Type == Notonelazy) && currentNode.Ch == nextNode.Ch:
+                        case Set when (nextNode.Type == Setloop || nextNode.Type == Setloopatomic || nextNode.Type == Setlazy) && currentNode.Str == nextNode.Str:
+                            if (CanCombineCounts(1, 1, nextNode.M, nextNode.N))
+                            {
+                                currentNode.Type = nextNode.Type;
+                                currentNode.M = nextNode.M + 1;
+                                currentNode.N = nextNode.N == int.MaxValue ? int.MaxValue : nextNode.N + 1;
+                                next++;
+                                continue;
+                            }
+                            break;
+
+                        // Coalescing an individual item with another individual item.
+                        case One when nextNode.Type == One && currentNode.Ch == nextNode.Ch:
+                        case Notone when nextNode.Type == Notone && currentNode.Ch == nextNode.Ch:
+                        case Set when nextNode.Type == Set && currentNode.Str == nextNode.Str:
+                            currentNode.MakeRep(Oneloop, 2, 2);
+                            next++;
+                            continue;
+                    }
+                }
+
+                children[nextSave++] = children[next];
+                current = next;
+                next++;
             }
 
-            // If the concatenation is now empty, return an empty node, or if it's got a single child, return that child.
-            // Otherwise, return this.
-            return StripEnation(Empty);
+            if (nextSave < children.Count)
+            {
+                children.RemoveRange(nextSave, children.Count - nextSave);
+            }
         }
 
         /// <summary>
         /// Finds one/notone/setloop nodes in the concatenation that can be automatically upgraded
         /// to one/notone/setloopatomic nodes.  Such changes avoid potential useless backtracking.
-        /// This looks for cases like A*B, where A and B are known to not overlap: in such cases,
-        /// we can effectively convert this to (?>A*)B.
+        /// A*B (where sets A and B don't overlap) => (?>A*)B.
         /// </summary>
         private void ReduceConcatenateWithAutoAtomic()
         {
