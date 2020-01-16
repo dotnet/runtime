@@ -600,15 +600,14 @@ void TieredCompilationManager::DoBackgroundWork()
     // work item to the thread pool and return this thread back to the pool.
     const DWORD OptimizationQuantumMs = 50;
 
-    bool sendBackgroundJitStopEvent = false;
     if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
     {
-        UINT32 countOfMethodsToOptimize = VolatileLoadWithoutBarrier(&m_countOfMethodsToOptimize);
-        if (countOfMethodsToOptimize != 0)
+        UINT32 countOfMethodsToOptimize = m_countOfMethodsToOptimize;
+        if (m_isPendingCallCountingCompletion)
         {
-            ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStart(countOfMethodsToOptimize);
-            sendBackgroundJitStopEvent = true;
+            countOfMethodsToOptimize += CallCountingManager::GetCountOfCodeVersionsPendingCompletion();
         }
+        ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStart(countOfMethodsToOptimize);
     }
 
     bool allMethodsJitted = false;
@@ -722,9 +721,14 @@ void TieredCompilationManager::DoBackgroundWork()
         }
     }
 
-    if (sendBackgroundJitStopEvent && ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
+    if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
     {
-        ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(m_countOfMethodsToOptimize, jittedMethodCount);
+        UINT32 countOfMethodsToOptimize = m_countOfMethodsToOptimize;
+        if (m_isPendingCallCountingCompletion)
+        {
+            countOfMethodsToOptimize += CallCountingManager::GetCountOfCodeVersionsPendingCompletion();
+        }
+        ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(countOfMethodsToOptimize, jittedMethodCount);
     }
 
     if (allMethodsJitted && CallCountingManager::MayDeleteCallCountingStubs())

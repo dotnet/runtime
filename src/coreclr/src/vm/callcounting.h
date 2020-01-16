@@ -306,6 +306,7 @@ public:
         bool wasMethodCalled,
         bool *scheduleTieringBackgroundWorkRef);
     static PCODE OnCallCountThresholdReached(TransitionBlock *transitionBlock, TADDR stubIdentifyingToken);
+    static COUNT_T GetCountOfCodeVersionsPendingCompletion();
     static void CompleteCallCounting();
 
 public:

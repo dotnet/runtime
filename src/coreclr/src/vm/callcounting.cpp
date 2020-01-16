@@ -847,6 +847,29 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     return codeEntryPoint;
 }
 
+COUNT_T CallCountingManager::GetCountOfCodeVersionsPendingCompletion()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    COUNT_T count = 0;
+
+    CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+    for (auto itEnd = s_callCountingManagers->End(), it = s_callCountingManagers->Begin(); it != itEnd; ++it)
+    {
+        CallCountingManager *callCountingManager = *it;
+        count += callCountingManager->m_callCountingInfosPendingCompletion.GetCount();
+    }
+
+    return count;
+}
+
 void CallCountingManager::CompleteCallCounting()
 {
     CONTRACTL
