@@ -321,14 +321,15 @@ namespace Internal.Cryptography.Pal
 
         internal static ISet<string> ReadCertPolicyExtension(X509Extension extension)
         {
-            AsnReader reader = new AsnReader(extension.RawData, AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
+            byte[] rawData = extension.RawData;
+            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+            AsnValueReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 
             HashSet<string> policies = new HashSet<string>();
             while (sequenceReader.HasData)
             {
-                PolicyInformationAsn.Decode(sequenceReader, out PolicyInformationAsn policyInformation);
+                PolicyInformationAsn.Decode(ref sequenceReader, rawData, out PolicyInformationAsn policyInformation);
                 policies.Add(policyInformation.PolicyIdentifier);
 
                 // There is an optional policy qualifier here, but it is for information
@@ -343,14 +344,15 @@ namespace Internal.Cryptography.Pal
 
         private static List<CertificatePolicyMappingAsn> ReadCertPolicyMappingsExtension(X509Extension extension)
         {
-            AsnReader reader = new AsnReader(extension.RawData, AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
+            byte[] rawData = extension.RawData;
+            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+            AsnValueReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 
             List<CertificatePolicyMappingAsn> mappings = new List<CertificatePolicyMappingAsn>();
             while (sequenceReader.HasData)
             {
-                CertificatePolicyMappingAsn.Decode(sequenceReader, out CertificatePolicyMappingAsn mapping);
+                CertificatePolicyMappingAsn.Decode(ref sequenceReader, rawData, out CertificatePolicyMappingAsn mapping);
                 mappings.Add(mapping);
             }
 
