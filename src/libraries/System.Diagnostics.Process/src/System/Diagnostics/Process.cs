@@ -1388,6 +1388,12 @@ namespace System.Diagnostics
 
             if (!Associated) { throw new InvalidOperationException(SR.NoAssociatedProcess); }
 
+            if (!HasExited)
+            {
+                // Early out for cancellation before doing more expensive work
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
             try
             {
                 // CASE 1: We enable events
