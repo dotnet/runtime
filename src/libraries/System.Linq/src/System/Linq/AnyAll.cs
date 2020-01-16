@@ -57,6 +57,29 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
+            if (source is List<TSource> list)
+            {
+                for (var index = 0; index < list.Count; index++)
+                {
+                    var element = list[index];
+                    if (predicate(element))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (source is TSource[] array)
+            {
+                foreach (TSource element in array)
+                {
+                    if (predicate(element))
+                    {
+                        return true;
+                    }
+                }
+            }
+
             foreach (TSource element in source)
             {
                 if (predicate(element))
@@ -78,6 +101,29 @@ namespace System.Linq
             if (predicate == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (source is List<TSource> list)
+            {
+                for (var index = 0; index < list.Count; index++)
+                {
+                    var element = list[index];
+                    if (!predicate(element))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if (source is TSource[] array)
+            {
+                foreach (TSource element in array)
+                {
+                    if (!predicate(element))
+                    {
+                        return false;
+                    }
+                }
             }
 
             foreach (TSource element in source)

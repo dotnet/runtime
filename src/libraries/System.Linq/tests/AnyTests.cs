@@ -21,6 +21,38 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void SameResultsRepeatCallsIntArray() {
+            var array = new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 };
+
+            Func<int, bool> predicate = IsEven;
+            Assert.Equal(array.All(predicate), array.All(predicate));
+        }
+
+        [Fact]
+        public void SameResultsRepeatCallsListOfInt() {
+            var list = new List<int>() { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 };
+
+            Func<int, bool> predicate = IsEven;
+            Assert.Equal(list.All(predicate), list.All(predicate));
+        }
+
+        [Fact]
+        public void SameResultsRepeatCallsIntArray() {
+            var array = new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 };
+
+            Func<int, bool> predicate = IsEven;
+            Assert.Equal(array.Any(predicate), array.Any(predicate));
+        }
+
+        [Fact]
+        public void SameResultsRepeatCallsListOfInt() {
+            var list = new List<int> { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 };
+
+            Func<int, bool> predicate = IsEven;
+            Assert.Equal(list.Any(predicate), list.Any(predicate));
+        }
+
+        [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
             var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
@@ -62,6 +94,26 @@ namespace System.Linq.Tests
         public void Any(IEnumerable<int> source, bool expected)
         {
             Assert.Equal(expected, source.Any());
+        }
+
+        [Theory]
+        [MemberData(nameof(TestDataWithPredicate))]
+        public void AnyList(IEnumerable<int> source, Func<int, bool> predicate, bool expected) {
+            if (predicate == null) {
+                Assert.Equal(expected, new List<int>(source).Any());
+            } else {
+                Assert.Equal(expected, new List<int>(source).Any(predicate));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestDataWithPredicate))]
+        public void AnyArray(IEnumerable<int> source, Func<int, bool> predicate, bool expected) {
+            if (predicate == null) {
+                Assert.Equal(expected, System.Linq.Enumerable.ToArray(source).Any());
+            } else {
+                Assert.Equal(expected, System.Linq.Enumerable.ToArray(source).Any(predicate));
+            }
         }
 
         public static IEnumerable<object[]> TestDataWithPredicate()

@@ -57,6 +57,18 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.All(predicate));
         }
 
+        [Theory]
+        [MemberData(nameof(All_TestData))]
+        public void AllList(IEnumerable<int> source, Func<int, bool> predicate, bool expected) {
+            Assert.Equal(expected, System.Linq.Enumerable.ToList(source).All(predicate));
+        }
+
+        [Theory]
+        [MemberData(nameof(All_TestData))]
+        public void AllArray(IEnumerable<int> source, Func<int, bool> predicate, bool expected) {
+            Assert.Equal(expected, System.Linq.Enumerable.ToArray(source).All(predicate));
+        }
+
         [Theory, MemberData(nameof(All_TestData))]
         public void AllRunOnce(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
         {
