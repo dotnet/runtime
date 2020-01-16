@@ -5,6 +5,8 @@
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <Platform Condition="'$(__BuildArch)' != ''">$(__BuildArch)</Platform>
+    <!-- AnyCPU is set by default if platform isn't set. -->
+    <Platform Condition="'$(Platform)' == 'AnyCPU'" />
     <Platform Condition="'$(Platform)' == '' or '$(Platform)' == 'amd64'">x64</Platform>
     <Platform Condition="'$(Platform)' == 'armel'">arm</Platform>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(Platform)</TargetArchitecture>
@@ -19,6 +21,10 @@
     <Configuration Condition="'$(Configuration)' == '' or '$(Configuration)' == 'debug'">Debug</Configuration>
     <Configuration Condition="'$(Configuration)' == 'release'">Release</Configuration>
     <Configuration Condition="'$(Configuration)' == 'checked'">Checked</Configuration>
+
+    <!-- Used by VS configuration manager. -->
+    <Configurations>Debug;Release;Checked</Configurations>
+    <Platforms>x64;x86;arm;arm64</Platforms>
   </PropertyGroup>
 
   <!-- Setup Default symbol and optimization for Configuration -->
@@ -26,9 +32,6 @@
     <!-- Ensure a portable PDB is emitted. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <!-- Used by VS configuration manager. -->
-    <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;arm64</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
