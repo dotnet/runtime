@@ -20,7 +20,6 @@
         .586
         .model  flat
 
-include asmmacros.inc
 include asmconstants.inc
 
         assume fs: nothing
@@ -138,6 +137,39 @@ endif
 
 endm  ; POP_CPFH_FOR_COM
 endif ; FEATURE_COMINTEROP
+
+;
+; FramedMethodFrame prolog
+;
+STUB_PROLOG  macro
+    ; push ebp-frame
+    push        ebp
+    mov         ebp,esp
+
+    ; save CalleeSavedRegisters
+    push        ebx
+    push        esi
+    push        edi
+
+    ; push ArgumentRegisters
+    push        ecx
+    push        edx
+endm
+
+;
+; FramedMethodFrame epilog
+;
+STUB_EPILOG macro
+    ; pop ArgumentRegisters
+    pop     edx
+    pop     ecx
+
+    ; pop CalleeSavedRegisters
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp
+endm
 
 ;
 ; FramedMethodFrame epilog
@@ -1735,5 +1767,34 @@ DYNAMICHELPER DynamicHelperFrameFlags_ObjectArg, _Obj
 DYNAMICHELPER <DynamicHelperFrameFlags_ObjectArg OR DynamicHelperFrameFlags_ObjectArg2>, _ObjObj
 
 endif ; FEATURE_READYTORUN
+
+ifdef FEATURE_TIERED_COMPILATION
+
+EXTERN _OnCallCountThresholdReached@8:proc
+
+_OnCallCountThresholdReachedStub@0 proc public
+    ; Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
+    pop     eax
+    jmp     _OnCallCountThresholdReachedStub2@0
+_OnCallCountThresholdReachedStub@0 endp
+
+_OnCallCountThresholdReachedStub2@0 proc public
+    STUB_PROLOG
+
+    mov     esi, esp
+
+    push    eax ; stub-identifying token, see OnCallCountThresholdReachedStub
+    push    esi ; TransitionBlock *
+    call    _OnCallCountThresholdReached@8
+
+    STUB_EPILOG
+    jmp     eax
+
+    ; This will never be executed. It is just to help out stack-walking logic
+    ; which disassembles the epilog to unwind the stack.
+    ret
+_OnCallCountThresholdReachedStub2@0 endp
+
+endif ; FEATURE_TIERED_COMPILATION
 
     end

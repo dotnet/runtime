@@ -7,6 +7,46 @@
 #include "asmconstants.h"
 
 //
+// FramedMethodFrame prolog
+//
+.macro STUB_PROLOG
+    // push ebp-frame
+    PROLOG_BEG
+
+    // save CalleeSavedRegisters
+    PROLOG_PUSH ebx
+    PROLOG_PUSH esi
+    PROLOG_PUSH edi
+
+    // push ArgumentRegisters
+    PROLOG_PUSH ecx
+    PROLOG_PUSH edx
+
+    // set frame pointer
+    PROLOG_END
+.endm
+
+//
+// FramedMethodFrame epilog
+//
+.macro STUB_EPILOG
+    // restore stack pointer
+    EPILOG_BEG
+
+    // pop ArgumentRegisters
+    EPILOG_POP edx
+    EPILOG_POP ecx
+
+    // pop CalleeSavedRegisters
+    EPILOG_POP edi
+    EPILOG_POP esi
+    EPILOG_POP ebx
+
+    // pop ebp-frame
+    EPILOG_END
+.endm
+
+//
 // FramedMethodFrame epilog
 //
 .macro STUB_EPILOG_RETURN
@@ -1361,3 +1401,38 @@ NESTED_END ProfileTailcallNaked, _TEXT
 NESTED_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT, NoHandler
     ret
 NESTED_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+
+#ifdef FEATURE_TIERED_COMPILATION
+
+LEAF_ENTRY OnCallCountThresholdReachedStub, _TEXT
+    // Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
+    pop     eax
+    jmp     C_FUNC(OnCallCountThresholdReachedStub2)
+LEAF_END OnCallCountThresholdReachedStub, _TEXT
+
+NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT, NoHandler
+    STUB_PROLOG
+
+    mov     esi, esp
+
+    // Align the stack for the call
+    lea     ebx, [esp - 8]
+    and     ebx, 0fh
+    sub     esp, ebx
+
+    push    eax // stub-identifying token, see OnCallCountThresholdReachedStub
+    push    esi // TransitionBlock *
+    CHECK_STACK_ALIGNMENT
+    call    C_FUNC(OnCallCountThresholdReached)
+
+    mov     esp, esi
+
+    STUB_EPILOG
+    jmp     eax
+
+    // This will never be executed. It is just to help out stack-walking logic
+    // which disassembles the epilog to unwind the stack.
+    ret
+NESTED_END OnCallCountThresholdReachedStub2, _TEXT
+
+#endif // FEATURE_TIERED_COMPILATION
