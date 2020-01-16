@@ -1647,7 +1647,7 @@ part2:
 #ifdef LOGGING
                 ShutdownLogging();
 #endif
-                GCHeapUtilities::GetGCHeap()->ShutDownLogging();
+                GCHeapUtilities::GetGCHeap()->Shutdown();
             }
         }
 

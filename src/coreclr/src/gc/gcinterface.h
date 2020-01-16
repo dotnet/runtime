@@ -735,7 +735,7 @@ public:
     virtual void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor) = 0;
 
     // Flush the log and close the file if GCLog is turned on.
-    virtual void ShutDownLogging() = 0;
+    virtual void Shutdown() = 0;
 
     /*
     ============================================================================

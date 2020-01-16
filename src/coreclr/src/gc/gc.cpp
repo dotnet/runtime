@@ -672,7 +672,7 @@ void GCLogConfig (const char *fmt, ... )
 }
 #endif // GC_CONFIG_DRIVEN && !DACCESS_COMPILE
 
-void GCHeap::ShutDownLogging()
+void GCHeap::Shutdown()
 {
 #if defined(TRACE_GC) && !defined(DACCESS_COMPILE)
     if (gc_log_on && (gc_log != NULL))
@@ -36413,7 +36413,7 @@ void DestructObject (CObjectHeader* hdr)
     hdr->~CObjectHeader();
 }
 
-HRESULT GCHeap::Shutdown ()
+HRESULT GCHeap::StaticShutdown ()
 {
     deleteGCShadow();
 
