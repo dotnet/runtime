@@ -13,23 +13,26 @@ Xcode
 
 Install Apple Xcode developer tools from the Mac App Store ([link](https://apps.apple.com/us/app/xcode/id497799835)).
 
-CMake
------
+Toolchain Setup
+---------------
 
-dotnet/runtime has a dependency on CMake 3.15.5 for the build. You can download it from [CMake downloads](http://www.cmake.org/download/).
+Building dotnet/runtime requires CMake 3.15.5 or newer.  You can download it from [CMake downloads](http://www.cmake.org/download/).
 
-Alternatively, you can install CMake from [Homebrew](http://brew.sh/).
+For ease of use, you should setup the entire toolchain using [Homebrew](http://brew.sh).
 
-```sh
-brew install cmake
+Install the following packages:
+
+- cmake
+- autoconf
+- automake
+- libtool
+- pkg-config
+- python3
+- icu4c
+
+The lines to install all the packages above:
+
 ```
-
-ICU
----
-
-ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](http://brew.sh/).
-
-```sh
-brew install icu4c
+brew install cmake autoconf automake libtool pkg-config python3 icu4c
 brew link --force icu4c
 ```
