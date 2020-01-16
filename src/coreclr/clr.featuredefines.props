@@ -19,15 +19,15 @@
 
     <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
     <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
-    <FeaturePortableShuffleThunks Condition="'$(ArchGroup)' != 'x86'">true</FeaturePortableShuffleThunks>
+    <FeaturePortableShuffleThunks Condition="'$(Platform)' != 'x86'">true</FeaturePortableShuffleThunks>
     <FeatureInstantiatingStubAsIL>true</FeatureInstantiatingStubAsIL>
     <FeatureStubsAsIL>true</FeatureStubsAsIL>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-    <FeatureArrayStubAsIL Condition="'$(ArchGroup)' != 'x86'">true</FeatureArrayStubAsIL>
-    <FeatureMulticastStubAsIL Condition="'$(ArchGroup)' != 'x86'">true</FeatureMulticastStubAsIL>
-    <FeatureStubsAsIL Condition="'$(ArchGroup)' == 'arm64'">true</FeatureStubsAsIL>
+    <FeatureArrayStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureArrayStubAsIL>
+    <FeatureMulticastStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureMulticastStubAsIL>
+    <FeatureStubsAsIL Condition="'$(Platform)' == 'arm64'">true</FeatureStubsAsIL>
     <FeatureCominterop>true</FeatureCominterop>
     <FeatureClassicCominterop>true</FeatureClassicCominterop>
     <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
@@ -36,8 +36,8 @@
     <FeatureAppX>true</FeatureAppX>
     <FeatureWin32Registry>true</FeatureWin32Registry>
     <FeatureProfAttach>true</FeatureProfAttach>
-    <FeaturePortableShuffleThunks Condition="'$(ArchGroup)' != 'x86'">true</FeaturePortableShuffleThunks>
-    <FeatureInstantiatingStubAsIL Condition="'$(ArchGroup)' != 'x86'">true</FeatureInstantiatingStubAsIL>
+    <FeaturePortableShuffleThunks Condition="'$(Platform)' != 'x86'">true</FeaturePortableShuffleThunks>
+    <FeatureInstantiatingStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureInstantiatingStubAsIL>
   </PropertyGroup>
 
   <!-- Features we're currently flighting, but don't intend to ship in officially supported releases -->

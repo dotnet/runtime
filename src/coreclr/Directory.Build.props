@@ -9,6 +9,7 @@
     <ArchGroup Condition="'$(ArchGroup)' == 'amd64'">x64</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == 'armel'">arm</ArchGroup>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(ArchGroup)</TargetArchitecture>
+    <Platform Condition="'$(Platform)' == ''">$(ArchGroup)</Platform>
 
     <OSGroup Condition="'$(__BuildOS)' != ''">$(__BuildOS)</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</OSGroup>

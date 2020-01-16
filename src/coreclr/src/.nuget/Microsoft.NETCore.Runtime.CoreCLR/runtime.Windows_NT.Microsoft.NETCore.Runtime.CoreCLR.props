@@ -2,8 +2,8 @@
 <Project>
   <PropertyGroup>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
-    <LongNamePlatform>$(ArchGroup)</LongNamePlatform>
-    <LongNamePlatform Condition="'$(ArchGroup)'=='x64'">amd64</LongNamePlatform>
+    <LongNamePlatform>$(Platform)</LongNamePlatform>
+    <LongNamePlatform Condition="'$(Platform)' == 'x64'">amd64</LongNamePlatform>
     <CrossTargetPlatform>$(CrossTargetComponentFolder)</CrossTargetPlatform>
     <CrossTargetPlatform Condition="'$(CrossTargetPlatform)'=='x64'">amd64</CrossTargetPlatform>
     <LongNameSuffix>_$(LongNamePlatform)_$(LongNamePlatform)_$(FileVersion)</LongNameSuffix>
@@ -42,7 +42,7 @@
     </LongNameFile>
     <LongNameFile Include="$(BinDir)$(CrossTargetComponentFolder)\mscordaccore.dll"
                   Condition="'$(HasCrossTargetComponents)'=='true'">
-      <TargetPath>tools\$(CrossTargetComponentFolder)_$(ArchGroup)\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)</TargetPath>
+      <TargetPath>tools\$(CrossTargetComponentFolder)_$(Platform)\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)</TargetPath>
     </LongNameFile>
   </ItemGroup>
 </Project>
