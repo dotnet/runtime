@@ -163,9 +163,9 @@ public:
         m_offset = offset;
     }
 
-    BOOL IsUnmarshalable() const
+    bool IsUnmarshalable() const
     {
-        return m_category == NativeFieldCategory::ILLEGAL ? TRUE : FALSE;
+        return m_category == NativeFieldCategory::ILLEGAL;
     }
 
 private:
