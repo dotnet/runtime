@@ -4,15 +4,16 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    public partial struct Guid
+    public readonly partial struct Guid
     {
         // This will create a new random guid based on the https://www.ietf.org/rfc/rfc4122.txt
         public static unsafe Guid NewGuid()
         {
-            Guid g;
+            MutableGuid g;
             Interop.GetRandomBytes((byte*)&g, sizeof(Guid));
 
             const ushort VersionMask = 0xF000;
@@ -31,7 +32,7 @@ namespace System
                 g._d = (byte)((g._d & ~ClockSeqHiAndReservedMask) | ClockSeqHiAndReservedValue);
             }
 
-            return g;
+            return Unsafe.As<MutableGuid, Guid>(ref g);
         }
     }
 }
