@@ -10852,7 +10852,7 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     // to    (X <op> Y) <op> (C1 <op> C2)
     if (op1->OperIs(oper) && op2->OperIs(oper) && 
         op1->AsOp()->gtGetOp2()->IsCnsIntOrI() && op2->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
-        !gtIsActiveCSE_Candidate(op2))
+        !gtIsActiveCSE_Candidate(op1) && !gtIsActiveCSE_Candidate(op2))
     {
         // Don't create a byref pointer that may point outside of the ref object.
         // If a GC happens, the byref won't get updated. This can happen if one
@@ -10911,7 +10911,7 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
         // to    (X <op> (C1 <op> C2)
         if (op1->OperIs(oper) && !gtIsActiveCSE_Candidate(op1) && op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
             (op1->AsOp()->gtGetOp2()->OperGet() == op2->OperGet()) &&
-            !varTypeIsGC(op1->AsOp()->gtGetOp2()->TypeGet()) && !varTypeIsGC(op2->TypeGet()))
+            !varTypeIsGC(op1->AsOp()->gtGetOp2()->TypeGet()))
         {
             GenTreeIntConCommon* cns1  = op1->AsOp()->gtGetOp2()->AsIntConCommon();
             GenTreeIntConCommon* cns2  = op2->AsIntConCommon();
