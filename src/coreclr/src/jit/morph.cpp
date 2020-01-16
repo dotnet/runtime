@@ -10848,9 +10848,11 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     GenTree*   op2  = tree->gtGetOp2();
     genTreeOps oper = tree->OperGet();
 
-    // Fold "((x <op> icon1) <op> (y <op> icon2))" to "((x <op> y) <op> (icon1 <op> icon2))"
-    if (op1->OperIs(op2->OperGet()) && op1->OperIs(oper) && !gtIsActiveCSE_Candidate(op2) &&
-        op1->AsOp()->gtGetOp2()->IsCnsIntOrI() && op2->AsOp()->gtGetOp2()->IsCnsIntOrI())
+    // Fold  (X <op> C1) <op> (Y <op> C2)
+    // to    (X <op> Y) <op> (C1 <op> C2)
+    if (op1->OperIs(oper) && op2->OperIs(oper) && 
+        op1->AsOp()->gtGetOp2()->IsCnsIntOrI() && op2->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
+        !gtIsActiveCSE_Candidate(op2))
     {
         // Don't create a byref pointer that may point outside of the ref object.
         // If a GC happens, the byref won't get updated. This can happen if one
@@ -10860,8 +10862,6 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
         {
             GenTreeIntCon* cns1  = op1->AsOp()->gtGetOp2()->AsIntCon();
             GenTreeIntCon* cns2  = op2->AsOp()->gtGetOp2()->AsIntCon();
-            const ssize_t  icon1 = cns1->IconValue();
-            const ssize_t  icon2 = cns2->IconValue();
 
             if (oper == GT_ADD)
             {
@@ -10869,19 +10869,19 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
                 {
                     return tree;
                 }
-                cns1->SetIconValue(icon1 + icon2);
+                cns1->SetIconValue(cns1->IconValue() + cns2->IconValue());
             }
             else if (oper == GT_OR)
             {
-                cns1->SetIconValue(icon1 | icon2);
+                cns1->SetIconValue(cns1->IconValue() | cns2->IconValue());
             }
             else if (oper == GT_XOR)
             {
-                cns1->SetIconValue(icon1 ^ icon2);
+                cns1->SetIconValue(cns1->IconValue() ^ cns2->IconValue());
             }
             else if (oper == GT_AND)
             {
-                cns1->SetIconValue(icon1 & icon2);
+                cns1->SetIconValue(cns1->IconValue() & cns2->IconValue());
             }
             else
             {
@@ -10907,15 +10907,14 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
 
     if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(tree->TypeGet()))
     {
-        // Fold "((x <op> icon1) <op> icon2) to (x <op> (icon1 <op> icon2))"
+        // Fold  (X <op> C1) <op> C2
+        // to    (X <op> (C1 <op> C2)
         if (op1->OperIs(oper) && !gtIsActiveCSE_Candidate(op1) && op1->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
             (op1->AsOp()->gtGetOp2()->OperGet() == op2->OperGet()) &&
             !varTypeIsGC(op1->AsOp()->gtGetOp2()->TypeGet()) && !varTypeIsGC(op2->TypeGet()))
         {
             GenTreeIntConCommon* cns1  = op1->AsOp()->gtGetOp2()->AsIntConCommon();
             GenTreeIntConCommon* cns2  = op2->AsIntConCommon();
-            const ssize_t        icon1 = cns1->IconValue();
-            const ssize_t        icon2 = cns2->IconValue();
 
             if (oper == GT_ADD)
             {
@@ -10923,19 +10922,19 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
                 {
                     return tree;
                 }
-                cns2->SetIconValue(icon1 + icon2);
+                cns2->SetIconValue(cns1->IconValue() + cns2->IconValue());
             }
             else if (oper == GT_OR)
             {
-                cns2->SetIconValue(icon1 | icon2);
+                cns2->SetIconValue(cns1->IconValue() | cns2->IconValue());
             }
             else if (oper == GT_XOR)
             {
-                cns2->SetIconValue(icon1 ^ icon2);
+                cns2->SetIconValue(cns1->IconValue() ^ cns2->IconValue());
             }
             else if (oper == GT_AND)
             {
-                cns2->SetIconValue(icon1 & icon2);
+                cns2->SetIconValue(cns1->IconValue() & cns2->IconValue());
             }
             else
             {
@@ -10954,23 +10953,22 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
                 op2->AsIntCon()->gtFieldSeq =
                     GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
             }
-            DEBUG_DESTROY_NODE(cns1);
 
+            DEBUG_DESTROY_NODE(cns1);
             tree->gtOp1 = op1->AsOp()->gtOp1;
             DEBUG_DESTROY_NODE(op1);
             op1 = tree->gtOp1;
         }
 
-        // Fold (x <op> 0) for GT_ADD, GT_OR and GT_XOR.
+        // Fold  X <op> 0
+        // to    X
         if (tree->OperIs(GT_ADD, GT_OR, GT_XOR) && (op2->AsIntConCommon()->IconValue() == 0) &&
             !gtIsActiveCSE_Candidate(tree))
         {
-
             // If this addition is adding an offset to a null pointer,
             // avoid the work and yield the null pointer immediately.
             // Dereferencing the pointer in either case will have the
             // same effect.
-
             if (!optValnumCSE_phase && varTypeIsGC(op2->TypeGet()) && ((op1->gtFlags & GTF_ALL_EFFECT) == 0))
             {
                 op2->gtType = tree->gtType;
@@ -10981,7 +10979,6 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
 
             // Remove the addition if it won't change the tree type
             // to TYP_REF.
-
             if (!gtIsActiveCSE_Candidate(op2) && ((op1->TypeGet() == tree->TypeGet()) || (op1->TypeGet() != TYP_REF)))
             {
                 if (fgGlobalMorph && (op2->OperGet() == GT_CNS_INT) && (op2->AsIntCon()->gtFieldSeq != nullptr) &&
