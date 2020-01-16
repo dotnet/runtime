@@ -3,7 +3,7 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(ConfigurationGroup)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(ArchGroup)' == '' ">AnyCPU</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{6AE26CD6-C971-48D6-8C03-2FFA272B942C}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>parse_hb_log</RootNamespace>
@@ -13,7 +13,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(ConfigurationGroup)|$(ArchGroup)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(ConfigurationGroup)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -23,7 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(ConfigurationGroup)|$(ArchGroup)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(ConfigurationGroup)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
@@ -32,7 +32,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Debug|x64'">
+  <PropertyGroup Condition="'$(ConfigurationGroup)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>artifacts\x64\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -42,7 +42,7 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Release|x64'">
+  <PropertyGroup Condition="'$(ConfigurationGroup)|$(Platform)' == 'Release|x64'">
     <OutputPath>artifacts\x64\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>

@@ -3,12 +3,10 @@
     <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
     <CLRTestPriority>1</CLRTestPriority>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Condition="'$(ArchGroup)' == 'x86'" Include="sizeof.il" />
-    <Compile Condition="'$(ArchGroup)' != 'x86'" Include="64sizeof.il" />
+    <Compile Condition="'$(Platform)' == 'x86'" Include="sizeof.il" />
+    <Compile Condition="'$(Platform)' != 'x86'" Include="64sizeof.il" />
   </ItemGroup>
 </Project>

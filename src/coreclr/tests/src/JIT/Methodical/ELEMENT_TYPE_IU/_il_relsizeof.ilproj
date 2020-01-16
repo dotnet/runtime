@@ -2,15 +2,13 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Condition="'$(ArchGroup)' ==   'x64'" Include="sizeof-ia64.il" />
-    <Compile Condition="'$(ArchGroup)' == 'arm64'" Include="sizeof-ia64.il" />
-    <Compile Condition="'$(ArchGroup)' ==   'x86'" Include="sizeof-i386.il" />
-    <Compile Condition="'$(ArchGroup)' ==   'arm'" Include="sizeof-i386.il" />
-    <Compile Condition="'$(ArchGroup)' ==   'armel'" Include="sizeof-i386.il" />
+    <Compile Condition="'$(Platform)' == 'x64'" Include="sizeof-ia64.il" />
+    <Compile Condition="'$(Platform)' == 'arm64'" Include="sizeof-ia64.il" />
+    <Compile Condition="'$(Platform)' == 'x86'" Include="sizeof-i386.il" />
+    <Compile Condition="'$(Platform)' == 'arm'" Include="sizeof-i386.il" />
+    <Compile Condition="'$(Platform)' == 'armel'" Include="sizeof-i386.il" />
   </ItemGroup>
 </Project>

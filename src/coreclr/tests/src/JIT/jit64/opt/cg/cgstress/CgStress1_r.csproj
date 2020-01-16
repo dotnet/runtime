@@ -2,10 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- NOTE: this test simply takes too long to complete under heap verify. It is not fundamentally incompatible. -->
-    <GCStressIncompatible Condition="'$(ArchGroup)' == 'x86'">true</GCStressIncompatible>
-    <HeapVerifyIncompatible Condition="'$(ArchGroup)' == 'x86'">true</HeapVerifyIncompatible>
-  </PropertyGroup>
-  <PropertyGroup>
+    <GCStressIncompatible Condition="'$(Platform)' == 'x86'">true</GCStressIncompatible>
+    <HeapVerifyIncompatible Condition="'$(Platform)' == 'x86'">true</HeapVerifyIncompatible>
     <DebugType>None</DebugType>
     <Optimize>False</Optimize>
   </PropertyGroup>

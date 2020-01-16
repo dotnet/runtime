@@ -21,7 +21,7 @@
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchGroup)' == 'x64' and ('$(TargetsWindows)' == 'true' or '$(TargetsLinux)' == 'true')">
+  <ItemGroup Condition="'$(Platform)' == 'x64' and ('$(TargetsWindows)' == 'true' or '$(TargetsLinux)' == 'true')">
     <ProjectReference Include="Microsoft.NETCore.Crossgen2\Microsoft.NETCore.Crossgen2.builds" />
   </ItemGroup>
 

@@ -17,17 +17,17 @@
        The api-*xstate.dll binary needs to be signed. -->
   <Target Name="CopyUcrtFiles" AfterTargets="Build">
     <ItemGroup>
-      <UcrtFilesToCopy Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(ArchGroup)\*.dll" />
+      <UcrtFilesToCopy Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(Platform)\*.dll" />
     </ItemGroup>
 
-    <Copy Condition="'$(ConfigurationGroup)' == 'Release' and '$(ArchGroup)' != 'arm64'"
+    <Copy Condition="'$(ConfigurationGroup)' == 'Release' and '$(Platform)' != 'arm64'"
         SourceFiles="@(UcrtFilesToCopy)"
-        DestinationFolder="$(BinDir)Redist\ucrt\DLLs\$(ArchGroup)" />
+        DestinationFolder="$(BinDir)Redist\ucrt\DLLs\$(Platform)" />
   </Target>
 
   <PropertyGroup>
     <RunEnforcePGO Condition="$(__EnforcePgo) == '1'">true</RunEnforcePGO>
-    <RunEnforcePGO Condition="'$(ArchGroup)' == 'arm' or '$(ArchGroup)' == 'arm64'">false</RunEnforcePGO>
+    <RunEnforcePGO Condition="'$(Platform)' == 'arm' or '$(Platform)' == 'arm64'">false</RunEnforcePGO>
   </PropertyGroup>
 
   <Target Name="EnforcePGO" Condition="$(RunEnforcePGO) == 'true'" AfterTargets="Build">

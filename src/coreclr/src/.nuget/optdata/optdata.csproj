@@ -3,10 +3,10 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <OptimizationDataSupported Condition="'$(TargetsWindows)' == 'true' and ('$(ArchGroup)' == 'x64' or '$(ArchGroup)' == 'x86')">True</OptimizationDataSupported>
-    <OptimizationDataSupported Condition="'$(TargetsLinux)' == 'true' and '$(ArchGroup)' == 'x64'">True</OptimizationDataSupported>
+    <OptimizationDataSupported Condition="'$(TargetsWindows)' == 'true' and ('$(Platform)' == 'x64' or '$(Platform)' == 'x86')">True</OptimizationDataSupported>
+    <OptimizationDataSupported Condition="'$(TargetsLinux)' == 'true' and '$(Platform)' == 'x64'">True</OptimizationDataSupported>
     <RuntimeIdentifiers>win7-x64;win7-x86;linux-x64</RuntimeIdentifiers>
-    <_BuildOSArchLowercase>$(OSGroup.ToLower())-$(ArchGroup.ToLower())</_BuildOSArchLowercase>
+    <_BuildOSArchLowercase>$(OSGroup.ToLower())-$(Platform.ToLower())</_BuildOSArchLowercase>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,11 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(ArchGroup)' == 'x86'">
-    <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup>
+    <DefineConstants Condition="'$(Platform)' == 'x86'">BIT32;$(DefineConstants)</DefineConstants>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

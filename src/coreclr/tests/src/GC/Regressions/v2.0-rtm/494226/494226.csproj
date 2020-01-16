@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <GCStressIncompatible>true</GCStressIncompatible>
-    <HeapVerifyIncompatible Condition="'$(ArchGroup)' == 'x86' or '$(ArchGroup)' == 'arm' or '$(ArchGroup)' == 'arm64'">true</HeapVerifyIncompatible>
+    <HeapVerifyIncompatible Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'arm' or '$(Platform)' == 'arm64'">true</HeapVerifyIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>

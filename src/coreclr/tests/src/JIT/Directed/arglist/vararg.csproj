@@ -2,11 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);WIN32</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>

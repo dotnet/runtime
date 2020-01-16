@@ -4,12 +4,10 @@
 
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
-    <ArchGroup Condition="'$(__BuildArch)' != ''">$(__BuildArch)</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == 'amd64'">x64</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == 'armel'">arm</ArchGroup>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(ArchGroup)</TargetArchitecture>
-    <Platform Condition="'$(Platform)' == ''">$(ArchGroup)</Platform>
+    <Platform Condition="'$(__BuildArch)' != ''">$(__BuildArch)</Platform>
+    <Platform Condition="'$(Platform)' == '' or '$(Platform)' == 'amd64'">x64</Platform>
+    <Platform Condition="'$(Platform)' == 'armel'">arm</Platform>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(Platform)</TargetArchitecture>
 
     <OSGroup Condition="'$(__BuildOS)' != ''">$(__BuildOS)</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</OSGroup>
@@ -55,6 +53,9 @@
     <!-- Ensure a portable PDB is emitted. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <!-- Used by VS configuration manager. -->
+    <Configurations>Debug;Release;Checked</Configurations>
+    <Platforms>x64;x86;arm;arm64</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
@@ -80,28 +81,28 @@
              TargetsWindows property may already be set. Only set the property if
              it is not already defined -->
         <TargetsWindows Condition="'$(TargetsWindows)' == ''">true</TargetsWindows>
-        <TestNugetRuntimeId>win-$(ArchGroup)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>win-$(Platform)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)' == 'Linux'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
-        <TestNugetRuntimeId>ubuntu.14.04-$(ArchGroup)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(Platform)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)' == 'OSX'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
-        <TestNugetRuntimeId>osx.10.12-$(ArchGroup)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>osx.10.12-$(Platform)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)' == 'FreeBSD'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsFreeBSD>true</TargetsFreeBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-$(ArchGroup)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(Platform)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <Otherwise>
@@ -120,13 +121,13 @@
     <TargetRid Condition="'$(TargetRid)' == ''">$(TestNugetRuntimeId)</TargetRid>
 
     <!-- Folder for cross target components -->
-    <CrossTargetComponentFolder Condition="'$(ArchGroup)' == 'arm64'">x64</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(ArchGroup)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(ArchGroup)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(Platform)' == 'arm64'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(Platform)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(Platform)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
   </PropertyGroup>
 
   <PropertyGroup>
-    <OSPlatformConfig>$(OSGroup).$(ArchGroup).$(ConfigurationGroup)</OSPlatformConfig>
+    <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
 
     <BinDir>$(ArtifactsBinDir)coreclr\$(OSPlatformConfig)\</BinDir>
     <SourceDir>$(MSBuildThisFileDirectory)src\</SourceDir>

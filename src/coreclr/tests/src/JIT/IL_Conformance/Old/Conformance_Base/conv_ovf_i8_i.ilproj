@@ -1,10 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <DisableProjectBuild Condition="'$(ArchGroup)' == 'x64'">true</DisableProjectBuild>
-    <DisableProjectBuild Condition="'$(ArchGroup)' == 'arm64'">true</DisableProjectBuild>
-  </PropertyGroup>
-  <PropertyGroup>
+    <DisableProjectBuild Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'">true</DisableProjectBuild>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

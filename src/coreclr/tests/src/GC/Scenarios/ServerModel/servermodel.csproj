@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <CLRTestExecutionArguments>/numrequests:100</CLRTestExecutionArguments>
     <GCStressIncompatible>true</GCStressIncompatible>
-    <HeapVerifyIncompatible Condition="'$(ArchGroup)' == 'x86' or '$(ArchGroup)' == 'arm' or '$(ArchGroup)' == 'arm64'">true</HeapVerifyIncompatible>
+    <HeapVerifyIncompatible Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'arm' or '$(Platform)' == 'arm64'">true</HeapVerifyIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="cache.cs" />
