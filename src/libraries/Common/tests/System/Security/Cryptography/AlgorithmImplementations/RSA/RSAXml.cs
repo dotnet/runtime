@@ -1340,7 +1340,7 @@ zM=
         }
 
         [Fact]
-        [ActiveIssue(37595, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/37595", TestPlatforms.OSX)]
         public static void FromNonsenseXml()
         {
             // This is DiminishedDPParameters XML, but with a P that is way too long.

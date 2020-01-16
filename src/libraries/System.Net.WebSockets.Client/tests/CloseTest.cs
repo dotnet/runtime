@@ -17,7 +17,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public CloseTest(ITestOutputHelper output) : base(output) { }
 
-        [ActiveIssue(36016)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/36016")]
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersAndBoolean))]
         public async Task CloseAsync_ServerInitiatedClose_Success(Uri server, bool useCloseOutputAsync)
@@ -197,7 +197,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(36016)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/36016")]
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseOutputAsync_ServerInitiated_CanSend(Uri server)
@@ -260,7 +260,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(20362, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20362", TargetFrameworkMonikers.Netcoreapp)]
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseOutputAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)

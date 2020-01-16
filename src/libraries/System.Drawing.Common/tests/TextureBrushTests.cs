@@ -17,7 +17,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Metafile(Helpers.GetTestBitmapPath("telescope_01.wmf")), PixelFormat.Format32bppArgb, new Size(490, 654) };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Bitmap_TestData))]
         public void Ctor_Bitmap(Image bitmap, PixelFormat expectedPixelFormat, Size expectedSize)
@@ -41,7 +41,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_BitmapFromIconHandle_Success()
         {
@@ -64,7 +64,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_WrapMode_TestData))]
         public void Ctor_Image_WrapMode(Image image, WrapMode wrapMode, PixelFormat expectedPixelFormat, Size expectedSize)
@@ -94,7 +94,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Bitmap(10, 10), new Rectangle(5, 5, 5, 5) };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_Rectangle_TestData))]
         public void Ctor_Image_Rectangle(Image image, Rectangle rectangle)
@@ -118,7 +118,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_Rectangle_TestData))]
         public void Ctor_Image_RectangleF(Image image, Rectangle rectangle)
@@ -154,7 +154,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_WrapMode_Rectangle_TestData))]
         public void Ctor_Image_WrapMode_Rectangle(Image image, WrapMode wrapMode, Rectangle rectangle)
@@ -178,7 +178,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_WrapMode_Rectangle_TestData))]
         public void Ctor_Image_WrapMode_RectangleF(Image image, WrapMode wrapMode, Rectangle rectangle)
@@ -215,7 +215,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_Rectangle_ImageAttributes_TestData))]
         public void Ctor_Image_Rectangle_ImageAttributes(Image image, Rectangle rectangle, ImageAttributes attributes, WrapMode expectedWrapMode)
@@ -240,7 +240,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_Rectangle_ImageAttributes_TestData))]
         public void Ctor_Image_RectangleF_ImageAttributes(Image image, Rectangle rectangle, ImageAttributes attributes, WrapMode expectedWrapMode)
@@ -449,7 +449,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(MatrixOrder.Prepend - 1)]
         [InlineData(MatrixOrder.Append + 1)]
@@ -841,7 +841,7 @@ namespace System.Drawing.Tests
             });
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void WrapMode_TileFlipX_ReturnsExpected()
         {
@@ -858,7 +858,7 @@ namespace System.Drawing.Tests
             });
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void WrapMode_TileFlipY_ReturnsExpected()
         {
@@ -875,7 +875,7 @@ namespace System.Drawing.Tests
             });
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void WrapMode_TileFlipXY_ReturnsExpected()
         {

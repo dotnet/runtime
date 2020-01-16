@@ -144,7 +144,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(579990)]  // NullReferenceException
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/579990")]  // NullReferenceException
         public void ExportsChanged_Add_WhenDisposed_ShouldThrowObjectDisposed()
         {
             var container = CreateCompositionContainer();
@@ -157,7 +157,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(579990)] // NullReferenceException
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/579990")] // NullReferenceException
         public void ExportsChanged_Remove_WhenDisposed_ShouldThrowObjectDisposed()
         {
             var container = CreateCompositionContainer();
@@ -2418,7 +2418,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException)
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException)
         public void TryGetValueWithCatalogVerifyExecptionDuringGet()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -2458,7 +2458,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(468388)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
         public void ContainerXGetXTest()
         {
             CompositionContainer container = CreateCompositionContainer();
@@ -2469,7 +2469,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(468388)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
         public void ContainerXGetXByComponentCatalogTest()
         {
             CompositionContainer container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -2984,7 +2984,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void ComposeExportedValueOfT_ValidContractName_ExportedValue_ExportContainsEmptyMetadata()
         {
             string expectedContractName = "ContractName";

@@ -463,7 +463,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(684510)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/684510")]
         public void PartAOptionalDependsOnPartB_PartBGetAddedLater()
         {
             var container = new CompositionContainer(new TypeCatalog(typeof(PartC), typeof(PartA)));
@@ -489,7 +489,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(684510)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/684510")]
         public void PartAOptionalDependsOnPartBAndPartC_PartCGetRecurrected()
         {
             var container = new CompositionContainer(new TypeCatalog(typeof(PartA2), typeof(PartB)));

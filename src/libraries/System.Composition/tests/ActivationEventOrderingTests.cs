@@ -32,7 +32,7 @@ namespace System.Composition.UnitTests
     public class ActivationEventOrderingTests : ContainerTests
     {
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void OnImportsSatisfiedIsCalledAfterPropertyInjection()
         {
             var cc = CreateContainer(typeof(TracksImportSatisfaction), typeof(Imported));

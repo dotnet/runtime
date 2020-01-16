@@ -1892,7 +1892,7 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20844")]
         public void MeasureString_MultlineString_Width()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -2810,21 +2810,21 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844, TestPlatforms.Any)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20844", TestPlatforms.Any)]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Document()
         {
             Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Document));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20844")]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Inch()
         {
             Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Inch));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844, TestPlatforms.Any)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20844", TestPlatforms.Any)]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Millimeter()
         {
             Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Millimeter));
@@ -2838,7 +2838,7 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844, TestPlatforms.Any)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20844", TestPlatforms.Any)]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Point()
         {
             Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Point));
@@ -3208,7 +3208,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TransformPoints()
         {

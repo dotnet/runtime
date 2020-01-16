@@ -672,7 +672,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31480, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31480", TargetFrameworkMonikers.Netcoreapp)]
         public void GetObjectForNativeVariant_Record_ReturnsExpected()
         {
             int record = 10;

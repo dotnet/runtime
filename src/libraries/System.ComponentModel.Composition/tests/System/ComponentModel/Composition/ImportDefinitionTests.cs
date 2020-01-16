@@ -159,7 +159,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void ToString_ValueAsConstraintArgument_ShouldReturnConstraintProperty()
         {
             var expectations = new ExpectationCollection<Expression<Func<ExportDefinition, bool>>, string>();
@@ -177,7 +177,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void ToString_DerivedImportDefinition_ShouldReturnOverriddenConstraintProperty()
         {
             var expectations = new ExpectationCollection<Expression<Func<ExportDefinition, bool>>, string>();
@@ -195,7 +195,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(738535)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/738535")]
         public void ContractName_ShouldBeIncludedInConstraintAutomatically()
         {
             string testContractName = "TestContractName";
