@@ -5945,21 +5945,28 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
 
                     // box + isinst + unbox.any
                     case CEE_UNBOX_ANY:
-                        if ((nextCodeAddr + 5) <= codeEndp)
+                        if ((nextCodeAddr + 1 + sizeof(mdToken)) <= codeEndp)
                         {
+                            CORINFO_RESOLVED_TOKEN isinstResolvedToken = {};
+                            impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
+
                             CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
-                            impResolveToken(codeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
+                            impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
 
                             // See if the resolved tokens describe types that are equal.
-                            const TypeCompareState compare =
+                            const TypeCompareState compareBoxIsInst =
+                                info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
+                                                                          pResolvedToken->hClass);
+                            const TypeCompareState compareBoxUnbox =
                                 info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
                                                                           pResolvedToken->hClass);
 
                             // If so, box/unbox.any is a nop.
-                            if (compare == TypeCompareState::Must)
+                            if (compareBoxIsInst == TypeCompareState::Must &&
+                                compareBoxUnbox == TypeCompareState::Must)
                             {
                                 JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
-                                return 6 + sizeof(mdToken);
+                                return 2 + sizeof(mdToken) * 2;
                             }
                         }
                         break;
