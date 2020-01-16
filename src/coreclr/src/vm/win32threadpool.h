@@ -733,6 +733,7 @@ public:
             return pRecycledListPerProcessor != NULL;
         }
 
+#ifndef DACCESS_COMPILE
     	FORCEINLINE RecycledListInfo& GetRecycleMemoryInfo( enum MemType memType )
         {
             LIMITED_METHOD_CONTRACT;
@@ -756,6 +757,7 @@ public:
 #endif // !TARGET_UNIX
             return pRecycledListPerProcessor[processorNumber][memType];
     	}
+#endif // DACCESS_COMPILE
     };
 
 #define GATE_THREAD_STATUS_NOT_RUNNING         0 // There is no gate thread
