@@ -33,8 +33,8 @@ The instructions for Linux are essentially the same:
 # From root in the morning:
 git clean -xdf
 git pull upstream master & git push origin master
-./build.sh -subsetCategory corclr -c Release
-./build.sh -subsetCategory libraries -coreclrConfiguration Release
+./build.sh -subsetcategory corclr -c Release
+./build.sh -subsetcategory libraries -coreclrconfiguration Release
 
 # The above you may only perform once in a day, or when
 # you pull down significant new changes.
@@ -59,7 +59,7 @@ These example commands will build a release CoreCLR (and CoreLib), debug librari
 
 For Linux:
 ```
-./build.sh -coreclrConfiguration Release
+./build.sh -coreclrconfiguration Release
 ```
 
 For Windows:

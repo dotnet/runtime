@@ -125,11 +125,11 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:BuildNativeStripSymbols=true"
       shift 1
       ;;
-     -coreclrConfiguration)
+     -coreclrconfiguration)
       arguments="$arguments /p:CoreCLRConfiguration=$2"
       shift 2
       ;;
-     -librariesConfiguration)
+     -librariesconfiguration)
       arguments="$arguments /p:LibrariesConfiguration=$2"
       shift 2
       ;;
