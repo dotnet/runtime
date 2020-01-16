@@ -3879,6 +3879,7 @@ void emitter::emitIns_R_R(
             assert(isGeneralRegisterOrZR(reg2));
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_1D); // Reserved encoding
             fmt = IF_DV_2C;
             break;
 
