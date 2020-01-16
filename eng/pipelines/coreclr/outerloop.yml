@@ -1,26 +1,12 @@
-trigger:
+trigger: none
+
+schedules:
+- cron: "0 11 * * *" # 11 AM UTC => 3 AM PST
+  displayName: Outerloop scheduled build
   branches:
     include:
     - master
-  paths:
-    include:
-    - '*'
-    - src/libraries/System.Private.CoreLib/*
-    exclude:
-    - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
-    - LICENSE.TXT
-    - PATENTS.TXT
-    - README.md
-    - SECURITY.md
-    - THIRD-PARTY-NOTICES.TXT
-    - src/installer/*
-    - src/libraries/*
-    - eng/pipelines/installer/*
-    - eng/pipelines/libraries/*
-    - eng/pipelines/runtime.yml
-
+    - release/*.*
 
 pr: none
 
@@ -145,20 +131,6 @@ jobs:
       readyToRun: true
       displayNameArgs: R2R
       liveLibrariesBuildConfig: Release
-
-#
-# Crossgen-comparison jobs
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
-    buildConfig: release
-    platforms:
-    # Currently failing globally, should be uncommented once the tracking bug gets fixed:
-    # https://github.com/dotnet/runtime/issues/1282
-    # - Linux_arm
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
 
 #
 # Formatting
