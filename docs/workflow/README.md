@@ -28,7 +28,7 @@ For Windows:
 build.cmd
 ```
 
-This builds the product, but not the tests.
+This builds the product (in the default debug configuration), but not the tests.
 
 For information about the different options available, supply the argument `--help|-h` when invoking the build script:
 ```

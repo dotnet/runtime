@@ -12,7 +12,7 @@ For Windows:
 build.cmd --subsetCategory coreclr
 ```
 
-By default, build generates a 'debug' build type, that includes asserts and is easier for some people to debug. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version which does not have these checks by adding the flag `-configuration release` (or `-c release`), for example:
+By default, build generates a 'debug' build type, that includes asserts and is easier for some people to debug. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version (which does not have these checks) by adding the flag `-configuration release` (or `-c release`), for example:
 ```
 ./build.sh --subsetCategory coreclr -configuration release
 ```
