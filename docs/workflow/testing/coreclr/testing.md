@@ -4,12 +4,11 @@ Details on test metadata can be found in [test-configuration.md](test-configurat
 
 ## Build All Tests
 
-1) Build the CoreCLR product in Release configuration
+1) Build the CoreCLR product
     * [Unix](../../building/coreclr/linux-instructions.md)
     * [OSX](../../building/coreclr/osx-instructions.md)
     * [Windows](../../building/coreclr/README.md)
-1) [Build the libraries](../../building/libraries/README.md) in Release configuration 
-1) If you don't want to use the release configuration for running the tests, build CoreCLR again in the configuration you want to test with.
+1) [Build the libraries](../../building/libraries/README.md) in Release configuration. Pass the configuration of CoreCLR you just built to the build script (e.g. `/p:CoreCLRConfiguration=Debug`).
 1) From the src/coreclr directory run the following command:
     * Non-Windows - `./build-test.sh`
     * Windows - `build-test.cmd`
