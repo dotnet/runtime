@@ -572,6 +572,20 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public async Task WaitAsyncForProcess()
+        {
+            Process p = CreateSleepProcess(WaitInMS);
+            p.Start();
+
+            Task processTask = p.WaitForExitAsync();
+            Task delayTask = Task.Delay(WaitInMS * 2);
+
+            Task result = await Task.WhenAny(processTask, delayTask);
+            Assert.Equal(processTask, result);
+            Assert.True(p.HasExited);
+        }
+
+        [Fact]
         public void WaitForInputIdle_NotDirected_ThrowsInvalidOperationException()
         {
             var process = new Process();
