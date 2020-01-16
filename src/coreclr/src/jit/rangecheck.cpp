@@ -362,7 +362,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
 
     // Add hashtable entry for expr.
-    bool alreadyPresent = !m_pSearchPath->Set(expr, nullptr, SearchPath::Overwrite);
+    bool alreadyPresent = m_pSearchPath->Set(expr, nullptr, SearchPath::Overwrite);
     if (alreadyPresent)
     {
         return true;
