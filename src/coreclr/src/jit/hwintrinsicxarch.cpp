@@ -534,7 +534,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
             {
-                // Vector<T> is 32-bytes, so we should treat this as a call to Vector128.ToVector256
+                // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector128.ToVector256
                 return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, mustExpand);
             }
 
@@ -576,7 +576,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 {
-                    break;
+                    // TYP_SIMD8 and TYP_SIMD12 currently only expose "safe" versions
+                    // which zero the upper elements and so are implemented in managed.
+                    unreached();
                 }
 
                 case TYP_SIMD16:
@@ -590,6 +592,12 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                     assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
 
                     break;
+                }
+
+                case TYP_SIMD32:
+                {
+                    // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector256.GetLower
+                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, mustExpand);
                 }
 
                 default:
