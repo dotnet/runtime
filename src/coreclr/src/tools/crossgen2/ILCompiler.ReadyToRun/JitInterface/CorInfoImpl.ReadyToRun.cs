@@ -2087,12 +2087,14 @@ namespace Internal.JitInterface
                     return true;
                 }
 
-                return ((PInvokeILStubMethodIL)stubIL).IsMarshallingRequired;
+                PInvokeILStubMethodIL pinvokeILStub = (PInvokeILStubMethodIL)stubIL;
+                return pinvokeILStub.IsMarshallingRequired || pinvokeILStub.HasByRefArguments;
             }
             else
             {
                 var sig = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
-                return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>());
+                Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>(), out bool marshallingRequired, out bool hasByrefArgs);
+                return marshallingRequired || hasByrefArgs;
             }
         }
 

@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
@@ -209,7 +210,12 @@ namespace ILCompiler
             if (((EcmaMethod)method).Module.Equals(method.Context.SystemModule))
                 return true;
 
-            return !Marshaller.IsMarshallingRequired(method);
+            Marshaller.IsMarshallingRequired(method, out bool marshallingRequired, out bool hasByrefArgs);
+
+            // We can generate a PInvoke ILStub if no marshalling is required. If there are byref arguments,
+            // we can still generate and precompile the stub: we just cannot inline the pinvoke transition into
+            // callers (we can still inline the precomiled IL stub like any regular method if the JIT decides to do so)
+            return !marshallingRequired;
         }
 
         public override bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token)
