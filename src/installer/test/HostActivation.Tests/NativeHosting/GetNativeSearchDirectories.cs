@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -40,9 +41,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNet.BinPath)
                 .Execute();
 
+            string pathSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Path.DirectorySeparatorChar.ToString() : string.Empty;
             string expectedSearchDirectories =
-                Path.GetDirectoryName(sharedState.AppPath) + Path.DirectorySeparatorChar + Path.PathSeparator +
-                Path.Combine(sharedState.DotNet.BinPath, "shared", "Microsoft.NETCore.App", SharedTestState.NetCoreAppVersion) + Path.DirectorySeparatorChar + Path.PathSeparator;
+                Path.GetDirectoryName(sharedState.AppPath) + pathSuffix + Path.PathSeparator +
+                Path.Combine(sharedState.DotNet.BinPath, "shared", "Microsoft.NETCore.App", SharedTestState.NetCoreAppVersion) + pathSuffix + Path.PathSeparator;
             result.Should().Pass()
                 .And.HaveStdOutContaining($"Native search directories: '{expectedSearchDirectories}'");
         }
