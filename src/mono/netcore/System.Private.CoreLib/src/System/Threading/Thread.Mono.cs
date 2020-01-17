@@ -296,6 +296,7 @@ namespace System.Threading
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		private extern static void InitializeCurrentThread_icall (ref Thread thread);
 
+		[MethodImpl (MethodImplOptions.NoInlining)]
 		static Thread InitializeCurrentThread () {
 			Thread thread = null;
 			InitializeCurrentThread_icall (ref thread);
