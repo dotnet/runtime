@@ -235,9 +235,7 @@ namespace System.Text.RegularExpressions
         {
             // Save the assembly to the current directory.
             string fileName = _assembly.GetName().Name + ".dll";
-
-            // TODO https://github.com/dotnet/runtime/issues/30153: _assembly.Save(fileName)
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+            new Lokad.ILPack.AssemblyGenerator().GenerateAssembly(_assembly, fileName);
         }
 
         /// <summary>Begins the definition of a new type with a specified base class</summary>

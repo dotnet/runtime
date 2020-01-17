@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
+  </PropertyGroup>  
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
@@ -65,4 +65,24 @@
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
   </ItemGroup>
+
+  <!-- TEMPORARY START -->
+  <PropertyGroup>
+    <Nullable>annotations</Nullable>
+    <RunApiCompat>false</RunApiCompat>
+    <NoWarn>$(NoWarn);CS3003;CS3002;CS3001;SA1400;SA1028;SA1000;CA1810;SA1518;IDE0073;CA1834;CA2208;CS1574</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\..\..\ILPack\src\*.cs" />
+    <Compile Include="..\..\..\..\..\ILPack\src\IL\*.cs" />
+    <Compile Include="..\..\..\..\..\ILPack\src\Metadata\*.cs" />
+    <Reference Include="System.Collections.Immutable" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Reflection.Metadata" />
+    <Reference Include="System.Runtime.Loader" />
+    <Reference Include="System.Runtime.InteropServices" />
+  </ItemGroup>
+  <!-- TEMPORARY END -->
+
 </Project>
