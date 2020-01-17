@@ -208,7 +208,7 @@ namespace System.ComponentModel.Composition.Hosting
             var processedArgs = ProcessEventArgs(e);
             if (processedArgs != null)
             {
-                OnChanged(ProcessEventArgs(processedArgs));
+                OnChanged(ProcessEventArgs(processedArgs)!);
             }
         }
 
@@ -217,11 +217,11 @@ namespace System.ComponentModel.Composition.Hosting
             var processedArgs = ProcessEventArgs(e);
             if (processedArgs != null)
             {
-                OnChanging(ProcessEventArgs(processedArgs));
+                OnChanging(ProcessEventArgs(processedArgs)!);
             }
         }
 
-        private ComposablePartCatalogChangeEventArgs ProcessEventArgs(ComposablePartCatalogChangeEventArgs e)
+        private ComposablePartCatalogChangeEventArgs? ProcessEventArgs(ComposablePartCatalogChangeEventArgs e)
         {
             // the constructor for ComposablePartCatalogChangeEventArgs takes a snapshot of the arguments, so we don't have to
             var result = new ComposablePartCatalogChangeEventArgs(
@@ -236,7 +236,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
             else
             {
-                return null!; // event args shouldn't be nullable, banged for now
+                return null;
             }
         }
 

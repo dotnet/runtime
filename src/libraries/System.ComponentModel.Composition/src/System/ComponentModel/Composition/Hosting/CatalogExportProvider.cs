@@ -150,25 +150,26 @@ namespace System.ComponentModel.Composition.Hosting
         ///     <see cref="CatalogExportProvider"/>.
         /// </remarks>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "EnsureCanSet ensures that the property is set only once, Dispose is not required")]
-        public ExportProvider SourceProvider
+        [DisallowNull]
+        public ExportProvider? SourceProvider
         {
             get
             {
                 ThrowIfDisposed();
                 using (_lock.LockStateForRead())
                 {
-                    return _sourceProvider!;  // Should be [DisallowNull]
+                    return _sourceProvider;
                 }
             }
             set
             {
                 ThrowIfDisposed();
 
-                Requires.NotNull(value, nameof(value));
+                Requires.NotNull(value!, nameof(value));
 
                 ImportEngine? newImportEngine = null;
                 AggregateExportProvider? aggregateExportProvider = null;
-                ExportProvider sourceProvider = value;
+                ExportProvider sourceProvider = value!;
 
                 bool isThrowing = true;
                 try

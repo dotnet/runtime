@@ -287,7 +287,8 @@ namespace System.ComponentModel.Composition.Hosting
         public CatalogExportProvider(System.ComponentModel.Composition.Primitives.ComposablePartCatalog catalog, bool isThreadSafe) { }
         public CatalogExportProvider(System.ComponentModel.Composition.Primitives.ComposablePartCatalog catalog, System.ComponentModel.Composition.Hosting.CompositionOptions compositionOptions) { }
         public System.ComponentModel.Composition.Primitives.ComposablePartCatalog Catalog { get { throw null; } }
-        public System.ComponentModel.Composition.Hosting.ExportProvider SourceProvider { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public System.ComponentModel.Composition.Hosting.ExportProvider? SourceProvider { get { throw null; } set { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         protected override System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.Export> GetExportsCore(System.ComponentModel.Composition.Primitives.ImportDefinition definition, System.ComponentModel.Composition.Hosting.AtomicComposition? atomicComposition) { throw null; }
@@ -308,7 +309,8 @@ namespace System.ComponentModel.Composition.Hosting
         public ComposablePartExportProvider() { }
         public ComposablePartExportProvider(bool isThreadSafe) { }
         public ComposablePartExportProvider(System.ComponentModel.Composition.Hosting.CompositionOptions compositionOptions) { }
-        public System.ComponentModel.Composition.Hosting.ExportProvider SourceProvider { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public System.ComponentModel.Composition.Hosting.ExportProvider? SourceProvider { get { throw null; } set { } }
         public void Compose(System.ComponentModel.Composition.Hosting.CompositionBatch batch) { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
