@@ -40,7 +40,7 @@ jobs:
         - _msbuildCommonParameters: ''
         - _stripSymbolsArg: ''
         - _runtimeOSArg: ''
-        - _finalFrameworkArg: -framework ${{ parameters.framework }}
+        - _finalFrameworkArg: ''
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
         - _warnAsErrorArg: ''
         - _testScopeArg: ''
@@ -61,6 +61,9 @@ jobs:
 
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
+
+        - ${{ if ne(parameters.framework, '') }}:
+          - _finalFrameworkArg: -framework ${{ parameters.framework }}
 
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations

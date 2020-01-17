@@ -43,7 +43,7 @@ function Get-Help() {
 
   Write-Host "Libraries settings:"
   Write-Host "  -vs                     Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
-  Write-Host "  -framework              Build framework: netcoreapp or net472 (short: -f)"
+  Write-Host "  -framework              Build framework: netcoreapp5.0 or net472 (short: -f)"
   Write-Host "  -coverage               Collect code coverage when testing"
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
   Write-Host "  -allconfigurations      Build packages for all build configurations"
