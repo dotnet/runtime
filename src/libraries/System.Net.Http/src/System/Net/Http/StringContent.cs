@@ -15,12 +15,12 @@ namespace System.Net.Http
         private const string DefaultMediaType = "text/plain";
 
         public StringContent(string content)
-            : this(content, null, null)
+            : this(content, null, null as string)
         {
         }
 
         public StringContent(string content, Encoding encoding)
-            : this(content, encoding, null)
+            : this(content, encoding, null as string)
         {
         }
 
@@ -30,6 +30,23 @@ namespace System.Net.Http
             // Initialize the 'Content-Type' header with information provided by parameters.
             MediaTypeHeaderValue headerValue = new MediaTypeHeaderValue((mediaType == null) ? DefaultMediaType : mediaType);
             headerValue.CharSet = (encoding == null) ? HttpContent.DefaultStringEncoding.WebName : encoding.WebName;
+
+            Headers.ContentType = headerValue;
+        }
+
+        public StringContent(string content, MediaTypeHeaderValue mediaType)
+            : this(content, null, mediaType)
+        {
+        }
+
+        public StringContent(string content, Encoding encoding, MediaTypeHeaderValue mediaType)
+            : base(GetContentByteArray(content, encoding))
+        {
+            // Initialize the 'Content-Type' header with information provided by parameters.
+            MediaTypeHeaderValue headerValue = mediaType ?? new MediaTypeHeaderValue(DefaultMediaType);
+
+            // If encoding is not provided, use charset as specified in mediaType
+            if (encoding != null) headerValue.CharSet = encoding.WebName;
 
             Headers.ContentType = headerValue;
         }

@@ -4,11 +4,11 @@
 
 using System;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -68,6 +68,27 @@ namespace System.Net.Http.Functional.Tests
             destination.Seek(0, SeekOrigin.Begin);
             string roundTrip = new StreamReader(destination, defaultStringEncoding).ReadToEnd();
             Assert.Equal(sourceString, roundTrip);
+        }
+
+        [Fact]
+        public void Ctor_UseMediaTypeObjectWithCustomMediaTypeAndUseCustomEncoding_ContentHeaderIsRenderedWithCustomMediaTypeAndCustomCharset()
+        {
+            var mediaType = new MediaTypeHeaderValue("application/custom");
+            var content = new StringContent("source", Encoding.UTF7, mediaType);
+
+            // Make sure the charset label is present with custom encoding when the Content-type header is rendered
+            Assert.Equal("application/custom; charset=utf-7", content.Headers.ContentType.ToString());
+        }
+
+        [Fact]
+        public void Ctor_UseMediaTypeObjectWithEmptyCharsetAndNoEncoding_ContentHeaderIsRenderedWithoutCharset()
+        {
+            var mediaType = new MediaTypeHeaderValue("text/plain");
+            mediaType.CharSet = string.Empty;
+            var content = new StringContent("source", mediaType);
+
+            // Make sure the charset label is omitted when the Content-type header is rendered
+            Assert.Equal("text/plain", content.Headers.ContentType.ToString());
         }
     }
 }

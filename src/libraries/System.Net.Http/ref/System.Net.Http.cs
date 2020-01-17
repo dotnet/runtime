@@ -280,6 +280,8 @@ namespace System.Net.Http
         public StringContent(string content) : base (default(byte[])) { }
         public StringContent(string content, System.Text.Encoding encoding) : base (default(byte[])) { }
         public StringContent(string content, System.Text.Encoding encoding, string mediaType) : base (default(byte[])) { }
+        public StringContent(string content, System.Net.Http.Headers.MediaTypeHeaderValue mediaType) : base (default(byte[])) { }
+        public StringContent(string content, System.Text.Encoding encoding, System.Net.Http.Headers.MediaTypeHeaderValue mediaType) : base(default(byte[])) { }
     }
 }
 namespace System.Net.Http.Headers
