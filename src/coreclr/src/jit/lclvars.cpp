@@ -7339,9 +7339,9 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_SKIP_SUBTREES;
         }
 
-        // The assert in the second pass below, requires that these types match, or we have a TYP_BLK
+        // The noway_assert in the second pass below, requires that these types match, or we have a TYP_BLK
         //
-        if ((varDsc->lvType != lcl->gtType) && varDsc->lvType != TYP_BLK)
+        if ((varDsc->lvType != lcl->gtType) && (varDsc->lvType != TYP_BLK))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;
@@ -7368,7 +7368,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     else
     {
         // Do the morphing
-        noway_assert(varDsc->lvType == lcl->gtType || varDsc->lvType == TYP_BLK);
+        noway_assert((varDsc->lvType == lcl->gtType) || (varDsc->lvType == TYP_BLK));
         var_types varType = varDsc->TypeGet();
 
         // Calculate padding
