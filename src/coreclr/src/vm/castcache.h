@@ -58,7 +58,7 @@ class CastCache
         // version has the following structure:
         // [ distance:3bit |  versionNum:29bit ]
         //
-        // distance is how many iterations is the entry from it ideal position.
+        // distance is how many iterations the entry is from it ideal position.
         // we use that for preemption.
         //
         // versionNum is a monotonicaly increasing numerical tag.

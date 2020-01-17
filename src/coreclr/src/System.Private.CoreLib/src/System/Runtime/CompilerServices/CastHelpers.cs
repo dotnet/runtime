@@ -29,7 +29,7 @@ namespace System.Runtime.CompilerServices
             // version has the following structure:
             // [ distance:3bit |  versionNum:29bit ]
             //
-            // distance is how many iterations is the entry from it ideal position.
+            // distance is how many iterations the entry is from it ideal position.
             // we use that for preemption.
             //
             // versionNum is a monotonicaly increasing numerical tag.
@@ -166,11 +166,11 @@ namespace System.Runtime.CompilerServices
         private static extern object JITutil_ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
-        // Unlike the IsInstanceOfInterface, IsInstanceOfClass, and IsIsntanceofArray functions,
+        // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests
-        //[DebuggerHidden]
-        //[StackTraceHidden]
-        //[DebuggerStepThrough]
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static object? JIT_IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
             if (obj != null)
@@ -201,9 +201,9 @@ namespace System.Runtime.CompilerServices
             return JITutil_IsInstanceOfAny_NoCacheLookup(toTypeHnd, obj);
         }
 
-        //[DebuggerHidden]
-        //[StackTraceHidden]
-        //[DebuggerStepThrough]
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static object? JIT_IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
             if (obj != null)
@@ -227,26 +227,6 @@ namespace System.Runtime.CompilerServices
                             goto done;
                     }
                     while ((i += 4) < interfaceCount);
-
-                    // REVIEW FYI: Also tried the following (vectorizing the lookup).
-                    //
-                    //             It improved the worst case scenarios (10-20%), since we can get through the whole list faster.
-                    //             but best/common cases got slower (also 10-20%). I am guessing that superscalar CPU is very good at
-                    //             linear/speculative compares, and without any math vectorization does not help that much.
-                    //
-
-                    //var toTypeV = Vector256.Create((nuint)toTypeHnd);
-                    //do
-                    //{
-                    //    var matchMask = Avx2.CompareEqual(toTypeV, *(Vector256<nuint>*)(interfaceMap + i));
-                    //    var anyMatch = Avx2.MoveMask(matchMask.AsByte());
-                    //
-                    //    if (anyMatch != 0)
-                    //    {
-                    //        goto pass;
-                    //    }
-                    //}
-                    //while ((i += 4) < interfaceCount);
                 }
 
                 if (mt->NonTrivialInterfaceCast)
@@ -264,9 +244,9 @@ namespace System.Runtime.CompilerServices
             return IsInstanceHelper(toTypeHnd, obj);
         }
 
-        //[DebuggerHidden]
-        //[StackTraceHidden]
-        //[DebuggerStepThrough]
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static object? JIT_IsInstanceOfClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
@@ -319,9 +299,10 @@ namespace System.Runtime.CompilerServices
             return IsInstanceHelper(toTypeHnd, obj);
         }
 
-        //[DebuggerHidden]
-        //[StackTraceHidden]
-        //[DebuggerStepThrough]
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? IsInstanceHelper(void* toTypeHnd, object obj)
         {
             CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
@@ -341,9 +322,9 @@ namespace System.Runtime.CompilerServices
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the ChkCastInterface and ChkCastClass functions,
         // this test must deal with all kinds of type tests
-        //[DebuggerHidden]
-        //[StackTraceHidden]
-        //[DebuggerStepThrough]
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static object? JIT_ChkCastAny(void* toTypeHnd, object? obj)
         {
             CastResult result;
@@ -371,9 +352,10 @@ namespace System.Runtime.CompilerServices
             return objRet;
         }
 
-        //[DebuggerHidden]
-        //[StackTraceHidden]
-        //[DebuggerStepThrough]
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? ChkCastHelper(void* toTypeHnd, object obj)
         {
             CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
@@ -386,9 +368,9 @@ namespace System.Runtime.CompilerServices
             return JITutil_ChkCastAny_NoCacheLookup(toTypeHnd, obj);
         }
 
-        //[DebuggerHidden]
-        //[StackTraceHidden]
-        //[DebuggerStepThrough]
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static object? JIT_ChkCastInterface(void* toTypeHnd, object? obj)
         {
             if (obj != null)
@@ -424,9 +406,9 @@ namespace System.Runtime.CompilerServices
             return ChkCastHelper(toTypeHnd, obj);
         }
 
-        //[DebuggerHidden]
-        //[StackTraceHidden]
-        //[DebuggerStepThrough]
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static object? JIT_ChkCastClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
@@ -437,9 +419,9 @@ namespace System.Runtime.CompilerServices
             return JIT_ChkCastClassSpecial(toTypeHnd, obj);
         }
 
-        //[DebuggerHidden]
-        //[StackTraceHidden]
-        //[DebuggerStepThrough]
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static object? JIT_ChkCastClassSpecial(void* toTypeHnd, object obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
