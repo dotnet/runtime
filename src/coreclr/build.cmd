@@ -347,7 +347,7 @@ if %__BuildNative%==0 if %__BuildNativeCoreLib%==0 if %__BuildTests%==0 set __CM
 if %__CMakeNeeded%==1 (
     REM Eval the output from set-cmake-path.ps1
     for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
-    REM echo Using CMake from %CMakePath%
+    echo %__MsgPrefix%Using CMake from !CMakePath!
 )
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
@@ -370,7 +370,7 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     %__RepoRootDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
     /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
@@ -389,7 +389,7 @@ REM ============================================================================
 set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
         %OptDataProjectFilePath% /t:Restore^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
@@ -403,7 +403,7 @@ set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
 set IbcDataPackagePathOutputFile="%__IntermediatesDir%\ibcoptdatapath.txt"
 
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
@@ -418,7 +418,7 @@ if not exist "!PgoDataPackagePathOutputFile!" (
 
 set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     "%OptDataProjectFilePath%" /t:DumpIbcDataPackagePath /nologo %__CommonMSBuildArgs% /p:IbcDataPackagePathOutputFile="!IbcDataPackagePathOutputFile!"
 
  if not !errorlevel! == 0 (
@@ -484,7 +484,7 @@ if %__BuildCrossArchNative% EQU 1 (
 
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0"
+    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
     
     if not !errorlevel! == 0 (
@@ -511,7 +511,7 @@ if %__BuildCrossArchNative% EQU 1 (
     set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed.
@@ -541,15 +541,10 @@ if %__BuildNative% EQU 1 (
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
     if /i "%__BuildArch%" == "arm" (
         set __VCBuildArch=x86_arm
-        REM Make CMake pick the highest installed version in the 10.0.* range
-        set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
         set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
     )
     if /i "%__BuildArch%" == "arm64" (
         set __VCBuildArch=x86_arm64
-
-        REM Make CMake pick the highest installed version in the 10.0.* range
-        set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
         set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
     )
 
@@ -567,7 +562,7 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
-    set __ExtraCmakeArgs=!___SDKVersion! !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
+    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" !___CrossBuildDefine! "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
@@ -594,7 +589,7 @@ if %__BuildNative% EQU 1 (
     set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: native component build failed.
@@ -637,7 +632,7 @@ if %__BuildCoreLib% EQU 1 (
         set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
         set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj /t:Restore^
             /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true^
             !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
@@ -650,7 +645,7 @@ if %__BuildCoreLib% EQU 1 (
             goto ExitWithCode
         )
 
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             %__ProjectDir%\src\build.proj /nodeReuse:false /p:PortableBuild=true /maxcpucount^
             '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
@@ -664,8 +659,8 @@ if %__BuildCoreLib% EQU 1 (
 
         if "%__BuildManagedTools%" == "1" (
             echo %__MsgPrefix%Publishing crossgen2...
-            call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /p:BuildArch=%__BuildArch%
-            
+            call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /nologo /p:BuildArch=%__BuildArch%
+
             if not !errorlevel! == 0 (
                 echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to build crossgen2.
                 echo     !__BuildLog!
@@ -675,15 +670,15 @@ if %__BuildCoreLib% EQU 1 (
                 goto ExitWithCode
             )
 
-            copy /Y "%__BinDir%\clrjit.dll" "%__BinDir%\crossgen2\clrjitilc.dll"
-            copy /Y "%__BinDir%\jitinterface.dll" "%__BinDir%\crossgen2\jitinterface.dll"
+            copy /Y "%__BinDir%\clrjit.dll" "%__BinDir%\crossgen2\clrjitilc.dll"  | find /i /v "file(s) copied"
+            copy /Y "%__BinDir%\jitinterface.dll" "%__BinDir%\crossgen2\jitinterface.dll" | find /i /v "file(s) copied"
         )
     )
     if %__IbcOptimize% EQU 1 (
         echo %__MsgPrefix%Commencing IBCMerge of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
         set IbcMergeProjectFilePath=%__ProjectDir%\src\.nuget\optdata\ibcmerge.csproj
         set IbcMergePackagePathOutputFile="%__IntermediatesDir%\ibcmergepath.txt"
-        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+        powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
             "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackagePath /nologo %__CommonMSBuildArgs% /p:IbcMergePackagePathOutputFile="!IbcMergePackagePathOutputFile!"
 
         if not !errorlevel! == 0 (
@@ -840,7 +835,7 @@ if %__BuildNativeCoreLib% EQU 1 (
         set COMPlus_ContinueOnAssert=0
     )
 
-    set NEXTCMD="%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%\IL" /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
+    set NEXTCMD="%__CrossgenExe%" /nologo %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%\IL" /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
     echo %__MsgPrefix%!NEXTCMD!
     echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
     !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
@@ -851,7 +846,7 @@ if %__BuildNativeCoreLib% EQU 1 (
         goto ExitWithError
     )
 
-    set NEXTCMD="%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
+    set NEXTCMD="%__CrossgenExe%" /nologo /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
     echo %__MsgPrefix%!NEXTCMD!
     echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
     !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
@@ -884,7 +879,7 @@ if %__BuildPackages% EQU 1 (
     REM Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\build.ps1"^
         -r -b -projects %__SourceDir%\.nuget\packages.builds^
-        -verbosity minimal /nodeReuse:false /bl:!__BuildLog!^
+        -verbosity minimal /clp:nosummary /nodeReuse:false /bl:!__BuildLog!^
         /p:PortableBuild=true^
         /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
@@ -1090,11 +1085,8 @@ exit /b 1
 
 :NoDIA
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-This is due to a bug in the Visual Studio installer. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
-at the install location of previous Visual Studio version. The workaround is to copy the DIA SDK folder from the Visual Studio install location ^
-of the previous version to "%VSINSTALLDIR%" and then build.
-REM DIA SDK not included in Express editions
-echo Visual Studio Express does not include the DIA SDK. ^
-You need Visual Studio 2017 or 2019 (Community is free).
-echo See: https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md#prerequisites
+Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
+Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
+Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
+may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1

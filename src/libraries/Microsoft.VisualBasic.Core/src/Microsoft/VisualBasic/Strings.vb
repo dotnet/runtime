@@ -1008,90 +1008,35 @@ RedimAndExit:
 
             If (Expression Is Nothing) Then
                 Return ""
+            ElseIf Expression.Length <= 1 Then
+                Return Expression
             End If
 
-            Dim chars As Char()
-            Dim uc As UnicodeCategory
-            Dim ch As Char
-            Dim SrcIndex, Length As Integer
+            'Use TextElementEnumerator to iterate through the grapheme clusters, then
+            'add them to the destination array in reverse order. A grapheme cluster
+            'is a text element that displays as a single character; it might consist
+            'of multiple chars.
+            Dim TextEnum As TextElementEnumerator = StringInfo.GetTextElementEnumerator(Expression)
+            Dim Output(Expression.Length - 1) As Char
+            Dim LastSrcIndex As Integer
 
-            Length = Expression.Length
-            If Length = 0 Then
-                Return ""
-            End If
-
-            'Detect if there are any graphemes that need special handling
-            For SrcIndex = 0 To Length - 1
-                ch = Expression.Chars(SrcIndex)
-                uc = Char.GetUnicodeCategory(ch)
-                If uc = UnicodeCategory.Surrogate OrElse
-                    uc = UnicodeCategory.NonSpacingMark OrElse
-                    uc = UnicodeCategory.SpacingCombiningMark OrElse
-                    uc = UnicodeCategory.EnclosingMark Then
-                    'Need to use special handling
-                    Return InternalStrReverse(Expression, SrcIndex, Length)
-                End If
-            Next SrcIndex
-
-            chars = Expression.ToCharArray()
-            System.Array.Reverse(chars)
-            Return New String(chars)
-
-        End Function
-
-        'This routine handles reversing Strings containing graphemes
-        ' GRAPHEME: a text element that is displayed as a single character
-        '
-        Private Function InternalStrReverse(ByVal Expression As String, ByVal SrcIndex As Integer, ByVal Length As Integer) As String
-
-            Dim TextEnum As TextElementEnumerator
-            Dim DestIndex, LastSrcIndex, NextSrcIndex As Integer
-            Dim sb As StringBuilder
-
-            'This code can only be hit one time
-            sb = New StringBuilder(Length)
-            sb.Length = Length
-
-            TextEnum = StringInfo.GetTextElementEnumerator(Expression, SrcIndex)
-
-            'Init enumerator position
-            If Not TextEnum.MoveNext() Then
-                Return ""
-            End If
-
+            'Initialize the enumerator
+            TextEnum.MoveNext()
             LastSrcIndex = 0
-            DestIndex = Length - 1
 
-            'Copy up the first surrogate found
-            Do While LastSrcIndex < SrcIndex
-                sb.Chars(DestIndex) = Expression.Chars(LastSrcIndex)
-                DestIndex -= 1
-                LastSrcIndex += 1
+            'Iterate through the enumerator, performing a forward-copy of the source
+            'expression to the end of the StringBuilder.
+            ' Example: input = [ (ABC) (D) (EFGH) (IJ) (K) ]
+            '         output = [ (K) (IJ) (EFGH) (D) (ABC) ]
+            Do While TextEnum.MoveNext()
+                Expression.CopyTo(LastSrcIndex, Output, Output.Length - TextEnum.ElementIndex, TextEnum.ElementIndex - LastSrcIndex)
+                LastSrcIndex = TextEnum.ElementIndex
             Loop
 
-            'Now iterate through the text elements and copy them to the reversed string
-            NextSrcIndex = TextEnum.ElementIndex
+            'The above loop won't hit the last element - we need to copy the remaining data manually
+            Expression.CopyTo(LastSrcIndex, Output, 0, Expression.Length - LastSrcIndex)
 
-            Do While DestIndex >= 0
-                SrcIndex = NextSrcIndex
-
-                'Move to next element
-                If (TextEnum.MoveNext()) Then
-                    NextSrcIndex = TextEnum.ElementIndex
-                Else
-                    'Point NextSrcIndex to end of string
-                    NextSrcIndex = Length
-                End If
-                LastSrcIndex = NextSrcIndex - 1
-
-                Do While LastSrcIndex >= SrcIndex
-                    sb.Chars(DestIndex) = Expression.Chars(LastSrcIndex)
-                    DestIndex -= 1
-                    LastSrcIndex -= 1
-                Loop
-            Loop
-
-            Return sb.ToString()
+            Return New String(Output)
 
         End Function
 

@@ -57,8 +57,8 @@ namespace System.Reflection.Internal
         // if someone needs to create a private pool;
         public static ObjectPool<PooledStringBuilder> CreatePool()
         {
-            ObjectPool<PooledStringBuilder> pool = null;
-            pool = new ObjectPool<PooledStringBuilder>(() => new PooledStringBuilder(pool), 32);
+            ObjectPool<PooledStringBuilder>? pool = null;
+            pool = new ObjectPool<PooledStringBuilder>(() => new PooledStringBuilder(pool!), 32);
             return pool;
         }
 

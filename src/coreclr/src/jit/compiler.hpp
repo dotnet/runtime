@@ -2729,13 +2729,31 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 */
 inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
 {
-    // If we're converting a BBJ_CALLFINALLY block to a BBJ_THROW block,
+    JITDUMP("Converting " FMT_BB " to BBJ_THROW\n", block->bbNum);
+
+    // Ordering of the following operations matters.
+    // First, note if we are looking at the first block of a call always pair.
+    const bool isCallAlwaysPair = block->isBBCallAlwaysPair();
+
+    // Scrub this block from the pred lists of any successors
+    fgRemoveBlockAsPred(block);
+
+    // Update jump kind after the scrub.
+    block->bbJumpKind = BBJ_THROW;
+
+    // Any block with a throw is rare
+    block->bbSetRunRarely();
+
+    // If we've converted a BBJ_CALLFINALLY block to a BBJ_THROW block,
     // then mark the subsequent BBJ_ALWAYS block as unreferenced.
-    if (block->isBBCallAlwaysPair())
+    //
+    // Must do this after we update bbJumpKind of block.
+    if (isCallAlwaysPair)
     {
         BasicBlock* leaveBlk = block->bbNext;
         noway_assert(leaveBlk->bbJumpKind == BBJ_ALWAYS);
 
+        // leaveBlk is now unreachable, so scrub the pred lists.
         leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
         leaveBlk->bbRefs  = 0;
         leaveBlk->bbPreds = nullptr;
@@ -2757,9 +2775,6 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
         }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     }
-
-    block->bbJumpKind = BBJ_THROW;
-    block->bbSetRunRarely(); // any block with a throw is rare
 }
 
 /*****************************************************************************
@@ -4066,34 +4081,6 @@ inline void Compiler::EndPhase(Phases phase)
     fgDumpFlowGraph(phase);
 #endif // DUMP_FLOWGRAPHS
     previousCompletedPhase = phase;
-#ifdef DEBUG
-    if (dumpIR)
-    {
-        if ((*dumpIRPhase == L'*') || (wcscmp(dumpIRPhase, PhaseShortNames[phase]) == 0))
-        {
-            printf("\n");
-            printf("IR after %s (switch: %ls)\n", PhaseEnums[phase], PhaseShortNames[phase]);
-            printf("\n");
-
-            if (dumpIRLinear)
-            {
-                dFuncIR();
-            }
-            else if (dumpIRTrees)
-            {
-                dTrees();
-            }
-
-            // If we are just dumping a single method and we have a request to exit
-            // after dumping, do so now.
-
-            if (dumpIRExit && ((*dumpIRPhase != L'*') || (phase == PHASE_EMIT_GCEH)))
-            {
-                exit(0);
-            }
-        }
-    }
-#endif
 }
 
 /*****************************************************************************/

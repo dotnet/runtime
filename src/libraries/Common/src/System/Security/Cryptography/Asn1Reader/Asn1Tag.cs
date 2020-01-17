@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     /// <summary>
@@ -410,7 +411,7 @@ namespace System.Security.Cryptography.Asn1
         ///   <c>false</c> if <paramref name="obj"/> is not an <see cref="Asn1Tag"/>,
         ///   <see cref="Equals(System.Security.Cryptography.Asn1.Asn1Tag)"/> otherwise.
         /// </returns>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             return obj is Asn1Tag tag && Equals(tag);

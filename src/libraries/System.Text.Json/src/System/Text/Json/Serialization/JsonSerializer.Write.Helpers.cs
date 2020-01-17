@@ -8,7 +8,7 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static void GetRuntimeClassInfo(object value, ref JsonClassInfo jsonClassInfo, JsonSerializerOptions options)
+        private static void GetRuntimeClassInfo(object? value, ref JsonClassInfo jsonClassInfo, JsonSerializerOptions options)
         {
             if (value != null)
             {
@@ -22,7 +22,7 @@ namespace System.Text.Json
             }
         }
 
-        private static void GetRuntimePropertyInfo(object value, JsonClassInfo jsonClassInfo, ref JsonPropertyInfo jsonPropertyInfo, JsonSerializerOptions options)
+        private static void GetRuntimePropertyInfo(object? value, JsonClassInfo jsonClassInfo, ref JsonPropertyInfo jsonPropertyInfo, JsonSerializerOptions options)
         {
             if (value != null)
             {
@@ -36,14 +36,11 @@ namespace System.Text.Json
             }
         }
 
-        private static void VerifyValueAndType(object value, Type type)
+        private static void VerifyValueAndType(object? value, Type type)
         {
             if (type == null)
             {
-                if (value != null)
-                {
-                    throw new ArgumentNullException(nameof(type));
-                }
+                throw new ArgumentNullException(nameof(type));
             }
             else if (value != null)
             {
@@ -54,7 +51,7 @@ namespace System.Text.Json
             }
         }
 
-        private static byte[] WriteCoreBytes(object value, Type type, JsonSerializerOptions options)
+        private static byte[] WriteCoreBytes(object? value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -72,7 +69,7 @@ namespace System.Text.Json
             return result;
         }
 
-        private static string WriteCoreString(object value, Type type, JsonSerializerOptions options)
+        private static string WriteCoreString(object? value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -90,7 +87,7 @@ namespace System.Text.Json
             return result;
         }
 
-        private static void WriteValueCore(Utf8JsonWriter writer, object value, Type type, JsonSerializerOptions options)
+        private static void WriteValueCore(Utf8JsonWriter writer, object? value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -105,7 +102,7 @@ namespace System.Text.Json
             WriteCore(writer, value, type, options);
         }
 
-        private static void WriteCore(PooledByteBufferWriter output, object value, Type type, JsonSerializerOptions options)
+        private static void WriteCore(PooledByteBufferWriter output, object? value, Type type, JsonSerializerOptions options)
         {
             using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
@@ -113,7 +110,7 @@ namespace System.Text.Json
             }
         }
 
-        private static void WriteCore(Utf8JsonWriter writer, object value, Type type, JsonSerializerOptions options)
+        private static void WriteCore(Utf8JsonWriter writer, object? value, Type type, JsonSerializerOptions options)
         {
             Debug.Assert(type != null || value == null);
             Debug.Assert(writer != null);
@@ -131,6 +128,7 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
+                Debug.Assert(type != null);
                 state.Current.Initialize(type, options);
                 state.Current.CurrentValue = value;
 

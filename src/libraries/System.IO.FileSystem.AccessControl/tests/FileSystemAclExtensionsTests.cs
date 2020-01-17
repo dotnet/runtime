@@ -235,23 +235,22 @@ namespace System.IO
         public void DirectoryInfo_Create_DefaultDirectorySecurity()
         {
             DirectorySecurity security = new DirectorySecurity();
-            VerifyDirectorySecurity(security);
+            Verify_DirectoryInfo_Create(security);
         }
 
         [Theory]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadAndExecute, AccessControlType.Allow)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadAndExecute, AccessControlType.Deny)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.WriteData, AccessControlType.Allow)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.WriteData, AccessControlType.Deny)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Allow)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Deny)]
+        [InlineData(FileSystemRights.ReadAndExecute, AccessControlType.Allow)]
+        [InlineData(FileSystemRights.ReadAndExecute, AccessControlType.Deny)]
+        [InlineData(FileSystemRights.WriteData,      AccessControlType.Allow)]
+        [InlineData(FileSystemRights.WriteData,      AccessControlType.Deny)]
+        [InlineData(FileSystemRights.FullControl,    AccessControlType.Allow)]
+        [InlineData(FileSystemRights.FullControl,    AccessControlType.Deny)]
         public void DirectoryInfo_Create_DirectorySecurityWithSpecificAccessRule(
-            WellKnownSidType sid,
             FileSystemRights rights,
             AccessControlType controlType)
         {
-            DirectorySecurity security = GetDirectorySecurity(sid, rights, controlType);
-            VerifyDirectorySecurity(security);
+            DirectorySecurity security = GetDirectorySecurity(rights, controlType);
+            Verify_DirectoryInfo_Create(security);
         }
 
         #endregion
@@ -381,14 +380,14 @@ namespace System.IO
         }
 
         [Theory]
-        [InlineData(FileMode.Truncate, FileSystemRights.Read)]
-        [InlineData(FileMode.Truncate, FileSystemRights.ReadData)]
+        [InlineData(FileMode.Truncate,  FileSystemRights.Read)]
+        [InlineData(FileMode.Truncate,  FileSystemRights.ReadData)]
         [InlineData(FileMode.CreateNew, FileSystemRights.Read)]
         [InlineData(FileMode.CreateNew, FileSystemRights.ReadData)]
-        [InlineData(FileMode.Create, FileSystemRights.Read)]
-        [InlineData(FileMode.Create, FileSystemRights.ReadData)]
-        [InlineData(FileMode.Append, FileSystemRights.Read)]
-        [InlineData(FileMode.Append, FileSystemRights.ReadData)]
+        [InlineData(FileMode.Create,    FileSystemRights.Read)]
+        [InlineData(FileMode.Create,    FileSystemRights.ReadData)]
+        [InlineData(FileMode.Append,    FileSystemRights.Read)]
+        [InlineData(FileMode.Append,    FileSystemRights.ReadData)]
         public void FileInfo_Create_FileSecurity_ForbiddenCombo_FileModeFileSystemSecurity(FileMode mode, FileSystemRights rights)
         {
             FileSecurity security = new FileSecurity();
@@ -411,20 +410,87 @@ namespace System.IO
         public void FileInfo_Create_DefaultFileSecurity()
         {
             FileSecurity security = new FileSecurity();
-            VerifyFileSecurity(security);
+            Verify_FileInfo_Create(security);
         }
 
         [Theory]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadAndExecute, AccessControlType.Allow)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.ReadAndExecute, AccessControlType.Deny)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.WriteData, AccessControlType.Allow)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.WriteData, AccessControlType.Deny)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Allow)]
-        [InlineData(WellKnownSidType.BuiltinUsersSid, FileSystemRights.FullControl, AccessControlType.Deny)]
-        public void FileInfo_Create_FileSecurity_SpecificAccessRule(WellKnownSidType sid, FileSystemRights rights, AccessControlType controlType)
+        [InlineData(FileSystemRights.ReadAndExecute, AccessControlType.Allow)]
+        [InlineData(FileSystemRights.ReadAndExecute, AccessControlType.Deny)]
+        [InlineData(FileSystemRights.WriteData,      AccessControlType.Allow)]
+        [InlineData(FileSystemRights.WriteData,      AccessControlType.Deny)]
+        [InlineData(FileSystemRights.FullControl,    AccessControlType.Allow)]
+        [InlineData(FileSystemRights.FullControl,    AccessControlType.Deny)]
+        public void FileInfo_Create_FileSecurity_SpecificAccessRule(FileSystemRights rights, AccessControlType controlType)
         {
-            FileSecurity security = GetFileSecurity(sid, rights, controlType);
-            VerifyFileSecurity(security);
+            FileSecurity security = GetFileSecurity(rights, controlType);
+            Verify_FileInfo_Create(security);
+        }
+
+        #endregion
+
+        #region DirectorySecurity CreateDirectory
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void DirectorySecurity_CreateDirectory_NullSecurity()
+        {
+            DirectorySecurity security = null;
+            string path = "whatever";
+
+            Assert.Throws<ArgumentNullException>("directorySecurity", () => security.CreateDirectory(path));
+            Assert.Throws<ArgumentNullException>("directorySecurity", () => FileSystemAclExtensions.CreateDirectory(security, path));
+        }
+
+        [Fact]
+        public void DirectorySecurity_CreateDirectory_InvalidPath()
+        {
+            DirectorySecurity security = new DirectorySecurity();
+
+            Assert.Throws<ArgumentNullException>("path", () => security.CreateDirectory(null));
+            Assert.Throws<ArgumentException>(() => security.CreateDirectory(""));
+        }
+
+        [Fact]
+        public void DirectorySecurity_CreateDirectory_DefaultDirectorySecurity()
+        {
+            DirectorySecurity security = new DirectorySecurity();
+            Verify_DirectorySecurity_CreateDirectory(security);
+        }
+
+        [Theory]
+        [InlineData(FileSystemRights.ReadAndExecute, AccessControlType.Allow)]
+        [InlineData(FileSystemRights.ReadAndExecute, AccessControlType.Deny)]
+        [InlineData(FileSystemRights.WriteData,      AccessControlType.Allow)]
+        [InlineData(FileSystemRights.WriteData,      AccessControlType.Deny)]
+        [InlineData(FileSystemRights.FullControl,    AccessControlType.Allow)]
+        [InlineData(FileSystemRights.FullControl,    AccessControlType.Deny)]
+        public void DirectorySecurity_CreateDirectory_DirectorySecurityWithSpecificAccessRule(
+            FileSystemRights rights,
+            AccessControlType controlType)
+        {
+            DirectorySecurity security = GetDirectorySecurity(rights, controlType);
+            Verify_DirectorySecurity_CreateDirectory(security);
+        }
+
+        [Fact]
+        public void DirectorySecurity_CreateDirectory_DirectoryAlreadyExists()
+        {
+            using var directory = new TempDirectory();
+            string path = Path.Combine(directory.Path, "createMe");
+
+            DirectorySecurity basicSecurity = new DirectorySecurity();
+            DirectoryInfo basicDirInfo = basicSecurity.CreateDirectory(path);
+
+            Assert.True(Directory.Exists(path));
+
+            DirectorySecurity specificSecurity = GetDirectorySecurity(FileSystemRights.ExecuteFile, AccessControlType.Deny);
+
+            // Already exists, existingDirInfo should have the original basic security, not the new specific security
+            DirectoryInfo existingDirInfo = specificSecurity.CreateDirectory(path);
+
+            DirectorySecurity actualSecurity = existingDirInfo.GetAccessControl();
+
+            VerifyAccessSecurity(basicSecurity, actualSecurity);
         }
 
         #endregion
@@ -433,6 +499,8 @@ namespace System.IO
 
 
         #region Helper methods
+
+        private DirectorySecurity GetDirectorySecurity(FileSystemRights rights, AccessControlType controlType) => GetDirectorySecurity(WellKnownSidType.BuiltinUsersSid, rights, controlType);
 
         private DirectorySecurity GetDirectorySecurity(WellKnownSidType sid, FileSystemRights rights, AccessControlType controlType)
         {
@@ -445,7 +513,7 @@ namespace System.IO
             return security;
         }
 
-        private void VerifyDirectorySecurity(DirectorySecurity expectedSecurity)
+        private void Verify_DirectoryInfo_Create(DirectorySecurity expectedSecurity)
         {
             using var directory = new TempDirectory();
             string path = Path.Combine(directory.Path, "directory");
@@ -462,6 +530,24 @@ namespace System.IO
             VerifyAccessSecurity(expectedSecurity, actualSecurity);
         }
 
+        private void Verify_DirectorySecurity_CreateDirectory(DirectorySecurity expectedSecurity)
+        {
+            using var directory = new TempDirectory();
+            string path = Path.Combine(directory.Path, "createMe");
+
+            DirectoryInfo createdInfo = expectedSecurity.CreateDirectory(path);
+
+            Assert.True(Directory.Exists(path));
+
+            DirectoryInfo actualInfo = new DirectoryInfo(path);
+
+            DirectorySecurity actualSecurity = actualInfo.GetAccessControl();
+
+            VerifyAccessSecurity(expectedSecurity, actualSecurity);
+        }
+
+        private FileSecurity GetFileSecurity(FileSystemRights rights, AccessControlType controlType) => GetFileSecurity(WellKnownSidType.BuiltinUsersSid, rights, controlType);
+
         private FileSecurity GetFileSecurity(WellKnownSidType sid, FileSystemRights rights, AccessControlType controlType)
         {
             FileSecurity security = new FileSecurity();
@@ -473,12 +559,12 @@ namespace System.IO
             return security;
         }
 
-        private void VerifyFileSecurity(FileSecurity expectedSecurity)
+        private void Verify_FileInfo_Create(FileSecurity expectedSecurity)
         {
-            VerifyFileSecurity(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, expectedSecurity);
+            Verify_FileInfo_Create(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, expectedSecurity);
         }
 
-        private void VerifyFileSecurity(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity expectedSecurity)
+        private void Verify_FileInfo_Create(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity expectedSecurity)
         {
             using var directory = new TempDirectory();
 

@@ -10,7 +10,7 @@ namespace Microsoft.NET.HostModel.ComHost
 {
     public class ComHost
     {
-        // These need to match RESOURCEID_CLISDMAP and RESOURCETYPE_CLSIDMAP defined in comhost.h.
+        // These need to match RESOURCEID_CLSIDMAP and RESOURCETYPE_CLSIDMAP defined in comhost.h.
         private const int ClsidmapResourceId = 64;
         private const int ClsidmapResourceType = 1024;
 

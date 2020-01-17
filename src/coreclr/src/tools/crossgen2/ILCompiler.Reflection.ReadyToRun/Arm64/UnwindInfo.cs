@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun.Arm64
 {
     public class Epilog
     {
-        [XmlAttribute("Index")]
         public int Index { get; set; }
 
         public uint EpilogStartOffset { get; set; }
@@ -48,7 +46,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Arm64
 
     public class UnwindCode
     {
-        [XmlAttribute("Index")]
         public int Index { get; set; }
 
         public UnwindCode() { }

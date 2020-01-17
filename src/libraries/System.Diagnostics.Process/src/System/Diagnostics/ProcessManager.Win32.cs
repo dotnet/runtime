@@ -71,7 +71,7 @@ namespace System.Diagnostics
             if (processId == SystemProcessID || processId == IdleProcessID)
             {
                 // system process and idle process doesn't have any modules
-                throw new Win32Exception(Interop.Errors.EFail, SR.EnumProcessModuleFailed);
+                throw new Win32Exception(HResults.E_FAIL, SR.EnumProcessModuleFailed);
             }
 
             SafeProcessHandle processHandle = SafeProcessHandle.InvalidHandle;

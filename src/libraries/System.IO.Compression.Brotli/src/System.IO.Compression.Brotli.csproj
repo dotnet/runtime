@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <!-- Platform agnostic files -->
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Interop.Brotli.cs" />
@@ -18,8 +17,8 @@
     <Compile Include="System\IO\Compression\enc\BrotliEncoderOperation.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliEncoderParameter.cs" />
     <Compile Include="System\IO\Compression\BrotliStream.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs</Link>

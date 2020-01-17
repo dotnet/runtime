@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.14.2)
 
 cmake_policy(SET CMP0042 NEW)
 
@@ -20,6 +20,9 @@ set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/src/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/dlls/mscordac/palredefines.S)
+
+# Avoid logging when skipping up-to-date copies
+set(CMAKE_INSTALL_MESSAGE LAZY)
 
 set(CORECLR_SET_RPATH ON)
 if(CORECLR_SET_RPATH)
@@ -112,7 +115,7 @@ endif(WIN32)
 # Configure compiler settings for environment
 #----------------------------------------------------
 include(configurecompiler.cmake)
-include(configuretools.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 #----------------------------------------------------
 # Cross target Component build specific configuration
@@ -133,7 +136,7 @@ include(pgosupport.cmake)
 #-----------------------------------------
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/pal)
-    add_subdirectory(src/coreclr/hosts)
+    add_subdirectory(src/hosts)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 # Add this subdir. We install the headers for the jit.

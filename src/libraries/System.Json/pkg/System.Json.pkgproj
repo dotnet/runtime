@@ -1,5 +1,5 @@
 ﻿<Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <ProjectReference Include="..\src\System.Json.csproj">
       <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
@@ -24,5 +24,5 @@
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

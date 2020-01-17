@@ -46,7 +46,7 @@ public:
             Realloc();
         }
 
-        new (&data[tosIndex], jitstd::placement_t()) T(jitstd::forward<Args>(args)...);
+        new (&data[tosIndex], jitstd::placement_t()) T(std::forward<Args>(args)...);
         tosIndex++;
     }
 

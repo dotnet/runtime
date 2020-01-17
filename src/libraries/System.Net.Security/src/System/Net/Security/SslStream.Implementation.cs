@@ -9,8 +9,6 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
-using System.Security.Authentication.ExtendedProtection;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -74,10 +72,7 @@ namespace System.Net.Security
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
 
         private int _lockWriteState;
-        private object _queuedWriteStateRequest;
-
         private int _lockReadState;
-        private object _queuedReadStateRequest;
 
         private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback localCallback)
         {
@@ -245,7 +240,7 @@ namespace System.Net.Security
             Task result = null;
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, isApm ? "BeginAuthenticate" :  "Authenticate", "authenticate"));
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, isApm ? "BeginAuthenticate" : "Authenticate", "authenticate"));
             }
 
             try
@@ -364,7 +359,7 @@ namespace System.Net.Security
 
             do
             {
-                message  = await ReceiveBlobAsync(adapter, buffer, cancellationToken).ConfigureAwait(false);
+                message = await ReceiveBlobAsync(adapter, buffer, cancellationToken).ConfigureAwait(false);
                 if (message.Size > 0)
                 {
                     // If there is message send it out even if call failed. It may contain TLS Alert.
@@ -633,9 +628,6 @@ namespace System.Net.Security
                 }
 
                 _lockReadState = LockPendingRead;
-
-                lazyResult = new LazyAsyncResult(null, null, /*must be */ null);
-                _queuedReadStateRequest = lazyResult;
             }
             // Need to exit from lock before waiting.
             lazyResult.InternalWaitForCompletion();
@@ -673,7 +665,6 @@ namespace System.Net.Security
 
                 _lockReadState = LockPendingRead;
                 TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>(buffer, TaskCreationOptions.RunContinuationsAsynchronously);
-                _queuedReadStateRequest = taskCompletionSource;
                 return new ValueTask<int>(taskCompletionSource.Task);
             }
         }
@@ -697,7 +688,6 @@ namespace System.Net.Security
 
                 _lockWriteState = LockPendingWrite;
                 TaskCompletionSource<int> completionSource = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-                _queuedWriteStateRequest = completionSource;
                 return completionSource.Task;
             }
         }
@@ -705,7 +695,6 @@ namespace System.Net.Security
         private void CheckEnqueueWrite()
         {
             // Clear previous request.
-            _queuedWriteStateRequest = null;
             int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockWrite, LockNone);
             if (lockState != LockHandshake)
             {
@@ -724,9 +713,6 @@ namespace System.Net.Security
                 }
 
                 _lockWriteState = LockPendingWrite;
-
-                lazyResult = new LazyAsyncResult(null, null, /*must be */null);
-                _queuedWriteStateRequest = lazyResult;
             }
 
             // Need to exit from lock before waiting.

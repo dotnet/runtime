@@ -164,7 +164,7 @@ namespace System.Security.Cryptography
         bool CanTransformMultipleBlocks { get; }
         int InputBlockSize { get; }
         int OutputBlockSize { get; }
-        int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset);
+        int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset);
         byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount);
     }
     public abstract partial class KeyedHashAlgorithm : System.Security.Cryptography.HashAlgorithm

@@ -414,7 +414,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(733533)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/733533")]
         public void RemoveCatalogWithNonSharedPartWithRequiredImport()
         {
             var typeCatalog = new TypeCatalog(typeof(NonSharedImporter), typeof(SimpleImport));
@@ -435,7 +435,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(734123)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/734123")]
         public void GetExportResultShouldBePromise()
         {
             var typeCatalog = new TypeCatalog(typeof(RootImporter), typeof(SimpleImport));
@@ -512,7 +512,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(762215)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/762215")]
         public void TestPartCreatorResurrection()
         {
             var container = new CompositionContainer(new TypeCatalog(typeof(NonDisposableImportsDisposable), typeof(PartImporter<NonDisposableImportsDisposable>)));

@@ -214,7 +214,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     return false;
 }
 
-#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // IsDstSrcImmAvxInstruction: Checks if the instruction has a "reg, reg/mem, imm" or
 //                            "reg/mem, reg, imm" form for the legacy, VEX, and EVEX
@@ -250,7 +249,6 @@ static bool IsDstSrcImmAvxInstruction(instruction ins)
             return false;
     }
 }
-#endif // FEATURE_HW_INTRINSICS
 
 // -------------------------------------------------------------------
 // Is4ByteSSEInstruction: Returns true if the SSE instruction is a 4-byte opcode.
@@ -5629,7 +5627,6 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     emitAdjustStackDepthPushPop(ins);
 }
 
-#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // emitIns_SIMD_R_R_I: emits the code for an instruction that takes a register operand, an immediate operand
 //                     and that returns a value in register
@@ -5810,6 +5807,7 @@ void emitter::emitIns_SIMD_R_R_S(
     }
 }
 
+#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // emitIns_SIMD_R_R_A_I: emits the code for a SIMD instruction that takes a register operand, a GenTreeIndir address,
 //                       an immediate operand, and that returns a value in register

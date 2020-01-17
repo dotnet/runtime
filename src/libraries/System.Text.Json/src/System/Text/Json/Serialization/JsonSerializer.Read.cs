@@ -184,7 +184,7 @@ namespace System.Text.Json
         {
             // The escaped name is always longer than the unescaped, so it is safe to use escaped name for the buffer length.
             int length = utf8Source.Length;
-            byte[] pooledName = null;
+            byte[]? pooledName = null;
 
             Span<byte> unescapedName = length <= JsonConstants.StackallocThreshold ?
                 stackalloc byte[length] :

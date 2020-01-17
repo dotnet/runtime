@@ -44,7 +44,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             // Certain invalid phone numbers are reported as valid with .NET core.
             // The full .NET framework considers them invalid. This is likely a bug
             // in .NET core. Seee https://github.com/dotnet/corefx/issues/17873.
-            // [ActiveIssue(17873)]
+            // [ActiveIssue("https://github.com/dotnet/corefx/issues/17873")]
             if (PlatformDetection.IsFullFramework)
             {
                 yield return new TestCase(new PhoneAttribute(), "+4+2+5+-+5+5+5+-+1+2++1+2++");

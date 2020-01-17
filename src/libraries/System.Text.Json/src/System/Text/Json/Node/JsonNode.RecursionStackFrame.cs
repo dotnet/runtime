@@ -11,18 +11,18 @@ namespace System.Text.Json
     {
         private readonly struct RecursionStackFrame
         {
-            public string PropertyName { get; }
-            public JsonNode PropertyValue { get; }
+            public string? PropertyName { get; }
+            public JsonNode? PropertyValue { get; }
             public JsonValueKind ValueKind { get; } // to retrieve ValueKind when PropertyValue is null
 
-            public RecursionStackFrame(string propertyName, JsonNode propertyValue, JsonValueKind valueKind)
+            public RecursionStackFrame(string? propertyName, JsonNode? propertyValue, JsonValueKind valueKind)
             {
                 PropertyName = propertyName;
                 PropertyValue = propertyValue;
                 ValueKind = valueKind;
             }
 
-            public RecursionStackFrame(string propertyName, JsonNode propertyValue) : this(propertyName, propertyValue, propertyValue.ValueKind)
+            public RecursionStackFrame(string? propertyName, JsonNode propertyValue) : this(propertyName, propertyValue, propertyValue.ValueKind)
             {
             }
         }

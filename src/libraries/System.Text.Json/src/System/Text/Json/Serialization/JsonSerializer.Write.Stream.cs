@@ -18,7 +18,7 @@ namespace System.Text.Json
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
-        public static Task SerializeAsync<TValue>(Stream utf8Json, TValue value, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        public static Task SerializeAsync<TValue>(Stream utf8Json, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             return WriteAsyncCore(utf8Json, value, typeof(TValue), options, cancellationToken);
         }
@@ -32,7 +32,7 @@ namespace System.Text.Json
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
-        public static Task SerializeAsync(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        public static Task SerializeAsync(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
                 throw new ArgumentNullException(nameof(utf8Json));
@@ -42,7 +42,7 @@ namespace System.Text.Json
             return WriteAsyncCore(utf8Json, value, inputType, options, cancellationToken);
         }
 
-        private static async Task WriteAsyncCore(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options, CancellationToken cancellationToken)
+        private static async Task WriteAsyncCore(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             if (options == null)
             {

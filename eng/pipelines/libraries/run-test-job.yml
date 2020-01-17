@@ -10,7 +10,8 @@ parameters:
   pool: ''
   testScope: ''
   helixQueues: []
-  dependsOnBuildConfiguration: Debug
+  dependsOnTestBuildConfiguration: Debug
+  dependsOnTestArchitecture: x64
   condition: true
   variables: {}
 
@@ -28,22 +29,33 @@ jobs:
       container: '' # we just send to helix, no need to use a container.
       condition: ${{ parameters.condition }}
       pool: ${{ parameters.pool }}
-      name: test_run
-      displayName: 'Test Run'
+      ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+        displayName: ${{ format('Test Run {0} CoreCLR', parameters.liveCoreClrBuildConfig) }}
+        name: ${{ format('test_run_{0}_coreclr', parameters.liveCoreClrBuildConfig) }}
+      ${{ if eq(parameters.liveCoreClrBuildConfig, '') }}:
+        displayName: 'Test Run'
+        name: test_run
 
       dependsOn:
       - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      - ${{ format('libraries_test_build_{0}_{1}_x64_{2}', parameters.framework, parameters.osGroup, parameters.dependsOnBuildConfiguration) }}
+      - ${{ format('libraries_test_build_{0}_{1}_{2}_{3}', parameters.framework, parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
+      - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+        - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveCoreClrBuildConfig) }}
 
       variables:
+        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
         - _skipTestRestoreArg: /p:SkipTestRestore=false
+        - _testRunNamePrefixSuffix: ''
+        - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+          - _testRunNamePrefixSuffix: CoreCLR_${{ parameters.liveCoreClrBuildConfig }}
         - ${{ parameters.variables }}
 
       steps:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             displayName: Build Assets
+            cleanUnpackFolder: false
             artifactName: $(librariesBuildArtifactName)
             artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
@@ -56,6 +68,14 @@ jobs:
             artifactName: $(librariesTestsArtifactName)
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
 
+        - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+          - script: $(_msbuildCommand) src/libraries/restore/runtime/runtime.depproj 
+                    $(_coreClrArtifactsPathArg)
+                    $(_runtimeOSArg)
+                    /p:ArchGroup=${{ parameters.archType }}
+                    /p:ConfigurationGroup=${{ parameters.buildConfig }}
+            displayName: Override CoreCLR from live drop
+
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             targetOS: ${{ parameters.osGroup }}
@@ -67,3 +87,4 @@ jobs:
             testScope: ${{ parameters.testScope }}
             creator: dotnet-bot
             helixToken: ''
+            testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)

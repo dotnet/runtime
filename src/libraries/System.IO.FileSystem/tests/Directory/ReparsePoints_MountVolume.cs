@@ -19,7 +19,7 @@ public class Directory_ReparsePoints_MountVolume
     private static bool s_pass = true;
 
     [Fact]
-    [ActiveIssue(1221)]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/1221")]
     [PlatformSpecific(TestPlatforms.Windows)] // testing mounting volumes and reparse points
     public static void runTest()
     {

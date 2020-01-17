@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
-
-using Internal.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -16,7 +15,7 @@ namespace System.Runtime.InteropServices
     /// Provides a collection of methods for interoperating with <see cref="Memory{T}"/>, <see cref="ReadOnlyMemory{T}"/>,
     /// <see cref="Span{T}"/>, and <see cref="ReadOnlySpan{T}"/>.
     /// </summary>
-    public static class MemoryMarshal
+    public static partial class MemoryMarshal
     {
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.

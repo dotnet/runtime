@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
-using System.Diagnostics;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
@@ -129,6 +128,16 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockStream(this, streamId, bidirectional: true);
         }
 
+        internal override long GetRemoteAvailableUnidirectionalStreamCount()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override long GetRemoteAvailableBidirectionalStreamCount()
+        {
+            throw new NotImplementedException();
+        }
+
         internal async Task<Socket> CreateOutboundMockStreamAsync(long streamId)
         {
             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
@@ -169,9 +178,10 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockStream(socket, streamId, bidirectional: bidirectional);
         }
 
-        internal override void Close()
+        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
             Dispose();
+            return default;
         }
 
         private void CheckDisposed()

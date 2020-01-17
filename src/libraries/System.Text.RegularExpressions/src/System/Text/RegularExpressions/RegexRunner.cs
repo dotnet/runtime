@@ -15,6 +15,7 @@
 // backtracked results from) the Match instance.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -547,6 +548,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Dump the current state
         /// </summary>
+        [ExcludeFromCodeCoverage]
         internal virtual void DumpState()
         {
             Debug.WriteLine("Text:  " + TextposDescription());
@@ -554,6 +556,7 @@ namespace System.Text.RegularExpressions
             Debug.WriteLine("Stack: " + StackDescription(runstack!, runstackpos));
         }
 
+        [ExcludeFromCodeCoverage]
         private static string StackDescription(int[] a, int index)
         {
             var sb = new StringBuilder();
@@ -579,6 +582,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
+        [ExcludeFromCodeCoverage]
         internal virtual string TextposDescription()
         {
             var sb = new StringBuilder();

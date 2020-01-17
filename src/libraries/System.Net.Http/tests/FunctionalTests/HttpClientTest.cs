@@ -5,15 +5,19 @@
 using Microsoft.DotNet.RemoteExecutor;
 using System.IO;
 using System.Linq;
+using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public sealed class HttpClientTest
+    public sealed class HttpClientTest : HttpClientHandlerTestBase
     {
+        public HttpClientTest(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         public void Dispose_MultipleTimes_Success()
         {
@@ -345,6 +349,212 @@ namespace System.Net.Http.Functional.Tests
                 await client.SendAsync(request);
                 await content.ReadAsStringAsync(); // no exception
             }
+        }
+
+        [Fact]
+        public async Task GetStringAsync_Success()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    string received = await httpClient.GetStringAsync(uri);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task GetStringAsync_CanBeCanceled_AlreadyCanceledCts()
+        {
+            var onClientFinished = new SemaphoreSlim(0, 1);
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStringAsync(uri, cts.Token));
+                    onClientFinished.Release();
+                },
+                async server =>
+                {
+                    Assert.True(await onClientFinished.WaitAsync(5000), "OnClientFinished timed out");
+                });
+        }
+
+        [Fact]
+        public async Task GetStringAsync_CanBeCanceled()
+        {
+            var cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStringAsync(uri, cts.Token));
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        cts.Cancel();
+                        try
+                        {
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
+                        }
+                        catch { }
+                    });
+                });
+        }
+
+        [Fact]
+        public async Task GetByteArrayAsync_Success()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    byte[] receivedBytes = await httpClient.GetByteArrayAsync(uri);
+                    string received = Encoding.UTF8.GetString(receivedBytes);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task GetByteArrayAsync_CanBeCanceled_AlreadyCanceledCts()
+        {
+            var onClientFinished = new SemaphoreSlim(0, 1);
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetByteArrayAsync(uri, cts.Token));
+                    onClientFinished.Release();
+                },
+                async server =>
+                {
+                    Assert.True(await onClientFinished.WaitAsync(5000), "OnClientFinished timed out");
+                });
+        }
+
+        [Fact]
+        public async Task GetByteArrayAsync_CanBeCanceled()
+        {
+            var cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetByteArrayAsync(uri, cts.Token));
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        cts.Cancel();
+                        try
+                        {
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
+                        }
+                        catch { }
+                    });
+                });
+        }
+
+        [Fact]
+        public async Task GetStreamAsync_Success()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    Stream receivedStream = await httpClient.GetStreamAsync(uri);
+                    using var ms = new MemoryStream();
+                    await receivedStream.CopyToAsync(ms);
+                    byte[] receivedBytes = ms.ToArray();
+                    string received = Encoding.UTF8.GetString(receivedBytes);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task GetStreamAsync_CanBeCanceled_AlreadyCanceledCts()
+        {
+            var onClientFinished = new SemaphoreSlim(0, 1);
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStreamAsync(uri, cts.Token));
+                    onClientFinished.Release();
+                },
+                async server =>
+                {
+                    Assert.True(await onClientFinished.WaitAsync(5000), "OnClientFinished timed out");
+                });
+        }
+
+        [Fact]
+        public async Task GetStreamAsync_CanBeCanceled()
+        {
+            var cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStreamAsync(uri, cts.Token));
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        cts.Cancel();
+                        try
+                        {
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
+                        }
+                        catch { }
+                    });
+                });
         }
 
         [Fact]

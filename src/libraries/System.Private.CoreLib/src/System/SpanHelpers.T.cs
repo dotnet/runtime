@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-#if !NETSTANDARD2_0
+using System.Runtime.CompilerServices;
+
 using Internal.Runtime.CompilerServices;
-#endif
 
 namespace System
 {

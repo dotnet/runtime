@@ -38,7 +38,7 @@
     <Message Importance="High" Text="$(MSBuildProjectName) -> completed in $(SignDuration)" />
   </Target>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 
   <!-- If signing is enabled, wait until all projects in this stage are done and sign them. -->
   <Target Name="Build"

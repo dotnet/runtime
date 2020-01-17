@@ -274,7 +274,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [Fact]
 #if TESTING_CNG_IMPLEMENTATION
-        [ActiveIssue(18882, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/18882", TargetFrameworkMonikers.NetFramework)]
 #endif
         public static void ImportNoDP()
         {

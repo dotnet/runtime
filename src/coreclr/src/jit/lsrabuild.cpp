@@ -2071,7 +2071,7 @@ void LinearScan::buildIntervals()
 
         bool predBlockIsAllocated = false;
         predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
-        if (predBlock)
+        if (predBlock != nullptr)
         {
             JITDUMP("\n\nSetting " FMT_BB " as the predecessor for determining incoming variable registers of " FMT_BB
                     "\n",
@@ -2095,46 +2095,47 @@ void LinearScan::buildIntervals()
             // Any lclVars live-in to a block are resolution candidates.
             VarSetOps::UnionD(compiler, resolutionCandidateVars, currentLiveVars);
 
-            // Determine if we need any DummyDefs.
-            // We need DummyDefs for cases where "predBlock" isn't really a predecessor.
-            // Note that it's possible to have uses of unitialized variables, in which case even the first
-            // block may require DummyDefs, which we are not currently adding - this means that these variables
-            // will always be considered to be in memory on entry (and reloaded when the use is encountered).
-            // TODO-CQ: Consider how best to tune this.  Currently, if we create DummyDefs for uninitialized
-            // variables (which may actually be initialized along the dynamically executed paths, but not
-            // on all static paths), we wind up with excessive liveranges for some of these variables.
-            VARSET_TP newLiveIn(VarSetOps::MakeCopy(compiler, currentLiveVars));
-            if (predBlock)
+            if (!blockInfo[block->bbNum].hasEHBoundaryIn)
             {
-                // Compute set difference: newLiveIn = currentLiveVars - predBlock->bbLiveOut
-                VarSetOps::DiffD(compiler, newLiveIn, predBlock->bbLiveOut);
-            }
-            bool needsDummyDefs = (!VarSetOps::IsEmpty(compiler, newLiveIn) && block != compiler->fgFirstBB);
+                // Determine if we need any DummyDefs.
+                // We need DummyDefs for cases where "predBlock" isn't really a predecessor.
+                // Note that it's possible to have uses of unitialized variables, in which case even the first
+                // block may require DummyDefs, which we are not currently adding - this means that these variables
+                // will always be considered to be in memory on entry (and reloaded when the use is encountered).
+                // TODO-CQ: Consider how best to tune this.  Currently, if we create DummyDefs for uninitialized
+                // variables (which may actually be initialized along the dynamically executed paths, but not
+                // on all static paths), we wind up with excessive liveranges for some of these variables.
 
-            // Create dummy def RefPositions
-
-            if (needsDummyDefs)
-            {
-                // If we are using locations from a predecessor, we should never require DummyDefs.
-                assert(!predBlockIsAllocated);
-
-                JITDUMP("Creating dummy definitions\n");
-                VarSetOps::Iter iter(compiler, newLiveIn);
-                unsigned        varIndex = 0;
-                while (iter.NextElem(&varIndex))
+                VARSET_TP newLiveIn(VarSetOps::MakeCopy(compiler, currentLiveVars));
+                if (predBlock != nullptr)
                 {
-                    LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-                    // Add a dummyDef for any candidate vars that are in the "newLiveIn" set.
-                    // If this is the entry block, don't add any incoming parameters (they're handled with ParamDefs).
-                    if (isCandidateVar(varDsc) && (predBlock != nullptr || !varDsc->lvIsParam))
+                    // Compute set difference: newLiveIn = currentLiveVars - predBlock->bbLiveOut
+                    VarSetOps::DiffD(compiler, newLiveIn, predBlock->bbLiveOut);
+                }
+                bool needsDummyDefs = (!VarSetOps::IsEmpty(compiler, newLiveIn) && block != compiler->fgFirstBB);
+
+                // Create dummy def RefPositions
+
+                if (needsDummyDefs)
+                {
+                    // If we are using locations from a predecessor, we should never require DummyDefs.
+                    assert(!predBlockIsAllocated);
+
+                    JITDUMP("Creating dummy definitions\n");
+                    VarSetOps::Iter iter(compiler, newLiveIn);
+                    unsigned        varIndex = 0;
+                    while (iter.NextElem(&varIndex))
                     {
+                        // Add a dummyDef for any candidate vars that are in the "newLiveIn" set.
+                        LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+                        assert(isCandidateVar(varDsc));
                         Interval*    interval = getIntervalForLocalVar(varIndex);
                         RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
                                                           allRegs(interval->registerType));
                         pos->setRegOptional(true);
                     }
+                    JITDUMP("Finished creating dummy definitions\n\n");
                 }
-                JITDUMP("Finished creating dummy definitions\n\n");
             }
         }
 

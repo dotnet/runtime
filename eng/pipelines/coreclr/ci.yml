@@ -154,7 +154,9 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
     buildConfig: release
     platforms:
-    - Linux_arm
+    # Currently failing globally, should be uncommented once the tracking bug gets fixed:
+    # https://github.com/dotnet/runtime/issues/1282
+    # - Linux_arm
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
 

@@ -254,7 +254,7 @@ namespace Internal.JitInterface
                 if (instantiatedType != null)
                 {
                     if (VectorFieldLayoutAlgorithm.IsVectorType(instantiatedType) ||
-                        VectorFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
+                        VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
                     {
                         return false;
                     }

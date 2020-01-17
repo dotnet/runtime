@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using System.Xml.Serialization;
 
 namespace ILCompiler.Reflection.ReadyToRun.x86
 {

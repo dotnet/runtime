@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -25,28 +26,28 @@ namespace System.Text.Json
         private const int PropertyNameCountCacheThreshold = 64;
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        public volatile Dictionary<string, JsonPropertyInfo> PropertyCache;
+        public volatile Dictionary<string, JsonPropertyInfo>? PropertyCache;
 
         // Serializable runtime/polymorphic properties, keyed on property and runtime type.
-        public ConcurrentDictionary<(JsonPropertyInfo, Type), JsonPropertyInfo> RuntimePropertyCache;
+        public ConcurrentDictionary<(JsonPropertyInfo, Type), JsonPropertyInfo>? RuntimePropertyCache;
 
         // All of the serializable properties on a POCO including the optional extension property.
         // Used for performance during serialization instead of 'PropertyCache' above.
-        public volatile JsonPropertyInfo[] PropertyCacheArray;
+        public volatile JsonPropertyInfo[]? PropertyCacheArray;
 
         // Fast cache of properties by first JSON ordering; may not contain all properties. Accessed before PropertyCache.
         // Use an array (instead of List<T>) for highest performance.
-        private volatile PropertyRef[] _propertyRefsSorted;
+        private volatile PropertyRef[]? _propertyRefsSorted;
 
-        public delegate object ConstructorDelegate();
-        public ConstructorDelegate CreateObject { get; private set; }
+        public delegate object? ConstructorDelegate();
+        public ConstructorDelegate? CreateObject { get; private set; }
 
         public ClassType ClassType { get; private set; }
 
-        public JsonPropertyInfo DataExtensionProperty { get; private set; }
+        public JsonPropertyInfo? DataExtensionProperty { get; private set; }
 
         // If enumerable, the JsonClassInfo for the element type.
-        private JsonClassInfo _elementClassInfo;
+        private JsonClassInfo? _elementClassInfo;
 
         /// <summary>
         /// Return the JsonClassInfo for the element type, or null if the type is not an enumerable or dictionary.
@@ -55,7 +56,7 @@ namespace System.Text.Json
         /// This should not be called during warm-up (initial creation of JsonClassInfos) to avoid recursive behavior
         /// which could result in a StackOverflowException.
         /// </remarks>
-        public JsonClassInfo ElementClassInfo
+        public JsonClassInfo? ElementClassInfo
         {
             get
             {
@@ -71,7 +72,7 @@ namespace System.Text.Json
             }
         }
 
-        public Type ElementType { get; set; }
+        public Type? ElementType { get; set; }
 
         public JsonSerializerOptions Options { get; private set; }
 
@@ -123,10 +124,10 @@ namespace System.Text.Json
                 parentClassType: type,
                 propertyInfo: null,
                 out Type runtimeType,
-                out Type elementType,
-                out Type nullableUnderlyingType,
-                out MethodInfo addMethod,
-                out JsonConverter converter,
+                out Type? elementType,
+                out Type? nullableUnderlyingType,
+                out MethodInfo? addMethod,
+                out JsonConverter? converter,
                 checkForAddMethod: true,
                 options);
 
@@ -154,7 +155,7 @@ namespace System.Text.Json
                                 propertyInfo.SetMethod?.IsPublic == true)
                             {
                                 JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo.PropertyType, propertyInfo, type, options);
-                                Debug.Assert(jsonPropertyInfo != null);
+                                Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
                                 // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
                                 if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
@@ -179,7 +180,7 @@ namespace System.Text.Json
                         if (DetermineExtensionDataProperty(cache))
                         {
                             // Remove from cache since it is handled independently.
-                            cache.Remove(DataExtensionProperty.NameAsString);
+                            cache.Remove(DataExtensionProperty!.NameAsString!);
 
                             cacheArray = new JsonPropertyInfo[cache.Count + 1];
 
@@ -228,7 +229,7 @@ namespace System.Text.Json
 
         private bool DetermineExtensionDataProperty(Dictionary<string, JsonPropertyInfo> cache)
         {
-            JsonPropertyInfo jsonPropertyInfo = GetPropertyWithUniqueAttribute(typeof(JsonExtensionDataAttribute), cache);
+            JsonPropertyInfo? jsonPropertyInfo = GetPropertyWithUniqueAttribute(typeof(JsonExtensionDataAttribute), cache);
             if (jsonPropertyInfo != null)
             {
                 Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
@@ -245,13 +246,14 @@ namespace System.Text.Json
             return false;
         }
 
-        private JsonPropertyInfo GetPropertyWithUniqueAttribute(Type attributeType, Dictionary<string, JsonPropertyInfo> cache)
+        private JsonPropertyInfo? GetPropertyWithUniqueAttribute(Type attributeType, Dictionary<string, JsonPropertyInfo> cache)
         {
-            JsonPropertyInfo property = null;
+            JsonPropertyInfo? property = null;
 
             foreach (JsonPropertyInfo jsonPropertyInfo in cache.Values)
             {
-                Attribute attribute = jsonPropertyInfo.PropertyInfo.GetCustomAttribute(attributeType);
+                Debug.Assert(jsonPropertyInfo.PropertyInfo != null);
+                Attribute? attribute = jsonPropertyInfo.PropertyInfo.GetCustomAttribute(attributeType);
                 if (attribute != null)
                 {
                     if (property != null)
@@ -270,10 +272,10 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JsonPropertyInfo GetProperty(ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame)
         {
-            JsonPropertyInfo info = null;
+            JsonPropertyInfo? info = null;
 
             // Keep a local copy of the cache in case it changes by another thread.
-            PropertyRef[] localPropertyRefsSorted = _propertyRefsSorted;
+            PropertyRef[]? localPropertyRefsSorted = _propertyRefsSorted;
 
             ulong key = GetKey(propertyName);
 
@@ -396,12 +398,12 @@ namespace System.Text.Json
             return new Dictionary<string, JsonPropertyInfo>(capacity, comparer);
         }
 
-        public JsonPropertyInfo PolicyProperty { get; private set; }
+        public JsonPropertyInfo? PolicyProperty { get; private set; }
 
-        public MethodInfo AddItemToObject { get; private set; }
+        public MethodInfo? AddItemToObject { get; private set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, ref JsonPropertyInfo info)
+        private static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, [NotNullWhen(true)] ref JsonPropertyInfo? info)
         {
             if (key == propertyRef.Key)
             {
@@ -519,12 +521,12 @@ namespace System.Text.Json
         public static ClassType GetClassType(
             Type type,
             Type parentClassType,
-            PropertyInfo propertyInfo,
+            PropertyInfo? propertyInfo,
             out Type runtimeType,
-            out Type elementType,
-            out Type nullableUnderlyingType,
-            out MethodInfo addMethod,
-            out JsonConverter converter,
+            out Type? elementType,
+            out Type? nullableUnderlyingType,
+            out MethodInfo? addMethod,
+            out JsonConverter? converter,
             bool checkForAddMethod,
             JsonSerializerOptions options)
         {
@@ -582,26 +584,30 @@ namespace System.Text.Json
                 return ClassType.Enumerable;
             }
 
-            if (type.FullName.StartsWith("System.Collections.Generic.IEnumerable`1"))
+            if (type.FullName != null)
             {
-                elementType = type.GetGenericArguments()[0];
-                runtimeType = typeof(List<>).MakeGenericType(elementType);
-                addMethod = default;
-                return ClassType.Enumerable;
-            }
-            else if (type.FullName.StartsWith("System.Collections.Generic.IDictionary`2") ||
-                type.FullName.StartsWith("System.Collections.Generic.IReadOnlyDictionary`2"))
-            {
-                Type[] genericTypes = type.GetGenericArguments();
+                if (type.FullName.StartsWith("System.Collections.Generic.IEnumerable`1"))
+                {
+                    elementType = type.GetGenericArguments()[0];
+                    runtimeType = typeof(List<>).MakeGenericType(elementType);
+                    addMethod = default;
+                    return ClassType.Enumerable;
+                }
+                else if (type.FullName.StartsWith("System.Collections.Generic.IDictionary`2") ||
+                    type.FullName.StartsWith("System.Collections.Generic.IReadOnlyDictionary`2"))
+                {
+                    Type[] genericTypes = type.GetGenericArguments();
 
-                elementType = genericTypes[1];
-                runtimeType = typeof(Dictionary<,>).MakeGenericType(genericTypes[0], elementType);
-                addMethod = default;
-                return ClassType.Dictionary;
+                    elementType = genericTypes[1];
+                    runtimeType = typeof(Dictionary<,>).MakeGenericType(genericTypes[0], elementType);
+                    addMethod = default;
+                    return ClassType.Dictionary;
+                }
             }
 
+
             {
-                Type genericIDictionaryType = type.GetInterface("System.Collections.Generic.IDictionary`2") ?? type.GetInterface("System.Collections.Generic.IReadOnlyDictionary`2");
+                Type? genericIDictionaryType = type.GetInterface("System.Collections.Generic.IDictionary`2") ?? type.GetInterface("System.Collections.Generic.IReadOnlyDictionary`2");
                 if (genericIDictionaryType != null)
                 {
                     Type[] genericTypes = genericIDictionaryType.GetGenericArguments();
@@ -641,7 +647,7 @@ namespace System.Text.Json
             }
 
             {
-                Type genericIEnumerableType = type.GetInterface("System.Collections.Generic.IEnumerable`1");
+                Type? genericIEnumerableType = type.GetInterface("System.Collections.Generic.IEnumerable`1");
 
                 if (genericIEnumerableType != null)
                 {
@@ -690,7 +696,7 @@ namespace System.Text.Json
 
                 if (checkForAddMethod)
                 {
-                    Type genericICollectionType = type.GetInterface("System.Collections.Generic.ICollection`1");
+                    Type? genericICollectionType = type.GetInterface("System.Collections.Generic.ICollection`1");
                     if (genericICollectionType != null)
                     {
                         addMethod = genericICollectionType.GetMethod("Add");
@@ -698,7 +704,7 @@ namespace System.Text.Json
                     else
                     {
                         // Non-immutable stack or queue.
-                        MethodInfo methodInfo = type.GetMethod("Push") ?? type.GetMethod("Enqueue");
+                        MethodInfo? methodInfo = type.GetMethod("Push") ?? type.GetMethod("Enqueue");
                         if (methodInfo?.ReturnType == typeof(void))
                         {
                             addMethod = methodInfo;

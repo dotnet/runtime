@@ -14,7 +14,7 @@ namespace System.Drawing.Tests
             yield return new object[] { Color.PapayaWhip, Color.PapayaWhip };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Colors_TestData))]
         public void Ctor_Color(Color color, Color expectedColor)
@@ -60,7 +60,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.Clone());
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Color_EmptyAndGetDisposed_ThrowsArgumentException()
         {

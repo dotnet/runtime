@@ -150,8 +150,8 @@ namespace System
                 (uint)length <= (nuint)destinationArray.LongLength)
             {
                 nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
-                ref byte src = ref sourceArray.GetRawSzArrayData();
-                ref byte dst = ref destinationArray.GetRawSzArrayData();
+                ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
+                ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
 
                 if (pMT->ContainsGCPointers)
                     Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
@@ -182,8 +182,8 @@ namespace System
                 {
                     nuint elementSize = (nuint)pMT->ComponentSize;
                     nuint byteCount = (uint)length * elementSize;
-                    ref byte src = ref Unsafe.AddByteOffset(ref sourceArray.GetRawSzArrayData(), (uint)sourceIndex * elementSize);
-                    ref byte dst = ref Unsafe.AddByteOffset(ref destinationArray.GetRawSzArrayData(), (uint)destinationIndex * elementSize);
+                    ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(sourceArray).Data, (uint)sourceIndex * elementSize);
+                    ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
 
                     if (pMT->ContainsGCPointers)
                         Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);

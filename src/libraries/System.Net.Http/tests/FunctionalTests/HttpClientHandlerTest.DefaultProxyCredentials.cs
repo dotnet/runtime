@@ -76,7 +76,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(42323)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/42323")]
         [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [Theory]

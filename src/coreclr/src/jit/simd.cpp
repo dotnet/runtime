@@ -1924,8 +1924,8 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
             op1LclNum = lvaGrabTemp(true DEBUGARG("SIMD Min/Max"));
-            dupOp1    = gtNewLclvNode(op1LclNum, op1->TypeGet());
             lvaSetStruct(op1LclNum, typeHnd, false);
+            dupOp1    = gtNewLclvNode(op1LclNum, op1->TypeGet());
             op1Assign = gtNewTempAssign(op1LclNum, op1);
             op1       = gtNewLclvNode(op1LclNum, op1->TypeGet());
         }
@@ -1937,8 +1937,8 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
             op2LclNum = lvaGrabTemp(true DEBUGARG("SIMD Min/Max"));
-            dupOp2    = gtNewLclvNode(op2LclNum, op2->TypeGet());
             lvaSetStruct(op2LclNum, typeHnd, false);
+            dupOp2    = gtNewLclvNode(op2LclNum, op2->TypeGet());
             op2Assign = gtNewTempAssign(op2LclNum, op2);
             op2       = gtNewLclvNode(op2LclNum, op2->TypeGet());
         }

@@ -902,7 +902,7 @@ void InvokeUtil::ValidateObjectTarget(FieldDesc *pField, TypeHandle enclosingTyp
         COMPlusThrow(kTargetException,W("RFLCT.Targ_StatFldReqTarg"));
 
     // Verify that the object is of the proper type...
-    TypeHandle ty = (*target)->GetTrueTypeHandle();
+    TypeHandle ty = (*target)->GetTypeHandle();
     while (!ty.IsNull() && ty != enclosingType)
         ty = ty.GetParent();
 

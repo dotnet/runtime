@@ -12,10 +12,10 @@ namespace System.Text.Json
 {
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        public override JsonClassInfo.ConstructorDelegate CreateConstructor(Type type)
+        public override JsonClassInfo.ConstructorDelegate? CreateConstructor(Type type)
         {
             Debug.Assert(type != null);
-            ConstructorInfo realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
+            ConstructorInfo? realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
 
             if (type.IsAbstract)
             {
@@ -66,14 +66,9 @@ namespace System.Text.Json
         {
             MethodInfo createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
 
-            if (createRange == null)
-            {
-                return null;
-            }
-
             Type creatorType = typeof(ImmutableEnumerableCreator<,>).MakeGenericType(elementType, collectionType);
 
-            ConstructorInfo realMethod = creatorType.GetConstructor(
+            ConstructorInfo? realMethod = creatorType.GetConstructor(
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
                 binder: null,
                 Type.EmptyTypes,
@@ -95,8 +90,9 @@ namespace System.Text.Json
             JsonClassInfo.ConstructorDelegate constructor = (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(
                 typeof(JsonClassInfo.ConstructorDelegate));
 
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor();
+            ImmutableCollectionCreator? creator = (ImmutableCollectionCreator?)constructor();
 
+            Debug.Assert(creator != null);
             creator.RegisterCreatorDelegateFromMethod(createRange);
             return creator;
         }
@@ -114,14 +110,9 @@ namespace System.Text.Json
 
             MethodInfo createRange = ImmutableDictionaryCreateRangeMethod(constructingType, elementType);
 
-            if (createRange == null)
-            {
-                return null;
-            }
-
             Type creatorType = typeof(ImmutableDictionaryCreator<,>).MakeGenericType(elementType, collectionType);
 
-            ConstructorInfo realMethod = creatorType.GetConstructor(
+            ConstructorInfo? realMethod = creatorType.GetConstructor(
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
                 binder: null,
                 Type.EmptyTypes,
@@ -143,20 +134,22 @@ namespace System.Text.Json
             JsonClassInfo.ConstructorDelegate constructor = (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(
                 typeof(JsonClassInfo.ConstructorDelegate));
 
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor();
+            ImmutableCollectionCreator? creator = (ImmutableCollectionCreator?)constructor();
 
+            Debug.Assert(creator != null);
             creator.RegisterCreatorDelegateFromMethod(createRange);
             return creator;
         }
 
-        public override Func<object, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
-            (Func<object, TProperty>)CreatePropertyGetter(propertyInfo, typeof(TClass));
+        public override Func<object?, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
+            (Func<object?, TProperty>)CreatePropertyGetter(propertyInfo, typeof(TClass));
 
         private static Delegate CreatePropertyGetter(PropertyInfo propertyInfo, Type classType)
         {
-            MethodInfo realMethod = propertyInfo.GetGetMethod();
+            MethodInfo? realMethod = propertyInfo.GetGetMethod();
             Type objectType = typeof(object);
 
+            Debug.Assert(realMethod != null);
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,
                 propertyInfo.PropertyType,
@@ -184,14 +177,15 @@ namespace System.Text.Json
             return dynamicMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(objectType, propertyInfo.PropertyType));
         }
 
-        public override Action<object, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
-            (Action<object, TProperty>)CreatePropertySetter(propertyInfo, typeof(TClass));
+        public override Action<object?, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
+            (Action<object?, TProperty>)CreatePropertySetter(propertyInfo, typeof(TClass));
 
         private static Delegate CreatePropertySetter(PropertyInfo propertyInfo, Type classType)
         {
-            MethodInfo realMethod = propertyInfo.GetSetMethod();
+            MethodInfo? realMethod = propertyInfo.GetSetMethod();
             Type objectType = typeof(object);
 
+            Debug.Assert(realMethod != null);
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,
                 typeof(void),

@@ -2788,7 +2788,6 @@ IMetaDataImport2 * NativeImageDumper::TypeToString(PTR_CCOR_SIGNATURE &sig,
         buf.Append( W("System.__Canon") );
         break;
 
-    case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
     case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
         {
             buf.Append( W("native ") );
@@ -6108,51 +6107,17 @@ void NativeImageDumper::TypeDescToString( PTR_TypeDesc td, SString& buf )
         PTR_FnPtrTypeDesc fptd( PTR_TO_TADDR(td) );
         buf.Append( W("(fnptr)") );
     }
-    else if( td->HasTypeParam() || td->IsArray() )
+    else if(td->HasTypeParam())
     {
-        //either a Parameter or an Array.
         PTR_ParamTypeDesc ptd(PTR_TO_TADDR(td));
-        TypeHandle elemType;
-        /* REVISIT_TODO Thu 10/5/2006
-         * Do I need to find a rank somewhere in the TypeDesc?
-         */
-        unsigned rank;
-        if( td->IsArray()  )
-        {
-            //td->HasTypeParam() may also be true.
-            PTR_MethodTable mt = ptd->GetTemplateMethodTableInternal();
-            _ASSERTE( PTR_TO_TADDR(mt) );
-            if( CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(mt)) )
-            {
-                if (!isSelf(GetDependencyForPointer(PTR_TO_TADDR(ptd))))
-                {
-                    //this is an RVA from another hardbound dependency.  We cannot decode it
-                    buf.Append(W("OUT_OF_MODULE_FIXUP"));
-                }
-                else
-                {
-                    RVA rva = CORCOMPILE_UNTAG_TOKEN(PTR_TO_TADDR(mt));
-                    FixupBlobToString(rva, buf);
-                }
-                return;
-            }
-            else
-            {
-                _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(mt)) );
-                MethodTableToString( mt, buf );
-                rank = PTR_ArrayTypeDesc(PTR_TO_TADDR(ptd))->GetRank();
-            }
-        }
-        else
-        {
-            _ASSERTE(td->HasTypeParam());
-            TypeHandle th(ptd->GetTypeParam());
-            _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(th.AsTAddr()) );
-            _ASSERTE( th.AsTAddr() );
-            TypeHandleToString(th, buf);
-            rank = 0;
-        }
-        AppendTypeQualifier( td->GetInternalCorElementType(), rank, buf );
+
+        _ASSERTE(td->HasTypeParam());
+        TypeHandle th(ptd->GetTypeParam());
+        _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(th.AsTAddr()) );
+        _ASSERTE( th.AsTAddr() );
+        TypeHandleToString(th, buf);
+
+        AppendTypeQualifier( td->GetInternalCorElementType(), /*rank*/ 0, buf );
     }
     else
     {
@@ -8638,7 +8603,6 @@ enum TypeDescType
 {
     TDT_IsTypeDesc,
     TDT_IsParamTypeDesc,
-    TDT_IsArrayTypeDesc,
     TDT_IsTypeVarTypeDesc,
     TDT_IsFnPtrTypeDesc
 };
@@ -8646,7 +8610,6 @@ const char * const g_typeDescTypeNames[] =
 {
     "TypeDesc",
     "ParamTypeDesc",
-    "ArrayTypeDesc",
     "TypeVarTypeDesc",
     "FnPtrTypeDesc"
 };
@@ -8654,15 +8617,12 @@ int g_typeDescSizes[] =
 {
     sizeof(TypeDesc),
     sizeof(ParamTypeDesc),
-    sizeof(ArrayTypeDesc),
     sizeof(TypeVarTypeDesc),
     -1//sizeof(FnPtrTypeDesc) -- variable size
 };
 TypeDescType getTypeDescType( PTR_TypeDesc td )
 {
     _ASSERTE(td != NULL);
-    if( td->IsArray() )
-        return TDT_IsArrayTypeDesc;
     if( td->HasTypeParam() )
         return TDT_IsParamTypeDesc;
     if( td->IsGenericVariable() )
@@ -8722,7 +8682,7 @@ void NativeImageDumper::DumpTypeDesc( PTR_TypeDesc td )
                               TypeDesc, TYPEDESCS );
     DisplayWriteFieldEnumerated( m_typeAndFlags, td->m_typeAndFlags, TypeDesc,
                                  s_TDFlags, W(", "), TYPEDESCS );
-    if( tdt == TDT_IsParamTypeDesc || tdt == TDT_IsArrayTypeDesc )
+    if( tdt == TDT_IsParamTypeDesc )
     {
         PTR_ParamTypeDesc ptd(td);
         DisplayStartVStructure( "ParamTypeDesc", TYPEDESCS );

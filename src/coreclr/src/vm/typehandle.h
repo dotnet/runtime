@@ -22,7 +22,6 @@
 class TypeDesc;
 class TypeHandle;
 class Instantiation;
-class ArrayTypeDesc;
 class FnPtrTypeDesc;
 class ParamTypeDesc;
 class TypeVarTypeDesc;
@@ -42,7 +41,6 @@ struct CORINFO_CLASS_STRUCT_;
 typedef DPTR(class TypeVarTypeDesc) PTR_TypeVarTypeDesc;
 typedef SPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
 typedef DPTR(class ParamTypeDesc) PTR_ParamTypeDesc;
-typedef DPTR(class ArrayTypeDesc) PTR_ArrayTypeDesc;
 typedef DPTR(class TypeDesc) PTR_TypeDesc;
 typedef DPTR(class TypeHandle) PTR_TypeHandle;
 
@@ -64,19 +62,12 @@ class ComCallWrapperTemplate;
 
 // At the present time a TypeHandle can point at two possible things
 //
-//      1) A MethodTable    (Intrinsics, Classes, Value Types and their instantiations)
-//      2) A TypeDesc       (all other cases: arrays, byrefs, pointer types, function pointers, generic type variables)
+//      1) A MethodTable    (Arrays, Intrinsics, Classes, Value Types and their instantiations)
+//      2) A TypeDesc       (all other cases: byrefs, pointer types, function pointers, generic type variables)
 //
 // or with IL stubs, a third thing:
 //
 //      3) A MethodTable for a native value type.
-//
-// Array MTs are not valid TypeHandles: for example no allocated object will
-// ever return such a type handle from Object::GetTypeHandle(), and
-// these type handles should not be passed across the JIT Interface
-// as CORINFO_CLASS_HANDLEs.  However some code in the EE does create
-// temporary TypeHandles out of these MTs, so we can't yet assert
-// !pMT->IsArray() in the TypeHandle constructor.
 //
 // Wherever possible, you should be using TypeHandles or MethodTables.
 // Code that is known to work over Class/ValueClass types (including their
@@ -84,7 +75,6 @@ class ComCallWrapperTemplate;
 //
 // TypeDescs in turn break down into several variants and are
 // for special cases around the edges
-//    - array types whose method tables get share
 //    - types for function pointers for verification and reflection
 //    - types for generic parameters for verification and reflection
 //
@@ -294,7 +284,7 @@ public:
     // Get the parent, known to be decoded
     TypeHandle GetParent() const;
 
-    // Obtain element type for an array or pointer, returning NULL otherwise
+    // Obtain element type for an array, byref or pointer, returning NULL otherwise
     TypeHandle GetTypeParam() const;
 
     // Obtain instantiation from an instantiated type
@@ -419,24 +409,21 @@ public:
 #endif
 
     // Unlike AsMethodTable, GetMethodTable will get the method table
-    // of the type, regardless of whether it is an array etc. 
+    // of the type, regardless of whether it is a TypeDesc. 
     // Note, however this method table may be non-exact/shared for TypeDescs. 
     // for example all pointers and function pointers use ELEMENT_TYPE_U.
     // And some types (like ByRef or generic type parameters) have no 
     // method table and this function returns NULL for them.
     inline PTR_MethodTable GetMethodTable() const;
 
-    // Returns the method table which should be used for visibility checking.
-    // Like GetMethodTable except for TypeDescs returns the root ElementType.
-    // So for Foo[] instead of returning Array returns Foo.
-    inline MethodTable* GetMethodTableOfElementType() const;
+    // Returns the type which should be used for visibility checking.
+    inline MethodTable* GetMethodTableOfRootTypeParam() const;
 
-    // Returns the MethodTable for the SZARRAY or ARRAY type
-    inline MethodTable * GetPossiblySharedArrayMethodTable() const;
+    // Returns the type of the array element
+    inline TypeHandle GetArrayElementTypeHandle() const;
 
-    // As above but returns a TypeHandle (so it will return a non-null result
-    // for generic type variables, for instance).
-    inline TypeHandle GetElementType() const;
+    // Returns the rank for the SZARRAY or ARRAY type
+    inline unsigned int GetRank() const;
 
     // Return the canonical representative MT amongst the set of MT's that share
     // code with the MT for the given TypeHandle because of generics.
@@ -475,24 +462,8 @@ public:
 
     // Shortcuts
 
-    // ARRAY or SZARRAY TypeDesc (arrays with a shared MethodTable)
-    // If this is TRUE, it is OK to call AsArray()
-    // Also see IsArrayType()
-    BOOL IsArray() const;
-
     // ARRAY or SZARRAY
-    // Note that this does not imply that it is OK to call AsArray(). See IsArray()
-    //
-    // All arrays, even those with a unique unshared MethodTable, have an ArrayTypeDesc
-    // which is used for type identity. However, over time, people have started
-    // wrapping the MethodTables directly in a TypeHandle. Note that such
-    // TypeHandles cannot be used for type identity. However, IsArrayType() lets
-    // you check even for such cases where IsArray() returns FALSE, but the type
-    // still is an array type.
-    //
-    // @TODO: Change all the constructors of TypeHandle which take a MethodTable
-    // to call TypeHandle::Verify() that can then enforce that IsArray() is fully correct.
-    BOOL IsArrayType() const;
+    BOOL IsArray() const;
 
     // VAR or MVAR
     BOOL IsGenericVariable() const;
@@ -511,7 +482,7 @@ public:
 
     Module* GetDefiningModuleForOpenType() const;
 
-    // Is actually ParamTypeDesc (ARRAY, SZARRAY, BYREF, PTR)
+    // Is type that has a type parameter (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;
 
     BOOL IsRestored_NoLogging() const;
@@ -533,9 +504,6 @@ public:
 
     // Does this type participate in type equivalence?
     inline BOOL HasTypeEquivalence() const;
-
-    // Not clear we should have this.
-    inline PTR_ArrayTypeDesc AsArray() const;
 
     FnPtrTypeDesc* AsFnPtrType() const;
 
@@ -590,7 +558,6 @@ private:
         void *              m_asPtr;
         PTR_MethodTable     m_asMT;
         PTR_TypeDesc        m_asTypeDesc;
-        PTR_ArrayTypeDesc   m_asArrayTypeDesc;
         PTR_ParamTypeDesc   m_asParamTypeDesc;
         PTR_TypeVarTypeDesc m_asTypeVarTypeDesc;
         PTR_FnPtrTypeDesc   m_asFnPtrTypeDesc;

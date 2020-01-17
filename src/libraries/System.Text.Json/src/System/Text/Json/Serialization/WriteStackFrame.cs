@@ -12,14 +12,14 @@ namespace System.Text.Json
     internal struct WriteStackFrame
     {
         // The object (POCO or IEnumerable) that is being populated.
-        public object CurrentValue;
-        public JsonClassInfo JsonClassInfo;
+        public object? CurrentValue;
+        public JsonClassInfo? JsonClassInfo;
 
         // Support Dictionary keys.
-        public string KeyName;
+        public string? KeyName;
 
         // The current IEnumerable or IDictionary.
-        public IEnumerator CollectionEnumerator;
+        public IEnumerator? CollectionEnumerator;
         // Note all bools are kept together for packing:
         public bool PopStackOnEndCollection;
 
@@ -31,7 +31,7 @@ namespace System.Text.Json
         // The current property.
         public int PropertyEnumeratorIndex;
         public ExtensionDataWriteStatus ExtensionDataStatus;
-        public JsonPropertyInfo JsonPropertyInfo;
+        public JsonPropertyInfo? JsonPropertyInfo;
 
         public void Initialize(Type type, JsonSerializerOptions options)
         {
@@ -46,7 +46,7 @@ namespace System.Text.Json
         {
             if (JsonPropertyInfo?.EscapedName.HasValue == true)
             {
-                WriteObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName.Value, writer, writeNull);
+                WriteObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName!.Value, writer, writeNull);
             }
             else if (KeyName != null)
             {
@@ -129,6 +129,7 @@ namespace System.Text.Json
         {
             EndProperty();
 
+            Debug.Assert(JsonClassInfo != null && JsonClassInfo.PropertyCacheArray != null);
             int maxPropertyIndex = JsonClassInfo.PropertyCacheArray.Length;
 
             ++PropertyEnumeratorIndex;

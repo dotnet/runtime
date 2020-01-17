@@ -40,8 +40,8 @@ flowList* ShuffleHelper(unsigned hash, flowList* res)
         {
             // Swap res with head.
             prev->flNext = head;
-            jitstd::swap(head->flNext, res->flNext);
-            jitstd::swap(head, res);
+            std::swap(head->flNext, res->flNext);
+            std::swap(head, res);
         }
     }
     return head;

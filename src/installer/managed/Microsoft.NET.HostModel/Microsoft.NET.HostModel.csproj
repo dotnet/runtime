@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), CommonManaged.props))\CommonManaged.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(CommonManaged.props))" />
 
   <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata">

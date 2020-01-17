@@ -57,7 +57,6 @@
 // winbase.h
 #undef GetBinaryType
 #undef GetShortPathName
-#undef GetLongPathName
 #undef GetEnvironmentStrings
 #undef FreeEnvironmentStrings
 #undef FormatMessage
@@ -94,20 +93,15 @@
 #undef GetSystemDirectory
 #undef GetTempPath
 #undef GetTempFileName
-#undef SetCurrentDirectory
 #undef GetCurrentDirectory
-#undef CreateDirectory
-#undef RemoveDirectory
 #undef GetFullPathName
 #undef CreateFile
-#undef SetFileAttributes
 #undef GetFileAttributes
 #undef GetFileAttributesEx
 #undef DeleteFile
 #undef FindFirstFileEx
 #undef FindFirstFile
 #undef FindNextFile
-#undef SearchPath
 #undef CopyFile
 #undef CopyFileEx
 #undef MoveFile
@@ -125,7 +119,6 @@
 
 #undef SendMessage
 #undef CharLower
-#undef CharNext
 #undef MessageBox
 #undef GetClassName
 #undef LoadString
@@ -181,7 +174,6 @@
 #define WszGetMessage GetMessageW
 #define WszSendMessage SendMessageW
 #define WszCharLower CharLowerW
-#define WszCharNext CharNextW
 #define WszMessageBox LateboundMessageBoxW
 #define WszGetClassName GetClassNameW
 #define WszLoadString LoadStringW
@@ -234,7 +226,6 @@
 #define WszFindFirstFileEx     FindFirstFileExWrapper
 #define WszFindNextFile        FindNextFileW
 #define WszMoveFileEx          MoveFileExWrapper
-#define WszCreateDirectory     CreateDirectoryWrapper
 
 //Can not use extended syntax
 #define WszGetFullPathName     GetFullPathNameW
@@ -252,7 +243,6 @@
 //NOTE: IF the following API's are enabled ensure that they can work with LongFile Names
 //See the usage and implementation of above API's
 //
-//#define WszSetCurrentDirectory SetCurrentDirectoryW
 //#define WszGetBinaryType       GetBinaryTypeWrapper     //Coresys does not seem to have this API
 
 #if FEATURE_PAL

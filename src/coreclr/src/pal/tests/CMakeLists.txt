@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12.2)
+cmake_minimum_required(VERSION 3.14.2)
 
 if(CLR_CMAKE_PLATFORM_ARCH_I386)
     set(PAL_CMAKE_PLATFORM_ARCH_I386 1)

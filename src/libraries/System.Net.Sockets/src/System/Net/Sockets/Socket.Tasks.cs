@@ -782,7 +782,7 @@ namespace System.Net.Sockets
             internal bool _accessed = false;
 
             internal TaskSocketAsyncEventArgs() :
-                base(flowExecutionContext: false) // avoid flowing context at lower layers as we only expose Task, which handles it
+                base(unsafeSuppressExecutionContextFlow: true) // avoid flowing context at lower layers as we only expose Task, which handles it
             {
             }
 
@@ -836,7 +836,7 @@ namespace System.Net.Sockets
 
             /// <summary>Initializes the event args.</summary>
             public AwaitableSocketAsyncEventArgs() :
-                base(flowExecutionContext: false) // avoid flowing context at lower layers as we only expose ValueTask, which handles it
+                base(unsafeSuppressExecutionContextFlow: true) // avoid flowing context at lower layers as we only expose ValueTask, which handles it
             {
             }
 

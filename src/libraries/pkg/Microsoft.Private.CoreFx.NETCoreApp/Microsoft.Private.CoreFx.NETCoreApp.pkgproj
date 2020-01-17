@@ -1,5 +1,5 @@
 ﻿<Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <PropertyGroup>
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
@@ -74,5 +74,5 @@
     <Error Condition="'@(_RuntimeOnlyMissingFile)' != ''" Text="Files '@(_RuntimeOnlyMissingFile)' should be present on all runtime-specific packages, but are not present for the package RID '$(PackageTargetRuntime)'" />
   </Target>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
