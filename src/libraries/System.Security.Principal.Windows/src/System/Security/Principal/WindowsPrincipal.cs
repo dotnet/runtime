@@ -35,27 +35,17 @@ namespace System.Security.Principal
         public WindowsPrincipal(WindowsIdentity ntIdentity)
             : base(ntIdentity)
         {
-            if (ntIdentity == null)
-                throw new ArgumentNullException(nameof(ntIdentity));
-
-            _identity = ntIdentity;
+            _identity = ntIdentity ?? throw new ArgumentNullException(nameof(ntIdentity));
         }
 
         //
         // Properties.
         //
-        public override IIdentity Identity
-        {
-            get
-            {
-                return _identity;
-            }
-        }
+        public override IIdentity Identity => _identity;
 
         //
         // Public methods.
         //
-
 
         public override bool IsInRole(string role)
         {
@@ -91,8 +81,7 @@ namespace System.Security.Principal
             {
                 foreach (ClaimsIdentity identity in Identities)
                 {
-                    WindowsIdentity wi = identity as WindowsIdentity;
-                    if (wi != null)
+                    if (identity is WindowsIdentity wi)
                     {
                         foreach (Claim claim in wi.UserClaims)
                         {
@@ -113,8 +102,7 @@ namespace System.Security.Principal
             {
                 foreach (ClaimsIdentity identity in Identities)
                 {
-                    WindowsIdentity wi = identity as WindowsIdentity;
-                    if (wi != null)
+                    if (identity is WindowsIdentity wi)
                     {
                         foreach (Claim claim in wi.DeviceClaims)
                         {
@@ -135,10 +123,17 @@ namespace System.Security.Principal
 
         public virtual bool IsInRole(int rid)
         {
-            SecurityIdentifier sid = new SecurityIdentifier(IdentifierAuthority.NTAuthority,
-                                                            new int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, rid });
-
-            return IsInRole(sid);
+            return IsInRole(
+                new SecurityIdentifier(
+                    IdentifierAuthority.NTAuthority,
+#if NETCOREAPP2_0
+                    new
+#else
+                    stackalloc
+#endif
+                    int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, rid }
+                )
+            );
         }
 
         // This method (with a SID parameter) is more general than the 2 overloads that accept a WindowsBuiltInRole or
