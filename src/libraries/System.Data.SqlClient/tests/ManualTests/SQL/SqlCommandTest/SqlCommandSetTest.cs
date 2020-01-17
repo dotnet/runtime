@@ -9,7 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public class SqlCommandSetTest
     {
-        private static Assembly mds = Assembly.GetAssembly(typeof(SqlConnection));
+        private static Assembly sqlclient = Assembly.GetAssembly(typeof(SqlConnection));
 
         [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestByteArrayParameters()
@@ -35,7 +35,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         cmd.ExecuteNonQuery();
 
                         //Insert with command Set
-                        var commandSetType = mds.GetType("Microsoft.Data.SqlClient.SqlCommandSet");
+                        var commandSetType = sqlclient.GetType("System.Data.SqlClient.SqlCommandSet");
                         var cmdSet = Activator.CreateInstance(commandSetType, true);
                         commandSetType.GetMethod("Append", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(cmdSet, new object[] { cmd });
                         commandSetType.GetProperty("Connection", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetSetMethod(true).Invoke(cmdSet, new object[] { connection });
@@ -48,7 +48,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             while (reader.Read())
                             {
                                 SqlBytes byteArray = reader.GetSqlBytes(0);
-                                Assert.Equal(byteArray.Length, bArray.Length);
+                                Assert.Equal(bArray.Length, byteArray.Length);
 
                                 for (int i = 0; i < bArray.Length; i++)
                                 {
@@ -58,10 +58,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                         }
                     }
-                }
-                catch (Exception e)
-                {
-                    throw e;
                 }
                 finally
                 {
