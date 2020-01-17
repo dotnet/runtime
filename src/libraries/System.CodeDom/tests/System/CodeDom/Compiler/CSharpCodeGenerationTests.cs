@@ -3462,7 +3462,7 @@ namespace System.CodeDom.Compiler.Tests
 
             AssertEqual(cd,
                 @"public class ClassWithStringFields {
-                      public static string StringWithNewLines = ""\u0085\u2028\u2029"";
+                      public static string StringWithSpecialNewLines = ""\u0085\u2028\u2029"";
                   }");
         }
     }
