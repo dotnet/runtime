@@ -1,7 +1,25 @@
 # Running Tests on MonoVM
 
 ## Running Runtime Tests
-TBA
+The runtime tests will be available at a later date.  
 
 ## Running Library Tests
-TBA
+Running library tests again mono is straightforward regardless of configuration.  Simply run the following commands:
+
+1. Build and set the TestRuntimeFlavor 
+
+```
+./build.sh /p:TestRuntimeFlavor=mono
+```
+or on Windows
+```
+build.cmd /p:TestRuntimeFlavor=mono
+```
+
+2. cd into the test library of your choice (`cd src/libraries/<library>/tests`)
+
+3. Run the tests
+
+```
+dotnet msbuild /t:BuildAndTest /p:TestRuntimeFlavor=mono
+```

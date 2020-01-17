@@ -1,4 +1,4 @@
-# Building
+# Building Mono
 
 To build just Mono runtime, use the `--subsetCategory` flag to the `build.sh` (or `build.cmd`) at the repo root:
 
