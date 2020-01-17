@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Net.Security;
@@ -34,7 +35,7 @@ namespace System.Net.Quic.Tests
                     await stream.WriteAsync(s_data, endStream: true);
                     await stream.ShutdownWriteCompleted();
 
-                    await connection.CloseAsync();
+                    await connection.CloseAsync(errorCode: 0);
                 });
 
                 Task clientTask = Task.Run(async () =>
@@ -53,7 +54,7 @@ namespace System.Net.Quic.Tests
                     Assert.True(s_data.Span.SequenceEqual(memory));
                     await stream.ShutdownWriteCompleted();
 
-                    await connection.CloseAsync();
+                    await connection.CloseAsync(errorCode: 0);
                 });
 
                 await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 10000);
@@ -89,7 +90,7 @@ namespace System.Net.Quic.Tests
                     }
                     await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
                     await stream.ShutdownWriteCompleted();
-                    await connection.CloseAsync();
+                    await connection.CloseAsync(errorCode: 0);
                 });
 
                 Task clientTask = Task.Run(async () =>
@@ -117,7 +118,7 @@ namespace System.Net.Quic.Tests
                     }
 
                     await stream.ShutdownWriteCompleted();
-                    await connection.CloseAsync();
+                    await connection.CloseAsync(errorCode: 0);
                 });
 
                 await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
@@ -164,7 +165,7 @@ namespace System.Net.Quic.Tests
                     await stream2.WriteAsync(s_data, endStream: true);
                     await stream2.ShutdownWriteCompleted();
 
-                    await connection.CloseAsync();
+                    await connection.CloseAsync(errorCode: 0);
                 }
             });
 
@@ -201,7 +202,7 @@ namespace System.Net.Quic.Tests
                     Assert.True(s_data.Span.SequenceEqual(memory));
                 }
 
-                await connection.CloseAsync();
+                await connection.CloseAsync(errorCode: 0);
             });
 
             await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 60000);
@@ -216,7 +217,7 @@ namespace System.Net.Quic.Tests
             using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
             await clientTask;
             // Close connection on client, verifying server connection is aborted.
-            await clientConnection.CloseAsync();
+            await clientConnection.CloseAsync(errorCode: 0);
             QuicStream stream = await serverConnection.AcceptStreamAsync();
 
             // Providers are alaways wrapped right now by a QuicStream. All fields are null here.
@@ -257,9 +258,72 @@ namespace System.Net.Quic.Tests
                     await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
                     await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
                     await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
-                    await clientConnection.CloseAsync();
+                    await clientConnection.CloseAsync(errorCode: 0);
                 }
             }
+        }
+
+        [Fact(Skip = "MsQuic not available")]
+        public async Task UnidirectionalAndBidirectionalStreamCountsWork()
+        {
+            using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+            await clientTask;
+            Assert.Equal(100, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
+            Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
+        }
+
+        [Fact(Skip = "MsQuic not available")]
+        public async Task UnidirectionalAndBidirectionalChangeValues()
+        {
+            QuicClientConnectionOptions options = new QuicClientConnectionOptions()
+            {
+                MaxBidirectionalStreams = 10,
+                MaxUnidirectionalStreams = 20,
+                RemoteEndPoint = DefaultListener.ListenEndPoint,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+            };
+
+            using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+            await clientTask;
+            Assert.Equal(20, clientConnection.GetRemoteAvailableUnidirectionalStreamCount());
+            Assert.Equal(10, clientConnection.GetRemoteAvailableBidirectionalStreamCount());
+            Assert.Equal(100, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
+            Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
+        }
+
+        [Fact(Skip = "MsQuic not available")]
+        public async Task CallDifferentWriteMethodsWorks()
+        {
+            using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+            await clientTask;
+
+            ReadOnlyMemory<byte> helloWorld = Encoding.ASCII.GetBytes("Hello world!");
+            ReadOnlySequence<byte> ros = CreateReadOnlySequenceFromBytes(helloWorld.ToArray());
+
+            Assert.False(ros.IsSingleSegment);
+            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+            ValueTask writeTask = clientStream.WriteAsync(ros);
+            using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+
+            await writeTask;
+            byte[] memory = new byte[24];
+            int res = await serverStream.ReadAsync(memory);
+            Assert.Equal(12, res);
+            ReadOnlyMemory<ReadOnlyMemory<byte>> romrom = new ReadOnlyMemory<ReadOnlyMemory<byte>>(new ReadOnlyMemory<byte>[] { helloWorld, helloWorld });
+            
+            await clientStream.WriteAsync(romrom);
+
+            res = await serverStream.ReadAsync(memory);
+            Assert.Equal(24, res);
         }
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)
@@ -359,6 +423,82 @@ namespace System.Net.Quic.Tests
             // Another read should still give EOF
             bytesRead = await s2.ReadAsync(readBuffer);
             Assert.Equal(0, bytesRead);
+        }
+
+        private static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
+        {
+            List<byte[]> segments = new List<byte[]>
+            {
+                Array.Empty<byte>()
+            };
+
+            foreach (var b in data)
+            {
+                segments.Add(new[] { b });
+                segments.Add(Array.Empty<byte>());
+            }
+
+            return CreateSegments(segments.ToArray());
+        }
+
+        private static ReadOnlySequence<byte> CreateSegments(params byte[][] inputs)
+        {
+            if (inputs == null || inputs.Length == 0)
+            {
+                throw new InvalidOperationException();
+            }
+
+            int i = 0;
+
+            BufferSegment last = null;
+            BufferSegment first = null;
+
+            do
+            {
+                byte[] s = inputs[i];
+                int length = s.Length;
+                int dataOffset = length;
+                var chars = new byte[length * 2];
+
+                for (int j = 0; j < length; j++)
+                {
+                    chars[dataOffset + j] = s[j];
+                }
+
+                // Create a segment that has offset relative to the OwnedMemory and OwnedMemory itself has offset relative to array
+                var memory = new Memory<byte>(chars).Slice(length, length);
+
+                if (first == null)
+                {
+                    first = new BufferSegment(memory);
+                    last = first;
+                }
+                else
+                {
+                    last = last.Append(memory);
+                }
+                i++;
+            } while (i < inputs.Length);
+
+            return new ReadOnlySequence<byte>(first, 0, last, last.Memory.Length);
+        }
+
+        internal class BufferSegment : ReadOnlySequenceSegment<byte>
+        {
+            public BufferSegment(Memory<byte> memory)
+            {
+                Memory = memory;
+            }
+
+            public BufferSegment Append(Memory<byte> memory)
+            {
+                var segment = new BufferSegment(memory)
+                {
+                    RunningIndex = RunningIndex + Memory.Length
+                };
+                Next = segment;
+                return segment;
+            }
         }
     }
 }
