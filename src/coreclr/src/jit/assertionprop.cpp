@@ -1644,6 +1644,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
             // so no handle bits should be set here.
             assert((assertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) == 0);
         }
+        break;
 
         default:
             // for all other 'assertion->op2.kind' values we don't check anything
