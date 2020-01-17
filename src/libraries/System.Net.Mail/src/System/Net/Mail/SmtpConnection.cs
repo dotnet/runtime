@@ -135,6 +135,7 @@ namespace System.Net.Mail
                         try
                         {
                             // Gracefully close the transmission channel
+                            _tcpClient.Client.Blocking = false;
                             QuitCommand.Send(this);
                         }
                         finally
