@@ -18,8 +18,6 @@ namespace System.Text.RegularExpressions
 
         private AssemblyBuilder _assembly;
         private ModuleBuilder _module;
-        private TypeBuilder? _type;
-        private MethodBuilder? _method;
 
         internal RegexAssemblyCompiler(AssemblyName an, CustomAttributeBuilder[]? attribs, string? resourceFile) :
             base(persistsAssembly: true)
@@ -41,8 +39,10 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void GenerateRegexType(string pattern, RegexOptions options, string name, bool isPublic, RegexCode code, RegexTree tree, TimeSpan matchTimeout)
+        internal void GenerateRegexType(string pattern, RegexOptions options, string name, bool isPublic, RegexCode code, TimeSpan matchTimeout)
         {
+            // Store arguments into the base type's fields
+            _options = options;
             _code = code;
             _codes = code.Codes;
             _strings = code.Strings;
@@ -50,163 +50,154 @@ namespace System.Text.RegularExpressions
             _bmPrefix = code.BMPrefix;
             _anchors = code.Anchors;
             _trackcount = code.TrackCount;
-            _options = options;
 
             // Pick a name for the class.
             string typenumString = ((uint)Interlocked.Increment(ref s_typeCount)).ToString();
 
             // Generate the RegexRunner-derived type.
-            DefineType($"{name}Runner{typenumString}", false, typeof(RegexRunner));
-
-            DefineMethod("Go", null);
+            TypeBuilder regexRunnerTypeBuilder = DefineType(_module, $"{name}Runner{typenumString}", false, typeof(RegexRunner));
+            _ilg = DefineMethod(regexRunnerTypeBuilder, "Go", null);
             GenerateGo();
-            BakeMethod();
-
-            DefineMethod("FindFirstChar", typeof(bool));
+            _ilg = DefineMethod(regexRunnerTypeBuilder, "FindFirstChar", typeof(bool));
             GenerateFindFirstChar();
-            BakeMethod();
-
-            DefineMethod("InitTrackCount", null);
+            _ilg = DefineMethod(regexRunnerTypeBuilder, "InitTrackCount", null);
             GenerateInitTrackCount();
-            BakeMethod();
+            Type runnerType = regexRunnerTypeBuilder.CreateType()!;
 
-            Type runnertype = BakeType();
+            // Generate the RegexRunnerFactory-derived type.
+            TypeBuilder regexRunnerFactoryTypeBuilder = DefineType(_module, $"{name}Factory{typenumString}", false, typeof(RegexRunnerFactory));
+            _ilg = DefineMethod(regexRunnerFactoryTypeBuilder, "CreateInstance", typeof(RegexRunner));
+            GenerateCreateInstance(runnerType);
+            Type regexRunnerFactoryType = regexRunnerFactoryTypeBuilder.CreateType()!;
 
-            // Generate a RegexRunnerFactory-derived type.
-            DefineType($"{name}Factory{typenumString}", false, typeof(RegexRunnerFactory));
-            DefineMethod("CreateInstance", typeof(RegexRunner));
-            GenerateCreateInstance(runnertype);
-            BakeMethod();
-            Type factory = BakeType();
-
-            FieldInfo internalMatchTimeoutField = RegexField(nameof(Regex.internalMatchTimeout));
-            ConstructorBuilder defaultCtor, timeoutCtor;
-
-            DefineType(name, isPublic, typeof(Regex));
+            // Generate the Regex-derived type.
+            TypeBuilder regexTypeBuilder = DefineType(_module, name, isPublic, typeof(Regex));
+            ConstructorBuilder defaultCtorBuilder = regexTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
+            _ilg = defaultCtorBuilder.GetILGenerator();
+            GenerateRegexDefaultCtor(pattern, options, regexRunnerFactoryType, code, matchTimeout);
+            if (matchTimeout != Regex.InfiniteMatchTimeout)
             {
-                // Define default constructor:
-                _method = null;
-                defaultCtor = _type!.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
-                _ilg = defaultCtor.GetILGenerator();
-                {
-                    // call base constructor
-                    Ldthis();
-                    _ilg.Emit(OpCodes.Call, typeof(Regex).GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, Array.Empty<ParameterModifier>())!);
-
-                    // set pattern
-                    Ldthis();
-                    Ldstr(pattern);
-                    Stfld(RegexField(nameof(Regex.pattern)));
-
-                    // set options
-                    Ldthis();
-                    Ldc((int)options);
-                    Stfld(RegexField(nameof(Regex.roptions)));
-
-                    // set timeout (no need to validate as it should have happened in RegexCompilationInfo)
-                    Ldthis();
-                    LdcI8(matchTimeout.Ticks);
-                    Call(typeof(TimeSpan).GetMethod(nameof(TimeSpan.FromTicks), BindingFlags.Static | BindingFlags.Public)!);
-                    Stfld(internalMatchTimeoutField);
-
-                    // set factory
-                    Ldthis();
-                    Newobj(factory.GetConstructor(Type.EmptyTypes)!);
-                    Stfld(RegexField(nameof(Regex.factory)));
-
-                    // set caps
-                    if (code.Caps != null)
-                    {
-                        GenerateCreateHashtable(RegexField(nameof(Regex.caps)), code.Caps);
-                    }
-
-                    // set capnames
-                    if (tree.CapNames != null)
-                    {
-                        GenerateCreateHashtable(RegexField(nameof(Regex.capnames)), tree.CapNames);
-                    }
-
-                    // set capslist
-                    if (tree.CapsList != null)
-                    {
-                        Ldthis();
-                        Ldc(tree.CapsList.Length);
-                        _ilg.Emit(OpCodes.Newarr, typeof(string));  // create new string array
-                        FieldInfo capslistField = RegexField(nameof(Regex.capslist));
-                        Stfld(capslistField);
-                        for (int i = 0; i < tree.CapsList.Length; i++)
-                        {
-                            Ldthisfld(capslistField);
-
-                            Ldc(i);
-                            Ldstr(tree.CapsList[i]);
-                            _ilg.Emit(OpCodes.Stelem_Ref);
-                        }
-                    }
-
-                    // set capsize
-                    Ldthis();
-                    Ldc(code.CapSize);
-                    Stfld(RegexField(nameof(Regex.capsize)));
-
-                    // set runnerref and replref by calling InitializeReferences()
-                    Ldthis();
-                    Call(typeof(Regex).GetMethod("InitializeReferences", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!);
-
-                    Ret();
-                }
-
-                // Constructor with the timeout parameter:
                 // We only generate a constructor with a timeout parameter if the regex information supplied has a non-infinite timeout.
-                // If it has an infinite timeout, then the generated code is not going to respect the timeout.
-                if (matchTimeout != Regex.InfiniteMatchTimeout)
-                {
-                    _method = null;
-                    timeoutCtor = _type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(TimeSpan) });
-                    _ilg = timeoutCtor.GetILGenerator();
-                    {
-                        // Call the default constructor:
-                        Ldthis();
-                        _ilg.Emit(OpCodes.Call, defaultCtor);
-
-                        // Validate timeout:
-                        _ilg.Emit(OpCodes.Ldarg_1);
-                        Call(typeof(Regex).GetMethod(nameof(Regex.ValidateMatchTimeout), BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!);
-
-                        // Set timeout:
-                        Ldthis();
-                        _ilg.Emit(OpCodes.Ldarg_1);
-                        Stfld(internalMatchTimeoutField);
-
-                        Ret();
-                    }
-                }
+                // If it has an infinite timeout, then the generated code is not going to respect the timeout. This is a difference from netfx,
+                // due to the fact that we now special-case an infinite timeout in the code generator to avoid spitting unnecessary code
+                // and paying for the checks at run time.
+                _ilg = regexTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(TimeSpan) }).GetILGenerator();
+                GenerateRegexTimeoutCtor(defaultCtorBuilder, regexTypeBuilder);
             }
-
-            // bake the type
-            _type.CreateType();
-            _type = null;
-            _method = null;
-            _ilg = null;
+            regexTypeBuilder.CreateType();
         }
 
         private void GenerateInitTrackCount()
         {
+            // this.runtrackcount = _trackcount;
+            // return;
             Ldthis();
             Ldc(_trackcount);
             Stfld(s_runtrackcountField);
             Ret();
         }
 
+        /// <summary>Generates a very simple factory method.</summary>
+        internal void GenerateCreateInstance(Type type)
+        {
+            // return new Type();
+            Newobj(type.GetConstructor(Type.EmptyTypes)!);
+            Ret();
+        }
+
+        private void GenerateRegexDefaultCtor(string pattern, RegexOptions options, Type regexRunnerFactoryType, RegexCode code, TimeSpan matchTimeout)
+        {
+            // Call the base ctor and store pattern, options, and factory.
+            // base.ctor();
+            // base.pattern = pattern;
+            // base.options = options;
+            // base.factory = new DerivedRegexRunnerFactory();
+            Ldthis();
+            _ilg!.Emit(OpCodes.Call, typeof(Regex).GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, Array.Empty<ParameterModifier>())!);
+            Ldthis();
+            Ldstr(pattern);
+            Stfld(RegexField(nameof(Regex.pattern)));
+            Ldthis();
+            Ldc((int)options);
+            Stfld(RegexField(nameof(Regex.roptions)));
+            Ldthis();
+            Newobj(regexRunnerFactoryType.GetConstructor(Type.EmptyTypes)!);
+            Stfld(RegexField(nameof(Regex.factory)));
+
+            // Store the timeout (no need to validate as it should have happened in RegexCompilationInfo)
+            // base.internalMatchTimeout = TimeSpan.FromTick(matchTimeout.Ticks);
+            Ldthis();
+            LdcI8(matchTimeout.Ticks);
+            Call(typeof(TimeSpan).GetMethod(nameof(TimeSpan.FromTicks), BindingFlags.Public | BindingFlags.Static)!);
+            Stfld(RegexField(nameof(Regex.internalMatchTimeout)));
+
+            // Set capsize, caps, capnames, capslist.
+            Ldthis();
+            Ldc(code.CapSize);
+            Stfld(RegexField(nameof(Regex.capsize)));
+            if (code.Caps != null)
+            {
+                // Caps = new Hashtable {{0, 0}, {1, 1}, ... };
+                GenerateCreateHashtable(RegexField(nameof(Regex.caps)), code.Caps);
+            }
+            if (code.Tree.CapNames != null)
+            {
+                // CapNames = new Hashtable {{"0", 0}, {"1", 1}, ...};
+                GenerateCreateHashtable(RegexField(nameof(Regex.capnames)), code.Tree.CapNames);
+            }
+            if (code.Tree.CapsList != null)
+            {
+                // capslist = new string[...];
+                // capslist[0] = "0";
+                // capslist[1] = "1";
+                // ...
+                Ldthis();
+                Ldc(code.Tree.CapsList.Length);
+                _ilg.Emit(OpCodes.Newarr, typeof(string));  // create new string array
+                FieldInfo capslistField = RegexField(nameof(Regex.capslist));
+                Stfld(capslistField);
+                for (int i = 0; i < code.Tree.CapsList.Length; i++)
+                {
+                    Ldthisfld(capslistField);
+                    Ldc(i);
+                    Ldstr(code.Tree.CapsList[i]);
+                    _ilg.Emit(OpCodes.Stelem_Ref);
+                }
+            }
+
+            // InitializeReferences();
+            // return;
+            Ldthis();
+            Call(typeof(Regex).GetMethod("InitializeReferences", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!);
+            Ret();
+        }
+
+        private void GenerateRegexTimeoutCtor(ConstructorBuilder defaultCtorBuilder, TypeBuilder regexTypeBuilder)
+        {
+            // base.ctor();
+            // ValidateMatchTimeout(timeSpan);
+            // base.internalMatchTimeout = timeSpan;
+            Ldthis();
+            _ilg!.Emit(OpCodes.Call, defaultCtorBuilder);
+            _ilg.Emit(OpCodes.Ldarg_1);
+            Call(typeof(Regex).GetMethod(nameof(Regex.ValidateMatchTimeout), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!);
+            Ldthis();
+            _ilg.Emit(OpCodes.Ldarg_1);
+            Stfld(RegexField(nameof(Regex.internalMatchTimeout)));
+            Ret();
+        }
+
         internal void GenerateCreateHashtable(FieldInfo field, Hashtable ht)
         {
-            MethodInfo addMethod = typeof(Hashtable).GetMethod(nameof(Hashtable.Add), BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!;
-
+            // hashtable = new Hashtable();
             Ldthis();
             Newobj(typeof(Hashtable).GetConstructor(Type.EmptyTypes)!);
-
             Stfld(field);
 
+            // hashtable.Add(key1, value1);
+            // hashtable.Add(key2, value2);
+            // ...
+            MethodInfo addMethod = typeof(Hashtable).GetMethod(nameof(Hashtable.Add), BindingFlags.Public | BindingFlags.Instance)!;
             IDictionaryEnumerator en = ht.GetEnumerator();
             while (en.MoveNext())
             {
@@ -228,9 +219,11 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private FieldInfo RegexField(string fieldname) =>
-            typeof(Regex).GetField(fieldname, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!;
+        /// <summary>Gets the named instance field from the Regex type.</summary>
+        private static FieldInfo RegexField(string fieldname) =>
+            typeof(Regex).GetField(fieldname, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
 
+        /// <summary>Saves the assembly to a file in the current directory based on the assembly's name.</summary>
         internal void Save()
         {
             // Save the assembly to the current directory.
@@ -240,34 +233,13 @@ namespace System.Text.RegularExpressions
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
         }
 
-        /// <summary>Generates a very simple factory method.</summary>
-        internal void GenerateCreateInstance(Type newtype)
-        {
-            Newobj(newtype.GetConstructor(Type.EmptyTypes)!);
-            Ret();
-        }
-
         /// <summary>Begins the definition of a new type with a specified base class</summary>
-        internal void DefineType(string typename, bool isPublic, Type inheritfromclass) =>
-            _type = _module.DefineType(typename, TypeAttributes.Class | (isPublic ? TypeAttributes.Public : TypeAttributes.NotPublic), inheritfromclass);
+        private static TypeBuilder DefineType(ModuleBuilder moduleBuilder, string typeName, bool isPublic, Type inheritFromClass) =>
+            moduleBuilder.DefineType(typeName, (isPublic ? TypeAttributes.Public : TypeAttributes.NotPublic) | TypeAttributes.Class, inheritFromClass);
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
-        internal void DefineMethod(string methname, Type? returntype)
-        {
-            _method = _type!.DefineMethod(methname, MethodAttributes.Public | MethodAttributes.Virtual, returntype, null);
-            _ilg = _method.GetILGenerator();
-        }
-
-        /// <summary>Ends the definition of a method</summary>
-        internal void BakeMethod() => _method = null;
-
-        /// <summary>Ends the definition of a class and returns the type</summary>
-        internal Type BakeType()
-        {
-            Type retval = _type!.CreateType()!;
-            _type = null;
-            return retval!;
-        }
+        private static ILGenerator DefineMethod(TypeBuilder typeBuilder, string methname, Type? returnType) =>
+            typeBuilder.DefineMethod(methname, MethodAttributes.Public | MethodAttributes.Virtual, returnType, null).GetILGenerator();
     }
 }
 #endif

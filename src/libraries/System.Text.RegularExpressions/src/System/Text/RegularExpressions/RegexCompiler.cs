@@ -172,7 +172,7 @@ namespace System.Text.RegularExpressions
                 RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
                 RegexCode code = RegexWriter.Write(tree);
 
-                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, code, tree, regexinfos[i].MatchTimeout);
+                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, code, regexinfos[i].MatchTimeout);
             }
 
             c.Save();
@@ -4603,9 +4603,6 @@ namespace System.Text.RegularExpressions
             // it lets IL emit handle all the gory details for us.  It also is ok from an
             // endianness perspective because the compilation happens on the same machine
             // that runs the compiled code.
-            // TODO https://github.com/dotnet/corefx/issues/39227: If that were to ever change,
-            // this would need to be revisited, such as by doubling the string length, and using
-            // just the lower byte of the char, e.g. (byte)lookup[x].
             string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
