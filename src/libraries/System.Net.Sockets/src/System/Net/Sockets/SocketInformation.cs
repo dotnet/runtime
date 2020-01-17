@@ -17,7 +17,7 @@ namespace System.Net.Sockets
 
         internal bool GetOption(SocketInformationOptions option)
         {
-            return ((Options & option) != 0);
+            return (Options & option) != 0;
         }
     }
 }

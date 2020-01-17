@@ -1294,7 +1294,8 @@ namespace System.Net.Sockets
 
             fixed (byte* pinnedBuffer = socketInformation.ProtocolInformation)
             {
-                return Interop.Winsock.WSADuplicateSocket(handle, (uint)targetProcessId, pinnedBuffer);
+                int result = Interop.Winsock.WSADuplicateSocket(handle, (uint)targetProcessId, pinnedBuffer);
+                return result == 0 ? SocketError.Success : GetLastSocketError();
             }
         }
     }

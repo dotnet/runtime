@@ -27,7 +27,6 @@ namespace System.Net.Sockets.Tests
             Encoding.ASCII.GetString(data.AsSpan().Slice(0, count));
         private static int CurrentProcessId => Process.GetCurrentProcess().Id;
 
-
         [Fact]
         public void UseOnlyOverlappedIO_AlwaysFalse()
         {
@@ -44,7 +43,8 @@ namespace System.Net.Sockets.Tests
         {
             using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-            Assert.Throws<SocketException>(() => socket.DuplicateAndClose(-1));
+            SocketException ex = Assert.Throws<SocketException>(() => socket.DuplicateAndClose(-1));
+            Assert.Equal(SocketError.InvalidArgument, ex.SocketErrorCode);
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -130,7 +130,7 @@ namespace System.Net.Sockets.Tests
             using Socket listener1 = new Socket(listener0.DuplicateAndClose(CurrentProcessId));
 
             using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _ = client.ConnectAsync(listener1.LocalEndPoint);
+            await client.ConnectAsync(listener1.LocalEndPoint);
 
             using Socket handler = await listener1.AcceptAsync();
             await client.SendAsync(TestBytes, SocketFlags.None);

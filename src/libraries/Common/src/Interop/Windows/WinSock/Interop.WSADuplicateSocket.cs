@@ -6,7 +6,7 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential)]
         internal struct WSAProtocolChain
         {
             internal int ChainLen;
@@ -43,10 +43,10 @@ internal static partial class Interop
         }
 
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern unsafe SocketError WSADuplicateSocket(
-            [In] SafeHandle socketHandle,
+        internal static extern unsafe int WSADuplicateSocket(
+            [In] SafeSocketHandle socketHandle,
             [In] uint targetProcessId,
-            [In] byte* pinnedBuffer
+            [In] byte* lpProtocolInfo
         );
     }
 }
