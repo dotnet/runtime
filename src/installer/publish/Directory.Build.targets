@@ -38,7 +38,8 @@
       <RuntimeNupkgFile
         Include="
           $(DownloadDirectory)**\Microsoft.*.Runtime.*.nupkg;
-          $(DownloadDirectory)**\Microsoft.*.App.Host.*.nupkg"
+          $(DownloadDirectory)**\Microsoft.*.App.Host.*.nupkg;
+          $(DownloadDirectory)**\Microsoft.*.App.Crossgen2.*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
       <!-- VS insertion packages, carrying RID-specific installers. -->
