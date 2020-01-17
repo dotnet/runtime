@@ -3449,5 +3449,21 @@ namespace System.CodeDom.Compiler.Tests
                       }
                   }");
         }
+
+        [Fact]
+        public void SpecialNewLineCharactersInStringsDoneCorrectly()
+        {
+            var cd = new CodeTypeDeclaration("ClassWithStringFields") { IsClass = true };
+
+            var field = new CodeMemberField("System.String", "StringWithSpecialNewLines");
+            field.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+            field.InitExpression = new CodePrimitiveExpression("\u0085\u2028\u2029");
+            cd.Members.Add(field);
+
+            AssertEqual(cd,
+                @"public class ClassWithStringFields {
+                      public static string StringWithNewLines = ""\u0085\u2028\u2029"";
+                  }");
+        }
     }
 }
