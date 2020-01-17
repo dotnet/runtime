@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///         That is, it will not try to dispose of any of them when it gets disposed.
         ///     </para>
         /// </remarks>
-        public AggregateExportProvider(IEnumerable<ExportProvider> providers)
+        public AggregateExportProvider(IEnumerable<ExportProvider>? providers)
             : this((providers != null) ? providers.AsArray() : null)
         {
         }

@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ObjectDisposedException">
         ///     The <see cref="ImportEngine"/> has been disposed of.
         /// </exception>
-        public void PreviewImports(ComposablePart part, AtomicComposition atomicComposition)
+        public void PreviewImports(ComposablePart part, AtomicComposition? atomicComposition)
         {
             ThrowIfDisposed();
 

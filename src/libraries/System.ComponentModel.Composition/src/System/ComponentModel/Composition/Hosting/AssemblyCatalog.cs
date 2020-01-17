@@ -437,7 +437,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     var catalogReflectionContextAttribute = _assembly.GetFirstAttribute<CatalogReflectionContextAttribute>();
                     var assembly = (catalogReflectionContextAttribute != null)
-                        ? catalogReflectionContextAttribute.CreateReflectionContext()!.MapAssembly(_assembly)
+                        ? catalogReflectionContextAttribute.CreateReflectionContext().MapAssembly(_assembly)
                         : _assembly;
                     lock (_thisLock)
                     {

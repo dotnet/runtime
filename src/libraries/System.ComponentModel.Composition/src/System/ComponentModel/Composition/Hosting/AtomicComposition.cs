@@ -36,7 +36,7 @@ namespace System.ComponentModel.Composition.Hosting
     public class AtomicComposition : IDisposable
     {
         private readonly AtomicComposition? _outerAtomicComposition;
-        private KeyValuePair<object, object>[]? _values;
+        private KeyValuePair<object, object?>[]? _values;
         private int _valueCount = 0;
         private List<Action>? _completeActionList;
         private List<Action>? _revertActionList;
@@ -60,7 +60,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        public void SetValue(object key, object value)
+        public void SetValue(object key, object? value)
         {
             ThrowIfDisposed();
             ThrowIfCompleted();
@@ -301,14 +301,14 @@ namespace System.ComponentModel.Composition.Hosting
             return false;
         }
 
-        private void SetValueInternal(object key, object value)
+        private void SetValueInternal(object key, object? value)
         {
             // Handle overwrites quickly
             for (var index = 0; index < _valueCount; index++)
             {
                 if (_values![index].Key == key)
                 {
-                    _values[index] = new KeyValuePair<object, object>(key, value);
+                    _values[index] = new KeyValuePair<object, object?>(key, value);
                     return;
                 }
             }
@@ -316,7 +316,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Expand storage when needed
             if (_values == null || _valueCount == _values.Length)
             {
-                var newQueries = new KeyValuePair<object, object>[_valueCount == 0 ? 5 : _valueCount * 2];
+                var newQueries = new KeyValuePair<object, object?>[_valueCount == 0 ? 5 : _valueCount * 2];
                 if (_values != null)
                 {
                     Array.Copy(_values, newQueries, _valueCount);
@@ -325,7 +325,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // Store a new entry
-            _values[_valueCount] = new KeyValuePair<object, object>(key, value);
+            _values[_valueCount] = new KeyValuePair<object, object?>(key, value);
             _valueCount++;
             return;
         }

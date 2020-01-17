@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.Primitives
         /// <exception cref="ArgumentException">
         ///     <paramref name="contractName"/> is an empty string ("").
         /// </exception>
-        public Export(string contractName, Func<object> exportedValueGetter)
+        public Export(string contractName, Func<object?> exportedValueGetter)
             : this(new ExportDefinition(contractName, (IDictionary<string, object?>?)null), exportedValueGetter)
         {
         }

@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     values.
         /// </exception>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite)
+        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite)
             : this(contractName, cardinality, isRecomposable, isPrerequisite, MetadataServices.EmptyMetadata)
         {
             Requires.NotNull(constraint, nameof(constraint));
@@ -89,7 +89,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object?> metadata)
+        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object?>? metadata)
             : this(contractName, cardinality, isRecomposable, isPrerequisite, metadata)
         {
             Requires.NotNull(constraint, nameof(constraint));
@@ -97,7 +97,7 @@ namespace System.ComponentModel.Composition.Primitives
             _constraint = constraint;
         }
 
-        internal ImportDefinition(string contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object?> metadata)
+        internal ImportDefinition(string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object?>? metadata)
         {
             if (
                 (cardinality != ImportCardinality.ExactlyOne) &&

@@ -43,7 +43,7 @@ namespace System.ComponentModel.Composition
     public partial class CatalogReflectionContextAttribute : System.Attribute
     {
         public CatalogReflectionContextAttribute(System.Type reflectionContextType) { }
-        public System.Reflection.ReflectionContext? CreateReflectionContext() { throw null; }
+        public System.Reflection.ReflectionContext CreateReflectionContext() { throw null; }
     }
     public partial class ChangeRejectedException : System.ComponentModel.Composition.CompositionException
     {
@@ -230,7 +230,7 @@ namespace System.ComponentModel.Composition.Hosting
     }
     public partial class AggregateExportProvider : System.ComponentModel.Composition.Hosting.ExportProvider, System.IDisposable
     {
-        public AggregateExportProvider(System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Hosting.ExportProvider> providers) { }
+        public AggregateExportProvider(System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Hosting.ExportProvider>? providers) { }
         public AggregateExportProvider(params System.ComponentModel.Composition.Hosting.ExportProvider[]? providers) { }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.ComponentModel.Composition.Hosting.ExportProvider> Providers { get { throw null; } }
         public void Dispose() { }
@@ -277,7 +277,7 @@ namespace System.ComponentModel.Composition.Hosting
         public void Complete() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public void SetValue(object key, object value) { }
+        public void SetValue(object key, object? value) { }
         public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T value) { throw null; }
         public bool TryGetValue<T>(object key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T value) { throw null; }
     }
@@ -471,7 +471,7 @@ namespace System.ComponentModel.Composition.Hosting
         public ImportEngine(System.ComponentModel.Composition.Hosting.ExportProvider sourceProvider, System.ComponentModel.Composition.Hosting.CompositionOptions compositionOptions) { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public void PreviewImports(System.ComponentModel.Composition.Primitives.ComposablePart part, System.ComponentModel.Composition.Hosting.AtomicComposition atomicComposition) { }
+        public void PreviewImports(System.ComponentModel.Composition.Primitives.ComposablePart part, System.ComponentModel.Composition.Hosting.AtomicComposition? atomicComposition) { }
         public void ReleaseImports(System.ComponentModel.Composition.Primitives.ComposablePart part, System.ComponentModel.Composition.Hosting.AtomicComposition? atomicComposition) { }
         public void SatisfyImports(System.ComponentModel.Composition.Primitives.ComposablePart part) { }
         public void SatisfyImportsOnce(System.ComponentModel.Composition.Primitives.ComposablePart part) { }
@@ -562,7 +562,7 @@ namespace System.ComponentModel.Composition.Primitives
         protected Export() { }
         public Export(System.ComponentModel.Composition.Primitives.ExportDefinition definition, System.Func<object?> exportedValueGetter) { }
         public Export(string contractName, System.Collections.Generic.IDictionary<string, object?>? metadata, System.Func<object?> exportedValueGetter) { }
-        public Export(string contractName, System.Func<object> exportedValueGetter) { }
+        public Export(string contractName, System.Func<object?> exportedValueGetter) { }
         public virtual System.ComponentModel.Composition.Primitives.ExportDefinition Definition { get { throw null; } }
         public System.Collections.Generic.IDictionary<string, object?> Metadata { get { throw null; } }
         public object? Value { get { throw null; } }
@@ -596,8 +596,8 @@ namespace System.ComponentModel.Composition.Primitives
     public partial class ImportDefinition
     {
         protected ImportDefinition() { }
-        public ImportDefinition(System.Linq.Expressions.Expression<System.Func<System.ComponentModel.Composition.Primitives.ExportDefinition, bool>> constraint, string contractName, System.ComponentModel.Composition.Primitives.ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite) { }
-        public ImportDefinition(System.Linq.Expressions.Expression<System.Func<System.ComponentModel.Composition.Primitives.ExportDefinition, bool>> constraint, string contractName, System.ComponentModel.Composition.Primitives.ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, System.Collections.Generic.IDictionary<string, object?> metadata) { }
+        public ImportDefinition(System.Linq.Expressions.Expression<System.Func<System.ComponentModel.Composition.Primitives.ExportDefinition, bool>> constraint, string? contractName, System.ComponentModel.Composition.Primitives.ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite) { }
+        public ImportDefinition(System.Linq.Expressions.Expression<System.Func<System.ComponentModel.Composition.Primitives.ExportDefinition, bool>> constraint, string? contractName, System.ComponentModel.Composition.Primitives.ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, System.Collections.Generic.IDictionary<string, object?>? metadata) { }
         public virtual System.ComponentModel.Composition.Primitives.ImportCardinality Cardinality { get { throw null; } }
         public virtual System.Linq.Expressions.Expression<System.Func<System.ComponentModel.Composition.Primitives.ExportDefinition, bool>> Constraint { get { throw null; } }
         public virtual string ContractName { get { throw null; } }
