@@ -8,6 +8,17 @@ namespace Microsoft.Extensions.DependencyInjection.Tests.Fakes
 {
     public class ClassWithServiceAndOptionalArgsCtorWithStructs
     {
+        public DateTime DateTime { get; }
+        public DateTime DateTimeDefault { get; }
+        public TimeSpan TimeSpan { get; }
+        public TimeSpan TimeSpanDefault { get; }
+        public DateTimeOffset DateTimeOffset { get; }
+        public DateTimeOffset DateTimeOffsetDefault { get; }
+        public Guid Guid { get; }
+        public Guid GuidDefault { get; }
+        public CustomStruct CustomStructValue { get; }
+        public CustomStruct CustomStructDefault { get; }
+
         public ClassWithServiceAndOptionalArgsCtorWithStructs(IFakeService fake,
             DateTime dateTime = new DateTime(),
             DateTime dateTimeDefault = default(DateTime),
@@ -21,6 +32,16 @@ namespace Microsoft.Extensions.DependencyInjection.Tests.Fakes
             CustomStruct customStructDefault = default(CustomStruct)
         )
         {
+            DateTime = dateTime;
+            DateTimeDefault = dateTimeDefault;
+            TimeSpan = timeSpan;
+            TimeSpanDefault = timeSpanDefault;
+            DateTimeOffset = dateTimeOffset;
+            DateTimeOffsetDefault = dateTimeOffsetDefault;
+            Guid = guid;
+            GuidDefault = guidDefault;
+            CustomStructValue = customStruct;
+            CustomStructDefault = customStructDefault;
         }
 
         public struct CustomStruct { }

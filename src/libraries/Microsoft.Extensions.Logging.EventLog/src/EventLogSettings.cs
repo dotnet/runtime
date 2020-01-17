@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging.EventLog
         public string LogName { get; set; }
 
         /// <summary>
-        /// Name of the event log source. If <c>null</c> or not specified, "Application" is the default.
+        /// Name of the event log source. If <c>null</c> or not specified, ".NET Runtime" is the default.
         /// </summary>
         public string SourceName { get; set; }
 
