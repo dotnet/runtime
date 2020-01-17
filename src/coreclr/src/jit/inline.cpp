@@ -1679,6 +1679,12 @@ CLRRandom* InlineStrategy::GetRandom()
         if (m_Compiler->compRandomInlineStress())
         {
             externalSeed = getJitStressLevel();
+            // We can set COMPlus_JitStressModeNames without setting COMPlus_JitStress,
+            // but we need external seed to be non-zero.
+            if (externalSeed == 0)
+            {
+                externalSeed = 2;
+            }
         }
 
 #endif // DEBUG

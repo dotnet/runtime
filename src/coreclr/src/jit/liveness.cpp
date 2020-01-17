@@ -2411,37 +2411,23 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        if (block->bbCatchTyp != BBCT_NONE)
+        if (block->hasEHBoundaryIn())
         {
             /* Note the set of variables live on entry to exception handler */
             VarSetOps::UnionD(this, exceptVars, block->bbLiveIn);
         }
 
-        if (block->bbJumpKind == BBJ_EHFILTERRET)
-        {
-            /* Get the set of live variables on exit from a 'filter' */
-            VarSetOps::UnionD(this, filterVars, block->bbLiveOut);
-        }
-        else if (block->bbJumpKind == BBJ_EHFINALLYRET)
-        {
-            /* Get the set of live variables on exit from a 'finally' block */
-
-            VarSetOps::UnionD(this, finallyVars, block->bbLiveOut);
-        }
-#if defined(FEATURE_EH_FUNCLETS)
-        // Funclets are called and returned from, as such we can only count on the frame
-        // pointer being restored, and thus everything live in or live out must be on the
-        // stack
-        if (block->bbFlags & BBF_FUNCLET_BEG)
-        {
-            VarSetOps::UnionD(this, exceptVars, block->bbLiveIn);
-        }
-        if ((block->bbJumpKind == BBJ_EHFINALLYRET) || (block->bbJumpKind == BBJ_EHFILTERRET) ||
-            (block->bbJumpKind == BBJ_EHCATCHRET))
+        if (block->hasEHBoundaryOut())
         {
             VarSetOps::UnionD(this, exceptVars, block->bbLiveOut);
+            if (block->bbJumpKind == BBJ_EHFINALLYRET)
+            {
+                // Live on exit from finally.
+                // We track these separately because, in addition to having EH live-out semantics,
+                // they must be marked must-init.
+                VarSetOps::UnionD(this, finallyVars, block->bbLiveOut);
+            }
         }
-#endif // FEATURE_EH_FUNCLETS
     }
 
     LclVarDsc* varDsc;
