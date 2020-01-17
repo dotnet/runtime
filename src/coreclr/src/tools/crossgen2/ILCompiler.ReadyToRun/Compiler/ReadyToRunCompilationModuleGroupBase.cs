@@ -15,7 +15,7 @@ namespace ILCompiler
 {
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
     {
-        private HashSet<ModuleDesc> _compilationModuleSet;
+        protected HashSet<ModuleDesc> _compilationModuleSet;
         private HashSet<ModuleDesc> _versionBubbleModuleSet;
         private Dictionary<TypeDesc, ModuleToken> _typeRefsInCompilationModuleSet;
         private bool _compileGenericDependenciesFromVersionBubbleModuleSet;
@@ -144,6 +144,9 @@ namespace ILCompiler
             else
                 return false;
 
+            if (method == method.GetTypicalMethodDefinition())
+                return true;
+
             return ComputeInstantiationVersionsWithCode(method.Instantiation, method);
         }
 
@@ -221,6 +224,9 @@ namespace ILCompiler
                     return false;
             }
 
+            if (type == type.GetTypeDefinition())
+                return true;
+
             return ComputeInstantiationVersionsWithCode(type.Instantiation, type);
         }
 
@@ -240,11 +246,11 @@ namespace ILCompiler
                         Instantiation entityDefinitionInstantiation;
                         if (entityWithInstantiation is TypeDesc type)
                         {
-                            entityDefinitionInstantiation = type.Instantiation;
+                            entityDefinitionInstantiation = type.GetTypeDefinition().Instantiation;
                         }
                         else
                         {
-                            entityDefinitionInstantiation = ((MethodDesc)entityWithInstantiation).Instantiation;
+                            entityDefinitionInstantiation = ((MethodDesc)entityWithInstantiation).GetTypicalMethodDefinition().Instantiation;
                         }
 
                         GenericParameterDesc genericParam = (GenericParameterDesc)entityDefinitionInstantiation[iInstantiation];

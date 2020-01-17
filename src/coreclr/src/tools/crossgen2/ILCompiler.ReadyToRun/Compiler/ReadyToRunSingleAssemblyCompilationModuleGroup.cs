@@ -70,7 +70,7 @@ namespace ILCompiler
                 return false;
             }
 
-            return ContainsType(method.OwningType) || CompileVersionBubbleGenericsIntoCurrentModule(method);
+            return (ContainsType(method.OwningType) && VersionsWithMethodBody(method)) || CompileVersionBubbleGenericsIntoCurrentModule(method);
         }
 
         public sealed override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
