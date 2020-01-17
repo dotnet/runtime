@@ -1435,9 +1435,6 @@ namespace Internal.JitInterface
                 out callerModule,
                 out useInstantiatingStub);
 
-            if (constrainedType != null && constrainedType.IsValueType && !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(constrainedType))
-                throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> .constrained" + constrainedType.ToString() + " " + originalMethod.ToString());
-
             pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
