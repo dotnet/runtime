@@ -1066,7 +1066,7 @@ namespace System.CodeDom.Compiler.Tests
 
             AssertEqual(main,
                  "public static void Main() { " +
-                 "     System.Console.WriteLine(\"\u1234 \u4567 \uABCD \\r \\n \\t \\\\ \\\" \\' \\0 \\u2028 \\u2029 \u0084 \u0085 \U00010F00\"); " +
+                 "     System.Console.WriteLine(\"\u1234 \u4567 \uABCD \\r \\n \\t \\\\ \\\" \\' \\0 \\u2028 \\u2029 \u0084 \\u0085 \U00010F00\"); " +
                  "}");
         }
 
