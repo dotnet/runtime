@@ -11,10 +11,8 @@ using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if BIT64
-using nint = System.Int64;
 using nuint = System.UInt64;
 #else
-using nint = System.Int32;
 using nuint = System.UInt32;
 #endif
 
@@ -42,13 +40,13 @@ namespace System.Runtime.CompilerServices
             // To have a usable entry both reads must yield the same even version.
             //
             internal int  _version;
-            internal nint _source;
+            internal nuint _source;
             // pointers have unused lower bits due to alignment, we use one for the result
-            internal nint _targetAndResult;
+            internal nuint _targetAndResult;
         };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int KeyToBucket(int[] table, nint source, nint target)
+        private static int KeyToBucket(int[] table, nuint source, nuint target)
         {
             // upper bits of addresses do not vary much, so to reduce loss due to cancelling out,
             // we do `rotl(source, <half-size>) ^ target` for mixing inputs.
@@ -103,7 +101,7 @@ namespace System.Runtime.CompilerServices
         // This is a copy of C++ implementation in CastCache.cpp
         // Keep the copies, if possible, in sync.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static CastResult TryGet(nint source, nint target)
+        private static CastResult TryGet(nuint source, nuint target)
         {
             const int BUCKET_SIZE = 8;
             int[]? table = s_table;
@@ -114,30 +112,28 @@ namespace System.Runtime.CompilerServices
             if (table != null)
             {
                 int index = KeyToBucket(table, source, target);
-                ref CastCacheEntry pEntry = ref Element(table, index);
-
                 for (int i = 0; i < BUCKET_SIZE;)
                 {
+                    ref CastCacheEntry pEntry = ref Element(table, index);
+
                     // must read in this order: version -> entry parts -> version
                     // if version is odd or changes, the entry is inconsistent and thus ignored
-                    int version1 = Volatile.Read(ref pEntry._version);
-                    nint entrySource = pEntry._source;
+                    int version = Volatile.Read(ref pEntry._version);
+                    nuint entrySource = pEntry._source;
 
                     // mask the lower version bit to make it even.
                     // This way we can check if version is odd or changing in just one compare.
-                    version1 &= ~1;
+                    version &= ~1;
 
                     if (entrySource == source)
                     {
-                        nint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
-
+                        nuint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
                         // target never has its lower bit set.
-                        // a matching entryTargetAndResult would have same bits, except for the lowest one, which is the result.
+                        // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
                         entryTargetAndResult ^= target;
                         if (entryTargetAndResult <= 1)
                         {
-                            int version2 = pEntry._version;
-                            if (version2 != version1)
+                            if (version != pEntry._version)
                             {
                                 // oh, so close, the entry is in inconsistent state.
                                 // it is either changing or has changed while we were reading.
@@ -149,7 +145,7 @@ namespace System.Runtime.CompilerServices
                         }
                     }
 
-                    if (version1 == 0)
+                    if (version == 0)
                     {
                         // the rest of the bucket is unclaimed, no point to search further
                         break;
@@ -157,8 +153,7 @@ namespace System.Runtime.CompilerServices
 
                     // quadratic reprobe
                     i++;
-                    index += i;
-                    pEntry = ref Element(table, index & TableMask(table));
+                    index = (index + i) & TableMask(table);
                 }
             }
             return CastResult.MaybeCast;
@@ -183,7 +178,7 @@ namespace System.Runtime.CompilerServices
                 void* mt = RuntimeHelpers.GetMethodTable(obj);
                 if (mt != toTypeHnd)
                 {
-                    CastResult result = TryGet((nint)mt, (nint)toTypeHnd);
+                    CastResult result = TryGet((nuint)mt, (nuint)toTypeHnd);
                     if (result == CastResult.CanCast)
                     {
                         // do nothing
@@ -214,11 +209,11 @@ namespace System.Runtime.CompilerServices
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-                nint interfaceCount = mt->InterfaceCount;
+                nuint interfaceCount = mt->InterfaceCount;
                 if (interfaceCount > 0)
                 {
                     nuint* interfaceMap = mt->InterfaceMap;
-                    nint i = 0;
+                    nuint i = 0;
 
                     do
                     {
@@ -274,47 +269,48 @@ namespace System.Runtime.CompilerServices
         //[DebuggerStepThrough]
         private static object? JIT_IsInstanceOfClass(void* toTypeHnd, object? obj)
         {
-            if (obj != null)
+            if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
+                return obj;
+
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(obj)->BaseMethodTable;
+            for (; ; )
             {
-                MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-                for (;;)
-                {
-                    if (mt == toTypeHnd)
-                        goto done;
+                if (mt == toTypeHnd)
+                    goto done;
 
-                    mt = mt->BaseMethodTable;
-                    if (mt == null)
-                        break;
+                if (mt == null)
+                    break;
 
-                    if (mt == toTypeHnd)
-                        goto done;
+                mt = mt->BaseMethodTable;
+                if (mt == toTypeHnd)
+                    goto done;
 
-                    mt = mt->BaseMethodTable;
-                    if (mt == null)
-                        break;
+                if (mt == null)
+                    break;
 
-                    if (mt == toTypeHnd)
-                        goto done;
+                mt = mt->BaseMethodTable;
+                if (mt == toTypeHnd)
+                    goto done;
 
-                    mt = mt->BaseMethodTable;
-                    if (mt == null)
-                        break;
+                if (mt == null)
+                    break;
 
-                    if (mt == toTypeHnd)
-                        goto done;
+                mt = mt->BaseMethodTable;
+                if (mt == toTypeHnd)
+                    goto done;
 
-                    mt = mt->BaseMethodTable;
-                    if (mt == null)
-                        break;
-                }
+                if (mt == null)
+                    break;
 
-                if (RuntimeHelpers.GetMethodTable(obj)->HasTypeEquivalence)
-                {
-                    goto slowPath;
-                }
-
-                obj = null;
+                mt = mt->BaseMethodTable;
             }
+
+            if (RuntimeHelpers.GetMethodTable(obj)->HasTypeEquivalence)
+            {
+                goto slowPath;
+            }
+
+            obj = null;
 
         done:
             return obj;
@@ -328,7 +324,7 @@ namespace System.Runtime.CompilerServices
         //[DebuggerStepThrough]
         private static object? IsInstanceHelper(void* toTypeHnd, object obj)
         {
-            CastResult result = TryGet((nint)RuntimeHelpers.GetMethodTable(obj), (nint)toTypeHnd);
+            CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
             if (result == CastResult.CanCast)
             {
                 return obj;
@@ -357,7 +353,7 @@ namespace System.Runtime.CompilerServices
                 void* mt = RuntimeHelpers.GetMethodTable(obj);
                 if (mt != toTypeHnd)
                 {
-                    result = TryGet((nint)mt, (nint)toTypeHnd);
+                    result = TryGet((nuint)mt, (nuint)toTypeHnd);
                     if (result != CastResult.CanCast)
                     {
                         goto slowPath;
@@ -380,7 +376,7 @@ namespace System.Runtime.CompilerServices
         //[DebuggerStepThrough]
         private static object? ChkCastHelper(void* toTypeHnd, object obj)
         {
-            CastResult result = TryGet((nint)RuntimeHelpers.GetMethodTable(obj), (nint)toTypeHnd);
+            CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
             if (result == CastResult.CanCast)
             {
                 return obj;
@@ -398,11 +394,11 @@ namespace System.Runtime.CompilerServices
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-                nint interfaceCount = mt->InterfaceCount;
+                nuint interfaceCount = mt->InterfaceCount;
                 if (interfaceCount > 0)
                 {
                     nuint* interfaceMap = mt->InterfaceMap;
-                    nint i = 0;
+                    nuint i = 0;
 
                     do
                     {
@@ -433,16 +429,11 @@ namespace System.Runtime.CompilerServices
         //[DebuggerStepThrough]
         private static object? JIT_ChkCastClass(void* toTypeHnd, object? obj)
         {
-            if (obj != null)
+            if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
             {
-                MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-                if (mt != toTypeHnd)
-                    goto slowPath;
+                return obj;
             }
 
-            return obj;
-
-        slowPath:
             return JIT_ChkCastClassSpecial(toTypeHnd, obj);
         }
 
@@ -452,33 +443,35 @@ namespace System.Runtime.CompilerServices
         private static object? JIT_ChkCastClassSpecial(void* toTypeHnd, object obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+            Debug.Assert(mt != toTypeHnd, "The check for the trivial cases should be inlined by the JIT");
+
             for (; ; )
             {
+                mt = mt->BaseMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                mt = mt->BaseMethodTable;
                 if (mt == null)
                     break;
 
+                mt = mt->BaseMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                mt = mt->BaseMethodTable;
                 if (mt == null)
                     break;
 
+                mt = mt->BaseMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                mt = mt->BaseMethodTable;
                 if (mt == null)
                     break;
 
+                mt = mt->BaseMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                mt = mt->BaseMethodTable;
                 if (mt == null)
                     break;
             }

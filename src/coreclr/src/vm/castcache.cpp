@@ -147,10 +147,10 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
     if (table != NULL)
     {
         DWORD index = KeyToBucket(table, source, target);
-        CastCacheEntry* pEntry = &Elements(table)[index];
-
         for (DWORD i = 0; i < BUCKET_SIZE;)
         {
+            CastCacheEntry* pEntry = &Elements(table)[index];
+
             // must read in this order: version -> entry parts -> version
             // if version is odd or changes, the entry is inconsistent and thus ignored
             DWORD version1 = VolatileLoad(&pEntry->version);
@@ -163,14 +163,12 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
             if (entrySource == source)
             {
                 TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
-
                 // target never has its lower bit set.
-                // a matching entryTargetAndResult would have same bits, except for the lowest one, which is the result.
+                // a matching entryTargetAndResult would have the same bits, except for the lowest one, which is the result.
                 entryTargetAndResult ^= target;
                 if (entryTargetAndResult <= 1)
                 {
-                    DWORD version2 = pEntry->version;
-                    if (version2 != version1)
+                    if (version1 != pEntry->version)
                     {
                         // oh, so close, the entry is in inconsistent state.
                         // it is either changing or has changed while we were reading.
@@ -190,8 +188,7 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
 
             // quadratic reprobe
             i++;
-            index += i;
-            pEntry = &Elements(table)[index & TableMask(table)];
+            index = (index + i) & TableMask(table);
         }
     }
     return TypeHandle::MaybeCast;
