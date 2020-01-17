@@ -40,10 +40,9 @@ namespace System.Security.Principal
             string systemName,
             PolicyRights rights)
         {
-            SafeLsaPolicyHandle policyHandle;
 
             Interop.OBJECT_ATTRIBUTES attributes = default;
-            uint error = Interop.Advapi32.LsaOpenPolicy(systemName, ref attributes, (int)rights, out policyHandle);
+            uint error = Interop.Advapi32.LsaOpenPolicy(systemName, ref attributes, (int)rights, out SafeLsaPolicyHandle policyHandle);
             if (error == 0)
             {
                 return policyHandle;
@@ -172,7 +171,7 @@ namespace System.Security.Principal
             uint length = (uint)SecurityIdentifier.MaxBinaryLength;
             resultSid = new byte[length];
 
-            if (FALSE != Interop.Advapi32.CreateWellKnownSid((int)sidType, domainSid == null ? null : domainSid.BinaryForm, resultSid, ref length))
+            if (FALSE != Interop.Advapi32.CreateWellKnownSid((int)sidType, domainSid?.BinaryForm, resultSid, ref length))
             {
                 return Interop.Errors.ERROR_SUCCESS;
             }
@@ -197,15 +196,13 @@ namespace System.Security.Principal
             }
             else
             {
-                bool result;
-
                 byte[] BinaryForm1 = new byte[sid1.BinaryLength];
                 sid1.GetBinaryForm(BinaryForm1, 0);
 
                 byte[] BinaryForm2 = new byte[sid2.BinaryLength];
                 sid2.GetBinaryForm(BinaryForm2, 0);
 
-                return (Interop.Advapi32.IsEqualDomainSid(BinaryForm1, BinaryForm2, out result) == FALSE ? false : result);
+                return (Interop.Advapi32.IsEqualDomainSid(BinaryForm1, BinaryForm2, out bool result) == FALSE ? false : result);
             }
         }
 

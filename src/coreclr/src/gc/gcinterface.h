@@ -734,6 +734,9 @@ public:
     // Tells the GC how many YieldProcessor calls are equal to one scaled yield processor call.
     virtual void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor) = 0;
 
+    // Flush the log and close the file if GCLog is turned on.
+    virtual void Shutdown() = 0;
+
     /*
     ============================================================================
     Add/RemoveMemoryPressure support routines. These are on the interface
