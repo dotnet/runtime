@@ -7,7 +7,6 @@ Param(
   [string][Alias('c')]$configuration = "Debug",
   [string][Alias('f')]$framework,
   [string]$vs,
-  [string]$vspath,
   [string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
@@ -44,7 +43,6 @@ function Get-Help() {
 
   Write-Host "Libraries settings:"
   Write-Host "  -vs                     Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
-  Write-Host "  -vspath                 Path to the VS to use (devenv.exe) - to be able to run with preview VS versions"
   Write-Host "  -framework              Build framework: netcoreapp or netfx (short: -f)"
   Write-Host "  -coverage               Collect code coverage when testing"
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
@@ -97,12 +95,7 @@ if ($vs) {
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
 
   # Launch Visual Studio with the locally defined environment variables
-  if ([string]::IsNullOrEmpty($vspath)) {
-    ."$vs"
-  }
-  else {
-    & $vspath $vs
-  }
+  ."$vs"
 
   exit 0
 }
