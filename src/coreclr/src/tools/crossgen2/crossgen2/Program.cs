@@ -235,14 +235,13 @@ namespace ILCompiler
                         catch { } // Ignore non-managed pe files
                     }
 
-                    ProfileDataManager profileDataManager = new ProfileDataManager(logger, referenceableModules);
 
-                    CompilationModuleGroup compilationGroup;
+                    ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
                     if (singleMethod != null)
                     {
                         // Compiling just a single method
-                        compilationGroup = new SingleMethodCompilationModuleGroup(singleMethod);
+                        compilationGroup = new SingleMethodCompilationModuleGroup(typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics, singleMethod);
                         compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                     }
                     else
@@ -261,9 +260,22 @@ namespace ILCompiler
                             }
                         }
 
-                        List<EcmaModule> inputModules = new List<EcmaModule>();
+                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
+                            typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics);
+                    }
 
-                        foreach (var inputFile in typeSystemContext.InputFilePaths)
+                    // Examine profile guided information as appropriate
+                    ProfileDataManager profileDataManager =
+                        new ProfileDataManager(logger,
+                        referenceableModules);
+
+                    if (_commandLineOptions.Partial)
+                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
+
+                    if (singleMethod == null)
+                    {
+                        // For non-single-method compilations add compilation roots.
+                        foreach (var module in inputModules)
                         {
                             EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
                             compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager));
@@ -295,10 +307,6 @@ namespace ILCompiler
                                 }
                             }
                         }
-
-                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                            typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics,
-                            _commandLineOptions.Partial ? profileDataManager : null);
                     }
 
                     //
