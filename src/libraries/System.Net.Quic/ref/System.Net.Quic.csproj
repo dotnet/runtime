@@ -8,6 +8,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
+    <ProjectReference Include="..\..\System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\ref\System.IO.FileSystem.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Net.Security\ref\System.Net.Security.csproj" />

@@ -28,6 +28,7 @@
     <Compile Include="RegexCultureTests.cs" />
     <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
     <Compile Include="RegexParserTests.cs" />
+    <Compile Include="RegexReductionTests.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs">
       <Link>System\Text\RegularExpressions\RegexParseError.cs</Link>
     </Compile>

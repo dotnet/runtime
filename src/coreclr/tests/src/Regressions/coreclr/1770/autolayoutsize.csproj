@@ -3,9 +3,9 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <CLRTestPriority>0</CLRTestPriority>
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="readonlyPrefix.cs" />
+    <Compile Include="autolayoutsize.cs" />
   </ItemGroup>
 </Project>
