@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpMessageHandler wrappedHandler = httpClientHandler;
 
-            // ActiveIssue #39293: WinHttpHandler will downgrade to 1.1 if you set Transfer-Encoding: chunked.
+            // WinHttpHandler will downgrade to 1.1 if you set Transfer-Encoding: chunked.
             // So, skip this verification if we're not using SocketsHttpHandler.
             if (PlatformDetection.SupportsAlpn)
             {

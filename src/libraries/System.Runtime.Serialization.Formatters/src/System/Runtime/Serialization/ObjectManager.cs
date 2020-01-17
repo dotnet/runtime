@@ -778,7 +778,6 @@ namespace System.Runtime.Serialization
 
         internal static ConstructorInfo GetDeserializationConstructor(Type t)
         {
-            // TODO #10530: Use Type.GetConstructor that takes BindingFlags when it's available
             foreach (ConstructorInfo ci in t.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 ParameterInfo[] parameters = ci.GetParameters();
