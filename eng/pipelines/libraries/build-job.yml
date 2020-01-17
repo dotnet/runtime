@@ -3,6 +3,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
+  crossrootfsDir: ''
   framework: netcoreapp
   isOfficialBuild: false
   isOfficialAllConfigurations: false
@@ -30,6 +31,7 @@ jobs:
       osGroup:  ${{ parameters.osGroup }}
       osSubgroup:  ${{ parameters.osSubgroup }}
       archType:  ${{ parameters.archType }}
+      crossrootfsDir: ${{ parameters.crossrootfsDir }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}

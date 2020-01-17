@@ -2,7 +2,7 @@
 
 build_test_wrappers()
 {
-    if [ $__BuildTestWrappers -ne -0 ]; then
+    if [ "$__BuildTestWrappers" -ne -0 ]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
         export __Exclude="${__ProjectDir}/tests/issues.targets"
@@ -10,12 +10,12 @@ build_test_wrappers()
 
         buildVerbosity="Summary"
 
-        if [ $__VerboseBuild == 1 ]; then
+        if [ "$__VerboseBuild" = 1 ]; then
             buildVerbosity="Diag"
         fi
 
         # Set up directories and file names
-        __BuildLogRootName=$subDirectoryName
+        __BuildLogRootName="$subDirectoryName"
         __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
         __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
         __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
@@ -308,7 +308,7 @@ build_Tests()
     fi
 
     if [ $__SkipNative != 1 ]; then
-        build_native_projects "$__BuildArch" "${__NativeTestIntermediatesDir}"
+        build_native "$__BuildArch" "$__TestDir" "$__ProjectRoot" "$__NativeTestIntermediatesDir" "CoreCLR test component"
 
         if [ $? -ne 0 ]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -459,107 +459,22 @@ build_MSBuild_projects()
     fi
 }
 
-build_native_projects()
-{
-    platformArch="$1"
-    intermediatesForBuild="$2"
-
-    extraCmakeArguments=""
-    message="native tests assets"
-
-    # All set to commence the build
-    echo "Commencing build of $message for $__BuildOS.$__BuildArch.$__BuildType in $intermediatesForBuild"
-
-    generator=""
-    if [ $__UseNinja == 1 ]; then
-        generator="ninja"
-        if ! buildTool=$(command -v ninja || command -v ninja-build); then
-           echo "Unable to locate ninja!" 1>&2
-           exit 1
-        fi
-    fi
-
-    if [ $__SkipConfigure == 0 ]; then
-        # if msbuild is not supported, then set __SkipGenerateVersion to 1
-        if [ $__isMSBuildOnNETCoreSupported == 0 ]; then __SkipGenerateVersion=1; fi
-        # Drop version.c file
-        __versionSourceFile="$intermediatesForBuild/version.c"
-        if [ $__SkipGenerateVersion == 0 ]; then
-            pwd
-            $__RepoRootDir/eng/common/msbuild.sh $__RepoRootDir/eng/empty.csproj \
-                                                 /p:NativeVersionFile=$__versionSourceFile \
-                                                 /t:GenerateNativeVersionFile /restore \
-                                                 $__CommonMSBuildArgs $__UnprocessedBuildArgs
-            if [ $? -ne 0 ]; then
-                echo "${__ErrMsgPrefix}Failed to generate native version file."
-                exit $?
-            fi
-        else
-            # Generate the dummy version.c, but only if it didn't exist to make sure we don't trigger unnecessary rebuild
-            __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
-            if [ -e $__versionSourceFile ]; then
-                read existingVersionSourceLine < $__versionSourceFile
-            fi
-            if [ "$__versionSourceLine" != "$existingVersionSourceLine" ]; then
-                echo $__versionSourceLine > $__versionSourceFile
-            fi
-        fi
-
-        if [[ -n "$__CodeCoverage" ]]; then
-            extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
-        fi
-
-        engNativeDir="$__RepoRootDir/eng/native"
-        __cmakeargs="$__cmakeargs -DCLR_ENG_NATIVE_DIR=\"$engNativeDir\""
-        nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$__TestDir\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType $generator $extraCmakeArguments $__cmakeargs"
-        echo "Invoking $nextCommand"
-        eval $nextCommand
-
-        if [ $? != 0  ]; then
-            echo "${__ErrMsgPrefix}Failed to generate $message build project!"
-            exit 1
-        fi
-    fi
-
-    if [ ! -f "$intermediatesForBuild/CMakeCache.txt" ]; then
-        echo "${__ErrMsgPrefix}Unable to find generated build files for $message project!"
-        exit 1
-    fi
-
-    # Build
-    if [ $__ConfigureOnly == 1 ]; then
-        echo "Finish configuration & skipping $message build."
-        return
-    fi
-
-    echo "Executing cmake --build \"$intermediatesForBuild\" --target install -j $__NumProc"
-
-    cmake --build "$intermediatesForBuild" --target install -j $__NumProc
-
-    local exit_code=$?
-    if [ $exit_code != 0 ]; then
-        echo "${__ErrMsgPrefix}Failed to build $message."
-        exit $exit_code
-    fi
-
-    echo "Native tests build success!"
-}
-
-usage_list=("-buildtestwrappersonly - only build the test wrappers.")
+usage_list=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
-usage_list+=("-crossgen - Precompiles the framework managed assemblies in coreroot.")
-usage_list+=("-generatelayoutonly - only pull down dependencies and build coreroot.")
-usage_list+=("-priority1 - include priority=1 tests in the build.")
-usage_list+=("-runtests - run tests after building them.")
+usage_list+=("-crossgen: Precompiles the framework managed assemblies in coreroot.")
+usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
+usage_list+=("-priority1: include priority=1 tests in the build.")
+usage_list+=("-rebuild: if tests have already been built - rebuild them.")
+usage_list+=("-runtests: run tests after building them.")
 usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
-usage_list+=("-skiprestorepackages - skip package restore.")
+usage_list+=("-skiprestorepackages: skip package restore.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-__RepoRootDir=${__ProjectRoot}/../..
+__RepoRootDir="${__ProjectRoot}/../.."
 
-handle_arguments() {
-    case $1 in
+handle_arguments_local() {
+    case "$1" in
         buildtestwrappersonly|-buildtestwrappersonly)
             __BuildTestWrappersOnly=1
             ;;
@@ -590,6 +505,10 @@ handle_arguments() {
         priority1|-priority1)
             __priority1=1
             __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
+            ;;
+
+        rebuild|-rebuild)
+            __RebuildTests=1
             ;;
 
         runtests|-runtests)
@@ -633,6 +552,7 @@ __DoCrossgen2=0
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __GenerateTestHostOnly=
+__IsMSBuildOnNETCoreSupported=0
 __MSBCleanBuildArgs=
 __NativeTestIntermediatesDir=
 __PortableBuild=1
@@ -651,8 +571,7 @@ __UnprocessedBuildArgs=
 __LocalCoreFXConfig=${__BuildType}
 __UseNinja=0
 __VerboseBuild=0
-__cmakeargs=""
-__msbuildonunsupportedplatform=0
+__CMakeArgs=""
 __priority1=
 CORE_ROOT=
 
@@ -673,18 +592,15 @@ __TestDir="$__ProjectDir/tests"
 __TestWorkingDir="$__RootBinDir/tests/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__BuildOS.$__BuildArch.$__BuildType"
-__isMSBuildOnNETCoreSupported=0
 __CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 
 __CrossArch="$__HostArch"
-if [ $__CrossBuild == 1 ]; then
+if [ "$__CrossBuild" = 1 ]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi
 __CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$BuildArch.$__BuildType.log"
 __CrossgenExe="$__CrossComponentBinDir/crossgen"
-
-isMSBuildOnNETCoreSupported
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.
 # This is needed by CLI to function.
@@ -692,23 +608,10 @@ if [ -z "$HOME" ]; then
     if [ ! -d "$__ProjectDir/temp_home" ]; then
         mkdir temp_home
     fi
-    export HOME=$__ProjectDir/temp_home
+
+    HOME="$__ProjectDir"/temp_home
+    export HOME
     echo "HOME not defined; setting it to $HOME"
-fi
-
-# Configure environment if we are doing a cross compile.
-if [ $__CrossBuild == 1 ]; then
-    export CROSSCOMPILE=1
-    if ! [[ -n "$ROOTFS_DIR" ]]; then
-        export ROOTFS_DIR="$__RepoRootDir/eng/common/cross/rootfs/$__BuildArch"
-    fi
-fi
-
-# init the target distro name
-initTargetDistroRid
-
-if [ $__PortableBuild == 0 ]; then
-    __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
 fi
 
 if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
