@@ -611,6 +611,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.StackProbe;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
+                    id = ReadyToRunHelper.GCPoll;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
@@ -2046,9 +2050,17 @@ namespace Internal.JitInterface
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null);
-            
-            pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken, GetSignatureContext()));
-            pLookup.accessType = InfoAccessType.IAT_PPVALUE;
+
+            if (ecmaMethod.IsSuppressGCTransition())
+            {
+                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+                pLookup.accessType = InfoAccessType.IAT_PVALUE;
+            }
+            else
+            {
+                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+                pLookup.accessType = InfoAccessType.IAT_PPVALUE;
+            }
         }
 
         private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
