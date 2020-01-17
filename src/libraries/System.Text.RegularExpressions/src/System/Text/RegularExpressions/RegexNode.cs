@@ -174,63 +174,127 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Performs additional optimizations on an entire tree prior to being used.</summary>
+        /// <remarks>
+        /// Some optimizations are performed by the parser while parsing, and others are performed
+        /// as nodes are being added to the tree.  The optimizations here expect the tree to be fully
+        /// formed, as they inspect relationships between nodes that may not have been in place as
+        /// individual nodes were being processed/added to the tree.
+        /// </remarks>
         internal RegexNode FinalOptimize()
         {
             RegexNode rootNode = this;
-            Debug.Assert(rootNode.Type == Capture && rootNode.ChildCount() == 1);
+            Debug.Assert(rootNode.Type == Capture);
+            Debug.Assert(rootNode.Next is null);
+            Debug.Assert(rootNode.ChildCount() == 1);
 
-            // If we find backtracking construct at the end of the regex, we can instead make it non-backtracking,
-            // since nothing would ever backtrack into it anyway.  Doing this then makes the construct available
-            // to implementations that don't support backtracking.
-            if ((Options & RegexOptions.RightToLeft) == 0 && // only apply optimization when LTR to avoid needing additional code for the rarer RTL case
-                (Options & RegexOptions.Compiled) != 0) // only apply when we're compiling, as that's the only time it would make a meaningful difference
+            if ((Options & RegexOptions.RightToLeft) == 0) // only apply optimization when LTR to avoid needing additional code for the rarer RTL case
             {
-                // Walk the tree, starting from the sole child of the root implicit capture.
-                RegexNode node = rootNode.Child(0);
-                while (true)
+                // Optimization: backtracking removal at expression end.
+                // If we find backtracking construct at the end of the regex, we can instead make it non-backtracking,
+                // since nothing would ever backtrack into it anyway.  Doing this then makes the construct available
+                // to implementations that don't support backtracking.
+                if ((Options & RegexOptions.Compiled) != 0) // only apply when we're compiling, as that's the only time it would make a meaningful difference
                 {
-                    switch (node.Type)
+                    // Walk the tree, starting from the sole child of the root implicit capture.
+                    RegexNode node = rootNode.Child(0);
+                    while (true)
                     {
-                        case Oneloop:
-                            node.Type = Oneloopatomic;
-                            break;
+                        switch (node.Type)
+                        {
+                            case Oneloop:
+                                node.Type = Oneloopatomic;
+                                break;
 
-                        case Notoneloop:
-                            node.Type = Notoneloopatomic;
-                            break;
+                            case Notoneloop:
+                                node.Type = Notoneloopatomic;
+                                break;
 
-                        case Setloop:
-                            node.Type = Setloopatomic;
-                            break;
+                            case Setloop:
+                                node.Type = Setloopatomic;
+                                break;
 
-                        case Capture:
-                        case Concatenate:
-                            RegexNode existingChild = node.Child(node.ChildCount() - 1);
-                            switch (existingChild.Type)
-                            {
-                                default:
-                                    node = existingChild;
-                                    break;
+                            case Capture:
+                            case Concatenate:
+                                RegexNode existingChild = node.Child(node.ChildCount() - 1);
+                                switch (existingChild.Type)
+                                {
+                                    default:
+                                        node = existingChild;
+                                        break;
 
-                                case Alternate:
-                                case Loop:
-                                case Lazyloop:
-                                    var atomic = new RegexNode(Atomic, Options);
-                                    atomic.AddChild(existingChild);
-                                    node.ReplaceChild(node.ChildCount() - 1, atomic);
-                                    break;
-                            }
-                            continue;
+                                    case Alternate:
+                                    case Loop:
+                                    case Lazyloop:
+                                        var atomic = new RegexNode(Atomic, Options);
+                                        atomic.AddChild(existingChild);
+                                        node.ReplaceChild(node.ChildCount() - 1, atomic);
+                                        break;
+                                }
+                                continue;
 
-                        case Atomic:
-                            node = node.Child(0);
-                            continue;
+                            case Atomic:
+                                node = node.Child(0);
+                                continue;
+                        }
+
+                        break;
                     }
+                }
 
-                    break;
+                // Optimization: implicit anchoring.
+                // If the expression begins with a .* loop, add an anchor to the beginning:
+                // - If Singleline is set such that '.' eats anything, the .* will zip to the end of the string and then backtrack through
+                //   the whole thing looking for a match; since it will have examined everything, there's no benefit to examining it all
+                //   again, and we can anchor to beginning.
+                // - If Singleline is not set, then '.' eats anything up until a '\n' and backtracks from there, so we can similarly avoid
+                //   re-examining that content and anchor to the beginning of lines.
+                // We are currently very conservative here, only examining concat nodes.  This could be loosened in the future, e.g. to
+                // explore captures (but think through any implications of there being a back ref to that capture), to explore loops and
+                // lazy loops a positive minimum (but the anchor shouldn't be part of the loop), to explore alternations and support adding
+                // an anchor if all of them begin with appropriate star loops (though this could also be accomplished by factoring out the
+                // loops to be before the alternation), etc.
+                {
+                    RegexNode node = rootNode.Child(0); // skip implicit root capture node
+                    while (true)
+                    {
+                        bool singleline = (node.Options & RegexOptions.Singleline) != 0;
+                        switch (node.Type)
+                        {
+                            case Concatenate:
+                                node = node.Child(0);
+                                continue;
+
+                            case Setloop when singleline && node.N == int.MaxValue && node.Str == RegexCharClass.AnyClass:
+                            case Setloopatomic when singleline && node.N == int.MaxValue && node.Str == RegexCharClass.AnyClass:
+                            case Notoneloop when !singleline && node.N == int.MaxValue && node.Ch == '\n':
+                            case Notoneloopatomic when !singleline && node.N == int.MaxValue && node.Ch == '\n':
+                                RegexNode? parent = node.Next;
+                                var anchor = new RegexNode(singleline ? Beginning : Bol, node.Options);
+                                Debug.Assert(parent != null);
+                                if (parent.Type == Concatenate)
+                                {
+                                    Debug.Assert(parent.ChildCount() >= 2);
+                                    Debug.Assert(parent.Children is List<RegexNode>);
+                                    anchor.Next = parent;
+                                    ((List<RegexNode>)parent.Children).Insert(0, anchor);
+                                }
+                                else
+                                {
+                                    Debug.Assert(parent.Type == Capture && parent.Next is null, "Only valid capture is the implicit root capture");
+                                    var concat = new RegexNode(Concatenate, parent.Options);
+                                    concat.AddChild(anchor);
+                                    concat.AddChild(node);
+                                    parent.ReplaceChild(0, concat);
+                                }
+                                break;
+                        }
+
+                        break;
+                    }
                 }
             }
 
+            // Optimization: Unnecessary root atomic.
             // If the root node under the implicit Capture is an Atomic, the Atomic is useless as there's nothing
             // to backtrack into it, so we can remove it.
             if (rootNode.Child(0).Type == Atomic)
@@ -1220,5 +1284,5 @@ namespace System.Text.RegularExpressions
             }
         }
 #endif
-    }
+        }
 }
