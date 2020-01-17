@@ -422,7 +422,7 @@ jobs:
     displayName: Build
 
   # Only in glibc leg, we produce RPMs and Debs
-  - ${{ if eq(parameters.name, 'Linux_x64_glibc')}}:
+  - ${{ if and(eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:
     - task: CopyFiles@2
       displayName: 'Copy built Portable linux-x64 binaries to staging directory'
       inputs:
