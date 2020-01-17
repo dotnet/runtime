@@ -112,7 +112,7 @@ namespace System.ComponentModel.Composition.Hosting
                     atomicComposition.AddRevertAction(() => compositionLockHolder!.Dispose());
                 }
 
-                PartManager partManager = GetPartManager(part, true)!;
+                var partManager = GetPartManager(part, true)!;
                 var result = TryPreviewImportsStateMachine(partManager, part, atomicComposition);
                 result.ThrowOnErrors(atomicComposition);
 

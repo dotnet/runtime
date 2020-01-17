@@ -519,6 +519,7 @@ namespace System.ComponentModel.Composition.Primitives
     public abstract partial class ComposablePartCatalog : System.Collections.Generic.IEnumerable<System.ComponentModel.Composition.Primitives.ComposablePartDefinition>, System.Collections.IEnumerable, System.IDisposable
     {
         protected ComposablePartCatalog() { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual System.Linq.IQueryable<System.ComponentModel.Composition.Primitives.ComposablePartDefinition> Parts { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }

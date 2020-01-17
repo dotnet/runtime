@@ -17,8 +17,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         protected override void ReleaseInstanceIfNecessary(object? instance)
         {
-            IDisposable? disposable = instance as IDisposable;
-            if (disposable != null)
+            if (instance is IDisposable disposable)
             {
                 disposable.Dispose();
             }

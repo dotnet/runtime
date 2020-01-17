@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29630.52
+# Visual Studio Version 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.Composition.Tests", "tests\System.ComponentModel.Composition.Tests.csproj", "{59F4682D-C41D-45A7-9798-16C75525BB1D}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -39,8 +39,8 @@ Global
 		{396D6EBF-60BD-4DAF-8783-FB403E070A56}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
 		{396D6EBF-60BD-4DAF-8783-FB403E070A56}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
 		{396D6EBF-60BD-4DAF-8783-FB403E070A56}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
-		{2D694AC8-A12F-4622-9405-74E20EC40C3A}.Debug|Any CPU.ActiveCfg = netcoreapp2.0-Debug|Any CPU
-		{2D694AC8-A12F-4622-9405-74E20EC40C3A}.Debug|Any CPU.Build.0 = netcoreapp2.0-Debug|Any CPU
+		{2D694AC8-A12F-4622-9405-74E20EC40C3A}.Debug|Any CPU.ActiveCfg = netcoreapp5.0-Debug|Any CPU
+		{2D694AC8-A12F-4622-9405-74E20EC40C3A}.Debug|Any CPU.Build.0 = netcoreapp5.0-Debug|Any CPU
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A}.Release|Any CPU.ActiveCfg = netcoreapp5.0-Release|Any CPU
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A}.Release|Any CPU.Build.0 = netcoreapp5.0-Release|Any CPU
 		{DD3B8052-CE03-4159-8311-1CE1382C51B0}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
