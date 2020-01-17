@@ -5,6 +5,10 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <PropertyGroup>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
   </PropertyGroup>
