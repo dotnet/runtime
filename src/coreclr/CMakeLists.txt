@@ -35,7 +35,7 @@ OPTION(CLR_CMAKE_WARNINGS_ARE_ERRORS "Warnings are errors" ON)
 
 # Ensure other tools are present
 if (WIN32)
-    if(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+    if(CLR_CMAKE_PLATFORM_ARCH STREQUAL arm)
 
       # Confirm that Windows SDK is present
       if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
@@ -53,7 +53,7 @@ if (WIN32)
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
-    elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm64)
+    elseif(CLR_CMAKE_PLATFORM_ARCH STREQUAL arm64)
 
       # Confirm that Windows SDK is present
       if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
