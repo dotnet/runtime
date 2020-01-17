@@ -176,13 +176,15 @@ namespace Tracing.Tests.Common
         {
             // FIXME: This is a bandaid fix for a deadlock in EventPipeEventSource caused by
             // the lazy caching in the Regex library.  The caching creates a ConcurrentDictionary
-            // and because it is the first one in the process, it creates and EventSource which
-            // results in a deadlock over a lock in EventPipe.  This line should be removed once the
-            // underlying issue is fixed.
+            // and because it is the first one in the process, it creates an EventSource which
+            // results in a deadlock over a lock in EventPipe.  These lines should be removed once the
+            // underlying issue is fixed by forcing these events to try to be written _before_ we shutdown.
             //
             // see: https://github.com/dotnet/runtime/pull/1794 for details on the issue
             //
             var emptyConcurrentDictionary = new ConcurrentDictionary<string, string>();
+            emptyConcurrentDictionary["foo"] = "bar";
+            var __count = emptyConcurrentDictionary.Count;
 
             var isClean = EnsureCleanEnvironment();
             if (!isClean)
