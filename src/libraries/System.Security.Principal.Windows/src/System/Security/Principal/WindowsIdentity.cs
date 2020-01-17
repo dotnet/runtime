@@ -692,8 +692,8 @@ namespace System.Security.Principal
         /// </summary>
         /// <typeparam name="T">The type of the object to return.</typeparam>
         /// <param name="safeAccessTokenHandle">The SafeAccessTokenHandle of the impersonated Windows identity.</param>
-        /// <param name="func">The System.Func<System.Threading.Tasks.Task<T>> to run.</param>
-        /// <returns>A <see cref="Task{T}"/> that represents the asynchronous operation of the provided System.Func<System.Threading.Tasks.Task<T>>.</returns>
+        /// <param name="func">The <see cref="System.Func{Task}"/> of <see cref="System.Threading.Tasks.Task{T}"/> to run.</param>
+        /// <returns>A <see cref="Task{T}"/> that represents the asynchronous operation of the <see cref="System.Func{Task}"/> of <see cref="System.Threading.Tasks.Task{T}"/> provided.</returns>
         public static Task<T> RunImpersonatedAsync<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task<T>> func)
             => RunImpersonated(safeAccessTokenHandle, func);
 
