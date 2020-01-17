@@ -6142,7 +6142,7 @@ GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSE
         assert(type == lvaTable[lnum].lvType ||
                (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (lvaTable[lnum].lvType == TYP_BYREF)));
     }
-    GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(type, lnum DEBUGARG(ILoffs));
+    GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs));
 
     /* Cannot have this assert because the inliner uses this function
      * to add temporaries */
@@ -6166,25 +6166,27 @@ GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSE
     }
     // This local variable node may later get transformed into a large node
     assert(GenTree::s_gtNodeSizes[LargeOpOpcode()] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
-    GenTree* node = new (this, LargeOpOpcode()) GenTreeLclVar(type, lnum DEBUGARG(ILoffs) DEBUGARG(/*largeNode*/ true));
+    GenTree* node =
+        new (this, LargeOpOpcode()) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs) DEBUGARG(/*largeNode*/ true));
     return node;
 }
 
 GenTreeLclVar* Compiler::gtNewLclVarAddrNode(unsigned lclNum, var_types type)
 {
-    return new (this, GT_LCL_VAR_ADDR) GenTreeLclVar(type, lclNum);
+    GenTreeLclVar* node = new (this, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, type, lclNum);
+    return node;
 }
 
 GenTreeLclFld* Compiler::gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, FieldSeqNode* fieldSeq, var_types type)
 {
-    GenTreeLclFld* node = new (this, GT_LCL_FLD_ADDR) GenTreeLclFld(type, lclNum, lclOffs);
+    GenTreeLclFld* node = new (this, GT_LCL_FLD_ADDR) GenTreeLclFld(GT_LCL_FLD_ADDR, type, lclNum, lclOffs);
     node->SetFieldSeq(fieldSeq == nullptr ? FieldSeqStore::NotAField() : fieldSeq);
     return node;
 }
 
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset)
 {
-    GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(type, lnum, offset);
+    GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset);
 
     /* Cannot have this assert because the inliner uses this function
      * to add temporaries */
@@ -6196,7 +6198,6 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
 }
 
 GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type)
-
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
@@ -7158,8 +7159,9 @@ GenTree* Compiler::gtCloneExpr(
                     // Remember that the LclVar node has been cloned. The flag will
                     // be set on 'copy' as well.
                     tree->gtFlags |= GTF_VAR_CLONED;
-                    copy = new (this, GT_LCL_FLD)
-                        GenTreeLclFld(tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs());
+                    copy =
+                        new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
+                                                             tree->AsLclFld()->GetLclOffs());
                     copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
                     copy->gtFlags = tree->gtFlags;
                 }
