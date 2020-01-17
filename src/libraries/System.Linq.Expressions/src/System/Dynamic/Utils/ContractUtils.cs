@@ -37,7 +37,7 @@ namespace System.Dynamic.Utils
         /// <exception cref="ArgumentException">
         /// Thrown if <paramref name="precondition"/> is <c>false</c>.
         /// </exception>
-        public static void Requires(bool precondition, string paramName)
+        public static void Requires([DoesNotReturnIf(false)] bool precondition, string paramName)
         {
             Debug.Assert(!string.IsNullOrEmpty(paramName));
 

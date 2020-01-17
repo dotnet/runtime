@@ -377,6 +377,28 @@ namespace System.Text.RegularExpressions.Tests
             VerifyMatch(new Regex(pattern, options).Match(input, beginning, length), expectedSuccess, expectedValue);
         }
 
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+        [InlineData(RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+        public void Match_VaryingLengthStrings(RegexOptions options)
+        {
+            var lengths = new List<int>() { 2, 3, 4, 5, 6, 7, 8, 9, 31, 32, 33, 63, 64, 65 };
+            if ((options & RegexOptions.IgnoreCase) == 0)
+            {
+                lengths.Add(100_000); // currently produces too large a compiled method for case-insensitive
+            }
+
+            bool caseInsensitive = (options & RegexOptions.IgnoreCase) != 0;
+            foreach (int length in lengths)
+            {
+                string pattern = "[123]" + string.Concat(Enumerable.Range(0, length).Select(i => (char)('A' + (i % 26))));
+                string input = "2" + string.Concat(Enumerable.Range(0, length).Select(i => (char)((caseInsensitive ? 'a' : 'A') + (i % 26))));
+                Match(pattern, input, options, 0, input.Length, expectedSuccess: true, expectedValue: input);
+            }
+        }
+
         private static void VerifyMatch(Match match, bool expectedSuccess, string expectedValue)
         {
             Assert.Equal(expectedSuccess, match.Success);
@@ -386,6 +408,29 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(match.Groups.Count >= 1);
             Assert.Equal(expectedSuccess, match.Groups[0].Success);
             Assert.Equal(expectedValue, match.Groups[0].Value);
+        }
+
+        [Theory]
+        [InlineData(RegexOptions.None, 1)]
+        [InlineData(RegexOptions.None, 10)]
+        [InlineData(RegexOptions.None, 100)]
+        [InlineData(RegexOptions.Compiled, 1)]
+        [InlineData(RegexOptions.Compiled, 10)]
+        [InlineData(RegexOptions.Compiled, 100)]
+        public void Match_DeepNesting(RegexOptions options, int count)
+        {
+            const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
+            const string Match = "defg";
+
+            string pattern = string.Concat(Enumerable.Repeat(Start, count)) + string.Concat(Enumerable.Repeat(End, count));
+            string input = string.Concat(Enumerable.Repeat(Match, count));
+
+            var r = new Regex(pattern, options);
+            Match m = r.Match(input);
+
+            Assert.True(m.Success);
+            Assert.Equal(input, m.Value);
+            Assert.Equal(count + 1, m.Groups.Count);
         }
 
         [Fact]

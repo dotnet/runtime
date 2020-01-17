@@ -4496,6 +4496,8 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             // needed.
             CodeLabel *Inner_passedTypeCheck = NewCodeLabel();
 
+            // test typeReg, typeReg
+            X86EmitR2ROp(0x85, typeReg, typeReg);
             X86EmitCondJump(Inner_passedTypeCheck, X86CondCode::kJZ);
 
             // Compare MT against the MT of the array.                     

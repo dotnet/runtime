@@ -29,11 +29,6 @@ init_rid_plat()
             if [[ "$ID" == "alpine" ]]; then
                 __rid_plat="linux-musl"
             fi
-        elif [ -e /etc/redhat-release ]; then
-            local redhatRelease=$(</etc/redhat-release)
-            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
-               __rid_plat="rhel.6"
-            fi
         fi
     fi
 

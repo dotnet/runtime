@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void CustomIndexerName()
         {
             dynamic d = new AllTheIntegers();
@@ -53,7 +53,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void CustomIndexerNameDynamicArgument()
         {
             AllTheIntegers all = new AllTheIntegers();
@@ -72,7 +72,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void DeepInheritingIndexingInterface()
         {
             IC ifaceTyped = new Implementation();
@@ -128,7 +128,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void GetIndexWithNonRepeatingArgumentInfos()
         {
             CallSiteBinder binder = Binder.GetIndex(CSharpBinderFlags.None, GetType(), new ArgumentEnumerable(2));
@@ -140,7 +140,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void SetIndexWithNonRepeatingArgumentInfos()
         {
             CallSiteBinder binder = Binder.SetIndex(CSharpBinderFlags.None, GetType(), new ArgumentEnumerable(3));

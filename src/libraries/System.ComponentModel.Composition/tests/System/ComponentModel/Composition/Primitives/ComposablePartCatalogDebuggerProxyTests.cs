@@ -20,7 +20,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void Constructor_ValueAsCatalogArgument_ShouldSetPartsProperty()
         {
             var expectations = Expectations.GetCatalogs();
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void Parts_ShouldNotCacheUnderlyingParts()
         {
             var catalog = CatalogFactory.CreateAggregateCatalog();

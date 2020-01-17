@@ -14,6 +14,7 @@ parameters:
   variables: {}
   pool: ''
   isOfficialBuild: false
+  condition: true
 
 ### Product build
 jobs:
@@ -29,6 +30,7 @@ jobs:
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
+    condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
     name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}

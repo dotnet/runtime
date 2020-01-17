@@ -192,7 +192,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [ActiveIssue(36016)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/36016")]
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]

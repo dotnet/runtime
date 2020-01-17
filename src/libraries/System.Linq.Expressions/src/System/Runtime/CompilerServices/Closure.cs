@@ -26,14 +26,14 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
-        public readonly object[] Locals;
+        public readonly object[]? Locals;
 
         /// <summary>
         /// Creates an object to hold state of a dynamically generated method.
         /// </summary>
         /// <param name="constants">The constant values used by the method.</param>
         /// <param name="locals">The hoisted local variables from the parent context.</param>
-        public Closure(object[] constants, object[] locals)
+        public Closure(object[] constants, object[]? locals)
         {
             Constants = constants;
             Locals = locals;

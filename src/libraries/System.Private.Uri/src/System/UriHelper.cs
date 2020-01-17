@@ -625,7 +625,7 @@ namespace System
                                         EscapeAsciiChar((char)encodedBytes[l], ref dest);
                                     }
                                 }
-                                else if (!UriHelper.IsBidiControlCharacter(unescapedCharsPtr[j]) || !UriParser.DontKeepUnicodeBidiFormattingCharacters)
+                                else
                                 {
                                     //copy chars
                                     dest.Append(unescapedCharsPtr[j]);
@@ -708,7 +708,6 @@ namespace System
         }
 
         internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
-        private const string RFC2396ReservedMarks = @";/?:@&=+$,";
         private const string AdditionalUnsafeToUnescape = @"%\#"; // While not specified as reserved, these are still unsafe to unescape.
 
         // When unescaping in safe mode, do not unescape the RFC 3986 reserved set:
@@ -729,18 +728,8 @@ namespace System
             {
                 return true;
             }
-            else if (UriParser.DontEnableStrictRFC3986ReservedCharacterSets)
-            {
-                if ((ch != ':' && (RFC2396ReservedMarks.IndexOf(ch) >= 0) || (AdditionalUnsafeToUnescape.IndexOf(ch) >= 0)))
-                {
-                    return true;
-                }
-            }
-            else if ((RFC3986ReservedMarks.IndexOf(ch) >= 0) || (AdditionalUnsafeToUnescape.IndexOf(ch) >= 0))
-            {
-                return true;
-            }
-            return false;
+
+            return RFC3986ReservedMarks.IndexOf(ch) >= 0 || AdditionalUnsafeToUnescape.IndexOf(ch) >= 0;
         }
 
         // "Reserved" and "Unreserved" characters are based on RFC 3986.

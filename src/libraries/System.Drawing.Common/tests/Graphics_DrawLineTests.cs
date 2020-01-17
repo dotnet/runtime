@@ -7,7 +7,7 @@ namespace System.Drawing.Tests
 {
     public class Graphics_DrawLineTests : DrawingTest
     {
-        [ActiveIssue(30683, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/30683", TargetFrameworkMonikers.Netcoreapp)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_Points()
         {
@@ -23,7 +23,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(30683, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/30683", TargetFrameworkMonikers.Netcoreapp)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_PointFs()
         {
@@ -68,7 +68,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLine_Busy_ThrowsInvalidOperationException()
         {
@@ -158,7 +158,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_Busy_ThrowsInvalidOperationException()
         {

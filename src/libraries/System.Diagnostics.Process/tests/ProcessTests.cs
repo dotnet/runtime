@@ -1845,7 +1845,7 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue(37054, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/37054", TestPlatforms.OSX)]
         [Fact]
         public void LongProcessNamesAreSupported()
         {

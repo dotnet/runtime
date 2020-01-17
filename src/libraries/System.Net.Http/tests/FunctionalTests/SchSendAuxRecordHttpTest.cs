@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ActiveIssue(26539)]    // Flaky test
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/26539")]    // Flaky test
     public abstract class SchSendAuxRecordHttpTest : HttpClientHandlerTestBase
     {
         public SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }

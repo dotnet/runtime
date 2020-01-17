@@ -1279,54 +1279,96 @@ namespace System.Text.RegularExpressions
             _canonical = true;
 
             List<SingleRange>? rangelist = _rangelist;
-            if (rangelist != null && rangelist.Count > 1)
+            if (rangelist != null)
             {
-                rangelist.Sort((x, y) => x.First.CompareTo(y.First));
-
-                // Find and eliminate overlapping or abutting ranges
-
-                bool done = false;
-                int i, j;
-
-                for (i = 1, j = 0; ; i++)
+                // Find and eliminate overlapping or abutting ranges.
+                if (rangelist.Count > 1)
                 {
-                    char last;
-                    for (last = rangelist[j].Last; ; i++)
+                    rangelist.Sort((x, y) => x.First.CompareTo(y.First));
+
+                    bool done = false;
+                    int j = 0;
+
+                    for (int i = 1; ; i++)
                     {
-                        if (i == rangelist.Count || last == LastChar)
+                        char last;
+                        for (last = rangelist[j].Last; ; i++)
                         {
-                            done = true;
+                            if (i == rangelist.Count || last == LastChar)
+                            {
+                                done = true;
+                                break;
+                            }
+
+                            SingleRange currentRange;
+                            if ((currentRange = rangelist[i]).First > last + 1)
+                            {
+                                break;
+                            }
+
+                            if (last < currentRange.Last)
+                            {
+                                last = currentRange.Last;
+                            }
+                        }
+
+                        rangelist[j] = new SingleRange(rangelist[j].First, last);
+
+                        j++;
+
+                        if (done)
+                        {
                             break;
                         }
 
-                        SingleRange currentRange;
-                        if ((currentRange = rangelist[i]).First > last + 1)
+                        if (j < i)
                         {
-                            break;
-                        }
-
-                        if (last < currentRange.Last)
-                        {
-                            last = currentRange.Last;
+                            rangelist[j] = rangelist[i];
                         }
                     }
 
-                    rangelist[j] = new SingleRange(rangelist[j].First, last);
-
-                    j++;
-
-                    if (done)
-                    {
-                        break;
-                    }
-
-                    if (j < i)
-                    {
-                        rangelist[j] = rangelist[i];
-                    }
+                    rangelist.RemoveRange(j, rangelist.Count - j);
                 }
 
-                rangelist.RemoveRange(j, rangelist.Count - j);
+                // If the class now represents a single negated character, but does so by including every
+                // other character, invert it to produce a normalized form recognized by IsSingletonInverse.
+                if (!_negate && _subtractor is null && (_categories is null || _categories.Length == 0))
+                {
+                    if (rangelist.Count == 2)
+                    {
+                        // There are two ranges in the list.  See if there's one missing element between them.
+                        if (rangelist[0].First == 0 &&
+                            rangelist[0].Last == (char)(rangelist[1].First - 2) &&
+                            rangelist[1].Last == LastChar)
+                        {
+                            char ch = (char)(rangelist[0].Last + 1);
+                            rangelist.RemoveAt(1);
+                            rangelist[0] = new SingleRange(ch, ch);
+                            _negate = true;
+                        }
+                    }
+                    else if (rangelist.Count == 1)
+                    {
+                        if (rangelist[0].First == 0)
+                        {
+                            // There's only one range in the list.  Does it include everything but the last char?
+                            if (rangelist[0].Last == LastChar - 1)
+                            {
+                                rangelist[0] = new SingleRange(LastChar, LastChar);
+                                _negate = true;
+                            }
+                        }
+                        else if (rangelist[0].First == 1)
+                        {
+                            // Or everything but the first char?
+                            if (rangelist[0].Last == LastChar)
+                            {
+                                rangelist[0] = new SingleRange('\0', '\0');
+                                _negate = true;
+                            }
+                        }
+                    }
+                }
             }
         }
 

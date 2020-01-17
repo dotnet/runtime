@@ -43,7 +43,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         // data value and server consts
         private string _connStr;
 
-        [ActiveIssue(27858, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/27858", TestPlatforms.AnyUnix)]
         [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestMain()
         {

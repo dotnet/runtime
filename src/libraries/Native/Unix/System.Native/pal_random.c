@@ -41,7 +41,7 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
             do
             {
 #if HAVE_O_CLOEXEC
-                fd = open("/dev/urandom", O_RDONLY, O_CLOEXEC);
+                fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
 #else
                 fd = open("/dev/urandom", O_RDONLY);
                 fcntl(fd, F_SETFD, FD_CLOEXEC);

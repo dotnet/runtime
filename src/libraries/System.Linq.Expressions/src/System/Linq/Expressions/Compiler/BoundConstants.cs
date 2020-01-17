@@ -44,9 +44,9 @@ namespace System.Linq.Expressions.Compiler
                 return object.ReferenceEquals(Value, other.Value) && Type.Equals(other.Type);
             }
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2231:OverloadOperatorEqualsOnOverridingValueTypeEquals")]
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
-                return (obj is TypedConstant) && Equals((TypedConstant)obj);
+                return obj is TypedConstant typedConstant && Equals(typedConstant);
             }
         }
 
@@ -104,8 +104,7 @@ namespace System.Linq.Expressions.Compiler
             }
 #endif
 
-            LocalBuilder local;
-            if (_cache.TryGetValue(new TypedConstant(value, type), out local))
+            if (_cache.TryGetValue(new TypedConstant(value, type), out LocalBuilder? local))
             {
                 lc.IL.Emit(OpCodes.Ldloc, local);
                 return;

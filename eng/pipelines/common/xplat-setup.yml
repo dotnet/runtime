@@ -12,13 +12,6 @@ jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
     variables:
-      - name: _containsCoreClrChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'] ]
-      - name: _containsLibrariesChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: _containsInstallerChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_installer.containsChange'] ]
-
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
           value: '.zip'
