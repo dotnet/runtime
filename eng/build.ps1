@@ -14,6 +14,8 @@ Param(
   [string]$arch,
   [string]$subsetCategory,
   [string]$subset,
+  [string]$coreClrConfiguration,
+  [string]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
