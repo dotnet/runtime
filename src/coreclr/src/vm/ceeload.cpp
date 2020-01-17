@@ -9033,14 +9033,6 @@ void Module::PlaceType(DataImage *image, TypeHandle th, DWORD profilingFlags)
                 }
             }
         }
-
-        if (profilingFlags & (1 << ReadFieldMarshalers))
-        {
-            if (pClass->HasLayout())
-            {
-                image->PlaceStructureForAddress((void *)pClass->GetNativeLayoutInfo(), CORCOMPILE_SECTION_HOT);
-            }
-        }
     }
     if (th.IsTypeDesc())
     {

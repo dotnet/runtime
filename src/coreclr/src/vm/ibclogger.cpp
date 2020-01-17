@@ -888,25 +888,6 @@ void IBCLogger::LogDispatchTableSlotAccessHelper(DispatchSlot *pDS)
     LogDispatchTableAccessHelper(pMT);
 }
 
-// Log write to EEClass
-void IBCLogger::LogFieldMarshalersReadAccessHelper(MethodTable * pMT)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (pMT == NULL)
-        return;
-
-    LogTypeAccessHelper(pMT, ReadMethodTable);
-
-    if (!pMT->IsCanonicalMethodTable()) {
-        pMT = pMT->GetCanonicalMethodTable();
-        LogTypeAccessHelper(pMT, ReadMethodTable);
-    }
-
-    LogTypeAccessHelper(pMT, ReadEEClass);
-    LogTypeAccessHelper(pMT, ReadFieldMarshalers);
-}
-
 // Log access to cctor info table
 void IBCLogger::LogCCtorInfoReadAccessHelper(MethodTable *pMT)
 {

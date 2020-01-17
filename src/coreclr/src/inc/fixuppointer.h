@@ -76,12 +76,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return GetValue((TADDR)this);
     }
-
-    FORCEINLINE PTR_TYPE GetValueVolatile() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return GetValue();
-    }
 #endif
 
     // Static version of GetValue. It is meant to simplify access to arrays of pointers.
@@ -610,14 +604,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return dac_cast<PTR_TYPE>(m_ptr);
     }
-
-#ifndef DACCESS_COMPILE
-    PTR_TYPE GetValueVolatile() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return dac_cast<PTR_TYPE>(VolatileLoad(&m_ptr));
-    }
-#endif
 
 #ifndef DACCESS_COMPILE
     // Returns the pointer to the indirection cell.

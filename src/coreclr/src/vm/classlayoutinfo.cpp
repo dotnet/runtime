@@ -763,8 +763,7 @@ void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(Method
 #ifdef UNIX_AMD64_ABI
             SystemVAmd64CheckForPassNativeStructInRegister(pMT, pNativeLayoutInfo);
 #endif
-
-            ((LayoutEEClass*)pClass)->m_nativeLayoutInfo.SetValue(pNativeLayoutInfo);
+            ((LayoutEEClass*)pClass)->m_nativeLayoutInfo = pNativeLayoutInfo;
         }
     }
 }

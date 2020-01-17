@@ -4358,9 +4358,6 @@ static void CreateStructStub(ILStubState* pss,
     for (int i = 0; i < numFields; ++i)
     {
         NativeFieldDescriptor& nativeFieldDescriptor = pFieldDescriptors[i];
-
-        nativeFieldDescriptor.Restore();
-
         FieldDesc* pFD = nativeFieldDescriptor.GetFieldDesc();
         SigPointer fieldSig = pFD->GetSigPointer();
         // The first byte in a field signature is always 0x6 per ECMA 335. Skip over this byte to get to the rest of the signature for the MarshalInfo constructor.

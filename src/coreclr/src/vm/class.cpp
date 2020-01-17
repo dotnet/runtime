@@ -2614,31 +2614,6 @@ void EEClass::Save(DataImage *image, MethodTable *pMT)
         }
     }
 
-    //
-    // Save MethodDescs
-    //
-
-    if (HasLayout())
-    {
-        EEClassNativeLayoutInfo const* pLayoutInfo = pMT->GetNativeLayoutInfo();
-
-        ZapStoredStructure* pNode = image->StoreStructure(pLayoutInfo,
-            sizeof(EEClassNativeLayoutInfo) + pLayoutInfo->GetNumFields() * sizeof(NativeFieldDescriptor),
-            DataImage::ITEM_NATIVE_LAYOUT_INFO);
-
-        if (pLayoutInfo->GetNumFields() > 0)
-        {
-            for (UINT iField = 0; iField < pLayoutInfo->GetNumFields(); iField++)
-            {
-                NativeFieldDescriptor const*pFM = &pLayoutInfo->GetNativeFieldDescriptors()[iField];
-                pFM->Save(image);
-
-                if (iField > 0)
-                    image->BindPointer(pFM, pNode, iField * sizeof(NativeFieldDescriptor));
-            }
-        }
-    }
-
     // Save dictionary layout information
     DictionaryLayout *pDictLayout = GetDictionaryLayout();
     if (pMT->IsSharedByGenericInstantiations() && pDictLayout != NULL)
@@ -2833,18 +2808,10 @@ void EEClass::Fixup(DataImage *image, MethodTable *pMT)
     image->ZeroPointerField(this, offsetof(EEClass, m_pccwTemplate));
 #endif // FEATURE_COMINTEROP
 
+
     if (HasLayout())
     {
-        image->FixupRelativePointerField(this, offsetof(LayoutEEClass, m_nativeLayoutInfo));
-
-        EEClassNativeLayoutInfo *pInfo = this->GetNativeLayoutInfo();
-
-        NativeFieldDescriptor* pFMBegin = pInfo->GetNativeFieldDescriptors();
-        NativeFieldDescriptor* pFMEnd = pFMBegin + pInfo->GetNumFields();
-        for (NativeFieldDescriptor* pCurr = pFMBegin; pCurr < pFMEnd; ++pCurr)
-        {
-            pCurr->Fixup(image);
-        }
+        image->ZeroPointerField(this, offsetof(LayoutEEClass, m_nativeLayoutInfo));
     }
     else if (IsDelegate())
     {

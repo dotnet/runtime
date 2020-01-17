@@ -91,31 +91,6 @@ public:
 
     ~NativeFieldDescriptor() = default;
 
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    void Save(DataImage * image) const
-    {
-        STANDARD_VM_CONTRACT;
-    }
-
-    void Fixup(DataImage * image)
-    {
-        STANDARD_VM_CONTRACT;
-
-        image->FixupFieldDescPointer(this, &m_pFD);
-
-        if (IsNestedType())
-        {
-            image->FixupMethodTablePointer(this, &nestedTypeAndCount.m_pNestedType);
-        }
-    }
-#endif // defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-
-#ifdef _DEBUG
-    BOOL IsRestored() const;
-#endif
-
-    void Restore();
-
     NativeFieldCategory GetCategory() const
     {
         return m_category;
@@ -174,12 +149,12 @@ private:
         return m_category == NativeFieldCategory::NESTED;
     }
 
-    RelativeFixupPointer<PTR_FieldDesc> m_pFD;
+    PTR_FieldDesc m_pFD;
     union
     {
         struct
         {
-            RelativeFixupPointer<PTR_MethodTable> m_pNestedType;
+            PTR_MethodTable m_pNestedType;
             ULONG m_numElements;
         } nestedTypeAndCount;
         struct

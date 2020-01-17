@@ -1956,13 +1956,13 @@ class LayoutEEClass : public EEClass
 {
 public:
     EEClassLayoutInfo m_LayoutInfo;
-    RelativePointer<PTR_EEClassNativeLayoutInfo> m_nativeLayoutInfo;
+    PTR_EEClassNativeLayoutInfo m_nativeLayoutInfo;
 
 #ifndef DACCESS_COMPILE
     LayoutEEClass() : EEClass(sizeof(LayoutEEClass))
     {
         LIMITED_METHOD_CONTRACT;
-        m_nativeLayoutInfo.SetValueMaybeNull(nullptr);
+        m_nativeLayoutInfo = NULL;
     }
 #endif // !DACCESS_COMPILE
 };
@@ -2109,7 +2109,7 @@ inline PTR_EEClassNativeLayoutInfo EEClass::GetNativeLayoutInfo()
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(HasLayout());
 
-    return ((LayoutEEClass*)this)->m_nativeLayoutInfo.GetValueMaybeNull();
+    return ((LayoutEEClass*)this)->m_nativeLayoutInfo;
 }
 
 inline BOOL EEClass::IsBlittable()
