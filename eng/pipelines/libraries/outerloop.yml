@@ -61,7 +61,6 @@ jobs:
       jobParameters:
         isOfficialBuild: ${{ variables['isOfficialBuild'] }}
         isFullMatrix: ${{ variables['isFullMatrix'] }}
-        framework: netcoreapp
         runTests: true
         testScope: outerloop
         liveCoreClrBuildConfig: release
@@ -83,7 +82,6 @@ jobs:
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
           isFullMatrix: ${{ variables['isFullMatrix'] }}
-          framework: netcoreapp
           runTests: true
           testScope: outerloop
           liveCoreClrBuildConfig: release

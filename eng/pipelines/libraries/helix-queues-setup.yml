@@ -75,7 +75,7 @@ jobs:
     # Windows_NT x64
     - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
       # netcoreapp
-      - ${{ if eq(parameters.jobParameters.framework, 'netcoreapp') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.7.Amd64.Open
           - Windows.81.Amd64.Open
@@ -99,7 +99,7 @@ jobs:
     # Windows_NT x86
     - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
       # netcoreapp
-      - ${{ if eq(parameters.jobParameters.framework, 'netcoreapp') }}:
+      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
           - Windows.7.Amd64.Open
           - Windows.81.Amd64.Open
