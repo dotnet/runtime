@@ -46,9 +46,11 @@ namespace System.Net.Security
             return Interop.Sec_Application_Protocols.ToByteArray(protocols);
         }
 
-        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, out int outputSize, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
+            outputSize = 0;
+
             ArraySegment<byte> input = inputBuffer != null ? new ArraySegment<byte>(inputBuffer, offset, count) : default;
 
             ThreeSecurityBuffers threeSecurityBuffers = default;
@@ -71,12 +73,14 @@ namespace System.Net.Security
                 ref unusedAttributes);
 
             outputBuffer = resultBuffer.token;
+            outputSize = outputBuffer == null ? 0 : outputBuffer.Length;
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, string targetName, byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, string targetName, byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, out int outputSize, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
+            outputSize = 0;
             ArraySegment<byte> input = inputBuffer != null ? new ArraySegment<byte>(inputBuffer, offset, count) : default;
 
             ThreeSecurityBuffers threeSecurityBuffers = default;
@@ -100,6 +104,7 @@ namespace System.Net.Security
                             ref unusedAttributes);
 
             outputBuffer = resultBuffer.token;
+            outputSize = outputBuffer == null ? 0 : outputBuffer.Length;
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 

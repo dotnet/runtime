@@ -78,6 +78,9 @@
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
       <Link>Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
+      <Link>Common\System\Net\ArrayBuffer.cs</Link>
+    </Compile>
     <!-- Common -->
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>

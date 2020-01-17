@@ -35,11 +35,11 @@ namespace System.Net.Security
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
-            byte[] inputBuffer, int offset, int count,
-            ref byte[] outputBuffer,
+            ReadOnlySpan<byte> inputBuffer
+            ref byte[] outputBuffer, out int outputSize,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, nputBuffer ref outputBuffer, out outputSize, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
@@ -47,10 +47,10 @@ namespace System.Net.Security
             ref SafeDeleteSslContext context,
             string targetName,
             byte[] inputBuffer, int offset, int count,
-            ref byte[] outputBuffer,
+            ref byte[] outputBuffer, out int outputSize,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, out outputSize, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(
@@ -234,10 +234,11 @@ namespace System.Net.Security
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
             ReadOnlySpan<byte> inputBuffer,
-            ref byte[] outputBuffer,
+            ref byte[] outputBuffer, out int outputSize,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(!credential.IsInvalid);
+            outputSize = 0;
 
             try
             {
@@ -274,6 +275,7 @@ namespace System.Net.Security
                 }
 
                 outputBuffer = sslContext.ReadPendingWrites();
+                size = outputBuffer == null ? 0 : outputBuffer.Length;
                 return status;
             }
             catch (Exception exc)

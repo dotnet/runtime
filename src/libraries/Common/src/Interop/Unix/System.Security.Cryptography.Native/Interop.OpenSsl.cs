@@ -253,7 +253,7 @@ internal static partial class Interop
             return context;
         }
 
-        internal static bool DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[] sendBuf, out int sendCount)
+        internal static bool DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, ref byte[] sendBuf, out int sendCount)
         {
             sendBuf = null;
             sendCount = 0;
@@ -286,7 +286,10 @@ internal static partial class Interop
             sendCount = Crypto.BioCtrlPending(context.OutputBio);
             if (sendCount > 0)
             {
-                sendBuf = new byte[sendCount];
+                if (sendBuf == null || sendBuf.Length < sendCount)
+                {
+                    sendBuf = new byte[sendCount];
+                }
 
                 try
                 {

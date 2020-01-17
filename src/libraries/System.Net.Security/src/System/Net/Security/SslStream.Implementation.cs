@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Threading;
@@ -45,6 +46,8 @@ namespace System.Net.Security
         // This is set on the first packet to figure out the framing style.
         private Framing _framing = Framing.Unknown;
 
+        private ArrayBuffer _handshakeBuffer;
+
         // SSL3/TLS protocol frames definitions.
         private enum FrameType : byte
         {
@@ -70,6 +73,7 @@ namespace System.Net.Security
 
         private const int FrameOverhead = 32;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
+        private const int InitialReadBufferSize = 4096 + FrameOverhead;      // try to fit at least 4K ServerCertificate
 
         private int _lockWriteState;
         private int _lockReadState;
@@ -295,10 +299,10 @@ namespace System.Net.Security
 
         //
         // This method attempts to start authentication.
-        // Incoming buffer is either null or is the result of "renegotiate" decrypted message
+        // Incoming inputData buffer is either null or is the result of "renegotiate" decrypted message
         // If write is in progress the method will either wait or be put on hold
         //
-        private void ForceAuthentication(bool receiveFirst, byte[] buffer)
+        private void ForceAuthentication(bool receiveFirst, byte[] inputData)
         {
             // This will tell that we don't know the framing yet (what SSL version is)
             _framing = Framing.Unknown;
@@ -308,12 +312,12 @@ namespace System.Net.Security
                 if (receiveFirst)
                 {
                     // Listen for a client blob.
-                    ReceiveBlob(buffer);
+                    ReceiveBlob(inputData);
                 }
                 else
                 {
                     // We start with the first blob.
-                    SendBlob(buffer, (buffer == null ? 0 : buffer.Length));
+                    SendBlob(inputData);
                 }
             }
             catch (Exception e)
@@ -339,27 +343,31 @@ namespace System.Net.Security
             }
         }
 
-        internal async Task ForceAuthenticationAsync(bool receiveFirst, byte[] buffer, CancellationToken cancellationToken)
+        internal async Task ForceAuthenticationAsync(bool receiveFirst, byte[] inputData, CancellationToken cancellationToken)
         {
             _framing = Framing.Unknown;
             ProtocolToken message;
-            SslReadAsync adapter = new SslReadAsync(this, cancellationToken);
+            _handshakeBuffer = new ArrayBuffer(InitialReadBufferSize);
 
             if (!receiveFirst)
             {
-                message = _context.NextMessage(buffer, 0, (buffer == null ? 0 : buffer.Length));
+                message = _context.NextMessage(inputData);
+                if (message.Size > 0)
+                {
+                    // If there is message send it out even if call failed. It may contain TLS Alert.
+                    await InnerStream.WriteAsync(message.Payload, cancellationToken).ConfigureAwait(false);
+                }
+
                 if (message.Failed)
                 {
                     // tracing done in NextMessage()
                     throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                 }
-
-                await InnerStream.WriteAsync(message.Payload, cancellationToken).ConfigureAwait(false);
             }
 
             do
             {
-                message = await ReceiveBlobAsync(adapter, buffer, cancellationToken).ConfigureAwait(false);
+                message = await ReceiveBlobAsync(inputData, cancellationToken).ConfigureAwait(false);
                 if (message.Size > 0)
                 {
                     // If there is message send it out even if call failed. It may contain TLS Alert.
@@ -372,8 +380,7 @@ namespace System.Net.Security
                 }
             } while (message.Status.ErrorCode != SecurityStatusPalErrorCode.OK);
 
-            ProtocolToken alertToken = null;
-            if (!CompleteHandshake(ref alertToken))
+            if (!CompleteHandshake(out ProtocolToken alertToken))
             {
                 SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
             }
@@ -387,15 +394,14 @@ namespace System.Net.Security
                                                                     HashStrength,
                                                                     KeyExchangeAlgorithm,
                                                                     KeyExchangeStrength);
-
         }
 
         //
         // Client side starts here, but server also loops through this method.
         //
-        private void SendBlob(byte[] incoming, int count)
+        private void SendBlob(ReadOnlySpan<byte> incoming)
         {
-            ProtocolToken message = _context.NextMessage(incoming, 0, count);
+            ProtocolToken message = _context.NextMessage(incoming);
             _securityStatus = message.Status;
 
             if (message.Size != 0)
@@ -411,7 +417,7 @@ namespace System.Net.Security
 
                 if (_framing == Framing.Unified)
                 {
-                    _framing = DetectFraming(message.Payload, message.Payload.Length);
+                    _framing = DetectFraming(new Span<byte>(message.Payload, 0, message.Payload.Length));
                 }
 
                 InnerStream.Write(message.Payload, 0, message.Size);
@@ -427,14 +433,12 @@ namespace System.Net.Security
         {
             if (message.Failed)
             {
-                SendAuthResetSignal(null, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_auth_SSPI, message.GetException())));
+                SendAuthResetSignal(default, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_auth_SSPI, message.GetException())));
                 return;
             }
             else if (message.Done)
             {
-                ProtocolToken alertToken = null;
-
-                if (!CompleteHandshake(ref alertToken))
+                if (!CompleteHandshake(out ProtocolToken alertToken))
                 {
                     SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
                     return;
@@ -467,33 +471,46 @@ namespace System.Net.Security
 
             if (_framing == Framing.Unknown)
             {
-                _framing = DetectFraming(buffer, readBytes);
+                _framing = DetectFraming(buffer);
             }
 
-            int restBytes = GetRemainingFrameSize(buffer, 0, readBytes);
+            int frameSize = GetFrameSize(new Span<byte>(buffer, 0, readBytes));
+            int restBytes = frameSize - readBytes;
 
-            if (restBytes < 0)
+            if (frameSize < 0)
             {
                 throw new IOException(SR.net_ssl_io_frame);
             }
 
-            if (restBytes == 0)
-            {
-                // EOF received
-                throw new AuthenticationException(SR.net_auth_eof, null);
-            }
+            buffer = EnsureBufferSize(buffer, readBytes, frameSize);
 
-            buffer = EnsureBufferSize(buffer, readBytes, readBytes + restBytes);
+            restBytes = FixedSizeReader.ReadPacket(_innerStream, buffer, readBytes, frameSize - readBytes);
 
-            restBytes = FixedSizeReader.ReadPacket(_innerStream, buffer, readBytes, restBytes);
-
-            SendBlob(buffer, readBytes + restBytes);
+            SendBlob(new ReadOnlySpan<byte>(buffer, 0, readBytes + restBytes));
         }
 
-        private async ValueTask<ProtocolToken> ReceiveBlobAsync(SslReadAsync adapter, byte[] buffer, CancellationToken cancellationToken)
+        private static async ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minReadBytes, CancellationToken cancellationToken = default)
         {
-            ResetReadBuffer();
-            int readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
+            Debug.Assert(buffer.Length >= minReadBytes);
+
+            int totalBytesRead = 0;
+            while (totalBytesRead < minReadBytes)
+            {
+                int bytesRead = await stream.ReadAsync(buffer.Slice(totalBytesRead), cancellationToken).ConfigureAwait(false);
+                if (bytesRead == 0)
+                {
+                    throw new IOException(SR.net_io_eof);
+                }
+
+                totalBytesRead += bytesRead;
+            }
+
+            return totalBytesRead;
+        }
+
+        private async ValueTask<ProtocolToken> ReceiveBlobAsync(byte[] inputData, CancellationToken cancellationToken)
+        {
+            int readBytes = await FillBufferAsync(InnerStream, _handshakeBuffer, SecureChannel.ReadHeaderSize, cancellationToken).ConfigureAwait(false);
             if (readBytes == 0)
             {
                 throw new IOException(SR.net_io_eof);
@@ -501,29 +518,23 @@ namespace System.Net.Security
 
             if (_framing == Framing.Unified || _framing == Framing.Unknown)
             {
-                _framing = DetectFraming(_internalBuffer, readBytes);
+                _framing = DetectFraming(_handshakeBuffer.ActiveSpan);
             }
 
-            int payloadBytes = GetRemainingFrameSize(_internalBuffer, _internalOffset, readBytes);
-            if (payloadBytes < 0)
+            int frameSize = GetFrameSize(_handshakeBuffer.ActiveSpan);
+            if (frameSize < 0)
             {
                 throw new IOException(SR.net_frame_read_size);
             }
 
-            int frameSize = SecureChannel.ReadHeaderSize + payloadBytes;
+            //int frameSize = SecureChannel.ReadHeaderSize + payloadBytes;
 
-            if (readBytes < frameSize)
+            if (_handshakeBuffer.ActiveLength < frameSize)
             {
-                readBytes = await FillBufferAsync(adapter, frameSize).ConfigureAwait(false);
-                Debug.Assert(readBytes >= 0);
-                if (readBytes == 0)
-                {
-                    throw new IOException(SR.net_io_eof);
-                }
+                readBytes = await FillBufferAsync(InnerStream, _handshakeBuffer, frameSize, cancellationToken).ConfigureAwait(false);
             }
-
-            ProtocolToken token = _context.NextMessage(_internalBuffer, _internalOffset, frameSize);
-            ConsumeBufferedBytes(frameSize);
+            ProtocolToken token = _context.NextMessage(_handshakeBuffer.ActiveSpan.Slice(0, frameSize));
+            _handshakeBuffer.Discard(frameSize);
 
             return token;
         }
@@ -536,7 +547,7 @@ namespace System.Net.Security
         {
             SetException(exception.SourceException);
 
-            if (message == null || message.Size == 0)
+            if (message.Size == 0)
             {
                 //
                 // We don't have an alert to send so cannot retry and fail prematurely.
@@ -557,10 +568,12 @@ namespace System.Net.Security
         //
         // - Returns false if failed to verify the Remote Cert
         //
-        private bool CompleteHandshake(ref ProtocolToken alertToken)
+        private bool CompleteHandshake(out ProtocolToken alertToken)
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
+
+            alertToken = default;
 
             _context.ProcessHandshakeSuccess();
 
@@ -784,8 +797,7 @@ namespace System.Net.Security
             {
                 // Re-handshake status is not supported.
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
-                ProtocolToken message = new ProtocolToken(null, status);
-                return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, message.GetException()))));
+                return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status)))));
             }
 
             ValueTask t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
@@ -899,13 +911,13 @@ namespace System.Net.Security
                         return 0;
                     }
 
-                    int payloadBytes = GetRemainingFrameSize(_internalBuffer, _internalOffset, readBytes);
+                    int payloadBytes = GetFrameSize(new Span<byte>(_internalBuffer, _internalOffset, readBytes));
                     if (payloadBytes < 0)
                     {
                         throw new IOException(SR.net_frame_read_size);
                     }
 
-                    readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize + payloadBytes).ConfigureAwait(false);
+                    readBytes = await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
                     Debug.Assert(readBytes >= 0);
                     if (readBytes == 0)
                     {
@@ -916,7 +928,7 @@ namespace System.Net.Security
                     // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
                     // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
                     _decryptedBytesOffset = _internalOffset;
-                    _decryptedBytesCount = readBytes;
+                    _decryptedBytesCount = payloadBytes;
                     SecurityStatusPal status = DecryptData();
 
                     // Treat the bytes we just decrypted as consumed
@@ -934,11 +946,10 @@ namespace System.Net.Security
                             _decryptedBytesCount = 0;
                         }
 
-                        ProtocolToken message = new ProtocolToken(null, status);
                         if (NetEventSource.IsEnabled)
-                            NetEventSource.Info(null, $"***Processing an error Status = {message.Status}");
+                            NetEventSource.Info(null, $"***Processing an error Status = {status}");
 
-                        if (message.Renegotiate)
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
                             if (!_sslAuthenticationOptions.AllowRenegotiation)
                             {
@@ -951,12 +962,12 @@ namespace System.Net.Security
                             continue;
                         }
 
-                        if (message.CloseConnection)
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired)
                         {
                             return 0;
                         }
 
-                        throw new IOException(SR.net_io_decrypt, message.GetException());
+                        throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
                     }
                 }
             }
@@ -973,6 +984,26 @@ namespace System.Net.Security
             {
                 _nestedRead = 0;
             }
+        }
+
+        // This function tries to make sure buffer has at least minSize bytes available.
+        // If we have enough data, it returns synchronously. If not, it will try to read
+        // remaining bytes from given stream.
+        private async ValueTask<int> FillBufferAsync(Stream stream, ArrayBuffer buffer, int minSize, CancellationToken cancellationToken)
+        {
+            if (_handshakeBuffer.ActiveLength >= minSize)
+            {
+                return _handshakeBuffer.ActiveLength;
+            }
+
+            int bytesNeeded = minSize - buffer.ActiveLength;
+            _handshakeBuffer.EnsureAvailableSpace(bytesNeeded);
+
+            buffer.EnsureAvailableSpace(bytesNeeded);
+            int bytesRead = await ReadAtLeastAsync(stream, _handshakeBuffer.AvailableMemory, bytesNeeded, cancellationToken).ConfigureAwait(false);
+            _handshakeBuffer.Commit(bytesRead);
+
+            return bytesRead;
         }
 
         private ValueTask<int> FillBufferAsync<TReadAdapter>(TReadAdapter adapter, int minSize)
@@ -1135,7 +1166,7 @@ namespace System.Net.Security
         }
 
         // We need at least 5 bytes to determine what we have.
-        private Framing DetectFraming(byte[] bytes, int length)
+        private Framing DetectFraming(ReadOnlySpan<byte> bytes)
         {
             /* PCTv1.0 Hello starts with
              * RECORD_LENGTH_MSB  (ignore)
@@ -1224,7 +1255,7 @@ namespace System.Net.Security
             if (bytes[0] == (byte)FrameType.Handshake || bytes[0] == (byte)FrameType.AppData
                 || bytes[0] == (byte)FrameType.Alert)
             {
-                if (length < 3)
+                if (bytes.Length < 3)
                 {
                     return Framing.Invalid;
                 }
@@ -1256,7 +1287,7 @@ namespace System.Net.Security
             }
 #endif
 
-            if (length < 3)
+            if (bytes.Length < 3)
             {
                 return Framing.Invalid;
             }
@@ -1268,14 +1299,14 @@ namespace System.Net.Security
 
             if (bytes[2] == 0x1)  // SSL_MT_CLIENT_HELLO
             {
-                if (length >= 5)
+                if (bytes.Length >= 5)
                 {
                     version = (bytes[3] << 8) | bytes[4];
                 }
             }
             else if (bytes[2] == 0x4) // SSL_MT_SERVER_HELLO
             {
-                if (length >= 7)
+                if (bytes.Length >= 7)
                 {
                     version = (bytes[5] << 8) | bytes[6];
                 }
@@ -1313,44 +1344,41 @@ namespace System.Net.Security
 
         //
         // This is called from SslStream class too.
-        private int GetRemainingFrameSize(byte[] buffer, int offset, int dataSize)
+        private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
             if (NetEventSource.IsEnabled)
-                NetEventSource.Enter(this, buffer, offset, dataSize);
+                NetEventSource.Enter(this, buffer.Length);
 
             int payloadSize = -1;
             switch (_framing)
             {
                 case Framing.Unified:
                 case Framing.BeforeSSL3:
-                    if (dataSize < 2)
+                    if (buffer.Length < 2)
                     {
                         throw new System.IO.IOException(SR.net_ssl_io_frame);
                     }
                     // Note: Cannot detect version mismatch for <= SSL2
 
-                    if ((buffer[offset] & 0x80) != 0)
+                    if ((buffer[0] & 0x80) != 0)
                     {
                         // Two bytes
-                        payloadSize = (((buffer[offset] & 0x7f) << 8) | buffer[offset + 1]) + 2;
-                        payloadSize -= dataSize;
+                        payloadSize = (((buffer[0] & 0x7f) << 8) | buffer[1]) + 2;
                     }
                     else
                     {
                         // Three bytes
-                        payloadSize = (((buffer[offset] & 0x3f) << 8) | buffer[offset + 1]) + 3;
-                        payloadSize -= dataSize;
+                        payloadSize = (((buffer[0] & 0x3f) << 8) | buffer[1]) + 3;
                     }
 
                     break;
                 case Framing.SinceSSL3:
-                    if (dataSize < 5)
+                    if (buffer.Length < 5)
                     {
                         throw new System.IO.IOException(SR.net_ssl_io_frame);
                     }
 
-                    payloadSize = ((buffer[offset + 3] << 8) | buffer[offset + 4]) + 5;
-                    payloadSize -= dataSize;
+                    payloadSize = ((buffer[3] << 8) | buffer[4]) + 5;
                     break;
                 default:
                     break;
