@@ -208,7 +208,7 @@ enum bgc_state
     bgc_overflow_uoh,
     bgc_final_marking,
     bgc_sweep_soh,
-    bgc_sweep_loh,
+    bgc_sweep_uoh,
     bgc_plan_phase
 };
 

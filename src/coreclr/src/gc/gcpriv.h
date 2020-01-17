@@ -977,7 +977,7 @@ struct alloc_thread_wait_data
 enum msl_take_state
 {
     mt_get_large_seg = 0,
-    mt_bgc_loh_sweep,
+    mt_bgc_uoh_sweep,
     mt_wait_bgc,
     mt_block_gc,
     mt_clr_mem,
@@ -2095,8 +2095,6 @@ protected:
     void process_background_segment_end (heap_segment*, generation*, uint8_t*,
                                      heap_segment*, BOOL*);
     PER_HEAP
-    void process_n_background_segments (heap_segment*, heap_segment*, generation* gen);
-    PER_HEAP
     BOOL fgc_should_consider_object (uint8_t* o,
                                      heap_segment* seg,
                                      BOOL consider_bgc_mark_p,
@@ -2916,7 +2914,7 @@ protected:
     PER_HEAP
     size_t committed_size();
     PER_HEAP
-    size_t committed_size (int gen_number, size_t* allocated);
+    size_t uoh_committed_size (int gen_number, size_t* allocated);
     PER_HEAP
     size_t approximate_new_allocation();
     PER_HEAP
@@ -2934,9 +2932,9 @@ protected:
     PER_HEAP
     BOOL ephemeral_gen_fit_p (gc_tuning_point tp);
     PER_HEAP
-    void sweep_uoh_objects (gc_generation_num gen_num);
+    void sweep_uoh_objects (int gen_num);
     PER_HEAP
-    void relocate_in_uoh_objects (gc_generation_num gen_num);
+    void relocate_in_uoh_objects (int gen_num);
     PER_HEAP
     void mark_through_cards_for_uoh_objects(card_fn fn, int oldest_gen_num, BOOL relocating
                                               CARD_MARKING_STEALING_ARG(gc_heap* hpt));
