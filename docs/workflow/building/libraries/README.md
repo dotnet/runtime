@@ -8,7 +8,7 @@ Here is one example of a daily workflow for a developer working mainly on the li
 :: From root in the morning:
 git clean -xdf
 git pull upstream master & git push origin master
-build -subsetCategory corelcr -c Release
+build -subsetCategory coreclr -c Release
 build -subsetCategory libraries -coreclrConfiguration Release
 
 :: The above you may only perform once in a day, or when
@@ -33,7 +33,7 @@ The instructions for Linux are essentially the same:
 # From root in the morning:
 git clean -xdf
 git pull upstream master & git push origin master
-./build.sh -subsetcategory corclr -c Release
+./build.sh -subsetcategory coreclr -c Release
 ./build.sh -subsetcategory libraries -coreclrconfiguration Release
 
 # The above you may only perform once in a day, or when
