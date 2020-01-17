@@ -152,27 +152,11 @@ typedef struct
 #define STACK_TYPE_MP 6
 #define STACK_TYPE_F  7
 
-static const char *stack_type_string [] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
-
 #if SIZEOF_VOID_P == 8
 #define STACK_TYPE_I STACK_TYPE_I8
 #else
 #define STACK_TYPE_I STACK_TYPE_I4
 #endif
-
-static int stack_type [] = {
-	STACK_TYPE_I4, /*I1*/
-	STACK_TYPE_I4, /*U1*/
-	STACK_TYPE_I4, /*I2*/
-	STACK_TYPE_I4, /*U2*/
-	STACK_TYPE_I4, /*I4*/
-	STACK_TYPE_I8, /*I8*/
-	STACK_TYPE_R4, /*R4*/
-	STACK_TYPE_R8, /*R8*/
-	STACK_TYPE_O,  /*O*/
-	STACK_TYPE_MP, /*P*/
-	STACK_TYPE_VT
-};
 
 /* test exports for white box testing */
 void

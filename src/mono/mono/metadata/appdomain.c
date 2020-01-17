@@ -154,7 +154,9 @@ static MonoLoadFunc load_function = NULL;
 
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (assembly, "System.Reflection", "Assembly");
+#ifdef ENABLE_NETCORE
 static GENERATE_GET_CLASS_WITH_CACHE (app_context, "System", "AppContext");
+#endif
 
 GENERATE_GET_CLASS_WITH_CACHE (appdomain, MONO_APPDOMAIN_CLASS_NAME_SPACE, MONO_APPDOMAIN_CLASS_NAME);
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_setup, MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE, MONO_APPDOMAIN_SETUP_CLASS_NAME);
@@ -2411,6 +2413,7 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	return result;
 }
 
+#ifdef ENABLE_NETCORE
 static char *
 get_app_context_base_directory (MonoError *error)
 {
@@ -2431,6 +2434,7 @@ get_app_context_base_directory (MonoError *error)
 
 	HANDLE_FUNCTION_RETURN_VAL (base_dir);
 }
+#endif
 
 /*
  * Try loading the assembly from ApplicationBase and PrivateBinPath 

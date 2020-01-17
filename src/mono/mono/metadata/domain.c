@@ -131,6 +131,7 @@ get_runtime_by_version (const char *version);
 static void
 mono_domain_alcs_destroy (MonoDomain *domain);
 
+#ifdef ENABLE_NETCORE
 static void
 mono_domain_alcs_lock (MonoDomain *domain);
 
@@ -139,6 +140,7 @@ mono_domain_alcs_unlock (MonoDomain *domain);
 
 static void
 mono_domain_create_default_alc (MonoDomain *domain);
+#endif
 
 static LockFreeMempool*
 lock_free_mempool_new (void)
@@ -2080,10 +2082,10 @@ mono_domain_alcs_unlock (MonoDomain *domain)
 #endif
 
 
+#ifdef ENABLE_NETCORE
 static MonoAssemblyLoadContext *
 create_alc (MonoDomain *domain, gboolean is_default)
 {
-#ifdef ENABLE_NETCORE
 	MonoAssemblyLoadContext *alc = NULL;
 
 	mono_domain_alcs_lock (domain);
@@ -2099,22 +2101,18 @@ create_alc (MonoDomain *domain, gboolean is_default)
 leave:
 	mono_domain_alcs_unlock (domain);
 	return alc;
-#else
-	return NULL;
-#endif
 }
+#endif
 
+#ifdef ENABLE_NETCORE
 void
 mono_domain_create_default_alc (MonoDomain *domain)
 {
-#ifdef ENABLE_NETCORE
 	if (domain->default_alc)
 		return;
 	create_alc (domain, TRUE);
-#endif
 }
 
-#ifdef ENABLE_NETCORE
 MonoAssemblyLoadContext *
 mono_domain_create_individual_alc (MonoDomain *domain, uint32_t this_gchandle, gboolean collectible, MonoError *error)
 {
@@ -2123,16 +2121,14 @@ mono_domain_create_individual_alc (MonoDomain *domain, uint32_t this_gchandle, g
 	alc->gchandle = this_gchandle;
 	return alc;
 }
-#endif
 
 static void
 mono_alc_free (MonoAssemblyLoadContext *alc)
 {
-#ifdef ENABLE_NETCORE
 	mono_alc_cleanup (alc);
 	g_free (alc);
-#endif
 }
+#endif
 
 void
 mono_domain_alcs_destroy (MonoDomain *domain)

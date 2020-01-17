@@ -239,7 +239,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 {
 	const char *tramp_name;
 	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code, *br_ex_check;
-	int i, lmf_offset, offset, res_offset, arg_offset, rax_offset, ex_offset, tramp_offset, ctx_offset, saved_regs_offset;
+	int i, lmf_offset, offset, res_offset, arg_offset, rax_offset, tramp_offset, ctx_offset, saved_regs_offset;
 	int r11_save_offset, saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset, cfa_offset;
 	gboolean has_caller;
 	GSList *unwind_ops = NULL;
@@ -260,8 +260,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	offset += sizeof (target_mgreg_t);
 	rax_offset = -offset;
 
+	/* ex_offset */
 	offset += sizeof (target_mgreg_t);
-	ex_offset = -offset;
 
 	offset += sizeof (target_mgreg_t);
 	r11_save_offset = -offset;

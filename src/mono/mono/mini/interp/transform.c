@@ -164,6 +164,22 @@ static const MagicIntrinsic int_cmpop[] = {
 	{ "op_LessThanOrEqual", {MINT_CLE_P, MINT_CLE_UN_P, MINT_CLE_FP}}
 };
 
+static const char *stack_type_string [] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
+
+static int stack_type [] = {
+	STACK_TYPE_I4, /*I1*/
+	STACK_TYPE_I4, /*U1*/
+	STACK_TYPE_I4, /*I2*/
+	STACK_TYPE_I4, /*U2*/
+	STACK_TYPE_I4, /*I4*/
+	STACK_TYPE_I8, /*I8*/
+	STACK_TYPE_R4, /*R4*/
+	STACK_TYPE_R8, /*R8*/
+	STACK_TYPE_O,  /*O*/
+	STACK_TYPE_MP, /*P*/
+	STACK_TYPE_VT
+};
+
 static gboolean generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error);
 
 static InterpInst*

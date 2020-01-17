@@ -185,15 +185,6 @@ buffer_add_byte (Buffer *buf, guint8 val)
 }
 
 static void
-buffer_add_short (Buffer *buf, guint32 val)
-{
-	buffer_make_room (buf, 2);
-	buf->p [0] = (val >> 8) & 0xff;
-	buf->p [1] = (val >> 0) & 0xff;
-	buf->p += 2;
-}
-
-static void
 buffer_add_int (Buffer *buf, guint32 val)
 {
 	buffer_make_room (buf, 4);
@@ -202,19 +193,6 @@ buffer_add_int (Buffer *buf, guint32 val)
 	buf->p [2] = (val >> 8) & 0xff;
 	buf->p [3] = (val >> 0) & 0xff;
 	buf->p += 4;
-}
-
-static void
-buffer_add_long (Buffer *buf, guint64 l)
-{
-	buffer_add_int (buf, (l >> 32) & 0xffffffff);
-	buffer_add_int (buf, (l >> 0) & 0xffffffff);
-}
-
-static void
-buffer_add_id (Buffer *buf, int id)
-{
-	buffer_add_int (buf, (guint64)id);
 }
 
 static void
@@ -237,12 +215,6 @@ buffer_add_string (Buffer *buf, const char *str)
 		buffer_add_int (buf, len);
 		buffer_add_data (buf, (guint8*)str, len);
 	}
-}
-
-static void
-buffer_add_buffer (Buffer *buf, Buffer *data)
-{
-	buffer_add_data (buf, data->buf, buffer_len (data));
 }
 
 static void

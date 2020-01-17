@@ -531,6 +531,7 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, gboolean fatal, con
 
 #define MAX_SYMBOL_SIZE 256
 
+#if defined(TARGET_WIN32) && defined(TARGET_X86)
 static const char *
 mangle_symbol (const char * symbol, char * mangled_symbol, gsize length)
 {
@@ -540,15 +541,11 @@ mangle_symbol (const char * symbol, char * mangled_symbol, gsize length)
 	g_assert (NULL != mangled_symbol);
 	g_assert (0 != length);
 
-#if defined(TARGET_WIN32) && defined(TARGET_X86)
 	if (symbol && '_' != symbol [0]) {
 		needed_size = g_snprintf (mangled_symbol, length, "_%s", symbol);
 	} else {
 		needed_size = g_snprintf (mangled_symbol, length, "%s", symbol);
 	}
-#else
-	needed_size = g_snprintf (mangled_symbol, length, "%s", symbol);
-#endif
 
 	g_assert (0 <= needed_size && needed_size < length);
 	return mangled_symbol;
@@ -559,17 +556,14 @@ mangle_symbol_alloc (const char * symbol)
 {
 	g_assert (NULL != symbol);
 
-#if defined(TARGET_WIN32) && defined(TARGET_X86)
 	if (symbol && '_' != symbol [0]) {
 		return g_strdup_printf ("_%s", symbol);
 	}
 	else {
 		return g_strdup_printf ("%s", symbol);
 	}
-#else
-	return g_strdup_printf ("%s", symbol);
-#endif
 }
+#endif
 
 static void
 emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsection_index)
@@ -749,11 +743,13 @@ emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
 
 #endif
 
+#ifdef TARGET_WIN32_MSVC
 static gboolean
 link_shared_library (MonoAotCompile *acfg)
 {
 	return !acfg->aot_opts.static_link && !acfg->aot_opts.asm_only;
 }
+#endif
 
 static gboolean
 add_to_global_symbol_table (MonoAotCompile *acfg)
@@ -7472,7 +7468,7 @@ static void
 emit_trampolines (MonoAotCompile *acfg)
 {
 	char symbol [MAX_SYMBOL_SIZE];
-	char end_symbol [MAX_SYMBOL_SIZE];
+	char end_symbol [MAX_SYMBOL_SIZE + 2];
 	int i, tramp_got_offset;
 	int ntype;
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES

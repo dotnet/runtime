@@ -291,6 +291,7 @@ mono_loader_register_module (const char *name, MonoDl *module)
 	mono_global_loader_data_unlock ();
 }
 
+#ifdef ENABLE_NETCORE
 static MonoDl *
 mono_loader_register_module_locking (const char *name, MonoDl *module)
 {
@@ -317,6 +318,7 @@ exit:
 
 	return result;
 }
+#endif
 
 static void
 remove_cached_module (gpointer key, gpointer value, gpointer user_data)

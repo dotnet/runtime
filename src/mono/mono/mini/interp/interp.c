@@ -3421,11 +3421,13 @@ g_warning_ds (const char *format, int d, const char *s)
 	g_warning (format, d, s);
 }
 
+#if !USE_COMPUTED_GOTO
 static void
 g_error_xsx (const char *format, int x1, const char *s, int x2)
 {
 	g_error (format, x1, s, x2);
 }
+#endif
 
 static MONO_ALWAYS_INLINE void
 method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing, MonoException **out_ex)
