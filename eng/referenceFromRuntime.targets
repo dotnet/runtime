@@ -1,6 +1,6 @@
 <Project>
 
-  <PropertyGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) and '$(_TargetFrameworkWithoutProfile)' != '$(NetCoreAppCurrent)'">
+  <PropertyGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <PrepareProjectReferencesDependsOn>
       AddRuntimeProjectReference;
       $(PrepareProjectReferencesDependsOn);
@@ -39,7 +39,7 @@
 
     <Error Condition="'$(IsReferenceAssembly)' == 'true' and '$(AllowReferenceFromRuntime)' != 'true'" Text="ReferenceFromRuntime may not be used from reference assemblies." />
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="GetFilesFromCoreCLR" Condition="'$(_TargetFrameworkWithoutProfile)' == '$(NetCoreAppCurrent)'">
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="GetFilesFromCoreCLR" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
       <Output TaskParameter="TargetOutputs" ItemName="CoreCLRFiles" />
     </MSBuild>
 

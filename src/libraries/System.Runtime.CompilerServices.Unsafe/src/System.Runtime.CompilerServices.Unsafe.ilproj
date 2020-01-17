@@ -15,9 +15,11 @@
     <OriginalTargetFramework Condition="'$(OriginalTargetFramework)' == ''">$(BuildTargetFramework)</OriginalTargetFramework>
     <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)\</OutputPath>
     <TargetFrameworks>netcoreapp5.0;netstandard2.0;netstandard1.0;net45;net472</TargetFrameworks>
+    <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="System.Runtime" />
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
     <ILResourceReference Include="$(Refpath)\$(TargetFileName)" />
     <TargetFrameworksList Include="$(TargetFrameworks)"/>
