@@ -1,23 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.3'">$(DefineConstants);netcoreapp</DefineConstants>
+    <DefineConstants Condition="'$(OriginalTargetFramework)' == 'netstandard1.3'">$(DefineConstants);netcoreapp</DefineConstants>
     <TargetFrameworks>netstandard1.3;net46;netstandard2.0;;$(NetFrameworkCurrent);</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Packaging.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.3'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' != 'netstandard1.3'">
     <Compile Include="System.IO.Packaging.Serialization.cs" />
     <Compile Include="System.IO.Packaging.PackUriScheme.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' or '$(TargetFramework)' == 'net46'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == '$(NetFrameworkCurrent)' or '$(OriginalTargetFramework)' == 'net46'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.3'">
     <Reference Include="System.Collections" />
     <Reference Include="System.IO" />
     <Reference Include="System.IO.FileSystem.Primitives" />

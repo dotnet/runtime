@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>Monitoring</RootNamespace>
     <AssemblyName>Monitoring</AssemblyName>
-    <TargetFrameworks>netstandard2.0-Unix;netstandard2.0-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.0-Unix;netstandard2.0-Windows_NT;</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="IMonitorLoader.cs" />

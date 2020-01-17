@@ -9,9 +9,9 @@
   <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
     <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);netstandard2.0;netstandard2.1</AdditionalBuildTargetFrameworks>
     <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(ReferenceAssemblyOutputPath)', 'ref'))</BaseOutputPath>
-    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(ConfigurationGroup)</OutputPath>
+    <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)</OutputPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'ref'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(ConfigurationGroup)</IntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)</IntermediateOutputPath>
 
     <!-- disable warnings about unused fields -->
     <NoWarn>$(NoWarn);CS0169;CS0649;CS8618</NoWarn>

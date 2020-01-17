@@ -7,17 +7,29 @@
   <PropertyGroup>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
-    <IncludePath>include\$(TargetFramework)</IncludePath>
-    <IncludePath Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == ''">include\netcoreapp</IncludePath>
+    <IncludePath>include\$(OriginalTargetFramework)</IncludePath>
+    <IncludePath Condition="'$(TargetsNetCoreApp)' == 'true' or '$(OriginalTargetFramework)' == ''">include\netcoreapp</IncludePath>
     <IncludePath Condition="'$(TargetsNetFx)' == 'true'">include\netfx</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(ConfigurationGroup)\</OutputPath>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(BuildTargetFramework)</TargetFramework>
+    <OriginalTargetFramework Condition="'$(OriginalTargetFramework)' == ''">$(BuildTargetFramework)</OriginalTargetFramework>
+    <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)\</OutputPath>
     <TargetFrameworks>netcoreapp5.0;netstandard2.0;netstandard1.0;net45;net472;</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
     <ILResourceReference Include="$(Refpath)\$(TargetFileName)" />
+    <TargetFrameworksList Include="$(TargetFrameworks)"/>
+    <TargetFrameworksList Remove="$(BuildTargetFramework)" />
   </ItemGroup>
+
+  <Target Name="AllConfigurationBuild" BeforeTargets="Build" Condition="'$(BuildAllConfigurations)' == 'true'">
+    <MSBuild Projects="$(ProjectPath)"
+             Targets="Build"
+             ContinueOnError="true"
+             Properties="BuildAllConfigurations=false;TargetFramework=%(TargetFrameworksList.Identity)"
+             SkipNonexistentTargets="true">
+    </MSBuild>
+  </Target>
 </Project>

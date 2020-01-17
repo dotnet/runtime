@@ -335,7 +335,7 @@
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildConfiguration)'))</TestHostRootPath>
 
     <!-- interop is not available on NETStandard1.0 -->
-    <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFramework)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
+    <IncludeDllSafeSearchPathAttribute Condition="'$(OriginalTargetFramework)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
   </PropertyGroup>
@@ -346,9 +346,9 @@
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
 
   <PropertyGroup Condition="'$(IsReferenceAssembly)' != 'true'">
-    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(ConfigurationGroup)\</OutputPath>
+    <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)\</OutputPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(ConfigurationGroup)</IntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)</IntermediateOutputPath>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 

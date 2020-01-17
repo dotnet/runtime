@@ -29,19 +29,19 @@
   </Target>
 
   <Target Name="BuildNative">
-    <ItemGroup>
+    <!-- <ItemGroup>
       <_BuildNativeProjects Include="$(MSBuildThisFileDirectory)Native\build-native.proj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(_BuildNativeProjects)" Properties="$(ProjectProperties)" />
+    <MSBuild Projects="@(_BuildNativeProjects)" Properties="$(ProjectProperties)" /> -->
   </Target>
 
   <Target Name="BuildManaged">
-    <ItemGroup>
+    <!-- <ItemGroup>
       <_BuildMangedProjects Include="$(MSBuildThisFileDirectory)dirs.proj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(_BuildMangedProjects)" Properties="$(ProjectProperties)" />
+    <MSBuild Projects="@(_BuildMangedProjects)" Properties="$(ProjectProperties)" /> -->
   </Target>
 
   <Target Name="BuildTests">

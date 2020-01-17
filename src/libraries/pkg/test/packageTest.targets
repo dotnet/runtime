@@ -15,14 +15,14 @@
   <Import Project="tools\build\Packaging.common.targets" />
   <Import Project="tools\eng\Versions.props" />
   <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets" />
-  <Import Project="frameworkSettings\$(TargetFramework)\*.targets" />
+  <Import Project="frameworkSettings\$(OriginalTargetFramework)\*.targets" />
   <Import Project="packageSettings\$(TestPackageId)\*.targets" />
   <Import Project="packageSettings\$(TestPackageId)\$(_targetFrameworkIdentifier)\*.targets" />
-  <Import Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets" />
+  <Import Project="packageSettings\$(TestPackageId)\$(OriginalTargetFramework)\*.targets" />
 
   <Target Name="LogBeginTest">
     <PropertyGroup>
-      <_message>Testing $(TestPackageID) TFM=$(TargetFramework)</_message>
+      <_message>Testing $(TestPackageID) TFM=$(OriginalTargetFramework)</_message>
       <_message Condition="'$(RuntimeIdentifier)' != ''">$(_message) RID=$(RuntimeIdentifier)</_message>
     </PropertyGroup>
     <Message Importance="High" Text="$(_message)" />

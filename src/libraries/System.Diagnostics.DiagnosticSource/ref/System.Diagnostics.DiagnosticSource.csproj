@@ -5,28 +5,28 @@
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+  <PropertyGroup Condition="'$(OriginalTargetFramework)' == 'net45' or '$(OriginalTargetFramework)' == '$(NetFrameworkCurrent)'">
     <DefineConstants>$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Diagnostics.DiagnosticSource.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'">
     <Compile Include="System.Diagnostics.DiagnosticSourceActivity.cs" />
     <Reference Include="System.Memory" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'net45' or '$(OriginalTargetFramework)' == '$(NetFrameworkCurrent)'">
     <Reference Include="mscorlib" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'net45'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == '$(NetFrameworkCurrent)'">
     <Reference Include="netstandard" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.1' or '$(OriginalTargetFramework)' == 'netstandard1.3'">
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime" />
   </ItemGroup>

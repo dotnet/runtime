@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Net.Quic</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
     <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
   </PropertyGroup>
   <ItemGroup>
@@ -52,7 +52,7 @@
     <Compile Include="Interop\Windows\MsQuicStatusHelper.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
       <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
     </Compile>

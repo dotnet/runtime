@@ -13,6 +13,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent);</TargetFrameworks>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <OriginalTargetFramework>$(BuildTargetFramework)</OriginalTargetFramework>
   </PropertyGroup>
 
   <Target Name="GetBinPlaceItems">

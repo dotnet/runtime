@@ -2,11 +2,11 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
+    <DefineConstants Condition="'$(OriginalTargetFramework)' != 'netstandard1.3'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
     <TargetFrameworks>net46;netstandard1.3;netstandard2.0;;$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.3'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Globalization" />
@@ -48,7 +48,7 @@
     <Compile Include="System\IO\Packaging\ZipPackagePart.cs" />
     <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
-    <Compile Condition="'$(TargetFramework)' != 'netstandard1.3'" Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />
+    <Compile Condition="'$(OriginalTargetFramework)' != 'netstandard1.3'" Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />

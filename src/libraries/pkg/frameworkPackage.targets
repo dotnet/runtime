@@ -11,9 +11,9 @@
     <IncludeLibFiles Condition="'$(IncludeLibFiles)' == '' and '$(PackageTargetRuntime)' != ''">true</IncludeLibFiles>
     <IncludeNativeFiles Condition="'$(IncludeNativeFiles)' == '' and '$(PackageTargetRuntime)' != ''">true</IncludeNativeFiles>
 
-    <RefFileTargetPath Condition="'$(RefFileTargetPath)' == ''">ref/$(TargetFramework)</RefFileTargetPath>
-    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' and '$(PackageTargetRuntime)' == ''">lib/$(TargetFramework)</LibFileTargetPath>
-    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' and '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</LibFileTargetPath>
+    <RefFileTargetPath Condition="'$(RefFileTargetPath)' == ''">ref/$(OriginalTargetFramework)</RefFileTargetPath>
+    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' and '$(PackageTargetRuntime)' == ''">lib/$(OriginalTargetFramework)</LibFileTargetPath>
+    <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' and '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/lib/$(OriginalTargetFramework)</LibFileTargetPath>
 
     <NativeFileTargetPath Condition="'$(NativeFileTargetPath)' == '' and '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/native</NativeFileTargetPath>
     <NativeBinDir Condition="'$(PackageTargetRuntimeSuffix)' == 'aot'">$(NativeBinDir)-aot</NativeBinDir>

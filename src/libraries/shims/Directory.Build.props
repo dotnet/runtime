@@ -13,7 +13,7 @@
 
   <PropertyGroup>
     <IsNETCoreApp>true</IsNETCoreApp>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(TargetFramework)</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(OriginalTargetFramework)</NuGetTargetMoniker>
   </PropertyGroup>
 
   <PropertyGroup>

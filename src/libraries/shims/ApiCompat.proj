@@ -40,7 +40,7 @@
     <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
 
     <Exec Command="$(_ApiCompatCommand) &quot;@(NetFxReference -> '$(NetFxRefPath)%(Identity).dll')&quot; $(BaselineApiCompatArgs) @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
-          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(BaselineApiCompat)' == 'true'"
+          Condition="'$(OriginalTargetFramework)' == '$(NetCoreAppCurrent)' and '$(BaselineApiCompat)' == 'true'"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
@@ -48,7 +48,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NetFrameworkCurrent) to $(TargetFramework)" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NetFrameworkCurrent) to $(OriginalTargetFramework)" />
 
 
     <!--

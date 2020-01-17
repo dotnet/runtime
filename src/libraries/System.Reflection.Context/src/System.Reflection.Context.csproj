@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_ReflectionContext</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OriginalTargetFramework)' == 'netstandard1.1' or '$(OriginalTargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_ReflectionContext</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>netstandard2.0;netstandard1.1;netstandard2.1;</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard2.1'">
     <Compile Include="System\Reflection\Context\CollectionServices.cs" />
     <Compile Include="System\Reflection\Context\CustomReflectionContext.cs" />
     <Compile Include="System\Reflection\Context\CustomReflectionContext.Projector.cs" />
@@ -61,7 +61,7 @@
     <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.PropertySetter.cs" />
     <Compile Include="System\Reflection\Context\Virtual\VirtualReturnParameter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.1'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.1'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Resources.ResourceManager" />

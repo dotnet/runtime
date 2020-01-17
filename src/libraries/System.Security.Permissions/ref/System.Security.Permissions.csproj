@@ -28,7 +28,7 @@
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Data.Common\ref\System.Data.Common.csproj" />
@@ -41,7 +41,7 @@
     <ProjectReference Include="..\..\System.Text.RegularExpressions\ref\System.Text.RegularExpressions.csproj" />
     <ProjectReference Include="..\..\System.Threading\ref\System.Threading.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="netstandard" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />

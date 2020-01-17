@@ -7,6 +7,10 @@
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier> 
+    <TargetFrameworkVersion>5.0</TargetFrameworkVersion>
+  </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We currently only test with C# projects. -->

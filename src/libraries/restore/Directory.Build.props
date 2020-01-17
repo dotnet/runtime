@@ -8,7 +8,7 @@
     <MSBuildProjectExtensionsPath>$(IntermediateOutputPath)</MSBuildProjectExtensionsPath>
     <SkipDeriveTargetFrameworks>true</SkipDeriveTargetFrameworks>
     <!-- let us control the output path -->
-    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(ConfigurationGroup)</OutputPath>
+    <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)</OutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AdditionalBuildTargetFrameworks>netstandard2.0-$(OSGroup)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
