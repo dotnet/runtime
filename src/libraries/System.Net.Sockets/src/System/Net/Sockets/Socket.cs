@@ -92,6 +92,7 @@ namespace System.Net.Sockets
             if (errorCode != SocketError.Success)
             {
                 Debug.Assert(_handle.IsInvalid);
+
                 // Failed to create the socket, throw.
                 throw new SocketException((int)errorCode);
             }
