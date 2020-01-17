@@ -23,18 +23,15 @@ const PCODE CallCountingStub::TargetForThresholdReached = (PCODE)GetEEFuncEntryP
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CallCountingManager::CallCountingInfo
 
-const UINT16 CallCountingManager::CallCountingInfo::CallCountingDisabledState = (UINT8)Stage::Complete;
-
 #ifndef DACCESS_COMPILE
 
 CallCountingManager::CallCountingInfo::CallCountingInfo(NativeCodeVersion codeVersion)
     : m_codeVersion(codeVersion),
     m_callCountingStub(nullptr),
     m_remainingCallCount(0),
-    m_state(CallCountingDisabledState)
+    m_stage(Stage::Disabled)
 {
     WRAPPER_NO_CONTRACT;
-    static_assert_no_msg((CallCountingDisabledState >> (UINT8)Stage::BitCount) == 0);
     _ASSERTE(!codeVersion.IsNull());
     _ASSERTE(!IsCallCountingEnabled());
 }
@@ -57,14 +54,12 @@ CallCountingManager::CallCountingInfo::CallCountingInfo(NativeCodeVersion codeVe
     : m_codeVersion(codeVersion),
     m_callCountingStub(nullptr),
     m_remainingCallCount(callCountThreshold),
-    m_state((callCountThreshold << (UINT8)Stage::BitCount) | (UINT8)Stage::StubIsNotActive)
+    m_stage(Stage::StubIsNotActive)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!codeVersion.IsNull());
     _ASSERTE(callCountThreshold != 0);
     _ASSERTE(IsCallCountingEnabled());
-    _ASSERTE(GetCallCountThreshold() == callCountThreshold);
-    _ASSERTE(GetStage() == Stage::StubIsNotActive);
 }
 
 CallCountingManager::CallCountingInfo::~CallCountingInfo()
@@ -92,7 +87,7 @@ NativeCodeVersion CallCountingManager::CallCountingInfo::GetCodeVersion() const
 bool CallCountingManager::CallCountingInfo::IsCallCountingEnabled() const
 {
     WRAPPER_NO_CONTRACT;
-    return m_state != CallCountingDisabledState;
+    return m_stage != Stage::Disabled;
 }
 
 #ifndef DACCESS_COMPILE
@@ -144,18 +139,10 @@ CallCountingManager::CallCount *CallCountingManager::CallCountingInfo::GetRemain
     return &m_remainingCallCount;
 }
 
-CallCountingManager::CallCount CallCountingManager::CallCountingInfo::GetCallCountThreshold() const
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsCallCountingEnabled());
-
-    return m_state >> (UINT8)Stage::BitCount;
-}
-
 CallCountingManager::CallCountingInfo::Stage CallCountingManager::CallCountingInfo::GetStage() const
 {
     WRAPPER_NO_CONTRACT;
-    return (Stage)(m_state & (UINT8)Stage::BitMask);
+    return m_stage;
 }
 
 FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
@@ -198,7 +185,7 @@ FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
             UNREACHABLE();
     }
 
-    m_state = (m_state & ~(UINT16)Stage::BitMask) | (UINT8)stage;
+    m_stage = stage;
 }
 
 #endif // !DACCESS_COMPILE
@@ -685,7 +672,6 @@ bool CallCountingManager::SetCodeEntryPoint(
 
             CallCount callCountThreshold = (CallCount)g_pConfig->TieredCompilation_CallCountThreshold();
             _ASSERTE(callCountThreshold != 0);
-            _ASSERTE(callCountThreshold <= MaximumCallCountThreshold);
 
             NewHolder<CallCountingInfo> callCountingInfoHolder = new CallCountingInfo(activeCodeVersion, callCountThreshold);
             callCountingManager->m_callCountingInfoByCodeVersionHash.Add(callCountingInfoHolder);

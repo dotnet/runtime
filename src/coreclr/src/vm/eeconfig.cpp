@@ -1211,9 +1211,9 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
         {
             tieredCompilation_CallCountThreshold = 1;
         }
-        else if (tieredCompilation_ConfiguredCallCountThreshold > CallCountingManager::MaximumCallCountThreshold)
+        else if (tieredCompilation_ConfiguredCallCountThreshold > UINT16_MAX)
         {
-            tieredCompilation_CallCountThreshold = CallCountingManager::MaximumCallCountThreshold;
+            tieredCompilation_CallCountThreshold = UINT16_MAX;
         }
         else
         {

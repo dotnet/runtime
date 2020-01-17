@@ -90,29 +90,26 @@ private:
         enum class Stage : UINT8
         {
             // Stub is definitely not going to be called, stub may be deleted
-            StubIsNotActive = 0,
+            StubIsNotActive,
 
             // Stub may be called, don't know if it's actually active (changes to code versions, etc.)
-            StubMayBeActive = 1,
+            StubMayBeActive,
 
             // Stub may be active, call counting complete, not yet promoted
-            PendingCompletion = 2,
+            PendingCompletion,
 
             // Stub is not active and will not become active, call counting complete, promoted, stub may be deleted
-            Complete = 3,
+            Complete,
 
-            BitCount = 2,
-            BitMask = (1 << BitCount) - 1
+            // Call counting is disabled, only used for the default code version to indicate that it is to be optimized
+            Disabled
         };
-
-    private:
-        static const UINT16 CallCountingDisabledState;
 
     private:
         const NativeCodeVersion m_codeVersion;
         const CallCountingStub *m_callCountingStub;
         CallCount m_remainingCallCount;
-        UINT16 m_state;
+        Stage m_stage;
 
     #ifndef DACCESS_COMPILE
     private:
@@ -134,7 +131,6 @@ private:
         void SetCallCountingStub(const CallCountingStub *callCountingStub);
         void ClearCallCountingStub();
         CallCount *GetRemainingCallCountCell();
-        CallCount GetCallCountThreshold() const;
         Stage GetStage() const;
         void SetStage(Stage stage);
     #endif
@@ -267,9 +263,6 @@ private:
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CallCountingManager members
-
-public:
-    static const CallCount MaximumCallCountThreshold = UINT16_MAX >> (UINT8)CallCountingInfo::Stage::BitCount;
 
 private:
     static PTR_CallCountingManagerHash s_callCountingManagers;
