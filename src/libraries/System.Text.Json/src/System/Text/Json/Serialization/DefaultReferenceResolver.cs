@@ -36,6 +36,12 @@ namespace System.Text.Json.Serialization
             }
         }
 
+
+        /// <summary>
+        /// Adds an entry to the bag of references using the specified key and value.
+        /// </summary>
+        /// <param name="key">The key of the respective JSON object or array.</param>
+        /// <param name="value">The value of the respective CLR reference type object that results from parsing the JSON object or array.</param>
         public void AddReferenceOnDeserialize(string key, object value)
         {
             if (!JsonHelpers.TryAdd(_keyObjectMap!, key, value))
@@ -44,6 +50,12 @@ namespace System.Text.Json.Serialization
             }
         }
 
+        /// <summary>
+        /// Gets the key of the specified value if exists; otherwise a new key is assigned.
+        /// </summary>
+        /// <param name="value">The value of the CLR reference type object to get or add a key for.</param>
+        /// <param name="key">The key realated to the object.</param>
+        /// <returns></returns>
         public bool TryGetOrAddReferenceOnSerialize(object value, out string key)
         {
             if (!_objectKeyMap!.TryGetValue(value, out key!))
@@ -57,6 +69,11 @@ namespace System.Text.Json.Serialization
             return true;
         }
 
+        /// <summary>
+        /// Resolves the object CLR reference type object related to the specified key.
+        /// </summary>
+        /// <param name="key">The key related to the returned object.</param>
+        /// <returns></returns>
         public object ResolveReferenceOnDeserialize(string key)
         {
             if (!_keyObjectMap!.TryGetValue(key, out object? value))
