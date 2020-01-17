@@ -136,12 +136,11 @@ namespace Internal.IL.Stubs
 
     public sealed class PInvokeILStubMethodIL : ILStubMethodIL
     {
-        public bool IsMarshallingRequired;
-        public bool HasByRefArguments;
+        public bool IsMarshallingRequired { get; }
 
         public PInvokeILStubMethodIL(ILStubMethodIL methodIL) : base(methodIL)
         {
-            Marshaller.IsMarshallingRequired(methodIL.OwningMethod, out IsMarshallingRequired, out HasByRefArguments);
+            IsMarshallingRequired = Marshaller.IsMarshallingRequired(methodIL.OwningMethod);
         }
     }
 }

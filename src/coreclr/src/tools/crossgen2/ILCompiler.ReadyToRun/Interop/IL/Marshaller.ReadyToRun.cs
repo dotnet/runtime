@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Interop
@@ -86,29 +85,30 @@ namespace Internal.TypeSystem.Interop
             return marshallers;
         }
 
-        public static void IsMarshallingRequired(MethodDesc targetMethod, out bool marshallingRequired, out bool hasByrefArgs)
+        public static bool IsMarshallingRequired(MethodDesc targetMethod)
         {
-            marshallingRequired = hasByrefArgs = false;
-
             Debug.Assert(targetMethod.IsPInvoke);
 
             PInvokeFlags flags = targetMethod.GetPInvokeMethodMetadata().Flags;
 
-            if (flags.SetLastError || !flags.PreserveSig)
-                marshallingRequired = true;
+            if (flags.SetLastError)
+                return true;
+
+            if (!flags.PreserveSig)
+                return true;
 
             var marshallers = GetMarshallersForMethod(targetMethod);
             for (int i = 0; i < marshallers.Length; i++)
             {
-                marshallingRequired = marshallingRequired || marshallers[i].IsMarshallingRequired();
-                hasByrefArgs = hasByrefArgs || marshallers[i].IsManagedByRef || marshallers[i].Out;
+                if (marshallers[i].IsMarshallingRequired())
+                    return true;
             }
+
+            return false;
         }
 
-        public static void IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata, out bool marshallingRequired, out bool hasByrefArgs)
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata)
         {
-            marshallingRequired = hasByrefArgs = false;
-
             for (int i = 0, paramIndex = 0; i < methodSig.Length + 1; i++)
             {
                 ParameterMetadata parameterMetadata = (paramIndex == paramMetadata.Length || i < paramMetadata[paramIndex].Index) ?
@@ -125,9 +125,11 @@ namespace Internal.TypeSystem.Interop
                     MarshallerType.Argument,
                     out MarshallerKind elementMarshallerKind);
 
-                marshallingRequired = marshallingRequired || IsMarshallingRequired(marshallerKind);
-                hasByrefArgs = hasByrefArgs || parameterType.IsByRef;
+                if (IsMarshallingRequired(marshallerKind))
+                    return true;
             }
+
+            return false;
         }
     }
 }
