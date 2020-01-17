@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
@@ -29,7 +27,7 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runtrackField = RegexRunnerField("runtrack");
         private static readonly FieldInfo s_runstackposField = RegexRunnerField("runstackpos");
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
-        private static readonly FieldInfo s_runtrackcountField = RegexRunnerField("runtrackcount");
+        protected static readonly FieldInfo s_runtrackcountField = RegexRunnerField("runtrackcount");
 
         private static readonly MethodInfo s_doubleStackMethod = RegexRunnerMethod("DoubleStack");
         private static readonly MethodInfo s_doubleTrackMethod = RegexRunnerMethod("DoubleTrack");
@@ -77,6 +75,8 @@ namespace System.Text.RegularExpressions
         private const int MaxRecursionDepth = 20;
 
         protected ILGenerator? _ilg;
+        /// <summary>true if the compiled code is saved for later use, potentially on a different machine.</summary>
+        private readonly bool _persistsAssembly;
 
         // tokens representing local variables
         private LocalBuilder? _runtextbegLocal;
@@ -129,6 +129,11 @@ namespace System.Text.RegularExpressions
         private const int Uniquecount = 10;
         private const int LoopTimeoutCheckCount = 2048; // A conservative value to guarantee the correct timeout handling.
 
+        protected RegexCompiler(bool persistsAssembly)
+        {
+            _persistsAssembly = persistsAssembly;
+        }
+
         private static FieldInfo RegexRunnerField(string fieldname) => typeof(RegexRunner).GetField(fieldname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
 
         private static MethodInfo RegexRunnerMethod(string methname) => typeof(RegexRunner).GetMethod(methname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
@@ -137,7 +142,42 @@ namespace System.Text.RegularExpressions
         /// Entry point to dynamically compile a regular expression.  The expression is compiled to
         /// an in-memory assembly.
         /// </summary>
-        internal static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout) => new RegexLWCGCompiler().FactoryInstanceFromCode(code, options, hasTimeout);
+        internal static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout) =>
+            new RegexLWCGCompiler().FactoryInstanceFromCode(code, options, hasTimeout);
+
+#if DEBUG // until it can be fully implemented
+        /// <summary>
+        /// Entry point to dynamically compile a regular expression.  The expression is compiled to
+        /// an assembly saved to a file.
+        /// </summary>
+        internal static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
+        {
+            var c = new RegexAssemblyCompiler(assemblyname, attributes, resourceFile);
+
+            for (int i = 0; i < regexinfos.Length; i++)
+            {
+                if (regexinfos[i] is null)
+                {
+                    throw new ArgumentNullException(nameof(regexinfos), SR.ArgumentNull_ArrayWithNullElements);
+                }
+
+                string pattern = regexinfos[i].Pattern;
+
+                RegexOptions options = regexinfos[i].Options | RegexOptions.Compiled; // ensure compiled is set; it enables more optimization specific to compilation
+
+                string fullname = regexinfos[i].Namespace.Length == 0 ?
+                    regexinfos[i].Name :
+                    regexinfos[i].Namespace + "." + regexinfos[i].Name;
+
+                RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+                RegexCode code = RegexWriter.Write(tree);
+
+                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, code, regexinfos[i].MatchTimeout);
+            }
+
+            c.Save();
+        }
+#endif
 
         /// <summary>
         /// Keeps track of an operation that needs to be referenced in the backtrack-jump
@@ -245,10 +285,10 @@ namespace System.Text.RegularExpressions
         private int Code() => _regexopcode & RegexCode.Mask;
 
         /// <summary>A macro for _ilg.Emit(Opcodes.Ldstr, str)</summary>
-        private void Ldstr(string str) => _ilg!.Emit(OpCodes.Ldstr, str);
+        protected void Ldstr(string str) => _ilg!.Emit(OpCodes.Ldstr, str);
 
         /// <summary>A macro for the various forms of Ldc.</summary>
-        private void Ldc(int i)
+        protected void Ldc(int i)
         {
             Debug.Assert(_ilg != null);
 
@@ -277,13 +317,16 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldc_I8).</summary>
-        private void LdcI8(long i) => _ilg!.Emit(OpCodes.Ldc_I8, i);
+        protected void LdcI8(long i) => _ilg!.Emit(OpCodes.Ldc_I8, i);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Dup).</summary>
         private void Dup() => _ilg!.Emit(OpCodes.Dup);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Ret).</summary>
-        private void Ret() => _ilg!.Emit(OpCodes.Ret);
+        protected void Ret() => _ilg!.Emit(OpCodes.Ret);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Newobj, constructor).</summary>
+        protected void Newobj(ConstructorInfo constructor) => _ilg!.Emit(OpCodes.Newobj, constructor);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Rem_Un).</summary>
         private void RemUn() => _ilg!.Emit(OpCodes.Rem_Un);
@@ -346,10 +389,10 @@ namespace System.Text.RegularExpressions
         private void Stloc(LocalBuilder lt) => _ilg!.Emit(OpCodes.Stloc_S, lt);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Ldarg_0).</summary>
-        private void Ldthis() => _ilg!.Emit(OpCodes.Ldarg_0);
+        protected void Ldthis() => _ilg!.Emit(OpCodes.Ldarg_0);
 
         /// <summary>A macro for Ldthis(); Ldfld();</summary>
-        private void Ldthisfld(FieldInfo ft)
+        protected void Ldthisfld(FieldInfo ft)
         {
             Ldthis();
             Ldfld(ft);
@@ -374,13 +417,13 @@ namespace System.Text.RegularExpressions
         private void Ldfld(FieldInfo ft) => _ilg!.Emit(OpCodes.Ldfld, ft);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Stfld).</summary>
-        private void Stfld(FieldInfo ft) => _ilg!.Emit(OpCodes.Stfld, ft);
+        protected void Stfld(FieldInfo ft) => _ilg!.Emit(OpCodes.Stfld, ft);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Callvirt, mt).</summary>
-        private void Callvirt(MethodInfo mt) => _ilg!.Emit(OpCodes.Callvirt, mt);
+        protected void Callvirt(MethodInfo mt) => _ilg!.Emit(OpCodes.Callvirt, mt);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Call, mt).</summary>
-        private void Call(MethodInfo mt) => _ilg!.Emit(OpCodes.Call, mt);
+        protected void Call(MethodInfo mt) => _ilg!.Emit(OpCodes.Call, mt);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Brfalse) (long form).</summary>
         private void BrfalseFar(Label l) => _ilg!.Emit(OpCodes.Brfalse, l);
@@ -2417,16 +2460,12 @@ namespace System.Text.RegularExpressions
                 // If we're doing a case-insensitive comparison, we need to lower case each character,
                 // so we just go character-by-character.  But if we're not, we try to process multiple
                 // characters at a time; this is helpful not only for throughput but also in reducing
-                // the amount of IL and asm that results from this unrolling.
-                if (!caseInsensitive)
+                // the amount of IL and asm that results from this unrolling. Also, this optimization
+                // is subject to endianness issues if the generated code is used on a machine with a
+                // different endianness; for now, we simply disable the optimization if the generated
+                // code is being saved. TODO https://github.com/dotnet/corefx/issues/39227.
+                if (!caseInsensitive && !_persistsAssembly)
                 {
-                    // TODO https://github.com/dotnet/corefx/issues/39227:
-                    // If/when we implement CompileToAssembly, this code will either need to be special-cased
-                    // to not be used when saving out the assembly, or it'll need to be augmented to emit an
-                    // endianness check into the IL.  The code below is creating int/long constants based on
-                    // reading the comparison string at compile time, and the machine doing the compilation
-                    // could be of a different endianness than the machine running the compiled assembly.
-
                     // On 64-bit, process 4 characters at a time until the string isn't at least 4 characters long.
                     if (IntPtr.Size == 8)
                     {
@@ -4564,9 +4603,6 @@ namespace System.Text.RegularExpressions
             // it lets IL emit handle all the gory details for us.  It also is ok from an
             // endianness perspective because the compilation happens on the same machine
             // that runs the compiled code.
-            // TODO https://github.com/dotnet/corefx/issues/39227: If that were to ever change,
-            // this would need to be revisited, such as by doubling the string length, and using
-            // just the lower byte of the char, e.g. (byte)lookup[x].
             string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
