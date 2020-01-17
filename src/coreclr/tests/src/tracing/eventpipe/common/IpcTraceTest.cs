@@ -9,6 +9,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using System.Runtime.InteropServices;
@@ -173,6 +174,16 @@ namespace Tracing.Tests.Common
 
         private int Validate()
         {
+            // FIXME: This is a bandaid fix for a deadlock in EventPipeEventSource caused by
+            // the lazy caching in the Regex library.  The caching creates a ConcurrentDictionary
+            // and because it is the first one in the process, it creates and EventSource which
+            // results in a deadlock over a lock in EventPipe.  This line should be removed once the
+            // underlying issue is fixed.
+            //
+            // see: https://github.com/dotnet/runtime/pull/1794 for details on the issue
+            //
+            var emptyConcurrentDictionary = new ConcurrentDictionary<string, string>();
+
             var isClean = EnsureCleanEnvironment();
             if (!isClean)
                 return -1;
