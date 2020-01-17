@@ -1383,7 +1383,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
 // Return Value:
 //    True iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
-//    -- a block corresponding to an exit from the try of a try/finally. 
+//    -- a block corresponding to an exit from the try of a try/finally.
 //
 // Notes:
 //    In the flow graph, this becomes a block that calls the finally, and a second, immediately
@@ -1429,7 +1429,7 @@ bool BasicBlock::isBBCallAlwaysPair()
 //
 // Return Value:
 //    True iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
-//    -- a block corresponding to an exit from the try of a try/finally. 
+//    -- a block corresponding to an exit from the try of a try/finally.
 //
 // Notes:
 //    See notes on isBBCallAlwaysPair(), above.
