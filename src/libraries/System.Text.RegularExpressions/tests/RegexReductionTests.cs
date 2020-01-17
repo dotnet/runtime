@@ -33,7 +33,31 @@ namespace System.Text.RegularExpressions.Tests
             return codes;
         }
 
+        private static int GetMinRequiredLength(Regex r)
+        {
+            FieldInfo codeField = typeof(Regex).GetField("_code", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(codeField);
+
+            object code = codeField.GetValue(r);
+            Assert.NotNull(code);
+
+            FieldInfo treeField = code.GetType().GetField("Tree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(treeField);
+
+            object tree = treeField.GetValue(code);
+            Assert.NotNull(tree);
+
+            FieldInfo minRequiredLengthField = tree.GetType().GetField("MinRequiredLength", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(minRequiredLengthField);
+
+            object minRequiredLength = minRequiredLengthField.GetValue(tree);
+            Assert.IsType<int>(minRequiredLength);
+
+            return (int)minRequiredLength;
+        }
+
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in netfx.")]
         // Two greedy one loops
         [InlineData("a*a*", "a*")]
         [InlineData("(a*a*)", "(a*)")]
@@ -255,6 +279,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a*(?:bcd|efg)", "(?>a*)(?:bcd|efg)")]
         [InlineData("\\w*\\b", "(?>\\w*)\\b")]
         [InlineData("\\d*\\b", "(?>\\d*)\\b")]
+        [InlineData("(?:a[ce]*|b*)g", "(?:a(?>[ce]*)|(?>b*))g")]
+        [InlineData("(?:a[ce]*|b*)c", "(?:a[ce]*|(?>b*))c")]
         public void PatternsReduceIdentically(string pattern1, string pattern2)
         {
             AssertExtensions.Equal(GetRegexCodes(new Regex(pattern1)), GetRegexCodes(new Regex(pattern2)));
@@ -263,6 +289,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in netfx.")]
         // Not coalescing loops
         [InlineData("aa", "a{2}")]
         [InlineData("a[^a]", "a{2}")]
@@ -309,6 +336,38 @@ namespace System.Text.RegularExpressions.Tests
             var r1 = new Regex(pattern1);
             var r2 = new Regex(pattern2);
             Assert.NotEqual<int>(GetRegexCodes(r1), GetRegexCodes(r2));
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not computed in netfx")]
+        [InlineData(@"a", 1)]
+        [InlineData(@"[^a]", 1)]
+        [InlineData(@"[abcdefg]", 1)]
+        [InlineData(@"abcd", 4)]
+        [InlineData(@"a*", 0)]
+        [InlineData(@"a*?", 0)]
+        [InlineData(@"a?", 0)]
+        [InlineData(@"a??", 0)]
+        [InlineData(@"a+", 1)]
+        [InlineData(@"a+?", 1)]
+        [InlineData(@"a{2}", 2)]
+        [InlineData(@"a{2}?", 2)]
+        [InlineData(@"a{3,17}", 3)]
+        [InlineData(@"a{3,17}?", 3)]
+        [InlineData(@"(abcd){5}", 20)]
+        [InlineData(@"(abcd|ef){2,6}", 4)]
+        [InlineData(@"abcef|de", 2)]
+        [InlineData(@"abc(def|ghij)k", 7)]
+        [InlineData(@"\d{1,2}-\d{1,2}-\d{2,4}", 6)]
+        [InlineData(@"1(?=9)\d", 2)]
+        [InlineData(@"1(?!\d)\w", 2)]
+        [InlineData(@"a*a*a*a*a*a*a*b*", 0)]
+        [InlineData(@"((a{1,2}){4}){3,7}", 12)]
+        [InlineData(@"\b\w{4}\b", 4)]
+        public void MinRequiredLengthIsCorrect(string pattern, int expectedLength)
+        {
+            var r = new Regex(pattern);
+            Assert.Equal(expectedLength, GetMinRequiredLength(r));
         }
     }
 }

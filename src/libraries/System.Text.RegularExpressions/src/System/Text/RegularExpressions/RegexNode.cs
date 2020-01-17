@@ -104,6 +104,8 @@ namespace System.Text.RegularExpressions
         public const int Testref = 33;                                //          (?(n) | )  - alternation, reference
         public const int Testgroup = 34;                              //          (?(...) | )- alternation, expression
 
+        private const int DefaultMaxRecursionDepth = 20; // arbitrary cut-off to avoid unbounded recursion
+
         private object? Children;
         public int Type { get; private set; }
         public string? Str { get; private set; }
@@ -380,8 +382,8 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Simple optimization. If an atomic subexpression contains only a one/notone/set loop,
-        /// change it to be an atomic one/notone/set loop and remove the atomic node.
+        /// Simple optimization. If an atomic subexpression contains only a {one/notone/set}loop,
+        /// change it to be an atomic {one/notone/set}loop and remove the atomic node.
         /// </summary>
         private RegexNode ReduceAtomic()
         {
@@ -918,8 +920,8 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Finds one/notone/setloop nodes in the concatenation that can be automatically upgraded
-        /// to one/notone/setloopatomic nodes.  Such changes avoid potential useless backtracking.
+        /// Finds {one/notone/set}loop nodes in the concatenation that can be automatically upgraded
+        /// to {one/notone/set}loopatomic nodes.  Such changes avoid potential useless backtracking.
         /// A*B (where sets A and B don't overlap) => (?>A*)B.
         /// </summary>
         private void ReduceConcatenateWithAutoAtomic()
@@ -931,9 +933,9 @@ namespace System.Text.RegularExpressions
             var children = (List<RegexNode>)Children;
             for (int i = 0; i < children.Count - 1; i++)
             {
-                ProcessNode(children[i], children[i + 1]);
+                ProcessNode(children[i], children[i + 1], DefaultMaxRecursionDepth);
 
-                static void ProcessNode(RegexNode node, RegexNode subsequent, int maxDepth = 20)
+                static void ProcessNode(RegexNode node, RegexNode subsequent, int maxDepth)
                 {
                     // Skip down the node past irrelevant nodes.  We don't need to
                     // skip Groups, as they should have already been reduced away.
@@ -975,7 +977,7 @@ namespace System.Text.RegularExpressions
 
                     // Determines whether node can be switched to an atomic loop.  Subsequent is the node
                     // immediately after 'node'.
-                    static bool CanBeMadeAtomic(RegexNode node, RegexNode subsequent, int maxDepth = 20)
+                    static bool CanBeMadeAtomic(RegexNode node, RegexNode subsequent, int maxDepth)
                     {
                         if (maxDepth <= 0)
                         {
@@ -1026,8 +1028,8 @@ namespace System.Text.RegularExpressions
                             return true;
                         }
 
-                        // If this node is a one/notone/setloop, see if it overlaps with its successor in the concatenation.
-                        // If it doesn't, then we can upgrade it to being a one/notone/setloopatomic.
+                        // If this node is a {one/notone/set}loop, see if it overlaps with its successor in the concatenation.
+                        // If it doesn't, then we can upgrade it to being a {one/notone/set}loopatomic.
                         // Doing so avoids unnecessary backtracking.
                         switch (node.Type)
                         {
@@ -1109,7 +1111,7 @@ namespace System.Text.RegularExpressions
         /// <returns>The min computed length.  If the result is 0, there is no minimum we can enforce.</returns>
         public int ComputeMinLength()
         {
-            return ComputeMinLength(this, 20); // arbitrary cut-off to avoid stack overflow with degenerate expressions
+            return ComputeMinLength(this, DefaultMaxRecursionDepth);
 
             static int ComputeMinLength(RegexNode node, int maxDepth)
             {
