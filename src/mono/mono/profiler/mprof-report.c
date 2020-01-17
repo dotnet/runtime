@@ -405,7 +405,7 @@ dump_counters_value (Counter *counter, const char *key_format, const char *key, 
 			}
 			break;
 		case MONO_COUNTER_ULONG:
-			snprintf (format, sizeof (format), "%s : %%" PRIu64 "\n", (guint64)key_format);
+			snprintf (format, sizeof (format), "%s : %%" PRIu64 "\n", key_format);
 			fprintf (outfile, format, key, *(uint64_t*)value);
 			break;
 		case MONO_COUNTER_DOUBLE:
