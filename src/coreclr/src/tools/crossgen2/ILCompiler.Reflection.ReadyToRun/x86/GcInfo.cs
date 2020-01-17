@@ -62,6 +62,11 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             return sb.ToString();
         }
 
+        public string GetRegisterName(int registerNumber)
+        {
+            return ((x86.Registers)registerNumber).ToString();
+        }
+
         private void AddNewTransition(BaseGcTransition transition)
         {
             if (!Transitions.ContainsKey(transition.CodeOffset))

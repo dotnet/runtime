@@ -121,7 +121,8 @@
   <Target Name="GenerateReferenceSource">
     <PropertyGroup>
       <_RefSourceFileOutputPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</_RefSourceFileOutputPath>
-      <_ExcludeAPIList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAPIList>
+      <_ExcludeAPIList>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', 'ReferenceSourceExcludeApi.txt'))</_ExcludeAPIList>
+      <_ExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAttributesList>
       <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
     </PropertyGroup>
 
@@ -130,7 +131,8 @@
       <_GenAPICmd>$(_GenAPICmd) "@(IntermediateAssembly)"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --lib-path "$(RefPath.Trim('\/'))"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --out "$(_RefSourceFileOutputPath)"</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAPIList)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAttributesList)"</_GenAPICmd>
+      <_GenAPICmd Condition="Exists('$(_ExcludeAPIList)')">$(_GenAPICmd) --exclude-api-list "$(_ExcludeAPIList)"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --header-file "$(_LicenseHeaderTxtPath)"</_GenAPICmd>
       <_GenAPICmd Condition="'$(LangVersion)' != ''">$(_GenAPICmd) --lang-version "$(LangVersion)"</_GenAPICmd>
     </PropertyGroup>

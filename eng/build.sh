@@ -17,8 +17,8 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --subset                   Build a subset, print availabe subsets with -subset help"
-  echo "  --subsetCategory           Build a subsetCategory, print availabe subsetCategories with -subset help"
+  echo "  --subset                   Build a subset, print available subsets with -subset help"
+  echo "  --subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
   echo "  --os                       Build operating system: Windows_NT or Unix"
   echo "  --arch                     Build platform: x86, x64, arm or arm64"
   echo "  --configuration <value>    Build configuration: Debug or Release (short: -c)"
@@ -127,7 +127,7 @@ while [[ $# > 0 ]]; do
       ;;
       *)
       ea=$1
-      
+
       if [[ $checkedPossibleDirectoryToBuild == false ]] && [[ $subsetCategory == "libraries" ]]; then
         checkedPossibleDirectoryToBuild=true
 

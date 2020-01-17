@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal partial class AsnReader
@@ -489,7 +490,7 @@ namespace System.Security.Cryptography.Asn1
         private int ProcessConstructedBitString(
             ReadOnlyMemory<byte> source,
             Span<byte> destination,
-            BitStringCopyAction copyAction,
+            BitStringCopyAction? copyAction,
             bool isIndefinite,
             out int lastUnusedBitCount,
             out int bytesRead)
@@ -498,8 +499,8 @@ namespace System.Security.Cryptography.Asn1
             bytesRead = 0;
             int lastSegmentLength = MaxCERSegmentSize;
 
-            AsnReader tmpReader = new AsnReader(source, RuleSet);
-            Stack<(AsnReader, bool, int)> readerStack = null;
+            AsnReader? tmpReader = new AsnReader(source, RuleSet);
+            Stack<(AsnReader, bool, int)>? readerStack = null;
             int totalLength = 0;
             Asn1Tag tag = Asn1Tag.ConstructedBitString;
             Span<byte> curDest = destination;

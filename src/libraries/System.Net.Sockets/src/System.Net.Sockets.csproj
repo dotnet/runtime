@@ -47,8 +47,8 @@
     <Compile Include="System\Net\Sockets\OverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\DebugThreadTracking.cs">
@@ -269,8 +269,8 @@
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs">
       <Link>Common\System\Net\Sockets\SocketErrorPal.Unix</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>

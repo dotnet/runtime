@@ -159,11 +159,11 @@
     <Compile Include="$(CommonPath)System\Text\EncodingHelper.Windows.cs">
       <Link>Common\System\IO\EncodingHelper.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
-      <Link>System\IO\Win32Marshal.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->
@@ -181,7 +181,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
       <Link>Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Text\EncodingHelper.Unix.cs">

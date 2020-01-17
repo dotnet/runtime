@@ -10,8 +10,8 @@ namespace System.Net.Quic.Implementations
     {
         internal QuicImplementationProvider() { }
 
-        internal abstract QuicListenerProvider CreateListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions);
+        internal abstract QuicListenerProvider CreateListener(QuicListenerOptions options);
 
-        internal abstract QuicConnectionProvider CreateConnection(IPEndPoint remoteEndPoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint);
+        internal abstract QuicConnectionProvider CreateConnection(QuicClientConnectionOptions options);
     }
 }

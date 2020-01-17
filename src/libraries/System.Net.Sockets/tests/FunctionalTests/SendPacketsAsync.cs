@@ -288,7 +288,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [ActiveIssue(27269)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/27269")]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
         [PlatformSpecific(TestPlatforms.Windows)] // valid filename chars on Unix

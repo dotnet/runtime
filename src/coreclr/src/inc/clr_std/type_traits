@@ -187,6 +187,70 @@ namespace std
     };
 
     //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS make_unsigned
+    template<typename Type1>
+    struct make_unsigned
+    {
+    };
+
+    template<>
+    struct make_unsigned<int>
+    {
+        typedef unsigned int type;
+    };
+
+#ifndef PLATFORM_UNIX
+
+    template<>
+    struct make_unsigned<long>
+    {
+        typedef unsigned long type;
+    };
+
+#endif // !PLATFORM_UNIX
+
+    template<>
+    struct make_unsigned<__int64>
+    {
+        typedef unsigned __int64 type;
+    };
+
+    template<>
+    struct make_unsigned<size_t>
+    {
+        typedef size_t type;
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS make_signed
+    template<typename Type1>
+    struct make_signed
+    {
+    };
+
+    template<>
+    struct make_signed<unsigned int>
+    {
+        typedef signed int type;
+    };
+
+#ifndef PLATFORM_UNIX
+
+    template<>
+    struct make_signed<unsigned long>
+    {
+        typedef signed long type;
+    };
+
+#endif // !PLATFORM_UNIX
+
+    template<>
+    struct make_signed<unsigned __int64>
+    {
+        typedef signed __int64 type;
+    };
+
+    //-----------------------------------------------------------------------------------------
     // TEMPLATE CLASS is_lvalue_reference
     template<class _Ty>
     struct is_lvalue_reference

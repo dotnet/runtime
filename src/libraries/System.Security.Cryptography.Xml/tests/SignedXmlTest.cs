@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(17001, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/17001", TestPlatforms.OSX)]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();

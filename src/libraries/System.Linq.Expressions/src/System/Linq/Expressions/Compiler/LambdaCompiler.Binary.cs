@@ -96,7 +96,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 ParameterExpression p1 = Expression.Variable(b.Left.Type.GetNonNullableType(), name: null);
                 ParameterExpression p2 = Expression.Variable(b.Right.Type.GetNonNullableType(), name: null);
-                MethodCallExpression mc = Expression.Call(null, b.Method, p1, p2);
+                MethodCallExpression mc = Expression.Call(null, b.Method!, p1, p2);
                 Type resultType;
                 if (b.IsLiftedToNull)
                 {
@@ -121,7 +121,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                EmitMethodCallExpression(Expression.Call(null, b.Method, b.Left, b.Right), flags);
+                EmitMethodCallExpression(Expression.Call(null, b.Method!, b.Left, b.Right), flags);
             }
         }
 
@@ -481,7 +481,7 @@ namespace System.Linq.Expressions.Compiler
             EmitBinaryOperator(op, leftType.GetNonNullableType(), rightType.GetNonNullableType(), resultType.GetNonNullableType(), liftedToNull: false);
 
             // construct result type
-            ConstructorInfo ci = resultType.GetConstructor(new Type[] { resultType.GetNonNullableType() });
+            ConstructorInfo ci = resultType.GetConstructor(new Type[] { resultType.GetNonNullableType() })!;
             _ilg.Emit(OpCodes.Newobj, ci);
             _ilg.Emit(OpCodes.Stloc, locResult);
             _ilg.Emit(OpCodes.Br_S, labEnd);

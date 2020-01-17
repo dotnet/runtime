@@ -439,7 +439,14 @@ private:
                 fatCall->gtCallArgs = compiler->gtPrependNewCallArg(hiddenArgument, fatCall->gtCallArgs);
             }
 #else
-            AddArgumentToTail(fatCall->gtCallArgs, hiddenArgument);
+            if (fatCall->gtCallArgs == nullptr)
+            {
+                fatCall->gtCallArgs = compiler->gtNewCallArgs(hiddenArgument);
+            }
+            else
+            {
+                AddArgumentToTail(fatCall->gtCallArgs, hiddenArgument);
+            }
 #endif
         }
 

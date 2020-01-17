@@ -19,7 +19,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Mutex.cs" Link="Interop\Windows\Kernel32\Interop.Mutex.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs" Link="Interop\Windows\Kernel32\Interop.Semaphore.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs" Link="System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs" Link="Common\System\IO\Win32Marshal.cs" />
     <Compile Include="System\Security\AccessControl\MutexSecurity.cs" />
     <Compile Include="System\Security\AccessControl\EventWaitHandleSecurity.cs" />
     <Compile Include="System\Security\AccessControl\SemaphoreSecurity.cs" />

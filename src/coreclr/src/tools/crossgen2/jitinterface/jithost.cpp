@@ -9,12 +9,12 @@
 class JitConfigProvider
 {
 public:
-    virtual int getIntConfigValue(
+    virtual int STDMETHODCALLTYPE getIntConfigValue(
         const wchar_t* name, 
         int defaultValue
         ) = 0;
 
-    virtual int getStringConfigValue(
+    virtual int STDMETHODCALLTYPE getStringConfigValue(
         const wchar_t* name,
         wchar_t* retBuffer,
         int retBufferLength

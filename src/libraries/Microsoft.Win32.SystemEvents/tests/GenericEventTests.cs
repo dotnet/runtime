@@ -28,7 +28,7 @@ namespace Microsoft.Win32.SystemEventsTests
         public void SignalsEventsAsynchronouslyOnMessage()
         {
             var signal = new AutoResetEvent(false);
-            EventHandler signaledHandler = (o, e) => signal.Set();
+            EventHandler signaledHandler = (o, e) => { Assert.NotNull(o); signal.Set(); };
 
             Event += signaledHandler;
 
@@ -48,7 +48,7 @@ namespace Microsoft.Win32.SystemEventsTests
         public void SignalsEventsSynchronouslyOnReflectedMessage()
         {
             bool signal = false;
-            EventHandler signaledHandler = (o, e) => signal = true;
+            EventHandler signaledHandler = (o, e) => { Assert.NotNull(o); signal = true; };
 
             Event += signaledHandler;
 

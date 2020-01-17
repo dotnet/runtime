@@ -3203,21 +3203,10 @@ DWORD Thread::DoAppropriateWait(AppropriateWaitFunc func, void *args,
 //--------------------------------------------------------------------
 DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis, BOOL bAlertable)
 {
-    STATIC_CONTRACT_THROWS;
-    // The true contract for GC trigger should be the following.  But this puts a very strong restriction
-    // on contract for functions that call EnablePreemptiveGC.
-    //if (GetThread() && !ThreadStore::HoldingThreadStore(GetThread())) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
-    STATIC_CONTRACT_GC_TRIGGERS;
+    STANDARD_VM_CONTRACT;
 
     DWORD flags = 0;
     DWORD dwReturn=WAIT_ABANDONED;
-
-    Thread* pThread = GetThread();
-    // If pThread is NULL, we'd better shut down.
-    if (pThread == NULL)
-        _ASSERTE (g_fEEShutDown);
-
-    DWORD lastError = 0;
 
     // If we're going to pump, we cannot use WAIT_ALL.  That's because the wait would
     // only be satisfied if a message arrives while the handles are signalled.  If we
@@ -3244,8 +3233,12 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
     if (bAlertable)
         flags |= COWAIT_ALERTABLE;
 
-    HRESULT hr = S_OK;
-    hr = CoWaitForMultipleHandles(flags, millis, numWaiters, phEvent, &dwReturn);
+    // CoWaitForMultipleHandles does not support more than 63 handles. It returns RPC_S_CALLPENDING for more than 63 handles
+    // that is impossible to differentiate from timeout.
+    if (numWaiters > 63)
+        COMPlusThrow(kNotSupportedException, W("NotSupported_MaxWaitHandles_STA"));
+
+    HRESULT hr = CoWaitForMultipleHandles(flags, millis, numWaiters, phEvent, &dwReturn);
 
     if (hr == RPC_S_CALLPENDING)
     {
@@ -3259,13 +3252,9 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
         dwReturn = WAIT_FAILED;
     }
     else
-{
+    {
         dwReturn += WAIT_OBJECT_0;  // success -- bias back
-                }
-
-    lastError = ::GetLastError();
-
-    ::SetLastError(lastError);
+    }
 
     return dwReturn;
 }
@@ -3277,11 +3266,7 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
 DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll,
                                          DWORD timeout, WaitMode mode)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     BOOL alertable = (mode & WaitMode_Alertable) != 0;
 

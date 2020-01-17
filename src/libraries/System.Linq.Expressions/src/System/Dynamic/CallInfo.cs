@@ -83,10 +83,9 @@ namespace System.Dynamic
         /// </summary>
         /// <param name="obj">The instance of <see cref="CallInfo"/> to compare with the current instance.</param>
         /// <returns>true if the specified instance is equal to the current one otherwise, false.</returns>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            var other = obj as CallInfo;
-            return other != null && ArgumentCount == other.ArgumentCount && ArgumentNames.ListEquals(other.ArgumentNames);
+            return obj is CallInfo other && ArgumentCount == other.ArgumentCount && ArgumentNames.ListEquals(other.ArgumentNames);
         }
     }
 }

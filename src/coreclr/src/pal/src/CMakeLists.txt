@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12.2)
-
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
@@ -387,8 +385,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     ${KVM}
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-
-add_subdirectory(examples)
 
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)

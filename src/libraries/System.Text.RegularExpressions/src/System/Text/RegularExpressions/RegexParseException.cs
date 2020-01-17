@@ -9,7 +9,7 @@ namespace System.Text.RegularExpressions
     [Serializable]
     internal sealed class RegexParseException : ArgumentException
     {
-        private readonly RegexParseError _error;
+        private readonly RegexParseError _error; // tests access this via private reflection
 
         /// <summary>
         /// The error that happened during parsing.
@@ -27,28 +27,14 @@ namespace System.Text.RegularExpressions
             Offset = offset;
         }
 
-        public RegexParseException() : base()
-        {
-        }
-
-        public RegexParseException(string message) : base(message)
-        {
-        }
-
-        public RegexParseException(string message, Exception inner) : base(message, inner)
-        {
-        }
-
-        private RegexParseException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
+        private RegexParseException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            // To maintain serialization support with netfx.
-            info.SetType(typeof(ArgumentException));
+            info.SetType(typeof(ArgumentException)); // To maintain serialization support with netfx.
         }
     }
 }

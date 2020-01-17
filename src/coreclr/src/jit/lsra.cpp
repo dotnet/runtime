@@ -4443,6 +4443,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
     // For each physical register that can hold a GC type,
     // if it is occupied by an interval of a GC type, spill that interval.
     regMaskTP candidateRegs = killRefPosition->registerAssignment;
+    INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {
         regMaskTP nextRegBit = genFindLowestBit(candidateRegs);
@@ -4470,11 +4471,12 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
         }
         if (needsKill)
         {
-            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_GC_REF, nullptr, nextReg, nullptr));
+            INDEBUG(killedRegs = true);
             unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
         }
     }
-    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DONE_KILL_GC_REFS, nullptr, REG_NA, nullptr));
+    INDEBUG(dumpLsraAllocationEvent(killedRegs ? LSRA_EVENT_DONE_KILL_GC_REFS : LSRA_EVENT_NO_GC_KILLS, nullptr, REG_NA,
+                                    nullptr));
 }
 
 //------------------------------------------------------------------------
@@ -5433,25 +5435,28 @@ void LinearScan::allocateRegisters()
 
             if (refType == RefTypeParamDef || refType == RefTypeZeroInit)
             {
-                // For a ParamDef with a weighted refCount less than unity, don't enregister it at entry.
-                // TODO-CQ: Consider doing this only for stack parameters, since otherwise we may be needlessly
-                // inserting a store.
-                LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
-                assert(varDsc != nullptr);
-                if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+                if (nextRefPosition == nullptr)
                 {
-                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
-                    didDump  = true;
-                    allocate = false;
-                    setIntervalAsSpilled(currentInterval);
-                }
-                // If it has no actual references, mark it as "lastUse"; since they're not actually part
-                // of any flow they won't have been marked during dataflow.  Otherwise, if we allocate a
-                // register we won't unassign it.
-                else if (nextRefPosition == nullptr)
-                {
+                    // If it has no actual references, mark it as "lastUse"; since they're not actually part
+                    // of any flow they won't have been marked during dataflow.  Otherwise, if we allocate a
+                    // register we won't unassign it.
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_ZERO_REF, currentInterval));
                     currentRefPosition->lastUse = true;
+                }
+                if (refType == RefTypeParamDef)
+                {
+                    LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
+                    assert(varDsc != nullptr);
+                    if (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+                    {
+                        // For a ParamDef with a weighted refCount less than unity, don't enregister it at entry.
+                        // TODO-CQ: Consider doing this only for stack parameters, since otherwise we may be needlessly
+                        // inserting a store.
+                        allocate = false;
+                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
+                        didDump = true;
+                        setIntervalAsSpilled(currentInterval);
+                    }
                 }
             }
 #ifdef FEATURE_SIMD
@@ -6190,6 +6195,16 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
         else
         {
             treeNode->gtFlags &= ~GTF_VAR_DEATH;
+        }
+
+        if ((currentRefPosition->registerAssignment != RBM_NONE) && (interval->physReg == REG_NA) &&
+            currentRefPosition->RegOptional() && currentRefPosition->lastUse)
+        {
+            // This can happen if the incoming location for the block was changed from a register to the stack
+            // during resolution. In this case we're better off making it contained.
+            assert(inVarToRegMaps[curBBNum][varDsc->lvVarIndex] == REG_STK);
+            currentRefPosition->registerAssignment = RBM_NONE;
+            treeNode->SetRegNum(REG_NA);
         }
     }
 
@@ -9716,9 +9731,14 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             dumpRegRecords();
             break;
 
-        // Done with GC Kills
         case LSRA_EVENT_DONE_KILL_GC_REFS:
-            printf(indentFormat, "  DoneKillGC ");
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Done       ");
+            break;
+
+        case LSRA_EVENT_NO_GC_KILLS:
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("None       ");
             break;
 
         // Block boundaries
@@ -9831,7 +9851,9 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             break;
 
         default:
-            unreached();
+            printf("????? %-4s ", getRegName(reg));
+            dumpRegRecords();
+            break;
     }
 }
 

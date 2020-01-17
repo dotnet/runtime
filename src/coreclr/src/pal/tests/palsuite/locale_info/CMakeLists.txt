@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12.2)
-
 # TODO: make the following tests compile if they are needed
 # add_subdirectory(CompareStringA)
 # add_subdirectory(CompareStringW)

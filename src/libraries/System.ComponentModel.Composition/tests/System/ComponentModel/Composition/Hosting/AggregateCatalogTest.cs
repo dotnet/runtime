@@ -30,7 +30,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void Constructor1_ShouldSetPartsPropertyToEmpty()
         {
             var catalog = new AggregateCatalog();
@@ -55,7 +55,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void Constructor3_NullAsCatalogsArgument_ShouldSetPartsPropertyToEmpty()
         {
             var catalog = new AggregateCatalog((IEnumerable<ComposablePartCatalog>)null);
@@ -64,7 +64,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void Constructor3_EmptyIEnumerableAsCatalogsArgument_ShouldSetPartsPropertyToEmpty()
         {
             var catalog = new AggregateCatalog(Enumerable.Empty<ComposablePartCatalog>());
@@ -73,7 +73,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void Constructor3_ArrayWithNullAsCatalogsArgument_ShouldThrowArgument()
         {
             var catalogs = new ComposablePartCatalog[] { null };
@@ -122,7 +122,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void GetExports_NullAsConstraintArgument_ShouldThrowArgumentNull()
         {
             var catalog = CreateAggregateCatalog();
@@ -394,7 +394,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(514749)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/514749")]
         public void MutableMultithreadedEnumerations()
         {
             var catalog = new AggregateCatalog();
@@ -498,7 +498,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void AggregatingCatalogAddAndRemoveChildren()
         {
             int changedCount = 0;
@@ -568,7 +568,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void AggregatingCatalogAddAndRemoveNestedChildren()
         {
             int changedCount = 0;
@@ -623,7 +623,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void AggregatingDisposedAndNotifications()
         {
             int changedCount = 0;
@@ -751,7 +751,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void CatalogEvents_AggregateAddRemove()
         {
             var catalog = new AggregateCatalog();
@@ -759,7 +759,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void CatalogEvents_DeepAggregateAddRemove()
         {
             var deepCatalog = new AggregateCatalog();

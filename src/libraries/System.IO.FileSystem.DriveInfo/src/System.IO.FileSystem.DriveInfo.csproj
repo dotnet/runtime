@@ -59,8 +59,8 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\DisableMediaInsertionPrompt.cs">
       <Link>Common\System\IO\DisableMediaInsertionPrompt.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
-      <Link>System\IO\Win32Marshal.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs">
       <Link>Common\System\IO\DriveInfoInternal.Windows.cs</Link>

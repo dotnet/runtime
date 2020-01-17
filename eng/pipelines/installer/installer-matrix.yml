@@ -1,98 +1,18 @@
 parameters:
-  # Allow entry points to skip certain platforms. Note: only implemented for platforms that are
-  # known to sometimes need skipping. (Adds boilerplate.)
-  skipPlatforms: []
+  platforms: []
+  jobParameters: []
+  buildConfig: Release
 
 jobs:
 
+#
+# Build and Test
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/installer/jobs/windows-build.yml
-    platforms:
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    jobTemplate: /eng/pipelines/installer/jobs/base-job.yml
+    buildConfig: ${{ parameters.buildConfig }}
+    platforms: ${{ parameters.platforms }}
+    passPlatforms: true
     jobParameters:
-      ${{ insert }}: ${{ parameters }}
-      crossBuild: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/installer/jobs/windows-build.yml
-    platforms:
-    - Windows_NT_x86
-    jobParameters:
-      ${{ insert }}: ${{ parameters }}
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/installer/jobs/windows-build.yml
-    platforms:
-    - Windows_NT_x64
-    jobParameters:
-      ${{ insert }}: ${{ parameters }}
-      publicRidAgnosticPackages: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
-    platforms:
-    - Linux_arm
-    - ${{ if not(containsValue(parameters.skipPlatforms, 'Linux_arm64')) }}:
-      - Linux_arm64
-    jobParameters:
-      ${{ insert }}: ${{ parameters }}
-      portableBuild: true
-      crossBuild: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
-    platforms:
-    - ${{ if not(containsValue(parameters.skipPlatforms, 'Linux_musl_x64')) }}:
-      - Linux_musl_x64
-    jobParameters:
-      ${{ insert }}: ${{ parameters }}
-      additionalMSBuildArgs: /p:OutputRid=linux-musl-x64
-      portableBuild: false
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
-    platforms:
-    - ${{ if not(containsValue(parameters.skipPlatforms, 'Linux_musl_arm64')) }}:
-      - Linux_musl_arm64
-    jobParameters:
-      ${{ insert }}: ${{ parameters }}
-      additionalMSBuildArgs: /p:OutputRid=linux-musl-arm64
-      portableBuild: false
-      crossBuild: true
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/installer/jobs/osx-build.yml
-    platforms:
-    - OSX_x64
-    jobParameters:
-      ${{ insert }}: ${{ parameters }}
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/installer/jobs/bash-build.yml
-    platforms:
-    - Linux_x64
-    jobParameters:
-      ${{ insert }}: ${{ parameters }}
-      name: Linux_x64_glibc
-      packageDistroList:
-      - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
-        imageRid: ubuntu.14.04
-        rids: []
-      - image: mcr.microsoft.com/dotnet-buildtools/prereqs:rhel-7-rpmpkg-c982313-20174116044113
-        imageRid: rhel.7
-        rids:
-        - centos.7
-        - fedora.27
-        - opensuse.42
-        - oraclelinux.7
-        - sles.12
-      portableBuild: true
+      ${{ insert }}: ${{ parameters.jobParameters }}
