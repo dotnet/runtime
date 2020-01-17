@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Net.Sockets</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -196,6 +196,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAConnect.cs">
       <Link>Common\Interop\Windows\WinSock\Interop.WSAConnect.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\WinSock\Interop.WSADuplicateSocket.cs">
+      <Link>Common\Interop\Windows\WinSock\Interop.WSADuplicateSocket.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAGetOverlappedResult.cs">
       <Link>Common\Interop\Windows\WinSock\Interop.WSAGetOverlappedResult.cs</Link>

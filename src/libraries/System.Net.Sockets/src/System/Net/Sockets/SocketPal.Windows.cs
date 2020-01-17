@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -47,6 +48,43 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
 
             return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
+        }
+
+        public static unsafe SocketError CreateSocket(
+            SocketInformation socketInformation,
+            out SafeSocketHandle socket,
+            ref AddressFamily addressFamily,
+            ref SocketType socketType,
+            ref ProtocolType protocolType)
+        {
+            if (socketInformation.ProtocolInformation == null || socketInformation.ProtocolInformation.Length < Interop.Winsock.WSAProtocolInfo.Size)
+            {
+                throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
+            }
+
+            fixed (byte* pinnedBuffer = socketInformation.ProtocolInformation)
+            {
+                IntPtr handle = Interop.Winsock.WSASocketW(
+                    (AddressFamily)(-1),
+                    (SocketType)(-1),
+                    (ProtocolType)(-1),
+                    (IntPtr)pinnedBuffer, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED);
+
+                socket = new SafeSocketHandle(handle, ownsHandle: true);
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+
+                if (socket.IsInvalid)
+                {
+                    return GetLastSocketError();
+                }
+
+                Interop.Winsock.WSAProtocolInfo protocolInfo = Marshal.PtrToStructure<Interop.Winsock.WSAProtocolInfo>((IntPtr)pinnedBuffer);
+                addressFamily = protocolInfo.AddressFamily;
+                socketType = protocolInfo.SocketType;
+                protocolType = protocolInfo.ProtocolType;
+
+                return SocketError.Success;
+            }
         }
 
         public static SocketError SetBlocking(SafeSocketHandle handle, bool shouldBlock, out bool willBlock)
@@ -1245,6 +1283,19 @@ namespace System.Net.Sockets
             }
 
             return errorCode;
+        }
+
+        internal static unsafe SocketError DuplicateSocket(SafeSocketHandle handle, int targetProcessId, out SocketInformation socketInformation)
+        {
+            socketInformation = new SocketInformation
+            {
+                ProtocolInformation = new byte[Interop.Winsock.WSAProtocolInfo.Size]
+            };
+
+            fixed (byte* pinnedBuffer = socketInformation.ProtocolInformation)
+            {
+                return Interop.Winsock.WSADuplicateSocket(handle, (uint)targetProcessId, pinnedBuffer);
+            }
         }
     }
 }
