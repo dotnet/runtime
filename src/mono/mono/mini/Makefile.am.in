@@ -446,6 +446,7 @@ interp_sources =	\
 	interp/mintops.h	\
 	interp/mintops.def	\
 	interp/mintops.c	\
+	interp/transform.h	\
 	interp/transform.c
 
 interp_libs = libmono-ee-interp.la
@@ -1103,6 +1104,7 @@ EXTRA_DIST = TestDriver.cs \
 	$(posix_sources)					\
 	test_op_il_seq_point.sh			\
 	test_op_il_seq_point_headerfooter.sh	\
+	interp/whitebox-snippets.il		\
 	Makefile.am.in
 
 if ENABLE_NETCORE
