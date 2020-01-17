@@ -10,35 +10,38 @@ namespace System.Text.Json
     {
         private static void HandleMetadataPropertyValue(ref Utf8JsonReader reader, ref ReadStack state)
         {
+            Debug.Assert(state.Current.JsonClassInfo!.Options.ReferenceHandling.ShouldReadPreservedReferences());
+
             if (reader.TokenType != JsonTokenType.String)
             {
-                ThrowHelper.ThrowJsonException_MetadataValueWasNotString();
+                ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
             }
 
-            MetadataPropertyName metadata = state.Current.MetadataProperty;
+            MetadataPropertyName metadata = state.Current.LastSeenMetadataProperty;
             string key = reader.GetString()!;
+            Debug.Assert(metadata == MetadataPropertyName.Id || metadata == MetadataPropertyName.Ref);
 
             if (metadata == MetadataPropertyName.Id)
             {
-                state.ReferenceResolver.AddReference(key, GetValueToPreserve(ref state));
+                // Special case for dictionary properties since those do not push into the ReadStack.
+                // There is no need to check for enumerables since those will always be wrapped into JsonPreservableArrayReference<T> which turns enumerables into objects.
+                object value = state.Current.IsProcessingProperty(ClassType.Dictionary) ?
+                state.Current.JsonPropertyInfo!.GetValueAsObject(state.Current.ReturnValue)! :
+                state.Current.ReturnValue!;
+
+                state.ReferenceResolver.AddReferenceOnDeserialize(key, value);
             }
             else if (metadata == MetadataPropertyName.Ref)
             {
                 state.Current.ReferenceId = key;
             }
-
-            state.Current.ReadMetadataValue = false;
-        }
-
-        private static object GetValueToPreserve(ref ReadStack state)
-        {
-            return state.Current.IsProcessingProperty(ClassType.Dictionary) ?
-                state.Current.JsonPropertyInfo!.GetValueAsObject(state.Current.ReturnValue)! : state.Current.ReturnValue!;
         }
 
         internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader)
         {
-            if (propertyName[0] == '$')
+            Debug.Assert(state.Current.JsonClassInfo!.Options.ReferenceHandling.ShouldReadPreservedReferences());
+
+            if (propertyName.Length > 0 && propertyName[0] == '$')
             {
                 switch (propertyName.Length)
                 {
@@ -60,7 +63,7 @@ namespace System.Text.Json
                         break;
 
                     case 7:
-                        // Only Preserved Arrays are allowed to read $values as metadata.
+                        // Only enumerables wrapped in JsonPreservableArrayReference<T> are allowed to understand $values as metadata.
                         if (state.Current.IsPreservedArray &&
                             propertyName[1] == 'v' &&
                             propertyName[2] == 'a' &&
@@ -82,7 +85,9 @@ namespace System.Text.Json
 
         private static void HandleReference(ref ReadStack state)
         {
-            object referenceValue = state.ReferenceResolver.ResolveReference(state.Current.ReferenceId);
+            Debug.Assert(state.Current.JsonClassInfo!.Options.ReferenceHandling.ShouldReadPreservedReferences());
+
+            object referenceValue = state.ReferenceResolver.ResolveReferenceOnDeserialize(state.Current.ReferenceId!);
             if (state.Current.IsProcessingProperty(ClassType.Dictionary))
             {
                 ApplyObjectToEnumerable(referenceValue, ref state, setPropertyDirectly: true);
@@ -93,13 +98,15 @@ namespace System.Text.Json
                 state.Current.ReturnValue = referenceValue;
                 HandleEndObject(ref state);
             }
-
-            state.Current.ShouldHandleReference = false;
+            state.Current.ReferenceId = null;
         }
 
-        private static JsonPropertyInfo GetValuesFromJsonPreservedReference(ref ReadStackFrame current)
+        private static JsonPropertyInfo GetValuesPropertyInfoFromJsonPreservableArrayRef(ref ReadStackFrame current)
         {
-            Debug.Assert(current.JsonClassInfo!.PropertyCacheArray![0] == current.JsonClassInfo.PropertyCache!["Values"]);
+            Debug.Assert(current.JsonClassInfo!.Options.ReferenceHandling.ShouldReadPreservedReferences());
+            Debug.Assert(current.JsonClassInfo.Type.GetGenericTypeDefinition() == typeof(JsonPreservableArrayReference<>));
+            Debug.Assert(current.JsonClassInfo.PropertyCacheArray![0] == current.JsonClassInfo.PropertyCache!["Values"]);
+
             return current.JsonClassInfo.PropertyCacheArray[0];
         }
     }

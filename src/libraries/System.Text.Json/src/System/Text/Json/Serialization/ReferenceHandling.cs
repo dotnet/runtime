@@ -5,17 +5,25 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// This class defines the various ways the <see cref="JsonSerializer"/> can deal with references on serialization and deserialization.
+    /// This class defines the ways the <see cref="JsonSerializer"/> can deal with references on serialization and deserialization.
     /// </summary>
     public sealed class ReferenceHandling
     {
         /// <summary>
-        /// Reference handling semantics will not be applied to complex JSON types when serializing or deserializing.
+        /// Reference handling semantics will not be applied to JSON objects and arrays when serializing or deserializing.
         /// </summary>
+        /// <remarks>
+        /// * On Serialize: Throw a `JsonException` when `MaxDepth` is exceeded. This may occur by either a reference loop or by passing a very deep object. This option will not affect the performance of the serializer.
+        /// * On Deserialize: Metadata properties will not be consumed, therefore metadata properties(`$id`, `$values`, and `$ref`) will be treated as regular properties that can map to a real property using `JsonPropertyName` or be added to the `JsonExtensionData` overflow dictionary.
+        /// </remarks>
         public static ReferenceHandling Default { get; } = new ReferenceHandling(PreserveReferencesHandling.None);
         /// <summary>
-        /// Reference metadata will be written and honored when deserializing and serializing complex JSON types.
+        /// Reference metadata will be written and honored when deserializing and serializing JSON objects and arrays.
         /// </summary>
+        /// <remarks>
+        /// * On Serialize: When writing complex CLR types (e.g. POCOs/non-primitive types), the serializer also writes metadata (`$id`, `$values`, and `$ref`) properties within them in order to reference them later by writing a pointer to the previously written JSON object or array on the CLR objects that are identical; this is very useful to prevent serialization cycles and preserve reference equality through serialization.
+        /// * On Deserialize: The metadata properties emitted on serialization will be expected (although they are not mandatory) and the deserializer will try to understand them.
+        /// </remarks>
         public static ReferenceHandling Preserve { get; } = new ReferenceHandling(PreserveReferencesHandling.All);
 
         private PreserveReferencesHandling _preserveHandlingOnSerialize;
@@ -25,10 +33,10 @@ namespace System.Text.Json.Serialization
         /// Creates a new instance of <see cref="ReferenceHandling"/> using the specified <paramref name="handling"/>
         /// </summary>
         /// <param name="handling">The specified behavior for write/read preserved references.</param>
-        internal ReferenceHandling(PreserveReferencesHandling handling) : this(handling, handling, ReferenceLoopHandling.Error) { }
+        private ReferenceHandling(PreserveReferencesHandling handling) : this(handling, handling) { }
 
-        // For future, someone may want to define their own custom Handler with different behaviors of PreserveReferenceHandling on Serialize vs Deserialize and another ReferenceLoopHandling, such as ignore if added in a future.
-        private ReferenceHandling(PreserveReferencesHandling preserveHandlingOnSerialize, PreserveReferencesHandling preserveHandlingOnDeserialize, ReferenceLoopHandling loopHandling)
+        // For future, someone may want to define their own custom Handler with different behaviors of PreserveReferenceHandling on Serialize vs Deserialize.
+        private ReferenceHandling(PreserveReferencesHandling preserveHandlingOnSerialize, PreserveReferencesHandling preserveHandlingOnDeserialize)
         {
             _preserveHandlingOnSerialize = preserveHandlingOnSerialize;
             _preserveHandlingOnDeserialize = preserveHandlingOnDeserialize;
@@ -45,11 +53,6 @@ namespace System.Text.Json.Serialization
         }
     }
 
-    internal enum ReferenceLoopHandling
-    {
-        Error = 0,
-    }
-
 
     /// <summary>
     /// Defines behaviors to preserve references of JSON complex types.
@@ -57,11 +60,11 @@ namespace System.Text.Json.Serialization
     internal enum PreserveReferencesHandling
     {
         /// <summary>
-        /// Preserved objects and arrays will not be written/readen.
+        /// Preserved objects and arrays will not be written/read.
         /// </summary>
         None = 0,
         /// <summary>
-        /// Preserved objects and arrays will be written/readen.
+        /// Preserved objects and arrays will be written/read.
         /// </summary>
         All = 1,
     }

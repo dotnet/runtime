@@ -9,9 +9,6 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        [PreserveDependency("get_Values", "System.Text.Json.JsonPreservedReference`1")]
-        [PreserveDependency("set_Values", "System.Text.Json.JsonPreservedReference`1")]
-        [PreserveDependency(".ctor()", "System.Text.Json.JsonPreservedReference`1")]
         private static void HandleStartObject(JsonSerializerOptions options, ref ReadStack state)
         {
             Debug.Assert(!state.Current.IsProcessingDictionary());
@@ -35,6 +32,8 @@ namespace System.Text.Json
             }
 
             JsonClassInfo classInfo = state.Current.JsonClassInfo!;
+
+            Debug.Assert(state.Current.IsProcessingObject(ClassType.Dictionary) || state.Current.IsProcessingObject(ClassType.Object) || state.Current.IsProcessingObject(ClassType.Enumerable));
 
             if (state.Current.IsProcessingObject(ClassType.Dictionary))
             {
@@ -64,7 +63,7 @@ namespace System.Text.Json
                 HandleStartObjectInEnumerable(ref state, options, classInfo.Type);
 
                 Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
-                Debug.Assert(state.Current.JsonClassInfo!.Type.GetGenericTypeDefinition() == typeof(JsonPreservedReference<>));
+                Debug.Assert(state.Current.JsonClassInfo!.Type.GetGenericTypeDefinition() == typeof(JsonPreservableArrayReference<>));
 
                 state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject!();
                 state.Current.IsNestedPreservedArray = true;
@@ -75,8 +74,10 @@ namespace System.Text.Json
         {
             Debug.Assert(state.Current.JsonClassInfo != null);
 
-            // Only allow dictionaries to be processed here if this is the DataExtensionProperty or if it was a preserved reference.
-            Debug.Assert(!state.Current.IsProcessingDictionary() || state.Current.JsonClassInfo.DataExtensionProperty == state.Current.JsonPropertyInfo || state.Current.ShouldHandleReference);
+            // Only allow dictionaries to be processed here if this is the DataExtensionProperty or if the dictionary is a preserved reference.
+            Debug.Assert(!state.Current.IsProcessingDictionary() ||
+                state.Current.JsonClassInfo.DataExtensionProperty == state.Current.JsonPropertyInfo ||
+                (state.Current.IsProcessingObject(ClassType.Dictionary) && state.Current.ReferenceId != null));
 
             // Check if we are trying to build the sorted cache.
             if (state.Current.PropertyRefCache != null)
@@ -112,9 +113,7 @@ namespace System.Text.Json
 
         private static object GetPreservedArrayValue(ref ReadStack state)
         {
-            // Preserved JSON arrays are wrapped into JsonPreservedReference<T> where T is the original type of the enumerable
-            // and Values is the actual enumerable instance being preserved.
-            JsonPropertyInfo info = GetValuesFromJsonPreservedReference(ref state.Current);
+            JsonPropertyInfo info = GetValuesPropertyInfoFromJsonPreservableArrayRef(ref state.Current);
             object? value = info.GetValueAsObject(state.Current.ReturnValue);
 
             if (value == null)
@@ -122,17 +121,17 @@ namespace System.Text.Json
                 ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(info.DeclaredPropertyType);
             }
 
-            return value!;
+            return value;
         }
 
         private static void HandleStartPreservedArray(ref ReadStack state, JsonSerializerOptions options)
         {
-            // Check we are not parsing into immutable or array.
+            // Check we are not parsing into an immutable list or array.
             if (state.Current.JsonPropertyInfo!.EnumerableConverter != null)
             {
                 ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(state.Current.JsonPropertyInfo.DeclaredPropertyType);
             }
-            Type preservedObjType = state.Current.JsonPropertyInfo.GetJsonPreservedReferenceType();
+            Type preservedObjType = state.Current.JsonPropertyInfo.GetJsonPreservableArrayReferenceType();
             if (state.Current.IsProcessingProperty(ClassType.Enumerable))
             {
                 state.Push();
@@ -140,13 +139,18 @@ namespace System.Text.Json
             }
             else
             {
-                // Re-Initialize the current frame.
+                // For array objects, we don't need to Push a new frame to the stack,
+                // so we just call Initialize again passing the wrapper class
+                // since we are going to handle the array at the moment we step into JsonPreservableArrayReference<T>.Values.
                 state.Current.Initialize(preservedObjType, options);
             }
 
             state.Current.IsPreservedArray = true;
         }
 
+        [PreserveDependency("get_Values", "System.Text.Json.JsonPreservableArrayReference`1")]
+        [PreserveDependency("set_Values", "System.Text.Json.JsonPreservableArrayReference`1")]
+        [PreserveDependency(".ctor()", "System.Text.Json.JsonPreservableArrayReference`1")]
         private static void HandleStartObjectInEnumerable(ref ReadStack state, JsonSerializerOptions options, Type type)
         {
             if (!state.Current.CollectionPropertyInitialized)

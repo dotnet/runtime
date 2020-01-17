@@ -174,6 +174,7 @@ namespace System.Text.Json.Tests
             Assert.Empty(employee.SubordinatesString);
             // reference to preserved array.
             Assert.Empty(employee.Manager.SubordinatesString);
+            Assert.Same(employee.Manager.SubordinatesString, employee.SubordinatesString);
         }
 
         [Fact] // Verify ReadStackFrame.DictionaryPropertyIsPreserved is being reset properly.
@@ -190,6 +191,34 @@ namespace System.Text.Json.Tests
             }";
 
             Employee employee = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            Assert.Same(employee.Contacts, employee.Contacts2);
+
+            json = @"{
+                ""$id"": ""1"",
+                ""Contacts"": {
+                    ""$id"": ""2""
+                },
+                ""Contacts2"": {
+                    ""$id"": ""3""
+                }
+            }";
+
+            employee = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            Assert.Equal(0, employee.Contacts.Count);
+            Assert.Equal(0, employee.Contacts2.Count);
+        }
+
+
+
+        [Fact]
+        public static void ObjectPropertyLengthZero()
+        {
+            string json = @"{
+                """": 1
+            }";
+
+            var root = JsonSerializer.Deserialize<MyClass<int>>(json, _deserializeOptions);
+            Assert.Equal(1, root.ZeroLengthProperty);
         }
         #endregion
 
@@ -293,6 +322,17 @@ namespace System.Text.Json.Tests
 
             var root = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(json, _deserializeOptions);
             Assert.Same(root["Dictionary1"], root["Dictionary2"]);
+        }
+
+        [Fact]
+        public static void DictionaryKeyLengthZero()
+        {
+            string json = @"{
+                """": 1
+            }";
+
+            var root = JsonSerializer.Deserialize<Dictionary<string, int>>(json, _deserializeOptions);
+            Assert.Equal(1, root[""]);
         }
         #endregion
 
@@ -1235,6 +1275,7 @@ namespace System.Text.Json.Tests
 
             Assert.Equal("$", ex.Path);
             Assert.Contains(typeof(List<Employee>).ToString(), ex.Message);
+            Assert.Contains("TrailingProperty", ex.Message);
         }
         #endregion
 

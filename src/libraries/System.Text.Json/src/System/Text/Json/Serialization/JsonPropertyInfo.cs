@@ -44,7 +44,7 @@ namespace System.Text.Json
             return info;
         }
 
-        public static JsonPropertyInfo GetMetadataProperty()
+        private static JsonPropertyInfo GetMetadataProperty()
         {
             JsonPropertyInfo info = new JsonPropertyInfoNotNullable<object, object, object, object>();
             info.ShouldDeserialize = true;
@@ -613,6 +613,6 @@ namespace System.Text.Json
             }
         }
 
-        public abstract Type GetJsonPreservedReferenceType();
+        public abstract Type GetJsonPreservableArrayReferenceType();
     }
 }

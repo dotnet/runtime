@@ -40,13 +40,8 @@ namespace System.Text.Json
         // Preserve Reference
         public bool IsPreservedArray;
         public bool IsNestedPreservedArray;
-        public bool DictionaryHaveKeys;
-        public bool ObjectHaveProperties;
-        // maybe I can remove ShouldHandleReference if I use ReferenceId = null as false.
-        public bool ShouldHandleReference;
-        public bool ReadMetadataValue;
-        public MetadataPropertyName MetadataProperty;
-        public string ReferenceId;
+        public MetadataPropertyName LastSeenMetadataProperty;
+        public string? ReferenceId;
 
         // Support IDictionary constructible types, i.e. types that we
         // support by passing and IDictionary to their constructors:
@@ -183,7 +178,6 @@ namespace System.Text.Json
 
         public void EndObject()
         {
-            ObjectHaveProperties = false;
             PropertyIndex = 0;
             EndProperty();
         }
@@ -197,7 +191,6 @@ namespace System.Text.Json
             TempDictionaryValues = null;
             JsonPropertyName = null;
             KeyName = null;
-            DictionaryHaveKeys = false;
         }
 
         public static object? CreateEnumerableValue(ref ReadStack state)

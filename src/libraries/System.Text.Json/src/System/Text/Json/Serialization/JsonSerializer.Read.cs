@@ -92,9 +92,10 @@ namespace System.Text.Json
                             // A non-dictionary property can also have EndProperty() called when completed, although it is redundant.
                             readStack.Current.EndProperty();
                         }
-                        // Used for ReferenceHandling.Preserve.
-                        else if (readStack.Current.ShouldHandleReference)
+                        else if (readStack.Current.ReferenceId != null)
                         {
+                            Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
+
                             HandleReference(ref readStack);
                         }
                         else if (readStack.Current.IsProcessingDictionary())
@@ -215,14 +216,14 @@ namespace System.Text.Json
 
         private static void CheckValidTokenAfterMetadataValues(ref ReadStack state, JsonTokenType tokenType)
         {
-            if (state.Current.MetadataProperty == MetadataPropertyName.Values)
+            if (state.Current.LastSeenMetadataProperty == MetadataPropertyName.Values)
             {
                 if (tokenType != JsonTokenType.StartArray)
                 {
-                    ThrowHelper.ThrowJsonException_MetadataValuesInvalidToken();
+                    ThrowHelper.ThrowJsonException_MetadataValuesInvalidToken(tokenType);
                 }
 
-                state.Current.MetadataProperty = MetadataPropertyName.NoMetadata;
+                state.Current.LastSeenMetadataProperty = MetadataPropertyName.NoMetadata;
             }
         }
     }

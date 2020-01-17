@@ -308,6 +308,11 @@ namespace System.Text.Json
             {
                 VerifyMutable();
 
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
                 _referenceHandling = value;
             }
         }

@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -113,7 +114,7 @@ namespace System.Text.Json
             ReadStack readStack = default;
             if (options.ReferenceHandling.ShouldReadPreservedReferences())
             {
-                readStack.ReferenceResolver = new DefaultReferenceResolver(false);
+                readStack.ReferenceResolver = new DefaultReferenceResolver(writing: false);
             }
             readStack.Current.Initialize(returnType, options);
 

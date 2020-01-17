@@ -17,9 +17,6 @@ namespace System.Text.Json.Tests
 
         private class Employee
         {
-            public static readonly List<string> SubordinatesDefault = new List<string> { "Bob" }; //how can I make these immutables?
-            public static readonly Dictionary<string, string> ContactsDefault = new Dictionary<string, string>() { { "Bob", "555-5555" } };
-
             public string Name { get; set; }
             public Employee Manager { get; set; }
             public Employee Manager2 { get; set; }
@@ -28,9 +25,9 @@ namespace System.Text.Json.Tests
             public Dictionary<string, Employee> Contacts { get; set; }
             public Dictionary<string, Employee> Contacts2 { get; set; }
 
-            //Properties with default value.
-            public List<string> SubordinatesString { get; set; } = SubordinatesDefault;
-            public Dictionary<string, string> ContactsString { get; set; } = ContactsDefault;
+            //Properties with default value to verify they get overwritten when deserializing into them.
+            public List<string> SubordinatesString { get; set; } = new List<string> { "Bob" };
+            public Dictionary<string, string> ContactsString { get; set; } = new Dictionary<string, string>() { { "Bob", "555-5555" } };
         }
 
         [Fact]
@@ -124,7 +121,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        [ActiveIssue("Not yet created")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1780")]
         public static void DictionaryKeyContainingLeadingDollarSignShouldBeEncoded()
         {
             //$ Key in dictionary holding primitive type.
@@ -151,5 +148,33 @@ namespace System.Text.Json.Tests
             //Also add scenarios where a NamingPolicy (DictionaryKey or Property) appends the leading $.
         }
         #endregion
+
+        private class MyTestClass
+        {
+            public List<int> PreservableList { get; set; }
+            public ImmutableArray<int> NonProservableArray { get; set; }
+        }
+
+        [Fact]
+        public static void WriteWrappingBraceResetsCorrectly()
+        {
+            List<int> list = new List<int> { 10, 20, 30 };
+            ImmutableArray<int> immutableArr = list.ToImmutableArray();
+ 
+            var root = new MyTestClass();
+            root.PreservableList = list;
+            // Do not write any curly braces for ImmutableArray since is a value type.
+            root.NonProservableArray = immutableArr;
+            JsonSerializer.Serialize(root, _serializeOptionsPreserve);
+
+            ImmutableArray<List<int>> immutablArraytOfLists = new List<List<int>> { list }.ToImmutableArray();
+            JsonSerializer.Serialize(immutablArraytOfLists, _serializeOptionsPreserve);
+
+            List<ImmutableArray<int>> listOfImmutableArrays = new List<ImmutableArray<int>> { immutableArr };
+            JsonSerializer.Serialize(listOfImmutableArrays, _serializeOptionsPreserve);
+
+            List<object> mixedListOfLists = new List<object> { list, immutableArr, list, immutableArr };
+            JsonSerializer.Serialize(mixedListOfLists, _serializeOptionsPreserve);
+        }
     }
 }

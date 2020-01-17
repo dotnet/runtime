@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -15,7 +16,8 @@ namespace System.Text.Json
         private List<WriteStackFrame> _previous;
         private int _index;
 
-        // The bag of preservable references. It needs to be kept in the state and never in JsonSerializerOptions.
+        // The bag of preservable references. It needs to be kept in the state and never in JsonSerializerOptions because
+        // the options should not have any per-serialization state since every serialization shares the same immutable state on the options.
         public DefaultReferenceResolver ReferenceResolver;
 
         public void Push()
@@ -107,30 +109,6 @@ namespace System.Text.Json
                     sb.Append(propertyName);
                 }
             }
-        }
-
-        internal MetadataPropertyName GetResolvedReferenceHandling(object value, out string? referenceId)
-        {
-            // Avoid emitting metadata to value types.
-            Type currentType = Current.JsonPropertyInfo?.DeclaredPropertyType ?? Current.JsonClassInfo!.Type;
-            if (currentType.IsValueType)
-            {
-                referenceId = default;
-                return MetadataPropertyName.NoMetadata;
-            }
-
-            if (ReferenceAlreadyExists(value, out referenceId))
-            {
-                return MetadataPropertyName.Ref;
-            }
-
-            return MetadataPropertyName.Id;
-        }
-
-        private bool ReferenceAlreadyExists(object value, out string id)
-        {
-            id = ReferenceResolver.GetOrAddReference(value, out bool alreadyExists);
-            return alreadyExists;
         }
     }
 }

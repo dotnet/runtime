@@ -18,9 +18,10 @@ namespace System.Text.Json
                 return;
             }
 
-            // Used for ReferenceHandling.Preserve.
-            if (state.Current.ReadMetadataValue)
+            if (state.Current.LastSeenMetadataProperty == MetadataPropertyName.Id || state.Current.LastSeenMetadataProperty == MetadataPropertyName.Ref)
             {
+                Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
+
                 HandleMetadataPropertyValue(ref reader, ref state);
                 return;
             }

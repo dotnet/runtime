@@ -281,30 +281,35 @@ namespace System.Text.Json
             }
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataValuesInvalidToken()
+        public static void ThrowJsonException_MetadataValuesInvalidToken(JsonTokenType tokenType)
         {
-            throw new JsonException(SR.MetadataInvalidTokenAfterValues);
+            throw new JsonException(SR.Format(SR.MetadataInvalidTokenAfterValues, tokenType));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataReferenceNotFound(string id)
         {
             throw new JsonException(SR.Format(SR.MetadataReferenceNotFound, id));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataValueWasNotString()
+        public static void ThrowJsonException_MetadataValueWasNotString(JsonTokenType tokenType)
         {
-            throw new JsonException(SR.MetadataValueWasNotString);
+            throw new JsonException(SR.Format(SR.MetadataValueWasNotString, tokenType));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties()
         {
             throw new JsonException(SR.MetadataReferenceCannotContainOtherProperties);
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties_Dictionary(ref ReadStackFrame current)
         {
@@ -312,12 +317,14 @@ namespace System.Text.Json
             ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataIdIsNotFirstProperty()
         {
             throw new JsonException(SR.MetadataIdIsNotFirstProperty);
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataIdIsNotFirstProperty_Dictionary(ref ReadStackFrame current)
         {
@@ -325,12 +332,14 @@ namespace System.Text.Json
             ThrowJsonException_MetadataIdIsNotFirstProperty();
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataMissingIdBeforeValues()
         {
-            throw new JsonException(SR.MetadataMissingIdBeforeValues);
+            throw new JsonException(SR.MetadataPreservedArrayPropertyNotFound);
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataInvalidPropertyWithLeadingSign(ReadOnlySpan<byte> propertyName, ref ReadStack state, in Utf8JsonReader reader)
         {
@@ -347,37 +356,46 @@ namespace System.Text.Json
                 state.Current.JsonPropertyInfo = info;
             }
 
-            throw new JsonException(SR.MetadataInvalidPropertyWithLeadingSign);
+            throw new JsonException(SR.MetadataInvalidPropertyWithLeadingDollarSign);
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataDuplicateIdFound(string id)
         {
             throw new JsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataInvalidReferenceToValueType(Type propertyType)
         {
             throw new JsonException(SR.Format(SR.MetadataInvalidReferenceToValueType, propertyType));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(Type propertyType)
+        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(string propertyName, Type propertyType)
         {
-            throw new JsonException(SR.Format(SR.MetadataPreservedArrayFailed,
-                SR.MetadataPreservedArrayInvalidProperty,
+            var ex = new JsonException(SR.Format(SR.MetadataPreservedArrayFailed,
+                SR.Format(SR.MetadataPreservedArrayInvalidProperty, propertyName),
                 SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
+
+            ex.AppendPathInformation = true;
+
+            throw ex;
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataPreservedArrayValuesNotFound(Type propertyType)
         {
             throw new JsonException(SR.Format(SR.MetadataPreservedArrayFailed,
-                SR.MetadataPreservedArrayValuesNotFound,
+                SR.MetadataPreservedArrayPropertyNotFound,
                 SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
         }
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(Type propertyType)
         {

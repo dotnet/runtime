@@ -35,6 +35,11 @@ namespace System.Text.Json
         public ExtensionDataWriteStatus ExtensionDataStatus;
         public JsonPropertyInfo? JsonPropertyInfo;
 
+        // Pre-encoded metadata properties.
+        private static readonly JsonEncodedText _metadataId = JsonEncodedText.Encode("$id", encoder: null);
+        private static readonly JsonEncodedText _metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
+        private static readonly JsonEncodedText _metadataValues = JsonEncodedText.Encode("$values", encoder: null);
+
         public void Initialize(Type type, JsonSerializerOptions options)
         {
             JsonClassInfo = options.GetOrAddClass(type);
@@ -95,49 +100,30 @@ namespace System.Text.Json
         {
             if (JsonPropertyInfo?.EscapedName.HasValue == true)
             {
-                WritePreservedObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName!.Value, writer, referenceId);
+                writer.WriteStartObject(JsonPropertyInfo.EscapedName!.Value);
             }
             else if (KeyName != null)
             {
                 JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName, options.Encoder);
-                WritePreservedObjectOrArrayStart(classType, propertyName, writer, referenceId);
+                writer.WriteStartObject(propertyName);
             }
             else
             {
-                if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
-                {
-                    writer.WriteStartObject();
-                    writer.WriteString("$id", referenceId);
-                    StartObjectWritten = true;
-                }
-                else
-                {
-                    // Wrap array into an object with $id and $values metadata properties.
-                    Debug.Assert(classType == ClassType.Enumerable);
-                    writer.WriteStartObject();
-                    writer.WriteString("$id", referenceId);
-                    writer.WritePropertyName("$values");
-                    writer.WriteStartArray();
-                    WriteWrappingBraceOnEndPreservedArray = true;
-                }
+                writer.WriteStartObject();
             }
-        }
 
-        private void WritePreservedObjectOrArrayStart(ClassType classType, JsonEncodedText propertyName, Utf8JsonWriter writer, string referenceId)
-        {
+
+            writer.WriteString(_metadataId, referenceId);
+
             if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
             {
-                writer.WriteStartObject(propertyName);
-                writer.WriteString("$id", referenceId);
                 StartObjectWritten = true;
             }
             else
             {
+                // Wrap array into an object with $id and $values metadata properties.
                 Debug.Assert(classType == ClassType.Enumerable);
-                writer.WriteStartObject(propertyName);
-                writer.WriteString("$id", referenceId);
-                writer.WritePropertyName("$values");
-                writer.WriteStartArray();
+                writer.WriteStartArray(_metadataValues);
                 WriteWrappingBraceOnEndPreservedArray = true;
             }
         }
@@ -146,25 +132,19 @@ namespace System.Text.Json
         {
             if (JsonPropertyInfo?.EscapedName.HasValue == true)
             {
-                WriteReferenceObject(JsonPropertyInfo.EscapedName!.Value, writer, referenceId);
+                writer.WriteStartObject(JsonPropertyInfo.EscapedName!.Value);
             }
             else if (KeyName != null)
             {
                 JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName, options.Encoder);
-                WriteReferenceObject(propertyName, writer, referenceId);
+                writer.WriteStartObject(propertyName);
             }
             else
             {
                 writer.WriteStartObject();
-                writer.WriteString("$ref", referenceId);
-                writer.WriteEndObject();
             }
-        }
 
-        private void WriteReferenceObject(JsonEncodedText propertyName, Utf8JsonWriter writer, string referenceId)
-        {
-            writer.WriteStartObject(propertyName);
-            writer.WriteString("$ref", referenceId);
+            writer.WriteString(_metadataRef, referenceId);
             writer.WriteEndObject();
         }
 
@@ -188,6 +168,7 @@ namespace System.Text.Json
             JsonPropertyInfo = null;
             KeyName = null;
             MoveToNextProperty = false;
+            WriteWrappingBraceOnEndPreservedArray = false;
         }
 
         public void EndDictionary()

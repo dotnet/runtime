@@ -4,13 +4,13 @@
 
 using System.Collections.Generic;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// Passed to the <see cref="DefaultReferenceResolver._objectKeyMap"/> meant for serialization.
     /// It forces the dictionary to do a ReferenceEquals comparison when comparing the TKey object.
     /// </summary>
-    internal class ReferenceEqualsEqualityComparer<T> : IEqualityComparer<T>
+    internal sealed class ReferenceEqualsEqualityComparer<T> : IEqualityComparer<T>
     {
         public static ReferenceEqualsEqualityComparer<T> Comparer = new ReferenceEqualsEqualityComparer<T>();
 
@@ -21,7 +21,7 @@ namespace System.Text.Json
 
         int IEqualityComparer<T>.GetHashCode(T obj)
         {
-            return GetHashCode();
+            return obj!.GetHashCode();
         }
     }
 }

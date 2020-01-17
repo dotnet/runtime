@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -19,6 +21,12 @@ namespace System.Text.Json.Tests
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(a));
             //TODO: Change default throw error msg in order to state that you can deal with loops with any of the other RefHandling options.
+        }
+
+        [Fact]
+        public static void ThrowWhenPassingNullToReferenceHandling()
+        {
+            Assert.Throws<ArgumentNullException>(() => new JsonSerializerOptions { ReferenceHandling = null });
         }
 
         #region Root Object
@@ -132,6 +140,47 @@ namespace System.Text.Json.Tests
             Assert.Equal(kvp.Key, kvp2.Key);
             Assert.Equal(kvp.Value, kvp2.Value);
         }
+
+        private class MyClass<TValue>
+        {
+            [JsonPropertyName("")]
+            public TValue ZeroLengthProperty { get; set; }
+        }
+
+        [Fact]
+        public static void PropertyZeroLengthKey()
+        {
+            // Default
+
+            MyClass<int> rootValue = RoundTripPropertyZeroLengthKey(new MyClass<int>(), 10);
+            Assert.Equal(10, rootValue.ZeroLengthProperty);
+
+            MyClass<Employee> rootObject = RoundTripPropertyZeroLengthKey(new MyClass<Employee>(), new Employee { Name = "Test" });
+            Assert.Equal("Test", rootObject.ZeroLengthProperty.Name);
+
+            MyClass<List<int>> rootArray = RoundTripPropertyZeroLengthKey(new MyClass<List<int>>(), new List<int>());
+            Assert.Equal(0, rootArray.ZeroLengthProperty.Count);
+
+            // Preserve
+
+            MyClass<int> rootValue2 = RoundTripPropertyZeroLengthKey(new MyClass<int>(), 10, _deserializeOptions);
+            Assert.Equal(10, rootValue2.ZeroLengthProperty);
+
+            MyClass<Employee> rootObject2 = RoundTripPropertyZeroLengthKey(new MyClass<Employee>(), new Employee { Name = "Test" }, _deserializeOptions);
+            Assert.Equal("Test", rootObject2.ZeroLengthProperty.Name);
+
+            MyClass<List<int>> rootArray2 = RoundTripPropertyZeroLengthKey(new MyClass<List<int>>(), new List<int>(), _deserializeOptions);
+            Assert.Equal(0, rootArray2.ZeroLengthProperty.Count);
+        }
+
+        private static MyClass<TValue> RoundTripPropertyZeroLengthKey<TValue>(MyClass<TValue> obj, TValue value, JsonSerializerOptions opts = null)
+        {
+            obj.ZeroLengthProperty = value;
+            string json = JsonSerializer.Serialize(obj, opts);
+            Assert.Contains(string.Empty, json);
+
+            return JsonSerializer.Deserialize<MyClass<TValue>>(json, opts);
+        }
         #endregion Root Object
 
         #region Root Dictionary
@@ -233,6 +282,41 @@ namespace System.Text.Json.Tests
 
             Dictionary<string, Employee> rootCopy = JsonSerializer.Deserialize<Dictionary<string, Employee>>(actual, _serializeOptionsPreserve);
             Assert.Same(rootCopy["Employee1"], rootCopy["Employee2"]);
+        }
+
+        [Fact]
+        public static void DictionaryZeroLengthKey()
+        {
+            // Default
+
+            Dictionary<string, int> rootValue = RoundTripDictionaryZeroLengthKey(new Dictionary<string, int>(), 10);
+            Assert.Equal(10, rootValue[string.Empty]);
+
+            Dictionary<string, Employee> rootObject = RoundTripDictionaryZeroLengthKey(new Dictionary<string, Employee>(), new Employee { Name = "Test" });
+            Assert.Equal("Test", rootObject[string.Empty].Name);
+
+            Dictionary<string, List<int>> rootArray = RoundTripDictionaryZeroLengthKey(new Dictionary<string, List<int>>(), new List<int>());
+            Assert.Equal(0, rootArray[string.Empty].Count);
+
+            // Preserve
+
+            Dictionary<string, int> rootValue2 = RoundTripDictionaryZeroLengthKey(new Dictionary<string, int>(), 10, _deserializeOptions);
+            Assert.Equal(10, rootValue2[string.Empty]);
+
+            Dictionary<string, Employee> rootObject2 = RoundTripDictionaryZeroLengthKey(new Dictionary<string, Employee>(), new Employee { Name = "Test" }, _deserializeOptions);
+            Assert.Equal("Test", rootObject2[string.Empty].Name);
+
+            Dictionary<string, List<int>> rootArray2 = RoundTripDictionaryZeroLengthKey(new Dictionary<string, List<int>>(), new List<int>(), _deserializeOptions);
+            Assert.Equal(0, rootArray2[string.Empty].Count);
+        }
+
+        private static Dictionary<string, TValue> RoundTripDictionaryZeroLengthKey<TValue>(Dictionary<string, TValue> dictionary, TValue value, JsonSerializerOptions opts = null)
+        {
+            dictionary[string.Empty] = value;
+            string json = JsonSerializer.Serialize(dictionary, opts);
+            Assert.Contains(string.Empty, json);
+
+            return JsonSerializer.Deserialize<Dictionary<string, TValue>>(json, opts);
         }
         #endregion
 

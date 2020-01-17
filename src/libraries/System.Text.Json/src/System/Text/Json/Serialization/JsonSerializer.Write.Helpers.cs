@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -130,7 +131,7 @@ namespace System.Text.Json
                 WriteStack state = default;
                 if (options.ReferenceHandling.ShouldWritePreservedReferences())
                 {
-                    state.ReferenceResolver = new DefaultReferenceResolver(true);
+                    state.ReferenceResolver = new DefaultReferenceResolver(writing: true);
                 }
                 Debug.Assert(type != null);
                 state.Current.Initialize(type, options);
@@ -144,26 +145,25 @@ namespace System.Text.Json
 
         private static bool WriteReference(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, ClassType classType, object currentValue)
         {
-            MetadataPropertyName metadataToWrite = state.GetResolvedReferenceHandling(currentValue, out string? referenceId);
-
-            if (metadataToWrite == MetadataPropertyName.Ref)
-            {
-                // Object written before, write { "$ref": "#" } and finish.
-                state.Current.WriteReferenceObject(writer, options, referenceId!);
-                return true;
-            }
-            else if (metadataToWrite == MetadataPropertyName.Id)
-            {
-                // New object reference, write start and append $id.
-                // OR New array reference, write as object and append $id and $values; at the end writes EndObject token using WriteWrappingBraceOnEndCollection.
-                state.Current.WritePreservedObjectOrArrayStart(classType, writer, options, referenceId!);
-            }
-            else
+            // Avoid emitting metadata to value types.
+            Type currentType = state.Current.JsonPropertyInfo?.DeclaredPropertyType ?? state.Current.JsonClassInfo!.Type;
+            if (currentType.IsValueType)
             {
                 // Value type, fallback on regular Write method.
                 state.Current.WriteObjectOrArrayStart(classType, writer, options);
+                return false;
             }
 
+            if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(currentValue, out string referenceId))
+            {
+                // Object written before, write { "$ref": "#" } and jump to the next property/element.
+                state.Current.WriteReferenceObject(writer, options, referenceId);
+                return true;
+            }
+
+            // New object reference, write start and append $id.
+            // OR New array reference, write as object and append $id and $values; at the end writes EndObject token using WriteWrappingBraceOnEndCollection.
+            state.Current.WritePreservedObjectOrArrayStart(classType, writer, options, referenceId);
             return false;
         }
     }
