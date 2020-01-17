@@ -682,8 +682,8 @@ namespace System.Security.Principal
         /// Runs the specified asynchronous action as the impersonated Windows identity
         /// </summary>
         /// <param name="safeAccessTokenHandle">The SafeAccessTokenHandle of the impersonated Windows identity.</param>
-        /// <param name="func">The <see cref="System.Func{System.Threading.Tasks.Task}"/> to run.</param>
-        /// <returns>A <see cref="Task"/> that represents the asynchronous operation of the provided <see cref="System.Func{System.Threading.Tasks.Task}"/>.</returns>
+        /// <param name="func">The <see cref="System.Func{Task}"/> to run.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous operation of the provided <see cref="System.Func{Task}"/>.</returns>
         public static Task RunImpersonatedAsync(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task> func)
             => RunImpersonated(safeAccessTokenHandle, func);
 
