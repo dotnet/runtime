@@ -35,18 +35,18 @@ namespace System.Net.Security
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
-            ReadOnlySpan<byte> inputBuffer
+            ReadOnlySpan<byte> inputBuffer,
             ref byte[] outputBuffer, out int outputSize,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, nputBuffer ref outputBuffer, out outputSize, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, out outputSize, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
             string targetName,
-            byte[] inputBuffer, int offset, int count,
+            ReadOnlySpan<byte> inputBuffer,
             ref byte[] outputBuffer, out int outputSize,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
@@ -275,7 +275,7 @@ namespace System.Net.Security
                 }
 
                 outputBuffer = sslContext.ReadPendingWrites();
-                size = outputBuffer == null ? 0 : outputBuffer.Length;
+                outputSize = outputBuffer == null ? 0 : outputBuffer.Length;
                 return status;
             }
             catch (Exception exc)
