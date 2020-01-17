@@ -261,6 +261,20 @@ namespace JIT.HardwareIntrinsics.Arm
         foreach (var type in new[] { (name: "sbyte",  unsigned: "byte"),
                                      (name: "short",  unsigned: "ushort"),
                                      (name: "int",    unsigned: "uint"),
+                                     (name: "long",   unsigned: "ulong") })
+        {
+#>
+        public static <#= type.unsigned #> Abs(<#= type.name #> value) => value < 0 ? (<#= type.unsigned #>)-value : (<#= type.unsigned #>)value;
+<#
+        }
+#>
+        public static float Abs(float value) => Math.Abs(value);
+        public static double Abs(double value) => Math.Abs(value);
+
+<#
+        foreach (var type in new[] { (name: "sbyte",  unsigned: "byte"),
+                                     (name: "short",  unsigned: "ushort"),
+                                     (name: "int",    unsigned: "uint"),
                                      (name: "byte",   unsigned: "byte"),
                                      (name: "ushort", unsigned: "ushort"),
                                      (name: "uint",   unsigned: "uint") })
