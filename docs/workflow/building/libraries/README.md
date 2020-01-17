@@ -5,7 +5,7 @@
 Here is one example of a daily workflow for a developer working mainly on the libraries, in this case using Windows:
 
 ```
-:: From root in the morning:
+:: From root:
 git clean -xdf
 git pull upstream master & git push origin master
 cd src\coreclr
@@ -29,14 +29,14 @@ cd tests
 pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 ```
 
-The instructions for Linux are essentially the same:
+The instructions for Linux and macOS are essentially the same:
 
 ```
-# From root in the morning:
+# From root:
 git clean -xdf
 git pull upstream master & git push origin master
 cd src/coreclr
-build -release -skiptests
+./build.sh -release -skiptests
 cd ../../
 ./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release
 
@@ -57,11 +57,11 @@ The steps above may be all you need to know to make a change. Want more details 
 
 ## Building everything
 
-This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built CoreCLR (aka, the "runtime") to give the libraries something to run on. You should normally build CoreCLR in release configuration and libraries in debug configuration. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
+This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. You should normally build CoreCLR runtime in release configuration and libraries in debug configuration. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 
-These example commands will build a release CoreCLR (and CoreLib) and debug libraries:
+These example commands will build a release version of CoreCLR (and CoreLib) and debug version of Libraries:
 
-For Linux:
+For Linux and macOS:
 ```
 src/coreclr/build.sh -release -skiptests
 ./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release

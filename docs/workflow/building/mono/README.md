@@ -1,6 +1,6 @@
 # Building
 
-To build just mono, use the `--subsetCategory` flag to the `build.sh` (or `build.cmd`) at the repo root:
+To build just Mono runtime, use the `--subsetCategory` flag to the `build.sh` (or `build.cmd`) at the repo root:
 
 ```
 ./build.sh --subsetCategory mono
@@ -10,7 +10,7 @@ or on Windows,
 build.cmd --subsetCategory mono
 ```
 
-By default, build generates a 'debug' build type, that includes asserts and is easier for some people to debug. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version which does not have these checks by adding the flag `-configuration Release` (or `-c Release`) and `/p:__BuildType=Release`, for example
+By default, build generates a 'debug' build output, that includes asserts, less code optimizations and is easier for debugging. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version which does not have these checks by adding the flag `-configuration Release` (or `-c Release`) and `/p:__BuildType=Release`, for example
 ```
 ./build.sh --subsetCategory mono -configuration Release /p:__BuildType=Release
 ```
