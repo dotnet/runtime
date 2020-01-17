@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Asn1
         public ReadOnlySpan<byte> PeekContentBytes()
         {
             (int offset, int length) = GetNextContentRange();
-            return _data.Slice(offset, length);
+            return Slice(_data, offset, length);
         }
 
         internal (int Offset, int Length) GetNextContentRange()
@@ -637,7 +637,7 @@ namespace System.Security.Cryptography.Asn1
         {
             AsnValueReader reader = OpenValueReader();
             (int offset, int length) = reader.GetNextContentRange();
-            return _data.Slice(offset, length);
+            return Slice(_data, offset, length);
         }
 
         /// <summary>
