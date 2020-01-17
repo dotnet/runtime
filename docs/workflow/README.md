@@ -73,3 +73,8 @@ After that, here's information about how to run tests:
 
 - [Testing coreclr](testing/coreclr/testing.md)
 - [Testing libraries](testing/libraries/testing.md)
+
+And how to measure performance:
+
+- [Benchmarking workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/benchmarking-workflow-dotnet-runtime.md)
+- [Profiling workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/profiling-workflow-dotnet-runtime.md)
