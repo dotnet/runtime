@@ -495,7 +495,7 @@ HANDLES(THREAD_15, "GetCurrentOSThreadId", ves_icall_System_Threading_Thread_Get
 HANDLES(THREAD_16, "GetCurrentProcessorNumber", ves_icall_System_Threading_Thread_GetCurrentProcessorNumber, gint32, 0, ())
 HANDLES(THREAD_3, "GetState", ves_icall_System_Threading_Thread_GetState, guint32, 1, (MonoInternalThread))
 HANDLES(THREAD_4, "InitInternal", ves_icall_System_Threading_Thread_InitInternal, void, 1, (MonoThreadObject))
-HANDLES(THREAD_5, "InitializeCurrentThread", ves_icall_System_Threading_Thread_GetCurrentThread, MonoThreadObject, 0, ())
+NOHANDLES(ICALL(THREAD_5, "InitializeCurrentThread_icall", ves_icall_System_Threading_Thread_GetCurrentThread))
 HANDLES(THREAD_6, "InterruptInternal", ves_icall_System_Threading_Thread_Interrupt_internal, void, 1, (MonoThreadObject))
 HANDLES(THREAD_7, "JoinInternal", ves_icall_System_Threading_Thread_Join_internal, MonoBoolean, 2, (MonoThreadObject, int))
 HANDLES(THREAD_8, "SetName_icall", ves_icall_System_Threading_Thread_SetName_icall, void, 3, (MonoInternalThread, const_gunichar2_ptr, gint32))

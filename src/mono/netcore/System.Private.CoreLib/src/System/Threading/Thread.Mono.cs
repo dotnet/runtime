@@ -294,7 +294,13 @@ namespace System.Threading
 		extern static void InitInternal (Thread thread);
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		extern static Thread InitializeCurrentThread ();
+		private extern static void InitializeCurrentThread_icall (ref Thread thread);
+
+		static Thread InitializeCurrentThread () {
+			Thread thread = null;
+			InitializeCurrentThread_icall (ref thread);
+			return thread;
+		}
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		extern void FreeInternal ();

@@ -1675,10 +1675,10 @@ ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThreadObjectHandl
 }
 #endif
 
-MonoThreadObjectHandle
-ves_icall_System_Threading_Thread_GetCurrentThread (MonoError *error)
+void
+ves_icall_System_Threading_Thread_GetCurrentThread (MonoThread *volatile* thread)
 {
-	return MONO_HANDLE_NEW (MonoThreadObject, mono_thread_current ());
+	*thread = mono_thread_current ();
 }
 
 static MonoInternalThread*
