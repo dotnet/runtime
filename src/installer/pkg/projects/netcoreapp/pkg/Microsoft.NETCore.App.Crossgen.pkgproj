@@ -1,5 +1,28 @@
 <Project>
 
+  <!--
+    Use framework pack tooling to support building RID-specific crossgen packs.
+    Consider porting to central infrastructure: https://github.com/dotnet/runtime/issues/1867
+  -->
+  <PropertyGroup>
+    <FrameworkPackType>crossgen</FrameworkPackType>
+    <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
+  </PropertyGroup>
+
+  <!--
+    Get installer properties, in particular for MSIs.
+    Consider porting to central infrastructure: https://github.com/dotnet/runtime/issues/1867
+  -->
+  <Target Name="GetCrossgenPackInstallerProperties"
+          Condition="'$(FrameworkPackType)' == 'crossgen'"
+          BeforeTargets="GetInstallerProperties">
+    <PropertyGroup>
+      <InstallerName>$(ShortFrameworkName)-crossgen-pack</InstallerName>
+      <WixProductMoniker>$(CrossgenPackBrandName)</WixProductMoniker>
+      <VSInsertionShortComponentName>CrossgenPack</VSInsertionShortComponentName>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup>
     <RIDPropsFile>$(MSBuildThisFileDirectory)crossgenRIDs.props</RIDPropsFile>
   </PropertyGroup>
