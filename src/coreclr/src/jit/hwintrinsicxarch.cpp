@@ -553,6 +553,12 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_AsVector2:
         case NI_Vector128_AsVector3:
+        {
+            // TYP_SIMD8 and TYP_SIMD12 currently only expose "safe" versions
+            // which zero the upper elements and so are implemented in managed.
+            unreached();
+        }
+
         case NI_Vector128_AsVector4:
         {
             // We fold away the cast here, as it only exists to satisfy
