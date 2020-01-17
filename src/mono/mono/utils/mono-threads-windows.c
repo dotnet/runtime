@@ -272,7 +272,6 @@ mono_win32_abort_blocking_io_call (MonoThreadInfo *info)
 gboolean
 mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 {
-	DWORD id = mono_thread_info_get_tid (info);
 	HANDLE handle;
 	DWORD result;
 

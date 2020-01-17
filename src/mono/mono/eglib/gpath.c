@@ -337,7 +337,6 @@ g_ensure_directory_exists (const gchar *filename)
 	}
 
 	while (1) {
-		gboolean bRet = FALSE;
 		p = wcschr (p, '\\');
 		if (p)
 			*p = '\0';
