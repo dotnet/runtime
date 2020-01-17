@@ -34,7 +34,7 @@ usage_list+=("-skipcrossgen: skip native image generation.")
 usage_list+=("-skipcrossarchnative: Disable Open Source Signing for System.Private.CoreLib.")
 usage_list+=("-skipmanagedtools: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipmscorlib: generate IBC-tuning-enabled native images when invoking crossgen.")
-usage_list+=("-skipnuget: do not use profile guided optimizations.")
+usage_list+=("-skipnuget: skip NuGet package generation.")
 usage_list+=("-skiprestore: specify the official build ID to be used by this build.")
 usage_list+=("-skiprestoreoptdata: build CoreLib as PartialNGen.")
 usage_list+=("-staticanalyzer: skip native image generation.")
@@ -71,29 +71,6 @@ check_prereqs()
     if [[ $(version $cmake_version) -lt $(version 3.14.0) ]]; then
         echo "Please install CMake 3.14 or newer from http://www.cmake.org/download/ or https://apt.kitware.com and ensure it is on your path."; exit 1;
     fi
-
-    # Minimum required version of clang is version 4.0 for arm/armel cross build
-    if [[ $__CrossBuild == 1 && $__GccBuild == 0 &&  ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") ]]; then
-        if ! [[ "$__ClangMajorVersion" -ge "4" ]]; then
-            echo "Please install clang4.0 or latest for arm/armel cross build"; exit 1;
-        fi
-    fi
-
-    # Check for clang
-    if [[ $__GccBuild == 0 ]]; then
-        __ClangCombinedDottedVersion=$__ClangMajorVersion;
-        if [[ "$__ClangMinorVersion" != "" ]]; then
-            __ClangCombinedDottedVersion=$__ClangCombinedDottedVersion.$__ClangMinorVersion
-        fi
-        hash clang-$__ClangCombinedDottedVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null || hash clang 2>/dev/null || { echo >&2 "Please install clang-$__ClangMajorVersion.$__ClangMinorVersion before running this script"; exit 1; }
-    else
-        __GccCombinedDottedVersion=$__GccMajorVersion;
-        if [[ "$__GccMinorVersion" != "" ]]; then
-            __GccCombinedDottedVersion=$__GccCombinedDottedVersion.$__GccMinorVersion
-        fi
-        hash gcc-$__GccCombinedDottedVersion 2>/dev/null ||  hash gcc$__GccMajorVersion$__GccMinorVersion 2>/dev/null || hash gcc 2>/dev/null || { echo >&2 "Please install gcc-$__GccMajorVersion.$__GccMinorVersion before running this script"; exit 1; }
-    fi
-
 }
 
 restore_optdata()
@@ -101,7 +78,7 @@ restore_optdata()
     local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
     if [[ ( $__SkipRestoreOptData == 0 ) && ( $__isMSBuildOnNETCoreSupported == 1 ) ]]; then
         echo "Restoring the OptimizationData package"
-        "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                                $OptDataProjectFilePath /t:Restore /m \
                                                $__CommonMSBuildArgs $__UnprocessedBuildArgs
         local exit_code=$?
@@ -118,7 +95,7 @@ restore_optdata()
         local IbcDataPackagePathOutputFile="${__IntermediatesDir}/ibcoptdatapath.txt"
 
         # Writes into ${PgoDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} 2>&1 > /dev/null
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} 2>&1 > /dev/null
         local exit_code=$?
         if [ $exit_code != 0 ] || [ ! -f "${PgoDataPackagePathOutputFile}" ]; then
             echo "${__ErrMsgPrefix}Failed to get PGO data package path."
@@ -128,7 +105,7 @@ restore_optdata()
         __PgoOptDataPath=$(<"${PgoDataPackagePathOutputFile}")
 
         # Writes into ${IbcDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpIbcDataPackagePath ${__CommonMSBuildArgs} /p:IbcDataPackagePathOutputFile=${IbcDataPackagePathOutputFile} 2>&1 > /dev/null
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpIbcDataPackagePath ${__CommonMSBuildArgs} /p:IbcDataPackagePathOutputFile=${IbcDataPackagePathOutputFile} 2>&1 > /dev/null
         local exit_code=$?
         if [ $exit_code != 0 ] || [ ! -f "${IbcDataPackagePathOutputFile}" ]; then
             echo "${__ErrMsgPrefix}Failed to get IBC data package path."
@@ -193,7 +170,7 @@ build_native()
         __versionSourceFile="$intermediatesForBuild/version.c"
         if [ $__SkipGenerateVersion == 0 ]; then
             pwd
-            "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs $__RepoRootDir/eng/empty.csproj \
+            "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $__RepoRootDir/eng/empty.csproj \
                                                    /p:NativeVersionFile=$__versionSourceFile \
                                                    /t:GenerateNativeVersionFile /restore \
                                                    $__CommonMSBuildArgs $__UnprocessedBuildArgs
@@ -215,23 +192,16 @@ build_native()
 
         # Regenerate the CMake solution
 
-        scriptDir="$__ProjectRoot/src/pal/tools"
-        if [[ $__GccBuild == 0 ]]; then
-            echo "Invoking \"$scriptDir/find-clang.sh\" $__ClangMajorVersion \"$__ClangMinorVersion\""
-            source "$scriptDir/find-clang.sh" $__ClangMajorVersion "$__ClangMinorVersion"
-            if [[ $__StaticAnalyzer == 1 ]]; then
-                scan_build=scan-build
-            fi
-        else
-            echo "Invoking \"$scriptDir/find-gcc.sh\" \"$__GccMajorVersion\" \"$__GccMinorVersion\""
-            source "$scriptDir/find-gcc.sh" "$__GccMajorVersion" "$__GccMinorVersion"
+        if [ "$__StaticAnalyzer" = 1 ]; then
+            scan_build=scan-build
         fi
-
         if [[ -n "$__CodeCoverage" ]]; then
             extraCmakeArguments="$extraCmakeArguments -DCLR_CMAKE_ENABLE_CODE_COVERAGE=1"
         fi
 
-        nextCommand="\"$scriptDir/gen-buildsys.sh\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
+        engNativeDir="$__RepoRootDir/eng/native"
+        __cmakeargs="$__cmakeargs -DCLR_ENG_NATIVE_DIR=\"$engNativeDir\""
+        nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$__ProjectRoot\" \"$__ProjectRoot\" \"$intermediatesForBuild\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType $generator $scan_build $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -320,7 +290,7 @@ build_CoreLib_ni()
     fi
     echo "Generating native image of System.Private.CoreLib.dll for $__BuildOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
     echo "$__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll"
-    $__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
+    $__CrossGenExec /nologo /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
     local exit_code=$?
     if [ $exit_code != 0 ]; then
         echo "${__ErrMsgPrefix}Failed to generate native image for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
@@ -330,7 +300,7 @@ build_CoreLib_ni()
     if [ "$__BuildOS" == "Linux" ]; then
         echo "Generating symbol file for System.Private.CoreLib.dll"
         echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
-        $__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
+        $__CrossGenExec /nologo /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
         local exit_code=$?
         if [ $exit_code != 0 ]; then
             echo "${__ErrMsgPrefix}Failed to generate symbol file for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
@@ -364,7 +334,7 @@ build_CoreLib()
         __ExtraBuildArgs="$__ExtraBuildArgs /p:BuildManagedTools=true"
     fi
 
-    "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+    "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj /t:Restore \
                                            /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
@@ -377,7 +347,7 @@ build_CoreLib()
         exit $exit_code
     fi
 
-    "$__RepoRootDir/eng/common/msbuild.sh" $__ArcadeScriptArgs \
+    "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj \
                                            /p:PortableBuild=true /maxcpucount \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
@@ -392,7 +362,7 @@ build_CoreLib()
 
     if [[ "$__BuildManagedTools" -eq "1" ]]; then
         echo "Publishing crossgen2 for $__DistroRid"
-        "$__ProjectRoot/dotnet.sh" publish --self-contained -r $__DistroRid -c $__BuildType -o "$__BinDir/crossgen2" "$__ProjectRoot/src/tools/crossgen2/crossgen2/crossgen2.csproj" /p:BuildArch=$__BuildArch
+        "$__RepoRootDir/dotnet.sh" publish --self-contained -r $__DistroRid -c $__BuildType -o "$__BinDir/crossgen2" "$__ProjectRoot/src/tools/crossgen2/crossgen2/crossgen2.csproj" /nologo /p:BuildArch=$__BuildArch
 
         local exit_code=$?
         if [ $exit_code != 0 ]; then
@@ -588,16 +558,14 @@ __IgnoreWarnings=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __BuildManagedTools=1
-__ClangMajorVersion=0
-__ClangMinorVersion=0
+__Compiler=clang
+__CompilerMajorVersion=
+__CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0
 __CrossgenOnly=0
 __DistroRid=""
-__GccBuild=0
-__GccMajorVersion=0
-__GccMinorVersion=0
 __IbcOptDataPath=""
 __IbcTuning=""
 __MSBCleanBuildArgs=
@@ -658,7 +626,7 @@ __CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$__BuildArch.$__Buil
 if [ $__CrossBuild == 1 ]; then
     export CROSSCOMPILE=1
     if ! [[ -n "$ROOTFS_DIR" ]]; then
-        export ROOTFS_DIR="$__RepoRootDir/eng/common/cross/rootfs/$__BuildArch"
+        export ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
     fi
 fi
 

@@ -199,7 +199,7 @@ namespace MonoTests.System.Runtime.Caching
 
 
         [Fact]
-        [ActiveIssue(25168)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25168")]
         private static void Constructor_Calls_StartMonitoring_Handler()
         {
             Tuple<string, string, string, IList<string>> setup = null;
@@ -220,7 +220,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        [ActiveIssue(25168)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25168")]
         private static void Dispose_Calls_StopMonitoring_Handler()
         {
             Tuple<string, string, string, IList<string>> setup = null;
@@ -242,7 +242,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        [ActiveIssue(25168)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25168")]
         private static void Dispose_NullState_NoStopMonitoring_Handler()
         {
             Tuple<string, string, string, IList<string>> setup = null;

@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   framework: ''
   isOfficialBuild: false
+  isOfficialAllConfigurations: false
   liveCoreClrBuildConfig: ''
   timeoutInMinutes: 150
   condition: true
@@ -43,12 +44,14 @@ jobs:
         - _warnAsErrorArg: ''
         - _testScopeArg: ''
 
+        - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
-        
+
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
           - _runtimeOSArg: /p:RuntimeOS=linux-musl
-        
+
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
           - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
 
@@ -58,23 +61,24 @@ jobs:
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
-        - ${{ if eq(parameters.framework, 'allConfigurations' ) }}:
+        - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
+
+        - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
+          - _skipTestHostCopy: true
+          - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
-        - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-
         - _coreClrArtifactName: ''
         - _coreClrDownloadPath: ''
-        - _coreClrOverridePathArg: ''
+        - _coreClrArtifactsPathArg: ''
 
         - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
           - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
           - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
-          - _coreClrOverridePathArg: ' /p:CoreCLROverridePath=$(_coreClrDownloadPath)'
+          - _coreClrArtifactsPathArg: ' /p:CoreCLRArtifactsPath=$(_coreClrDownloadPath)'
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
@@ -90,7 +94,7 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_coreClrOverridePathArg)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_coreClrArtifactsPathArg)
         - ${{ parameters.variables }}
 
       dependsOn:
@@ -103,17 +107,7 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
       steps:
-      - checkout: none
-        clean: true
-
-      - download: current
-        artifact: Checkout_bundle
-        displayName: Download Checkout.bundle
-
-      - script: |
-          git clone $(Pipeline.Workspace)/Checkout_bundle/Checkout.bundle .
-          git remote set-url origin $(Build.Repository.Uri)
-        displayName: Clone the repository from Checkout.bundle
+      - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
       - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
         - template: /eng/pipelines/common/download-artifact-step.yml

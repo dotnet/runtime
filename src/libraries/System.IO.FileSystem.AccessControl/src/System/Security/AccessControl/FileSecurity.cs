@@ -17,8 +17,6 @@ namespace System.Security.AccessControl
         public FileSecurity(string fileName, AccessControlSections includeSections)
             : base(false, fileName, includeSections, false)
         {
-            // This will validate the passed path
-            Path.GetFullPath(fileName);
         }
 
         internal FileSecurity(SafeFileHandle handle, AccessControlSections includeSections)

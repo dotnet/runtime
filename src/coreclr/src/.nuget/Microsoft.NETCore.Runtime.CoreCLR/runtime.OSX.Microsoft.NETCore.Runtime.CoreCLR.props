@@ -8,7 +8,6 @@
     <File Include="$(BinDir)SOS_README.md">
       <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath>
     </File>
-    <NativeBinary Include="$(BinDir)System.Globalization.Native.dylib" />
     <CrossGenBinary Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
   </ItemGroup>

@@ -7,6 +7,7 @@
     <CLRTestPriority>1</CLRTestPriority>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
+    <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include=".\helper.csproj">

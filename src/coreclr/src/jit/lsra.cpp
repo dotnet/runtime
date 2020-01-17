@@ -1351,7 +1351,6 @@ void Interval::setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l
 //
 void LinearScan::identifyCandidatesExceptionDataflow()
 {
-    VarSetOps::AssignNoCopy(compiler, exceptVars, VarSetOps::MakeEmpty(compiler));
 #ifdef DEBUG
     VARSET_TP finallyVars(VarSetOps::MakeEmpty(compiler));
 #endif
@@ -1563,6 +1562,7 @@ void LinearScan::identifyCandidates()
         return;
     }
 
+    VarSetOps::AssignNoCopy(compiler, exceptVars, VarSetOps::MakeEmpty(compiler));
     if (compiler->compHndBBtabCount > 0)
     {
         identifyCandidatesExceptionDataflow();
@@ -2223,16 +2223,33 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                                                BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated))
 {
     BasicBlock* predBlock = nullptr;
+    assert(*pPredBlockIsAllocated == false);
 
     // Blocks with exception flow on entry use no predecessor blocks, as all incoming vars
     // are on the stack.
     if (blockInfo[block->bbNum].hasEHBoundaryIn)
     {
+        JITDUMP("\n\nIncoming EH boundary; ");
         return nullptr;
     }
 
+    if (block == compiler->fgFirstBB)
+    {
+        return nullptr;
+    }
+
+    if (block->bbPreds == nullptr)
+    {
+        // We may have unreachable blocks, due to optimization.
+        // We don't want to set the predecessor as null in this case, since that will result in
+        // unnecessary DummyDefs, and possibly result in inconsistencies requiring resolution
+        // (since these unreachable blocks can have reachable successors).
+        assert((block != compiler->fgFirstBB) || (prevBlock != nullptr));
+        JITDUMP("\n\nNo predecessor; ");
+        return prevBlock;
+    }
+
 #ifdef DEBUG
-    assert(*pPredBlockIsAllocated == false);
     if (getLsraBlockBoundaryLocations() == LSRA_BLOCK_BOUNDARY_LAYOUT)
     {
         if (prevBlock != nullptr)
@@ -2242,7 +2259,6 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
     }
     else
 #endif // DEBUG
-        if (block != compiler->fgFirstBB)
     {
         predBlock = block->GetUniquePred(compiler);
         if (predBlock != nullptr)
@@ -2256,7 +2272,7 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                     // Special handling to improve matching on backedges.
                     BasicBlock* otherBlock = (block == predBlock->bbNext) ? predBlock->bbJumpDest : predBlock->bbNext;
                     noway_assert(otherBlock != nullptr);
-                    if (isBlockVisited(otherBlock))
+                    if (isBlockVisited(otherBlock) && !blockInfo[otherBlock->bbNum].hasEHBoundaryIn)
                     {
                         // This is the case when we have a conditional branch where one target has already
                         // been visited.  It would be best to use the same incoming regs as that block,
@@ -4410,7 +4426,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 }
 
 //------------------------------------------------------------------------
-// spillGCRefs: Spill any GC-type intervals that are currently in registers.a
+// spillGCRefs: Spill any GC-type intervals that are currently in registers.
 //
 // Arguments:
 //    killRefPosition - The RefPosition for the kill
@@ -4418,11 +4434,16 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 // Return Value:
 //    None.
 //
+// Notes:
+//    This is used to ensure that we have no live GC refs in registers at an
+//    unmanaged call.
+//
 void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 {
     // For each physical register that can hold a GC type,
     // if it is occupied by an interval of a GC type, spill that interval.
     regMaskTP candidateRegs = killRefPosition->registerAssignment;
+    INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {
         regMaskTP nextRegBit = genFindLowestBit(candidateRegs);
@@ -4430,14 +4451,32 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
         regNumber  nextReg          = genRegNumFromMask(nextRegBit);
         RegRecord* regRecord        = getRegisterRecord(nextReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
-        if (assignedInterval == nullptr || (assignedInterval->isActive == false) ||
-            !varTypeIsGC(assignedInterval->registerType))
+        if (assignedInterval == nullptr || (assignedInterval->isActive == false))
         {
             continue;
         }
-        unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
+        bool needsKill = varTypeIsGC(assignedInterval->registerType);
+        if (!needsKill)
+        {
+            // The importer will assign a GC type to the rhs of an assignment if the lhs type is a GC type,
+            // even if the rhs is not. See the CEE_STLOC* case in impImportBlockCode(). As a result,
+            // we can have a 'GT_LCL_VAR' node with a GC type, when the lclVar itself is an integer type.
+            // The emitter will mark this register as holding a GC type. Therfore we must spill this value.
+            // This was exposed on Arm32 with EH write-thru.
+            if ((assignedInterval->recentRefPosition != nullptr) &&
+                (assignedInterval->recentRefPosition->treeNode != nullptr))
+            {
+                needsKill = varTypeIsGC(assignedInterval->recentRefPosition->treeNode);
+            }
+        }
+        if (needsKill)
+        {
+            INDEBUG(killedRegs = true);
+            unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
+        }
     }
-    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DONE_KILL_GC_REFS, nullptr, REG_NA, nullptr));
+    INDEBUG(dumpLsraAllocationEvent(killedRegs ? LSRA_EVENT_DONE_KILL_GC_REFS : LSRA_EVENT_NO_GC_KILLS, nullptr, REG_NA,
+                                    nullptr));
 }
 
 //------------------------------------------------------------------------
@@ -4745,16 +4784,19 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     if (predBBNum == 0)
     {
 #if DEBUG
-        // This should still be in its initialized empty state.
-        for (unsigned varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
+        if (blockInfo[currentBlock->bbNum].hasEHBoundaryIn || !allocationPassComplete)
         {
-            // In the case where we're extending lifetimes for stress, we are intentionally modeling variables
-            // as live when they really aren't to create extra register pressure & constraints.
-            // However, this means that non-EH-vars will be live into EH regions. We can and should ignore the
-            // locations of these. Note that they aren't reported to codegen anyway.
-            if (!getLsraExtendLifeTimes() || VarSetOps::IsMember(compiler, currentBlock->bbLiveIn, varIndex))
+            // This should still be in its initialized empty state.
+            for (unsigned varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
             {
-                assert(inVarToRegMap[varIndex] == REG_STK);
+                // In the case where we're extending lifetimes for stress, we are intentionally modeling variables
+                // as live when they really aren't to create extra register pressure & constraints.
+                // However, this means that non-EH-vars will be live into EH regions. We can and should ignore the
+                // locations of these. Note that they aren't reported to codegen anyway.
+                if (!getLsraExtendLifeTimes() || VarSetOps::IsMember(compiler, currentBlock->bbLiveIn, varIndex))
+                {
+                    assert(inVarToRegMap[varIndex] == REG_STK);
+                }
             }
         }
 #endif // DEBUG
@@ -5190,7 +5232,8 @@ void LinearScan::allocateRegisters()
         printf("\n\nAllocating Registers\n"
                "--------------------\n");
         // Start with a small set of commonly used registers, so that we don't keep having to print a new title.
-        registersToDump = LsraLimitSmallIntSet | LsraLimitSmallFPSet;
+        // Include all the arg regs, as they may already have values assigned to them.
+        registersToDump = LsraLimitSmallIntSet | LsraLimitSmallFPSet | RBM_ARG_REGS;
         dumpRegRecordHeader();
         // Now print an empty "RefPosition", since we complete the dump of the regs at the beginning of the loop.
         printf(indentFormat, "");
@@ -5392,25 +5435,28 @@ void LinearScan::allocateRegisters()
 
             if (refType == RefTypeParamDef || refType == RefTypeZeroInit)
             {
-                // For a ParamDef with a weighted refCount less than unity, don't enregister it at entry.
-                // TODO-CQ: Consider doing this only for stack parameters, since otherwise we may be needlessly
-                // inserting a store.
-                LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
-                assert(varDsc != nullptr);
-                if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+                if (nextRefPosition == nullptr)
                 {
-                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
-                    didDump  = true;
-                    allocate = false;
-                    setIntervalAsSpilled(currentInterval);
-                }
-                // If it has no actual references, mark it as "lastUse"; since they're not actually part
-                // of any flow they won't have been marked during dataflow.  Otherwise, if we allocate a
-                // register we won't unassign it.
-                else if (nextRefPosition == nullptr)
-                {
+                    // If it has no actual references, mark it as "lastUse"; since they're not actually part
+                    // of any flow they won't have been marked during dataflow.  Otherwise, if we allocate a
+                    // register we won't unassign it.
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_ZERO_REF, currentInterval));
                     currentRefPosition->lastUse = true;
+                }
+                if (refType == RefTypeParamDef)
+                {
+                    LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
+                    assert(varDsc != nullptr);
+                    if (varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+                    {
+                        // For a ParamDef with a weighted refCount less than unity, don't enregister it at entry.
+                        // TODO-CQ: Consider doing this only for stack parameters, since otherwise we may be needlessly
+                        // inserting a store.
+                        allocate = false;
+                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
+                        didDump = true;
+                        setIntervalAsSpilled(currentInterval);
+                    }
                 }
             }
 #ifdef FEATURE_SIMD
@@ -6149,6 +6195,16 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
         else
         {
             treeNode->gtFlags &= ~GTF_VAR_DEATH;
+        }
+
+        if ((currentRefPosition->registerAssignment != RBM_NONE) && (interval->physReg == REG_NA) &&
+            currentRefPosition->RegOptional() && currentRefPosition->lastUse)
+        {
+            // This can happen if the incoming location for the block was changed from a register to the stack
+            // during resolution. In this case we're better off making it contained.
+            assert(inVarToRegMaps[curBBNum][varDsc->lvVarIndex] == REG_STK);
+            currentRefPosition->registerAssignment = RBM_NONE;
+            treeNode->SetRegNum(REG_NA);
         }
     }
 
@@ -9675,9 +9731,14 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             dumpRegRecords();
             break;
 
-        // Done with GC Kills
         case LSRA_EVENT_DONE_KILL_GC_REFS:
-            printf(indentFormat, "  DoneKillGC ");
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("Done       ");
+            break;
+
+        case LSRA_EVENT_NO_GC_KILLS:
+            dumpRefPositionShort(activeRefPosition, currentBlock);
+            printf("None       ");
             break;
 
         // Block boundaries
@@ -9790,7 +9851,9 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             break;
 
         default:
-            unreached();
+            printf("????? %-4s ", getRegName(reg));
+            dumpRegRecords();
+            break;
     }
 }
 
@@ -9822,7 +9885,7 @@ void LinearScan::dumpRegRecordHeader()
            "action taken during allocation (e.g. Alloc a new register, or Keep an existing one).\n"
            "The subsequent columns show the Interval occupying each register, if any, followed by 'a' if it is\n"
            "active, a 'p' if it is a large vector that has been partially spilled, and 'i'if it is inactive.\n"
-           "Columns are only printed up to the last modifed register, which may increase during allocation,"
+           "Columns are only printed up to the last modifed register, which may increase during allocation,\n"
            "in which case additional columns will appear.  \n"
            "Registers which are not marked modified have ---- in their column.\n\n");
 

@@ -21,7 +21,7 @@
 
 #include "assemblyname.hpp"
 #include "field.h"
-#include "strongname.h"
+#include "strongnameinternal.h"
 #include "eeconfig.h"
 
 #ifndef URL_ESCAPE_AS_UTF8
@@ -102,8 +102,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
 
             {
                 GCX_PREEMP();
-                if (!StrongNameTokenFromPublicKey(pbKey, cb, &pbToken, &cb))
-                    COMPlusThrowHR(StrongNameErrorInfo());
+                IfFailThrow(StrongNameTokenFromPublicKey(pbKey, cb, &pbToken, &cb));
             }
         }
 

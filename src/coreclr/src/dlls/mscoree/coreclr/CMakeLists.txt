@@ -96,7 +96,6 @@ set(CORECLR_LIBRARIES
     corguids
     gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"
     ildbsymlib
-    strongname_wks
     utilcode
     v3binder
 )

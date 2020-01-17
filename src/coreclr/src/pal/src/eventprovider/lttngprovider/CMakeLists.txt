@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12)
-
 include(FindPython)
 set (GENERATE_SCRIPT ${CLR_DIR}/src/scripts/genLttngProvider.py)
 

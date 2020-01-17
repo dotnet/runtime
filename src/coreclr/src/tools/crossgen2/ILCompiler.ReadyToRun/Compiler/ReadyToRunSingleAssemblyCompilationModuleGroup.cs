@@ -4,10 +4,10 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
@@ -17,6 +17,7 @@ namespace ILCompiler
         private HashSet<ModuleDesc> _compilationModuleSet;
         private HashSet<ModuleDesc> _versionBubbleModuleSet;
         private ProfileDataManager _profileGuidedCompileRestriction;
+        private Dictionary<TypeDesc, ModuleToken> _typeRefsInCompilationModuleSet;
 
         private bool _compileGenericDependenciesFromVersionBubbleModuleSet;
 
@@ -209,6 +210,35 @@ namespace ILCompiler
                 return true;
 
             return !Marshaller.IsMarshallingRequired(method);
+        }
+
+        public override bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token)
+        {
+            Debug.Assert(!VersionsWithType(type));
+
+            if (_typeRefsInCompilationModuleSet == null)
+            {
+                _typeRefsInCompilationModuleSet = new Dictionary<TypeDesc, ModuleToken>();
+
+                foreach (var module in _compilationModuleSet)
+                {
+                    EcmaModule ecmaModule = (EcmaModule)module;
+                    foreach (var typeRefHandle in ecmaModule.MetadataReader.TypeReferences)
+                    {
+                        try
+                        {
+                            TypeDesc typeFromTypeRef = ecmaModule.GetType(typeRefHandle);
+                            if (!_typeRefsInCompilationModuleSet.ContainsKey(typeFromTypeRef))
+                            {
+                                _typeRefsInCompilationModuleSet.Add(typeFromTypeRef, new ModuleToken(ecmaModule, typeRefHandle));
+                            }
+                        }
+                        catch (TypeSystemException) { }
+                    }
+                }
+            }
+
+            return _typeRefsInCompilationModuleSet.TryGetValue(type, out token);
         }
     }
 }

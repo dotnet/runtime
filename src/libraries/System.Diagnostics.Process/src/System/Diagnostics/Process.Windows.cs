@@ -476,6 +476,10 @@ namespace System.Diagnostics
             SafeFileHandle parentErrorPipeHandle = null;
             SafeFileHandle childErrorPipeHandle = null;
 
+            // Take a global lock to synchronize all redirect pipe handle creations and CreateProcess
+            // calls. We do not want one process to inherit the handles created concurrently for another
+            // process, as that will impact the ownership and lifetimes of those handles now inherited
+            // into multiple child processes.
             lock (s_createProcessLock)
             {
                 try

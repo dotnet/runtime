@@ -8,7 +8,6 @@
     <CLRTestPriority>1</CLRTestPriority>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExceptionThrown_V1.cs" />

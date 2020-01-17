@@ -3,6 +3,7 @@
   <ItemGroup>
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/libnethost.dylib" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/libnethost.a" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/nethost.h" />
 
     <File Include="@(ArchitectureSpecificNativeFile)">

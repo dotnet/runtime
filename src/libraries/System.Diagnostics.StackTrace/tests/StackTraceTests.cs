@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Diagnostics
@@ -247,8 +248,6 @@ namespace System.Diagnostics.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-            // Debug mode and Release mode give different results.
-#if DEBUG
             yield return new object[] { new StackTrace(InvokeException()), "System.Diagnostics.Tests.StackTraceTests.ThrowException()" };
             yield return new object[] { new StackTrace(new Exception()), "" };
             yield return new object[] { NoParameters(), "System.Diagnostics.Tests.StackTraceTests.NoParameters()" };
@@ -260,7 +259,6 @@ namespace System.Diagnostics.Tests
 
             // Methods belonging to the System.Diagnostics namespace are ignored.
             yield return new object[] { InvokeIgnoredMethod(), "System.Diagnostics.Tests.StackTraceTests.InvokeIgnoredMethod()" };
-#endif
 
             yield return new object[] { InvokeIgnoredMethodWithException(), "System.Diagnostics.Ignored.MethodWithException()" };
         }
@@ -300,16 +298,22 @@ namespace System.Diagnostics.Tests
             Assert.Equal(Environment.NewLine, stackTrace.ToString());
         }
 
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace NoParameters() => new StackTrace();
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace OneParameter(int x) => new StackTrace();
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace TwoParameters(int x, string y) => new StackTrace();
 
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace Generic<T>() => new StackTrace();
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace Generic<T, U>() => new StackTrace();
 
         private static StackTrace InvokeIgnoredMethod() => Ignored.Method();
         private static StackTrace InvokeIgnoredMethodWithException() => Ignored.MethodWithException();
 
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static Exception InvokeException()
         {
             try

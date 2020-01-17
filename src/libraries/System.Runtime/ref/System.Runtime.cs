@@ -1911,12 +1911,12 @@ namespace System
         private T value;
         private int _dummyPrimitive;
         public Nullable(T value) { throw null; }
-        public bool HasValue { get { throw null; } }
-        public T Value { get { throw null; } }
+        public readonly bool HasValue { get { throw null; } }
+        public readonly T Value { get { throw null; } }
         public override bool Equals(object? other) { throw null; }
         public override int GetHashCode() { throw null; }
-        public T GetValueOrDefault() { throw null; }
-        public T GetValueOrDefault(T defaultValue) { throw null; }
+        public readonly T GetValueOrDefault() { throw null; }
+        public readonly T GetValueOrDefault(T defaultValue) { throw null; }
         public static explicit operator T (T? value) { throw null; }
         public static implicit operator T? (T value) { throw null; }
         public override string? ToString() { throw null; }
@@ -2285,10 +2285,7 @@ namespace System
     {
         public STAThreadAttribute() { }
     }
-    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.ICloneable, System.IComparable, System.IComparable<string?>, System.IConvertible,
-#nullable disable
-        System.IEquatable<string>
-#nullable restore
+    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.ICloneable, System.IComparable, System.IComparable<string?>, System.IConvertible, System.IEquatable<string?>
     {
         public static readonly string Empty;
         [System.CLSCompliantAttribute(false)]
@@ -2614,10 +2611,7 @@ namespace System
         public virtual System.DateTime ToLocalTime(System.DateTime time) { throw null; }
         public virtual System.DateTime ToUniversalTime(System.DateTime time) { throw null; }
     }
-    public sealed partial class TimeZoneInfo : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable,
-#nullable disable
-        System.IEquatable<System.TimeZoneInfo>
-#nullable restore
+    public sealed partial class TimeZoneInfo : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable, System.IEquatable<System.TimeZoneInfo?>
     {
         internal TimeZoneInfo() { }
         public System.TimeSpan BaseUtcOffset { get { throw null; } }
@@ -2662,10 +2656,7 @@ namespace System
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string ToSerializedString() { throw null; }
         public override string ToString() { throw null; }
-        public sealed partial class AdjustmentRule : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable,
-#nullable disable
-            System.IEquatable<System.TimeZoneInfo.AdjustmentRule>
-#nullable restore
+        public sealed partial class AdjustmentRule : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable, System.IEquatable<System.TimeZoneInfo.AdjustmentRule?>
         {
             internal AdjustmentRule() { }
             public System.DateTime DateEnd { get { throw null; } }
@@ -3113,13 +3104,13 @@ namespace System
         public object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Globalization.CultureInfo? culture) { throw null; }
         public abstract object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters);
         protected abstract bool IsArrayImpl();
-        public virtual bool IsAssignableFrom(System.Type? c) { throw null; }
+        public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? c) { throw null; }
         protected abstract bool IsByRefImpl();
         protected abstract bool IsCOMObjectImpl();
         protected virtual bool IsContextfulImpl() { throw null; }
         public virtual bool IsEnumDefined(object value) { throw null; }
-        public virtual bool IsEquivalentTo(System.Type? other) { throw null; }
-        public virtual bool IsInstanceOfType(object? o) { throw null; }
+        public virtual bool IsEquivalentTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? other) { throw null; }
+        public virtual bool IsInstanceOfType([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? o) { throw null; }
         protected virtual bool IsMarshalByRefImpl() { throw null; }
         protected abstract bool IsPointerImpl();
         protected abstract bool IsPrimitiveImpl();
@@ -3472,7 +3463,7 @@ namespace System
         [System.ObsoleteAttribute("The method has been deprecated. It is not used by the system. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected virtual bool IsReservedCharacter(char character) { throw null; }
         public bool IsWellFormedOriginalString() { throw null; }
-        public static bool IsWellFormedUriString(string? uriString, System.UriKind uriKind) { throw null; }
+        public static bool IsWellFormedUriString([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? uriString, System.UriKind uriKind) { throw null; }
         [System.ObsoleteAttribute("The method has been deprecated. Please use MakeRelativeUri(Uri uri). https://go.microsoft.com/fwlink/?linkid=14202")]
         public string MakeRelative(System.Uri toUri) { throw null; }
         public System.Uri MakeRelativeUri(System.Uri uri) { throw null; }
@@ -3744,10 +3735,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string? ToString() { throw null; }
     }
-    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>,
-#nullable disable
-        System.IEquatable<System.Version>
-#nullable restore
+    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>
     {
         public Version() { }
         public Version(int major, int minor) { }
@@ -3954,7 +3942,7 @@ namespace System.Collections.Generic
     {
         int Compare([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
     }
-    public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable where TKey : notnull
+    public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable
     {
         TValue this[TKey key] { get; set; }
         System.Collections.Generic.ICollection<TKey> Keys { get; }
@@ -3988,7 +3976,7 @@ namespace System.Collections.Generic
     {
         int Count { get; }
     }
-    public partial interface IReadOnlyDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable where TKey : notnull
+    public partial interface IReadOnlyDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable
     {
         TValue this[TKey key] { get; }
         System.Collections.Generic.IEnumerable<TKey> Keys { get; }
@@ -4444,6 +4432,7 @@ namespace System.Globalization
         public System.Globalization.CultureInfo GetConsoleFallbackUICulture() { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(int culture) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(string name) { throw null; }
+        public static System.Globalization.CultureInfo GetCultureInfo(string name, bool predefinedOnly) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfo(string name, string altName) { throw null; }
         public static System.Globalization.CultureInfo GetCultureInfoByIetfLanguageTag(string name) { throw null; }
         public static System.Globalization.CultureInfo[] GetCultures(System.Globalization.CultureTypes types) { throw null; }
@@ -4918,10 +4907,7 @@ namespace System.Globalization
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed partial class SortVersion :
-#nullable disable
-        System.IEquatable<System.Globalization.SortVersion>
-#nullable restore
+    public sealed partial class SortVersion : System.IEquatable<System.Globalization.SortVersion?>
     {
         public SortVersion(int fullVersion, System.Guid sortId) { }
         public int FullVersion { get { throw null; } }
@@ -6306,11 +6292,11 @@ namespace System.Reflection
     }
     public sealed partial class ReflectionTypeLoadException : System.SystemException, System.Runtime.Serialization.ISerializable
     {
-        public ReflectionTypeLoadException(System.Type[]? classes, System.Exception?[]? exceptions) { }
-        public ReflectionTypeLoadException(System.Type[]? classes, System.Exception?[]? exceptions, string? message) { }
-        public System.Exception?[]? LoaderExceptions { get { throw null; } }
+        public ReflectionTypeLoadException(System.Type?[]? classes, System.Exception?[]? exceptions) { }
+        public ReflectionTypeLoadException(System.Type?[]? classes, System.Exception?[]? exceptions, string? message) { }
+        public System.Exception?[] LoaderExceptions { get { throw null; } }
         public override string Message { get { throw null; } }
-        public System.Type[]? Types { get { throw null; } }
+        public System.Type?[] Types { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
@@ -6454,7 +6440,7 @@ namespace System.Reflection
         protected override bool HasElementTypeImpl() { throw null; }
         public override object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters) { throw null; }
         protected override bool IsArrayImpl() { throw null; }
-        public override bool IsAssignableFrom(System.Reflection.TypeInfo? typeInfo) { throw null; }
+        public override bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
         protected override bool IsByRefImpl() { throw null; }
         protected override bool IsCOMObjectImpl() { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
@@ -6482,7 +6468,7 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.MethodInfo> GetDeclaredMethods(string name) { throw null; }
         public virtual System.Reflection.TypeInfo? GetDeclaredNestedType(string name) { throw null; }
         public virtual System.Reflection.PropertyInfo? GetDeclaredProperty(string name) { throw null; }
-        public virtual bool IsAssignableFrom(System.Reflection.TypeInfo? typeInfo) { throw null; }
+        public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
         System.Reflection.TypeInfo System.Reflection.IReflectableType.GetTypeInfo() { throw null; }
     }
 }
@@ -6913,6 +6899,11 @@ namespace System.Runtime.CompilerServices
         public RuntimeWrappedException(object thrownObject) { }
         public object WrappedException { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Module | System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Event, Inherited = false)]
+    public sealed partial class SkipLocalsInitAttribute : System.Attribute
+    {
+        public SkipLocalsInitAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct)]
     public sealed partial class SpecialNameAttribute : System.Attribute

@@ -25,14 +25,9 @@ init_rid_plat()
                 # remove the last version number
                 VERSION_ID=${VERSION_ID%.*}
             fi
-            __rid_plat="$ID.$VERSION_ID"
+            __rid_plat="$ID${VERSION_ID:+.$VERSION_ID}"
             if [[ "$ID" == "alpine" ]]; then
                 __rid_plat="linux-musl"
-            fi
-        elif [ -e /etc/redhat-release ]; then
-            local redhatRelease=$(</etc/redhat-release)
-            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
-               __rid_plat="rhel.6"
             fi
         fi
     fi
@@ -227,12 +222,15 @@ elif command -v "clang-3.9" > /dev/null 2>&1; then
 elif command -v "clang-5.0" > /dev/null 2>&1; then
     export CC="$(command -v clang-5.0)"
     export CXX="$(command -v clang++-5.0)"
+elif command -v "clang-9" > /dev/null 2>&1; then
+    export CC="$(command -v clang-9)"
+    export CXX="$(command -v clang++-9)"
 elif command -v clang > /dev/null 2>&1; then
     export CC="$(command -v clang)"
     export CXX="$(command -v clang++)"
 else
     echo "Unable to find Clang Compiler"
-    echo "Install clang-3.5 or clang3.6 or clang3.9 or clang5.0"
+    echo "Install clang-3.5 or clang3.6 or clang3.9 or clang5.0 or clang9"
     exit 1
 fi
 
@@ -249,11 +247,14 @@ pushd $__intermediateOutputPath
 echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
 if [ $__CrossBuild == 1 ]; then
-    # clang-3.9 or clang-4.0 are default compilers for cross compilation
+    # clang-3.9 or clang-9 are default compilers for cross compilation
     if [[ "$__build_arch" != "arm" && "$__build_arch" != "armel" ]]; then
         if command -v "clang-3.9" > /dev/null 2>&1; then
             export CC="$(command -v clang-3.9)"
             export CXX="$(command -v clang++-3.9)"
+        elif command -v "clang-9" > /dev/null 2>&1; then
+            export CC="$(command -v clang-9)"
+            export CXX="$(command -v clang++-9)"
         fi
     elif command -v "clang-4.0" > /dev/null 2>&1; then
         export CC="$(command -v clang-4.0)"
@@ -261,9 +262,12 @@ if [ $__CrossBuild == 1 ]; then
     elif command -v "clang-5.0" > /dev/null 2>&1; then
         export CC="$(command -v clang-5.0)"
         export CXX="$(command -v clang++-5.0)"
+    elif command -v "clang-9" > /dev/null 2>&1; then
+        export CC="$(command -v clang-9)"
+        export CXX="$(command -v clang++-9)"
     else
-        echo "Unable to find Clang 3.9 or Clang 4.0 or Clang 5.0 Compiler"
-        echo "Install clang-3.9 or clang-4.0 or clang-5.0 for cross compilation"
+        echo "Unable to find Clang 3.9 or Clang 4.0 or Clang 5.0 or Clang 9 Compiler"
+        echo "Install clang-3.9 or clang-4.0 or clang-5.0 or clang-9 for cross compilation"
         exit 1
     fi
     export TARGET_BUILD_ARCH=$__build_arch_lowcase

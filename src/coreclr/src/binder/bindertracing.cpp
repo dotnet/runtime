@@ -14,6 +14,7 @@
 
 #include "common.h"
 #include "bindertracing.h"
+#include "bindresult.hpp"
 
 #include "activitytracker.h"
 
@@ -80,16 +81,39 @@ namespace
 #endif // FEATURE_EVENT_TRACE
     }
 
-    void GetAssemblyLoadContextNameFromBindContext(ICLRPrivBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
+    void GetAssemblyLoadContextNameFromManagedALC(INT_PTR managedALC, /* out */ SString &alcName)
     {
-        _ASSERTE(bindContext != nullptr);
-
-        UINT_PTR binderID = 0;
-        HRESULT hr = bindContext->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
-        if (FAILED(hr))
+        if (managedALC == GetAppDomain()->GetTPABinderContext()->GetManagedAssemblyLoadContext())
+        {
+            alcName.Set(W("Default"));
             return;
+        }
 
+#ifdef CROSSGEN_COMPILE
+        alcName.Set(W("Custom"));
+#else // CROSSGEN_COMPILE
+        OBJECTREF *alc = reinterpret_cast<OBJECTREF *>(managedALC);
+
+        GCX_COOP();
+        struct _gc {
+            STRINGREF alcName;
+        } gc;
+        ZeroMemory(&gc, sizeof(gc));
+
+        GCPROTECT_BEGIN(gc);
+
+        PREPARE_VIRTUAL_CALLSITE(METHOD__OBJECT__TO_STRING, *alc);
+        DECLARE_ARGHOLDER_ARRAY(args, 1);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*alc);
+        CALL_MANAGED_METHOD_RETREF(gc.alcName, STRINGREF, args);
+        gc.alcName->GetSString(alcName);
+
+        GCPROTECT_END();
+#endif // CROSSGEN_COMPILE
+    }
+
+    void GetAssemblyLoadContextNameFromBinderID(UINT_PTR binderID, AppDomain *domain, /*out*/ SString &alcName)
+    {
         ICLRPrivBinder *binder = reinterpret_cast<ICLRPrivBinder *>(binderID);
 #ifdef FEATURE_COMINTEROP
         if (AreSameBinderInstance(binder, domain->GetTPABinderContext()) || AreSameBinderInstance(binder, domain->GetWinRtBinder()))
@@ -102,28 +126,24 @@ namespace
         else
         {
 #ifdef CROSSGEN_COMPILE
-            alcName.Set(W("Custom"));
+            GetAssemblyLoadContextNameFromManagedALC(0, alcName);
 #else // CROSSGEN_COMPILE
-            CLRPrivBinderAssemblyLoadContext * alcBinder = static_cast<CLRPrivBinderAssemblyLoadContext *>(binder);
-            OBJECTREF *alc = reinterpret_cast<OBJECTREF *>(alcBinder->GetManagedAssemblyLoadContext());
+            CLRPrivBinderAssemblyLoadContext *alcBinder = static_cast<CLRPrivBinderAssemblyLoadContext *>(binder);
 
-            GCX_COOP();
-            struct _gc {
-                STRINGREF alcName;
-            } gc;
-            ZeroMemory(&gc, sizeof(gc));
-
-            GCPROTECT_BEGIN(gc);
-
-            PREPARE_VIRTUAL_CALLSITE(METHOD__OBJECT__TO_STRING, *alc);
-            DECLARE_ARGHOLDER_ARRAY(args, 1);
-            args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*alc);
-            CALL_MANAGED_METHOD_RETREF(gc.alcName, STRINGREF, args);
-            gc.alcName->GetSString(alcName);
-
-            GCPROTECT_END();
+            GetAssemblyLoadContextNameFromManagedALC(alcBinder->GetManagedAssemblyLoadContext(), alcName);
 #endif // CROSSGEN_COMPILE
         }
+    }
+
+    void GetAssemblyLoadContextNameFromBindContext(ICLRPrivBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
+    {
+        _ASSERTE(bindContext != nullptr);
+
+        UINT_PTR binderID = 0;
+        HRESULT hr = bindContext->GetBinderID(&binderID);
+        _ASSERTE(SUCCEEDED(hr));
+        if (SUCCEEDED(hr))
+            GetAssemblyLoadContextNameFromBinderID(binderID, domain, alcName);
     }
 
     void GetAssemblyLoadContextNameFromSpec(AssemblySpec *spec, /*out*/ SString &alcName)
@@ -166,6 +186,8 @@ namespace
 
         GetAssemblyLoadContextNameFromSpec(spec, request.AssemblyLoadContext);
     }
+
+    const WCHAR *s_assemblyNotFoundMessage = W("Could not locate assembly");
 }
 
 bool BinderTracing::IsEnabled()
@@ -207,6 +229,9 @@ namespace BinderTracing
             PopulateBindRequest(m_bindRequest);
 
         FireAssemblyLoadStop(m_bindRequest, m_resultAssembly, m_cached);
+
+        if (m_resultAssembly != nullptr)
+            m_resultAssembly->Release();
     }
 
     void AssemblyBindOperation::SetResult(PEAssembly *assembly, bool cached)
@@ -230,4 +255,212 @@ namespace BinderTracing
         m_checkedIgnoreBind = true;
         return m_ignoreBind;
     }
+}
+
+namespace BinderTracing
+{
+    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, UINT_PTR binderID, INT_PTR managedALC, const HRESULT& hr)
+        : m_hr { hr }
+        , m_stage { Stage::NotYetStarted }
+        , m_tracingEnabled { BinderTracing::IsEnabled() }
+        , m_assemblyNameObject { assemblyName }
+        , m_pFoundAssembly { nullptr }
+    {
+        _ASSERTE(binderID != 0 || managedALC != 0);
+
+        if (!m_tracingEnabled)
+            return;
+
+        // When binding the main assembly (by code base instead of name), the assembly name will be null. In this special case, we just
+        // leave the assembly name empty.
+        if (m_assemblyNameObject != nullptr)
+            m_assemblyNameObject->GetDisplayName(m_assemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+
+        if (managedALC != 0)
+        {
+            GetAssemblyLoadContextNameFromManagedALC(managedALC, m_assemblyLoadContextName);
+        }
+        else
+        {
+            GetAssemblyLoadContextNameFromBinderID(binderID, GetAppDomain(), m_assemblyLoadContextName);
+        }
+    }
+
+    // This function simply traces out the two stages represented by the bind result.
+    // It does not change the stage/assembly of the ResolutionAttemptedOperation class instance.
+    void ResolutionAttemptedOperation::TraceBindResult(const BindResult &bindResult, bool mvidMismatch)
+    {
+        if (!m_tracingEnabled)
+            return;
+
+        // Use the error message that would be reported in the file load exception
+        StackSString errorMsg;
+        if (mvidMismatch)
+            errorMsg.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+
+        const BindResult::AttemptResult *inContextAttempt = bindResult.GetAttempt(true /*foundInContext*/);
+        const BindResult::AttemptResult *appAssembliesAttempt = bindResult.GetAttempt(false /*foundInContext*/);
+
+        if (inContextAttempt != nullptr)
+        {
+            // If there the attempt HR represents a success, but the tracked HR represents a failure (e.g. from further validation), report the failed HR
+            bool isLastAttempt = appAssembliesAttempt == nullptr;
+            TraceStage(Stage::FindInLoadContext,
+                isLastAttempt && FAILED(m_hr) && SUCCEEDED(inContextAttempt->HResult) ? m_hr : inContextAttempt->HResult,
+                inContextAttempt->Assembly,
+                mvidMismatch && isLastAttempt ? errorMsg.GetUnicode() : nullptr);
+        }
+
+        if (appAssembliesAttempt != nullptr)
+            TraceStage(Stage::ApplicationAssemblies, FAILED(m_hr) && SUCCEEDED(appAssembliesAttempt->HResult) ? m_hr : appAssembliesAttempt->HResult, appAssembliesAttempt->Assembly, mvidMismatch ? errorMsg.GetUnicode() : nullptr);
+    }
+
+    void ResolutionAttemptedOperation::TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly, const WCHAR *customError)
+    {
+        if (!m_tracingEnabled || stage == Stage::NotYetStarted)
+            return;
+
+        PathString resultAssemblyName;
+        StackSString resultAssemblyPath;
+        if (resultAssembly != nullptr)
+        {
+            resultAssembly->GetAssemblyName()->GetDisplayName(resultAssemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+            resultAssemblyPath = resultAssembly->GetPEImage()->GetPath();
+        }
+
+        Result result;
+        StackSString errorMsg;
+        if (customError != nullptr)
+        {
+            errorMsg.Set(customError);
+            result = Result::Failure;
+        }
+        else if (!m_exceptionMessage.IsEmpty())
+        {
+            errorMsg = m_exceptionMessage;
+            result = Result::Exception;
+        }
+        else
+        {
+            switch (hr)
+            {
+                case S_FALSE:
+                case HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND):
+                    static_assert(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) == COR_E_FILENOTFOUND,
+                                    "COR_E_FILENOTFOUND has sane value");
+
+                    result = Result::AssemblyNotFound;
+                    errorMsg.Set(s_assemblyNotFoundMessage);
+                    break;
+
+                case FUSION_E_APP_DOMAIN_LOCKED:
+                    result = Result::IncompatibleVersion;
+
+                    {
+                        errorMsg.Set(W("Requested version"));
+                        if (m_assemblyNameObject != nullptr)
+                        {
+                            const auto &reqVersion = m_assemblyNameObject->GetVersion();
+                            errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
+                                reqVersion->GetMajor(),
+                                reqVersion->GetMinor(),
+                                reqVersion->GetBuild(),
+                                reqVersion->GetRevision());
+                        }
+
+                        errorMsg.Append(W(" is incompatible with found version"));
+                        if (resultAssembly != nullptr)
+                        {
+                            const auto &foundVersion = resultAssembly->GetAssemblyName()->GetVersion();
+                            errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
+                                foundVersion->GetMajor(),
+                                foundVersion->GetMinor(),
+                                foundVersion->GetBuild(),
+                                foundVersion->GetRevision());
+                        }
+                    }
+                    break;
+
+                case FUSION_E_REF_DEF_MISMATCH:
+                    result = Result::MismatchedAssemblyName;
+                    errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_assemblyName.GetUnicode());
+                    if (resultAssembly != nullptr)
+                        errorMsg.AppendPrintf(W(" '%s'"), resultAssemblyName.GetUnicode());
+
+                    break;
+
+                default:
+                    if (SUCCEEDED(hr))
+                    {
+                        result = Result::Success;
+                        _ASSERTE(resultAssembly != nullptr);
+                        // Leave errorMsg empty in this case.
+                    }
+                    else
+                    {
+                        result = Result::Failure;
+                        errorMsg.Printf(W("Resolution failed with HRESULT (%08x)"), m_hr);
+                    }
+            }
+        }
+
+        FireEtwResolutionAttempted(
+            GetClrInstanceId(),
+            m_assemblyName,
+            static_cast<uint16_t>(stage),
+            m_assemblyLoadContextName,
+            static_cast<uint16_t>(result),
+            resultAssemblyName,
+            resultAssemblyPath,
+            errorMsg);
+    }
+
+    // static
+    void ResolutionAttemptedOperation::TraceAppDomainAssemblyResolve(AssemblySpec *spec, PEAssembly *resultAssembly, Exception *exception)
+    {
+        if (!BinderTracing::IsEnabled())
+            return;
+
+        Result result;
+        StackSString errorMessage;
+        StackSString resultAssemblyName;
+        StackSString resultAssemblyPath;
+        if (exception != nullptr)
+        {
+            exception->GetMessage(errorMessage);
+            result = Result::Exception;
+        }
+        else if (resultAssembly != nullptr)
+        {
+            result = Result::Success;
+            resultAssemblyPath = resultAssembly->GetPath();
+            resultAssembly->GetDisplayName(resultAssemblyName);
+        }
+        else
+        {
+            result = Result::AssemblyNotFound;
+            errorMessage.Set(s_assemblyNotFoundMessage);
+        }
+
+        StackSString assemblyName;
+        spec->GetDisplayName(ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN, assemblyName);
+
+        StackSString alcName;
+        GetAssemblyLoadContextNameFromSpec(spec, alcName);
+
+        FireEtwResolutionAttempted(
+            GetClrInstanceId(),
+            assemblyName,
+            static_cast<uint16_t>(Stage::AppDomainAssemblyResolveEvent),
+            alcName,
+            static_cast<uint16_t>(result),
+            resultAssemblyName,
+            resultAssemblyPath,
+            errorMessage);
+    }
+}
+
+void BinderTracing::PathProbed(const WCHAR *path, BinderTracing::PathSource source, HRESULT hr)
+{
+    FireEtwKnownPathProbed(GetClrInstanceId(), path, source, hr);
 }

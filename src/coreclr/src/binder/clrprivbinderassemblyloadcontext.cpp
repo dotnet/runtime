@@ -107,6 +107,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *
     // would have already set the binder reference for the assembly, so we just need to
     // extract the reference now.
     *ppAssembly = pCoreCLRFoundAssembly.Extract();
+
 Exit:;
 
     return hr;
@@ -205,7 +206,9 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
             ReleaseHolder<CLRPrivBinderAssemblyLoadContext> pBinder;
 
             SAFE_NEW(pBinder, CLRPrivBinderAssemblyLoadContext);
-            hr = pBinder->m_appContext.Init();
+            UINT_PTR binderId;
+            pBinder->GetBinderID(&binderId);
+            hr = pBinder->m_appContext.Init(binderId);
             if(SUCCEEDED(hr))
             {
                 // Save the reference to the AppDomain in which the binder lives

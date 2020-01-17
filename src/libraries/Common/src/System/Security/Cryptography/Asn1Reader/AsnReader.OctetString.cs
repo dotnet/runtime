@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     internal partial class AsnReader
@@ -399,8 +400,8 @@ namespace System.Security.Cryptography.Asn1
             bytesRead = 0;
             int lastSegmentLength = MaxCERSegmentSize;
 
-            AsnReader tmpReader = new AsnReader(source, RuleSet);
-            Stack<(AsnReader, bool, int)> readerStack = null;
+            AsnReader? tmpReader = new AsnReader(source, RuleSet);
+            Stack<(AsnReader, bool, int)>? readerStack = null;
             int totalLength = 0;
             Asn1Tag tag = Asn1Tag.ConstructedBitString;
             Span<byte> curDest = destination;
@@ -545,7 +546,7 @@ namespace System.Security.Cryptography.Asn1
             Asn1Tag expectedTag,
             UniversalTagNumber universalTagNumber,
             out int bytesRead,
-            ref byte[] rented,
+            ref byte[]? rented,
             Span<byte> tmpSpace = default)
         {
             Debug.Assert(rented == null);

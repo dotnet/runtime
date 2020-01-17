@@ -1107,7 +1107,7 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
 
     if (memAccessKind == PERFSCORE_MEMORY_WRITE)
     {
-        // We assume that we won't read back from memory for the next WR_GENERAL (3) cycles
+        // We assume that we won't read back from memory for the next WR_GENERAL cycles
         // Thus we normally won't pay latency costs for writes.
         latency = max(0.0f, latency - PERFSCORE_LATENCY_WR_GENERAL);
     }
@@ -1119,6 +1119,34 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
     }
 
     return max(throughput, latency);
+}
+
+//------------------------------------------------------------------------------------
+// perfScoreUnhandledInstruction:
+//    Helper method used to report an unhandled instruction
+//
+// Arguments:
+//    id  - The current instruction descriptor to be evaluated
+//    pResult - pointer to struct holding the instruction characteristics
+//              if we return these are updated with default values
+//
+// Notes:
+//     When validating that the PerfScore handles every instruction.
+//     the #if 0 block is changed into a #ifdef DEBUG
+//     We will print the instruction and instruction group
+//     and instead of returning we will assert
+//
+//     Otherwise we will return default latencies of 1 cycle.
+//
+void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* pResult)
+{
+// Change this to #ifdef DEBUG to assert on any unhandled instructions
+#if 0
+    printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsName(id->idIns()), emitIfName(id->idInsFmt()));
+    assert(!"PerfScore: unhandled instruction");
+#endif
+    pResult->insThroughput = PERFSCORE_THROUGHPUT_1C;
+    pResult->insLatency    = PERFSCORE_LATENCY_1C;
 }
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)

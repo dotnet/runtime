@@ -135,7 +135,7 @@ namespace System.Data.OleDb.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(37438)]
+                return; // [ActiveIssue("https://github.com/dotnet/corefx/issues/37438")]
             }
 
             DataTable t1 = connection.GetSchema();
@@ -159,7 +159,7 @@ namespace System.Data.OleDb.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(37438)]
+                return; // [ActiveIssue("https://github.com/dotnet/corefx/issues/37438")]
             }
 
             DataTable schema = connection.GetSchema(tableName);

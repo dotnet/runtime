@@ -627,6 +627,18 @@ namespace System.Globalization.Tests
             Assert.Equal(version, new CultureInfo(cultureName).CompareInfo.Version);
         }
 
+        [Fact]
+        public void TestSortKey_ZeroWeightCodePoints()
+        {
+            // In the invariant globalization mode, there's no such thing as a zero-weight code point,
+            // so the U+200C ZERO WIDTH NON-JOINER code point contributes to the final sort key value.
+
+            CompareInfo compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+            SortKey sortKeyForEmptyString = compareInfo.GetSortKey("");
+            SortKey sortKeyForZeroWidthJoiner = compareInfo.GetSortKey("\u200c");
+            Assert.NotEqual(0, SortKey.Compare(sortKeyForEmptyString, sortKeyForZeroWidthJoiner));
+        }
+
 
         private static StringComparison GetStringComparison(CompareOptions options)
         {

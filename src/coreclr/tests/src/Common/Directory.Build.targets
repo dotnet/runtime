@@ -16,20 +16,20 @@
           DependsOnTargets="ResolveAssemblyReferences">
 
     <ItemGroup>
-      <RunTimeDependecyExclude Include="$(CORE_ROOT)\**\*.*"  />
-      <RunTimeDependecyExcludeFiles Include="@(RunTimeDependecyExclude -> '%(FileName)%(Extension)')" />
-      <RunTimeDependecyExcludeFiles Include="@(RunTimeDependecyExclude -> '%(FileName).ni%(Extension)')" />
-      <RunTimeDependecyExcludeFiles Include="@(RunTimeDependecyExclude -> '%(FileName).pdb')" />
+      <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*"  />
+      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName)%(Extension)')" />
+      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).ni%(Extension)')" />
+      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).pdb')" />
       <AllResolvedRuntimeDependencies Include="@(RuntimeCopyLocalItems -> '%(FileName)%(Extension)');@(NativeCopyLocalItems -> '%(FileName)%(Extension)')">
         <File>%(Identity)</File>
       </AllResolvedRuntimeDependencies>
-      <RunTimeDependecyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependecyExcludeFiles)"/>
-      <RunTimeDependecyCopyLocal Include="@(RunTimeDependecyCopyLocalFile -> '%(File)')"  />
-      <RunTimeDependecyCopyLocal Include="$(TargetingPackPath)/*" />
+      <RunTimeDependencyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependencyExcludeFiles)"/>
+      <RunTimeDependencyCopyLocal Include="@(RunTimeDependencyCopyLocalFile -> '%(File)')"  />
+      <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
     </ItemGroup>
 
     <Copy
-      SourceFiles="@(RunTimeDependecyCopyLocal)"
+      SourceFiles="@(RunTimeDependencyCopyLocal)"
       DestinationFolder="$(CORE_ROOT)"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"

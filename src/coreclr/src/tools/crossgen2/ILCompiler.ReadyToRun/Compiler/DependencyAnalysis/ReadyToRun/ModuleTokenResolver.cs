@@ -32,14 +32,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
-        private readonly CompilerTypeSystemContext _typeSystemContext;
-
         private Func<EcmaModule, int> _moduleIndexLookup;
+
+        public CompilerTypeSystemContext CompilerContext { get; }
 
         public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
         {
             _compilationModuleGroup = compilationModuleGroup;
-            _typeSystemContext = typeSystemContext;
+            CompilerContext = typeSystemContext;
         }
 
         public void SetModuleIndexLookup(Func<EcmaModule, int> moduleIndexLookup)
@@ -56,6 +56,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ModuleToken token;
             if (_typeToRefTokens.TryGetValue(type, out token))
+            {
+                return token;
+            }
+
+            // If the token was not lazily mapped, search the input compilation set for a type reference token
+            if (_compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
             {
                 return token;
             }
@@ -103,7 +109,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             FieldDesc canonField = field;
             if (owningCanonType != field.OwningType)
             {
-                canonField = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
+                canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
             }
 
             ModuleToken token;
@@ -160,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             FieldDesc canonField = field;
             if (owningCanonType != field.OwningType)
             {
-                canonField = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
+                canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
             }
 
             _fieldToRefTokens[canonField] = token;

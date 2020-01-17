@@ -468,15 +468,16 @@ public:
                        MethodTableWriteableData::enum_flag_Unrestored);
     }
 
-    void SetIsFullyLoadedForBuildMethodTable()
+    void SetIsRestoredForBuildArrayMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
 
         // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        m_dwFlags &= ~(MethodTableWriteableData::enum_flag_UnrestoredTypeKey |
-                       MethodTableWriteableData::enum_flag_Unrestored |
-                       MethodTableWriteableData::enum_flag_IsNotFullyLoaded |
-                       MethodTableWriteableData::enum_flag_HasApproxParent);
+        SetIsRestoredForBuildMethodTable();
+
+        // Array's parent is always precise 
+        m_dwFlags &= ~(MethodTableWriteableData::enum_flag_HasApproxParent);
+
     }
 
     inline CrossModuleGenericsStaticsInfo * GetCrossModuleGenericsStaticsInfo()
@@ -1973,9 +1974,9 @@ public:
     //
     BOOL CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited = NULL);
     BOOL CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVisited = NULL);
-    BOOL CanCastToClassOrInterface(MethodTable *pTargetMT, TypeHandlePairList *pVisited);
+    BOOL CanCastTo(MethodTable* pTargetMT, TypeHandlePairList *pVisited);
     BOOL ArraySupportsBizarreInterface(MethodTable* pInterfaceMT, TypeHandlePairList* pVisited);
-    BOOL ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pVisited);
+    BOOL ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* pVisited);
 
     BOOL CanCastByVarianceToInterfaceOrDelegate(MethodTable* pTargetMT, TypeHandlePairList* pVisited);
 

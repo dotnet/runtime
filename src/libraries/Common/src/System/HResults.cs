@@ -138,6 +138,7 @@ namespace System
         internal const int CTL_E_PERMISSIONDENIED = unchecked((int)0x800A0046);
         internal const int E_ELEMENTNOTAVAILABLE = unchecked((int)0x802B001F);
         internal const int E_ELEMENTNOTENABLED = unchecked((int)0x802B001E);
+        internal const int E_FILENOTFOUND = unchecked((int)0x80070002);
         internal const int E_FAIL = unchecked((int)0x80004005);
         internal const int E_HANDLE = unchecked((int)0x80070006);
         internal const int E_ILLEGAL_DELEGATE_ASSIGNMENT = unchecked((int)0x80000018);

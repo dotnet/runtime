@@ -31,12 +31,13 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The element on the top of the stack.
         /// </summary>
-        private readonly T _head;
+        [MaybeNull]
+        private readonly T _head = default!;
 
         /// <summary>
         /// A stack that contains the rest of the elements (under the top element).
         /// </summary>
-        private readonly ImmutableStack<T> _tail;
+        private readonly ImmutableStack<T>? _tail;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableStack{T}"/> class
@@ -114,7 +115,7 @@ namespace System.Collections.Immutable
                 throw new InvalidOperationException(SR.InvalidEmptyOperation);
             }
 
-            return _head;
+            return _head!;
         }
 
 #if !NETSTANDARD1_0
@@ -133,7 +134,7 @@ namespace System.Collections.Immutable
                 throw new InvalidOperationException(SR.InvalidEmptyOperation);
             }
 
-            return ref _head;
+            return ref _head!;
         }
 #endif
 

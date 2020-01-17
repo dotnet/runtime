@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public partial class Regex : ISerializable
     {
-        private const int MaxOptionShift = 10;
+        internal const int MaxOptionShift = 10;
 
         protected internal string? pattern;                   // The string pattern provided
         protected internal RegexOptions roptions;             // the top-level options from the options string
@@ -207,7 +207,6 @@ namespace System.Text.RegularExpressions
         }
 #endif
 
-#if FEATURE_COMPILEAPIS
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
@@ -222,7 +221,6 @@ namespace System.Text.RegularExpressions
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
         }
-#endif // FEATURE_COMPILEAPIS
 
         /// <summary>
         /// Escapes a minimal set of metacharacters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and
@@ -461,6 +459,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// True if the regex has debugging enabled
         /// </summary>
+        [ExcludeFromCodeCoverage]
         internal bool Debug => (roptions & RegexOptions.Debug) != 0;
 #endif
     }

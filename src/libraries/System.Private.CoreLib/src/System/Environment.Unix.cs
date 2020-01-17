@@ -17,6 +17,8 @@ namespace System
     {
         private static Func<string, object>? s_directoryCreateDirectory;
 
+        public static bool UserInteractive => true;
+
         private static string CurrentDirectoryCore
         {
             get => Interop.Sys.GetCwd();

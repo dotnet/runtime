@@ -315,23 +315,18 @@ namespace System.Diagnostics
 
         private bool WaitForInputIdleCore(int milliseconds)
         {
-            const int WAIT_OBJECT_0 = 0x00000000;
-            const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
-            const int WAIT_TIMEOUT = 0x00000102;
-
             bool idle;
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.SYNCHRONIZE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION))
             {
                 int ret = Interop.User32.WaitForInputIdle(handle, milliseconds);
                 switch (ret)
                 {
-                    case WAIT_OBJECT_0:
+                    case Interop.Kernel32.WAIT_OBJECT_0:
                         idle = true;
                         break;
-                    case WAIT_TIMEOUT:
+                    case Interop.Kernel32.WAIT_TIMEOUT:
                         idle = false;
                         break;
-                    case WAIT_FAILED:
                     default:
                         throw new InvalidOperationException(SR.InputIdleUnkownError);
                 }

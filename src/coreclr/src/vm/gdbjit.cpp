@@ -15,11 +15,7 @@
 #include "gdbjit.h"
 #include "gdbjithelpers.h"
 
-#ifndef __GNUC__
-__declspec(thread) bool tls_isSymReaderInProgress = false;
-#else // !__GNUC__
 thread_local bool tls_isSymReaderInProgress = false;
-#endif // !__GNUC__
 
 #ifdef _DEBUG
 static void DumpElf(const char* methodName, const char *addr, size_t size)
@@ -178,7 +174,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
             TypeInfoBase* lengthTypeInfo = GetTypeInfoFromTypeHandle(
                 TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4)), pTypeMap, method);
 
-            TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetTypeParam(), pTypeMap, method);
+            TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetArrayElementTypeHandle(), pTypeMap, method);
             info->m_array_type = new ArrayTypeInfo(typeHandle, 1, valTypeInfo);
 
             info->members[0].m_member_name = new char[16];

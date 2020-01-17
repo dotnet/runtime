@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netfx;
+      $(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

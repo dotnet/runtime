@@ -70,7 +70,7 @@ namespace System.Text.Json
         private void AppendStackFrame(StringBuilder sb, in ReadStackFrame frame)
         {
             // Append the property name.
-            string propertyName = GetPropertyName(frame);
+            string? propertyName = GetPropertyName(frame);
             AppendPropertyName(sb, propertyName);
 
             if (frame.JsonClassInfo != null)
@@ -82,11 +82,11 @@ namespace System.Text.Json
                 }
                 else if (frame.IsProcessingEnumerable())
                 {
-                    IList list = frame.TempEnumerableValues;
+                    IList? list = frame.TempEnumerableValues;
                     if (list == null && frame.ReturnValue != null)
                     {
 
-                        list = (IList)frame.JsonPropertyInfo?.GetValueAsObject(frame.ReturnValue);
+                        list = (IList?)frame.JsonPropertyInfo?.GetValueAsObject(frame.ReturnValue);
                     }
                     if (list != null)
                     {
@@ -98,7 +98,7 @@ namespace System.Text.Json
             }
         }
 
-        private void AppendPropertyName(StringBuilder sb, string propertyName)
+        private void AppendPropertyName(StringBuilder sb, string? propertyName)
         {
             if (propertyName != null)
             {
@@ -116,17 +116,17 @@ namespace System.Text.Json
             }
         }
 
-        private string GetPropertyName(in ReadStackFrame frame)
+        private string? GetPropertyName(in ReadStackFrame frame)
         {
             // Attempt to get the JSON property name from the frame.
-            byte[] utf8PropertyName = frame.JsonPropertyName;
+            byte[]? utf8PropertyName = frame.JsonPropertyName;
             if (utf8PropertyName == null)
             {
                 // Attempt to get the JSON property name from the JsonPropertyInfo.
                 utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName;
             }
 
-            string propertyName;
+            string? propertyName;
             if (utf8PropertyName != null)
             {
                 propertyName = JsonHelpers.Utf8GetString(utf8PropertyName);

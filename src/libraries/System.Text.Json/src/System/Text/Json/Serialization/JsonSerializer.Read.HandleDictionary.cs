@@ -14,10 +14,10 @@ namespace System.Text.Json
         {
             Debug.Assert(!state.Current.IsProcessingEnumerable());
 
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
+            JsonPropertyInfo? jsonPropertyInfo = state.Current.JsonPropertyInfo;
             if (jsonPropertyInfo == null)
             {
-                jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootProperty(options);
+                jsonPropertyInfo = state.Current.JsonClassInfo!.CreateRootProperty(options);
             }
 
             Debug.Assert(jsonPropertyInfo != null);
@@ -26,14 +26,14 @@ namespace System.Text.Json
             if (state.Current.CollectionPropertyInitialized)
             {
                 state.Push();
-                state.Current.JsonClassInfo = jsonPropertyInfo.ElementClassInfo;
+                state.Current.JsonClassInfo = jsonPropertyInfo.ElementClassInfo!;
                 state.Current.InitializeJsonPropertyInfo();
 
                 JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
                 if (state.Current.IsProcessingDictionary())
                 {
-                    object dictValue = ReadStackFrame.CreateDictionaryValue(ref state);
+                    object? dictValue = ReadStackFrame.CreateDictionaryValue(ref state);
 
                     // If value is not null, then we don't have a converter so apply the value.
                     if (dictValue != null)
@@ -63,13 +63,14 @@ namespace System.Text.Json
 
             state.Current.CollectionPropertyInitialized = true;
 
-            object value = ReadStackFrame.CreateDictionaryValue(ref state);
+            object? value = ReadStackFrame.CreateDictionaryValue(ref state);
             if (value != null)
             {
                 state.Current.DetermineIfDictionaryCanBePopulated(value);
 
                 if (state.Current.ReturnValue != null)
                 {
+                    Debug.Assert(state.Current.JsonPropertyInfo != null);
                     state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
                 }
                 else
@@ -82,18 +83,21 @@ namespace System.Text.Json
 
         private static void HandleEndDictionary(JsonSerializerOptions options, ref ReadStack state)
         {
-            Debug.Assert(!state.Current.SkipProperty);
+            Debug.Assert(!state.Current.SkipProperty && state.Current.JsonPropertyInfo != null);
 
             if (state.Current.IsProcessingProperty(ClassType.Dictionary))
             {
                 if (state.Current.TempDictionaryValues != null)
                 {
-                    JsonDictionaryConverter converter = state.Current.JsonPropertyInfo.DictionaryConverter;
+                    JsonDictionaryConverter? converter = state.Current.JsonPropertyInfo.DictionaryConverter;
+                    Debug.Assert(converter != null);
                     state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, converter.CreateFromDictionary(ref state, state.Current.TempDictionaryValues, options));
                     state.Current.EndProperty();
                 }
                 else
                 {
+                    Debug.Assert(state.Current.JsonClassInfo != null);
+
                     // Handle special case of DataExtensionProperty where we just added a dictionary element to the extension property.
                     // Since the JSON value is not a dictionary element (it's a normal property in JSON) a JsonTokenType.EndObject
                     // encountered here is from the outer object so forward to HandleEndObject().
@@ -110,10 +114,11 @@ namespace System.Text.Json
             }
             else
             {
-                object value;
+                object? value;
                 if (state.Current.TempDictionaryValues != null)
                 {
-                    JsonDictionaryConverter converter = state.Current.JsonPropertyInfo.DictionaryConverter;
+                    JsonDictionaryConverter? converter = state.Current.JsonPropertyInfo.DictionaryConverter;
+                    Debug.Assert(converter != null);
                     value = converter.CreateFromDictionary(ref state, state.Current.TempDictionaryValues, options);
                 }
                 else

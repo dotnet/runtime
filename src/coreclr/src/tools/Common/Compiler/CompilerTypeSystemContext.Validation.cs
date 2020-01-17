@@ -21,6 +21,17 @@ namespace ILCompiler
             _validTypes.GetOrCreateValue(type);
         }
 
+        public void EnsureLoadableMethod(MethodDesc method)
+        {
+            EnsureLoadableType(method.OwningType);
+
+            if (method.HasInstantiation)
+            {
+                foreach (var instType in method.Instantiation)
+                    EnsureLoadableType(instType);
+            }
+        }
+
         class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
         {
             protected override bool CompareKeyToValue(TypeDesc key, TypeDesc value) => key == value;
@@ -65,11 +76,14 @@ namespace ILCompiler
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    LayoutInt elementSize = parameterType.GetElementSize();
-                    if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
+                    if (!parameterType.IsRuntimeDeterminedSubtype)
                     {
-                        // Element size over 64k can't be encoded in the GCDesc
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
+                        LayoutInt elementSize = parameterType.GetElementSize();
+                        if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
+                        {
+                            // Element size over 64k can't be encoded in the GCDesc
+                            ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
+                        }
                     }
 
                     if (((ArrayType)parameterizedType).Rank > 32)
@@ -91,13 +105,17 @@ namespace ILCompiler
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
+            else if (type.IsGenericParameter)
+            {
+                return type;
+            }
             else
             {
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitons
-                if (type.IsGenericDefinition)
+                // Don't validate generic definitons or runtime determined subtypes
+                if (type.IsGenericDefinition || type.IsRuntimeDeterminedSubtype)
                 {
                     return type;
                 }
@@ -112,6 +130,11 @@ namespace ILCompiler
                 foreach (var intf in type.RuntimeInterfaces)
                 {
                     ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(intf.NormalizeInstantiation());
+                }
+
+                if (type.BaseType != null)
+                {
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type.BaseType);
                 }
 
                 var defType = (DefType)type;

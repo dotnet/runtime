@@ -1,7 +1,6 @@
 # Copyright (c) .NET Foundation and contributors. All rights reserved.
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-cmake_minimum_required (VERSION 2.6)
 project(test_fx_ver)
 
 set(EXE_NAME "test_fx_ver")
@@ -29,7 +28,6 @@ if(WIN32)
     add_compile_options($<$<CONFIG:Release>:/MT>)
     add_compile_options($<$<CONFIG:Debug>:/MTd>)
 else()
-    add_compile_options(-fPIE)
     add_compile_options(-fvisibility=hidden)
 endif()
 

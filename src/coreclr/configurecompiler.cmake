@@ -11,6 +11,7 @@ cmake_policy(SET CMP0083 NEW)
 include(CheckPIESupported)
 include(CheckCXXCompilerFlag)
 
+
 # All code we build should be compiled as position independent
 check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES CXX)
 if(NOT MSVC AND NOT CMAKE_CXX_LINK_PIE_SUPPORTED)
@@ -641,3 +642,7 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
   endif(CLR_CMAKE_PLATFORM_UNIX)
 
 endif(CLR_CMAKE_ENABLE_CODE_COVERAGE)
+
+if (CMAKE_BUILD_TOOL STREQUAL nmake)
+  set(CMAKE_RC_CREATE_SHARED_LIBRARY "${CMAKE_CXX_CREATE_SHARED_LIBRARY}")
+endif(CMAKE_BUILD_TOOL STREQUAL nmake)

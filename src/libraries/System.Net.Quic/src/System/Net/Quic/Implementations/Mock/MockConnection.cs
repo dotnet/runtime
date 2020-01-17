@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
-using System.Diagnostics;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
@@ -169,9 +168,10 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockStream(socket, streamId, bidirectional: bidirectional);
         }
 
-        internal override void Close()
+        internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
         {
             Dispose();
+            return default;
         }
 
         private void CheckDisposed()

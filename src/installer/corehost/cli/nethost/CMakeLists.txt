@@ -2,7 +2,6 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 # See the LICENSE file in the project root for more information.
 
-cmake_minimum_required (VERSION 2.6)
 project(nethost)
 
 set(DOTNET_PROJECT_NAME "nethost")
@@ -23,10 +22,12 @@ if(WIN32)
 endif()
 
 include(../lib.cmake)
+include(../lib_static.cmake)
 
 add_definitions(-DFEATURE_LIBHOST=1)
 add_definitions(-DNETHOST_EXPORT)
 
 install(FILES nethost.h DESTINATION corehost)
 install(TARGETS nethost DESTINATION corehost)
+install(TARGETS libnethost DESTINATION corehost)
 install_symbols(nethost corehost)

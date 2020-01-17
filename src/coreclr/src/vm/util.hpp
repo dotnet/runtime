@@ -619,9 +619,6 @@ CLRUnmapViewOfFile(
     IN LPVOID lpBaseAddress
     );
 
-BOOL CompareFiles(HANDLE hFile1,HANDLE hFile2);
-
-
 #ifndef DACCESS_COMPILE
 FORCEINLINE void VoidCLRUnmapViewOfFile(void *ptr) { CLRUnmapViewOfFile(ptr); }
 typedef Wrapper<void *, DoNothing, VoidCLRUnmapViewOfFile> CLRMapViewHolder;

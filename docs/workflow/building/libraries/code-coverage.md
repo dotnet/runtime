@@ -58,6 +58,6 @@ Some of the libraries for which contracts and tests live in the corefx repo are 
 
 If the test project does not set the property `TestRuntime` to `true` and you want to collect code coverage that includes types in System.Private.CoreLib.dll add `/p:TestRuntime=true` to the coverage build command listed above.
 
-If you want to get coverage report against a private build of System.Private.CoreLib follow the steps outlined at [Testing with Private CoreClr Bits](../project-docs/developer-guide.md#testing-with-private-coreclr-bits).
+If you want to get coverage report against a private build of System.Private.CoreLib (// TODO //).
 
 The build and test projects take care of copying assemblies and PDBs as needed for coverage runs. The resulting code coverage report should now also include details for System.Private.CoreLib.

@@ -849,21 +849,26 @@ void DynamicMethodDesc::Destroy()
 
     _ASSERTE(IsDynamicMethod());
     LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-
     LOG((LF_BCL, LL_INFO1000, "Level3 - Destroying DynamicMethod {0x%p}\n", this));
-    if (!m_pSig.IsNull())
-    {
-        delete[] (BYTE*)m_pSig.GetValue();
-        m_pSig.SetValueMaybeNull(NULL);
-    }
-    m_cSig = 0;
-    if (!m_pszMethodName.IsNull())
-    {
-        delete[] m_pszMethodName.GetValue();
-        m_pszMethodName.SetValueMaybeNull(NULL);
-    }
+
+    // The m_pSig and m_pszMethodName need to be destroyed after the GetLCGMethodResolver()->Destroy() call
+    // otherwise the EEJitManager::CodeHeapIterator could return DynamicMethodDesc with these members NULLed, but
+    // the nibble map for the corresponding code memory indicating that this DynamicMethodDesc is still alive.
+    PCODE pSig = m_pSig.GetValue();
+    PTR_CUTF8 pszMethodName = m_pszMethodName.GetValue();
 
     GetLCGMethodResolver()->Destroy();
+    // The current DynamicMethodDesc storage is destroyed at this point
+
+    if (pszMethodName != NULL)
+    {
+        delete[] pszMethodName;
+    }
+
+    if (pSig != NULL)
+    {
+        delete[] (BYTE*)pSig;
+    }
 
     if (pLoaderAllocator->IsCollectible())
     {

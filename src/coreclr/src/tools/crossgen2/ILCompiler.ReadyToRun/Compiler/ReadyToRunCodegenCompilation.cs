@@ -205,6 +205,8 @@ namespace ILCompiler
 
         private int _parallelism;
 
+        private bool _generateMapFile;
+
         public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
@@ -220,11 +222,13 @@ namespace ILCompiler
             string inputFilePath,
             IEnumerable<ModuleDesc> modulesBeingInstrumented,
             bool resilient,
+            bool generateMapFile,
             int parallelism)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, modulesBeingInstrumented, logger)
         {
             _resilient = resilient;
             _parallelism = parallelism;
+            _generateMapFile = generateMapFile;
             NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
             _jitConfigProvider = configProvider;
@@ -247,7 +251,7 @@ namespace ILCompiler
                 using (PerfEventSource.StartStopEvents.EmittingEvents())
                 {
                     NodeFactory.SetMarkingComplete();
-                    ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory);
+                    ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory, _generateMapFile);
                 }
             }
         }

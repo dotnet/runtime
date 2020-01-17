@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System.Diagnostics
 {
@@ -106,7 +105,7 @@ namespace System.Diagnostics
             {
                 if (memRef != IntPtr.Zero)
                 {
-                    return Marshal.PtrToStringUni(memRef);
+                    return Marshal.PtrToStringUni(memRef)!;
                 }
             }
 

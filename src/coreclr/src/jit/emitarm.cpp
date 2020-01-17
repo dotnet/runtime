@@ -7991,8 +7991,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     // ToDo: Calculate actual throughput and latency values
     //
-    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
-    result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+    result.insLatency    = PERFSCORE_LATENCY_1C;
 
     return result;
 }

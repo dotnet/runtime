@@ -499,7 +499,7 @@ namespace System.Net.Tests
             Assert.Equal(int.MaxValue, request.Timeout);
         }
 
-        [ActiveIssue(22627)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22627")]
         [Fact]
         public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
         {
@@ -1450,7 +1450,7 @@ namespace System.Net.Tests
             Assert.NotNull(request.Proxy);
         }
 
-        [ActiveIssue(42323)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/42323")]
         [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [Fact]
@@ -1715,7 +1715,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue(19083)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/19083")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "dotnet/corefx #19083")]
         [Fact]
         public async Task Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException()
@@ -1757,7 +1757,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue(18800)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/18800")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_EndGetResponseThrowsWebException()
         {

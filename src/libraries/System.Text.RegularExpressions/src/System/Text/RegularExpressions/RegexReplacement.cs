@@ -30,7 +30,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
         {
-            if (concat.Type() != RegexNode.Concatenate)
+            if (concat.Type != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);
 
             Span<char> vsbStack = stackalloc char[256];
@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions
             {
                 RegexNode child = concat.Child(i);
 
-                switch (child.Type())
+                switch (child.Type)
                 {
                     case RegexNode.Multi:
                         vsb.Append(child.Str!);

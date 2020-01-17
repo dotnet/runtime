@@ -4121,6 +4121,13 @@ namespace System.Net.Sockets
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
+
+            EndPoint oldEndPoint = _rightEndPoint;
+            if (_rightEndPoint == null)
+            {
+                _rightEndPoint = endPointSnapshot;
+            }
+
             SocketError socketError;
             try
             {
@@ -4128,9 +4135,15 @@ namespace System.Net.Sockets
             }
             catch
             {
+                _rightEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
                 throw;
+            }
+
+            if (!CheckErrorAndUpdateStatus(socketError))
+            {
+                _rightEndPoint = oldEndPoint;
             }
 
             bool retval = (socketError == SocketError.IOPending);
@@ -4616,7 +4629,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.ioctlsocket returns errorCode:{errorCode}");
 
-            // We will update only internal state but only on successfull win32 call
+            // We will update only internal state but only on successful win32 call
             // so if the native call fails, the state will remain the same.
             if (errorCode == SocketError.Success)
             {

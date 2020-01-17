@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public partial class BigIntegerConstructorTest
+    public class BigIntegerConstructorTest
     {
         private static int s_samples = 10;
         private static Random s_random = new Random(100);
@@ -957,7 +957,9 @@ namespace System.Numerics.Tests
 
             VerifyCtorByteArray(value);
         }
-        static partial void VerifyCtorByteSpan(byte[] value);
+
+        static void VerifyCtorByteSpan(byte[] value) =>
+            Assert.Equal(new BigInteger(value), new BigInteger(new ReadOnlySpan<byte>(value)));
 
         private static void VerifyCtorByteArray(byte[] value)
         {

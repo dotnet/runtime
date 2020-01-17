@@ -102,7 +102,12 @@ namespace System.Net.Quic.Implementations.Mock
             _socket.Send(buffer);
         }
 
-        internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return WriteAsync(buffer, endStream: false, cancellationToken);
+        }
+
+        internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
@@ -117,6 +122,11 @@ namespace System.Net.Quic.Implementations.Mock
             }
 
             await _socket.SendAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+
+            if (endStream)
+            {
+                _socket.Shutdown(SocketShutdown.Send);
+            }
         }
 
         internal override void Flush()
@@ -131,16 +141,16 @@ namespace System.Net.Quic.Implementations.Mock
             return Task.CompletedTask;
         }
 
-        internal override void ShutdownRead()
+        internal override void AbortRead()
         {
             throw new NotImplementedException();
         }
 
-        internal override void ShutdownWrite()
+        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
-            _socket.Shutdown(SocketShutdown.Send);
+            return default;
         }
 
         private void CheckDisposed()
@@ -160,6 +170,19 @@ namespace System.Net.Quic.Implementations.Mock
                 _socket?.Dispose();
                 _socket = null;
             }
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+
+                _socket?.Dispose();
+                _socket = null;
+            }
+
+            return default;
         }
     }
 }

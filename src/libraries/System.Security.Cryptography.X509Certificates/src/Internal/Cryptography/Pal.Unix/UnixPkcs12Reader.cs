@@ -19,6 +19,7 @@ namespace Internal.Cryptography.Pal
     internal abstract class UnixPkcs12Reader : IDisposable
     {
         private const string DecryptedSentinel = nameof(UnixPkcs12Reader);
+        private const int ErrorInvalidPasswordHResult = unchecked((int)0x80070056);
 
         private PfxAsn _pfxAsn;
         private ContentInfoAsn[] _safeContentsValues;
@@ -190,7 +191,10 @@ namespace Internal.Cryptography.Pal
             }
             catch (Exception e)
             {
-                throw new CryptographicException(SR.Cryptography_Pfx_BadPassword, e);
+                throw new CryptographicException(SR.Cryptography_Pfx_BadPassword, e)
+                {
+                    HResult = ErrorInvalidPasswordHResult
+                };
             }
             finally
             {
@@ -225,7 +229,10 @@ namespace Internal.Cryptography.Pal
                 return;
             }
 
-            throw new CryptographicException(SR.Cryptography_Pfx_BadPassword);
+            throw new CryptographicException(SR.Cryptography_Pfx_BadPassword)
+            {
+                HResult = ErrorInvalidPasswordHResult
+            };
         }
 
         private void Decrypt(ReadOnlySpan<char> password, ReadOnlyMemory<byte> authSafeContents)

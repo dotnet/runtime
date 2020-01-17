@@ -323,6 +323,7 @@ namespace ILCompiler
                     builder
                         .UseIbcTuning(_commandLineOptions.Tuning)
                         .UseResilience(_commandLineOptions.Resilient)
+                        .UseMapFile(_commandLineOptions.Map)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseILProvider(ilProvider)
                         .UseJitPath(_commandLineOptions.JitPath)
@@ -406,6 +407,7 @@ namespace ILCompiler
             for (int i = 0; i < failingMethod.Instantiation.Length; i++)
                 Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");
 
+            Console.WriteLine();
             return false;
         }
 

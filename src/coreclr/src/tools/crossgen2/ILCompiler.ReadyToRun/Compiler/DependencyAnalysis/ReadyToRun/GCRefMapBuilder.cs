@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _transitionBlock = TransitionBlock.FromTarget(target);
         }
 
-        public void GetCallRefMap(MethodDesc method)
+        public void GetCallRefMap(MethodDesc method, bool isUnboxingStub)
         {
             TransitionBlock transitionBlock = TransitionBlock.FromTarget(method.Context.Target);
 
@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 parameterTypes[parameterIndex] = new TypeHandle(method.Signature[parameterIndex]);
             }
             CallingConventions callingConventions = (hasThis ? CallingConventions.ManagedInstance : CallingConventions.ManagedStatic);
-            bool hasParamType = method.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg();
+            bool hasParamType = method.RequiresInstArg() && !isUnboxingStub;
             bool extraFunctionPointerArg = false;
             bool[] forcedByRefParams = new bool[parameterTypes.Length];
             bool skipFirstArg = false;
@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             CORCOMPILE_GCREFMAP_TOKENS[] fakeStack = new CORCOMPILE_GCREFMAP_TOKENS[transitionBlock.SizeOfTransitionBlock + nStackBytes];
 
             // Fill it in
-            FakeGcScanRoots(method, argit, fakeStack);
+            FakeGcScanRoots(method, argit, fakeStack, isUnboxingStub);
 
             // Encode the ref map
             uint nStackSlots;
@@ -147,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <summary>
         /// Fill in the GC-relevant stack frame locations.
         /// </summary>
-        private void FakeGcScanRoots(MethodDesc method, ArgIterator argit, CORCOMPILE_GCREFMAP_TOKENS[] frame)
+        private void FakeGcScanRoots(MethodDesc method, ArgIterator argit, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool isUnboxingStub)
         {
             // Encode generic instantiation arg
             if (argit.HasParamType)
@@ -165,7 +165,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // If the function has a this pointer, add it to the mask
             if (argit.HasThis)
             {
-                bool isUnboxingStub = false; // TODO: is this correct?
                 bool interior = method.OwningType.IsValueType && !isUnboxingStub;
 
                 frame[_transitionBlock.ThisOffset] = (interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF);
@@ -284,7 +283,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (!field.IsStatic)
                 {
-                    GcScanRoots(field.FieldType, argDest, field.Offset.AsInt, frame);
+                    GcScanRoots(field.FieldType, argDest, delta + field.Offset.AsInt, frame);
                 }
             }
         }

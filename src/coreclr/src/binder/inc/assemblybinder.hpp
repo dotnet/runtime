@@ -24,14 +24,6 @@ class CLRPrivBinderCoreCLR;
 
 namespace BINDER_SPACE
 {
-    typedef enum
-    {
-        kBindingStoreGAC      = 0x01,
-        kBindingStoreManifest = 0x02,
-        kBindingStoreHost     = 0x04,
-        kBindingStoreContext  = 0x08
-    } BindingStore;
-
     class AssemblyBinder
     {
     public:

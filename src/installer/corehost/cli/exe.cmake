@@ -4,6 +4,9 @@
 
 project (${DOTNET_PROJECT_NAME})
 
+cmake_policy(SET CMP0011 NEW)
+cmake_policy(SET CMP0083 NEW)
+
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 
 # Include directories

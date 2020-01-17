@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public partial class ToStringTest
+    public class ToStringTest
     {
         private static bool s_noZeroOut = true;
 
@@ -1460,7 +1460,29 @@ namespace System.Numerics.Tests
             }
         }
 
-        static partial void VerifyTryFormat(string test, string format, IFormatProvider provider, bool expectError, string expectedResult);
+        static void VerifyTryFormat(string test, string format, IFormatProvider provider, bool expectError, string expectedResult)
+        {
+            try
+            {
+                BigInteger bi = BigInteger.Parse(test, provider);
+
+                char[] destination = expectedResult != null ? new char[expectedResult.Length] : Array.Empty<char>();
+                Assert.True(bi.TryFormat(destination, out int charsWritten, format, provider));
+                Assert.False(expectError);
+
+                VerifyExpectedStringResult(expectedResult, new string(destination, 0, charsWritten));
+
+                if (expectedResult.Length > 0)
+                {
+                    Assert.False(bi.TryFormat(new char[expectedResult.Length - 1], out charsWritten, format, provider));
+                    Assert.Equal(0, charsWritten);
+                }
+            }
+            catch (FormatException)
+            {
+                Assert.True(expectError);
+            }
+        }
 
         private static string GetDigitSequence(int min, int max, Random random)
         {

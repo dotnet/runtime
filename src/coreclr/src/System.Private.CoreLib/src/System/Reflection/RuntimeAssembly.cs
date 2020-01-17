@@ -325,14 +325,13 @@ namespace System.Reflection
                 assemblyRef.ProcessorArchitecture = ProcessorArchitecture.None;
             }
 
-            string? codeBase = VerifyCodeBase(assemblyRef.CodeBase);
+            Debug.Assert(assemblyRef.CodeBase == null);
 
-            return nLoad(assemblyRef, codeBase, null, ref stackMark, true, assemblyLoadContext);
+            return nLoad(assemblyRef, null, ref stackMark, true, assemblyLoadContext);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern RuntimeAssembly nLoad(AssemblyName fileName,
-                                                    string? codeBase,
                                                     RuntimeAssembly? assemblyContext,
                                                     ref StackCrawlMark stackMark,
                                                     bool throwOnFileNotFound,
@@ -456,34 +455,6 @@ namespace System.Reflection
 
         public override long HostContext => 0;
 
-        private static string? VerifyCodeBase(string? codebase)
-        {
-            if (codebase == null)
-                return null;
-
-            int len = codebase.Length;
-            if (len == 0)
-                return null;
-
-
-            int j = codebase.IndexOf(':');
-            // Check to see if the url has a prefix
-            if ((j != -1) &&
-                (j + 2 < len) &&
-                ((codebase[j + 1] == '/') || (codebase[j + 1] == '\\')) &&
-                ((codebase[j + 2] == '/') || (codebase[j + 2] == '\\')))
-                return codebase;
-#if PLATFORM_WINDOWS
-            else if ((len > 2) && (codebase[0] == '\\') && (codebase[1] == '\\'))
-                return "file://" + codebase;
-            else
-                return "file:///" + Path.GetFullPath(codebase);
-#else
-            else
-                return "file://" + Path.GetFullPath(codebase);
-#endif // PLATFORM_WINDOWS
-        }
-
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetVersion(QCallAssembly assembly,
                                               out int majVer,
@@ -589,7 +560,7 @@ namespace System.Reflection
             // This stack crawl mark is never used because the requesting assembly is explicitly specified,
             // so the value could be anything.
             StackCrawlMark unused = default;
-            RuntimeAssembly? retAssembly = nLoad(an, null, this, ref unused, throwOnFileNotFound);
+            RuntimeAssembly? retAssembly = nLoad(an, this, ref unused, throwOnFileNotFound);
 
             if (retAssembly == this)
             {

@@ -189,7 +189,21 @@ namespace ILCompiler.PEWriter
                         delta = targetRVA - sourceRVA - 4;
                         break;
                     }
-                    
+
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                    {
+                        relocationLength = 4;
+                        delta = (targetRVA - sourceRVA) >> 12;
+                        break;
+                    }
+
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                    {
+                        relocationLength = 4;
+                        delta = targetRVA & 0xfff;
+                        break;
+                    }
+
                 default:
                     throw new NotSupportedException();
             }
@@ -202,6 +216,10 @@ namespace ILCompiler.PEWriter
                     fixed (byte *bufferContent = _relocationBuffer)
                     {
                         long value = Relocation.ReadValue(relocationType, bufferContent);
+                        // Supporting non-zero values for ARM64 would require refactoring this function
+                        if (((relocationType == RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21) || (relocationType == RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A)) && (value != 0))
+                            throw new NotSupportedException();
+
                         Relocation.WriteValue(relocationType, bufferContent, unchecked(value + delta));
                     }
                 }

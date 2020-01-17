@@ -38,6 +38,7 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        Map(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
@@ -70,6 +71,7 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        Map(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
@@ -82,6 +84,7 @@ namespace ReadyToRun.SuperIlc
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
                         R2RDumpPath(),
+                        GCStress(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
 
@@ -179,6 +182,9 @@ namespace ReadyToRun.SuperIlc
             Option NoCleanup() =>
                 new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
 
+            Option Map() =>
+                new Option(new[] { "--map" }, "Generate a map file (Crossgen2)", new Argument<bool>());
+
             Option DegreeOfParallelism() =>
                 new Option(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)", new Argument<int>());
 
@@ -226,6 +232,9 @@ namespace ReadyToRun.SuperIlc
 
             Option InputFileSearchString() =>
                 new Option(new[] { "--input-file-search-string", "-input-file" }, "Search string for input files in the input directory", new Argument<string>());
+
+            Option GCStress() =>
+                new Option(new[] { "--gcstress" }, "Run tests with the specified GC stress level enabled (the argument value is in hex)", new Argument<string>());
 
             //
             // compile-nuget specific options

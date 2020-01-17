@@ -38,7 +38,6 @@ target_link_libraries(crossgen
     gcinfo_crossgen
     corzap_crossgen
     mscorlib_crossgen
-    strongname_crossgen
     utilcode_crossgen
     v3binder_crossgen
 )

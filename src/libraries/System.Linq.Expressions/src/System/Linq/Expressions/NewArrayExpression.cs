@@ -66,14 +66,14 @@ namespace System.Linq.Expressions
             // Explicit null check here as otherwise wrong parameter name will be used.
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
 
-            if (ExpressionUtils.SameElements(ref expressions, Expressions))
+            if (ExpressionUtils.SameElements(ref expressions!, Expressions))
             {
                 return this;
             }
 
             return NodeType == ExpressionType.NewArrayInit
-                ? NewArrayInit(Type.GetElementType(), expressions)
-                : NewArrayBounds(Type.GetElementType(), expressions);
+                ? NewArrayInit(Type.GetElementType()!, expressions)
+                : NewArrayBounds(Type.GetElementType()!, expressions);
         }
     }
 
@@ -139,7 +139,7 @@ namespace System.Linq.Expressions
             TypeUtils.ValidateType(type, nameof(type));
             ReadOnlyCollection<Expression> initializerList = initializers.ToReadOnly();
 
-            Expression[] newList = null;
+            Expression[]? newList = null;
             for (int i = 0, n = initializerList.Count; i < n; i++)
             {
                 Expression expr = initializerList[i];

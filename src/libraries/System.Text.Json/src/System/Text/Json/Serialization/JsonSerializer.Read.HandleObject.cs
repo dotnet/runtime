@@ -22,7 +22,7 @@ namespace System.Text.Json
                 if (!state.Current.CollectionPropertyInitialized)
                 {
                     // We have bad JSON: enumerable element appeared without preceding StartArray token.
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo.DeclaredPropertyType);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonPropertyInfo!.DeclaredPropertyType);
                 }
 
                 Type objType = state.Current.GetElementType();
@@ -39,11 +39,11 @@ namespace System.Text.Json
                 state.Current.Initialize(objType, options);
             }
 
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonClassInfo classInfo = state.Current.JsonClassInfo!;
 
             if (state.Current.IsProcessingObject(ClassType.Dictionary))
             {
-                object value = ReadStackFrame.CreateDictionaryValue(ref state);
+                object? value = ReadStackFrame.CreateDictionaryValue(ref state);
 
                 // If value is not null, then we don't have a converter so apply the value.
                 if (value != null)
@@ -72,6 +72,8 @@ namespace System.Text.Json
 
         private static void HandleEndObject(ref ReadStack state)
         {
+            Debug.Assert(state.Current.JsonClassInfo != null);
+
             // Only allow dictionaries to be processed here if this is the DataExtensionProperty.
             Debug.Assert(!state.Current.IsProcessingDictionary() || state.Current.JsonClassInfo.DataExtensionProperty == state.Current.JsonPropertyInfo);
 
@@ -81,7 +83,7 @@ namespace System.Text.Json
                 state.Current.JsonClassInfo.UpdateSortedPropertyCache(ref state.Current);
             }
 
-            object value = state.Current.ReturnValue;
+            object? value = state.Current.ReturnValue;
 
             if (state.IsLastFrame)
             {

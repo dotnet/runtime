@@ -27,6 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         private readonly string _objectFilePath;
         private readonly IEnumerable<DependencyNode> _nodes;
         private readonly PEReader _inputPeReader;
+        private readonly bool _generateMapFile;
 
 #if DEBUG
         private struct NodeInfo
@@ -46,12 +47,13 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, NodeInfo> _previouslyWrittenNodeNames = new Dictionary<string, NodeInfo>();
 #endif
 
-        public ReadyToRunObjectWriter(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public ReadyToRunObjectWriter(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory, bool generateMapFile)
         {
             _objectFilePath = objectFilePath;
             _nodes = nodes;
             _nodeFactory = factory;
             _inputPeReader = inputPeReader;
+            _generateMapFile = generateMapFile;
         }
 
         public void EmitPortableExecutable()
@@ -63,13 +65,18 @@ namespace ILCompiler.DependencyAnalysis
 
             try
             {
-                string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
-                mapFileStream = new FileStream(mapFileName, FileMode.Create, FileAccess.Write);
-                mapFile = new StreamWriter(mapFileStream);
+                if (_generateMapFile)
+                {
+                    string mapFileName = Path.ChangeExtension(_objectFilePath, ".map");
+                    mapFileStream = new FileStream(mapFileName, FileMode.Create, FileAccess.Write);
+                    mapFile = new StreamWriter(mapFileStream);
+                }
 
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
-                mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
+
+                if (mapFile != null)
+                    mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
 
                 R2RPEBuilder r2rPeBuilder = new R2RPEBuilder(
                     _nodeFactory.Target,
@@ -125,9 +132,12 @@ namespace ILCompiler.DependencyAnalysis
                     r2rPeBuilder.Write(peStream);
                 }
 
-                mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");
-                mapFile.Flush();
-                mapFileStream.Flush();
+                if (mapFile != null)
+                {
+                    mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");
+                    mapFile.Flush();
+                    mapFileStream.Flush();
+                }
 
                 succeeded = true;
             }
@@ -194,10 +204,10 @@ namespace ILCompiler.DependencyAnalysis
             r2rPeBuilder.AddObjectData(data, section, name, mapFile);
         }
 
-        public static void EmitObject(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)
+        public static void EmitObject(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory, bool generateMapFile)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
-            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(inputPeReader, objectFilePath, nodes, factory);
+            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(inputPeReader, objectFilePath, nodes, factory, generateMapFile);
             objectWriter.EmitPortableExecutable();
         }
     }

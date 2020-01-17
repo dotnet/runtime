@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
+        internal JsonConverter? GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));
             return CreateConverter(typeToConvert, options);

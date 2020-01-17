@@ -8,9 +8,9 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netcoreapp-Windows_NT;
-      netcoreapp-Unix;
-      netfx-Windows_NT;
+      $(NetCoreAppCurrent)-Windows_NT;
+      $(NetCoreAppCurrent)-Unix;
+      $(NetFrameworkCurrent)-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
