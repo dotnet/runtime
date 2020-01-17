@@ -643,27 +643,6 @@ namespace System.Net.Mail
 
     internal static class QuitCommand
     {
-        private static void CheckResponse(SmtpStatusCode statusCode, string serverResponse)
-        {
-            switch (statusCode)
-            {
-                case SmtpStatusCode.ServiceClosingTransmissionChannel:
-                    {
-                        return;
-                    }
-                case SmtpStatusCode.CommandUnrecognized:
-                default:
-                    {
-                        if ((int)statusCode < 400)
-                        {
-                            throw new SmtpException(SR.net_webstatus_ServerProtocolViolation, serverResponse);
-                        }
-
-                        throw new SmtpException(statusCode, serverResponse, true);
-                    }
-            }
-        }
-
         private static void PrepareCommand(SmtpConnection conn)
         {
             if (conn.IsStreamOpen)
@@ -677,8 +656,12 @@ namespace System.Net.Mail
         internal static void Send(SmtpConnection conn)
         {
             PrepareCommand(conn);
-            SmtpStatusCode statusCode = CheckCommand.Send(conn, out string response);
-            CheckResponse(statusCode, response);
+
+            // We simply flush and don't read the response
+            // to avoid blocking call that will impact users
+            // that are using async api, since this code
+            // will run on Dispose()
+            conn.Flush();
         }
     }
 
