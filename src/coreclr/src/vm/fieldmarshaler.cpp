@@ -33,7 +33,7 @@
 
 VOID ParseNativeType(Module*                     pModule,
                      SigPointer                  sig,
-                     mdFieldDef                  fd,
+                     PTR_FieldDesc               pFD,
                      ParseNativeTypeFlags        flags,
                      NativeFieldDescriptor*      pNFD,
                      const SigTypeContext *      pTypeContext
@@ -64,7 +64,7 @@ VOID ParseNativeType(Module*                     pModule,
         pModule,
         sig,
         pTypeContext,
-        fd,
+        pFD->GetMemberDef(),
 #if FEATURE_COMINTEROP
         fIsWinRT ? MarshalInfo::MARSHAL_SCENARIO_WINRT_FIELD : MarshalInfo::MARSHAL_SCENARIO_FIELD,
 #else
@@ -95,99 +95,99 @@ VOID ParseNativeType(Module*                     pModule,
     {
         case MarshalInfo::MARSHAL_TYPE_GENERIC_1:
         case MarshalInfo::MARSHAL_TYPE_GENERIC_U1:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(INT8), sizeof(INT8));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT8), sizeof(INT8));
             break;
         case MarshalInfo::MARSHAL_TYPE_GENERIC_2:
         case MarshalInfo::MARSHAL_TYPE_GENERIC_U2:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(INT16), sizeof(INT16));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT16), sizeof(INT16));
             break;
         case MarshalInfo::MARSHAL_TYPE_GENERIC_4:
         case MarshalInfo::MARSHAL_TYPE_GENERIC_U4:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(INT32), sizeof(INT32));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT32), sizeof(INT32));
             break;
         case MarshalInfo::MARSHAL_TYPE_GENERIC_8:
 #if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(INT64), 4);
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT64), 4);
 #else
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(INT64), sizeof(INT64));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT64), sizeof(INT64));
 #endif
             break;
         case MarshalInfo::MARSHAL_TYPE_ANSICHAR:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(CHAR), sizeof(CHAR));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(CHAR), sizeof(CHAR));
             break;
         case MarshalInfo::MARSHAL_TYPE_WINBOOL:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(BOOL), sizeof(BOOL));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(BOOL), sizeof(BOOL));
             break;
         case MarshalInfo::MARSHAL_TYPE_CBOOL:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(bool), sizeof(bool));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(bool), sizeof(bool));
             break;
 #ifdef FEATURE_COMINTEROP
         case MarshalInfo::MARSHAL_TYPE_VTBOOL:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(VARIANT_BOOL), sizeof(VARIANT_BOOL));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(VARIANT_BOOL), sizeof(VARIANT_BOOL));
             break;
 #endif
         case MarshalInfo::MARSHAL_TYPE_FLOAT:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::FLOAT, sizeof(float), sizeof(float));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(float), sizeof(float));
             break;
         case MarshalInfo::MARSHAL_TYPE_DOUBLE:
 #if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::FLOAT, sizeof(double), 4);
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(double), 4);
 #else
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::FLOAT, sizeof(double), sizeof(double));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(double), sizeof(double));
 #endif
             break;
         case MarshalInfo::MARSHAL_TYPE_CURRENCY:
-            *pNFD = NativeFieldDescriptor(MscorlibBinder::GetClass(CLASS__CURRENCY));
+            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__CURRENCY));
             break;
         case MarshalInfo::MARSHAL_TYPE_DECIMAL:
             // The decimal type can't be blittable since the managed and native alignment requirements differ.
             // Native needs 8-byte alignment since one field is a 64-bit integer, but managed only needs 4-byte alignment since all fields are ints.
-            *pNFD = NativeFieldDescriptor(MscorlibBinder::GetClass(CLASS__NATIVEDECIMAL));
+            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__NATIVEDECIMAL));
             break;
         case MarshalInfo::MARSHAL_TYPE_GUID:
-            *pNFD = NativeFieldDescriptor(MscorlibBinder::GetClass(CLASS__GUID));
+            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__GUID));
             break;
         case MarshalInfo::MARSHAL_TYPE_DATE:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::FLOAT, sizeof(double), sizeof(double));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::FLOAT, sizeof(double), sizeof(double));
             break;
         case MarshalInfo::MARSHAL_TYPE_LPWSTR:
         case MarshalInfo::MARSHAL_TYPE_LPSTR:
         case MarshalInfo::MARSHAL_TYPE_LPUTF8STR:
         case MarshalInfo::MARSHAL_TYPE_BSTR:
         case MarshalInfo::MARSHAL_TYPE_ANSIBSTR:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
             break;
 #ifdef FEATURE_COMINTEROP
         case MarshalInfo::MARSHAL_TYPE_HSTRING:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(HSTRING), sizeof(HSTRING));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(HSTRING), sizeof(HSTRING));
             break;
         case MarshalInfo::MARSHAL_TYPE_DATETIME:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(INT64), sizeof(INT64));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(INT64), sizeof(INT64));
             break;
         case MarshalInfo::MARSHAL_TYPE_INTERFACE:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(IUnknown*), sizeof(IUnknown*));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(IUnknown*), sizeof(IUnknown*));
             break;
         case MarshalInfo::MARSHAL_TYPE_SAFEARRAY:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(SAFEARRAY*), sizeof(SAFEARRAY*));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(SAFEARRAY*), sizeof(SAFEARRAY*));
             break;
 #endif
         case MarshalInfo::MARSHAL_TYPE_DELEGATE:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
             break;
         case MarshalInfo::MARSHAL_TYPE_BLITTABLEVALUECLASS:
         case MarshalInfo::MARSHAL_TYPE_VALUECLASS:
         case MarshalInfo::MARSHAL_TYPE_LAYOUTCLASS:
         case MarshalInfo::MARSHAL_TYPE_BLITTABLE_LAYOUTCLASS:
-            *pNFD = NativeFieldDescriptor(pargs->m_pMT);
+            *pNFD = NativeFieldDescriptor(pFD, pargs->m_pMT);
             break;
 #ifdef FEATURE_COMINTEROP
         case MarshalInfo::MARSHAL_TYPE_OBJECT:
-            *pNFD = NativeFieldDescriptor(MscorlibBinder::GetClass(CLASS__NATIVEVARIANT));
+            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__NATIVEVARIANT));
             break;
 #endif
         case MarshalInfo::MARSHAL_TYPE_SAFEHANDLE:
         case MarshalInfo::MARSHAL_TYPE_CRITICALHANDLE:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
             break;
         case MarshalInfo::MARSHAL_TYPE_FIXED_ARRAY:
         {
@@ -201,29 +201,29 @@ VOID ParseNativeType(Module*                     pModule,
                 pMT = MscorlibBinder::GetElementType(pMT->GetInternalCorElementType());
             }
 
-            *pNFD = NativeFieldDescriptor(OleVariant::GetNativeMethodTableForVarType(mops.elementType, pMT), mops.additive);
+            *pNFD = NativeFieldDescriptor(pFD, OleVariant::GetNativeMethodTableForVarType(mops.elementType, pMT), mops.additive);
             break;
         }
         case MarshalInfo::MARSHAL_TYPE_FIXED_CSTR:
-            *pNFD = NativeFieldDescriptor(MscorlibBinder::GetClass(CLASS__BYTE), pargs->fs.fixedStringLength);
+            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__BYTE), pargs->fs.fixedStringLength);
             break;
         case MarshalInfo::MARSHAL_TYPE_FIXED_WSTR:
-            *pNFD = NativeFieldDescriptor(MscorlibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
+            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
             break;
 #ifdef FEATURE_COMINTEROP
         case MarshalInfo::MARSHAL_TYPE_SYSTEMTYPE:
-            *pNFD = NativeFieldDescriptor(MscorlibBinder::GetClass(CLASS__TYPENAMENATIVE));
+            *pNFD = NativeFieldDescriptor(pFD, MscorlibBinder::GetClass(CLASS__TYPENAMENATIVE));
             break;
         case MarshalInfo::MARSHAL_TYPE_EXCEPTION:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(int), sizeof(int));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(int), sizeof(int));
             break;
         case MarshalInfo::MARSHAL_TYPE_NULLABLE:
-            *pNFD = NativeFieldDescriptor(NativeFieldCategory::INTEGER, sizeof(IUnknown*), sizeof(IUnknown*));
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(IUnknown*), sizeof(IUnknown*));
             break;
 #endif
         case MarshalInfo::MARSHAL_TYPE_UNKNOWN:
         default:
-            *pNFD = NativeFieldDescriptor();
+            *pNFD = NativeFieldDescriptor(pFD);
             break;
     }
 }
@@ -380,18 +380,29 @@ NativeFieldDescriptor::NativeFieldDescriptor()
     m_pFD = NULL;
 }
 
-NativeFieldDescriptor::NativeFieldDescriptor(NativeFieldCategory flags, ULONG nativeSize, ULONG alignment)
-    :m_offset(0),
+NativeFieldDescriptor::NativeFieldDescriptor(PTR_FieldDesc pFD)
+    :m_pFD(pFD),
+    m_offset(0),
+    m_category(NativeFieldCategory::ILLEGAL)
+{
+    nativeSizeAndAlignment.m_nativeSize = 1;
+    nativeSizeAndAlignment.m_alignmentRequirement = 1;
+    m_pFD = NULL;
+}
+
+NativeFieldDescriptor::NativeFieldDescriptor(PTR_FieldDesc pFD, NativeFieldCategory flags, ULONG nativeSize, ULONG alignment)
+    :m_pFD(pFD),
+    m_offset(0),
     m_category(flags)
 {
     _ASSERTE(flags != NativeFieldCategory::NESTED);
     nativeSizeAndAlignment.m_nativeSize = nativeSize;
     nativeSizeAndAlignment.m_alignmentRequirement = alignment;
-    m_pFD = NULL;
 }
 
-NativeFieldDescriptor::NativeFieldDescriptor(PTR_MethodTable pMT, int numElements)
-    :m_category(NativeFieldCategory::NESTED)
+NativeFieldDescriptor::NativeFieldDescriptor(PTR_FieldDesc pFD,  PTR_MethodTable pMT, int numElements)
+    :m_pFD(pFD),
+    m_category(NativeFieldCategory::NESTED)
 {
     CONTRACTL
     {
@@ -400,7 +411,6 @@ NativeFieldDescriptor::NativeFieldDescriptor(PTR_MethodTable pMT, int numElement
     }
     CONTRACTL_END;
 
-    m_pFD = NULL;
     nestedTypeAndCount.m_pNestedType = pMT;
     nestedTypeAndCount.m_numElements = numElements;
 }
@@ -486,10 +496,4 @@ PTR_FieldDesc NativeFieldDescriptor::GetFieldDesc() const
     CONTRACT_END;
 
     RETURN m_pFD;
-}
-
-void NativeFieldDescriptor::SetFieldDesc(PTR_FieldDesc pFD)
-{
-    LIMITED_METHOD_CONTRACT;
-    m_pFD = pFD;
 }

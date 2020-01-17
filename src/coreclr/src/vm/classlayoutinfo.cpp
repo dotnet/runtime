@@ -355,7 +355,7 @@ namespace
     {
         HRESULT hr;
 
-        for (int i = 0; i < fieldDescs.Count(); i++)
+        for (int i = 0; i < fieldDescs.Count(); i++, pFieldInfoArrayOut++)
         {
             DWORD dwFieldAttrs;
 
@@ -400,7 +400,7 @@ namespace
 
             ParseNativeType(pModule,
                 fsig.GetArgProps(),
-                fd,
+                pFieldDesc,
                 nativeTypeFlags,
                 &pFieldInfoArrayOut->m_nfd,
                 pTypeContext
@@ -411,9 +411,6 @@ namespace
                 szFieldName
     #endif
             );
-
-            pFieldInfoArrayOut->m_nfd.SetFieldDesc(pFieldDesc);
-            pFieldInfoArrayOut++;
         }
 
         // NULL out the last entry

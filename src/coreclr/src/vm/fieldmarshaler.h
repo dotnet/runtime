@@ -81,9 +81,11 @@ class NativeFieldDescriptor
 public:
     NativeFieldDescriptor();
 
-    NativeFieldDescriptor(NativeFieldCategory flags, ULONG nativeSize, ULONG alignment);
+    NativeFieldDescriptor(PTR_FieldDesc pFD);
 
-    NativeFieldDescriptor(PTR_MethodTable pMT, int numElements = 1);
+    NativeFieldDescriptor(PTR_FieldDesc pFD, NativeFieldCategory flags, ULONG nativeSize, ULONG alignment);
+
+    NativeFieldDescriptor(PTR_FieldDesc pFD, PTR_MethodTable pMT, int numElements = 1);
 
     NativeFieldDescriptor(const NativeFieldDescriptor& other);
 
@@ -126,8 +128,6 @@ public:
 
     PTR_FieldDesc GetFieldDesc() const;
 
-    void SetFieldDesc(PTR_FieldDesc pFD);
-
     UINT32 GetExternalOffset() const
     {
         return m_offset;
@@ -169,7 +169,7 @@ private:
 
 VOID ParseNativeType(Module* pModule,
     SigPointer                  sig,
-    mdFieldDef                  fd,
+    PTR_FieldDesc               fd,
     ParseNativeTypeFlags        flags,
     NativeFieldDescriptor* pNFD,
     const SigTypeContext* pTypeContext
