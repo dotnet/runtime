@@ -345,73 +345,26 @@ void CallCountingManager::CallCountingStubAllocator::EnumerateHeapRanges(CLRData
 #endif // DACCESS_COMPILE
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// CallCountingManager::MethodDescForwarderStub
+// CallCountingManager::MethodDescForwarderStubHashTraits
 
-#ifndef DACCESS_COMPILE
-
-CallCountingManager::MethodDescForwarderStub::MethodDescForwarderStub() : m_methodDesc(nullptr), m_forwarderStub(nullptr)
+CallCountingManager::MethodDescForwarderStubHashTraits::key_t
+CallCountingManager::MethodDescForwarderStubHashTraits::GetKey(const element_t &e)
 {
     WRAPPER_NO_CONTRACT;
+    return e->GetMethodDesc();
 }
 
-CallCountingManager::MethodDescForwarderStub::MethodDescForwarderStub(MethodDesc *methodDesc, Precode *forwarderStub)
-    : m_methodDesc(methodDesc), m_forwarderStub(forwarderStub)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(methodDesc != nullptr);
-    _ASSERTE(forwarderStub != nullptr);
-}
-
-#endif // !DACCESS_COMPILE
-
-MethodDesc *CallCountingManager::MethodDescForwarderStub::GetMethodDesc() const
-{
-    WRAPPER_NO_CONTRACT;
-    return m_methodDesc;
-}
-
-#ifndef DACCESS_COMPILE
-Precode *CallCountingManager::MethodDescForwarderStub::GetForwarderStub() const
-{
-    WRAPPER_NO_CONTRACT;
-    return m_forwarderStub;
-}
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits
-
-CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits::key_t
-CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits::GetKey(const element_t &e)
-{
-    WRAPPER_NO_CONTRACT;
-    return e.GetMethodDesc();
-}
-
-BOOL CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits::Equals(const key_t &k1, const key_t &k2)
+BOOL CallCountingManager::MethodDescForwarderStubHashTraits::Equals(const key_t &k1, const key_t &k2)
 {
     WRAPPER_NO_CONTRACT;
     return k1 == k2;
 }
 
-CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits::count_t
-CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits::Hash(const key_t &k)
+CallCountingManager::MethodDescForwarderStubHashTraits::count_t
+CallCountingManager::MethodDescForwarderStubHashTraits::Hash(const key_t &k)
 {
     WRAPPER_NO_CONTRACT;
     return (count_t)k;
-}
-
-CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits::element_t
-CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits::Null()
-{
-    WRAPPER_NO_CONTRACT;
-    return MethodDescForwarderStub();
-}
-
-bool CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits::IsNull(const element_t &e)
-{
-    WRAPPER_NO_CONTRACT;
-    return e.GetMethodDesc() == nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -718,14 +671,9 @@ bool CallCountingManager::SetCodeEntryPoint(
         //   point, a small forwarder stub (precode) is created. The forwarder stub has process lifetime and fowards to the
         //   larger call counting stub. This is a simple solution for now and seems to have negligible impact.
 
-        Precode *forwarderStub;
         MethodDescForwarderStubHash &methodDescForwarderStubHash = callCountingManager->m_methodDescForwarderStubHash;
-        const MethodDescForwarderStub *methodDescForwarderStub = methodDescForwarderStubHash.LookupPtr(methodDesc);
-        if (methodDescForwarderStub != nullptr)
-        {
-            forwarderStub = methodDescForwarderStub->GetForwarderStub();
-        }
-        else
+        Precode *forwarderStub = methodDescForwarderStubHash.Lookup(methodDesc);
+        if (forwarderStub == nullptr)
         {
             AllocMemTracker forwarderStubAllocationTracker;
             forwarderStub =
@@ -734,7 +682,7 @@ bool CallCountingManager::SetCodeEntryPoint(
                     methodDesc,
                     methodDesc->GetLoaderAllocator(),
                     &forwarderStubAllocationTracker);
-            methodDescForwarderStubHash.Add(MethodDescForwarderStub(methodDesc, forwarderStub));
+            methodDescForwarderStubHash.Add(forwarderStub);
             forwarderStubAllocationTracker.SuppressRelease();
         }
 
@@ -1114,7 +1062,8 @@ void CallCountingManager::StopAllCallCounting(
         MethodDescForwarderStubHash &methodDescForwarderStubHash = callCountingManager->m_methodDescForwarderStubHash;
         for (auto itEnd = methodDescForwarderStubHash.End(), it = methodDescForwarderStubHash.Begin(); it != itEnd; ++it)
         {
-            it->GetForwarderStub()->ResetTargetInterlocked();
+            Precode *forwarderStub = *it;
+            forwarderStub->ResetTargetInterlocked();
         }
     }
 }
@@ -1139,9 +1088,11 @@ void CallCountingManager::DeleteAllCallCountingStubs()
         _ASSERTE(callCountingManager->m_callCountingInfosPendingCompletion.IsEmpty());
 
         // Clear the call counting stub from call counting infos and delete completed infos
+        MethodDescForwarderStubHash &methodDescForwarderStubHash = callCountingManager->m_methodDescForwarderStubHash;
+        COUNT_T forwarderStubsCapacityBefore = methodDescForwarderStubHash.GetCapacity();
         CallCountingInfoByCodeVersionHash &callCountingInfoByCodeVersionHash =
             callCountingManager->m_callCountingInfoByCodeVersionHash;
-        COUNT_T capacityBefore = callCountingInfoByCodeVersionHash.GetCapacity();
+        COUNT_T callCountingInfosCapacityBefore = callCountingInfoByCodeVersionHash.GetCapacity();
         for (auto itEnd = callCountingInfoByCodeVersionHash.End(), it = callCountingInfoByCodeVersionHash.Begin();
             it != itEnd;
             ++it)
@@ -1159,6 +1110,16 @@ void CallCountingManager::DeleteAllCallCountingStubs()
 
             if (callCountingInfo->GetStage() == CallCountingInfo::Stage::Complete)
             {
+                // Currently, tier 0 is the last code version that is counted, and the method is typically not counted anymore.
+                // Remove the forwarder stub if one exists, a new one will be created if necessary, for example, if a profiler
+                // adds an IL code version for the method.
+                Precode *const *forwarderStubPtr =
+                    methodDescForwarderStubHash.LookupPtr(callCountingInfo->GetCodeVersion().GetMethodDesc());
+                if (forwarderStubPtr != nullptr)
+                {
+                    methodDescForwarderStubHash.RemovePtr(const_cast<Precode **>(forwarderStubPtr));
+                }
+
                 callCountingInfoByCodeVersionHash.Remove(it);
                 delete callCountingInfo;
             }
@@ -1168,18 +1129,37 @@ void CallCountingManager::DeleteAllCallCountingStubs()
             }
         }
 
-        // Resize the hash table if it would save some space. The hash table's item count typically spikes and then stabilizes
+        // Resize the hash tables if it would save some space. The hash tables' item counts typically spikes and then stabilizes
         // at a lower value after most of the repeatedly called methods are promoted and the call counting infos deleted above.
         COUNT_T countAfter = callCountingInfoByCodeVersionHash.GetCount();
         if (countAfter == 0)
         {
             callCountingInfoByCodeVersionHash.RemoveAll();
         }
-        else if (countAfter <= capacityBefore / 4)
+        else if (countAfter <= callCountingInfosCapacityBefore / 4)
         {
             EX_TRY
             {
                 callCountingInfoByCodeVersionHash.Reallocate(countAfter * 2);
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(RethrowTerminalExceptions);
+        }
+        countAfter = methodDescForwarderStubHash.GetCount();
+        if (countAfter == 0)
+        {
+            if (forwarderStubsCapacityBefore != 0)
+            {
+                methodDescForwarderStubHash.RemoveAll();
+            }
+        }
+        else if (countAfter <= forwarderStubsCapacityBefore / 4)
+        {
+            EX_TRY
+            {
+                methodDescForwarderStubHash.Reallocate(countAfter * 2);
             }
             EX_CATCH
             {

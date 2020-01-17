@@ -195,49 +195,22 @@ private:
     // CallCountingManager::MethodDescForwarderStub
 
 private:
-    class MethodDescForwarderStub
+    class MethodDescForwarderStubHashTraits : public DefaultSHashTraits<Precode *>
     {
     private:
-        MethodDesc *m_methodDesc;
-        Precode *m_forwarderStub;
-
-    #ifndef DACCESS_COMPILE
+        typedef DefaultSHashTraits<Precode *> Base;
     public:
-        MethodDescForwarderStub();
-        MethodDescForwarderStub(MethodDesc *methodDesc, Precode *forwarderStub);
-    #endif // !DACCESS_COMPILE
+        typedef Base::element_t element_t;
+        typedef Base::count_t count_t;
+        typedef MethodDesc *key_t;
 
     public:
-        MethodDesc *GetMethodDesc() const;
-
-    #ifndef DACCESS_COMPILE
-    public:
-        Precode *GetForwarderStub() const;
-    #endif // !DACCESS_COMPILE
-
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // CallCountingManager::MethodDescForwarderStub::MethodDescHashTraits
-
-    public:
-        class MethodDescHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<MethodDescForwarderStub>>
-        {
-        private:
-            typedef NoRemoveSHashTraits<DefaultSHashTraits<MethodDescForwarderStub>> Base;
-        public:
-            typedef Base::element_t element_t;
-            typedef Base::count_t count_t;
-            typedef MethodDesc *key_t;
-
-        public:
-            static key_t GetKey(const element_t &e);
-            static BOOL Equals(const key_t &k1, const key_t &k2);
-            static count_t Hash(const key_t &k);
-            static element_t Null();
-            static bool IsNull(const element_t &e);
-        };
+        static key_t GetKey(const element_t &e);
+        static BOOL Equals(const key_t &k1, const key_t &k2);
+        static count_t Hash(const key_t &k);
     };
 
-    typedef SHash<MethodDescForwarderStub::MethodDescHashTraits> MethodDescForwarderStubHash;
+    typedef SHash<MethodDescForwarderStubHashTraits> MethodDescForwarderStubHash;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CallCountingManager::CallCountingManagerHashTraits
