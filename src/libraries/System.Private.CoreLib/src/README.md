@@ -12,5 +12,4 @@ The CoreCLR specific sources can be found at [src/coreclr/src/System.Private.Cor
 
 ## System.Private.CoreLib Mono Sources
 
-The Mono specific sources can be found at [src/mono/src/System.Private.CoreLib](../../../mono/src/System.Private.CoreLib/).
-
+The Mono specific sources can be found at [src/mono/netcore/System.Private.CoreLib](../../../mono/netcore/System.Private.CoreLib/).
