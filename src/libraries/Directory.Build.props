@@ -8,14 +8,14 @@
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
-    <RunApiCompat>false</RunApiCompat>
   </PropertyGroup>
 
   <!-- Import configuration data model -->
   <Import Project="$(RepositoryEngineeringDir)configurations/properties.props" />
 
   <PropertyGroup>
-    <ConfigurationGroup>$(Configuration)</ConfigurationGroup>
+    <ConfigurationGroup>Debug</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(Configuration)' != ''">$(Configuration)</ConfigurationGroup>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(Configuration)' != ''">
