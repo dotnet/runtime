@@ -78,6 +78,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData('5')]
         [InlineData('\u00FF')]
         [InlineData('\u0080')]
+        [InlineData('\u0100')]
         public void SingleExpected(char c)
         {
             string s = @"\u" + ((int)c).ToString("X4");
