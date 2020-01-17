@@ -4291,7 +4291,7 @@ static CorNativeLinkType GetLinkTypeOfMethodTable(MethodTable* pMT)
 
     if (!pMT->GetCharSet(&nltType))
     {
-        UNREACHABLE_MSG("Structs that are generating interop marshalling stubs have already been verified to have valid metadata");
+        UNREACHABLE_MSG("Structs that are generating interop marshalling stubs have already been verified to have valid charset metadata");
     }
 
     return nltType;

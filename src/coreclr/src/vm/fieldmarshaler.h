@@ -236,10 +236,10 @@ private:
 #ifdef FEATURE_HFA
     enum class HFAType : uint8_t
     {
-        Unset,
-        R4,
-        R8,
-        R16
+        Unset = ELEMENT_TYPE_END,
+        R4 = ELEMENT_TYPE_R4,
+        R8 = ELEMENT_TYPE_R8,
+        R16 = ELEMENT_TYPE_VALUETYPE
     };
     HFAType m_hfaType;
 #endif
@@ -298,17 +298,7 @@ public:
     CorElementType GetNativeHFAType() const
     {
         LIMITED_METHOD_CONTRACT;
-        switch (m_hfaType)
-        {
-        case HFAType::R4:
-            return ELEMENT_TYPE_R4;
-        case HFAType::R8:
-            return ELEMENT_TYPE_R8;
-        case HFAType::R16:
-            return ELEMENT_TYPE_VALUETYPE;
-        default:
-            return ELEMENT_TYPE_END;
-        }
+        return (CorElementType)m_hfaType;
     }
 
     void SetHFAType(CorElementType hfaType)
@@ -316,13 +306,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         // We should call this at most once.
         _ASSERTE(m_hfaType == HFAType::Unset);
-        switch (hfaType)
-        {
-        case ELEMENT_TYPE_R4: m_hfaType = HFAType::R4; break;
-        case ELEMENT_TYPE_R8: m_hfaType = HFAType::R8; break;
-        case ELEMENT_TYPE_VALUETYPE: m_hfaType = HFAType::R16; break;
-        default: _ASSERTE(!"Invalid HFA Type");
-        }
+        m_hfaType = (HFAType)m_hfaType;
     }
 #else
     bool IsNativeHFA() const

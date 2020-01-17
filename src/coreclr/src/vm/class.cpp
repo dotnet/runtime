@@ -1687,7 +1687,7 @@ mdTypeDef MethodTable::GetEnclosingCl()
 
 bool MethodTable::GetCharSet(CorNativeLinkType* pCharSet)
 {
-    IMDInternalImport* pInternalImport = this->GetModule()->GetMDImport();
+    IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
 
     DWORD clFlags;
     if (FAILED(pInternalImport->GetTypeDefProps(GetTypeDefRid(), &clFlags, NULL)))

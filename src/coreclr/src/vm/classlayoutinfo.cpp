@@ -186,7 +186,7 @@ namespace
             if (fieldEnd < placementInfo->m_offset)
                 COMPlusThrowOM();
 
-            // size of the structure is the size of the last field.  
+            // size of the structure is the size of the last field.
             if (fieldEnd > calcTotalSize)
                 calcTotalSize = fieldEnd;
         }
@@ -324,11 +324,9 @@ namespace
 
         _ASSERTE(pMT->HasLayout());
 
-        // Classify the native layout for this struct.
-        const bool useNativeLayout = true;
         // Iterate through the fields and make sure they meet requirements to pass in registers
         SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-        if (pMT->ClassifyEightBytesWithNativeLayout(&helper, 0, 0, useNativeLayout, pNativeLayoutInfo))
+        if (pMT->ClassifyEightBytesWithNativeLayout(&helper, 0, 0, pNativeLayoutInfo))
         {
             pNativeLayoutInfo->SetNativeStructPassedInRegisters();
         }
@@ -338,7 +336,7 @@ namespace
     //=====================================================================
     // ParseNativeFieldTypes:
     // Figure out the native field type of each field based on both the CLR
-    // signature of the field and the FieldMarshaler metadata. 
+    // signature of the field and the FieldMarshaler metadata.
     //=====================================================================
     void ParseFieldNativeTypes(
         IMDInternalImport* pInternalImport,
@@ -511,7 +509,7 @@ namespace
         // NULL out the last entry
         pFieldInfoArrayOut->m_MD = mdFieldDefNil;
     }
-    
+
 #ifdef FEATURE_HFA
     //
     // The managed and unmanaged views of the types can differ for non-blitable types. This method
@@ -526,7 +524,7 @@ namespace
             return;
 
         // No HFAs with explicit layout. There may be cases where explicit layout may be still
-        // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
+        // eligible for HFA, but it is hard to tell the real intent. Make it simple and just
         // unconditionally disable HFAs for explicit layout.
         if (pMT->GetClass()->HasExplicitFieldOffsetLayout())
             return;
@@ -581,20 +579,20 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     IMDInternalImport *pInternalImport = pModule->GetMDImport();
 
 #ifdef _DEBUG
-    LPCUTF8 szName; 
-    LPCUTF8 szNamespace; 
+    LPCUTF8 szName;
+    LPCUTF8 szNamespace;
     if (FAILED(pInternalImport->GetNameOfTypeDef(cl, &szName, &szNamespace)))
     {
         szName = szNamespace = "Invalid TypeDef record";
     }
-    
+
     if (g_pConfig->ShouldBreakOnStructMarshalSetup(szName))
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnStructMarshalSetup: '%s' ", szName));
 #endif
 
     // Running tote - if anything in this type disqualifies it from being ManagedSequential, somebody will set this to TRUE by the the time
     // function exits.
-    BOOL fDisqualifyFromManagedSequential; 
+    BOOL fDisqualifyFromManagedSequential;
 
     // Check if this type might be ManagedSequential. Only valuetypes marked Sequential can be
     // ManagedSequential. Other issues checked below might also disqualify the type.
@@ -621,10 +619,10 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     pEEClassLayoutInfoOut->SetIsBlittable(TRUE);
     if (fHasNonTrivialParent)
         pEEClassLayoutInfoOut->SetIsBlittable(pParentMT->IsBlittable());
-    pEEClassLayoutInfoOut->SetIsZeroSized(FALSE);    
+    pEEClassLayoutInfoOut->SetIsZeroSized(FALSE);
     pEEClassLayoutInfoOut->SetHasExplicitSize(FALSE);
-    pEEClassLayoutInfoOut->m_cbPackingSize = packingSize;    
-    
+    pEEClassLayoutInfoOut->m_cbPackingSize = packingSize;
+
     BOOL fParentHasLayout = pParentMT && pParentMT->HasLayout();
     UINT32 cbAdjustedParentLayoutNativeSize = 0;
     EEClassLayoutInfo *pParentLayoutInfo = NULL;
@@ -670,7 +668,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         );
 
     pEEClassLayoutInfoOut->SetIsBlittable(isBlittable);
-    
+
     S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));
     if (cbSortArraySize.IsOverflow())
     {
@@ -867,7 +865,7 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
     AllocMemHolder<EEClassNativeLayoutInfo> pNativeLayoutInfo(
         pAllocator->GetLowFrequencyHeap()->AllocMem(
             S_SIZE_T(sizeof(EEClassNativeLayoutInfo)) + S_SIZE_T(sizeof(NativeFieldDescriptor)) * S_SIZE_T(numTotalInstanceFields)));
-            
+
     pNativeLayoutInfo->m_numFields = numTotalInstanceFields;
 
     // Now compute the native size of each field
@@ -882,9 +880,9 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
     {
         ThrowHR(COR_E_TYPELOAD);
     }
-    
+
     BOOL fExplicitOffsets = pMT->GetClass()->HasExplicitFieldOffsetLayout();
-    
+
     LayoutRawFieldInfo** pSortArray = (LayoutRawFieldInfo**)_alloca(cbSortArraySize.Value());
     SetOffsetsAndSortFields(pInternalImport, pMT->GetCl(), pInfoArray, cInstanceFields, fExplicitOffsets, cbAdjustedParentLayoutNativeSize, pModule, pSortArray);
 
@@ -1102,7 +1100,7 @@ CorElementType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
 
     // Note that we check the total size, but do not perform any checks on number of fields:
     // - Type of fields can be HFA valuetype itself
-    // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
+    // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that
     //   the valuetype is HFA and explicitly specified size
 
     DWORD totalSize = GetSize();

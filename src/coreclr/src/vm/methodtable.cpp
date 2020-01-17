@@ -2217,7 +2217,7 @@ bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helpe
 {
     if (useNativeLayout)
     {
-        return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout, GetNativeLayoutInfo());
+        return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, GetNativeLayoutInfo());
     }
     else
     {
@@ -2419,8 +2419,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             // use the native classification. If not, continue using the managed layout.
             if (useNativeLayout && pFieldMT->HasLayout())
             {
-
-                structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout, pFieldMT->GetNativeLayoutInfo());
+                structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, pFieldMT->GetNativeLayoutInfo());
             }
             else
             {
@@ -2575,7 +2574,6 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
                                                     unsigned int nestingLevel,
                                                     unsigned int startOffsetOfStruct,
-                                                    bool useNativeLayout,
                                                     EEClassNativeLayoutInfo const* pNativeLayoutInfo)
 {
     CONTRACTL
@@ -2586,9 +2584,6 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     }
     CONTRACTL_END;
 
-    // Should be in this method only doing a native layout classification.
-    _ASSERTE(useNativeLayout);
-
 #ifdef DACCESS_COMPILE
     // No register classification for this case.
     return false;
@@ -2597,7 +2592,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     if (!HasLayout())
     {
         // If there is no native layout for this struct use the managed layout instead.
-        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
+        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, true);
     }
 
     const NativeFieldDescriptor *pNativeFieldDescs = pNativeLayoutInfo->GetNativeFieldDescriptors();
@@ -2731,7 +2726,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             {
                 bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
                 helperPtr->inEmbeddedStruct = true;
-                bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, nestedElementOffset, useNativeLayout, pFieldMT->GetNativeLayoutInfo());
+                bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, nestedElementOffset, pFieldMT->GetNativeLayoutInfo());
                 helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
 
                 if (!structRet)
@@ -5613,9 +5608,9 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         for (int i = 0; i < fieldDescs.Count(); i++)
         {
             FieldDesc* pFieldDesc = fieldDescs.Next();
-            
+
             // If the fielddesc pointer here is a token tagged pointer, then the field that we are
-            // working with will not need to be saved into this ngen image. And as that was the reason that we 
+            // working with will not need to be saved into this ngen image. And as that was the reason that we
             // needed to load this type, thus we will not need to fully load the type associated with this field desc.
             //
             if (!CORCOMPILE_IS_POINTER_TAGGED(pFieldDesc))
@@ -9940,9 +9935,9 @@ UINT32 MethodTable::GetNativeSize()
     {
         THROWS;
         MODE_ANY;
+        PRECONDITION(CheckPointer(GetClass()));
     }
     CONTRACTL_END;
-    _ASSERTE(GetClass());
     if (IsBlittable())
     {
         return GetClass()->GetLayoutInfo()->GetManagedSize();
@@ -9956,9 +9951,9 @@ EEClassNativeLayoutInfo const* MethodTable::GetNativeLayoutInfo()
     {
         THROWS;
         MODE_ANY;
+        PRECONDITION(HasLayout());
     }
     CONTRACTL_END;
-    PRECONDITION(HasLayout());
 
     EnsureNativeLayoutInfoInitialized();
     return GetClass()->GetNativeLayoutInfo();

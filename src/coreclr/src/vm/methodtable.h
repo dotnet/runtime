@@ -476,7 +476,7 @@ public:
         // Used only during method table initialization - no need for logging or Interlocked Exchange.
         SetIsRestoredForBuildMethodTable();
 
-        // Array's parent is always precise 
+        // Array's parent is always precise
         m_dwFlags &= ~(MethodTableWriteableData::enum_flag_HasApproxParent);
 
     }
@@ -893,7 +893,7 @@ public:
 #if defined(UNIX_AMD64_ABI_ITF)
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
-    bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
+    bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
     // Copy m_dwFlags from another method table
@@ -906,7 +906,7 @@ public:
 
     // Init the m_dwFlags field for an array
     void SetIsArray(CorElementType arrayType);
-        
+
     BOOL IsClassPreInited();
 
     // mark the class as having its cctor run.
@@ -2756,17 +2756,8 @@ public:
         _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         SetFlag(enum_flag_Category_Nullable);
     }
-    
-    // The following methods are only valid for the 
-    // method tables for array types.  These MTs may 
-    // be shared between array types and thus GetArrayElementTypeHandle
-    // may only be approximate.  If you need the exact element type handle then
-    // you should probably be calling GetArrayElementTypeHandle on a TypeHandle,
-    // or an ArrayTypeDesc, or on an object reference that is known to be an array,
-    // e.g. a BASEARRAYREF.
-    //
-    // At the moment only the object[] MethodTable is shared between array types.
-    // In the future the amount of sharing of method tables is likely to be increased.
+
+    // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType();
     DWORD GetRank();
 
