@@ -75,25 +75,22 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(blocking, clone.Blocking);
         }
 
-        public class NotSupportedOnUnix
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public void SocketCtr_SocketInformation_Unix_ThrowsPlatformNotSupportedException()
         {
-            [PlatformSpecific(TestPlatforms.AnyUnix)]
-            [Fact]
-            public void SocketCtr_SocketInformation()
-            {
-                SocketInformation socketInformation = default;
-                Assert.Throws<PlatformNotSupportedException>(() => new Socket(socketInformation));
-            }
+            SocketInformation socketInformation = default;
+            Assert.Throws<PlatformNotSupportedException>(() => new Socket(socketInformation));
+        }
 
-            [PlatformSpecific(TestPlatforms.AnyUnix)]
-            [Fact]
-            public void DuplicateAndClose()
-            {
-                using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                int processId = CurrentProcessId;
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public void DuplicateAndClose_Unix_ThrowsPlatformNotSupportedException()
+        {
+            using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            int processId = CurrentProcessId;
 
-                Assert.Throws<PlatformNotSupportedException>(() => socket.DuplicateAndClose(processId));
-            }
+            Assert.Throws<PlatformNotSupportedException>(() => socket.DuplicateAndClose(processId));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -244,9 +241,7 @@ namespace System.Net.Sockets.Tests
                 }
                 else
                 {
-                    RemoteInvokeOptions options = new RemoteInvokeOptions() {TimeOut = 500};
-                    using RemoteInvokeHandle hServerProc =
-                        RemoteExecutor.Invoke(HandlerServerCode, _ipcPipeName, options);
+                    using RemoteInvokeHandle hServerProc = RemoteExecutor.Invoke(HandlerServerCode, _ipcPipeName);
                     RunCommonHostLogic(hServerProc.Process.Id);
                 }
 
