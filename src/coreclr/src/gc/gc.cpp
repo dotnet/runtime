@@ -2053,27 +2053,33 @@ ptrdiff_t round_down (ptrdiff_t add, int pitch)
 #error if GROWABLE_SEG_MAPPING_TABLE is defined, SEG_MAPPING_TABLE must be defined
 #endif
 
+// Returns true if two pointers have the same large (double than normal) alignment.
 inline
 BOOL same_large_alignment_p (uint8_t* p1, uint8_t* p2)
 {
 #ifdef RESPECT_LARGE_ALIGNMENT
-    return ((((size_t)p1 ^ (size_t)p2) & 7) == 0);
+    const size_t LARGE_ALIGNMENT_MASK = 2 * DATA_ALIGNMENT - 1;
+    return ((((size_t)p1 ^ (size_t)p2) & LARGE_ALIGNMENT_MASK) == 0);
 #else
     UNREFERENCED_PARAMETER(p1);
     UNREFERENCED_PARAMETER(p2);
     return TRUE;
-#endif //RESPECT_LARGE_ALIGNMENT
+#endif // RESPECT_LARGE_ALIGNMENT
 }
 
+// Determines the padding size required to fix large alignment during relocation.
 inline
 size_t switch_alignment_size (BOOL already_padded_p)
 {
+#ifndef RESPECT_LARGE_ALIGNMENT
+    assert (!"Should not be called");
+#endif // RESPECT_LARGE_ALIGNMENT
+
     if (already_padded_p)
         return DATA_ALIGNMENT;
     else
-        return (Align (min_obj_size) +((Align (min_obj_size)&DATA_ALIGNMENT)^DATA_ALIGNMENT));
+        return Align (min_obj_size) | DATA_ALIGNMENT;
 }
-
 
 #ifdef FEATURE_STRUCTALIGN
 void set_node_aligninfo (uint8_t *node, int requiredAlignment, ptrdiff_t pad);
@@ -9372,8 +9378,6 @@ public:
         // BARTOKTODO (4841): this code path is disabled (see can_fit_all_blocks_p) until we take alignment requirements into account
         _ASSERTE(requiredAlignment == DATA_ALIGNMENT && false);
 #endif // FEATURE_STRUCTALIGN
-        // TODO: this is also not large alignment ready. We would need to consider alignment when choosing the
-        // the bucket.
 
         size_t plug_size_to_fit = plug_size;
 
@@ -9423,8 +9427,6 @@ retry:
             size_t free_space_size = 0;
             pad = 0;
 
-            BOOL realign_padding_p = FALSE;
-
             if (bucket_free_space[i].is_plug)
             {
                 mark* m = (mark*)(bucket_free_space[i].start);
@@ -9432,8 +9434,7 @@ retry:
 
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, plug_free_space_start)))
                 {
-                    pad += switch_alignment_size (FALSE);
-                    realign_padding_p = TRUE;
+                    pad = switch_alignment_size (FALSE);
                 }
 
                 plug_size = saved_plug_size + pad;
@@ -9459,7 +9460,7 @@ retry:
                                 index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
-                    if (realign_padding_p)
+                    if (pad != 0)
                     {
                         set_node_realigned (old_loc);
                     }
@@ -9475,7 +9476,6 @@ retry:
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, heap_segment_plan_allocated (seg))))
                 {
                     pad = switch_alignment_size (FALSE);
-                    realign_padding_p = TRUE;
                 }
 
                 plug_size = saved_plug_size + pad;
@@ -9497,7 +9497,7 @@ retry:
                                 index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
-                    if (realign_padding_p)
+                    if (pad != 0)
                         set_node_realigned (old_loc);
 
                     can_fit = TRUE;
@@ -9516,15 +9516,10 @@ retry:
             chosen_power2 = 1;
             goto retry;
         }
-        else
-        {
-            if (pad)
-            {
-                new_address += pad;
-            }
-            assert ((chosen_power2 && (i == 0)) ||
-                    ((!chosen_power2) && (i < free_space_count)));
-        }
+
+        new_address += pad;
+        assert ((chosen_power2 && (i == 0)) ||
+                ((!chosen_power2) && (i < free_space_count)));
 
         int new_bucket_power2 = index_of_highest_set_bit (new_free_space_size);
 
@@ -11653,15 +11648,18 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
 inline
 int gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* allocated, uint8_t* old_loc, size_t size, BOOL pad_front_p  REQD_ALIGN_AND_OFFSET_DCL)
 {
+    BOOL already_padded = FALSE;
 #ifdef SHORT_PLUGS
     if ((old_loc != 0) && pad_front_p)
     {
         allocated = allocated + Align (min_obj_size);
+        already_padded = TRUE;
     }
 #endif //SHORT_PLUGS
 
     if (!((old_loc == 0) || same_large_alignment_p (old_loc, allocated)))
-        size = size + switch_alignment_size (FALSE);
+        size += switch_alignment_size (already_padded);
+
 #ifdef FEATURE_STRUCTALIGN
     size_t pad = ComputeStructAlignPad(allocated, requiredAlignment, alignmentOffset);
     return grow_heap_segment (seg, allocated + pad + size);
@@ -14780,11 +14778,19 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 
     allocator* gen_allocator = generation_allocator (gen);
     BOOL discard_p = gen_allocator->discard_if_no_fit_p ();
+#ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && ((from_gen_number+1) != max_generation)) ? USE_PADDING_FRONT : 0;
+#else //SHORT_PLUGS
+    int pad_in_front = 0;
+#endif //SHORT_PLUGS
 
     size_t real_size = size + Align (min_obj_size);
     if (pad_in_front)
         real_size += Align (min_obj_size);
+
+#ifdef RESPECT_LARGE_ALIGNMENT
+    real_size += switch_alignment_size (pad_in_front);
+#endif //RESPECT_LARGE_ALIGNMENT
 
     if (! (size_fit_p (size REQD_ALIGN_AND_OFFSET_ARG, generation_allocation_pointer (gen),
                        generation_allocation_limit (gen), old_loc, USE_PADDING_TAIL | pad_in_front)))
@@ -14931,7 +14937,7 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 #else // FEATURE_STRUCTALIGN
         if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
+            pad += switch_alignment_size (pad != 0);
             set_node_realigned (old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
                          (size_t)old_loc, (size_t)(result+pad)));
@@ -15026,12 +15032,15 @@ uint8_t* gc_heap::allocate_in_expanded_heap (generation* gen,
                                           int active_new_gen_number
                                           REQD_ALIGN_AND_OFFSET_DCL)
 {
-    UNREFERENCED_PARAMETER(active_new_gen_number);
     dprintf (3, ("aie: P: %Ix, size: %Ix", old_loc, size));
 
     size = Align (size);
     assert (size >= Align (min_obj_size));
+#ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && (active_new_gen_number != max_generation)) ? USE_PADDING_FRONT : 0;
+#else //SHORT_PLUGS
+    int pad_in_front = 0;
+#endif //SHORT_PLUGS
 
     if (consider_bestfit && use_bestfit)
     {
@@ -15266,7 +15275,11 @@ uint8_t* gc_heap::allocate_in_condemned_generations (generation* gen,
 
     dprintf (3, ("aic gen%d: s: %Id", gen->gen_num, size));
 
+#ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && (to_gen_number != max_generation)) ? USE_PADDING_FRONT : 0;
+#else //SHORT_PLUGS
+    int pad_in_front = 0;
+#endif //SHORT_PLUGS
 
     if ((from_gen_number != -1) && (from_gen_number != (int)max_generation) && settings.promotion)
     {
@@ -15438,7 +15451,7 @@ retry:
 #else // FEATURE_STRUCTALIGN
         if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
+            pad += switch_alignment_size (pad != 0);
             set_node_realigned(old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
                          (size_t)old_loc, (size_t)(result+pad)));
@@ -15492,16 +15505,6 @@ retry:
         assert (result + pad);
         return result + pad;
     }
-}
-
-inline int power (int x, int y)
-{
-    int z = 1;
-    for (int i = 0; i < y; i++)
-    {
-        z = z*x;
-    }
-    return z;
 }
 
 int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
