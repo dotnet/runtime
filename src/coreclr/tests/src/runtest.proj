@@ -146,10 +146,10 @@ $(_XunitEpilog)
     <ItemGroup>
       <XUnitWrapperProjectFile Include="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" />
     </ItemGroup>
-    <MSBuild Projects="@(XUnitWrapperProjectFile)"
+    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"
              Targets="Restore"
              Properties="__BuildPhase=Restore" />
-    <MSBuild Projects="@(XUnitWrapperProjectFile)"
+    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"
              Targets="Build"
              Properties="__BuildPhase=Build" />
   </Target>
