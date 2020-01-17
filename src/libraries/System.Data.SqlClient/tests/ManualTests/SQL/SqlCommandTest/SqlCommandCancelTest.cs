@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public static class CommandCancelTest
+    public static class SqlCommandCancelTest
     {
         // Shrink the packet size - this should make timeouts more likely
         private static readonly string s_connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { PacketSize = 512 }).ConnectionString;
@@ -136,7 +136,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 Task.WaitAll(tasks, 15 * 1000);
 
-                CommandCancelTest.VerifyConnection(command);
+                SqlCommandCancelTest.VerifyConnection(command);
             }
         }
 
