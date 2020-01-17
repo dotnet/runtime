@@ -1,4 +1,4 @@
-<Project InitialTargets="PrintHelixQueues;BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
+<Project InitialTargets="PrintHelixQueues;PrintTargetGroup;BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
   <PropertyGroup>
     <!-- Set helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
@@ -106,5 +106,9 @@
 
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
+  </Target>
+
+  <Target Name="PrintTargetGroup">
+    <Message Importance="High" Text="Target Group: $(TargetGroup)" />
   </Target>
 </Project>

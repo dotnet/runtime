@@ -18,7 +18,6 @@ steps:
             /p:ConfigurationGroup=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
             /p:TestScope=${{ parameters.testScope }}
-            /p:TargetGroup=${{ parameters.framework }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
             /p:Creator=${{ parameters.creator }}
@@ -28,3 +27,5 @@ steps:
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
       HelixTargetQueues: ${{ parameters.helixQueues }} # Pass queues to MSBuild as env var to avoid need of escaping them
+      ${{ if ne(parameters.framework, '') }}:
+        TargetGroup: ${{ parameters.framework }} # Pass as env var as we can't condition otherwise, we can't pass empty to set default value.
