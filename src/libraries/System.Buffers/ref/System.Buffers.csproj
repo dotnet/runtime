@@ -3,7 +3,7 @@
     <!-- Must match version supported by frameworks which support 4.0.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.1.* -->
     <AssemblyVersion>4.0.2.0</AssemblyVersion>
-    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

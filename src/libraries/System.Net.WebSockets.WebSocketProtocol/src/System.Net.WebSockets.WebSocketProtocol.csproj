@@ -3,7 +3,7 @@
     <AssemblyName>System.Net.WebSockets.WebSocketProtocol</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.1;;$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.1;;$(NetCoreAppCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup>

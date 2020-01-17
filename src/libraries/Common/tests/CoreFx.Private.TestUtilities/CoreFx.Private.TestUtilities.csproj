@@ -6,7 +6,7 @@
       This assembly is referenced from rid agnostic configurations therefore we can't make it RID specific
       and instead use runtime checks.
     -->
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\AdminHelpers.cs" />

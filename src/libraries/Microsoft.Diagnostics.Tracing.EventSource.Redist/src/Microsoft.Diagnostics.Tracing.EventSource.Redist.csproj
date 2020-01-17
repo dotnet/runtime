@@ -3,7 +3,7 @@
     <AssemblyName>Microsoft.Diagnostics.Tracing.EventSource</AssemblyName>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <DefineConstants>$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;PLATFORM_WINDOWS</DefineConstants>
-    <TargetFrameworks>net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
     <Nullable>enable</Nullable>
   </PropertyGroup>

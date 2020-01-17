@@ -22,6 +22,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 </Project>

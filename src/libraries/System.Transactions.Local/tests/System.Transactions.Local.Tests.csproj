@@ -2,7 +2,7 @@
   <PropertyGroup>
     <CoverageSupported>false</CoverageSupported>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NonMsdtcPromoterTests.cs" />

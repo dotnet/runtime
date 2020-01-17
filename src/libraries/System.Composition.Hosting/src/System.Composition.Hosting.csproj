@@ -4,7 +4,7 @@
     <RootNamespace>
     </RootNamespace>
     <!-- CommonStrings needs RootNamespace to be empty -->
-    <TargetFrameworks>netstandard2.0;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\Hosting\CompositionHost.cs" />

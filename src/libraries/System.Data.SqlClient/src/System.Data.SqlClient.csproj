@@ -4,15 +4,15 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573;nullable</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_DataSqlClient</GeneratePlatformNotSupportedAssemblyMessage>
-    <AssemblyVersion Condition="'$(_TargetFrameworkWithoutProfile)' == 'netstandard2.0'">4.6.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.6.0.0</AssemblyVersion>
     <DefineConstants Condition="'$(TargetsNetCoreApp)' != 'true'">$(DefineConstants);NETSTANDARD2_0</DefineConstants>
-    <DefineConstants Condition="'$(_TargetFrameworkWithoutProfile)' == '$(NetCoreAppCurrent)'">$(DefineConstants);FEATURE_TCPKEEPALIVE</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);FEATURE_TCPKEEPALIVE</DefineConstants>
     <Nullable>annotations</Nullable>
-    <DefineConstants Condition="'$(_TargetFrameworkWithoutProfile)' != '$(NetCoreAppCurrent)'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
-    <TargetFrameworks>netstandard2.0-Unix;netstandard2.0-Windows_NT;netcoreapp2.1;netcoreapp2.1-Unix;netcoreapp2.1-Windows_NT;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
+    <DefineConstants Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
+    <TargetFrameworks>netstandard2.0-Unix;netstandard2.0-Windows_NT;netcoreapp2.1;netcoreapp2.1-Unix;netcoreapp2.1-Windows_NT;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
-  <ItemGroup Condition="'$(_TargetFrameworkWithoutProfile)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != 'AnyOS' and '$(TargetsNetCoreApp)' == 'true'">
@@ -230,7 +230,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs">
       <Link>System\IO\PathInternal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" Condition="'$(_TargetFrameworkWithoutProfile)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
       <Link>Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
@@ -287,7 +287,7 @@
     <Compile Include="System\Data\SqlClient\TdsParser.NetStandard.cs" />
   </ItemGroup>
   <!-- Manage the SNI toggle for Windows netstandard and UWP -->
-  <ItemGroup Condition="('$(_TargetFrameworkWithoutProfile)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true') and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="('$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true') and '$(TargetsWindows)' == 'true'">
     <!-- Manage the SNI toggle for Windows netstandard and UWP -->
     <Compile Include="System\Data\SqlClient\SNI\SNITcpHandle.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Windows.cs" />
@@ -503,7 +503,7 @@
     <Reference Include="Microsoft.Win32.Registry" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Reference Condition="'$(_TargetFrameworkWithoutProfile)' != 'netstandard2.0'" Include="System.Data.Common" />
+    <Reference Condition="'$(TargetFramework)' != 'netstandard2.0'" Include="System.Data.Common" />
     <Reference Include="System.Globalization" />
     <Reference Include="System.IO" />
     <Reference Include="System.ObjectModel" />

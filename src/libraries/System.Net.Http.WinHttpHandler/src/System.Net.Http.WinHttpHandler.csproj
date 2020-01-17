@@ -3,7 +3,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>

@@ -3,7 +3,7 @@
     <RootNamespace>DPStressHarness</RootNamespace>
     <OutputType>Exe</OutputType>
     <NoWarn>3021</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\IMonitorLoader\IMonitorLoader.csproj" />

@@ -8,10 +8,10 @@
     <NETStandardSupportPackageVersion>2.0.1-servicing-26011-01</NETStandardSupportPackageVersion>
     <NETStandardSupportRoot>$(NuGetPackageRoot)$(NETStandardSupportPackageId.ToLower())\$(NETStandardSupportPackageVersion)\build</NETStandardSupportRoot>
     <AddNetStandardSupportPackage Condition="'$(OriginalTargetFramework)' == 'net461' or '$(OriginalTargetFramework)' == 'net462' or '$(OriginalTargetFramework)' == 'net47'">true</AddNetStandardSupportPackage>
-    <TargetFrameworks>net45;net451;net46;net461;net462;net47;net471;net472;$(netcoreappCurrent);</TargetFrameworks>
+    <TargetFrameworks>net45;net451;net46;net461;net462;net47;net471;net472;$(netcoreappCurrent)</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(OriginalTargetFramework)' != ''">
-    <TargetFrameworks Condition="$(TargetFramework.Contains('net4'))">net45;net451;net46;net461;net462;net47;net471;net472;</TargetFrameworks>
+    <TargetFrameworks Condition="$(TargetFramework.Contains('net4'))">net45;net451;net46;net461;net462;net47;net471;net472</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetFx)' != 'true'">
     <!-- For things not .NETFramework we need the net472 targeting pack to generate facades -->

@@ -7,7 +7,7 @@
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CS1574;CS3016;CA5379;CA5384</NoWarn>
     <Nullable>annotations</Nullable>
-    <TargetFrameworks>netstandard2.0;netstandard2.0-Windows_NT;netstandard2.1;netstandard2.1-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.0-Windows_NT;netstandard2.1;netstandard2.1-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent)-Windows_NT;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
@@ -387,7 +387,7 @@
     <Reference Include="mscorlib" />
     <Reference Include="System.Security" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(_TargetFrameworkWithoutProfile)' == 'netstandard2.1'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Collections" />
@@ -408,7 +408,7 @@
     <Reference Include="System.Linq" />
     <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(_TargetFrameworkWithoutProfile)' != 'netstandard2.1'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFramework)' != 'netstandard2.1'">
     <Reference Include="System.Buffers" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
@@ -653,7 +653,7 @@
     <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoCollection.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoEnumerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(_TargetFrameworkWithoutProfile)' == 'netstandard2.1'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs">
       <Link>Common\System\Security\Cryptography\KeyFormatHelper.cs</Link>
     </Compile>

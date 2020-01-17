@@ -3,7 +3,7 @@
     <RootNamespace>System.IO.FileSystem.DriveInfo</RootNamespace>
     <AssemblyName>System.IO.FileSystem.DriveInfo</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -69,7 +69,7 @@
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(_TargetFrameworkWithoutProfile)' == '$(NetCoreAppCurrent)' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetFramework)' == '$(NetCoreAppCurrent)' ">
     <Compile Include="System\IO\DriveInfo.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>

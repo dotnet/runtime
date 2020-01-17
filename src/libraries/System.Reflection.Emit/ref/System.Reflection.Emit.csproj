@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;;$(NetCoreAppCurrent);_$(NetFrameworkCurrent);</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;;$(NetCoreAppCurrent);_$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);_$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
     <Nullable>enable</Nullable>
   </PropertyGroup>

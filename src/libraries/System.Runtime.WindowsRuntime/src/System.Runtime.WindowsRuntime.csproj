@@ -6,10 +6,10 @@
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
     <!-- CS0436 - System.Private.CoreLib has internals visible to System.Runtime.WindowsRuntime and is colliding internals on common shared code -->
     <NoWarn>$(NoWarn);1698;0436</NoWarn>
-    <AssemblyVersion Condition="'$(_TargetFrameworkWithoutProfile)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(_TargetFrameworkWithoutProfile)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
-    <TargetFrameworks>netstandard1.0;netstandard1.2;netstandard2.0;netcoreapp3.0-Windows_NT;;$(NetCoreAppCurrent)-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>netstandard1.0;netstandard1.2;netstandard2.0;netcoreapp3.0-Windows_NT;;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetStandard)' == 'true'">
@@ -22,7 +22,7 @@
     <Reference Include="Windows" />
     <ProjectReference Include="$(LibrariesProjectRoot)restore\winrt\winrt.depproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(_TargetFrameworkWithoutProfile)' == 'netcoreapp3.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ReferenceFromRuntime Include="System.Runtime" />
     <ReferenceFromRuntime Include="System.Runtime.Extensions">
@@ -33,7 +33,7 @@
     <ReferenceFromRuntime Include="System.Runtime.InteropServices.WindowsRuntime" />
     <ReferenceFromRuntime Include="System.ObjectModel" />
   </ItemGroup>
-  <ItemGroup Condition="'$(_TargetFrameworkWithoutProfile)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">

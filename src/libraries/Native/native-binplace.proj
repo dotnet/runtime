@@ -1,6 +1,6 @@
 <Project DefaultTargets="Build">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props" />
@@ -11,7 +11,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
     <OriginalTargetFramework>$(BuildTargetFramework)</OriginalTargetFramework>
   </PropertyGroup>

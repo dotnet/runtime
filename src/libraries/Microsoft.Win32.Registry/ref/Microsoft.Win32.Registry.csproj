@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <TargetFrameworks>netstandard2.0;$(NetFrameworkCurrent);net461;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Win32.Registry.cs" />

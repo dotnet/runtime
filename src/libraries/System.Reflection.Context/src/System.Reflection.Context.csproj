@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OriginalTargetFramework)' == 'netstandard1.1' or '$(OriginalTargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_ReflectionContext</GeneratePlatformNotSupportedAssemblyMessage>
-    <TargetFrameworks>netstandard2.0;netstandard1.1;netstandard2.1;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard1.1;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard2.1'">
     <Compile Include="System\Reflection\Context\CollectionServices.cs" />

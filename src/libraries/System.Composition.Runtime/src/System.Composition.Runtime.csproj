@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
     <AssemblyName>System.Composition.Runtime</AssemblyName>
-    <TargetFrameworks>netstandard2.0;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\CompositionContext.cs" />

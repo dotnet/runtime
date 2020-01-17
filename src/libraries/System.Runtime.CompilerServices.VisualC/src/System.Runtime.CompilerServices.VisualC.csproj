@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.CompilerServices.VisualC</AssemblyName>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- Shared CoreCLR -->
   <ItemGroup>

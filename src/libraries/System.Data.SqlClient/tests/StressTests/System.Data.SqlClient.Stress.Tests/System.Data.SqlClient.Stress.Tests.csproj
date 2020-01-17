@@ -3,7 +3,7 @@
     <RootNamespace>Stress.Data.SqlClient</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Stress.Tests</AssemblyName>
     <!-- These should not run in Helix: they produce no outputs and are only run manually -->
-    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <IgnoreForCI>true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>

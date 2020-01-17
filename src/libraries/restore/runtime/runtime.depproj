@@ -8,7 +8,7 @@
     <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(BuildOS)</CoreCLROSGroup>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(ConfigurationGroup)</CoreCLRConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
-    <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix;</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(_TargetFrameworkWithoutProfile)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="4.6.0-rc2.19462.14" />
+    <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="4.6.0-rc2.19462.14" />
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->

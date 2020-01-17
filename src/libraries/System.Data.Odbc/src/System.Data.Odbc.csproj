@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <TargetFrameworks>netcoreapp2.0-FreeBSD;netcoreapp2.0-Linux;netcoreapp2.0-OSX;netcoreapp2.0-Windows_NT;net461-Windows_NT;netstandard2.0;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0-FreeBSD;netcoreapp2.0-Linux;netcoreapp2.0-OSX;netcoreapp2.0-Windows_NT;net461-Windows_NT;netstandard2.0;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">

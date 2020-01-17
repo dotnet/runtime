@@ -4,7 +4,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_SystemEvents</GeneratePlatformNotSupportedAssemblyMessage>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;netcoreapp3.0-Windows_NT;net461;;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent);</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;netcoreapp3.0-Windows_NT;net461;;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' ">
@@ -148,7 +148,7 @@
     <Compile Include="Microsoft\Win32\UserPreferenceChangingEventArgs.cs" />
     <Compile Include="Microsoft\Win32\UserPreferenceChangingEventHandler.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(_TargetFrameworkWithoutProfile)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs">
       <Link>Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs</Link>
     </Compile>
@@ -170,7 +170,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(_TargetFrameworkWithoutProfile)' == 'netcoreapp2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
     <Reference Include="System.ComponentModel.TypeConverter" />
   </ItemGroup>
 </Project>

@@ -6,7 +6,7 @@
     <!-- do not binplace, this is only used to help compile references
          against Windows.winmd.  The real mscorlib comes from src/shims/shims.proj -->
     <BinPlaceRef>false</BinPlaceRef>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard1.0;</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard1.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />

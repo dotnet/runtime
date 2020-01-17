@@ -3,7 +3,7 @@
     <AssemblyName>System.Reflection.TypeExtensions</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>net461;netstandard2.0;netstandard1.3;netstandard1.5;;$(NetFrameworkCurrent);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;</TargetFrameworks>
+    <TargetFrameworks>net461;netstandard2.0;netstandard1.3;netstandard1.5;;$(NetFrameworkCurrent);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <PropertyGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.3' or '$(OriginalTargetFramework)' == 'netstandard1.5'">

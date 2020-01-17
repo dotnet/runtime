@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.0;$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;$(NetCoreAppCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup>

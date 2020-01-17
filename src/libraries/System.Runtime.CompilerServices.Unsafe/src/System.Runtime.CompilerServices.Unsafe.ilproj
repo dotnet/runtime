@@ -14,7 +14,7 @@
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(BuildTargetFramework)</TargetFramework>
     <OriginalTargetFramework Condition="'$(OriginalTargetFramework)' == ''">$(BuildTargetFramework)</OriginalTargetFramework>
     <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)\</OutputPath>
-    <TargetFrameworks>netcoreapp5.0;netstandard2.0;netstandard1.0;net45;net472;</TargetFrameworks>
+    <TargetFrameworks>netcoreapp5.0;netstandard2.0;netstandard1.0;net45;net472</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
