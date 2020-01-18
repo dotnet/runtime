@@ -565,9 +565,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -769,9 +767,7 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(pMT->HasLayout());
     }
@@ -820,12 +816,7 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
     }
 
 
-    CorNativeLinkType charSet;
-
-    if (!pMT->GetCharSet(&charSet))
-    {
-        UNREACHABLE_MSG("Metadata for this type should have already been verified at type-load time");
-    }
+    CorNativeLinkType charSet = pMT->GetCharSet();
 
     ParseNativeTypeFlags nativeTypeFlags = ParseNativeTypeFlags::None;
 #ifdef FEATURE_COMINTEROP
@@ -919,7 +910,7 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
     // The intrinsic Vector<T> type has a special size. Copy the native size and alignment
     // from the managed size and alignment.
 
-    if (strcmp(szName, "Vector`1") == 0 && strcmp(szNamespace, "System.Numerics") == 0)
+    if (pModule->IsSystem() && strcmp(szName, "Vector`1") == 0 && strcmp(szNamespace, "System.Numerics") == 0)
     {
         pNativeLayoutInfo->m_size = pEEClassLayoutInfo->GetManagedSize();
         pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;

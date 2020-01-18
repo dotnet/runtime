@@ -4285,18 +4285,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
     pss->FinishEmit(pMD);
 }
 
-static CorNativeLinkType GetLinkTypeOfMethodTable(MethodTable* pMT)
-{
-    CorNativeLinkType nltType;
-
-    if (!pMT->GetCharSet(&nltType))
-    {
-        UNREACHABLE_MSG("Structs that are generating interop marshalling stubs have already been verified to have valid charset metadata");
-    }
-
-    return nltType;
-}
-
 static void CreateStructStub(ILStubState* pss,
     StubSigDesc* pSigDesc,
     MethodTable* pMT,
@@ -4350,7 +4338,7 @@ static void CreateStructStub(ILStubState* pss,
         COMPlusThrowHR(COR_E_OVERFLOW);
     }
 
-    CorNativeLinkType nlType = GetLinkTypeOfMethodTable(pMT);
+    CorNativeLinkType nlType = pMT->GetCharSet();
 
     NativeFieldDescriptor const* pFieldDescriptors = pNativeLayoutInfo->GetNativeFieldDescriptors();
 

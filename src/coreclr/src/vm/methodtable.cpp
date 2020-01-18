@@ -9954,7 +9954,11 @@ EEClassNativeLayoutInfo const* MethodTable::GetNativeLayoutInfo()
         PRECONDITION(HasLayout());
     }
     CONTRACTL_END;
-
+    EEClassNativeLayoutInfo* pNativeLayoutInfo = GetClass()->GetNativeLayoutInfo();
+    if (pNativeLayoutInfo != nullptr)
+    {
+        return pNativeLayoutInfo;
+    }
     EnsureNativeLayoutInfoInitialized();
     return GetClass()->GetNativeLayoutInfo();
 }

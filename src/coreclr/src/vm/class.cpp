@@ -1685,38 +1685,44 @@ mdTypeDef MethodTable::GetEnclosingCl()
     return tdEnclosing;
 }
 
-bool MethodTable::GetCharSet(CorNativeLinkType* pCharSet)
+CorNativeLinkType MethodTable::GetCharSet()
 {
     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
 
     DWORD clFlags;
+
+    CorNativeLinkType charSet;
+    bool success = true;
+
     if (FAILED(pInternalImport->GetTypeDefProps(GetTypeDefRid(), &clFlags, NULL)))
     {
-        return false;
+        success = false;
     }
 
     if (IsTdAnsiClass(clFlags))
     {
-        *pCharSet = nltAnsi;
+        charSet = nltAnsi;
     }
     else if (IsTdUnicodeClass(clFlags))
     {
-        *pCharSet = nltUnicode;
+        charSet = nltUnicode;
     }
     else if (IsTdAutoClass(clFlags))
     {
 #ifdef PLATFORM_WINDOWS
-        *pCharSet = nltUnicode;
+        charSet = nltUnicode;
 #else
-        *pCharSet = nltAnsi; // We don't have a utf8 charset in metadata yet, but ANSI == UTF-8 off-Windows
+        charSet = nltAnsi; // We don't have a utf8 charset in metadata yet, but ANSI == UTF-8 off-Windows
 #endif
     }
     else
     {
-        return false;
+        success = false;
     }
 
-    return true;
+    _ASSERTE_MSG(success, "Charset metadata for this type should have already been verified at type-load time");
+
+    return charSet;
 }
 
 //*******************************************************************************
