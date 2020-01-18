@@ -93,6 +93,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         public void GetResourceString()
         {
             Assert.Contains("42", Utils.GetResourceString("Argument_InvalidValue1", "42"));
+            Assert.Contains("42", Utils.GetResourceString(ResourceKey: "Argument_InvalidValue1", Args: new[] { "42" }));
+            Assert.Null(Utils.GetResourceString("UnrecognizedResourceKey"));
         }
     }
 }
