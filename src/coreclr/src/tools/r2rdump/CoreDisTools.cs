@@ -89,7 +89,7 @@ namespace R2RDump
         /// <summary>
         /// R2R reader is used to access architecture info, the PE image data and symbol table.
         /// </summary>
-        private readonly R2RReader _reader;
+        private readonly ReadyToRunReader _reader;
 
         /// <summary>
         /// Dump options
@@ -105,7 +105,7 @@ namespace R2RDump
         /// Store the R2R reader and construct the disassembler for the appropriate architecture.
         /// </summary>
         /// <param name="reader"></param>
-        public Disassembler(R2RReader reader, DumpOptions options)
+        public Disassembler(ReadyToRunReader reader, DumpOptions options)
         {
             _reader = reader;
             _options = options;

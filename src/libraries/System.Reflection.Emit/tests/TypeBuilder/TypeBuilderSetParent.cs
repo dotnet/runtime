@@ -40,7 +40,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue(13977)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/13977")]
         public void SetParent_This_LoopsForever()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);

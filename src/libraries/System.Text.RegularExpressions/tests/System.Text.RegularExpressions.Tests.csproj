@@ -11,6 +11,7 @@
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
     <Compile Include="MonoRegexTests.cs" />
+    <Compile Include="Regex.CompileToAssembly.Tests.cs" />
     <Compile Include="Regex.Ctor.Tests.cs" />
     <Compile Include="Regex.Cache.Tests.cs" />
     <Compile Include="Regex.EscapeUnescape.Tests.cs" />
@@ -28,6 +29,7 @@
     <Compile Include="RegexCultureTests.cs" />
     <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
     <Compile Include="RegexParserTests.cs" />
+    <Compile Include="RegexReductionTests.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs">
       <Link>System\Text\RegularExpressions\RegexParseError.cs</Link>
     </Compile>

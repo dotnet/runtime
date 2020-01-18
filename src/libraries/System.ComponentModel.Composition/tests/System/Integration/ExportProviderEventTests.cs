@@ -111,7 +111,7 @@ namespace System.ComponentModel.Composition
         public class SampleCatalogExport2 { }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void CatalogMultipleAdds_ShouldFireEvents()
         {
             var catalog = new TypeCatalog(typeof(SampleCatalogExport));

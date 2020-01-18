@@ -595,7 +595,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
-        [ActiveIssue(20893)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20893")]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnectAsync_Static_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {

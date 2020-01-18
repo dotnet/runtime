@@ -372,21 +372,21 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20844")]
         public void CreateFilename_SingleGraphics_EmfOnly()
         {
             CreateFilename(EmfType.EmfOnly, true);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20844")]
         public void CreateFilename_SingleGraphics_EmfPlusDual()
         {
             CreateFilename(EmfType.EmfPlusDual, true);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20844")]
         public void CreateFilename_SingleGraphics_EmfPlusOnly()
         {
             CreateFilename(EmfType.EmfPlusOnly, true);

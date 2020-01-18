@@ -4,6 +4,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <UnicodeUcdVersion>12.1</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CompareInfo\CompareInfoTests.cs" />
@@ -101,7 +102,9 @@
     <Compile Include="NumberFormatInfo\NumberFormatInfoTests.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoTestData.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoTests.cs" />
+    <Compile Include="System\Globalization\CharUnicodeInfoTests.Generated.cs" />
     <Compile Include="System\Globalization\CultureNotFoundExceptionTests.cs" />
+    <Compile Include="System\Globalization\GraphemeBreakTest.cs" />
     <Compile Include="System\Globalization\RegionInfoTests.cs" />
     <Compile Include="System\Globalization\StringInfoTests.cs" />
     <Compile Include="System\Globalization\SortVersionTests.cs" />
@@ -114,17 +117,17 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.11.0.txt">
-      <Link>CharUnicodeInfo\UnicodeData.11.0.txt</Link>
-      <LogicalName>UnicodeData.11.0.txt</LogicalName>
+    <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
+      <Link>CharUnicodeInfo\UnicodeData.$(UnicodeUcdVersion).txt</Link>
+      <LogicalName>UnicodeData.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.8.0.txt">
-      <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
-      <LogicalName>UnicodeData.8.0.txt</LogicalName>
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\auxiliary\GraphemeBreakTest.txt">
+      <Link>CharUnicodeInfo\GraphemeBreakTest-$(UnicodeUcdVersion).0.txt</Link>
+      <LogicalName>GraphemeBreakTest.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData63.txt">
-      <Link>CharUnicodeInfo\UnicodeData6.3.txt</Link>
-      <LogicalName>UnicodeData6.3.txt</LogicalName>
-    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities.Unicode\CoreFx.Private.TestUtilities.Unicode.csproj" />
   </ItemGroup>
 </Project>

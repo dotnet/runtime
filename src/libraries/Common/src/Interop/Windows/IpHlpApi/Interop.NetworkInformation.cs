@@ -15,8 +15,6 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
-        // TODO: #3562 - Replace names with the ones from the Windows SDK.
-
         [Flags]
         internal enum AdapterFlags
         {

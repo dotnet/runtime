@@ -975,7 +975,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        [Fact, ActiveIssue(15719)]
+        [Fact, ActiveIssue("https://github.com/dotnet/corefx/issues/15719")]
         public void TryFinallyWithinFilterCompiled()
         {
             TryFinallyWithinFilter(false);
@@ -984,7 +984,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void TryFinallyWithinFilterCompiledProhibited()
         {
-            // Ideally we can change this behaviour (see issue 15719 above),
+            // Ideally we can change this behaviour (see https://github.com/dotnet/corefx/issues/15719),
             // but for now, check correct exception thrown.
 
             TryExpression tryExp = Expression.TryCatch(
@@ -1036,7 +1036,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        [Fact, ActiveIssue(15719)]
+        [Fact, ActiveIssue("https://github.com/dotnet/corefx/issues/15719")]
         public void TryCatchWithinFilterCompiled()
         {
             TryCatchWithinFilter(false);
@@ -1066,7 +1066,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        [Fact, ActiveIssue(15719)]
+        [Fact, ActiveIssue("https://github.com/dotnet/corefx/issues/15719")]
         public void TryCatchThrowingWithinFilterCompiled()
         {
             TryCatchThrowingWithinFilter(false);

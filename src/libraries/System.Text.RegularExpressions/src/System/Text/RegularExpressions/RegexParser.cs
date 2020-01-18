@@ -86,8 +86,9 @@ namespace System.Text.RegularExpressions
             parser.CountCaptures();
             parser.Reset(options);
             RegexNode root = parser.ScanRegex();
+            int minRequiredLength = root.ComputeMinLength();
             string[]? capnamelist = parser._capnamelist?.ToArray();
-            var tree = new RegexTree(root, parser._caps, parser._capnumlist!, parser._captop, parser._capnames!, capnamelist!, options);
+            var tree = new RegexTree(root, parser._caps, parser._capnumlist!, parser._captop, parser._capnames!, capnamelist!, options, minRequiredLength);
             parser.Dispose();
 
             return tree;

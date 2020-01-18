@@ -76,10 +76,17 @@ namespace
             while (std::getline(ss, line, _X('\n'))){
                 const pal::string_t prefix = _X("The framework '");
                 const pal::string_t suffix = _X("' was not found.");
+                const pal::string_t custom_prefix = _X("  _ ");
                 const pal::string_t url_prefix = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
                 if (starts_with(line, prefix, true) && ends_with(line, suffix, true))
                 {
                     dialogMsg.append(line);
+                    dialogMsg.append(_X("\n\n"));
+                }
+                else if (starts_with(line, custom_prefix, true))
+                {
+                    dialogMsg.erase();
+                    dialogMsg.append(line.substr(custom_prefix.length()));
                     dialogMsg.append(_X("\n\n"));
                 }
                 else if (starts_with(line, url_prefix, true))
@@ -94,6 +101,10 @@ namespace
         dialogMsg.append(_X("Would you like to download it now?"));
 
         assert(url.length() > 0);
+        if (is_gui_application())
+        {
+            url.append(_X("&gui=true"));
+        }
         url.append(_X("&apphost_version="));
         url.append(_STRINGIFY(COMMON_HOST_PKG_VER));
 

@@ -51,7 +51,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(812029)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
         public void FilteredCatalog_EventsFired()
         {
             var aggCatalog = CatalogFactory.CreateAggregateCatalog();
