@@ -10,7 +10,7 @@
     <NoLogo>True</NoLogo>
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
-    <DefineConstants>$(DefineConstants);DESKTOP;LOOP</DefineConstants>
+    <DefineConstants>$(DefineConstants);LOOP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="mixedexpr1.cs" />
