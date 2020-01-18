@@ -55,7 +55,7 @@ namespace System.Configuration
 
                 HasEntryAssembly = true;
 
-                // The original .NET Framework (desktop) code tried to get the local path without using Uri.
+                // The original .NET Framework code tried to get the local path without using Uri.
                 // If we ever find a need to do this again be careful with the logic. "file:///" is
                 // used for local paths and "file://" for UNCs. Simply removing the prefix will make
                 // local paths relative on Unix (e.g. "file:///home" will become "home" instead of

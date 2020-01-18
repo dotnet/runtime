@@ -30,7 +30,7 @@ namespace System.IO.IsolatedStorage
 
         internal static void GetDefaultIdentityAndHash(out object identity, out string hash, char separator)
         {
-            // .NET Framework (desktop CLR) IsolatedStorage uses identity from System.Security.Policy.Evidence to build
+            // .NET Framework IsolatedStorage uses identity from System.Security.Policy.Evidence to build
             // the folder structure on disk. It would use the "best" available evidence in this order:
             //
             //  1. Publisher (Authenticode)
@@ -39,12 +39,12 @@ namespace System.IO.IsolatedStorage
             //  4. Site
             //  5. Zone
             //
-            // For CoreFX StrongName and Url are the only relevant types. By default evidence for the Domain comes
+            // For .NET Core StrongName and Url are the only relevant types. By default evidence for the Domain comes
             // from the Assembly which comes from the EntryAssembly(). We'll emulate the legacy default behavior
             // by pulling directly from EntryAssembly.
             //
             // Note that it is possible that there won't be an EntryAssembly, which is something .NET Framework doesn't
-            // have to deal with and shouldn't be likely on CoreFX due to a single AppDomain. Without Evidence
+            // have to deal with and shouldn't be likely on .NET Core due to a single AppDomain. Without Evidence
             // to pull from we'd have to dig into the use case to try and find a reasonable solution should we
             // run into this in the wild.
 

@@ -27,7 +27,7 @@ namespace System.Drawing.Tests
                 // On .NET Framework sometimes the size might be default or it might
                 // be disposed in which case Size property throws an ArgumentException
                 // so allow both cases see https://github.com/dotnet/corefx/issues/27361.
-                if (PlatformDetection.IsFullFramework && ex is ArgumentException)
+                if (PlatformDetection.IsNetFramework && ex is ArgumentException)
                 {
                     return;
                 }

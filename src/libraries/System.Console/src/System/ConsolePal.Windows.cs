@@ -414,7 +414,8 @@ namespace System
                     throw new IOException(SR.IO_NoConsole);
 
                 int mode = 0;
-                Interop.Kernel32.GetConsoleMode(handle, out mode); // failure ignored in full framework
+                if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
 
                 if (value)
                 {

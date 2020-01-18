@@ -221,7 +221,7 @@ namespace System.Configuration
             }
             catch
             {
-                // On .NET Framework (Desktop) we try to P/Invoke directly to Windows to get a "better" exception
+                // On .NET Framework we try to P/Invoke directly to Windows to get a "better" exception
                 // ThrowBetterException(keyMustExist);
                 throw;
             }

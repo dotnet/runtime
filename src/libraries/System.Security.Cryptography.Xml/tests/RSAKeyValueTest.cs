@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 rsa.LoadXml(xmlDocument.DocumentElement);
             }
             catch (CryptographicException) { }
-            catch (FormatException) when (PlatformDetection.IsFullFramework) { }
+            catch (FormatException) when (PlatformDetection.IsNetFramework) { }
         }
 
         public static object[][] LoadXml_InvalidXml_Source()

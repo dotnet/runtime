@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             // net48 changes the default to AES-256-CBC, older versions (and quirk) are
             // DES3-EDE-CBC
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 supportedAlgorithms = new[] { Oids.TripleDesCbc, Oids.Aes256 };
             }
@@ -165,7 +165,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
             string expectedContentHex = "CEE8A7E4765371906D8C25123E57FA1D";
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 // .NET Framework over-counts encrypted content.
                 expectedContentHex += "000000000000";
@@ -239,7 +239,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
             string expectedHex = "BCEA3A10D0737EB9";
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 expectedHex = "BCEA3A10D0737EB9000000000000";
             }
@@ -361,7 +361,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             byte[] encoded = ecms.Encode();
             EnvelopedCms reDecoded = new EnvelopedCms();
             reDecoded.Decode(encoded);
-            int expectedSize = PlatformDetection.IsFullFramework ? 22 : 16; //NetFx compat.
+            int expectedSize = PlatformDetection.IsNetFramework ? 22 : 16; //NetFx compat.
             Assert.Equal(expectedSize, reDecoded.ContentInfo.Content.Length);
         }
 
