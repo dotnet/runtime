@@ -195,7 +195,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Gets or sets the Lightweight Directory Access Protocol (LDAP) filter string format.
         /// </devdoc>
-        [DefaultValue(defaultFilter)]        ]
+        [DefaultValue(defaultFilter)]
         public string Filter
         {
             get => _filter;
