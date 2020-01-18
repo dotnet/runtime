@@ -201,7 +201,7 @@ namespace System
             // This actually checks whether code is running in a modern app.
             // Currently this is the only situation where we run in app container.
             // If we want to distinguish the two cases in future,
-            // EnvironmentHelpers.IsAppContainerProcess in desktop code shows how to check for the AC token.
+            // EnvironmentHelpers.IsAppContainerProcess in .NET Framework code shows how to check for the AC token.
             get
             {
                 if (s_isInAppContainer != -1)

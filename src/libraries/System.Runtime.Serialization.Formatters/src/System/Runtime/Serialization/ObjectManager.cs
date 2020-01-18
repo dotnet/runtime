@@ -649,7 +649,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentOutOfRangeException(nameof(objectID), SR.ArgumentOutOfRange_ObjectID);
             }
-            if (member != null && !(member is FieldInfo)) // desktop checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
+            if (member != null && !(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
                 throw new SerializationException(SR.Serialization_UnknownMemberInfo);
             }
@@ -913,7 +913,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentNullException(nameof(member));
             }
-            if (!(member is FieldInfo)) // desktop checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
+            if (!(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, member.GetType()));
             }

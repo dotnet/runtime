@@ -1673,7 +1673,7 @@ namespace System.Tests
             }
             Assert.Equal(expected, s.EndsWith(value, comparisonType));
 
-            // Cannot use implicit cast from string to ReadOnlySpan for other runtimes, like netfx. Therefore, explicitly call AsSpan.
+            // Cannot use implicit cast from string to ReadOnlySpan for other runtimes, like .NET Framework. Therefore, explicitly call AsSpan.
             Assert.Equal(expected, s.AsSpan().EndsWith(value.AsSpan(), comparisonType));
         }
 

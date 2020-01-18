@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             if (PlatformDetection.IsFullFramework)
             {
-                // On NetFx when Array.Empty should be returned an array of 6 zeros is
+                // On .NET Framework when Array.Empty should be returned an array of 6 zeros is
                 // returned instead.
                 content = new byte[6];
             }

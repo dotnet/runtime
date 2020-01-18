@@ -34,7 +34,7 @@ namespace System
 
             if (netFxParamName == null && IsFullFramework)
             {
-                // Param name varies between NETFX versions -- skip checking it
+                // Param name varies between .NET Framework versions -- skip checking it
                 return;
             }
 
@@ -52,7 +52,7 @@ namespace System
 
             if (netFxParamName == null && IsFullFramework)
             {
-                // Param name varies between NETFX versions -- skip checking it
+                // Param name varies between .NET Framework versions -- skip checking it
                 return;
             }
 

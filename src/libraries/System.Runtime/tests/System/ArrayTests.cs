@@ -2989,7 +2989,7 @@ namespace System.Tests
         [Fact]
         public static void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
         {
-            // This was not fixed in order to be compatible with the full .NET framework and Xamarin.
+            // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
             // See https://github.com/dotnet/corefx/issues/13410
             IStructuralEquatable equatable = new int[] { 1, 2, 3 };
             Assert.Throws<NullReferenceException>(() => equatable.Equals(new int[] { 1, 2, 3 }, null));

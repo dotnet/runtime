@@ -195,7 +195,7 @@ namespace Internal.TypeSystem.Interop
             //
             // Determine MarshalerKind
             //
-            // This mostly resembles desktop CLR and .NET Native code as we need to match their behavior
+            // This mostly resembles .NET Framework CLR and .NET Native code as we need to match their behavior
             // 
             if (type.IsPrimitive)
             {

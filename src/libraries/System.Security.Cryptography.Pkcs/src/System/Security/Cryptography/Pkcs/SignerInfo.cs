@@ -358,7 +358,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             if (index < 0)
             {
-                // In NetFx RemoveCounterSignature doesn't bounds check, but the helper it calls does.
+                // In .NET Framework RemoveCounterSignature doesn't bounds check, but the helper it calls does.
                 // In the helper the argument is called "childIndex".
                 throw new ArgumentOutOfRangeException("childIndex");
             }
@@ -366,7 +366,7 @@ namespace System.Security.Cryptography.Pkcs
             // The SignerInfo class is a projection of data contained within the SignedCms.
             // The projection is applied at construction time, and is not live.
             // So RemoveCounterSignature modifies _document, not this.
-            // (Because that's what NetFx does)
+            // (Because that's what .NET Framework does)
 
             int myIdx = _document.SignerInfos.FindIndexForSigner(this);
 
@@ -734,7 +734,7 @@ namespace System.Security.Cryptography.Pkcs
                     throw new CryptographicException(SR.Cryptography_Cms_TrustFailure, status.StatusInformation);
                 }
 
-                // NetFx checks for either of these
+                // .NET Framework checks for either of these
                 const X509KeyUsageFlags SufficientFlags =
                     X509KeyUsageFlags.DigitalSignature |
                     X509KeyUsageFlags.NonRepudiation;
