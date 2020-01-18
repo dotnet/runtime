@@ -1691,7 +1691,7 @@ CorNativeLinkType MethodTable::GetCharSet()
 
     DWORD clFlags;
 
-    CorNativeLinkType charSet;
+    CorNativeLinkType charSet = nltAnsi; // Initialize to ANSI to make the compiler happy for the case that always asserts
     bool success = true;
 
     if (FAILED(pInternalImport->GetTypeDefProps(GetTypeDefRid(), &clFlags, NULL)))
