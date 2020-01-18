@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
         // orapki wallet create -wallet ewallet.p12
         // mkstore -wrl ewallet.p12 -createUserCredential a b c d
         // mkstore -wrl ewallet.p12 -createCredential a_prod_db a_test_user
-        //  (prompted secret: "potatoes are tasty")
+        //  (prompted secret: "potatos are tasty")
         internal static readonly ReadOnlyMemory<byte> SimpleOracleWallet = (
             "308202AC0201033082027206092A864886F70D010701A08202630482025F3082" +
             "025B3082025706092A864886F70D010706A0820248308202440201003082023D" +
