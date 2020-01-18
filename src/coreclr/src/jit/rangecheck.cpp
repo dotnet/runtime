@@ -806,10 +806,6 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             {
                 icon = icon1 >> icon2;
             }
-            else
-            {
-                return Range(Limit::keUnknown);
-            }
         }
 
         if (icon < 0)
@@ -820,6 +816,9 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
         return range;
     }
+
+    // other operators are expected to be handled above.
+    assert(binop->OperIs(GT_ADD));
 
     Range* op1RangeCached = nullptr;
     Range  op1Range       = Limit(Limit::keUndef);
