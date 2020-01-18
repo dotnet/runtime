@@ -90,7 +90,15 @@ namespace Internal.TypeSystem.Ecma
                 switch (handle.Kind)
                 {
                     case HandleKind.TypeDefinition:
-                        item = new EcmaType(_module, (TypeDefinitionHandle)handle);
+                        var ecmaType = new EcmaType(_module, (TypeDefinitionHandle)handle);
+                        item = ecmaType;
+                        if (_module == _module.Context.CanonTypesModule)
+                        {
+                            if (_module.Context.SupportsCanon && _module.Context.CanonType != null && (ecmaType.Name == _module.Context.CanonType.Name) && (ecmaType.Namespace == _module.Context.CanonType.Namespace))
+                                item = _module.Context.CanonType;
+                            else if (_module.Context.SupportsUniversalCanon && (ecmaType.Name == _module.Context.UniversalCanonType.Name) && (ecmaType.Namespace == _module.Context.UniversalCanonType.Namespace))
+                                item = _module.Context.UniversalCanonType;
+                        }
                         break;
 
                     case HandleKind.MethodDefinition:
@@ -159,7 +167,11 @@ namespace Internal.TypeSystem.Ecma
                     case HandleKind.MethodDefinition:
                     case HandleKind.FieldDefinition:
                         // type/method/field definitions directly correspond to their target item.
-                        return (IEntityHandleObject)item;
+                        if (item is IEntityHandleObject entityHandleObject)
+                            return entityHandleObject;
+
+                        // Except for Canon and UniversalCanon, which are not EcmaType.
+                        return new EcmaObjectLookupWrapper(handle, item);
                     default:
                         // Everything else is some form of reference which cannot be self-describing
                         return new EcmaObjectLookupWrapper(handle, item);

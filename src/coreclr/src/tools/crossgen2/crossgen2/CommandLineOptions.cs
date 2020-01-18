@@ -11,6 +11,7 @@ namespace ILCompiler
     public class CommandLineOptions
     {
         public FileInfo[] InputFilePaths { get; set; }
+        public FileInfo[] Mibc { get; set; }
         public string[] Reference { get; set; }
         public FileInfo OutputFilePath { get; set; }
         public bool Optimize { get; set; }
@@ -27,6 +28,7 @@ namespace ILCompiler
         public string TargetOS { get; set; }
         public string JitPath { get; set; }
         public string SystemModule { get; set; }
+        public bool NonLocalGenerics { get; set; }
         public bool WaitForDebugger { get; set; }
         public bool Tuning { get; set; }
         public bool Partial { get; set; }
@@ -61,6 +63,13 @@ namespace ILCompiler
                         Arity = arbitraryArity
                     } 
                 },
+                new Option(new[] { "--mibc", "-m" }, "Mibc file(s) for profile guided optimization")
+                {
+                    Argument = new Argument<string[]>()
+                    {
+                        Arity = arbitraryArity
+                    }
+                },
                 new Option(new[] { "--outputfilepath", "--out", "-o" }, "Output file path")
                 {
                     Argument = new Argument<FileInfo>()
@@ -75,6 +84,7 @@ namespace ILCompiler
                 },
                 new Option(new[] { "--optimize-time", "--Ot" }, "Enable optimizations, favor code speed"),
                 new Option(new[] { "--inputbubble" }, "True when the entire input forms a version bubble (default = per-assembly bubble)"),
+                new Option(new[] { "--non-local-generics" }, "Include generic code into module even if it isn't defined in module."),
                 new Option(new[] { "--tuning" }, "Generate IBC tuning image") 
                 {
                     Argument = new Argument<bool>() 
