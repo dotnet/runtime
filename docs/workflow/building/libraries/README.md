@@ -8,10 +8,8 @@ Here is one example of a daily workflow for a developer working mainly on the li
 :: From root in the morning:
 git clean -xdf
 git pull upstream master & git push origin master
-cd src\coreclr
-build -release -skiptests
-cd ..\..\
-build -subsetCategory libraries /p:CoreCLRConfiguration=Release
+build -subsetCategory coreclr -c Release
+build -subsetCategory libraries -coreclrConfiguration Release
 
 :: The above you may only perform once in a day, or when
 :: you pull down significant new changes.
@@ -35,10 +33,8 @@ The instructions for Linux are essentially the same:
 # From root in the morning:
 git clean -xdf
 git pull upstream master & git push origin master
-cd src/coreclr
-build -release -skiptests
-cd ../../
-./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release
+./build.sh -subsetcategory coreclr -c Release
+./build.sh -subsetcategory libraries -coreclrconfiguration Release
 
 # The above you may only perform once in a day, or when
 # you pull down significant new changes.
@@ -59,18 +55,16 @@ The steps above may be all you need to know to make a change. Want more details 
 
 This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built CoreCLR (aka, the "runtime") to give the libraries something to run on. You should normally build CoreCLR in release configuration and libraries in debug configuration. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 
-These example commands will build a release CoreCLR (and CoreLib) and debug libraries:
+These example commands will build a release CoreCLR (and CoreLib), debug libraries, and debug installer:
 
 For Linux:
 ```
-src/coreclr/build.sh -release -skiptests
-./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release
+./build.sh -coreclrconfiguration Release
 ```
 
 For Windows:
 ```
-src\coreclr\build.cmd -release -skiptests
-build.cmd -subsetCategory libraries /p:CoreCLRConfiguration=Release
+./build.cmd -coreclrConfiguration Release
 ```
 
 Detailed information about building and testing CoreCLR and the libraries is in the documents linked below.

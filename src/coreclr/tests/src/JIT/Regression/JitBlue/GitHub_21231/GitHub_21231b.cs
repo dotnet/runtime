@@ -4,7 +4,7 @@
 
 using System;
 
-// Test case for issue 21231
+// Test case for https://github.com/dotnet/coreclr/issues/21231
 //
 // 
 // Debug: Outputs 2

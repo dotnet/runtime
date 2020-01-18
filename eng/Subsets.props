@@ -102,6 +102,18 @@
     <ProjectToBuild Include="$(RepoToolsLocalDir)regenerate-readme-table.proj" />
   </ItemGroup>
 
+  <ItemDefinitionGroup Condition="'$(CoreCLRConfiguration)' != ''">
+    <CoreClrProjectToBuild>
+      <Properties>Configuration=$(CoreCLRConfiguration)</Properties>
+    </CoreClrProjectToBuild>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(LibrariesConfiguration)' != ''">
+    <LibrariesProjectToBuild>
+      <Properties>Configuration=$(LibrariesConfiguration)</Properties>
+    </LibrariesProjectToBuild>
+  </ItemDefinitionGroup>
+
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('all'))">
     <CoreClrProjectToBuild Include="$(CoreClrProjectRoot)coreclr.proj" BuildInParallel="false" />

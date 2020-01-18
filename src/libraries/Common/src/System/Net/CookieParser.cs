@@ -529,7 +529,7 @@ namespace System.Net
             {
                 if (s_internalSetNameMethod == null)
                 {
-                    // TODO: #13607
+                    // TODO https://github.com/dotnet/corefx/issues/13607:
                     // We need to use Cookie.InternalSetName instead of the Cookie.set_Name wrapped in a try catch block, as
                     // Cookie.set_Name keeps the original name if the string is empty or null.
                     // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
@@ -550,7 +550,7 @@ namespace System.Net
             {
                 if (s_isQuotedDomainField == null)
                 {
-                    // TODO: #13607
+                    // TODO https://github.com/dotnet/corefx/issues/13607:
                     FieldInfo field = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(field != null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
                     s_isQuotedDomainField = field;
@@ -567,7 +567,7 @@ namespace System.Net
             {
                 if (s_isQuotedVersionField == null)
                 {
-                    // TODO: #13607
+                    // TODO https://github.com/dotnet/corefx/issues/13607:
                     FieldInfo field = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(field != null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
                     s_isQuotedVersionField = field;

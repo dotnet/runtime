@@ -17,7 +17,8 @@ namespace System.Composition.TypedParts.Tests
         public static bool HasMultiplerProcessors { get; } = Environment.ProcessorCount > 1;
 
         /// <summary>
-        /// Regression test for issue #6857 System.Composition: Bug in Resolving Activators Due to the .NET Type System
+        /// Regression test for https://github.com/dotnet/corefx/issues/6857
+        /// System.Composition: Bug in Resolving Activators Due to the .NET Type System
         /// Non-deterministic
         /// </summary>
         /// <remarks>

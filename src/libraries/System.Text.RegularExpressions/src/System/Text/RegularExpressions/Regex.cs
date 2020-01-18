@@ -201,25 +201,33 @@ namespace System.Text.RegularExpressions
         /// instantiating a non-compiled regex.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout)
-        {
-            return RegexCompiler.Compile(code, options, hasTimeout);
-        }
+        private static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout) =>
+            RegexCompiler.Compile(code, options, hasTimeout);
 #endif
 
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-        }
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname) =>
+            CompileToAssembly(regexinfos, assemblyname, null, null);
 
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-        }
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes) =>
+            CompileToAssembly(regexinfos, assemblyname, attributes, null);
 
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes, string resourceFile)
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
         {
+            if (assemblyname is null)
+            {
+                throw new ArgumentNullException(nameof(assemblyname));
+            }
+
+            if (regexinfos is null)
+            {
+                throw new ArgumentNullException(nameof(regexinfos));
+            }
+
+#if DEBUG // until it can be fully implemented
+            RegexCompiler.CompileToAssembly(regexinfos, assemblyname, attributes, resourceFile);
+#else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+#endif
         }
 
         /// <summary>
