@@ -674,6 +674,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(?:abcd|efghj{2,}|j[klm]o+)i", "efghjjjjji", RegexOptions.None, new string[] { "efghjjjjji" } };
             yield return new object[] { null, @"(?:abcd|efghi{2,}|j[klm]o+)i", "efghiii", RegexOptions.None, new string[] { "efghiii" } };
             yield return new object[] { null, @"(?:abcd|efghi{2,}|j[klm]o+)i", "efghiiiiiiii", RegexOptions.None, new string[] { "efghiiiiiiii" } };
+            yield return new object[] { null, @"a?ba?ba?ba?b", "abbabab", RegexOptions.None, new string[] { "abbabab" } };
+            yield return new object[] { null, @"a?ba?ba?ba?b", "abBAbab", RegexOptions.IgnoreCase, new string[] { "abBAbab" } };
             // Implicitly upgrading (or not) notoneloop to be atomic
             yield return new object[] { null, @"[^b]*b", "aaab", RegexOptions.None, new string[] { "aaab" } };
             yield return new object[] { null, @"[^b]*b+", "aaab", RegexOptions.None, new string[] { "aaab" } };
@@ -684,6 +686,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(?:abc[^b]*|efgh)i", "efghi", RegexOptions.None, new string[] { "efghi" } }; // can't upgrade
             yield return new object[] { null, @"(?:abcd|efg[^b]*)b", "efgb", RegexOptions.None, new string[] { "efgb" } };
             yield return new object[] { null, @"(?:abcd|efg[^b]*)i", "efgi", RegexOptions.None, new string[] { "efgi" } }; // can't upgrade
+            yield return new object[] { null, @"[^a]?a[^a]?a[^a]?a[^a]?a", "baababa", RegexOptions.None, new string[] { "baababa" } };
+            yield return new object[] { null, @"[^a]?a[^a]?a[^a]?a[^a]?a", "BAababa", RegexOptions.IgnoreCase, new string[] { "BAababa" } };
             // Implicitly upgrading (or not) setloop to be atomic
             yield return new object[] { null, @"[ac]*", "aaa", RegexOptions.None, new string[] { "aaa" } };
             yield return new object[] { null, @"[ac]*b", "aaab", RegexOptions.None, new string[] { "aaab" } };
@@ -710,6 +714,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(?:abcd|efg[hij]*)h", "efgh", RegexOptions.None, new string[] { "efgh" } }; // can't upgrade
             yield return new object[] { null, @"(?:abcd|efg[hij]*)ih", "efgjih", RegexOptions.None, new string[] { "efgjih" } }; // can't upgrade
             yield return new object[] { null, @"(?:abcd|efg[hij]*)k", "efgjk", RegexOptions.None, new string[] { "efgjk" } };
+            yield return new object[] { null, @"[ace]?b[ace]?b[ace]?b[ace]?b", "cbbabeb", RegexOptions.None, new string[] { "cbbabeb" } };
+            yield return new object[] { null, @"[ace]?b[ace]?b[ace]?b[ace]?b", "cBbAbEb", RegexOptions.IgnoreCase, new string[] { "cBbAbEb" } };
             // Implicitly upgrading (or not) concat loops to be atomic
             yield return new object[] { null, @"(?:[ab]c[de]f)*", "", RegexOptions.None, new string[] { "" } };
             yield return new object[] { null, @"(?:[ab]c[de]f)*", "acdf", RegexOptions.None, new string[] { "acdf" } };

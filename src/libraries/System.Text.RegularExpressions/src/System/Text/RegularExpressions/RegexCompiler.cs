@@ -1591,7 +1591,9 @@ namespace System.Text.RegularExpressions
             EmitNode(node);
 
             // Success:
-            // this.runtextpos = runtextpos + textSpanPos;
+            // runtextpos += textSpanPos;
+            // this.runtextpos = runtextpos;
+            // Capture(0, originalruntextpos, runtextpos);
             MarkLabel(stopSuccessLabel);
             Ldthis();
             Ldloc(runtextposLocal);
@@ -1599,14 +1601,14 @@ namespace System.Text.RegularExpressions
             {
                 Ldc(textSpanPos);
                 Add();
+                Stloc(runtextposLocal);
+                Ldloc(runtextposLocal);
             }
             Stfld(s_runtextposField);
-
-            // Capture(0, originalruntextposLocal, this.runtextpos);
             Ldthis();
             Ldc(0);
             Ldloc(originalruntextposLocal);
-            Ldthisfld(s_runtextposField);
+            Ldloc(runtextposLocal);
             Callvirt(s_captureMethod);
 
             // If the graph contained captures, undo any remaining to handle failed matches.
@@ -2658,10 +2660,17 @@ namespace System.Text.RegularExpressions
                     node.Type == RegexNode.Setloopatomic);
                 Debug.Assert(node.M < int.MaxValue);
 
-                // First generate the code to handle the required number of iterations.
+                // If this is actually a repeater, emit that instead.
                 if (node.M == node.N)
                 {
                     EmitSingleCharRepeater(node);
+                    return;
+                }
+
+                // If this is actually an optional single char, emit that instead.
+                if (node.M == 0 && node.N == 1)
+                {
+                    EmitAtomicSingleCharZeroOrOne(node);
                     return;
                 }
 
@@ -2812,6 +2821,63 @@ namespace System.Text.RegularExpressions
                 ReturnInt32Local(iterationLocal);
             }
 
+            // Emits the code to handle a non-backtracking optional zero-or-one loop.
+            void EmitAtomicSingleCharZeroOrOne(RegexNode node)
+            {
+                Debug.Assert(
+                    node.Type == RegexNode.Oneloopatomic ||
+                    node.Type == RegexNode.Notoneloopatomic ||
+                    node.Type == RegexNode.Setloopatomic);
+                Debug.Assert(node.M == 0 && node.N == 1);
+
+                Label skipUpdatesLabel = DefineLabel();
+
+                // if ((uint)textSpanPos >= (uint)textSpan.Length) goto skipUpdatesLabel;
+                Ldc(textSpanPos);
+                Ldloca(textSpanLocal);
+                Call(s_spanGetLengthMethod);
+                BgeUnFar(skipUpdatesLabel);
+
+                // if (textSpan[i] != ch) goto skipUpdatesLabel;
+                Ldloca(textSpanLocal);
+                Ldc(textSpanPos);
+                Call(s_spanGetItemMethod);
+                LdindU2();
+                switch (node.Type)
+                {
+                    case RegexNode.Oneloopatomic:
+                        if (IsCaseInsensitive(node)) CallToLower();
+                        Ldc(node.Ch);
+                        BneFar(skipUpdatesLabel);
+                        break;
+                    case RegexNode.Notoneloopatomic:
+                        if (IsCaseInsensitive(node)) CallToLower();
+                        Ldc(node.Ch);
+                        BeqFar(skipUpdatesLabel);
+                        break;
+                    case RegexNode.Setloopatomic:
+                        LocalBuilder setScratchLocal = RentInt32Local();
+                        EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
+                        ReturnInt32Local(setScratchLocal);
+                        BrfalseFar(skipUpdatesLabel);
+                        break;
+                }
+
+                // textSpan = textSpan.Slice(1);
+                Ldloca(textSpanLocal);
+                Ldc(1);
+                Call(s_spanSliceIntMethod);
+                Stloc(textSpanLocal);
+
+                // runtextpos++;
+                Ldloc(runtextposLocal);
+                Ldc(1);
+                Add();
+                Stloc(runtextposLocal);
+
+                MarkLabel(skipUpdatesLabel);
+            }
+
             // Emits the code to handle a non-backtracking, variable-length loop around another node.
             void EmitAtomicNodeLoop(RegexNode node)
             {
@@ -2819,6 +2885,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic));
                 Debug.Assert(node.M < int.MaxValue);
 
+                // If this is actually a repeater, emit that instead.
                 if (node.M == node.N)
                 {
                     EmitNodeRepeater(node);
