@@ -65,7 +65,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return SR.GetResourceString(id, id)
         End Function
 
-        Friend Shared Function GetResourceString(ByVal resourceKey As String, ByVal ParamArray args() As String) As String
+        Public Shared Function GetResourceString(ByVal resourceKey As String, ByVal ParamArray args() As String) As String
             Return SR.Format(resourceKey, args)
         End Function
 

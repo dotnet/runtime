@@ -88,5 +88,11 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", "srcIndex", () => Utils.CopyArray(array1, array2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", "srcIndex", () => Utils.CopyArray(array2, array1));
         }
+
+        [Fact]
+        public void GetResourceString()
+        {
+            Assert.Contains("42", Utils.GetResourceString("Argument_InvalidValue1", "42"));
+        }
     }
 }
