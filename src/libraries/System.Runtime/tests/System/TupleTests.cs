@@ -217,7 +217,7 @@ namespace System.Tests
 
             public void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
             {
-                // This was not fixed in order to be compatible with the full .NET framework and Xamarin.
+                // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
                 // See https://github.com/dotnet/corefx/issues/13410
                 IStructuralEquatable equatable = (IStructuralEquatable)Tuple;
                 Assert.Throws<NullReferenceException>(() => equatable.Equals(Tuple, null));
@@ -225,7 +225,7 @@ namespace System.Tests
 
             public void IStructuralEquatable_GetHashCode_NullComparer_ThrowsNullReferenceException()
             {
-                // This was not fixed in order to be compatible with the full .NET framework and Xamarin.
+                // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
                 // See https://github.com/dotnet/corefx/issues/13410
                 IStructuralEquatable equatable = (IStructuralEquatable)Tuple;
                 Assert.Throws<NullReferenceException>(() => equatable.GetHashCode(null));
@@ -242,7 +242,7 @@ namespace System.Tests
 
             public void IStructuralComparable_NullComparer_ThrowsNullReferenceException()
             {
-                // This was not fixed in order to be compatible with the full .NET framework and Xamarin.
+                // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
                 // See https://github.com/dotnet/corefx/issues/13410
                 IStructuralComparable comparable = (IStructuralComparable)Tuple;
                 Assert.Throws<NullReferenceException>(() => comparable.CompareTo(Tuple, null));
