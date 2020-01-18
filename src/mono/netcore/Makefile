@@ -2,14 +2,7 @@ ifneq ($(wildcard config.make),)
 
 include config.make
 
-NETCORETESTS_VERSION := $(shell cat ../eng/Versions.props | sed -n 's/.*MicrosoftPrivateCoreFxNETCoreAppVersion>\(.*\)<\/MicrosoftPrivateCoreFxNETCoreAppVersion.*/\1/p' )
-NETCOREAPP_VERSION := $(shell cat ../eng/Versions.props | sed -n 's/.*MicrosoftNETCoreAppVersion>\(.*\)<\/MicrosoftNETCoreAppVersion.*/\1/p' )
-ROSLYN_VERSION:=  $(shell cat ../eng/Versions.props | sed -n 's/.*MicrosoftNetCompilersVersion>\(.*\)<\/MicrosoftNetCompilersVersion.*/\1/p' )
-
-# Should be automated but not sure how for now
-# the name is misleading osx version is used for any unix like systems
-# the url is manually extracted from coreclr-outerloop (https://dev.azure.com/dnceng/public/_build?definitionId=98&_a=summary) Build artifacts published page
-CORECLR_TESTS:=https://dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_apis/build/builds/368250/artifacts?artifactName=Tests_OSX_x64_checked_outerloop&api-version=5.2-preview.5&%24format=zip
+NETCOREAPP_VERSION := $(shell cat ../../eng/Versions.props | sed -n 's/.*MicrosoftNETCoreAppVersion>\(.*\)<\/MicrosoftNETCoreAppVersion.*/\1/p' )
 
 # runtime version used by $(DOTNET) - local .net core sdk to bootstrap stuff
 # it doesn't match NETCOREAPP_VERSION
@@ -52,33 +45,7 @@ TESTS_PLATFORM = Linux.x64
 DOTNET := $(shell ./init-tools.sh | tail -1)
 endif
 
-NETCORESDK_FILE := dotnet-runtime-$(NETCOREAPP_VERSION)-$(RID).$(NETCORESDK_EXT)
-NETCORE_URL := https://dotnetcli.blob.core.windows.net/dotnet/Runtime/$(NETCOREAPP_VERSION)/$(NETCORESDK_FILE)
-FEED_BASE_URL := https://dotnetfeed.blob.core.windows.net/dotnet-core
-TEST_ASSETS_PATH := corefx-tests/$(NETCORETESTS_VERSION)/$(TESTS_PLATFORM)/netcoreapp/corefx-test-assets.xml
-
-# used to calculate exact version number for generating nupkg
-BLAME = $(shell git blame ../configure.ac | grep AC_INIT | cut -f1 -d' ')
-VERSTUB = .$(shell git rev-list --count $(BLAME)..HEAD)-preview
-
-all: bcl
-
-$(NETCORESDK_FILE):
-	curl $(NETCORE_URL) --output $(NETCORESDK_FILE)
-	rm -rf shared/Microsoft.NETCore.App
-	$(UNZIPCMD) $(NETCORESDK_FILE)
-	$(ON_RUNTIME_EXTRACT)
-
-update-corefx: corefx/.stamp-dl-corefx-$(NETCORETESTS_VERSION)
-
-corefx/.stamp-dl-corefx-$(NETCORETESTS_VERSION): corefx-restore.csproj
-	$(DOTNET) build corefx-restore.csproj --runtime $(RID) --packages corefx/packages -p:MicrosoftPrivateCoreFxNETCoreAppVersion=$(NETCORETESTS_VERSION) -p:OutputPath=corefx/restore/ -p:UseSharedCompilation=false
-	touch $@
-
-update-roslyn: roslyn/packages/microsoft.net.compilers.toolset/$(ROSLYN_VERSION)/microsoft.net.compilers.toolset.nuspec
-
-roslyn/packages/microsoft.net.compilers.toolset/$(ROSLYN_VERSION)/microsoft.net.compilers.toolset.nuspec:
-	$(DOTNET) restore roslyn-restore.csproj -p:RoslynVersion=$(ROSLYN_VERSION) --packages roslyn/packages -p:OutputPath=roslyn/restore/ -p:UseSharedCompilation=false
+all:
 
 run-sample: prepare
 	$(DOTNET) build sample/HelloWorld
@@ -140,21 +107,6 @@ run-sample-local-dotnet-llvm: patch-local-dotnet
 # COREHOST_TRACE=1 
 SHAREDRUNTIME := shared/Microsoft.NETCore.App/$(NETCOREAPP_VERSION)
 
-System.Private.CoreLib/src/System/Environment.Mono.cs: System.Private.CoreLib/src/System/Environment.Mono.in config.make
-	test -n '$(MONO_CORLIB_VERSION)'
-	sed -e 's,@''MONO_CORLIB_VERSION@,$(MONO_CORLIB_VERSION),' $< > $@
-
-CORLIB_BUILD_FLAGS?=-c Release
-
-bcl: update-roslyn System.Private.CoreLib/src/System/Environment.Mono.cs
-	$(DOTNET) build $(CORETARGETS) $(CORLIB_BUILD_FLAGS) -p:UseSharedCompilation=false -p:BuildArch=$(COREARCH) \
-	-p:OutputPath=bin/$(COREARCH) \
-	-p:RoslynPropsFile="../roslyn/packages/microsoft.net.compilers.toolset/$(ROSLYN_VERSION)/build/Microsoft.Net.Compilers.Toolset.props" \
-	System.Private.CoreLib/System.Private.CoreLib.csproj
-
-debug-bcl:
-	$(MAKE) bcl CORLIB_BUILD_FLAGS="-c Debug"
-
 runtime:
 	$(MAKE) -C ../mono
 
@@ -166,25 +118,10 @@ $(SHAREDRUNTIME)/.stamp-link-mono: ../mono/mini/.libs/libmonosgen-2.0$(PLATFORM_
 	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.pdb $(SHAREDRUNTIME)
 	touch $@
 
-prepare: $(NETCORESDK_FILE) update-corefx update-roslyn link-mono
-
-pack-%:
-	$(DOTNET) pack roslyn-restore.csproj -p:IsPackable=true -p:NuspecFile=$*.nuspec -p:NuspecProperties=\"RID=$(RID)\;VERSION=$(VERSION)$(VERSTUB)\;PLATFORM_AOT_SUFFIX=$(PLATFORM_AOT_SUFFIX)\;COREARCH=$(COREARCH)\;PLATFORM_AOT_PREFIX=$(PLATFORM_AOT_PREFIX)\" --output ../artifacts/ --no-build
-
-nupkg: pack-metapackage pack-runtime
-nupkg-llvm: pack-metapackage-llvm pack-runtime-llvm
+prepare: link-mono
 
 clean:
-	rm -rf .configured ../.dotnet sdk shared host dotnet tests obj corefx roslyn LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE)
-
-
-update-tests-corefx: corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION)
-
-corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
-	rm -rf corefx/tests
-	$(DOTNET) msbuild corefx-tests-restore.proj -m -t:DownloadAllTests -p:TEST_ASSETS_PATH="$(TEST_ASSETS_PATH)" -p:FEED_BASE_URL="$(FEED_BASE_URL)"
-	rm -rf corefx/tests/extracted/System.Utf8String.Experimental.Tests
-	touch $@
+	rm -rf .configured ../.dotnet sdk shared host dotnet
 
 #
 # Running CoreFX tests
@@ -197,7 +134,7 @@ corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
 # Running individual test: MONO_ENV_OPTIONS="--debug" make run-tests-corefx-System.Collections.Tests
 #
 
-run-tests-corefx: prepare update-tests-corefx
+run-tests-corefx: prepare
 	@rm -f .failures; \
 	counter=0; \
 	tests_count=$(words $(dir $(wildcard corefx/tests/extracted/*/))); \
@@ -216,7 +153,7 @@ run-tests-corefx: prepare update-tests-corefx
 		exit 1; \
 	fi
 
-run-tests-corefx-%: prepare update-tests-corefx
+run-tests-corefx-%: prepare
 	@echo ""
 	@echo "***************** $* $${TEST_COUNTER}*********************"
 	@cp corefx/restore/corefx-restore.deps.json corefx/tests/extracted/$*/$*.deps.json
@@ -231,33 +168,15 @@ run-tests-corefx-%: prepare update-tests-corefx
 		$(XUNIT_INNER_ARGS) @../../../../CoreFX.issues.rsp \
 		$(XUNIT_ARGS)
 
-# build a test assembly in COREFX_ROOT (path to a fully built corefx repo) and copy it to corefx/tests/extracted
-# e.g. `make build-test-corefx-System.Runtime COREFX_ROOT=/prj/corefx-master`
-build-test-corefx-%:
-	cd $(COREFX_ROOT)/src/$*/tests && $(DOTNET) msbuild /p:OutputPath=tmp
-	cp $(COREFX_ROOT)/src/$*/tests/tmp/$*.Tests.{dll,pdb} $(CURDIR)/corefx/tests/extracted/$*.Tests/
-	rm -rf $(COREFX_ROOT)/src/$*/tests/tmp
-
 xunit-summary:
 	./xunit-summary.py "corefx/tests"
-
-
-update-tests-coreclr: coreclr/.stamp-tests
-
-coreclr/.stamp-tests:
-	rm -rf coreclr/tests
-	curl -L "$(CORECLR_TESTS)" --output coreclr/tests.zip
-	tar -xvf coreclr/tests.zip -C coreclr/
-	mkdir coreclr/tests
-	tar -xvf coreclr/Tests_OSX_x64_checked_outerloop/Tests_OSX_x64_checked_outerloop.tar.gz -C coreclr/tests
-	touch $@
 
 .PHONY: corerun
 corerun:
 	$(MAKE) -C corerun
 	cp corerun/corerun $(SHAREDRUNTIME)
 
-run-tests-coreclr: prepare update-tests-coreclr corerun
+run-tests-coreclr: prepare corerun
 	rm -rf coreclr/output.log
 	@counter=0; \
 	failures=0; \
@@ -296,7 +215,7 @@ run-tests-mono: prepare
 	echo "Tests Count: $$counter"; \
 	echo "Failed: $$failures"
 
-run-tests-coreclr-%: prepare update-tests-coreclr
+run-tests-coreclr-%: prepare
 	@echo ""
 	@echo "***************** $* *********************"
 	@test_sh=$$(find . -type f -name "$*.sh" | head -n 1); \

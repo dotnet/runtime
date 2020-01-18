@@ -12,8 +12,6 @@ namespace System
 {
 	partial class Environment
 	{
-		const string mono_corlib_version = "@MONO_CORLIB_VERSION@";
-
 		public static int CurrentManagedThreadId => Thread.CurrentThread.ManagedThreadId;
 
 		public extern static int ExitCode {

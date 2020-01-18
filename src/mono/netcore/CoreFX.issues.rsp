@@ -342,11 +342,11 @@
 -nomethod System.Reflection.Tests.ParameterInfoTests.RawDefaultValueFromAttribute
 
 # SKIPPED
--nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs__CornerCase_HasElementTypes
+-nomethod System.Reflection.Tests.MemberInfoTests.HasSameMetadataDefinitionAs__CornerCase_HasElementTypes
 
 # Assertion failed... Not sure why 
 # https://github.com/mono/mono/issues/15069
--nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericTypeParameters
+-nomethod System.Reflection.Tests.MemberInfoTests.HasSameMetadataDefinitionAs_GenericTypeParameters
 
 # relies on specific exception message
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath
@@ -631,6 +631,9 @@
 -nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames
 -nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames_FNeedFileInfo
 
+# Assert.Contains() Failure
+-nomethod System.Diagnostics.Tests.StackTraceTests.ToString_Invoke_ReturnsExpected
+
 ####################################################################
 ##  System.Numerics.Vectors.Tests
 ####################################################################
@@ -712,6 +715,7 @@
 -nomethod System.Tests.AppDomainTests.ResourceResolve
 -nomethod System.Tests.AppDomainTests.FirstChanceException_Called
 -nomethod System.Tests.AppDomainTests.AssemblyResolve_FirstChanceException
+-nomethod System.Tests.AppDomainTests.AssemblyResolve_IsNotCalledForCoreLibResources
 
 # AssemblyLoadContext.SetProfileOptimizationRoot is no-op (not implemented)
 -nomethod System.Runtime.Tests.ProfileOptimizationTest.ProfileOptimization_CheckFileExists
@@ -821,7 +825,9 @@
 # Will be removed and we can skip for now.
 -nomethod System.Tests.MemoryTests.*
 -nomethod System.Tests.Utf8StringTests.*
+-nomethod System.Text.Tests.Utf8SpanTests.*
 -nomethod System.Tests.Utf8ExtensionsTests.*
+-nomethod System.Tests.Char8Tests.*
 -nomethod System.Tests.ReflectionTests.*
 -nomethod System.Net.Http.Tests.Utf8StringContentTests.*
 

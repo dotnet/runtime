@@ -12,5 +12,4 @@ packs/
 /roslyn
 /obj
 .configured
-/System.Private.CoreLib/src/System/Environment.Mono.cs
 /config.make

@@ -50,17 +50,19 @@
   <PropertyGroup>
     <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'libraries'))</LibrariesProjectRoot>
     <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr'))</CoreClrProjectRoot>
+    <MonoProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono'))</MonoProjectRoot>
     <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
     <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'tools-local'))</RepoToolsLocalDir>
     <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultSubsetCategories>libraries-installer-coreclr</DefaultSubsetCategories>
+    <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
     <DefaultCoreClrSubsets>all</DefaultCoreClrSubsets>
+    <DefaultMonoSubsets>all</DefaultMonoSubsets>
 
     <_subsetCategory Condition="'$(SubsetCategory)' != ''">$(SubsetCategory.ToLowerInvariant())</_subsetCategory>
     <_subsetCategory Condition="'$(SubsetCategory)' == ''">$(DefaultSubsetCategories)</_subsetCategory>
@@ -68,6 +70,7 @@
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('installer'))">$(DefaultInstallerSubsets)</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('libraries'))">$(_subset)$(DefaultLibrariesSubsets)</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('coreclr'))">$(_subset)$(DefaultCoreClrSubsets)</_subset>
+    <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('mono'))">$(_subset)$(DefaultMonoSubsets)</_subset>
   </PropertyGroup>
 
   <ItemGroup>
@@ -79,6 +82,9 @@
 
     <!-- CoreClr -->
     <SubsetName Include="All" Category="CoreClr" Description="The .NET runtime." />
+
+    <!-- Mono -->
+    <SubsetName Include="All" Category="Mono" Description="The Mono .NET runtime." />
 
     <!-- Installer -->
     <SubsetName Include="All" Category="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
@@ -100,6 +106,13 @@
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('all'))">
     <CoreClrProjectToBuild Include="$(CoreClrProjectRoot)coreclr.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrProjectToBuild)" />
+  </ItemGroup>
+
+  <!-- Mono sets -->
+  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('all'))">
+    <MonoProjectToBuild Include="$(MonoProjectRoot)mono.proj" BuildInParallel="false" />
+    <MonoProjectToBuild Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(MonoProjectToBuild)" />
   </ItemGroup>
 
   <!-- Libraries sets -->
