@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 ***********************************************************************************************
-Sdk.targets
+Microsoft.NET.Sdk.IL.targets
 
 WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
           created a backup copy.  Incorrect changes to this file will make it
@@ -11,12 +11,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <Import Condition="'$(IsCrossTargetingBuild)' != 'true'" Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.IL.targets" />
+  <Import Condition="'$(IsCrossTargetingBuild)' == 'true'" Project="$(MSBuildExtensionsPath)Microsoft.Common.CrossTargeting.targets" />
 
-  <PropertyGroup>
-    <MSBuildAllProjects>$(MSBuildThisFileFullPath);$(MSBuildAllProjects)</MSBuildAllProjects>
-    <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.ilproj'">$(MSBuildThisFileDirectory)..\targets\Microsoft.NET.Sdk.IL.Common.targets</LanguageTargets>
-  </PropertyGroup>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-
-</Project>
+</Project> 
