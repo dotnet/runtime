@@ -70,8 +70,6 @@ This document gives a quick overview of which collections are supported.
 
 ### System.Collections.Specialized
 
-#### Deserialization heuristics
-
 | Type | Serialization | Deserialization |
 | --- | --- | --- |
 | BitVector32 | Supported | Not supported |
