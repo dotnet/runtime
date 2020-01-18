@@ -672,6 +672,8 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_property_value(
     if (name == nullptr || value == nullptr)
         return StatusCode::InvalidArgFailure;
 
+    *value = nullptr;
+
     const host_context_t *context;
     if (host_context_handle == nullptr)
     {
@@ -788,6 +790,9 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_properties(
 
     if (count == nullptr)
         return StatusCode::InvalidArgFailure;
+
+    *keys = nullptr;
+    *values = nullptr;
 
     const host_context_t *context;
     if (host_context_handle == nullptr)
