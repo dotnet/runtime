@@ -5,13 +5,14 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Tests
 {
     public static partial class ReferenceHandlingTests
     {
-        private static JsonSerializerOptions _deserializeOptions = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
+        private static readonly JsonSerializerOptions s_deserializerOptionsPreserve = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
 
         private class EmployeeWithContacts
         {
@@ -34,7 +35,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            Employee angela = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            Employee angela = JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve);
             Assert.Same(angela, angela.Manager);
         }
 
@@ -54,7 +55,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            Employee employee = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            Employee employee = JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve);
             Assert.Equal(1, employee.Subordinates.Count);
             Assert.Same(employee, employee.Subordinates[0]);
         }
@@ -73,7 +74,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            EmployeeWithContacts employee = JsonSerializer.Deserialize<EmployeeWithContacts>(json, _deserializeOptions);
+            EmployeeWithContacts employee = JsonSerializer.Deserialize<EmployeeWithContacts>(json, s_deserializerOptionsPreserve);
             Assert.Same(employee, employee.Contacts["Angela"]);
         }
 
@@ -97,7 +98,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            Employee employee = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            Employee employee = JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve);
             Assert.Same(employee.Subordinates, employee.Subordinates[0].Subordinates);
         }
 
@@ -120,11 +121,11 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            EmployeeWithContacts employee = JsonSerializer.Deserialize<EmployeeWithContacts>(json, _deserializeOptions);
+            EmployeeWithContacts employee = JsonSerializer.Deserialize<EmployeeWithContacts>(json, s_deserializerOptionsPreserve);
             Assert.Same(employee.Contacts, employee.Contacts["Angela"].Contacts);
         }
 
-        private class MyClass
+        private class ClassWithSubsequentListProperties
         {
             public List<int> MyList { get; set; }
             public List<int> MyListCopy { get; set; }
@@ -147,7 +148,7 @@ namespace System.Text.Json.Tests
                 ""MyListCopy"": { ""$ref"": ""1"" }
             }";
 
-            MyClass instance = JsonSerializer.Deserialize<MyClass>(json, _deserializeOptions);
+            ClassWithSubsequentListProperties instance = JsonSerializer.Deserialize<ClassWithSubsequentListProperties>(json, s_deserializerOptionsPreserve);
             Assert.Equal(4, instance.MyList.Count);
             Assert.Same(instance.MyList, instance.MyListCopy);
         }
@@ -169,7 +170,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            Employee employee = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            Employee employee = JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve);
             // presereved array.
             Assert.Empty(employee.SubordinatesString);
             // reference to preserved array.
@@ -190,7 +191,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            Employee employee = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            Employee employee = JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve);
             Assert.Same(employee.Contacts, employee.Contacts2);
 
             json = @"{
@@ -203,7 +204,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            employee = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            employee = JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve);
             Assert.Equal(0, employee.Contacts.Count);
             Assert.Equal(0, employee.Contacts2.Count);
         }
@@ -215,8 +216,38 @@ namespace System.Text.Json.Tests
                 """": 1
             }";
 
-            var root = JsonSerializer.Deserialize<MyClass<int>>(json, _deserializeOptions);
+            ClassWithZeroLengthProperty<int> root = JsonSerializer.Deserialize<ClassWithZeroLengthProperty<int>>(json, s_deserializerOptionsPreserve);
             Assert.Equal(1, root.ZeroLengthProperty);
+        }
+
+        [Fact]
+        public static void TestJsonPathDoesNotFailOnMultiThreads()
+        {
+            const int ThreadCount = 8;
+            const int ConcurrentTestsCount = 4;
+            Task[] tasks = new Task[ThreadCount * ConcurrentTestsCount];
+
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i++] = Task.Run(() => TestIdTask());
+                tasks[i++] = Task.Run(() => TestRefTask());
+                tasks[i++] = Task.Run(() => TestIdTask());
+                tasks[i] = Task.Run(() => TestRefTask());
+            }
+
+            Task.WaitAll(tasks);
+        }
+
+        private static void TestIdTask()
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(@"{""$id"":1}", s_deserializerOptionsPreserve));
+            Assert.Equal("$.$id", ex.Path);
+        }
+
+        private static void TestRefTask()
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(@"{""$ref"":1}", s_deserializerOptionsPreserve));
+            Assert.Equal("$.$ref", ex.Path);
         }
         #endregion
 
@@ -236,7 +267,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            Dictionary<string, EmployeeWithContacts> dictionary = JsonSerializer.Deserialize<Dictionary<string, EmployeeWithContacts>>(json, _deserializeOptions);
+            Dictionary<string, EmployeeWithContacts> dictionary = JsonSerializer.Deserialize<Dictionary<string, EmployeeWithContacts>>(json, s_deserializerOptionsPreserve);
 
             Assert.Same(dictionary, dictionary["Angela"].Contacts);
         }
@@ -265,7 +296,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            Dictionary<string, EmployeeWithContacts> dictionary = JsonSerializer.Deserialize<Dictionary<string, EmployeeWithContacts>>(json, _deserializeOptions);
+            Dictionary<string, EmployeeWithContacts> dictionary = JsonSerializer.Deserialize<Dictionary<string, EmployeeWithContacts>>(json, s_deserializerOptionsPreserve);
             Assert.Same(dictionary, dictionary["Angela"].Subordinates[0].Contacts);
         }
 
@@ -279,7 +310,7 @@ namespace System.Text.Json.Tests
               ""557"": { ""$ref"": ""1"" }
             }";
 
-            Dictionary<string, Employee> directory = JsonSerializer.Deserialize<Dictionary<string, Employee>>(json, _deserializeOptions);
+            Dictionary<string, Employee> directory = JsonSerializer.Deserialize<Dictionary<string, Employee>>(json, s_deserializerOptionsPreserve);
             Assert.Same(directory["555"], directory["557"]);
         }
 
@@ -298,7 +329,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            var dict = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(json, _deserializeOptions);
+            Dictionary<string, List<int>> dict = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(json, s_deserializerOptionsPreserve);
             Assert.Same(dict["Array1"], dict["Array2"]);
         }
 
@@ -318,7 +349,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            var root = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(json, _deserializeOptions);
+            Dictionary<string, Dictionary<string, int>> root = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(json, s_deserializerOptionsPreserve);
             Assert.Same(root["Dictionary1"], root["Dictionary2"]);
         }
 
@@ -329,7 +360,7 @@ namespace System.Text.Json.Tests
                 """": 1
             }";
 
-            var root = JsonSerializer.Deserialize<Dictionary<string, int>>(json, _deserializeOptions);
+            Dictionary<string, int> root = JsonSerializer.Deserialize<Dictionary<string, int>>(json, s_deserializerOptionsPreserve);
             Assert.Equal(1, root[""]);
         }
         #endregion
@@ -349,7 +380,7 @@ namespace System.Text.Json.Tests
                 ]
             }";
 
-            List<int> myList = JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions);
+            List<int> myList = JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve);
             Assert.Equal(4, myList.Count);
         }
 
@@ -370,7 +401,7 @@ namespace System.Text.Json.Tests
                 ]
             }";
 
-            List<Employee> employees = JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions);
+            List<Employee> employees = JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve);
 
             Assert.Same(employees, employees[0].Subordinates);
         }
@@ -388,7 +419,7 @@ namespace System.Text.Json.Tests
               ""Name"": ""Angela""
             }";
 
-            Employee angela = JsonSerializer.Deserialize<Employee>(json, _deserializeOptions);
+            Employee angela = JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve);
 
             Assert.NotNull(angela);
             Assert.NotNull(angela.Subordinates);
@@ -426,7 +457,7 @@ namespace System.Text.Json.Tests
                 ]
             }";
 
-            List<Employee> employees = JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions);
+            List<Employee> employees = JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve);
             Assert.Equal(6, employees.Count);
             Assert.Same(employees[0], employees[2]);
             Assert.Same(employees[1], employees[3]);
@@ -461,7 +492,7 @@ namespace System.Text.Json.Tests
                 }
             ]";
 
-            Employee[] employees = JsonSerializer.Deserialize<Employee[]>(json, _deserializeOptions);
+            Employee[] employees = JsonSerializer.Deserialize<Employee[]>(json, s_deserializerOptionsPreserve);
             Assert.Equal(6, employees.Length);
             Assert.Same(employees[0], employees[2]);
             Assert.Same(employees[1], employees[3]);
@@ -481,7 +512,7 @@ namespace System.Text.Json.Tests
                 ]
             }";
 
-            List<List<int>> root = JsonSerializer.Deserialize<List<List<int>>>(json, _deserializeOptions);
+            List<List<int>> root = JsonSerializer.Deserialize<List<List<int>>>(json, s_deserializerOptionsPreserve);
             Assert.Equal(1, root.Count);
             Assert.Equal(3, root[0].Count);
         }
@@ -500,7 +531,7 @@ namespace System.Text.Json.Tests
                 ]
             }";
 
-            List<List<int>> root = JsonSerializer.Deserialize<List<List<int>>>(json, _deserializeOptions);
+            List<List<int>> root = JsonSerializer.Deserialize<List<List<int>>>(json, s_deserializerOptionsPreserve);
             Assert.Equal(2, root.Count);
             Assert.Equal(3, root[0].Count);
             Assert.Same(root[0], root[1]);
@@ -531,7 +562,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            ListWrapper root = JsonSerializer.Deserialize<ListWrapper>(json, _deserializeOptions);
+            ListWrapper root = JsonSerializer.Deserialize<ListWrapper>(json, s_deserializerOptionsPreserve);
             Assert.Equal(1, root.NestedList.Count);
             Assert.Equal(3, root.NestedList[0].Count);
         }
@@ -547,7 +578,7 @@ namespace System.Text.Json.Tests
                 }
             ]";
 
-            List<List<Employee>> root = JsonSerializer.Deserialize<List<List<Employee>>>(json, _serializeOptionsPreserve);
+            List<List<Employee>> root = JsonSerializer.Deserialize<List<List<Employee>>>(json, s_serializerOptionsPreserve);
             Assert.Equal(1, root.Count);
             Assert.Equal(0, root[0].Count);
         }
@@ -591,16 +622,19 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            var options = new JsonSerializerOptions();
-            options.ReferenceHandling = ReferenceHandling.Preserve;
-            options.Converters.Add(new MyConverter());
-
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandling = ReferenceHandling.Preserve,
+                Converters = { new ListOfEmployeeConverter() }
+            };
             Employee angela = JsonSerializer.Deserialize<Employee>(json, options);
+            Assert.Equal(0, angela.Subordinates.Count);
+            Assert.Equal(0, angela.Manager.Subordinates.Count);
         }
 
         //NOTE: If you implement a converter, you are on your own when handling metadata properties and therefore references.Newtonsoft does the same.
         //However; is there a way to recall preserved references previously found in the payload and to store new ones found in the converter's payload? that would be a cool enhancement.
-        private class MyConverter : Serialization.JsonConverter<List<Employee>>
+        private class ListOfEmployeeConverter : Serialization.JsonConverter<List<Employee>>
         {
             public override List<Employee> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
@@ -644,7 +678,7 @@ namespace System.Text.Json.Tests
                 ""$ref"": ""1""
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.$ref", ex.Path);
         }
 
@@ -656,7 +690,7 @@ namespace System.Text.Json.Tests
                 ""$ref"": ""1""
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.$ref", ex.Path);
         }
 
@@ -668,7 +702,7 @@ namespace System.Text.Json.Tests
                 ""$ref"": ""1""
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, Employee>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, Employee>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.$ref", ex.Path);
         }
 
@@ -682,7 +716,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Manager.$ref", ex.Path);
         }
 
@@ -696,7 +730,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Subordinates.$ref", ex.Path);
         }
 
@@ -710,7 +744,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Contacts.$ref", ex.Path);
         }
 
@@ -721,7 +755,7 @@ namespace System.Text.Json.Tests
         public static void JsonPath()
         {
             string json = @"[0";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$[0]", ex.Path);
         }
@@ -730,7 +764,7 @@ namespace System.Text.Json.Tests
         public static void JsonPathObject()
         {
             string json = @"{ ""Name"": ""A";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.Name", ex.Path);
         }
@@ -742,7 +776,7 @@ namespace System.Text.Json.Tests
             @"{
                 ""$id"": ""1"",
                 ""Nam";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.$id", ex.Path);
         }
@@ -754,7 +788,7 @@ namespace System.Text.Json.Tests
             @"{
                 ""Name"": ""Angela"",
                 ""$i";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.Name", ex.Path);
         }
@@ -765,7 +799,7 @@ namespace System.Text.Json.Tests
             string json =
             @"{
                 ""$id"":";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.$id", ex.Path);
         }
@@ -776,7 +810,7 @@ namespace System.Text.Json.Tests
             string json =
             @"{
                 ""$id"": ""1";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.$id", ex.Path);
         }
@@ -785,7 +819,7 @@ namespace System.Text.Json.Tests
         public static void JsonPathNestedObject()
         {
             string json = @"{ ""Name"": ""A"", ""Manager"": { ""Name"": ""B";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.Manager.Name", ex.Path);
         }
@@ -794,7 +828,7 @@ namespace System.Text.Json.Tests
         public static void JsonPathNestedArray()
         {
             string json = @"{ ""Subordinates"":";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.Subordinates", ex.Path);
         }
@@ -807,7 +841,7 @@ namespace System.Text.Json.Tests
                 ""$id"": ""1"",
                 ""$values"":[
                     1";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.$values[0]", ex.Path);
         }
@@ -818,7 +852,7 @@ namespace System.Text.Json.Tests
             string json =
             @"{
                 ""$id"": ""1";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.$id", ex.Path);
         }
@@ -830,7 +864,7 @@ namespace System.Text.Json.Tests
             @"{
                 ""$id"": ""1"",
                 ""$values"":";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.$values", ex.Path);
         }
@@ -839,7 +873,7 @@ namespace System.Text.Json.Tests
         public static void JsonPathCurlyBraceOnArray()
         {
             string json = "{";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$", ex.Path);
         }
@@ -858,7 +892,7 @@ namespace System.Text.Json.Tests
                 }
             ]";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<EmployeeStruct>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<EmployeeStruct>>(json, s_deserializerOptionsPreserve));
         }
         #endregion
 
@@ -881,11 +915,11 @@ namespace System.Text.Json.Tests
 
             JsonException ex;
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ImmutableList<EmployeeWithImmutable>>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ImmutableList<EmployeeWithImmutable>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$", ex.Path);
             Assert.Contains($"'{typeof(ImmutableList<EmployeeWithImmutable>)}'", ex.Message);
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable[]>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable[]>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$", ex.Path);
             Assert.Contains($"'{typeof(EmployeeWithImmutable[])}'", ex.Message);
         }
@@ -899,7 +933,7 @@ namespace System.Text.Json.Tests
                 ""Employee1"": {}
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ImmutableDictionary<string, EmployeeWithImmutable>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ImmutableDictionary<string, EmployeeWithImmutable>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$", ex.Path);
             Assert.Contains($"'{typeof(ImmutableDictionary<string, EmployeeWithImmutable>)}'", ex.Message);
         }
@@ -918,7 +952,7 @@ namespace System.Text.Json.Tests
 
             JsonException ex;
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Subordinates", ex.Path);
             Assert.Contains($"'{typeof(ImmutableList<EmployeeWithImmutable>)}'", ex.Message);
 
@@ -931,7 +965,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.SubordinatesArray", ex.Path);
             Assert.Contains($"'{typeof(EmployeeWithImmutable[])}'", ex.Message);
         }
@@ -948,7 +982,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Contacts", ex.Path);
             Assert.Contains($"'{typeof(ImmutableDictionary<string, EmployeeWithImmutable>)}'", ex.Message);
         }
@@ -984,9 +1018,33 @@ namespace System.Text.Json.Tests
             }";
 
             // Must not throw since the references are to nested objects, not the immutable dictionary itself.
-            ImmutableDictionary<string, Employee> dictionary = JsonSerializer.Deserialize<ImmutableDictionary<string, Employee>>(json, _deserializeOptions);
+            ImmutableDictionary<string, Employee> dictionary = JsonSerializer.Deserialize<ImmutableDictionary<string, Employee>>(json, s_deserializerOptionsPreserve);
             Assert.Same(dictionary["Angela"], dictionary["Angela"].Subordinates[0].Manager);
             Assert.Same(dictionary["Carlos"], dictionary["Angela"].Subordinates[0]);
+        }
+
+        [Theory]
+        [ActiveIssue("TODO")]
+        [InlineData(@"{""$id"": {}}", "$.$id")]
+        [InlineData(@"{""$id"": }", "$.$id")]
+        [InlineData(@"{""$id"": []}", "$.$id")]
+        [InlineData(@"{""$id"": ]", "$.$id")]
+        [InlineData(@"{""$id"": null}", "$.$id")]
+        [InlineData(@"{""$id"": true}", "$.$id")]
+        [InlineData(@"{""$id"": false}", "$.$id")]
+        [InlineData(@"{""$id"": 10}", "$.$id")]
+        [InlineData(@"{""$ref"": {}}", "$.$ref")]
+        [InlineData(@"{""$ref"": }", "$.$ref")]
+        [InlineData(@"{""$ref"": []}", "$.$ref")]
+        [InlineData(@"{""$ref"": ]", "$.$ref")]
+        [InlineData(@"{""$ref"": null}", "$.$ref")]
+        [InlineData(@"{""$ref"": true}", "$.$ref")]
+        [InlineData(@"{""$ref"": false}", "$.$ref")]
+        [InlineData(@"{""$ref"": 10}", "$.$ref")]
+        public static void IdAndRefContainInvalidToken(string json, string expectedPath)
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeWithImmutable>(json, s_deserializerOptionsPreserve));
+            Assert.Equal(expectedPath, ex.Path);
         }
         #endregion
 
@@ -1007,7 +1065,7 @@ namespace System.Text.Json.Tests
                 ""Quantity"": 10
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Order>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Order>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.$id", ex.Path);
 
             json = @"[
@@ -1021,7 +1079,7 @@ namespace System.Text.Json.Tests
                 }
             ]";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Order>>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Order>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$[1].$ref", ex.Path);
         }
 
@@ -1039,7 +1097,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Manager", ex.Path);
 
             //Regular dictionary key before $ref
@@ -1050,7 +1108,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Angela", ex.Path);
 
             //Regular property after $ref
@@ -1063,7 +1121,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Manager", ex.Path);
 
             //Metadata property before $ref
@@ -1076,7 +1134,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Manager", ex.Path);
 
             //Metadata property after $ref
@@ -1089,7 +1147,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.Manager", ex.Path);
         }
 
@@ -1106,7 +1164,7 @@ namespace System.Text.Json.Tests
                 }
             ]";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve));
             Assert.Contains("'1'", ex.Message);
             Assert.Equal("$[0].$ref", ex.Path);
         }
@@ -1125,7 +1183,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$", ex.Path);
         }
@@ -1141,7 +1199,7 @@ namespace System.Text.Json.Tests
                 }
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$", ex.Path);
 
             json = @"{
@@ -1149,7 +1207,7 @@ namespace System.Text.Json.Tests
                 ""$id"": ""1""
             }";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$", ex.Path);
         }
 
@@ -1167,10 +1225,21 @@ namespace System.Text.Json.Tests
                 }
             ]";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$[1].$id", ex.Path);
             Assert.Contains("'1'", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(@"{""$id"":""A"", ""Manager"":{""$ref"":""A""}}")]
+        [InlineData(@"{""$id"":""00000000-0000-0000-0000-000000000000"", ""Manager"":{""$ref"":""00000000-0000-0000-0000-000000000000""}}")]
+        [InlineData("{\"$id\":\"A\u0467\", \"Manager\":{\"$ref\":\"A\u0467\"}}")]
+        public static void TestOddStringsInMetadata(string json)
+        {
+            Employee root = JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve);
+            Assert.NotNull(root);
+            Assert.Same(root, root.Manager);
         }
         #endregion
 
@@ -1179,7 +1248,7 @@ namespace System.Text.Json.Tests
         public static void PreservedArrayWithoutMetadata()
         {
             string json = "{}";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$", ex.Path);
             Assert.Contains(typeof(List<int>).ToString(), ex.Message);
@@ -1191,10 +1260,10 @@ namespace System.Text.Json.Tests
             string json = @"{
                 ""$id"": ""1""
             }";
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
 
             // Not sure if is ok for Path to have this value.
-            Assert.Equal("$.$id", ex.Path); 
+            Assert.Equal("$.$id", ex.Path);
             Assert.Contains(typeof(List<int>).ToString(), ex.Message);
         }
 
@@ -1205,7 +1274,7 @@ namespace System.Text.Json.Tests
                 ""$values"": []
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.$values", ex.Path);
         }
@@ -1218,9 +1287,9 @@ namespace System.Text.Json.Tests
                 ""$values"": null
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$values", ex.Path); 
+            Assert.Equal("$.$values", ex.Path);
         }
 
         [Fact]
@@ -1231,7 +1300,7 @@ namespace System.Text.Json.Tests
                 ""$values"": 1
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.$values", ex.Path);
         }
@@ -1244,7 +1313,7 @@ namespace System.Text.Json.Tests
                 ""$values"": {}
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$.$values", ex.Path);
         }
@@ -1258,7 +1327,7 @@ namespace System.Text.Json.Tests
                 ""$values"": []
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$", ex.Path);
             Assert.Contains(typeof(List<Employee>).ToString(), ex.Message);
@@ -1269,7 +1338,7 @@ namespace System.Text.Json.Tests
                 ""TrailingProperty"": 0
             }";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, s_deserializerOptionsPreserve));
 
             Assert.Equal("$", ex.Path);
             Assert.Contains(typeof(List<Employee>).ToString(), ex.Message);
@@ -1294,10 +1363,10 @@ namespace System.Text.Json.Tests
                 ""$values"": ""test""
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeExtensionData>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeExtensionData>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.$values", ex.Path);
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.$values", ex.Path);
 
             // $.* Not valid (i.e: $test)
@@ -1306,10 +1375,10 @@ namespace System.Text.Json.Tests
                 ""$test"": ""test""
             }";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeExtensionData>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeExtensionData>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.$test", ex.Path);
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.$test", ex.Path);
 
             json = @"{
@@ -1318,10 +1387,10 @@ namespace System.Text.Json.Tests
             }";
 
             // \u0024.* Valid (i.e: \u0024test)
-            EmployeeExtensionData employee = JsonSerializer.Deserialize<EmployeeExtensionData>(json, _deserializeOptions);
+            EmployeeExtensionData employee = JsonSerializer.Deserialize<EmployeeExtensionData>(json, s_deserializerOptionsPreserve);
             Assert.Equal("test", ((JsonElement)employee.ExtensionData["$test"]).GetString());
 
-            Dictionary<string, string> dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(json, _deserializeOptions);
+            Dictionary<string, string> dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(json, s_deserializerOptionsPreserve);
             Assert.Equal("test", dictionary["$test"]);
         }
         #endregion
@@ -1336,7 +1405,7 @@ namespace System.Text.Json.Tests
                 ""$ref"": ""1""
             }";
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<string>>(json, _deserializeOptions));
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<string>>(json, s_deserializerOptionsPreserve));
             Assert.Equal("$.$ref", ex.Path);
 
             // $id Valid under conditions: must be the first property in the object.
@@ -1346,7 +1415,7 @@ namespace System.Text.Json.Tests
                 ""$values"": []
             }";
 
-            List<string> root = JsonSerializer.Deserialize<List<string>>(json, _deserializeOptions);
+            List<string> root = JsonSerializer.Deserialize<List<string>>(json, s_deserializerOptionsPreserve);
             Assert.NotNull(root);
             Assert.Equal(0, root.Count);
 
@@ -1356,7 +1425,7 @@ namespace System.Text.Json.Tests
                 ""$test"": ""test""
             }";
 
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<string>>(json, _deserializeOptions));
+            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<string>>(json, s_deserializerOptionsPreserve));
         }
         #endregion
         #endregion

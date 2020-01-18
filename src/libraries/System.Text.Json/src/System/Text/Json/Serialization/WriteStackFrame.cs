@@ -96,24 +96,6 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteObjectOrArrayStart(ClassType classType, string propertyName, Utf8JsonWriter writer, bool writeNull)
-        {
-            if (writeNull)
-            {
-                writer.WriteNull(propertyName);
-            }
-            else if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
-            {
-                writer.WriteStartObject(propertyName);
-                StartObjectWritten = true;
-            }
-            else
-            {
-                Debug.Assert(classType == ClassType.Enumerable);
-                writer.WriteStartArray(propertyName);
-            }
-        }
-
         public void WritePreservedObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, JsonSerializerOptions options, string referenceId)
         {
             if (JsonPropertyInfo?.EscapedName.HasValue == true)

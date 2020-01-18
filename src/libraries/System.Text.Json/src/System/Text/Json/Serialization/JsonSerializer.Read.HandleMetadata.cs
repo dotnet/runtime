@@ -82,7 +82,7 @@ namespace System.Text.Json
                         break;
                 }
 
-                ThrowHelper.ThrowJsonException_MetadataInvalidPropertyWithLeadingSign(propertyName, ref state, in reader);
+                ThrowHelper.ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, in reader);
             }
 
             return MetadataPropertyName.NoMetadata;

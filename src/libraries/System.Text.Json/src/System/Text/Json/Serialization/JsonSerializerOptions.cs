@@ -299,7 +299,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Defines how references are treated when writing/reading JSON, this is convenient to deal with circularity.
+        /// Defines how references are treated when reading and writing JSON, this is convenient to deal with circularity.
         /// </summary>
         public ReferenceHandling ReferenceHandling
         {
@@ -307,13 +307,7 @@ namespace System.Text.Json
             set
             {
                 VerifyMutable();
-
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                _referenceHandling = value;
+                _referenceHandling = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 

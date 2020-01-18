@@ -16,8 +16,8 @@ namespace System.Text.Json.Serialization
     internal struct DefaultReferenceResolver
     {
         private uint _referenceCount;
-        private Dictionary<string, object>? _referenceIdToObjectMap;
-        private Dictionary<object, string>? _objectToReferenceIdMap;
+        private readonly Dictionary<string, object>? _referenceIdToObjectMap;
+        private readonly Dictionary<object, string>? _objectToReferenceIdMap;
 
         public DefaultReferenceResolver(bool writing)
         {
@@ -54,6 +54,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Gets the reference id of the specified value if exists; otherwise a new id is assigned.
         /// This method gets called before a CLR object is written so we can decide whether to write $id and the rest of its properties or $ref and step into the next object.
+        /// The first $id value will be 1.
         /// </summary>
         /// <param name="value">The value of the CLR reference type object to get or add an id for.</param>
         /// <param name="referenceId">The id realated to the object.</param>
@@ -62,7 +63,8 @@ namespace System.Text.Json.Serialization
         {
             if (!_objectToReferenceIdMap!.TryGetValue(value, out referenceId!))
             {
-                referenceId = (++_referenceCount).ToString();
+                _referenceCount++;
+                referenceId = _referenceCount.ToString();
                 _objectToReferenceIdMap.Add(value, referenceId);
 
                 return false;

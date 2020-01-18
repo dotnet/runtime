@@ -20,7 +20,6 @@ namespace System.Text.Json
         private static readonly JsonDictionaryConverter s_jsonImmutableDictionaryConverter = new DefaultImmutableDictionaryConverter();
 
         public static readonly JsonPropertyInfo s_missingProperty = GetMissingProperty();
-        public static readonly JsonPropertyInfo s_metadataProperty = GetMetadataProperty();
 
         private JsonClassInfo? _elementClassInfo;
         private JsonClassInfo? _runtimeClassInfo;
@@ -41,14 +40,6 @@ namespace System.Text.Json
             info.IsPropertyPolicy = false;
             info.ShouldDeserialize = false;
             info.ShouldSerialize = false;
-            return info;
-        }
-
-        private static JsonPropertyInfo GetMetadataProperty()
-        {
-            JsonPropertyInfo info = new JsonPropertyInfoNotNullable<object, object, object, object>();
-            info.ShouldDeserialize = true;
-
             return info;
         }
 

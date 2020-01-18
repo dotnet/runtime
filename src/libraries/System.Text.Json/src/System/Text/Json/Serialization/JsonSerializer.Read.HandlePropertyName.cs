@@ -64,7 +64,6 @@ namespace System.Text.Json
                             ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(in reader, ref state);
                         }
 
-                        // Regular property, call main logic for HandlePropertyName.
                         HandlePropertyNameDefault(propertyName, ref state, ref reader, options);
                     }
                     else
@@ -199,11 +198,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty();
                 }
 
-                // TODO: Hook up JsonPropertyInfoAsString here instead.
-                // in case read of string value for this property fails.
-                JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
-                info.JsonPropertyName = ReadStack.s_idMetadataPropertyName;
-                state.Current.JsonPropertyInfo = info;
+                state.Current.JsonPropertyName = ReadStack.s_idMetadataPropertyName;
             }
             else if (metadata == MetadataPropertyName.Values)
             {
@@ -238,12 +233,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
                 }
 
-                // TODO: Hook up JsonPropertyInfoAsString here instead.
-                // in case read of string value for this property fails.
-
-                JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
-                info.JsonPropertyName = ReadStack.s_refMetadataPropertyName;
-                state.Current.JsonPropertyInfo = info;
+                state.Current.JsonPropertyName = ReadStack.s_refMetadataPropertyName;
             }
         }
     }

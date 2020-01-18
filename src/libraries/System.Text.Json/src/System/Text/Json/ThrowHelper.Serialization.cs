@@ -352,7 +352,7 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataInvalidPropertyWithLeadingSign(ReadOnlySpan<byte> propertyName, ref ReadStack state, in Utf8JsonReader reader)
+        public static void ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(ReadOnlySpan<byte> propertyName, ref ReadStack state, in Utf8JsonReader reader)
         {
             // Set PropertyInfo or KeyName to write down the conflicting property name in JsonException.Path
             if (state.Current.IsProcessingDictionary())
@@ -361,10 +361,7 @@ namespace System.Text.Json
             }
             else
             {
-                // TODO: Hook up JsonPropertyInfoAsString here instead.
-                JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
-                info.JsonPropertyName = propertyName.ToArray();
-                state.Current.JsonPropertyInfo = info;
+                state.Current.JsonPropertyName = propertyName.ToArray();
             }
 
             ThrowJsonException(SR.MetadataInvalidPropertyWithLeadingDollarSign);
