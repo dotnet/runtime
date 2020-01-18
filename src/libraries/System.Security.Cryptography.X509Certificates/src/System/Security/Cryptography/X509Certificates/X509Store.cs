@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             catch
             {
-                // For desktop compat, we keep the exception semantics even though they are not ideal
+                // For .NET Framework compat, we keep the exception semantics even though they are not ideal
                 // because an exception may cause certs to be removed even if they weren't there before.
                 for (int j = 0; j < i; j++)
                 {
@@ -199,7 +199,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             catch
             {
-                // For desktop compat, we keep the exception semantics even though they are not ideal
+                // For .NET Framework compat, we keep the exception semantics even though they are not ideal
                 // because an exception above may cause certs to be added even if they weren't there before
                 // and an exception here may cause certs not to be re-added.
                 for (int j = 0; j < i; j++)

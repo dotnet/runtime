@@ -51,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(26355)] // We aren't doing IDNA encoding properly
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/26355")] // We aren't doing IDNA encoding properly
         [Theory]
         [MemberData(nameof(InternationalHostNames))]
         public async Task InternationalRequestHeaderValues_UsesIdnaEncoding_Success(string hostname)
@@ -83,7 +83,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(26355)] // We aren't doing IDNA decoding properly
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/26355")] // We aren't doing IDNA decoding properly
         [Theory]
         [MemberData(nameof(InternationalHostNames))]
         public async Task InternationalResponseHeaderValues_UsesIdnaDecoding_Success(string hostname)

@@ -8,7 +8,6 @@
     <DebugType>None</DebugType>
     <Optimize />
     <NoLogo>True</NoLogo>
-    <DefineConstants>$(DefineConstants);DESKTOP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="intrinsic.cs" />

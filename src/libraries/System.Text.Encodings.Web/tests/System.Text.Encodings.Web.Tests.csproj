@@ -6,6 +6,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release</Configurations>
+    <UnicodeUcdVersion>12.1</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -45,14 +46,16 @@
     <Compile Include="UrlEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
+      <Link>CharUnicodeInfo\UnicodeData.$(UnicodeUcdVersion).txt</Link>
+      <LogicalName>UnicodeData.txt</LogicalName>
+    </EmbeddedResource>
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs">
       <Link>System\Text\UnicodeDebug.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs">
       <Link>System\Text\UnicodeUtility.cs</Link>
     </Compile>
-    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.12.1.txt">
-      <LogicalName>UnicodeData.12.1.txt</LogicalName>
-    </EmbeddedResource>
   </ItemGroup>
 </Project>

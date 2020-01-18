@@ -387,6 +387,23 @@ namespace System.Text.RegularExpressions
 
         protected override bool FindFirstChar()
         {
+            if (!_code.RightToLeft)
+            {
+                if (runtextpos > runtextend - _code.Tree.MinRequiredLength)
+                {
+                    runtextpos = runtextend;
+                    return false;
+                }
+            }
+            else
+            {
+                if (runtextpos - _code.Tree.MinRequiredLength < runtextbeg)
+                {
+                    runtextpos = runtextbeg;
+                    return false;
+                }
+            }
+
             if (0 != (_code.Anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
             {
                 if (!_code.RightToLeft)

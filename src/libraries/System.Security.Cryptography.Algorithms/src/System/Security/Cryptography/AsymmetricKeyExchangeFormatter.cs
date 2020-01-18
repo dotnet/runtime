@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
         public abstract void SetKey(AsymmetricAlgorithm key);
         public abstract byte[] CreateKeyExchange(byte[] data);
 
-        // For desktop compat, keep this even though symAlgType is not used.
+        // For .NET Framework compat, keep this even though symAlgType is not used.
         public abstract byte[] CreateKeyExchange(byte[] data, Type symAlgType);
     }
 }

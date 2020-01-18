@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    //TODO: If localization resources are not found, logging does not work. Issue #5126.
     [EventSource(Name = "Microsoft-System-Net-Sockets", Guid = "e03c0352-f9c9-56ff-0ea7-b94ba8cabc6b", LocalizationResources = "FxResources.System.Net.Sockets.SR")]
     internal sealed partial class NetEventSource
     {

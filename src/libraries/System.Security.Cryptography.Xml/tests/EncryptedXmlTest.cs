@@ -654,7 +654,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
                 // https://github.com/dotnet/corefx/issues/19272
                 Action decrypt = () => exml.DecryptData(ed, aes);
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                     Assert.Throws<ArgumentNullException>(decrypt);
                 else
                     Assert.Throws<CryptographicException>(decrypt);

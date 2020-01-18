@@ -65,6 +65,9 @@
           DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages">
     <ItemGroup>
+      <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
       <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
     </ItemGroup>
   </Target>

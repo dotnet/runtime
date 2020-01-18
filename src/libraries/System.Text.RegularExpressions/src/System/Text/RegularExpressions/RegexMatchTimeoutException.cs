@@ -28,14 +28,14 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// This constructor is provided in compliance with common NetFx design patterns;
+        /// This constructor is provided in compliance with common .NET Framework design patterns;
         /// developers should prefer using the constructor
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>
         public RegexMatchTimeoutException() { }
 
         /// <summary>
-        /// This constructor is provided in compliance with common NetFx design patterns;
+        /// This constructor is provided in compliance with common .NET Framework design patterns;
         /// developers should prefer using the constructor
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>
@@ -43,7 +43,7 @@ namespace System.Text.RegularExpressions
         public RegexMatchTimeoutException(string message) : base(message) { }
 
         /// <summary>
-        /// This constructor is provided in compliance with common NetFx design patterns;
+        /// This constructor is provided in compliance with common .NET Framework design patterns;
         /// developers should prefer using the constructor
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>

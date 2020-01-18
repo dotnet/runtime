@@ -138,7 +138,7 @@ namespace System.IO.IsolatedStorage
                 {
                 }
 
-                // Exception message might leak the IsolatedStorage path. The desktop prevented this by calling an
+                // Exception message might leak the IsolatedStorage path. The .NET Framework prevented this by calling an
                 // internal API which made sure that the exception message was scrubbed. However since the innerException
                 // is never returned to the user(GetIsolatedStorageException() does not populate the innerexception
                 // in retail bits we leak the path only under the debugger via IsolatedStorageException._underlyingException which

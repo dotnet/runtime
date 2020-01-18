@@ -739,8 +739,6 @@ namespace System.Linq.Tests
             IEnumerable<int> result = source.Select(selector);
             IEnumerator<int> enumerator = result.GetEnumerator();
 
-            // The.NET full framework throws a NotImplementedException.
-            // See https://github.com/dotnet/corefx/pull/2959.
             Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
 

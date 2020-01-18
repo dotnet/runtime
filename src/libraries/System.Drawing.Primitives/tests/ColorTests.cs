@@ -624,7 +624,7 @@ namespace System.Drawing.Primitives.Tests
         public void GetHashCodeForUnknownNamed()
         {
             // The .NET Framework gives all unknown colors the same hashcode,
-            // .NET Core will provide a unique hashcode.
+            // .NET Core will provide a unique hashcode based on color name.
             Color c1 = Color.FromName("SomeUnknownColorName");
             Color c2 = Color.FromName("AnotherUnknownColorName");
             Assert.NotEqual(c2.GetHashCode(), c1.GetHashCode());

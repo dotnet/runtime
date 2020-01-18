@@ -8,7 +8,7 @@
     <DebugType>PdbOnly</DebugType>
     <NoLogo>True</NoLogo>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);DESKTOP;LOCALLOC_LARGE</DefineConstants>
+    <DefineConstants>$(DefineConstants);LOCALLOC_LARGE</DefineConstants>
     <NoWarn>$(NoWarn),8002</NoWarn>
   </PropertyGroup>
   <ItemGroup>

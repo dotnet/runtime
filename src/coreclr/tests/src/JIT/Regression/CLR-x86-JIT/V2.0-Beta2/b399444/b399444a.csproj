@@ -9,7 +9,7 @@
     <NoLogo>True</NoLogo>
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
-    <DefineConstants>$(DefineConstants);DESKTOP;_65536</DefineConstants>
+    <DefineConstants>$(DefineConstants);_65536</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Repro.cs" />

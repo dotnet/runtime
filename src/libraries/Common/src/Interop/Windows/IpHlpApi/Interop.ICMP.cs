@@ -13,8 +13,6 @@ internal static partial class Interop
     {
         internal const int IP_STATUS_BASE = 11000;
 
-        // TODO: #3562 - Replace names with the ones from the Windows SDK.
-
         [StructLayout(LayoutKind.Sequential)]
         internal struct IPOptions
         {

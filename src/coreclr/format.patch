@@ -1,0 +1,47 @@
+diff --git a/src/coreclr/src/jit/importer.cpp b/src/coreclr/src/jit/importer.cpp
+index a71c325ff48..c0569355c89 100644
+--- a/src/coreclr/src/jit/importer.cpp
++++ b/src/coreclr/src/jit/importer.cpp
+@@ -15184,41 +15184,41 @@ void Compiler::impImportBlockCode(BasicBlock* block)
+                             info.compCompHnd->compareTypesForEquality(resolvedToken.hClass, clsHnd);
+ 
+                         if (compare == TypeCompareState::Must)
+                         {
+                             JITDUMP("\nOptimizing %s (%s) -- type test will succeed\n",
+                                     opcode == CEE_UNBOX ? "UNBOX" : "UNBOX.ANY", eeGetClassName(clsHnd));
+ 
+                             // For UNBOX, null check (if necessary), and then leave the box payload byref on the stack.
+                             if (opcode == CEE_UNBOX)
+                             {
+                                 GenTree* cloneOperand;
+                                 op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                                    nullptr DEBUGARG("optimized unbox clone"));
+ 
+                                 GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                                 GenTree* boxPayloadAddress =
+                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
+                                 GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, op1);
+                                 block->bbFlags |= BBF_HAS_NULLCHECK;
+                                 optMethodFlags |= OMF_HAS_NULLCHECK;
+-                                GenTree* result    = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
++                                GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                 impPushOnStack(result, tiRetVal);
+                                 break;
+                             }
+ 
+                             // For UNBOX.ANY load the struct from the box payload byref (the load will nullcheck)
+                             assert(opcode == CEE_UNBOX_ANY);
+                             GenTree* boxPayloadOffset  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                             GenTree* boxPayloadAddress = gtNewOperNode(GT_ADD, TYP_BYREF, op1, boxPayloadOffset);
+                             impPushOnStack(boxPayloadAddress, tiRetVal);
+                             oper = GT_OBJ;
+                             goto OBJ;
+                         }
+                         else
+                         {
+                             JITDUMP("\nUnable to optimize %s -- can't resolve type comparison\n",
+                                     opcode == CEE_UNBOX ? "UNBOX" : "UNBOX.ANY");
+                         }
+                     }
+                     else
+                     {

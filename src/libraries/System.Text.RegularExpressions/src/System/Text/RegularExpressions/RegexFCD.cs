@@ -154,16 +154,13 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Yet another related computation: it takes a RegexTree and computes
-        /// the leading anchors that it encounters.
+        /// the leading anchor that it encounters.
         /// </summary>
         public static int Anchors(RegexTree tree)
         {
-            RegexNode curNode;
+            RegexNode curNode = tree.Root;
             RegexNode? concatNode = null;
             int nextChild = 0;
-            int result = 0;
-
-            curNode = tree.Root;
 
             while (true)
             {
@@ -191,7 +188,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Start:
                     case RegexNode.EndZ:
                     case RegexNode.End:
-                        return result | AnchorFromType(curNode.Type);
+                        return AnchorFromType(curNode.Type);
 
                     case RegexNode.Empty:
                     case RegexNode.Require:
@@ -199,11 +196,11 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        return result;
+                        return 0;
                 }
 
                 if (concatNode == null || nextChild >= concatNode.ChildCount())
-                    return result;
+                    return 0;
 
                 curNode = concatNode.Child(nextChild++);
             }

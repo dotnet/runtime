@@ -179,7 +179,7 @@ namespace System.Net.Http.Functional.Tests
             }, options);
         }
 
-        [ActiveIssue(37336)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/37336")]
         [Theory]
         [InlineData(ClientCertificateOption.Manual)]
         [InlineData(ClientCertificateOption.Automatic)]
