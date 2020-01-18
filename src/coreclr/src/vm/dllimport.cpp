@@ -4340,8 +4340,7 @@ static void CreateStructStub(ILStubState* pss,
     // We need to manually initialize the native layout info here
     // since we need to access the non-const pointer to be able to call Restore
     // on the native field descriptors.
-    pMT->EnsureNativeLayoutInfoInitialized();
-    EEClassNativeLayoutInfo* pNativeLayoutInfo = pMT->GetClass()->GetNativeLayoutInfo();
+    EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetNativeLayoutInfo();
 
     int numFields = pNativeLayoutInfo->GetNumFields();
     // Build up marshaling information for each of the method's parameters
@@ -4353,12 +4352,12 @@ static void CreateStructStub(ILStubState* pss,
 
     CorNativeLinkType nlType = GetLinkTypeOfMethodTable(pMT);
 
-    NativeFieldDescriptor* pFieldDescriptors = pNativeLayoutInfo->GetNativeFieldDescriptors();
+    NativeFieldDescriptor const* pFieldDescriptors = pNativeLayoutInfo->GetNativeFieldDescriptors();
 
     for (int i = 0; i < numFields; ++i)
     {
-        NativeFieldDescriptor& nativeFieldDescriptor = pFieldDescriptors[i];
-        FieldDesc* pFD = nativeFieldDescriptor.GetFieldDesc();
+        NativeFieldDescriptor const& nativeFieldDescriptor = pFieldDescriptors[i];
+        PTR_FieldDesc pFD = nativeFieldDescriptor.GetFieldDesc();
         SigPointer fieldSig = pFD->GetSigPointer();
         // The first byte in a field signature is always 0x6 per ECMA 335. Skip over this byte to get to the rest of the signature for the MarshalInfo constructor.
         (void)fieldSig.GetByte(nullptr);
@@ -4367,7 +4366,7 @@ static void CreateStructStub(ILStubState* pss,
         MarshalInfo mlInfo(pFD->GetModule(),
             fieldSig,
             &context,
-            nativeFieldDescriptor.GetFieldDesc()->GetMemberDef(),
+            pFD->GetMemberDef(),
             ms,
             nlType,
             nlfNone,
