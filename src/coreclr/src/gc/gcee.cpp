@@ -28,34 +28,8 @@ void GCHeap::UpdatePreGCCounters()
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    size_t allocation_0 = 0;
-    size_t allocation_3 = 0;
-
     // Publish perf stats
     g_TotalTimeInGC = GCToOSInterface::QueryPerformanceCounter();
-
-#ifdef MULTIPLE_HEAPS
-    int hn = 0;
-    for (hn = 0; hn < gc_heap::n_heaps; hn++)
-    {
-        hp = gc_heap::g_heaps [hn];
-
-        allocation_0 +=
-            dd_desired_allocation (hp->dynamic_data_of (soh_gen0))-
-            dd_new_allocation (hp->dynamic_data_of (soh_gen0));
-        allocation_3 +=
-            dd_desired_allocation (hp->dynamic_data_of (loh_generation))-
-            dd_new_allocation (hp->dynamic_data_of (loh_generation));
-    }
-#else
-    allocation_0 =
-        dd_desired_allocation (hp->dynamic_data_of (soh_gen0))-
-        dd_new_allocation (hp->dynamic_data_of (soh_gen0));
-    allocation_3 =
-        dd_desired_allocation (hp->dynamic_data_of (uoh_start_generation))-
-        dd_new_allocation (hp->dynamic_data_of (uoh_start_generation));
-
-#endif //MULTIPLE_HEAPS
 
 #ifdef MULTIPLE_HEAPS
         //take the first heap....
