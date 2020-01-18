@@ -713,7 +713,7 @@ namespace System.Net.Tests
         [Fact]
         public void ConnectionGroupName_SetAndGetGroup_ValuesMatch()
         {
-            // Note: In CoreFX changing this value will not have any effect on HTTP stack's behavior.
+            // Note: In .NET Core changing this value will not have any effect on HTTP stack's behavior.
             //       For app-compat reasons we allow applications to alter and read the property.
             HttpWebRequest request = WebRequest.CreateHttp("http://test");
             Assert.Null(request.ConnectionGroupName);
@@ -1029,7 +1029,7 @@ namespace System.Net.Tests
         [Fact]
         public void ReadWriteTimeout_SetThenGet_ValuesMatch()
         {
-            // Note: In CoreFX changing this value will not have any effect on HTTP stack's behavior.
+            // Note: In .NET Core changing this value will not have any effect on HTTP stack's behavior.
             //       For app-compat reasons we allow applications to alter and read the property.
             HttpWebRequest request = WebRequest.CreateHttp("http://test");
             request.ReadWriteTimeout = 5;

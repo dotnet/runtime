@@ -343,7 +343,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // trailing whitespace in path is removed on Windows
         public void TrailingWhiteSpace_NotTrimmed(string component)
         {
-            // In CoreFX we don't trim anything other than space (' ')
+            // In .NET Core we don't trim anything other than space (' ')
             DirectoryInfo testDir = Create(GetTestFilePath() + component);
             string path = IOServices.RemoveTrailingSlash(testDir.FullName);
             DirectoryInfo result = Create(path);

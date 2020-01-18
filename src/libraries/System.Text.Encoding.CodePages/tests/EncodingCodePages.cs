@@ -477,7 +477,7 @@ namespace System.Text.Tests
                     AssertExtensions.Throws<ArgumentException>("name", () => Encoding.GetEncoding((string)mapping[2]));
                 }
 
-                // Currently the class EncodingInfo isn't present in corefx, so this checks none of the code pages are present.
+                // Currently the class EncodingInfo isn't present in .NET Core, so this checks none of the code pages are present.
                 // When it is, comment out this line and remove the previous foreach/assert.
                 // Assert.Equal(CrossplatformDefaultEncodings, Encoding.GetEncodings().OrderBy(i => i.CodePage).Select(i => Map(i.CodePage, i.WebName)));
 
@@ -502,7 +502,7 @@ namespace System.Text.Tests
             }
             // Adding the code page provider should keep the originals, too.
             ValidateDefaultEncodings();
-            // Currently the class EncodingInfo isn't present in corefx, so this checks the complete list
+            // Currently the class EncodingInfo isn't present in .NET Core, so this checks the complete list
             // When it is, comment out this line and remove the previous foreach/assert.
             // Assert.Equal(CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1])).OrderBy(i => i.Key)),
             //               Encoding.GetEncodings().OrderBy(i => i.CodePage).Select(i => Map(i.CodePage, i.WebName)));

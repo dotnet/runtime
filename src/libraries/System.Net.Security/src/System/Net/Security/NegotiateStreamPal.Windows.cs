@@ -50,7 +50,7 @@ namespace System.Net.Security
 
                     // TODO #5241:
                     // The following call was also specifying WindowsAccountType.Normal, true.
-                    // WindowsIdentity.IsAuthenticated is no longer supported in CoreFX.
+                    // WindowsIdentity.IsAuthenticated is no longer supported in .NET Core
                     result = new WindowsIdentity(token.DangerousGetHandle(), authtype);
                     return result;
                 }

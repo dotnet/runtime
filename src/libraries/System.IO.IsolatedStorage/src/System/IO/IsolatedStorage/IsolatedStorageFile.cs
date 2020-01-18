@@ -30,14 +30,14 @@ namespace System.IO.IsolatedStorage
         // private const string IDFile = "identity.dat";
 
         // "info.dat" is used to track disk space usage (against quota). The accounting file for Silverlight
-        // stores is "appInfo.dat". CoreFX is always in full trust so we can safely ignore these.
+        // stores is "appInfo.dat". .NET Core is always in full trust so we can safely ignore these.
         //
         // private const string InfoFile = "info.dat";
         // private const string AppInfoFile = "appInfo.dat";
 
         internal IsolatedStorageFile() { }
 
-        // Using this property to match NetFX for testing
+        // Using this property to match .NET Framework for testing
         private string RootDirectory
         {
             get { return _rootDirectory; }
@@ -472,12 +472,12 @@ namespace System.IO.IsolatedStorage
             // Not currently supported: https://github.com/dotnet/corefx/issues/10936
 
             // Implementing this would require serializing/deserializing identity objects which is particularly
-            // complicated given the normal identity objects used by NetFX aren't available on CoreFX.
+            // complicated given the normal identity objects used by .NET Framework aren't available on .NET Core.
             //
             // Starting expectation is that a given store's location would be identical between implementations
-            // (say, for a particular StrongName). You could iterate any store opened at least once by NetFX on
-            // NetFX as it would create the needed identity file. You wouldn't be able to iterate if it was only
-            // ever opened by CoreFX, as the needed file isn't there yet.
+            // (say, for a particular StrongName). You could iterate any store opened at least once by .NET Framework at
+            // runtime as it would create the needed identity file. You wouldn't be able to iterate if it was only
+            // ever opened by .NET Core, as the needed file isn't there yet.
             return new IsolatedStorageFileEnumerator();
         }
 
@@ -828,7 +828,7 @@ namespace System.IO.IsolatedStorage
 
             // Check if we have unknown files
 
-            // Note that we don't generate these files in CoreFX, but we want to match
+            // Note that we don't generate these files in .NET Core, but we want to match
             // NetFX removal semantics as NetFX will generate these.
 
             if (Helper.IsRoaming(Scope))
