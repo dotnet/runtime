@@ -25,7 +25,7 @@ namespace System.Net.Http.Functional.Tests
         {
             RemoteExecutor.Invoke(async (useHttp2String) =>
             {
-                // This test validates the current limitation of CoreFx's NetFxToWinRtStreamAdapter
+                // This test validates the current limitation of the libraries's NetFxToWinRtStreamAdapter
                 // which throws exceptions when trying to rewind a .NET Stream when it needs to be
                 // re-POST'd to the server.
                 string username = "testuser";
