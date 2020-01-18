@@ -1,0 +1,38 @@
+README					Last updated: 2007-03-09
+
+
+INTRODUCTION
+
+	This directory (msvc) serves as a central location for all
+	things needed to build the mono runtime using Microsoft Visual
+	Studio.
+
+BUILDING
+
+	From this directory type:
+
+	     msbuild.exe mono.sln /p:Configuration=Debug /p:Platform=x64
+
+	msbuild must be in your path, it comes with the .NET Framework.
+
+MAINTENANCE
+
+	Source files added to the different project .target files matches project makefile structure.
+	NOTE, all sources added to makefiles should also be added to corresponding targets files for consistency.
+	Files that should not be build on Windows should be excluded  using this configuration:
+
+	<ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-wasm.c">
+		<ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+	</ClCompile>
+
+	and at the begning of the target file have a property set when to exclude files. This example will always
+	exclude the file, but could be condtional if needed:
+
+	<PropertyGroup>
+		<ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+	</PropertyGroup>
+
+	All header files added to makefiles should be included in the different targets files for consistency.
+
+	Each target file has a corresponding filter file, files added to target files should also be added to the corresponding
+	filter file.

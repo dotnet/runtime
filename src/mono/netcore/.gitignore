@@ -1,0 +1,16 @@
+LICENSE.txt
+ThirdPartyNotices.txt
+tests
+/shared
+sdk
+dotnet*
+aspnetcore-runtime-*
+netcoreapp2.0/
+netcoreapp3.0/
+packs/
+/corefx
+/roslyn
+/obj
+.configured
+/System.Private.CoreLib/src/System/Environment.Mono.cs
+/config.make

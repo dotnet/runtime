@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="libmonoruntime.targets.filters" />
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{eb8a6a4d-924c-494d-99c1-663e4c09a806}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{b3f8bc4c-d4c8-457a-b29c-5f49d00a3b6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{3f4ff222-41cc-4bbc-b36b-cac0c21266ad}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
