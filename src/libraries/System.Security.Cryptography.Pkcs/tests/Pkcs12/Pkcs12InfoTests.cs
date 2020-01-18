@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             CheckOracleSecretBag(
                 bags[3],
                 "oracle.security.client.password1",
-                "potatos are tasty",
+                "potatoes are tasty",
                 "E6B652DD0000000400000000000000060000000000000000");
         }
 
