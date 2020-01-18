@@ -525,7 +525,7 @@ namespace System.Net.Security.Tests
                 // We're inconsistent as to whether the ObjectDisposedException is thrown directly
                 // or wrapped in an IOException.  For Begin/End, it's always wrapped; for Async,
                 // it's only wrapped on .NET Framework.
-                if (this is SslStreamStreamToStreamTest_BeginEnd || PlatformDetection.IsFullFramework)
+                if (this is SslStreamStreamToStreamTest_BeginEnd || PlatformDetection.IsNetFramework)
                 {
                     await Assert.ThrowsAsync<ObjectDisposedException>(() => serverReadTask);
                 }

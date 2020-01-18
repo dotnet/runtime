@@ -27,7 +27,7 @@ namespace Microsoft.Win32.SystemEventsTests
         {
             if (s_hwnd == IntPtr.Zero)
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     // .NET Framework has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
                     WaitForSystemEventsWindow();

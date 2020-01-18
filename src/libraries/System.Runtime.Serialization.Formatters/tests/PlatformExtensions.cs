@@ -28,7 +28,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             int index;
 
             // .NET Framework
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 // Check if a specialized blob for >=netfx472 build 3260 is present and return if found.
                 if (IsNetFxPatchedVersion(3260))

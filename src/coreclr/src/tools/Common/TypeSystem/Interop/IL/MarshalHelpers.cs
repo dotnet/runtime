@@ -195,8 +195,6 @@ namespace Internal.TypeSystem.Interop
             //
             // Determine MarshalerKind
             //
-            // This mostly resembles .NET Framework CLR and .NET Native code as we need to match their behavior
-            // 
             if (type.IsPrimitive)
             {
                 switch (type.Category)

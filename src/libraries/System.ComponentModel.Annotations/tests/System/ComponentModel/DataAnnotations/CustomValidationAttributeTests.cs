@@ -112,7 +112,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             // The .NET Framework has a bug where CustomValidationAttribute doesn't
             // validate the context. See https://github.com/dotnet/corefx/issues/18360.
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.False(attribute.RequiresValidationContext);
             }

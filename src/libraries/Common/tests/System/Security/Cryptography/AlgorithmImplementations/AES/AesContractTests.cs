@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(536870928, true)] // number of bits overflows and wraps around to a valid size
         public static void InvalidKeySizes(int invalidKeySize, bool skipOnNetfx)
         {
-            if (skipOnNetfx && PlatformDetection.IsFullFramework)
+            if (skipOnNetfx && PlatformDetection.IsNetFramework)
                 return;
 
             using (Aes aes = AesFactory.Create())
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(536870928, true)] // number of bits overflows and wraps around to default BlockSize
         public static void InvalidIVSizes(int invalidIvSize, bool skipOnNetfx)
         {
-            if (skipOnNetfx && PlatformDetection.IsFullFramework)
+            if (skipOnNetfx && PlatformDetection.IsNetFramework)
                 return;
 
             using (Aes aes = AesFactory.Create())

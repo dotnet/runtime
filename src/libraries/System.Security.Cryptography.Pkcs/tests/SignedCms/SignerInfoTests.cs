@@ -846,7 +846,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                             IncludeOption = X509IncludeOption.None,
                         });
 
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     Assert.ThrowsAny<CryptographicException>(sign);
                 }
@@ -898,7 +898,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignerInfo firstCounterSigner = firstSigner.CounterSignerInfos[0];
             Assert.ThrowsAny<CryptographicException>(() => firstCounterSigner.CheckSignature(true));
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 // NetFX's CheckHash only looks at top-level SignerInfos to find the
                 // crypt32 CMS signer ID, so it fails on any check from a countersigner.
@@ -997,7 +997,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.NoSignature, firstCounterSigner.SignerIdentifier.Type);
             Assert.ThrowsAny<CryptographicException>(() => firstCounterSigner.CheckSignature(true));
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 // NetFX's CheckHash only looks at top-level SignerInfos to find the
                 // crypt32 CMS signer ID, so it fails on any check from a countersigner.
