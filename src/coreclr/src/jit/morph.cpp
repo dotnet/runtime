@@ -5504,7 +5504,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         }
 #endif // _TARGET_64BIT_
 
-        GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)lenOffs);
+        GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)lenOffs, compCurBB);
 
         if (bndsChkType != TYP_INT)
         {
