@@ -15,6 +15,8 @@
     <RefPath>$(ArtifactsBinDir)runtime/$(TargetFramework)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)-$(ArchGroup)/</RefPath>
     <CoreCLROSGroup>$(_bc_OSGroup)</CoreCLROSGroup>
     <CoreCLRConfiguration>$(_bc_ConfigurationGroup)</CoreCLRConfiguration>
+    <MonoOSGroup>$(_bc_OSGroup)</MonoOSGroup>
+    <MonoConfiguration>$(_bc_ConfigurationGroup)</MonoConfiguration>
   </PropertyGroup>
 
   <ItemGroup>

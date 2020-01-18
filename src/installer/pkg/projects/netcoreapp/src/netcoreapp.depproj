@@ -7,6 +7,7 @@
     <CoreCLROSGroup Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLROSGroup>
     <CoreCLROSGroup Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLROSGroup>
     <CoreCLROSGroup Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLROSGroup>
+    <MonoOSGroup>$(CoreCLROSGroup)</MonoOSGroup>
     <LibrariesOSGroup>$(CoreCLROSGroup)</LibrariesOSGroup>
   </PropertyGroup>
 

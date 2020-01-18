@@ -3,6 +3,8 @@
   <PropertyGroup>
     <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(OSGroup)</CoreCLROSGroup>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
+    <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(OSGroup)</MonoOSGroup>
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(OSGroup)</LibrariesOSGroup>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
 
@@ -12,6 +14,7 @@
   <!-- Accept override paths for live artifacts. -->
   <PropertyGroup>
     <CoreCLRArtifactsPath Condition="'$(CoreCLROverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath Condition="'$(MonoOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(MonoOverridePath)'))</MonoArtifactsPath>
     <LibrariesArtifactsPath Condition="'$(LibrariesOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesOverridePath)'))</LibrariesArtifactsPath>
     <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigurationsOverridePath)'))</LibrariesAllConfigurationsArtifactsPath>
   </PropertyGroup>
@@ -40,6 +43,7 @@
     <ArtifactPlatform>$(ArtifactPlatform.Replace('-', '_'))</ArtifactPlatform>
 
     <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(AllArtifactsDownloadPath)', 'CoreCLRProduct_$(ArtifactPlatform)_$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(AllArtifactsDownloadPath)', 'MonoProduct_$(ArtifactPlatform)_$(MonoConfiguration)'))</MonoArtifactsPath>
     <LibrariesArtifactsPath>$([MSBuild]::NormalizeDirectory('$(AllArtifactsDownloadPath)', 'libraries_bin_$(ArtifactPlatform)_$(LibrariesConfiguration)'))</LibrariesArtifactsPath>
 
     <!--
@@ -52,6 +56,7 @@
   <!-- Set up default live asset paths if no overrides provided. -->
   <PropertyGroup>
     <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(CoreCLROSGroup).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'mono', '$(MonoOSGroup).$(TargetArchitecture).$(MonoConfiguration)'))</MonoArtifactsPath>
     <LibrariesArtifactsPath Condition="'$(LibrariesArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesArtifactsPath>
     <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesAllConfigurationsArtifactsPath>
   </PropertyGroup>
@@ -125,6 +130,16 @@
     </ItemGroup>
 
     <Error Condition="'@(CoreCLRFiles)' == ''" Text="The CoreCLR subset category must be built before building this project." />
+  </Target>
+
+  <Target Name="ResolveMonoFilesFromLocalBuild">
+    <Error Condition="!Exists('$(MonoArtifactsPath)')" Text="The Mono artifacts path does not exist '$(MonoArtifactsPath)'. The Mono subset category must be built before building this project." />
+
+    <ItemGroup>
+      <MonoFiles Include="$(MonoArtifactsPath)\*.*" />
+    </ItemGroup>
+
+    <Error Condition="'@(MonoFiles)' == ''" Text="The Mono subset category must be built before building this project." />
   </Target>
 
   <Target Name="EnsureLocalArtifactsExist">
