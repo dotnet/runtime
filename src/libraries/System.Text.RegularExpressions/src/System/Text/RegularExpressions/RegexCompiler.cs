@@ -1319,7 +1319,7 @@ namespace System.Text.RegularExpressions
 
                 if (!RegexCharClass.IsSingleton(_fcPrefix.GetValueOrDefault().Prefix))
                 {
-                    EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
+                    EmitMatchCharacterClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
                     BrtrueFar(l2);
                 }
                 else
@@ -1480,7 +1480,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(iLocal);
                     Call(s_spanGetItemMethod);
                     LdindU2();
-                    EmitCallCharInClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
+                    EmitMatchCharacterClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
                     BrfalseFar(charNotInClassLabel);
 
                     // thisruntextpos = runtextpos + i; return true;
@@ -2268,7 +2268,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Setloop:
                     case RegexNode.Setloopatomic:
                         LocalBuilder setScratchLocal = RentInt32Local();
-                        EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
+                        EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
                         ReturnInt32Local(setScratchLocal);
                         BrfalseFar(doneLabel);
                         break;
@@ -2756,7 +2756,7 @@ namespace System.Text.RegularExpressions
                             break;
                         case RegexNode.Setloopatomic:
                             LocalBuilder setScratchLocal = RentInt32Local();
-                            EmitCallCharInClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
+                            EmitMatchCharacterClass(node.Str!, IsCaseInsensitive(node), setScratchLocal);
                             ReturnInt32Local(setScratchLocal);
                             BrfalseFar(doneLabel);
                             break;
@@ -3832,7 +3832,7 @@ namespace System.Text.RegularExpressions
 
                     if (Code() == RegexCode.Set)
                     {
-                        EmitCallCharInClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
+                        EmitMatchCharacterClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
                         BrfalseFar(_backtrack);
                     }
                     else
@@ -4127,7 +4127,7 @@ namespace System.Text.RegularExpressions
                         if (Code() == RegexCode.Setrep)
                         {
                             EmitTimeoutCheck();
-                            EmitCallCharInClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
+                            EmitMatchCharacterClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
                             BrfalseFar(_backtrack);
                         }
                         else
@@ -4267,7 +4267,7 @@ namespace System.Text.RegularExpressions
                         if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopatomic)
                         {
                             EmitTimeoutCheck();
-                            EmitCallCharInClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
+                            EmitMatchCharacterClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
                             BrtrueFar(l1);
                         }
                         else
@@ -4461,7 +4461,7 @@ namespace System.Text.RegularExpressions
 
                     if (Code() == RegexCode.Setlazy)
                     {
-                        EmitCallCharInClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
+                        EmitMatchCharacterClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
                         BrfalseFar(_backtrack);
                     }
                     else
@@ -4500,8 +4500,8 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Emits a call to RegexRunner.CharInClass or a functional equivalent.</summary>
-        private void EmitCallCharInClass(string charClass, bool caseInsensitive, LocalBuilder tempLocal)
+        /// <summary>Emits a a check for whether the character is in the specified character class.</summary>
+        private void EmitMatchCharacterClass(string charClass, bool caseInsensitive, LocalBuilder tempLocal)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
@@ -4547,7 +4547,9 @@ namespace System.Text.RegularExpressions
             // If we're meant to be doing a case-insensitive lookup, and if we're not using the invariant culture,
             // lowercase the input.  If we're using the invariant culture, we may still end up calling ToLower later
             // on, but we may also be able to avoid it, in particular in the case of our lookup table, where we can
-            // generate the lookup table already factoring in the invariant case sensitivity.
+            // generate the lookup table already factoring in the invariant case sensitivity.  There are multiple
+            // special-code paths between here and the lookup table, but we only take those if invariant is false;
+            // if it were true, they'd need to use CallToLower().
             bool invariant = false;
             if (caseInsensitive)
             {
@@ -4559,24 +4561,20 @@ namespace System.Text.RegularExpressions
             }
 
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
-            if (!invariant && // if we're being asked to do a case insensitive comparison with the invariant culture, just use the lookup table
-                charClass.Length == RegexCharClass.SetStartIndex + 2 && // one set of two values
-                charClass[RegexCharClass.SetLengthIndex] == 2 && // validate we have the right number of ranges
-                charClass[RegexCharClass.CategoryLengthIndex] == 0 && // must not have any categories
-                charClass[RegexCharClass.SetStartIndex] < charClass[RegexCharClass.SetStartIndex + 1]) // valid range
+            if (!invariant && RegexCharClass.TryGetSingleRange(charClass, out char lowInclusive, out char highInclusive))
             {
-                if (RegexCharClass.IsSingleton(charClass) || RegexCharClass.IsSingletonInverse(charClass))
+                if (lowInclusive == highInclusive)
                 {
                     // ch == charClass[3]
-                    Ldc(charClass[3]);
+                    Ldc(lowInclusive);
                     Ceq();
                 }
                 else
                 {
-                    // (uint)ch - charClass[3] < charClass[4] - charClass[3]
-                    Ldc(charClass[RegexCharClass.SetStartIndex]);
+                    // (uint)ch - lowInclusive < highInclusive + 1 - lowInclusive
+                    Ldc(lowInclusive);
                     Sub();
-                    Ldc(charClass[RegexCharClass.SetStartIndex + 1] - charClass[RegexCharClass.SetStartIndex]);
+                    Ldc((int)highInclusive - (int)lowInclusive + 1);
                     CltUn();
                 }
 
@@ -4590,19 +4588,83 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // Next, special-case ASCII inputs.  If the character class contains only ASCII inputs, then we
-            // can satisfy the entire operation via a small lookup table, e.g.
-            //     ch < 128 && lookup(ch)
-            // If the character class contains values outside of the ASCII range, we can still optimize for
-            // ASCII inputs, using the table for values < 128, and falling back to calling CharInClass
-            // for anything outside of the ASCII range, e.g.
-            //     if (ch < 128) lookup(ch)
-            //     else ...
-            // Either way, we need to generate the lookup table for the ASCII range.
-            // We use a const string instead of a byte[] / static data property because
-            // it lets IL emit handle all the gory details for us.  It also is ok from an
-            // endianness perspective because the compilation happens on the same machine
-            // that runs the compiled code.
+            // Store the input character to a local so we can read it multiple times.
+            Stloc(tempLocal);
+
+            // Analyze the character set more to determine what code to generate.
+            RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);
+
+            // Helper method that emits a call to RegexRunner.CharInClass(ch{.ToLowerInvariant()}, charClass)
+            void EmitCharInClass()
+            {
+                Ldloc(tempLocal);
+                if (invariant)
+                {
+                    CallToLower();
+                }
+                Ldstr(charClass);
+                Call(s_charInClassMethod);
+            }
+
+            Label doneLabel = DefineLabel();
+            Label comparisonLabel = DefineLabel();
+
+            if (!invariant) // if we're being asked to do a case insensitive, invariant comparison, use the lookup table
+            {
+                if (analysis.ContainsNoAscii)
+                {
+                    // We determined that the character class contains only non-ASCII,
+                    // for example if the class were [\p{IsGreek}\p{IsGreekExtended}], which is
+                    // the same as [\u0370-\u03FF\u1F00-1FFF]. (In the future, we could possibly
+                    // extend the analysis to produce a known lower-bound and compare against
+                    // that rather than always using 128 as the pivot point.)
+
+                    // ch >= 128 && RegexRunner.CharInClass(ch, "...")
+                    Ldloc(tempLocal);
+                    Ldc(128);
+                    Blt(comparisonLabel);
+                    EmitCharInClass();
+                    Br(doneLabel);
+                    MarkLabel(comparisonLabel);
+                    Ldc(0);
+                    MarkLabel(doneLabel);
+                    return;
+                }
+
+                if (analysis.AllAsciiContained)
+                {
+                    // We determined that every ASCII character is in the class, for example
+                    // if the class were the negated example from case 1 above:
+                    // [^\p{IsGreek}\p{IsGreekExtended}].
+
+                    // ch < 128 || RegexRunner.CharInClass(ch, "...")
+                    Ldloc(tempLocal);
+                    Ldc(128);
+                    Blt(comparisonLabel);
+                    EmitCharInClass();
+                    Br(doneLabel);
+                    MarkLabel(comparisonLabel);
+                    Ldc(1);
+                    MarkLabel(doneLabel);
+                    return;
+                }
+            }
+
+            // Now, our big hammer is to generate a lookup table that lets us quickly index by character into a yes/no
+            // answer as to whether the character is in the target character class.  However, we don't want to store
+            // a lookup table for every possible character for every character class in the regular expression; at one
+            // bit for each of 65K characters, that would be an 8K bitmap per character class.  Instead, we handle the
+            // common case of ASCII input via such a lookup table, which at one bit for each of 128 characters is only
+            // 16 bytes per character class.  We of course still need to be able to handle inputs that aren't ASCII, so
+            // we check the input against 128, and have a fallback if the input is >= to it.  Determining the right
+            // fallback could itself be expensive.  For example, if it's possible that a value >= 128 could match the
+            // character class, we output a call to RegexRunner.CharInClass, but we don't want to have to enumerate the
+            // entire character class evaluating every character against it, just to determine whether it's a match.
+            // Instead, we employ some quick heuristics that will always ensure we provide a correct answer even if
+            // we could have sometimes generated better code to give that answer.
+
+            // Generate the lookup table to store 128 answers as bits. We use a const string instead of a byte[] / static
+            // data property because it lets IL emit handle all the details for us.
             string bitVectorString = string.Create(8, (charClass, invariant), (dest, state) => // String length is 8 chars == 16 bytes == 128 bits.
             {
                 for (int i = 0; i < 128; i++)
@@ -4618,39 +4680,13 @@ namespace System.Text.RegularExpressions
                 }
             });
 
-            // In order to determine whether we need the non-ASCII fallback, we have a few options:
-            // 1. Interpret the char class.  This would require fully understanding all of the ins and outs of the design,
-            //    and is a lot of code (in the future it's possible the parser could pass this information along).
-            // 2. Employ a heuristic to approximate (1), allowing for false positives (saying we need the fallback when
-            //    we don't) but no false negatives (saying we don't need the fallback when we do).
-            // 3. Evaluate CharInClass on all ~65K inputs.  This is relatively expensive, impacting startup costs.
-            // We currently go with (2).  We may sometimes generate a fallback when we don't need one, but the cost of
-            // doing so once in a while is minimal.
-            bool asciiOnly = RegexCharClass.CanEasilyEnumerateSetContents(charClass);
-            if (asciiOnly)
-            {
-                for (int i = RegexCharClass.SetStartIndex; i < charClass.Length; i++)
-                {
-                    if (charClass[i] >= 128) // validate all characters in the set are ASCII
-                    {
-                        asciiOnly = false;
-                        break;
-                    }
-                }
-            }
+            // We determined that the character class may contain ASCII, so we
+            // output the lookup against the lookup table.
 
-            Label nonAsciiLabel = DefineLabel(); // jumped to when input is >= 128
-            Label doneLabel = DefineLabel(); // jumped to when answer has been computed
-
-            // Store the input character so we can read it multiple times.
-            Stloc(tempLocal);
-
-            // ch < 128
+            // ch < 128 ? (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0 :
             Ldloc(tempLocal);
             Ldc(128);
-            Bge(nonAsciiLabel);
-
-            // (bitVectorString[ch >> 4] & (1 << (ch & 0xF))) != 0
+            Bge(comparisonLabel);
             Ldstr(bitVectorString);
             Ldloc(tempLocal);
             Ldc(4);
@@ -4667,28 +4703,29 @@ namespace System.Text.RegularExpressions
             Ldc(0);
             CgtUn();
             Br(doneLabel);
+            MarkLabel(comparisonLabel);
 
-            MarkLabel(nonAsciiLabel);
-            if (asciiOnly)
+            if (analysis.ContainsOnlyAscii)
             {
-                // The whole class was ASCII, so if the character is >= 128, it's not in the class:
-                // false
+                // We know that all inputs that could match are ASCII, for example if the
+                // character class were [A-Za-z0-9], so since the ch is now known to be >= 128, we
+                // can just fail the comparison.
                 Ldc(0);
+            }
+            else if (analysis.AllNonAsciiContained)
+            {
+                // We know that all non-ASCII inputs match, for example if the character
+                // class were [^\r\n], so since we just determined the ch to be >= 128, we can just
+                // give back success.
+                Ldc(1);
             }
             else
             {
-                // The whole class wasn't ASCII, so if the character is >= 128, we need to fall back to calling:
-                // CharInClass(ch, charClass).  If case insensitivity is required, we will have already called
-                // ToLower, but only if !invariant, so we need to do so here for invariant as well.
-                Ldloc(tempLocal);
-                if (invariant)
-                {
-                    CallToLower();
-                }
-                Ldstr(charClass);
-                Call(s_charInClassMethod);
+                // We know that the whole class wasn't ASCII, and we don't know anything about the non-ASCII
+                // characters other than that some might be included, for example if the character class
+                // were [\w\d], so since ch >= 128, we need to fall back to calling CharInClass.
+                EmitCharInClass();
             }
-
             MarkLabel(doneLabel);
         }
 
