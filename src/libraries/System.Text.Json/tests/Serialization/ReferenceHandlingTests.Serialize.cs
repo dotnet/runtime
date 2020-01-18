@@ -4,7 +4,9 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Tests;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -175,6 +177,95 @@ namespace System.Text.Json.Tests
 
             List<object> mixedListOfLists = new List<object> { list, immutableArr, list, immutableArr };
             JsonSerializer.Serialize(mixedListOfLists, _serializeOptionsPreserve);
+        }
+
+        [Fact]
+        public static void UnicodeDictionaryKeys()
+        {
+            var optionsWithEncoder = new JsonSerializerOptions();
+            optionsWithEncoder.ReferenceHandling = ReferenceHandling.Preserve;
+            optionsWithEncoder.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+            
+            Dictionary<string, int> obj = new Dictionary<string, int> { { "A\u0467", 1 } };
+            // Verify the name is escaped after serialize.
+            string json = JsonSerializer.Serialize(obj, _serializeOptionsPreserve);
+            Assert.Equal(@"{""$id"":""1"",""A\u0467"":1}", json);
+
+            // Verify with encoder.
+            optionsWithEncoder.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+            json = JsonSerializer.Serialize(obj, optionsWithEncoder);
+            Assert.Equal("{\"$id\":\"1\",\"A\u0467\":1}", json);
+
+            // We want to go over StackallocThreshold=256 to force a pooled allocation, so this property is 200 chars and 400 bytes.
+            const int charsInProperty = 200;
+            string longPropertyName = new string('\u0467', charsInProperty);
+            obj = new Dictionary<string, int> { { $"{longPropertyName}", 1 } };
+            Assert.Equal(1, obj[longPropertyName]);
+
+            // Verify the name is escaped after serialize.
+            json = JsonSerializer.Serialize(obj, _serializeOptionsPreserve);
+
+            // Duplicate the unicode character 'charsInProperty' times.
+            string longPropertyNameEscaped = new StringBuilder().Insert(0, @"\u0467", charsInProperty).ToString();
+            string expectedJson = $"{{\"$id\":\"1\",\"{longPropertyNameEscaped}\":1}}";
+            Assert.Equal(expectedJson, json);
+        }
+
+        [Fact]
+        public static void UnicodePropertyNames()
+        {
+            ClassWithUnicodeProperty obj = new ClassWithUnicodeProperty();
+            obj.A\u0467 = 1;
+
+            // Specifying encoder on options does not impact deserialize.
+            var optionsWithEncoder = new JsonSerializerOptions();
+            optionsWithEncoder.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+            optionsWithEncoder.ReferenceHandling = ReferenceHandling.Preserve;
+
+            // Verify the name is escaped after serialize.
+            string json = JsonSerializer.Serialize(obj, _serializeOptionsPreserve);
+            Assert.StartsWith("{\"$id\":\"1\",", json);
+            Assert.Contains(@"""A\u0467"":1", json);
+
+            // With custom escaper
+            json = JsonSerializer.Serialize(obj, optionsWithEncoder);
+            Assert.StartsWith("{\"$id\":\"1\",", json);
+            Assert.Contains("\"A\u0467\":1", json);
+
+            // We want to go over StackallocThreshold=256 to force a pooled allocation, so this property is 400 chars and 401 bytes.
+            obj = new ClassWithUnicodeProperty();
+            obj.A\u046734567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890 = 1;
+
+            // Verify the name is escaped after serialize.
+            json = JsonSerializer.Serialize(obj, _serializeOptionsPreserve);
+            Assert.StartsWith("{\"$id\":\"1\",", json);
+            Assert.Contains(@"""A\u046734567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"":1", json);
+        }
+
+        private class ClassCustomHashCode
+        {
+            public static int _index = 0;
+
+            public override int GetHashCode()
+            {
+                return _index++.GetHashCode();
+            }
+        };
+
+        [Fact]
+        public static void CustomHashCode()
+        {
+            // Test that POCO's implementation of GetHashCode is always used.
+            ClassCustomHashCode elem = new ClassCustomHashCode();
+            List<ClassCustomHashCode> list = new List<ClassCustomHashCode>()
+            {
+                elem,
+                elem,
+            };
+
+            string json = JsonSerializer.Serialize(list, _serializeOptionsPreserve);
+            Assert.Equal(@"{""$id"":""1"",""$values"":[{""$id"":""2""},{""$id"":""3""}]}", json);
         }
     }
 }

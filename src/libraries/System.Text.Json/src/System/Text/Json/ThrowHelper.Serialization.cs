@@ -81,9 +81,20 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException()
+        public static void ThrowJsonException(string? message = null)
         {
-            throw new JsonException();
+            JsonException ex;
+            if (string.IsNullOrEmpty(message))
+            {
+                ex = new JsonException();
+            }
+            else
+            {
+                ex = new JsonException(message);
+                ex.AppendPathInformation = true;
+            }
+
+            throw ex;
         }
 
         [DoesNotReturn]
@@ -285,28 +296,28 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataValuesInvalidToken(JsonTokenType tokenType)
         {
-            throw new JsonException(SR.Format(SR.MetadataInvalidTokenAfterValues, tokenType));
+            ThrowJsonException(SR.Format(SR.MetadataInvalidTokenAfterValues, tokenType));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataReferenceNotFound(string id)
         {
-            throw new JsonException(SR.Format(SR.MetadataReferenceNotFound, id));
+            ThrowJsonException(SR.Format(SR.MetadataReferenceNotFound, id));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataValueWasNotString(JsonTokenType tokenType)
         {
-            throw new JsonException(SR.Format(SR.MetadataValueWasNotString, tokenType));
+            ThrowJsonException(SR.Format(SR.MetadataValueWasNotString, tokenType));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties()
         {
-            throw new JsonException(SR.MetadataReferenceCannotContainOtherProperties);
+            ThrowJsonException(SR.MetadataReferenceCannotContainOtherProperties);
         }
 
         [DoesNotReturn]
@@ -321,7 +332,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataIdIsNotFirstProperty()
         {
-            throw new JsonException(SR.MetadataIdIsNotFirstProperty);
+            ThrowJsonException(SR.MetadataIdIsNotFirstProperty);
         }
 
         [DoesNotReturn]
@@ -336,7 +347,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataMissingIdBeforeValues()
         {
-            throw new JsonException(SR.MetadataPreservedArrayPropertyNotFound);
+            ThrowJsonException(SR.MetadataPreservedArrayPropertyNotFound);
         }
 
         [DoesNotReturn]
@@ -356,41 +367,40 @@ namespace System.Text.Json
                 state.Current.JsonPropertyInfo = info;
             }
 
-            throw new JsonException(SR.MetadataInvalidPropertyWithLeadingDollarSign);
+            ThrowJsonException(SR.MetadataInvalidPropertyWithLeadingDollarSign);
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataDuplicateIdFound(string id)
         {
-            throw new JsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
+            ThrowJsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataInvalidReferenceToValueType(Type propertyType)
         {
-            throw new JsonException(SR.Format(SR.MetadataInvalidReferenceToValueType, propertyType));
+            ThrowJsonException(SR.Format(SR.MetadataInvalidReferenceToValueType, propertyType));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(string propertyName, Type propertyType)
+        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(in Utf8JsonReader reader, ref ReadStack state)
         {
-            var ex = new JsonException(SR.Format(SR.MetadataPreservedArrayFailed,
+            string propertyName = reader.GetString()!;
+            Type propertyType = JsonSerializer.GetValuesPropertyInfoFromJsonPreservableArrayRef(ref state.Current).DeclaredPropertyType;
+
+            ThrowJsonException(SR.Format(SR.MetadataPreservedArrayFailed,
                 SR.Format(SR.MetadataPreservedArrayInvalidProperty, propertyName),
                 SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
-
-            ex.AppendPathInformation = true;
-
-            throw ex;
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataPreservedArrayValuesNotFound(Type propertyType)
         {
-            throw new JsonException(SR.Format(SR.MetadataPreservedArrayFailed,
+            ThrowJsonException(SR.Format(SR.MetadataPreservedArrayFailed,
                 SR.MetadataPreservedArrayPropertyNotFound,
                 SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
         }
@@ -399,7 +409,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(Type propertyType)
         {
-            throw new JsonException(SR.Format(SR.MetadataCannotParsePreservedObjectToImmutable, propertyType));
+            ThrowJsonException(SR.Format(SR.MetadataCannotParsePreservedObjectToImmutable, propertyType));
         }
     }
 }

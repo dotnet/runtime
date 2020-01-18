@@ -38,8 +38,10 @@ namespace System.Text.Json
                 if (options.ReferenceHandling.ShouldReadPreservedReferences())
                 {
                     ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-                    MetadataPropertyName metadata = GetMetadataProperty(propertyName, ref state, ref reader);
+                    MetadataPropertyName metadata = GetMetadataPropertyName(propertyName, ref state, ref reader);
                     ResolveMetadataOnDictionary(metadata, ref state);
+
+                    state.Current.LastSeenMetadataProperty = metadata;
                 }
 
                 state.Current.KeyName = reader.GetString();
@@ -53,8 +55,24 @@ namespace System.Text.Json
                 ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
                 if (options.ReferenceHandling.ShouldReadPreservedReferences())
                 {
-                    MetadataPropertyName metadata = GetMetadataProperty(propertyName, ref state, ref reader);
-                    ResolveMetadataOnObject(propertyName, metadata, ref state, ref reader, options);
+                    MetadataPropertyName metadata = GetMetadataPropertyName(propertyName, ref state, ref reader);
+
+                    if (metadata == MetadataPropertyName.NoMetadata)
+                    {
+                        if (state.Current.IsPreservedArray)
+                        {
+                            ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(in reader, ref state);
+                        }
+
+                        // Regular property, call main logic for HandlePropertyName.
+                        HandlePropertyNameDefault(propertyName, ref state, ref reader, options);
+                    }
+                    else
+                    {
+                        ResolveMetadataOnObject(metadata, ref state);
+                    }
+
+                    state.Current.LastSeenMetadataProperty = metadata;
                 }
                 else
                 {
@@ -148,17 +166,6 @@ namespace System.Text.Json
             // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.
         }
 
-        private static MetadataPropertyName GetMetadataProperty(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader)
-        {
-            if (state.Current.ReferenceId != null)
-            {
-                ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
-            }
-
-            MetadataPropertyName metadata = GetMetadataPropertyName(propertyName, ref state, ref reader);
-            return metadata;
-        }
-
         private static void ResolveMetadataOnDictionary(MetadataPropertyName metadata, ref ReadStack state)
         {
             if (metadata == MetadataPropertyName.Id)
@@ -181,26 +188,12 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties_Dictionary(ref state.Current);
                 }
             }
-
-            state.Current.LastSeenMetadataProperty = metadata;
         }
 
-        private static void ResolveMetadataOnObject(ReadOnlySpan<byte> propertyName, MetadataPropertyName meta, ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private static void ResolveMetadataOnObject(MetadataPropertyName metadata, ref ReadStack state)
         {
-            if (meta == MetadataPropertyName.NoMetadata)
+            if (metadata == MetadataPropertyName.Id)
             {
-                if (state.Current.IsPreservedArray)
-                {
-                    ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(reader.GetString()!, GetValuesPropertyInfoFromJsonPreservableArrayRef(ref state.Current).DeclaredPropertyType);
-                }
-
-                // Regular property, call main logic for HandlePropertyName.
-                HandlePropertyNameDefault(propertyName, ref state, ref reader, options);
-            }
-            else if (meta == MetadataPropertyName.Id)
-            {
-                Debug.Assert(propertyName.SequenceEqual(Encoding.UTF8.GetBytes("$id")));
-
                 if (state.Current.PropertyIndex > 0 || state.Current.LastSeenMetadataProperty != MetadataPropertyName.NoMetadata)
                 {
                     ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty();
@@ -212,9 +205,8 @@ namespace System.Text.Json
                 info.JsonPropertyName = ReadStack.s_idMetadataPropertyName;
                 state.Current.JsonPropertyInfo = info;
             }
-            else if (meta == MetadataPropertyName.Values)
+            else if (metadata == MetadataPropertyName.Values)
             {
-                Debug.Assert(propertyName.SequenceEqual(Encoding.UTF8.GetBytes("$values")));
                 // TODO: Hook up JsonPropertyInfoAsString
                 // to print $values on the JSON Path in case of failure deeper on the object graph.
                 JsonPropertyInfo info = GetValuesPropertyInfoFromJsonPreservableArrayRef(ref state.Current);
@@ -234,8 +226,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(propertyName.SequenceEqual(Encoding.UTF8.GetBytes("$ref")));
-                Debug.Assert(meta == MetadataPropertyName.Ref);
+                Debug.Assert(metadata == MetadataPropertyName.Ref);
 
                 if (state.Current.JsonClassInfo!.Type.IsValueType)
                 {
@@ -254,8 +245,6 @@ namespace System.Text.Json
                 info.JsonPropertyName = ReadStack.s_refMetadataPropertyName;
                 state.Current.JsonPropertyInfo = info;
             }
-
-            state.Current.LastSeenMetadataProperty = meta;
         }
     }
 }

@@ -474,7 +474,7 @@
     <value>One or more metadata properties, such as '$id' and '$values', were not found within a JSON object that must only contain metadata properties and the nested JSON array to be preserved.</value>
   </data>
   <data name="MetadataReferenceCannotContainOtherProperties" xml:space="preserve">
-    <value>Reference objects must not contain other properties except for '$ref'.</value>
+    <value>A JSON object that contains a '$ref' metadata property must not contain any other properties.</value>
   </data>
   <data name="MetadataReferenceNotFound" xml:space="preserve">
     <value>Reference '{0}' not found.</value>

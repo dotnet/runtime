@@ -10,19 +10,44 @@ namespace System.Text.Json.Serialization
     public sealed class ReferenceHandling
     {
         /// <summary>
-        /// Reference handling semantics will not be applied to JSON objects and arrays when serializing or deserializing.
+        /// Serialization does not support objects with cycles and does not preserve duplicate references. Metadata properties will not be written when serializing reference types and will be treated as regular properties on deserialize.
         /// </summary>
         /// <remarks>
-        /// * On Serialize: Throw a `JsonException` when `MaxDepth` is exceeded. This may occur by either a reference loop or by passing a very deep object. This option will not affect the performance of the serializer.
-        /// * On Deserialize: Metadata properties will not be consumed, therefore metadata properties(`$id`, `$values`, and `$ref`) will be treated as regular properties that can map to a real property using `JsonPropertyName` or be added to the `JsonExtensionData` overflow dictionary.
+        /// * On Serialize:
+        /// Treats duplicate object references as if they were unique and writes all their properties.
+        /// The serializer throws a `JsonException` if an object contains a cycle.
+        /// * On Deserialize:
+        /// Metadata properties (`$id`, `$values`, and `$ref`) will not be consumed and therefore will be treated as regular JSON properties.
+        /// The metadata properties can map to a real property on the returned object if the property names match, or will be added to the `JsonExtensionData` overflow dictionary, if one exists; otherwise, they are ignored.
         /// </remarks>
         public static ReferenceHandling Default { get; } = new ReferenceHandling(PreserveReferencesHandling.None);
+
         /// <summary>
-        /// Reference metadata will be written and honored when deserializing and serializing JSON objects and arrays.
+        /// Metadata properties will be honored when deserializing JSON objects and arrays into reference types and written when serializing reference types. This is necessary to create round-trippable JSON from objects that contain cycles or duplicate references.
         /// </summary>
         /// <remarks>
-        /// * On Serialize: When writing complex CLR types (e.g. POCOs/non-primitive types), the serializer also writes metadata (`$id`, `$values`, and `$ref`) properties within them in order to reference them later by writing a pointer to the previously written JSON object or array on the CLR objects that are identical; this is very useful to prevent serialization cycles and preserve reference equality through serialization.
-        /// * On Deserialize: The metadata properties emitted on serialization will be expected (although they are not mandatory) and the deserializer will try to understand them.
+        /// * On Serialize:
+        /// When writing complex reference types, the serializer also writes metadata properties (`$id`, `$values`, and `$ref`) within them.
+        /// The output JSON will contain an extra `$id` property for every object, and for every enumerable type the JSON array emitted will be nested within a JSON object containing an `$id` and `$values` property.
+        /// `RefererenceEquals` is used to determine whether objects are identical.
+        /// When an object is identical to a previously serialized one, a pointer(`$ref`) to the identifier(`$id`) of such object is written instead.
+        /// No metadata properties are written for value types.
+        /// * On Deserialize:
+        /// The metadata properties within the JSON that are used to preserve duplicated references and cycles will be honored as long as they are well-formed*.
+        /// For JSON objects that don't contain any metadata properties, the deserialization behavior is identical to `ReferenceHandling.Default`.
+        /// For value types:
+        ///   * the `$id` metadata property is ignored.
+        ///   * A `JsonException` is thrown if a `$ref` metadata property is found within the JSON object.
+        ///   * For enumerable value types, the `$values` metadata property is ignored.
+        /// For the metadata properties within the JSON to be considered well-formed*, they must follow these rules:
+        ///   1) The `$id` metadata property must be the first property in the JSON object.
+        ///   2) A JSON object that contains a `$ref` metadata property must not contain any other properties.
+        ///   3) The value of the `$ref` metadata property must refer to an `$id` that has appeared earlier in the JSON.
+        ///   4) The value of the `$id` and `$ref` metadata properties must be a JSON string.
+        ///   5) For enumerable types,  such as `List{T}`, the JSON array must be nested within a JSON object containing an `$id` and `$values` metadata property, in that order.
+        ///   6) For enumerable types, the `$values` metadata property must be a JSON array.
+        ///   7) The `$values` metadata property is only valid when referring to enumerable types.
+        /// If the JSON is not well-formed, a `JsonException` is thrown.
         /// </remarks>
         public static ReferenceHandling Preserve { get; } = new ReferenceHandling(PreserveReferencesHandling.All);
 

@@ -208,8 +208,6 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, employee.Contacts2.Count);
         }
 
-
-
         [Fact]
         public static void ObjectPropertyLengthZero()
         {

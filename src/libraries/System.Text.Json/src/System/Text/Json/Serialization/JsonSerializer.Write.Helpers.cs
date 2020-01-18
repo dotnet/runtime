@@ -145,7 +145,7 @@ namespace System.Text.Json
 
         private static bool WriteReference(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, ClassType classType, object currentValue)
         {
-            // Avoid emitting metadata to value types.
+            // Avoid emitting metadata for value types.
             Type currentType = state.Current.JsonPropertyInfo?.DeclaredPropertyType ?? state.Current.JsonClassInfo!.Type;
             if (currentType.IsValueType)
             {

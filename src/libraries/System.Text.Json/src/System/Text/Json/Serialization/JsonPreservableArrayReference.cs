@@ -11,7 +11,7 @@ namespace System.Text.Json
     internal class JsonPreservableArrayReference<T>
     {
         /// <summary>
-        ///  The actual enumerable instance being preserved it is extracted when we finish processing the JSON object on HandleEndObject.
+        ///  The actual enumerable instance being preserved is extracted when we finish processing the JSON object on HandleEndObject.
         /// </summary>
         public T Values { get; set; } = default!;
     }

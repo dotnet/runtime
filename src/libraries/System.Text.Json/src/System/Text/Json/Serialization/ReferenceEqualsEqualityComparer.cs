@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// Passed to the <see cref="DefaultReferenceResolver._objectKeyMap"/> meant for serialization.
+    /// Passed to the <see cref="DefaultReferenceResolver._objectToReferenceIdMap"/> meant for serialization.
     /// It forces the dictionary to do a ReferenceEquals comparison when comparing the TKey object.
     /// </summary>
     internal sealed class ReferenceEqualsEqualityComparer<T> : IEqualityComparer<T>

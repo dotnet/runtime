@@ -16,8 +16,8 @@ namespace System.Text.Json.Serialization
     internal struct DefaultReferenceResolver
     {
         private uint _referenceCount;
-        private Dictionary<string, object>? _keyObjectMap;
-        private Dictionary<object, string>? _objectKeyMap;
+        private Dictionary<string, object>? _referenceIdToObjectMap;
+        private Dictionary<object, string>? _objectToReferenceIdMap;
 
         public DefaultReferenceResolver(bool writing)
         {
@@ -26,42 +26,44 @@ namespace System.Text.Json.Serialization
             if (writing)
             {
                 // Comparer used here to always do a Reference Equality comparison on serialization which is where we use the objects as the TKey in our dictionary.
-                _objectKeyMap = new Dictionary<object, string>(ReferenceEqualsEqualityComparer<object>.Comparer);
-                _keyObjectMap = null;
+                _objectToReferenceIdMap = new Dictionary<object, string>(ReferenceEqualsEqualityComparer<object>.Comparer);
+                _referenceIdToObjectMap = null;
             }
             else
             {
-                _keyObjectMap = new Dictionary<string, object>();
-                _objectKeyMap = null;
+                _referenceIdToObjectMap = new Dictionary<string, object>();
+                _objectToReferenceIdMap = null;
             }
         }
 
 
         /// <summary>
-        /// Adds an entry to the bag of references using the specified key and value.
+        /// Adds an entry to the bag of references using the specified id and value.
+        /// This method gets called when an $id metadata property from a JSON object is read.
         /// </summary>
-        /// <param name="key">The key of the respective JSON object or array.</param>
-        /// <param name="value">The value of the respective CLR reference type object that results from parsing the JSON object or array.</param>
-        public void AddReferenceOnDeserialize(string key, object value)
+        /// <param name="referenceId">The identifier of the respective JSON object or array.</param>
+        /// <param name="value">The value of the respective CLR reference type object that results from parsing the JSON object.</param>
+        public void AddReferenceOnDeserialize(string referenceId, object value)
         {
-            if (!JsonHelpers.TryAdd(_keyObjectMap!, key, value))
+            if (!JsonHelpers.TryAdd(_referenceIdToObjectMap!, referenceId, value))
             {
-                ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(key);
+                ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(referenceId);
             }
         }
 
         /// <summary>
-        /// Gets the key of the specified value if exists; otherwise a new key is assigned.
+        /// Gets the reference id of the specified value if exists; otherwise a new id is assigned.
+        /// This method gets called before a CLR object is written so we can decide whether to write $id and the rest of its properties or $ref and step into the next object.
         /// </summary>
-        /// <param name="value">The value of the CLR reference type object to get or add a key for.</param>
-        /// <param name="key">The key realated to the object.</param>
+        /// <param name="value">The value of the CLR reference type object to get or add an id for.</param>
+        /// <param name="referenceId">The id realated to the object.</param>
         /// <returns></returns>
-        public bool TryGetOrAddReferenceOnSerialize(object value, out string key)
+        public bool TryGetOrAddReferenceOnSerialize(object value, out string referenceId)
         {
-            if (!_objectKeyMap!.TryGetValue(value, out key!))
+            if (!_objectToReferenceIdMap!.TryGetValue(value, out referenceId!))
             {
-                key = (++_referenceCount).ToString();
-                _objectKeyMap.Add(value, key);
+                referenceId = (++_referenceCount).ToString();
+                _objectToReferenceIdMap.Add(value, referenceId);
 
                 return false;
             }
@@ -70,15 +72,16 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
-        /// Resolves the object CLR reference type object related to the specified key.
+        /// Resolves the CLR reference type object related to the specified reference id.
+        /// This method gets called when $ref metadata property is read.
         /// </summary>
-        /// <param name="key">The key related to the returned object.</param>
+        /// <param name="referenceId">The id related to the returned object.</param>
         /// <returns></returns>
-        public object ResolveReferenceOnDeserialize(string key)
+        public object ResolveReferenceOnDeserialize(string referenceId)
         {
-            if (!_keyObjectMap!.TryGetValue(key, out object? value))
+            if (!_referenceIdToObjectMap!.TryGetValue(referenceId, out object? value))
             {
-                ThrowHelper.ThrowJsonException_MetadataReferenceNotFound(key);
+                ThrowHelper.ThrowJsonException_MetadataReferenceNotFound(referenceId);
             }
 
             return value;

@@ -26,8 +26,8 @@ namespace System.Text.Json
                 // Special case for dictionary properties since those do not push into the ReadStack.
                 // There is no need to check for enumerables since those will always be wrapped into JsonPreservableArrayReference<T> which turns enumerables into objects.
                 object value = state.Current.IsProcessingProperty(ClassType.Dictionary) ?
-                state.Current.JsonPropertyInfo!.GetValueAsObject(state.Current.ReturnValue)! :
-                state.Current.ReturnValue!;
+                    state.Current.JsonPropertyInfo!.GetValueAsObject(state.Current.ReturnValue)! :
+                    state.Current.ReturnValue!;
 
                 state.ReferenceResolver.AddReferenceOnDeserialize(key, value);
             }
@@ -37,9 +37,14 @@ namespace System.Text.Json
             }
         }
 
-        internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader)
+        private static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader)
         {
             Debug.Assert(state.Current.JsonClassInfo!.Options.ReferenceHandling.ShouldReadPreservedReferences());
+
+            if (state.Current.ReferenceId != null)
+            {
+                ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+            }
 
             if (propertyName.Length > 0 && propertyName[0] == '$')
             {
@@ -98,16 +103,22 @@ namespace System.Text.Json
                 state.Current.ReturnValue = referenceValue;
                 HandleEndObject(ref state);
             }
+
+            // Set back to null to no longer treat subsequent objects as references.
             state.Current.ReferenceId = null;
         }
 
-        private static JsonPropertyInfo GetValuesPropertyInfoFromJsonPreservableArrayRef(ref ReadStackFrame current)
+        internal static JsonPropertyInfo GetValuesPropertyInfoFromJsonPreservableArrayRef(ref ReadStackFrame current)
         {
             Debug.Assert(current.JsonClassInfo!.Options.ReferenceHandling.ShouldReadPreservedReferences());
             Debug.Assert(current.JsonClassInfo.Type.GetGenericTypeDefinition() == typeof(JsonPreservableArrayReference<>));
-            Debug.Assert(current.JsonClassInfo.PropertyCacheArray![0] == current.JsonClassInfo.PropertyCache!["Values"]);
 
-            return current.JsonClassInfo.PropertyCacheArray[0];
+            JsonPropertyInfo info = current.JsonClassInfo.PropertyCacheArray![0];
+
+            Debug.Assert(info == current.JsonClassInfo.PropertyCache!["Values"]);
+            Debug.Assert(info.ClassType == ClassType.Enumerable);
+
+            return info;
         }
     }
 }

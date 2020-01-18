@@ -36,9 +36,9 @@ namespace System.Text.Json
         public JsonPropertyInfo? JsonPropertyInfo;
 
         // Pre-encoded metadata properties.
-        private static readonly JsonEncodedText _metadataId = JsonEncodedText.Encode("$id", encoder: null);
-        private static readonly JsonEncodedText _metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
-        private static readonly JsonEncodedText _metadataValues = JsonEncodedText.Encode("$values", encoder: null);
+        private static readonly JsonEncodedText s_metadataId = JsonEncodedText.Encode("$id", encoder: null);
+        private static readonly JsonEncodedText s_metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
+        private static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode("$values", encoder: null);
 
         public void Initialize(Type type, JsonSerializerOptions options)
         {
@@ -96,6 +96,24 @@ namespace System.Text.Json
             }
         }
 
+        private void WriteObjectOrArrayStart(ClassType classType, string propertyName, Utf8JsonWriter writer, bool writeNull)
+        {
+            if (writeNull)
+            {
+                writer.WriteNull(propertyName);
+            }
+            else if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
+            {
+                writer.WriteStartObject(propertyName);
+                StartObjectWritten = true;
+            }
+            else
+            {
+                Debug.Assert(classType == ClassType.Enumerable);
+                writer.WriteStartArray(propertyName);
+            }
+        }
+
         public void WritePreservedObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, JsonSerializerOptions options, string referenceId)
         {
             if (JsonPropertyInfo?.EscapedName.HasValue == true)
@@ -104,8 +122,7 @@ namespace System.Text.Json
             }
             else if (KeyName != null)
             {
-                JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName, options.Encoder);
-                writer.WriteStartObject(propertyName);
+                writer.WriteStartObject(KeyName);
             }
             else
             {
@@ -113,7 +130,7 @@ namespace System.Text.Json
             }
 
 
-            writer.WriteString(_metadataId, referenceId);
+            writer.WriteString(s_metadataId, referenceId);
 
             if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
             {
@@ -123,7 +140,7 @@ namespace System.Text.Json
             {
                 // Wrap array into an object with $id and $values metadata properties.
                 Debug.Assert(classType == ClassType.Enumerable);
-                writer.WriteStartArray(_metadataValues);
+                writer.WriteStartArray(s_metadataValues);
                 WriteWrappingBraceOnEndPreservedArray = true;
             }
         }
@@ -136,15 +153,14 @@ namespace System.Text.Json
             }
             else if (KeyName != null)
             {
-                JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName, options.Encoder);
-                writer.WriteStartObject(propertyName);
+                writer.WriteStartObject(KeyName);
             }
             else
             {
                 writer.WriteStartObject();
             }
 
-            writer.WriteString(_metadataRef, referenceId);
+            writer.WriteString(s_metadataRef, referenceId);
             writer.WriteEndObject();
         }
 
