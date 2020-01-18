@@ -52,7 +52,7 @@ namespace Microsoft.Win32.SystemEventsTests
             {
                 if (PlatformDetection.IsFullFramework)
                 {
-                    // desktop has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
+                    // .NET Framework has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
                     SystemEventsTest.WaitForSystemEventsWindow();
                 }
 
@@ -102,7 +102,7 @@ namespace Microsoft.Win32.SystemEventsTests
             {
                 if (PlatformDetection.IsFullFramework)
                 {
-                    // netfx has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
+                    // .NET Framework has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
                     SystemEventsTest.WaitForSystemEventsWindow();
                 }
 

@@ -401,7 +401,7 @@ namespace System.Drawing.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // UNC
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix for #34122")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix for https://github.com/dotnet/corefx/issues/34122")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_UNCFilePath_Success()
         {

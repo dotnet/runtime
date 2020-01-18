@@ -10,7 +10,7 @@ namespace System.Net.Sockets.Tests
 {
     public class ReceiveMessageFrom
     {
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -50,7 +50,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -90,7 +90,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -141,7 +141,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false, 0)]
         [InlineData(false, 1)]

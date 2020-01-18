@@ -508,7 +508,7 @@ namespace System.Globalization
             // Text information
             invariant._iReadingLayout = 0;
 
-            // These are desktop only, not coreclr
+            // These are .NET Framework only, not coreclr
 
             invariant._iLanguage = CultureInfo.LOCALE_INVARIANT;   // locale ID (0409) - NO sort information
             invariant._iDefaultAnsiCodePage = 1252;         // default ansi code page ID (ACP)

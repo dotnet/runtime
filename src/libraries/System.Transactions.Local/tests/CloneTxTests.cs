@@ -39,7 +39,7 @@ namespace System.Transactions.Tests
         [InlineData(CloneType.RollbackDependent, IsolationLevel.Snapshot, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.RollbackDependent, IsolationLevel.Chaos, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.RollbackDependent, IsolationLevel.Unspecified, false, TransactionStatus.Aborted)]
-        // TODO: Issue #10353 - These variations need to be added once we have promotion support.
+        // These variations need to be added once we have promotion support.
         /*
         [InlineData(CloneType.Normal, true, TransactionStatus.Committed)]
         [InlineData(CloneType.Normal, IsolationLevel.RepeatableRead, false, TransactionStatus.Committed)]

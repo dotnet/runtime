@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     return index;
 
                 // If no newer blob for >=netfx471 is present use existing one.
-                // If no netfx blob is present then -1 will be returned.
+                // If no .NET Framework blob is present then -1 will be returned.
                 return blobList.FindIndex(b => b.Platform == TargetFrameworkMoniker.netfx461);
             }
 

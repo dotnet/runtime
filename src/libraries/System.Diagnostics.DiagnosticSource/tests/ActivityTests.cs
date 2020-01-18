@@ -1086,7 +1086,7 @@ namespace System.Diagnostics.Tests
             // Let's check that duration is 1sec - 2 * maximum DateTime.UtcNow error or bigger.
             // As both start and stop timestamps may have error.
             // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration)
-            // that checks duration precision on netfx.
+            // that checks duration precision on .NET Framework.
             Assert.InRange(activity.Duration.TotalMilliseconds, 1000 - 2 * MaxClockErrorMSec, double.MaxValue);
         }
 

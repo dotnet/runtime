@@ -666,7 +666,7 @@ namespace System.Data
         }
 
         // Loads a top most table.
-        // This is neded because desktop is capable of loading almost anything into the dataset.
+        // This is neded because .NET Framework is capable of loading almost anything into the dataset.
         // The top node could be a DataSet element or a Table element. To make things worse,
         // you could have a table with the same name as dataset.
         // Here's how we're going to dig into this mess:
@@ -1145,7 +1145,7 @@ namespace System.Data
             //      <Foo>FooVal</Foo>                           We would grab first text-like node
             //      Value                                       In this case it would be "FooVal"
             //      <Bar>BarVal</Bar>                           And not "Value" as you might think
-            //  </Column>                                       This is how desktop works
+            //  </Column>                                       This is how .NET Framework works
 
             string text = string.Empty;                         // Column text. Assume empty string
             string xsiNilString = null;                         // Possible NIL attribute string

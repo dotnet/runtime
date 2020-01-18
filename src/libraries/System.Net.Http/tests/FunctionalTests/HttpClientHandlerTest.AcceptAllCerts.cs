@@ -41,7 +41,6 @@ namespace System.Net.Http.Functional.Tests
         {
             // Overriding flag for the same reason we skip tests on Catalina
             // On OSX 10.13-10.14 we can override this flag to enable the scenario
-            // Issue: #22089
             requestOnlyThisProtocol |= PlatformDetection.IsMacOsHighSierraOrHigher && acceptedProtocol == SslProtocols.Tls;
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -79,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer },
         };
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
         [MemberData(nameof(InvalidCertificateServers))]
         public async Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds(string url)

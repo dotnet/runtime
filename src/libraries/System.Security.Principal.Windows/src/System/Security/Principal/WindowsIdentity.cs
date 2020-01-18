@@ -111,13 +111,13 @@ namespace System.Security.Principal
         /// Initializes a new instance of the WindowsIdentity class for the user represented by the specified User Principal Name (UPN).
         /// </summary>
         /// <remarks>
-        /// Unlike the desktop version, we connect to Lsa only as an untrusted caller. We do not attempt to exploit Tcb privilege or adjust the current
+        /// Unlike the .NET Framework version, we connect to Lsa only as an untrusted caller. We do not attempt to exploit Tcb privilege or adjust the current
         /// thread privilege to include Tcb.
         /// </remarks>
         public WindowsIdentity(string sUserPrincipalName)
             : base(null, null, null, ClaimTypes.Name, ClaimTypes.GroupSid)
         {
-            // Desktop compat: See comments below for why we don't validate sUserPrincipalName.
+            // .NET Framework compat: See comments below for why we don't validate sUserPrincipalName.
 
             using (SafeLsaHandle lsaHandle = ConnectToLsa())
             {
@@ -133,7 +133,7 @@ namespace System.Security.Principal
                 sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
                 Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
 
-                // Desktop compat: Desktop never null-checks sUserPrincipalName. Actual behavior is that the null makes it down to Encoding.Unicode.GetBytes() which then throws
+                // .NET Framework compat: Desktop never null-checks sUserPrincipalName. Actual behavior is that the null makes it down to Encoding.Unicode.GetBytes() which then throws
                 // the ArgumentNullException (provided that the prior LSA calls didn't fail first.) To make this compat decision explicit, we'll null check ourselves
                 // and simulate the exception from Encoding.Unicode.GetBytes().
                 if (sUserPrincipalName == null)
@@ -142,7 +142,7 @@ namespace System.Security.Principal
                 byte[] upnBytes = Encoding.Unicode.GetBytes(sUserPrincipalName);
                 if (upnBytes.Length > ushort.MaxValue)
                 {
-                    // Desktop compat: LSA only allocates 16 bits to hold the UPN size. We should throw an exception here but unfortunately, the desktop did an unchecked cast to ushort,
+                    // .NET Framework compat: LSA only allocates 16 bits to hold the UPN size. We should throw an exception here but unfortunately, the desktop did an unchecked cast to ushort,
                     // effectively truncating upnBytes to the first (N % 64K) bytes. We'll simulate the same behavior here (albeit in a way that makes it look less accidental.)
                     Array.Resize(ref upnBytes, upnBytes.Length & ushort.MaxValue);
                 }

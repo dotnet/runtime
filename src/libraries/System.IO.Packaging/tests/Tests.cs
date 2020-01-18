@@ -3776,7 +3776,7 @@ namespace System.IO.Packaging.Tests
                 const long SizeInMb = 6 * 1024; // 6GB
                 long totalLength = SizeInMb * buffer.Length;
 
-                // issue on desktop we cannot use FileAccess.Write on a ZipArchive
+                // issue on .NET Framework we cannot use FileAccess.Write on a ZipArchive
                 using (Package package = Package.Open(stream, FileMode.Create, PlatformDetection.IsFullFramework ? FileAccess.ReadWrite : FileAccess.Write))
                 {
                     PackagePart part = package.CreatePart(partUri,

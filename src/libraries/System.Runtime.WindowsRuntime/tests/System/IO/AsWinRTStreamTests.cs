@@ -65,7 +65,7 @@ namespace System.IO
         [Fact]
         public static void AsInputStream_RoundtripUnwrap()
         {
-            // NetFx Stream -> IInputStream -> NetFx Stream -> roundtrip reference equality is preserved
+            // .NET Framework Stream -> IInputStream -> .NET Framework Stream -> roundtrip reference equality is preserved
             Stream managedStream = TestStreamProvider.CreateReadOnlyStream();
             using (IInputStream ins = managedStream.AsInputStream())
             {
@@ -76,7 +76,7 @@ namespace System.IO
         [Fact]
         public static void AsOutputStream_RoundtripUnwrap()
         {
-            // NetFx Stream -> IOutputStream -> NetFx Stream -> roundtrip reference equality is preserved
+            // .NET Framework Stream -> IOutputStream -> .NET Framework Stream -> roundtrip reference equality is preserved
             Stream managedStream = TestStreamProvider.CreateWriteOnlyStream();
             using (IOutputStream outs = managedStream.AsOutputStream())
             {

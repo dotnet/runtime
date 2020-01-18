@@ -202,7 +202,7 @@ namespace System.Reflection.Internal
             //       (note no FromEncoding suffix), which defensively copies to a new byte array on every call -- defeating the entire purpose
             //       of this class!
             //
-            //       For this reason, desktop callers should not implement an interner that falls back to the unsafe string ctor but instead
+            //       For this reason, .NET Framework callers should not implement an interner that falls back to the unsafe string ctor but instead
             //       return null and let us find the best decoding approach for the current platform.
             //
             //       Yet another approach is to use new string('\0', GetCharCount) and use unsafe GetChars to fill it.

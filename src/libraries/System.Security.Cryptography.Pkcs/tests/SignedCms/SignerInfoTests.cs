@@ -594,7 +594,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, counterSigner.SignerIdentifier.Type);
 
-            // On NetFx there will be two attributes, because Windows emits the
+            // On .NET Framework there will be two attributes, because Windows emits the
             // content-type attribute even for counter-signers.
             int expectedAttrCount = 1;
             // One of them is a V3 signer.
@@ -642,7 +642,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(identifierType, counterSigner.SignerIdentifier.Type);
 
-            // On NetFx there will be two attributes, because Windows emits the
+            // On .NET Framework there will be two attributes, because Windows emits the
             // content-type attribute even for counter-signers.
             int expectedCount = 1;
 #if NETFRAMEWORK
@@ -731,7 +731,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(1, counterSigner.Version);
 
-            // On NetFx there will be two attributes, because Windows emits the
+            // On .NET Framework there will be two attributes, because Windows emits the
             // content-type attribute even for counter-signers.
             int expectedCount = 1;
 #if NETFRAMEWORK
@@ -799,7 +799,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             int expectedVersion = identifierType == SubjectIdentifierType.IssuerAndSerialNumber ? 1 : 3;
             Assert.Equal(expectedVersion, counterSigner.Version);
 
-            // On NetFx there will be two attributes, because Windows emits the
+            // On .NET Framework there will be two attributes, because Windows emits the
             // content-type attribute even for counter-signers.
             int expectedCount = 1;
 #if NETFRAMEWORK
