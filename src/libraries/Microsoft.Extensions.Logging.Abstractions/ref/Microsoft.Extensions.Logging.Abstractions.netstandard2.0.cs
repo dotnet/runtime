@@ -9,8 +9,8 @@ namespace Microsoft.Extensions.Logging
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public EventId(int id, string name = null) { throw null; }
-        public int Id { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public int Id { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public bool Equals(Microsoft.Extensions.Logging.EventId other) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
     public partial class NullLogger : Microsoft.Extensions.Logging.ILogger
     {
         internal NullLogger() { }
-        public static Microsoft.Extensions.Logging.Abstractions.NullLogger Instance { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static Microsoft.Extensions.Logging.Abstractions.NullLogger Instance { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public System.IDisposable BeginScope<TState>(TState state) { throw null; }
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception exception, System.Func<TState, System.Exception, string> formatter) { }
@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
     public partial class NullLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
     {
         internal NullLoggerProvider() { }
-        public static Microsoft.Extensions.Logging.Abstractions.NullLoggerProvider Instance { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static Microsoft.Extensions.Logging.Abstractions.NullLoggerProvider Instance { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) { throw null; }
         public void Dispose() { }
     }

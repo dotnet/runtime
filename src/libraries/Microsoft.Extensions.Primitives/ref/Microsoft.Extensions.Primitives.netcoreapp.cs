@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Primitives
     public partial class CancellationChangeToken : Microsoft.Extensions.Primitives.IChangeToken
     {
         public CancellationChangeToken(System.Threading.CancellationToken cancellationToken) { }
-        public bool ActiveChangeCallbacks { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool ActiveChangeCallbacks { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public bool HasChanged { get { throw null; } }
         public System.IDisposable RegisterChangeCallback(System.Action<object> callback, object state) { throw null; }
     }
@@ -18,8 +18,8 @@ namespace Microsoft.Extensions.Primitives
     public partial class CompositeChangeToken : Microsoft.Extensions.Primitives.IChangeToken
     {
         public CompositeChangeToken(System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.Primitives.IChangeToken> changeTokens) { }
-        public bool ActiveChangeCallbacks { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.Primitives.IChangeToken> ChangeTokens { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool ActiveChangeCallbacks { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.Primitives.IChangeToken> ChangeTokens { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public bool HasChanged { get { throw null; } }
         public System.IDisposable RegisterChangeCallback(System.Action<object> callback, object state) { throw null; }
     }
@@ -56,11 +56,11 @@ namespace Microsoft.Extensions.Primitives
         public static readonly Microsoft.Extensions.Primitives.StringSegment Empty;
         public StringSegment(string buffer) { throw null; }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]public StringSegment(string buffer, int offset, int length) { throw null; }
-        public string Buffer { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string Buffer { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public bool HasValue { get { throw null; } }
         public char this[int index] { get { throw null; } }
-        public int Length { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public int Offset { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public int Length { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public int Offset { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public string Value { get { throw null; } }
         public System.ReadOnlyMemory<char> AsMemory() { throw null; }
         public System.ReadOnlySpan<char> AsSpan() { throw null; }
@@ -100,8 +100,8 @@ namespace Microsoft.Extensions.Primitives
     public partial class StringSegmentComparer : System.Collections.Generic.IComparer<Microsoft.Extensions.Primitives.StringSegment>, System.Collections.Generic.IEqualityComparer<Microsoft.Extensions.Primitives.StringSegment>
     {
         internal StringSegmentComparer() { }
-        public static Microsoft.Extensions.Primitives.StringSegmentComparer Ordinal { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public static Microsoft.Extensions.Primitives.StringSegmentComparer OrdinalIgnoreCase { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static Microsoft.Extensions.Primitives.StringSegmentComparer Ordinal { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public static Microsoft.Extensions.Primitives.StringSegmentComparer OrdinalIgnoreCase { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public int Compare(Microsoft.Extensions.Primitives.StringSegment x, Microsoft.Extensions.Primitives.StringSegment y) { throw null; }
         public bool Equals(Microsoft.Extensions.Primitives.StringSegment x, Microsoft.Extensions.Primitives.StringSegment y) { throw null; }
         public int GetHashCode(Microsoft.Extensions.Primitives.StringSegment obj) { throw null; }
@@ -110,6 +110,7 @@ namespace Microsoft.Extensions.Primitives
     public readonly partial struct StringTokenizer : System.Collections.Generic.IEnumerable<Microsoft.Extensions.Primitives.StringSegment>, System.Collections.IEnumerable
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public StringTokenizer(Microsoft.Extensions.Primitives.StringSegment value, char[] separators) { throw null; }
         public StringTokenizer(string value, char[] separators) { throw null; }
         public Microsoft.Extensions.Primitives.StringTokenizer.Enumerator GetEnumerator() { throw null; }
@@ -121,7 +122,7 @@ namespace Microsoft.Extensions.Primitives
             private object _dummy;
             private int _dummyPrimitive;
             public Enumerator(ref Microsoft.Extensions.Primitives.StringTokenizer tokenizer) { throw null; }
-            public Microsoft.Extensions.Primitives.StringSegment Current { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+            public Microsoft.Extensions.Primitives.StringSegment Current { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
             public bool MoveNext() { throw null; }
@@ -132,6 +133,7 @@ namespace Microsoft.Extensions.Primitives
     public readonly partial struct StringValues : System.Collections.Generic.ICollection<string>, System.Collections.Generic.IEnumerable<string>, System.Collections.Generic.IList<string>, System.Collections.Generic.IReadOnlyCollection<string>, System.Collections.Generic.IReadOnlyList<string>, System.Collections.IEnumerable, System.IEquatable<Microsoft.Extensions.Primitives.StringValues>, System.IEquatable<string>, System.IEquatable<string[]>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public static readonly Microsoft.Extensions.Primitives.StringValues Empty;
         public StringValues(string value) { throw null; }
         public StringValues(string[] values) { throw null; }
