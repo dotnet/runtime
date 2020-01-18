@@ -4,11 +4,10 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Text.Json.Tests
+namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ReferenceHandlingTests
     {
@@ -102,8 +101,7 @@ namespace System.Text.Json.Tests
             Assert.Same(employee.Subordinates, employee.Subordinates[0].Subordinates);
         }
 
-        [Fact] //Employee Dictionary as a property and then use reference to itself on nested Employee.MissingMethodException: Method not found: 'Void System.Text.Json.JsonSerializerOptions.set_ReferenceHandling(System.Text.Json.ReferenceHandling)'.
-
+        [Fact]
         public static void ObjectWithDictionaryReferenceDeeper()
         {
             string json =
@@ -424,7 +422,6 @@ namespace System.Text.Json.Tests
             Assert.NotNull(angela);
             Assert.NotNull(angela.Subordinates);
             Assert.Equal(0, angela.Subordinates.Count);
-
         }
 
         [Fact]
@@ -462,7 +459,6 @@ namespace System.Text.Json.Tests
             Assert.Same(employees[0], employees[2]);
             Assert.Same(employees[1], employees[3]);
             Assert.Same(employees[4], employees[5]);
-
         }
 
         [Fact]
@@ -634,7 +630,7 @@ namespace System.Text.Json.Tests
 
         //NOTE: If you implement a converter, you are on your own when handling metadata properties and therefore references.Newtonsoft does the same.
         //However; is there a way to recall preserved references previously found in the payload and to store new ones found in the converter's payload? that would be a cool enhancement.
-        private class ListOfEmployeeConverter : Serialization.JsonConverter<List<Employee>>
+        private class ListOfEmployeeConverter : JsonConverter<List<Employee>>
         {
             public override List<Employee> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
@@ -782,7 +778,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void JsonPathImcompleteMetadataAfterProperty()
+        public static void JsonPathIncompleteMetadataAfterProperty()
         {
             string json =
             @"{
@@ -847,7 +843,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void JsonPathImcompleteArrayId()
+        public static void JsonPathIncompleteArrayId()
         {
             string json =
             @"{
@@ -858,7 +854,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void JsonPathImcompleteArrayValues()
+        public static void JsonPathIncompleteArrayValues()
         {
             string json =
             @"{
@@ -1024,7 +1020,7 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [ActiveIssue("TODO")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1902")]
         [InlineData(@"{""$id"": {}}", "$.$id")]
         [InlineData(@"{""$id"": }", "$.$id")]
         [InlineData(@"{""$id"": []}", "$.$id")]
@@ -1349,7 +1345,7 @@ namespace System.Text.Json.Tests
         #region JSON Objects if not collection
         private class EmployeeExtensionData : Employee
         {
-            [Serialization.JsonExtensionData]
+            [JsonExtensionData]
             [Newtonsoft.Json.JsonExtensionData]
             public IDictionary<string, object> ExtensionData { get; set; }
         }

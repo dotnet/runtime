@@ -4,11 +4,10 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace System.Text.Json.Tests
+namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ReferenceHandlingTests
     {
@@ -120,7 +119,7 @@ namespace System.Text.Json.Tests
         {
             public string Hello { get; set; }
 
-            [Serialization.JsonExtensionData]
+            [JsonExtensionData]
             public Dictionary<string, object> ExtensionData { get; set; }
         }
 

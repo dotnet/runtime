@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Text.Encodings.Web;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Tests;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace System.Text.Json.Tests
+namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ReferenceHandlingTests
     {

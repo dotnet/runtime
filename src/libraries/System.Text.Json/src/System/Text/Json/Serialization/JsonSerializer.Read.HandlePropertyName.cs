@@ -202,18 +202,11 @@ namespace System.Text.Json
             }
             else if (metadata == MetadataPropertyName.Values)
             {
-                // TODO: Hook up JsonPropertyInfoAsString
-                // to print $values on the JSON Path in case of failure deeper on the object graph.
                 JsonPropertyInfo info = GetValuesPropertyInfoFromJsonPreservableArrayRef(ref state.Current);
-
-                if (info.JsonPropertyName == null)
-                {
-                    info.JsonPropertyName = ReadStack.s_valuesMetadataPropertyName;
-                }
-
+                state.Current.JsonPropertyName = ReadStack.s_valuesMetadataPropertyName;
                 state.Current.JsonPropertyInfo = info;
 
-                // Throw after setting JsonPropertyInfo to show the correct JSON Path.
+                // Throw after setting JsonPropertyName to show the correct JSON Path.
                 if (state.Current.LastSeenMetadataProperty != MetadataPropertyName.Id)
                 {
                     ThrowHelper.ThrowJsonException_MetadataMissingIdBeforeValues();
