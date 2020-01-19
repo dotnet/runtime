@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-
 namespace System.Text.RegularExpressions
 {
     // Callback class
@@ -40,8 +36,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, string replacement)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Replace(input, replacement, -1, UseOptionR() ? input.Length : 0);
         }
@@ -53,8 +51,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, string replacement, int count)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Replace(input, replacement, count, UseOptionR() ? input.Length : 0);
         }
@@ -66,16 +66,21 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, string replacement, int count, int startat)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
-            if (replacement == null)
-                throw new ArgumentNullException(nameof(replacement));
+            if (replacement is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.replacement);
+            }
 
-            // Gets the weakly cached replacement helper or creates one if there isn't one already.
-            RegexReplacement repl = RegexReplacement.GetOrCreate(_replref!, replacement, caps!, capsize, capnames!, roptions);
-
-            return repl.Replace(this, input, count, startat);
+            // Gets the weakly cached replacement helper or creates one if there isn't one already,
+            // then uses it to perform the replace.
+            return
+                RegexReplacement.GetOrCreate(_replref!, replacement, caps!, capsize, capnames!, roptions).
+                Replace(this, input, count, startat);
         }
 
         /// <summary>
@@ -101,8 +106,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, MatchEvaluator evaluator)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Replace(input, evaluator, -1, UseOptionR() ? input.Length : 0);
         }
@@ -113,8 +120,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, MatchEvaluator evaluator, int count)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Replace(input, evaluator, count, UseOptionR() ? input.Length : 0);
         }
@@ -126,8 +135,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, MatchEvaluator evaluator, int count, int startat)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Replace(evaluator, this, input, count, startat);
         }
@@ -143,79 +154,96 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private static string Replace(MatchEvaluator evaluator, Regex regex, string input, int count, int startat)
         {
-            if (evaluator == null)
-                throw new ArgumentNullException(nameof(evaluator));
+            if (evaluator is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.evaluator);
+            }
             if (count < -1)
+            {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
+            }
             if (startat < 0 || startat > input.Length)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
+            }
 
             if (count == 0)
+            {
                 return input;
+            }
 
             Match match = regex.Match(input, startat);
-
             if (!match.Success)
             {
                 return input;
             }
+
+            var vsb = new ValueStringBuilder(stackalloc char[ReplaceBufferSize]);
+
+            if (!regex.RightToLeft)
+            {
+                int prevat = 0;
+
+                do
+                {
+                    if (match.Index != prevat)
+                    {
+                        vsb.Append(input.AsSpan(prevat, match.Index - prevat));
+                    }
+
+                    prevat = match.Index + match.Length;
+                    vsb.Append(evaluator(match));
+
+                    if (--count == 0)
+                    {
+                        break;
+                    }
+
+                    match = match.NextMatch();
+                }
+                while (match.Success);
+
+                if (prevat < input.Length)
+                {
+                    vsb.Append(input.AsSpan(prevat, input.Length - prevat));
+                }
+            }
             else
             {
-                var vsb = new ValueStringBuilder(stackalloc char[ReplaceBufferSize]);
+                // In right to left mode append all the inputs in reversed order to avoid an extra dynamic data structure
+                // and to be able to work with Spans. A final reverse of the transformed reversed input string generates
+                // the desired output. Similar to Tower of Hanoi.
 
-                if (!regex.RightToLeft)
+                int prevat = input.Length;
+
+                do
                 {
-                    int prevat = 0;
-
-                    do
+                    if (match.Index + match.Length != prevat)
                     {
-                        if (match.Index != prevat)
-                            vsb.Append(input.AsSpan(prevat, match.Index - prevat));
+                        vsb.AppendReversed(input.AsSpan(match.Index + match.Length, prevat - match.Index - match.Length));
+                    }
 
-                        prevat = match.Index + match.Length;
-                        string result = evaluator(match);
-                        if (!string.IsNullOrEmpty(result))
-                            vsb.Append(result);
+                    prevat = match.Index;
+                    vsb.AppendReversed(evaluator(match));
 
-                        if (--count == 0)
-                            break;
+                    if (--count == 0)
+                    {
+                        break;
+                    }
 
-                        match = match.NextMatch();
-                    } while (match.Success);
-
-                    if (prevat < input.Length)
-                        vsb.Append(input.AsSpan(prevat, input.Length - prevat));
+                    match = match.NextMatch();
                 }
-                else
+                while (match.Success);
+
+                if (prevat > 0)
                 {
-                    // In right to left mode append all the inputs in reversed order to avoid an extra dynamic data structure
-                    // and to be able to work with Spans. A final reverse of the transformed reversed input string generates
-                    // the desired output. Similar to Tower of Hanoi.
-
-                    int prevat = input.Length;
-
-                    do
-                    {
-                        if (match.Index + match.Length != prevat)
-                            vsb.AppendReversed(input.AsSpan(match.Index + match.Length, prevat - match.Index - match.Length));
-
-                        prevat = match.Index;
-                        vsb.AppendReversed(evaluator(match));
-
-                        if (--count == 0)
-                            break;
-
-                        match = match.NextMatch();
-                    } while (match.Success);
-
-                    if (prevat > 0)
-                        vsb.AppendReversed(input.AsSpan(0, prevat));
-
-                    vsb.Reverse();
+                    vsb.AppendReversed(input.AsSpan(0, prevat));
                 }
 
-                return vsb.ToString();
+                vsb.Reverse();
             }
+
+            return vsb.ToString();
         }
     }
 }

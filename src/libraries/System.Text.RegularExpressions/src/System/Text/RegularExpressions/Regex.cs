@@ -130,28 +130,21 @@ namespace System.Text.RegularExpressions
         {
             if (pattern is null)
             {
-                throw new ArgumentNullException(nameof(pattern));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pattern);
             }
         }
 
         internal static void ValidateOptions(RegexOptions options)
         {
-            if (options < RegexOptions.None || (((int)options) >> MaxOptionShift) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options));
-            }
-
-            if ((options & RegexOptions.ECMAScript) != 0 &&
-                (options & ~(RegexOptions.ECMAScript |
-                             RegexOptions.IgnoreCase |
-                             RegexOptions.Multiline |
-                             RegexOptions.Compiled |
+            if (((((uint)options) >> MaxOptionShift) != 0) ||
+                ((options & RegexOptions.ECMAScript) != 0 &&
+                 (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled |
 #if DEBUG
                              RegexOptions.Debug |
 #endif
-                             RegexOptions.CultureInvariant)) != 0)
+                             RegexOptions.CultureInvariant)) != 0))
             {
-                throw new ArgumentOutOfRangeException(nameof(options));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.options);
             }
         }
 
@@ -160,18 +153,15 @@ namespace System.Text.RegularExpressions
         /// The valid range is <code>TimeSpan.Zero &lt; matchTimeout &lt;= Regex.MaximumMatchTimeout</code>.
         /// </summary>
         /// <param name="matchTimeout">The timeout value to validate.</param>
-        /// <exception cref="ArgumentOutOfRangeException">If the specified timeout is not within a valid range.
-        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">If the specified timeout is not within a valid range.</exception>
         protected internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
         {
-            if (InfiniteMatchTimeout == matchTimeout)
-                return;
-
             // make sure timeout is not longer then Environment.Ticks cycle length:
-            if (TimeSpan.Zero < matchTimeout && matchTimeout <= s_maximumMatchTimeout)
-                return;
-
-            throw new ArgumentOutOfRangeException(nameof(matchTimeout));
+            long matchTimeoutTicks = matchTimeout.Ticks;
+            if (matchTimeoutTicks != InfiniteMatchTimeoutTicks && (matchTimeoutTicks <= 0 || matchTimeoutTicks > MaximumMatchTimeoutTicks))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.matchTimeout);
+            }
         }
 
         protected Regex(SerializationInfo info, StreamingContext context) =>
@@ -186,8 +176,10 @@ namespace System.Text.RegularExpressions
             get => caps;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                if (value is null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+                }
 
                 caps = value as Hashtable ?? new Hashtable(value);
             }
@@ -199,8 +191,10 @@ namespace System.Text.RegularExpressions
             get => capnames;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                if (value is null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+                }
 
                 capnames = value as Hashtable ?? new Hashtable(value);
             }
@@ -227,12 +221,12 @@ namespace System.Text.RegularExpressions
         {
             if (assemblyname is null)
             {
-                throw new ArgumentNullException(nameof(assemblyname));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.assemblyname);
             }
 
             if (regexinfos is null)
             {
-                throw new ArgumentNullException(nameof(regexinfos));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.regexinfos);
             }
 
 #if DEBUG // until it can be fully implemented
@@ -253,8 +247,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static string Escape(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            if (str is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.str);
+            }
 
             return RegexParser.Escape(str);
         }
@@ -264,8 +260,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static string Unescape(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            if (str is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.str);
+            }
 
             return RegexParser.Unescape(str);
         }
@@ -299,7 +297,7 @@ namespace System.Text.RegularExpressions
         {
             string[] result;
 
-            if (capslist == null)
+            if (capslist is null)
             {
                 result = new string[capsize];
                 for (int i = 0; i < result.Length; i++)
@@ -328,7 +326,7 @@ namespace System.Text.RegularExpressions
         {
             int[] result;
 
-            if (caps == null)
+            if (caps is null)
             {
                 int max = capsize;
                 result = new int[max];
@@ -365,7 +363,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string GroupNameFromNumber(int i)
         {
-            if (capslist == null)
+            if (capslist is null)
             {
                 if (i >= 0 && i < capsize)
                     return i.ToString();
@@ -399,8 +397,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public int GroupNumberFromName(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            if (name is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.name);
+            }
 
             int result;
 
@@ -442,10 +442,10 @@ namespace System.Text.RegularExpressions
         /// <returns></returns>
         internal Match? Run(bool quick, int prevlen, string input, int beginning, int length, int startat)
         {
-            if (startat < 0 || startat > input.Length)
+            if ((uint)startat > (uint)input.Length)
                 throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
 
-            if (length < 0 || length > input.Length)
+            if ((uint)length > (uint)input.Length)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
 
             RegexRunner runner =

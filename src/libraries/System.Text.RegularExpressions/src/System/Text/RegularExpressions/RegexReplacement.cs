@@ -31,7 +31,9 @@ namespace System.Text.RegularExpressions
         public RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
         {
             if (concat.Type != RegexNode.Concatenate)
+            {
                 throw new ArgumentException(SR.ReplacementError);
+            }
 
             Span<char> vsbStack = stackalloc char[256];
             var vsb = new ValueStringBuilder(vsbStack);
@@ -62,7 +64,9 @@ namespace System.Text.RegularExpressions
                         int slot = child.M;
 
                         if (_caps != null && slot >= 0)
+                        {
                             slot = (int)_caps[slot]!;
+                        }
 
                         rules.Add(-Specials - 1 - slot);
                         break;
@@ -101,9 +105,7 @@ namespace System.Text.RegularExpressions
             return repl;
         }
 
-        /// <summary>
-        /// The original pattern string
-        /// </summary>
+        /// <summary>The original pattern string</summary>
         public string Pattern { get; }
 
         /// <summary>
@@ -115,14 +117,21 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < _rules.Count; i++)
             {
                 int r = _rules[i];
-                if (r >= 0)   // string lookup
+                if (r >= 0)
+                {
+                    // string lookup
                     vsb.Append(_strings[r]);
-                else if (r < -Specials) // group lookup
+                }
+                else if (r < -Specials)
+                {
+                    // group lookup
                     vsb.Append(match.GroupToStringImpl(-Specials - 1 - r));
+                }
                 else
                 {
+                    // special insertion patterns
                     switch (-Specials - 1 - r)
-                    { // special insertion patterns
+                    {
                         case LeftPortion:
                             vsb.Append(match.GetLeftSubstring());
                             break;
@@ -149,10 +158,16 @@ namespace System.Text.RegularExpressions
             for (int i = _rules.Count - 1; i >= 0; i--)
             {
                 int r = _rules[i];
-                if (r >= 0)  // string lookup
+                if (r >= 0)
+                {
+                    // string lookup
                     vsb.AppendReversed(_strings[r]);
-                else if (r < -Specials) // group lookup
+                }
+                else if (r < -Specials)
+                {
+                    // group lookup
                     vsb.AppendReversed(match.GroupToStringImpl(-Specials - 1 - r));
+                }
                 else
                 {
                     switch (-Specials - 1 - r)
@@ -174,9 +189,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        // Three very similar algorithms appear below: replace (pattern),
-        // replace (evaluator), and split.
-
         /// <summary>
         /// Replaces all occurrences of the regex in the string with the
         /// replacement pattern.
@@ -189,71 +201,88 @@ namespace System.Text.RegularExpressions
         public string Replace(Regex regex, string input, int count, int startat)
         {
             if (count < -1)
+            {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
+            }
             if (startat < 0 || startat > input.Length)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
+            }
 
             if (count == 0)
+            {
                 return input;
+            }
 
             Match match = regex.Match(input, startat);
             if (!match.Success)
             {
                 return input;
             }
+
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+
+            if (!regex.RightToLeft)
+            {
+                int prevat = 0;
+
+                do
+                {
+                    if (match.Index != prevat)
+                    {
+                        vsb.Append(input.AsSpan(prevat, match.Index - prevat));
+                    }
+
+                    prevat = match.Index + match.Length;
+                    ReplacementImpl(ref vsb, match);
+                    if (--count == 0)
+                    {
+                        break;
+                    }
+
+                    match = match.NextMatch();
+                }
+                while (match.Success);
+
+                if (prevat < input.Length)
+                {
+                    vsb.Append(input.AsSpan(prevat, input.Length - prevat));
+                }
+            }
             else
             {
-                var vsb = new ValueStringBuilder(stackalloc char[256]);
+                // In right to left mode append all the inputs in reversed order to avoid an extra dynamic data structure
+                // and to be able to work with Spans. A final reverse of the transformed reversed input string generates
+                // the desired output. Similar to Tower of Hanoi.
 
-                if (!regex.RightToLeft)
+                int prevat = input.Length;
+
+                do
                 {
-                    int prevat = 0;
-
-                    do
+                    if (match.Index + match.Length != prevat)
                     {
-                        if (match.Index != prevat)
-                            vsb.Append(input.AsSpan(prevat, match.Index - prevat));
+                        vsb.AppendReversed(input.AsSpan(match.Index + match.Length, prevat - match.Index - match.Length));
+                    }
 
-                        prevat = match.Index + match.Length;
-                        ReplacementImpl(ref vsb, match);
-                        if (--count == 0)
-                            break;
+                    prevat = match.Index;
+                    ReplacementImplRTL(ref vsb, match);
+                    if (--count == 0)
+                    {
+                        break;
+                    }
 
-                        match = match.NextMatch();
-                    } while (match.Success);
+                    match = match.NextMatch();
+                } while (match.Success);
 
-                    if (prevat < input.Length)
-                        vsb.Append(input.AsSpan(prevat, input.Length - prevat));
-                }
-                else
+                if (prevat > 0)
                 {
-                    // In right to left mode append all the inputs in reversed order to avoid an extra dynamic data structure
-                    // and to be able to work with Spans. A final reverse of the transformed reversed input string generates
-                    // the desired output. Similar to Tower of Hanoi.
-
-                    int prevat = input.Length;
-
-                    do
-                    {
-                        if (match.Index + match.Length != prevat)
-                            vsb.AppendReversed(input.AsSpan(match.Index + match.Length, prevat - match.Index - match.Length));
-
-                        prevat = match.Index;
-                        ReplacementImplRTL(ref vsb, match);
-                        if (--count == 0)
-                            break;
-
-                        match = match.NextMatch();
-                    } while (match.Success);
-
-                    if (prevat > 0)
-                        vsb.AppendReversed(input.AsSpan(0, prevat));
-
-                    vsb.Reverse();
+                    vsb.AppendReversed(input.AsSpan(0, prevat));
                 }
 
-                return vsb.ToString();
+                vsb.Reverse();
             }
+
+            return vsb.ToString();
         }
     }
 }
