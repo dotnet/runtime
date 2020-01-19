@@ -19,12 +19,12 @@ Before proceeding further, please click on the link above that matches your mach
 The runtime repo can be built from a regular, non-administrator command prompt, from the root of the repo, as follows:
 
 For Linux and macOS
-```
+```bash
 ./build.sh
 ```
 
 For Windows:
-```
+```bat
 build.cmd
 ```
 

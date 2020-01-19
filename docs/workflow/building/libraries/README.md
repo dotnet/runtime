@@ -4,7 +4,7 @@
 
 Here is one example of a daily workflow for a developer working mainly on the libraries, in this case using Windows:
 
-```
+```bat
 :: From root:
 git clean -xdf
 git pull upstream master & git push origin master
@@ -31,7 +31,7 @@ pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 
 The instructions for Linux and macOS are essentially the same:
 
-```
+```bash
 # From root:
 git clean -xdf
 git pull upstream master & git push origin master
@@ -62,13 +62,13 @@ This document explains how to work on libraries. In order to work on library pro
 These example commands will build a release version of CoreCLR (and CoreLib) and debug version of Libraries:
 
 For Linux and macOS:
-```
+```bash
 src/coreclr/build.sh -release -skiptests
 ./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release
 ```
 
 For Windows:
-```
+```bat
 src\coreclr\build.cmd -release -skiptests
 build.cmd -subsetCategory libraries /p:CoreCLRConfiguration=Release
 ```
@@ -96,28 +96,28 @@ By default build only builds the product libraries and none of the tests. If you
 
 **Examples**
 - Building in release mode for platform x64 (restore and build are implicit here as no actions are passed in)
-```
+```bash
 ./build.sh -subsetCategory libraries -c Release -arch x64
 ```
 
 - Building the src assemblies and build and run tests (running all tests takes a considerable amount of time!)
-```
+```bash
 ./build.sh -subsetCategory libraries -restore -build -buildtests -test
 ```
 
 - Building for different target frameworks (restore and build are implicit again as no action is passed in)
-```
+```bash
 ./build.sh -subsetCategory libraries -framework netcoreapp
 ./build.sh -subsetCategory libraries -framework netfx
 ```
 
 - Build only managed components and skip the native build
-```
+```bash
 ./build.sh -subsetCategory libraries /p:BuildNative=false
 ```
 
 - Clean the entire solution
-```
+```bash
 ./build.sh -subsetCategory libraries -clean
 ```
 
@@ -130,12 +130,12 @@ The libraries build contains some native code. This includes shims over libc, op
 **Examples**
 
 - Building in debug mode for platform x64
-```
+```bash
 ./src/libraries/Native/build-native.sh debug x64
 ```
 
 - The following example shows how you would do an arm cross-compile build.
-```
+```bash
 ./src/libraries/Native/build-native.sh debug arm cross verbose
 ```
 
@@ -149,17 +149,17 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 
 - Build all projects for a given library (e.g.: System.Collections) including running the tests
 
-```
+```bash
  ./build.sh -subsetCategory libraries src/libraries/System.Collections
 ```
 
 - Build just the tests for a library project.
-```
+```bash
  ./build.sh -subsetCategory libraries src/libraries/System.Collections/tests
 ```
 
 - All the options listed above like framework and configuration are also supported (note they must be after the directory)
-```
+```bash
  ./build.sh -subsetCategory libraries System.Collections -f netfx -c Release
 ```
 
