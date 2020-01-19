@@ -1284,6 +1284,7 @@ void HelperCallProperties::init()
 
             // type casting helpers
             case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+            case CORINFO_HELP_ISINSTANCEOFARRAY:
             case CORINFO_HELP_ISINSTANCEOFCLASS:
             case CORINFO_HELP_ISINSTANCEOFANY:
             case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
@@ -1302,6 +1303,7 @@ void HelperCallProperties::init()
 
             // type casting helpers that throw
             case CORINFO_HELP_CHKCASTINTERFACE:
+            case CORINFO_HELP_CHKCASTARRAY:
             case CORINFO_HELP_CHKCASTCLASS:
             case CORINFO_HELP_CHKCASTANY:
             case CORINFO_HELP_CHKCASTCLASS_SPECIAL:

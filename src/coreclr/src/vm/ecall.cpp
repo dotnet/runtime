@@ -152,9 +152,11 @@ void ECall::PopulateManagedCastHelpers()
     MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_ISINSTANCEOFANY));
     PCODE pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
+    // array cast uses the "ANY" helper
+    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFARRAY, pDest);
 
 #ifdef FEATURE_PREJIT
-    // When interface table uses indirect references, just set interface casts to "ANY" handler
+    // When interface table uses indirect references, just set interface casts to "ANY" helper
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
 #else
     pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_ISINSTANCEOFINTERFACE));
@@ -169,6 +171,8 @@ void ECall::PopulateManagedCastHelpers()
     pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTANY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
+    // array cast uses the "ANY" helper
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTARRAY, pDest);
 
 #ifdef FEATURE_PREJIT
     // When interface table uses indirect references, just set interface casts to "ANY" handler
