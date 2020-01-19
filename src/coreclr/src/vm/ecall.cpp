@@ -149,7 +149,7 @@ void ECall::PopulateManagedCastHelpers()
 
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_ISINSTANCEOFANY));
+    MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
     PCODE pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
     // array cast uses the "ANY" helper
@@ -159,16 +159,16 @@ void ECall::PopulateManagedCastHelpers()
     // When interface table uses indirect references, just set interface casts to "ANY" helper
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
 #else
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_ISINSTANCEOFINTERFACE));
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
 #endif
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_ISINSTANCEOFCLASS));
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFCLASS, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTANY));
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
     // array cast uses the "ANY" helper
@@ -178,16 +178,16 @@ void ECall::PopulateManagedCastHelpers()
     // When interface table uses indirect references, just set interface casts to "ANY" handler
     SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
 #else
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTINTERFACE));
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
 #endif
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTCLASS));
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS, pDest);
 
-    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__JIT_CHKCASTCLASSSPECIAL));
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASSSPECIAL));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
 

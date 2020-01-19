@@ -160,10 +160,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object JITutil_IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
+        private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object JITutil_ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj);
+        private static extern object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
@@ -172,7 +172,7 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static object? JIT_IsInstanceOfAny(void* toTypeHnd, object? obj)
+        private static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
             if (obj != null)
             {
@@ -199,14 +199,14 @@ namespace System.Runtime.CompilerServices
 
         slowPath:
             // fall through to the slow helper
-            return JITutil_IsInstanceOfAny_NoCacheLookup(toTypeHnd, obj);
+            return IsInstanceOfAny_NoCacheLookup(toTypeHnd, obj);
         }
 
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static object? JIT_IsInstanceOfInterface(void* toTypeHnd, object? obj)
+        private static object? IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
             if (obj != null)
             {
@@ -250,7 +250,7 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static object? JIT_IsInstanceOfClass(void* toTypeHnd, object? obj)
+        private static object? IsInstanceOfClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
                 return obj;
@@ -319,7 +319,7 @@ namespace System.Runtime.CompilerServices
             }
 
             // fall through to the slow helper
-            return JITutil_IsInstanceOfAny_NoCacheLookup(toTypeHnd, obj);
+            return IsInstanceOfAny_NoCacheLookup(toTypeHnd, obj);
         }
 
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
@@ -328,7 +328,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        private static object? JIT_ChkCastAny(void* toTypeHnd, object? obj)
+        private static object? ChkCastAny(void* toTypeHnd, object? obj)
         {
             CastResult result;
 
@@ -349,7 +349,7 @@ namespace System.Runtime.CompilerServices
 
         slowPath:
             // fall through to the slow helper
-            object objRet = JITutil_ChkCastAny_NoCacheLookup(toTypeHnd, obj);
+            object objRet = ChkCastAny_NoCacheLookup(toTypeHnd, obj);
             // Make sure that the fast helper have not lied
             Debug.Assert(result != CastResult.CannotCast);
             return objRet;
@@ -368,14 +368,14 @@ namespace System.Runtime.CompilerServices
             }
 
             // fall through to the slow helper
-            return JITutil_ChkCastAny_NoCacheLookup(toTypeHnd, obj);
+            return ChkCastAny_NoCacheLookup(toTypeHnd, obj);
         }
 
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static object? JIT_ChkCastInterface(void* toTypeHnd, object? obj)
+        private static object? ChkCastInterface(void* toTypeHnd, object? obj)
         {
             if (obj != null)
             {
@@ -414,21 +414,21 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static object? JIT_ChkCastClass(void* toTypeHnd, object? obj)
+        private static object? ChkCastClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
             {
                 return obj;
             }
 
-            return JIT_ChkCastClassSpecial(toTypeHnd, obj);
+            return ChkCastClassSpecial(toTypeHnd, obj);
         }
 
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static object? JIT_ChkCastClassSpecial(void* toTypeHnd, object obj)
+        private static object? ChkCastClassSpecial(void* toTypeHnd, object obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
             Debug.Assert(mt != toTypeHnd, "The check for the trivial cases should be inlined by the JIT");

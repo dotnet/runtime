@@ -715,8 +715,8 @@ FCFuncStart(gClrConfig)
 FCFuncEnd()
 
 FCFuncStart(gCastHelpers)
-    FCFuncElement("JITutil_IsInstanceOfAny_NoCacheLookup", ::JITutil_IsInstanceOfAny_NoCacheLookup)
-    FCFuncElement("JITutil_ChkCastAny_NoCacheLookup", ::JITutil_ChkCastAny_NoCacheLookup)
+    FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
+    FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
 FCFuncEnd()
 
 FCFuncStart(gArrayFuncs)

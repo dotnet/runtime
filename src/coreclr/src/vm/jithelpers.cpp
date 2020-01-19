@@ -2188,7 +2188,7 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-NOINLINE HCIMPL2(Object*, JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
+NOINLINE HCIMPL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -2211,7 +2211,7 @@ NOINLINE HCIMPL2(Object*, JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE
 }
 HCIMPLEND
 
-NOINLINE HCIMPL2(Object*, JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
+NOINLINE HCIMPL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
