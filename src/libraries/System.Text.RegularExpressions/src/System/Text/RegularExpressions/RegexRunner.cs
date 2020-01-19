@@ -63,7 +63,6 @@ namespace System.Text.RegularExpressions
         private bool _ignoreTimeout;
         private int _timeoutOccursAt;
 
-
         // We have determined this value in a series of experiments where x86 retail
         // builds (ono-lab-optimized) were run on different pattern/input pairs. Larger values
         // of TimeoutCheckFrequency did not tend to increase performance; smaller values
@@ -85,49 +84,57 @@ namespace System.Text.RegularExpressions
         /// and we could use a separate method Skip() that will quickly scan past
         /// any characters that we know can't match.
         /// </summary>
-        protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick)
-        {
-            return Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
-        }
+        protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
+            Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
-            int bump;
-            int stoppos;
-            bool initted = false;
-
-            // We need to re-validate timeout here because Scan is historically protected and
-            // thus there is a possibility it is called from user code:
-            Regex.ValidateMatchTimeout(timeout);
-
-            _ignoreTimeout = (Regex.InfiniteMatchTimeout == timeout);
-            _timeout = _ignoreTimeout
-                                    ? (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
-                                    : (int)(timeout.TotalMilliseconds + 0.5); // Round
-
+            // Store arguments into fields for derived runner to examine
             runregex = regex;
             runtext = text;
             runtextbeg = textbeg;
             runtextend = textend;
-            runtextstart = textstart;
+            runtextpos = runtextstart = textstart;
 
-            bump = runregex.RightToLeft ? -1 : 1;
-            stoppos = runregex.RightToLeft ? runtextbeg : runtextend;
+            // Handle timeout argument
+            _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
+            bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
+            if (!ignoreTimeout)
+            {
+                // We are using Environment.TickCount and not Timewatch for performance reasons.
+                // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
+                // overflow it will still stay ahead of Environment.TickCount for comparisons made
+                // in DoCheckTimeout().
+                Regex.ValidateMatchTimeout(timeout); // validate timeout as this could be called from user code due to being protected
+                _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
+                _timeoutOccursAt = Environment.TickCount + _timeout;
+                _timeoutChecksToSkip = TimeoutCheckFrequency;
+            }
 
-            runtextpos = textstart;
+            // Configure the additional value to "bump" the position along each time we loop around
+            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+            // bump by 1 and stop at runtextend, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at runtextbeg.
+            int bump = 1, stoppos = runtextend;
+            if (runregex.RightToLeft)
+            {
+                bump = -1;
+                stoppos = runtextbeg;
+            }
 
-            // If previous match was empty or failed, advance by one before matching
-
+            // If previous match was empty or failed, advance by one before matching.
             if (prevlen == 0)
             {
                 if (runtextpos == stoppos)
+                {
                     return Match.Empty;
+                }
 
                 runtextpos += bump;
             }
 
-            StartTimeoutWatch();
-
+            // Main loop: FindFirstChar/Go + bump until the ending position.
+            bool initialized = false;
             while (true)
             {
 #if DEBUG
@@ -138,14 +145,20 @@ namespace System.Text.RegularExpressions
                     Debug.WriteLine("Firstchar search starting at " + runtextpos.ToString(CultureInfo.InvariantCulture) + " stopping at " + stoppos.ToString(CultureInfo.InvariantCulture));
                 }
 #endif
+                // Find the next potential location for a match in the input.
                 if (FindFirstChar())
                 {
-                    CheckTimeout();
-
-                    if (!initted)
+                    if (!ignoreTimeout)
                     {
-                        InitMatch();
-                        initted = true;
+                        DoCheckTimeout();
+                    }
+
+                    // Ensure that the runner is initialized.  This includes initializing all of the state in the runner
+                    // that Go might use, such as the backtracking stack, as well as a Match object for it to populate.
+                    if (!initialized)
+                    {
+                        InitializeForGo();
+                        initialized = true;
                     }
 #if DEBUG
                     if (runregex.Debug)
@@ -154,49 +167,39 @@ namespace System.Text.RegularExpressions
                         Debug.WriteLine("");
                     }
 #endif
+                    // See if there's a match at this position.
                     Go();
 
-                    if (runmatch!._matchcount[0] > 0)
+                    // If we got a match, we're done.
+                    Match match = runmatch!;
+                    if (match._matchcount[0] > 0)
                     {
-                        // We'll return a match even if it touches a previous empty match
-                        return TidyMatch(quick);
+                        if (quick)
+                        {
+                            return null;
+                        }
+
+                        // Return the match in its canonical form.
+                        runmatch = null;
+                        match.Tidy(runtextpos);
+                        return match;
                     }
 
-                    // reset state for another go
+                    // Reset state for another iteration.
                     runtrackpos = runtrack!.Length;
                     runstackpos = runstack!.Length;
                     runcrawlpos = runcrawl!.Length;
                 }
 
-                // failure!
-
+                // We failed to match at this position.  If we're at the stopping point, we're done.
                 if (runtextpos == stoppos)
                 {
-                    TidyMatch(true);
                     return Match.Empty;
                 }
 
-                // Recognize leading []* and various anchors, and bump on failure accordingly
-
-                // Bump by one and start again
-
+                // Bump by one (in whichever direction is appropriate) and loop to go again.
                 runtextpos += bump;
             }
-            // We never get here
-        }
-
-        private void StartTimeoutWatch()
-        {
-            if (_ignoreTimeout)
-                return;
-
-            _timeoutChecksToSkip = TimeoutCheckFrequency;
-
-            // We are using Environment.TickCount and not Timewatch for performance reasons.
-            // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
-            // overflow it will still stay ahead of Environment.TickCount for comparisons made
-            // in DoCheckTimeout():
-            _timeoutOccursAt = Environment.TickCount + _timeout;
         }
 
         protected void CheckTimeout()
@@ -266,27 +269,24 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Initializes all the data members that are used by Go()
         /// </summary>
-        private void InitMatch()
+        private void InitializeForGo()
         {
-            // Use a hashtabled Match object if the capture numbers are sparse
-
-            if (runmatch == null)
+            if (runmatch is null)
             {
-                if (runregex!.caps != null)
-                    runmatch = new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
-                else
-                    runmatch = new Match(runregex, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
+                // Use a hashtabled Match object if the capture numbers are sparse
+                runmatch = runregex!.caps is null ?
+                    new Match(runregex, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart) :
+                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
             }
             else
             {
                 runmatch.Reset(runregex!, runtext!, runtextbeg, runtextend, runtextstart);
             }
 
-            // note we test runcrawl, because it is the last one to be allocated
+            // Note we test runcrawl, because it is the last one to be allocated
             // If there is an alloc failure in the middle of the three allocations,
             // we may still return to reuse this instance, and we want to behave
-            // as if the allocations didn't occur. (we used to test _trackcount != 0)
-
+            // as if the allocations didn't occur.
             if (runcrawl != null)
             {
                 runtrackpos = runtrack!.Length;
@@ -295,15 +295,22 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
+            // Everything above runs once per match.
+            // Everything below runs once per runner.
+
             InitTrackCount();
 
-            int tracksize = runtrackcount * 8;
-            int stacksize = runtrackcount * 8;
+            int stacksize;
+            int tracksize = stacksize = runtrackcount * 8;
 
             if (tracksize < 32)
+            {
                 tracksize = 32;
+            }
             if (stacksize < 16)
+            {
                 stacksize = 16;
+            }
 
             runtrack = new int[tracksize];
             runtrackpos = tracksize;
@@ -313,29 +320,6 @@ namespace System.Text.RegularExpressions
 
             runcrawl = new int[32];
             runcrawlpos = 32;
-        }
-
-        /// <summary>
-        /// Put match in its canonical form before returning it.
-        /// </summary>
-        private Match? TidyMatch(bool quick)
-        {
-            if (!quick)
-            {
-                Match match = runmatch!;
-
-                runmatch = null;
-
-                match.Tidy(runtextpos);
-                return match;
-            }
-            else
-            {
-                // in quick mode, a successful match returns null, and
-                // the allocated match object is left in the cache
-
-                return null;
-            }
         }
 
         /// <summary>

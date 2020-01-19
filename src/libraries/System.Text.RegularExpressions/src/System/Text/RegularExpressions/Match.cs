@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -265,73 +266,74 @@ namespace System.Text.RegularExpressions
             return i >= 0 ? i : matches[cap][-3 - i];
         }
 
-        /// <summary>
-        /// Tidy the match so that it can be used as an immutable result
-        /// </summary>
+        /// <summary>Tidy the match so that it can be used as an immutable result</summary>
         internal void Tidy(int textpos)
         {
-            int[][] matches = _matches;
-
-            int[] interval = matches[0];
+            _textpos = textpos;
+            _capcount = _matchcount[0];
+            int[] interval = _matches[0];
             Index = interval[0];
             Length = interval[1];
-            _textpos = textpos;
-
-            int[] matchcount = _matchcount;
-            _capcount = matchcount[0];
-
             if (_balancing)
             {
-                // The idea here is that we want to compact all of our unbalanced captures.  To do that we
-                // use j basically as a count of how many unbalanced captures we have at any given time
-                // (really j is an index, but j/2 is the count).  First we skip past all of the real captures
-                // until we find a balance captures.  Then we check each subsequent entry.  If it's a balance
-                // capture (it's negative), we decrement j.  If it's a real capture, we increment j and copy
-                // it down to the last free position.
-                for (int cap = 0; cap < matchcount.Length; cap++)
+                TidyBalancing();
+            }
+        }
+
+        private void TidyBalancing()
+        {
+            int[] matchcount = _matchcount;
+            int[][] matches = _matches;
+
+            // The idea here is that we want to compact all of our unbalanced captures.  To do that we
+            // use j basically as a count of how many unbalanced captures we have at any given time
+            // (really j is an index, but j/2 is the count).  First we skip past all of the real captures
+            // until we find a balance captures.  Then we check each subsequent entry.  If it's a balance
+            // capture (it's negative), we decrement j.  If it's a real capture, we increment j and copy
+            // it down to the last free position.
+            for (int cap = 0; cap < matchcount.Length; cap++)
+            {
+                int limit;
+                int[] matcharray;
+
+                limit = matchcount[cap] * 2;
+                matcharray = matches[cap];
+
+                int i;
+                int j;
+
+                for (i = 0; i < limit; i++)
                 {
-                    int limit;
-                    int[] matcharray;
-
-                    limit = matchcount[cap] * 2;
-                    matcharray = matches[cap];
-
-                    int i;
-                    int j;
-
-                    for (i = 0; i < limit; i++)
+                    if (matcharray[i] < 0)
                     {
-                        if (matcharray[i] < 0)
-                        {
-                            break;
-                        }
+                        break;
                     }
-
-                    for (j = i; i < limit; i++)
-                    {
-                        if (matcharray[i] < 0)
-                        {
-                            // skip negative values
-                            j--;
-                        }
-                        else
-                        {
-                            // but if we find something positive (an actual capture), copy it back to the last
-                            // unbalanced position.
-                            if (i != j)
-                            {
-                                matcharray[j] = matcharray[i];
-                            }
-
-                            j++;
-                        }
-                    }
-
-                    matchcount[cap] = j / 2;
                 }
 
-                _balancing = false;
+                for (j = i; i < limit; i++)
+                {
+                    if (matcharray[i] < 0)
+                    {
+                        // skip negative values
+                        j--;
+                    }
+                    else
+                    {
+                        // but if we find something positive (an actual capture), copy it back to the last
+                        // unbalanced position.
+                        if (i != j)
+                        {
+                            matcharray[j] = matcharray[i];
+                        }
+
+                        j++;
+                    }
+                }
+
+                matchcount[cap] = j / 2;
             }
+
+            _balancing = false;
         }
 
 #if DEBUG
