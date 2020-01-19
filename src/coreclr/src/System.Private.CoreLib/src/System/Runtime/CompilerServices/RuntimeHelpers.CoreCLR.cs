@@ -302,6 +302,10 @@ namespace System.Runtime.CompilerServices
         public uint BaseSize;
         [FieldOffset(0x0e)]
         public ushort InterfaceCount;
+        [FieldOffset(BaseMethodTableOffset)]
+        public MethodTable* BaseMethodTable;
+        [FieldOffset(InterfaceMapOffset)]
+        public nuint* InterfaceMap;
 
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
@@ -311,6 +315,22 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
                                                              | 0x00400000;// enum_flag_ICastable;
+
+        private const int BaseMethodTableOffset = 0x10
+#if DEBUG
+        + sizeof(nuint)   // adjust for debug_m_szClassName
+#endif
+        ;
+
+#if BIT64
+        private const int InterfaceMapOffset = 0x38
+#else
+        private const int InterfaceMapOffset = 0x24
+#endif
+#if DEBUG
+        + sizeof(nuint)   // adjust for debug_m_szClassName
+#endif
+        ;
 
         public bool HasComponentSize
         {
@@ -364,38 +384,6 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(HasComponentSize);
                 // See comment on RawArrayData for details
                 return (int)((BaseSize - (uint)(3 * sizeof(IntPtr))) / (uint)(2 * sizeof(int)));
-            }
-        }
-
-        public MethodTable* BaseMethodTable
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                int mtFieldOffset = 0x10 / sizeof(nuint);
-#if DEBUG
-                mtFieldOffset += 1; // adjust for debug_m_szClassName
-#endif
-                ref nuint @this = ref Unsafe.As<MethodTable, nuint>(ref this);
-                return (MethodTable*)Unsafe.Add(ref @this, mtFieldOffset);
-            }
-        }
-
-        public nuint* InterfaceMap
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-#if BIT64
-                int imFieldOffset = 0x38 / sizeof(nuint);
-#else
-                int imFieldOffset = 0x24 / sizeof(nuint);
-#endif
-#if DEBUG
-                imFieldOffset += 1; // adjust for debug_m_szClassName
-#endif
-                ref nuint @this = ref Unsafe.As<MethodTable, nuint>(ref this);
-                return (nuint*)Unsafe.Add(ref @this, imFieldOffset);
             }
         }
     }
