@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
@@ -430,16 +431,15 @@ namespace System.Text.RegularExpressions
         protected void InitializeReferences()
         {
             if (_refsInitialized)
+            {
                 throw new NotSupportedException(SR.OnlyAllowedOnce);
+            }
 
             _refsInitialized = true;
             _replref = new WeakReference<RegexReplacement?>(null);
         }
 
-        /// <summary>
-        /// Internal worker called by all the public APIs
-        /// </summary>
-        /// <returns></returns>
+        /// <summary>Internal worker called by the public APIs</summary>
         internal Match? Run(bool quick, int prevlen, string input, int beginning, int length, int startat)
         {
             if ((uint)startat > (uint)input.Length)
@@ -448,10 +448,7 @@ namespace System.Text.RegularExpressions
             if ((uint)length > (uint)input.Length)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
 
-            RegexRunner runner =
-                Interlocked.Exchange(ref _runner, null) ?? // use a cached runner if there is one
-                (factory != null ? factory.CreateInstance() : // use the compiled RegexRunner factory if there is one
-                 new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
+            RegexRunner runner = RentRunner();
             try
             {
                 // Do the scan starting at the requested position
@@ -463,10 +460,25 @@ namespace System.Text.RegularExpressions
             }
             finally
             {
-                // Release the runner back to the cache
-                _runner = runner;
+                ReturnRunner(runner);
             }
         }
+
+        internal IEnumerator<Match> Enumerate(string input, int startat)
+        {
+            System.Diagnostics.Debug.Assert((uint)startat <= (uint)input.Length);
+            return RentRunner().ScanMatches(this, input, startat, internalMatchTimeout);
+        }
+
+        /// <summary>Gets a runner from the cache, or creates a new one.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // factored out to be used by only two call sites
+        private RegexRunner RentRunner() =>
+            Interlocked.Exchange(ref _runner, null) ?? // use a cached runner if there is one
+            (factory != null ? factory.CreateInstance() : // use the compiled RegexRunner factory if there is one
+            new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
+
+        /// <summary>Release the runner back to the cache.</summary>
+        internal void ReturnRunner(RegexRunner runner) => _runner = runner;
 
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 

@@ -88,6 +88,7 @@ namespace System.Text.RegularExpressions
             }
 
             _balancing = false;
+            _groupcoll?.Reset();
         }
 
         public virtual GroupCollection Groups => _groupcoll ??= new GroupCollection(this, null);
@@ -365,7 +366,7 @@ namespace System.Text.RegularExpressions
     /// <summary>
     /// MatchSparse is for handling the case where slots are sparsely arranged (e.g., if somebody says use slot 100000)
     /// </summary>
-    internal class MatchSparse : Match
+    internal sealed class MatchSparse : Match
     {
         // the lookup hashtable
         internal new readonly Hashtable _caps;

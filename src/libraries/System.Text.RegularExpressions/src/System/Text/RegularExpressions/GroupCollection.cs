@@ -29,6 +29,8 @@ namespace System.Text.RegularExpressions
             _captureMap = caps;
         }
 
+        internal void Reset() => _groups = null;
+
         public bool IsReadOnly => true;
 
         /// <summary>Returns the number of groups.</summary>

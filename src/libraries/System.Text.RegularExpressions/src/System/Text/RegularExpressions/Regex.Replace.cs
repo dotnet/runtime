@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+
 namespace System.Text.RegularExpressions
 {
     // Callback class
@@ -162,7 +164,7 @@ namespace System.Text.RegularExpressions
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
             }
-            if (startat < 0 || startat > input.Length)
+            if ((uint)startat > (uint)input.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
             }
@@ -172,8 +174,8 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            Match match = regex.Match(input, startat);
-            if (!match.Success)
+            using IEnumerator<Match> enumerator = regex.Enumerate(input, startat);
+            if (!enumerator.MoveNext())
             {
                 return input;
             }
@@ -186,6 +188,8 @@ namespace System.Text.RegularExpressions
 
                 do
                 {
+                    Match match = enumerator.Current;
+
                     if (match.Index != prevat)
                     {
                         vsb.Append(input.AsSpan(prevat, match.Index - prevat));
@@ -198,10 +202,8 @@ namespace System.Text.RegularExpressions
                     {
                         break;
                     }
-
-                    match = match.NextMatch();
                 }
-                while (match.Success);
+                while (enumerator.MoveNext());
 
                 if (prevat < input.Length)
                 {
@@ -218,6 +220,8 @@ namespace System.Text.RegularExpressions
 
                 do
                 {
+                    Match match = enumerator.Current;
+
                     if (match.Index + match.Length != prevat)
                     {
                         vsb.AppendReversed(input.AsSpan(match.Index + match.Length, prevat - match.Index - match.Length));
@@ -230,10 +234,8 @@ namespace System.Text.RegularExpressions
                     {
                         break;
                     }
-
-                    match = match.NextMatch();
                 }
-                while (match.Success);
+                while (enumerator.MoveNext());
 
                 if (prevat > 0)
                 {

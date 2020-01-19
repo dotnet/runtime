@@ -75,7 +75,7 @@ namespace System.Text.RegularExpressions
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
             }
-            if (startat < 0 || startat > input.Length)
+            if ((uint)startat > (uint)input.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
             }
@@ -87,8 +87,8 @@ namespace System.Text.RegularExpressions
 
             count -= 1;
 
-            Match match = regex.Match(input, startat);
-            if (!match.Success)
+            using IEnumerator<Match> enumerator = regex.Enumerate(input, startat);
+            if (!enumerator.MoveNext())
             {
                 return new string[] { input };
             }
@@ -99,8 +99,9 @@ namespace System.Text.RegularExpressions
             {
                 int prevat = 0;
 
-                while (true)
+                do
                 {
+                    Match match = enumerator.Current;
                     al.Add(input.Substring(prevat, match.Index - prevat));
 
                     prevat = match.Index + match.Length;
@@ -118,13 +119,8 @@ namespace System.Text.RegularExpressions
                     {
                         break;
                     }
-
-                    match = match.NextMatch();
-                    if (!match.Success)
-                    {
-                        break;
-                    }
                 }
+                while (enumerator.MoveNext());
 
                 al.Add(input.Substring(prevat, input.Length - prevat));
             }
@@ -132,8 +128,9 @@ namespace System.Text.RegularExpressions
             {
                 int prevat = input.Length;
 
-                while (true)
+                do
                 {
+                    Match match = enumerator.Current;
                     al.Add(input.Substring(match.Index + match.Length, prevat - match.Index - match.Length));
 
                     prevat = match.Index;
@@ -151,13 +148,8 @@ namespace System.Text.RegularExpressions
                     {
                         break;
                     }
-
-                    match = match.NextMatch();
-                    if (!match.Success)
-                    {
-                        break;
-                    }
                 }
+                while (enumerator.MoveNext());
 
                 al.Add(input.Substring(0, prevat));
                 al.Reverse(0, al.Count);
