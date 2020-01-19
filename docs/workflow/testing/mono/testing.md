@@ -1,4 +1,4 @@
-# Running Tests on MonoVM
+# Running Tests using Mono Runtime
 
 ## Running Runtime Tests
 The runtime tests will be available at a later date.
