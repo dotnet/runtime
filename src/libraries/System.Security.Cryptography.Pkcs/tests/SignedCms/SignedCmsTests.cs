@@ -402,7 +402,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
             SignedCms cms = new SignedCms(SubjectIdentifierType.NoSignature, contentInfo, detached);
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<NullReferenceException>(() => cms.ComputeSignature());
             }
@@ -761,7 +761,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                         IncludeOption = X509IncludeOption.None,
                     });
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<NullReferenceException>(sign);
             }

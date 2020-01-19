@@ -547,7 +547,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Array.Resize(ref encrypted, encrypted.Length + 1);
 
                 // Baseline/exempt a .NET Framework difference for RSACng
-                if (!PlatformDetection.IsFullFramework ||
+                if (!PlatformDetection.IsNetFramework ||
                     rsa.GetType().Assembly.GetName().Name != "System.Core")
                 {
                     Assert.ThrowsAny<CryptographicException>(
@@ -571,7 +571,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA1);
                 Array.Resize(ref encrypted, encrypted.Length + 1);
 
-                if (!PlatformDetection.IsFullFramework)
+                if (!PlatformDetection.IsNetFramework)
                 {
                     Assert.ThrowsAny<CryptographicException>(
                         () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
@@ -587,7 +587,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                     encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA256);
                     Array.Resize(ref encrypted, encrypted.Length + 1);
 
-                    if (!PlatformDetection.IsFullFramework)
+                    if (!PlatformDetection.IsNetFramework)
                     {
                         Assert.ThrowsAny<CryptographicException>(
                             () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA256));

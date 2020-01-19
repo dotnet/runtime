@@ -355,7 +355,7 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [InlineData(":1:2:3:4:5:6:7:8")] // leading single colon
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework machines are not yet patched with the fix for this")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework machines are not yet patched with the fix for this")]
         public void UriIPv6Host_BadAddress_SkipOnFramework(string address)
         {
             ParseBadIPv6Address(address);

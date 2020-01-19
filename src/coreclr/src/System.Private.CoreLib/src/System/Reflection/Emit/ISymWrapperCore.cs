@@ -77,7 +77,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             void ISymbolDocumentWriter.SetSource(byte[] source)
             {
-                throw new NotSupportedException();   // Intentionally not supported to match .NET Framework CLR
+                throw new NotSupportedException();   // Intentionally not supported to match .NET Framework
             }
 
             //------------------------------------------------------------------------------
@@ -497,7 +497,7 @@ namespace System.Reflection.Emit
     //
     // ! Because the Release occurs in the finalizer thread, this safehandle really takes
     // ! an ostrich approach to apartment issues. We only tolerate this here because we're emulating
-    // ! the .NET Framework CLR's use of ISymWrapper which also pays lip service to COM apartment rules.
+    // ! the .NET Framework's use of ISymWrapper which also pays lip service to COM apartment rules.
     // !
     // ! However, think twice about pulling this safehandle out for other uses.
     //

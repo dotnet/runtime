@@ -3777,7 +3777,7 @@ namespace System.IO.Packaging.Tests
                 long totalLength = SizeInMb * buffer.Length;
 
                 // issue on .NET Framework we cannot use FileAccess.Write on a ZipArchive
-                using (Package package = Package.Open(stream, FileMode.Create, PlatformDetection.IsFullFramework ? FileAccess.ReadWrite : FileAccess.Write))
+                using (Package package = Package.Open(stream, FileMode.Create, PlatformDetection.IsNetFramework ? FileAccess.ReadWrite : FileAccess.Write))
                 {
                     PackagePart part = package.CreatePart(partUri,
                                                           System.Net.Mime.MediaTypeNames.Application.Octet,

@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             EnvelopedCms ecms = new EnvelopedCms();
             ecms.Decode(content);
 
-            int expected = PlatformDetection.IsFullFramework ? 6 : 0; // Desktop bug gives 6
+            int expected = PlatformDetection.IsNetFramework ? 6 : 0; // Desktop bug gives 6
             Assert.Equal(expected, ecms.ContentInfo.Content.Length);
             Assert.Equal(Oids.Pkcs7Data, ecms.ContentInfo.ContentType.Value);
         }
@@ -192,7 +192,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 ContentInfo contentInfo = ecms.ContentInfo;
                 byte[] content = contentInfo.Content;
 
-                int expected = PlatformDetection.IsFullFramework ? 6 : 0; // Desktop bug gives 6
+                int expected = PlatformDetection.IsNetFramework ? 6 : 0; // Desktop bug gives 6
                 Assert.Equal(expected, content.Length);
             }
         }
