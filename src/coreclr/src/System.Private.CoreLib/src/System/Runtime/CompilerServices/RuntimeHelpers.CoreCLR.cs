@@ -302,8 +302,12 @@ namespace System.Runtime.CompilerServices
         public uint BaseSize;
         [FieldOffset(0x0e)]
         public ushort InterfaceCount;
-        [FieldOffset(BaseMethodTableOffset)]
-        public MethodTable* BaseMethodTable;
+        [FieldOffset(ParentMethodTableOffset)]
+        // NOTE: the ParentMethodTable could be an indirect pointer. (see: enum_flag_HasIndirectParent).
+        //       However, pointer to an indirection cell is adjusted by the offset of ParentMethodTable.
+        //       That is to allow casting to go through the chain of bases naturally without checking
+        //       for enum_flag_HasIndirectParent.
+        public MethodTable* ParentMethodTable;
         [FieldOffset(InterfaceMapOffset)]
         public nuint* InterfaceMap;
 
@@ -316,7 +320,7 @@ namespace System.Runtime.CompilerServices
                                                              | 0x40000000 // enum_flag_ComObject
                                                              | 0x00400000;// enum_flag_ICastable;
 
-        private const int BaseMethodTableOffset = 0x10
+        private const int ParentMethodTableOffset = 0x10
 #if DEBUG
         + sizeof(nuint)   // adjust for debug_m_szClassName
 #endif

@@ -217,6 +217,9 @@ namespace System.Runtime.CompilerServices
                     nuint* interfaceMap = mt->InterfaceMap;
                     nuint i = 0;
 
+                    // the interface map is aligned to 4 entries and padded with
+                    // zeroes, if needed.
+                    // That is to allow matching interfaces in blocks of 4.
                     do
                     {
                         if (interfaceMap[i + 0] == (nuint)toTypeHnd)
@@ -255,7 +258,7 @@ namespace System.Runtime.CompilerServices
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
                 return obj;
 
-            MethodTable* mt = RuntimeHelpers.GetMethodTable(obj)->BaseMethodTable;
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(obj)->ParentMethodTable;
             for (; ; )
             {
                 if (mt == toTypeHnd)
@@ -264,28 +267,28 @@ namespace System.Runtime.CompilerServices
                 if (mt == null)
                     break;
 
-                mt = mt->BaseMethodTable;
+                mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
                 if (mt == null)
                     break;
 
-                mt = mt->BaseMethodTable;
+                mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
                 if (mt == null)
                     break;
 
-                mt = mt->BaseMethodTable;
+                mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
                 if (mt == null)
                     break;
 
-                mt = mt->BaseMethodTable;
+                mt = mt->ParentMethodTable;
             }
 
             if (RuntimeHelpers.GetMethodTable(obj)->HasTypeEquivalence)
@@ -386,6 +389,9 @@ namespace System.Runtime.CompilerServices
                     nuint* interfaceMap = mt->InterfaceMap;
                     nuint i = 0;
 
+                    // the interface map is aligned to 4 entries and padded with
+                    // zeroes, if needed.
+                    // That is to allow matching interfaces in blocks of 4.
                     do
                     {
                         if (interfaceMap[i + 0] == (nuint)toTypeHnd)
@@ -435,28 +441,28 @@ namespace System.Runtime.CompilerServices
 
             for (; ; )
             {
-                mt = mt->BaseMethodTable;
+                mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
                 if (mt == null)
                     break;
 
-                mt = mt->BaseMethodTable;
+                mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
                 if (mt == null)
                     break;
 
-                mt = mt->BaseMethodTable;
+                mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
                 if (mt == null)
                     break;
 
-                mt = mt->BaseMethodTable;
+                mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
