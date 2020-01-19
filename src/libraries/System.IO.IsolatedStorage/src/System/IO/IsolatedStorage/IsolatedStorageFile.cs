@@ -475,8 +475,8 @@ namespace System.IO.IsolatedStorage
             // complicated given the normal identity objects used by .NET Framework aren't available on .NET Core.
             //
             // Starting expectation is that a given store's location would be identical between implementations
-            // (say, for a particular StrongName). You could iterate any store opened at least once by .NET Framework at
-            // runtime as it would create the needed identity file. You wouldn't be able to iterate if it was only
+            // (say, for a particular StrongName). You could iterate any store opened at least once by the .NET Framework
+            // at run time as it would create the needed identity file. You wouldn't be able to iterate if it was only
             // ever opened by .NET Core, as the needed file isn't there yet.
             return new IsolatedStorageFileEnumerator();
         }
