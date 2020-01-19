@@ -212,26 +212,28 @@ namespace System.Runtime.CompilerServices
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
                 nuint interfaceCount = mt->InterfaceCount;
-                if (interfaceCount > 0)
+                if (interfaceCount != 0)
                 {
                     nuint* interfaceMap = mt->InterfaceMap;
-                    nuint i = 0;
-
-                    // the interface map is aligned to 4 entries and padded with
-                    // zeroes, if needed.
-                    // That is to allow matching interfaces in blocks of 4.
-                    do
+                    for (nuint i = 0; ; i += 4)
                     {
                         if (interfaceMap[i + 0] == (nuint)toTypeHnd)
                             goto done;
+                        if (--interfaceCount == 0)
+                            break;
                         if (interfaceMap[i + 1] == (nuint)toTypeHnd)
                             goto done;
+                        if (--interfaceCount == 0)
+                            break;
                         if (interfaceMap[i + 2] == (nuint)toTypeHnd)
                             goto done;
+                        if (--interfaceCount == 0)
+                            break;
                         if (interfaceMap[i + 3] == (nuint)toTypeHnd)
                             goto done;
+                        if (--interfaceCount == 0)
+                            break;
                     }
-                    while ((i += 4) < interfaceCount);
                 }
 
                 if (mt->NonTrivialInterfaceCast)
@@ -384,29 +386,31 @@ namespace System.Runtime.CompilerServices
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
                 nuint interfaceCount = mt->InterfaceCount;
-                if (interfaceCount > 0)
+                if (interfaceCount == 0)
                 {
-                    nuint* interfaceMap = mt->InterfaceMap;
-                    nuint i = 0;
-
-                    // the interface map is aligned to 4 entries and padded with
-                    // zeroes, if needed.
-                    // That is to allow matching interfaces in blocks of 4.
-                    do
-                    {
-                        if (interfaceMap[i + 0] == (nuint)toTypeHnd)
-                            goto done;
-                        if (interfaceMap[i + 1] == (nuint)toTypeHnd)
-                            goto done;
-                        if (interfaceMap[i + 2] == (nuint)toTypeHnd)
-                            goto done;
-                        if (interfaceMap[i + 3] == (nuint)toTypeHnd)
-                            goto done;
-                    }
-                    while ((i += 4) < interfaceCount);
+                    goto slowPath;
                 }
 
-                goto slowPath;
+                nuint* interfaceMap = mt->InterfaceMap;
+                for (nuint i = 0; ; i += 4)
+                {
+                    if (interfaceMap[i + 0] == (nuint)toTypeHnd)
+                        goto done;
+                    if (--interfaceCount == 0)
+                        goto slowPath;
+                    if (interfaceMap[i + 1] == (nuint)toTypeHnd)
+                        goto done;
+                    if (--interfaceCount == 0)
+                        goto slowPath;
+                    if (interfaceMap[i + 2] == (nuint)toTypeHnd)
+                        goto done;
+                    if (--interfaceCount == 0)
+                        goto slowPath;
+                    if (interfaceMap[i + 3] == (nuint)toTypeHnd)
+                        goto done;
+                    if (--interfaceCount == 0)
+                        goto slowPath;
+                }
             }
 
         done:

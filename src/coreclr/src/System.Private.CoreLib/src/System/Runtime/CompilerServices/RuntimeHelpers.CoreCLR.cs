@@ -303,10 +303,6 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(0x0e)]
         public ushort InterfaceCount;
         [FieldOffset(ParentMethodTableOffset)]
-        // NOTE: the ParentMethodTable could be an indirect pointer. (see: enum_flag_HasIndirectParent).
-        //       However, pointer to an indirection cell is adjusted by the offset of ParentMethodTable.
-        //       That is to allow casting to go through the chain of bases naturally without checking
-        //       for enum_flag_HasIndirectParent.
         public MethodTable* ParentMethodTable;
         [FieldOffset(InterfaceMapOffset)]
         public nuint* InterfaceMap;
