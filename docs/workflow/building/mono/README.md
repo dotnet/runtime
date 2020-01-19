@@ -2,16 +2,16 @@
 
 To build just Mono runtime, use the `--subsetCategory` flag to the `build.sh` (or `build.cmd`) at the repo root:
 
-```
+```bash
 ./build.sh --subsetCategory mono
 ```
 or on Windows,
-```
+```bat
 build.cmd --subsetCategory mono
 ```
 
 By default, build generates a 'debug' build output, that includes asserts, less code optimizations and is easier for debugging. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version which does not have these checks by adding the flag `-configuration Release` (or `-c Release`) and `/p:__BuildType=Release`, for example
-```
+```bash
 ./build.sh --subsetCategory mono -configuration Release /p:__BuildType=Release
 ```
 
@@ -19,11 +19,11 @@ Product binaries will be dropped in `artifacts\bin\mono\<OS>.<arch>.<flavor>` fo
 
 To generate nuget packages:
 
-```
+```bash
 ./build.sh --subsetCategory mono -pack (with optional release configuration)
 ```
 or on Windows,
-```
+```bat
 build.cmd --subsetCategory mono -pack (with optional release configuration)
 ```
 
