@@ -2188,7 +2188,7 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-NOINLINE HCIMPL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
+HCIMPL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -2205,13 +2205,14 @@ NOINLINE HCIMPL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, O
     {
         UNREACHABLE(); //ObjIsInstanceOf will throw if cast can't be done
     }
+    HELPER_METHOD_POLL();
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oref);
 }
 HCIMPLEND
 
-NOINLINE HCIMPL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
+HCIMPL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -2226,6 +2227,7 @@ NOINLINE HCIMPL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE ty
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
     if (!ObjIsInstanceOfCore(OBJECTREFToObject(oref), clsHnd))
         oref = NULL;
+    HELPER_METHOD_POLL(); 
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oref);
