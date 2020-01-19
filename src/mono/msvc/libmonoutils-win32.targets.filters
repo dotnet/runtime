@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="win32_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\os-event-win32.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-wait-win32.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-semaphore-win32.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-windows-thread-name.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\win32</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\win32">
+      <UniqueIdentifier>{56DCE5E4-A83E-487B-BFED-577E1F784C14}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

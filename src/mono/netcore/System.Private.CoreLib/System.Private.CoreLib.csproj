@@ -1,0 +1,310 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Generate Mono corelib version file -->
+  <Import Project="GenerateMonoCoreLibVersionFile.targets" />
+
+  <PropertyGroup>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+
+    <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
+    <DebugType>Portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+
+    <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
+    <OutputPath>$(BinDir)IL/</OutputPath>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <Platforms>x64;x86;arm;arm64;wasm32</Platforms>
+
+    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
+    <ILLinkTrimXml>$(BclSourcesRoot)\LinkerDescriptor\System.Private.CoreLib.xml</ILLinkTrimXml>
+  </PropertyGroup>
+
+  <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Include="$(CoreClrProjectRoot)\src\System.Private.CoreLib\Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.SR</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
+    <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
+    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+    <NoStdLib>true</NoStdLib>
+    <NoCompilerStandardLib>true</NoCompilerStandardLib>
+    <SubsystemVersion>6.00</SubsystemVersion>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <Utf8Output>true</Utf8Output>
+    <HighEntropyVA>true</HighEntropyVA>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn),0419,0649</NoWarn>
+    <Nullable>enable</Nullable>
+
+    <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
+    <DefineConstants>MONO;NETCOREAPP</DefineConstants>
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
+
+    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
+         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
+    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
+    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
+    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <EnableAnalyzers>false</EnableAnalyzers> <!-- TOOD: reenable, right now it causes many errors in mono sources -->
+  </PropertyGroup>
+
+  <!-- Platform specific properties -->
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DefineConstants>BIT64;AMD64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm'">
+    <PlatformTarget>arm</PlatformTarget>
+    <DefineConstants>BIT32;ARM;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>BIT64;ARM64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'wasm32'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Configuration specific properties -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
+    <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
+    <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
+    <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'x64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
+    <DefineConstants>PLATFORM_OSX;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Assembly attributes -->
+  <PropertyGroup>
+    <Description>$(AssemblyName)</Description>
+  </PropertyGroup>
+
+  <!-- Signing -->
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
+  </PropertyGroup>
+
+  <!-- SourceLink -->
+  <PropertyGroup>
+    <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <CoreCompileDependsOn>$(CoreCompileDependsOn);AddUntrackedResourcesForSourceLink</CoreCompileDependsOn>
+  </PropertyGroup>
+
+  <!--
+    Helper Paths
+  -->
+  <PropertyGroup>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
+    <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
+  </PropertyGroup>
+
+  <!-- Compilation options -->
+
+  <!-- Mono specific build changes -->
+  <PropertyGroup>
+    <!-- Disable nullability-related warnings -->
+    <NoWarn>$(NoWarn),CS8597,CS8600,CS8601,CS8602,CS8603,CS8604,CS8609,CS8611,CS8618,CS8620,CS8625,CS8631,CS8632,CS8634</NoWarn>
+    <NoWarn>$(NoWarn),618,67</NoWarn>
+
+    <DefineConstants>FEATURE_DEFAULT_INTERFACES;FEATURE_MANAGED_ETW_CHANNELS;$(DefineConstants)</DefineConstants>
+    <DefineConstants>NETCORE;DISABLE_REMOTING;MONO_FEATURE_SRE;$(DefineConstants)</DefineConstants>
+
+    <FeaturePortableTimer>true</FeaturePortableTimer>
+    <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+    <FeaturePerfTracing>true</FeaturePerfTracing>
+  </PropertyGroup>
+
+  <!-- Sources -->
+  <ItemGroup>
+      <Compile Include="resources\SR.extra.cs" />
+      <Compile Include="$(CoreClrProjectRoot)\src\System.Private.CoreLib\src\System\SR.cs" />
+  </ItemGroup>
+  <ItemGroup>
+      <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\RuntimeHandles.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Array.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Attribute.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Buffer.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Delegate.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Enum.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Environment.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Exception.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\GC.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Object.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Math.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\MathF.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\ModuleHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\NotImplemented.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Nullable.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\RuntimeFieldHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\RuntimeMethodHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\RuntimeType.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\RuntimeTypeHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\String.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Type.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\TypeIdentifier.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\WeakReference.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\IO\Stream.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeData.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeTypedArgument.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeFieldInfo.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeLocalVariableInfo.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodBody.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodInfo.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeModule.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DerivedTypes.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILInfo.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.notsupported.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MonoArrayMethod.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\UnmanagedMarshal.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DependentHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\JitHelpers.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MarshalAsAttribute.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyDependencyResolver.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\Contexts\Context.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\StackCrawlMark.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLock.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelSpinWaiter.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.Mono.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.Unix.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.Unix.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.Unix.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
+
+      <Compile Include="$(BclSourcesRoot)\System\IO\MonoIOError.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.Mono.cs" />
+  </ItemGroup>
+  <ItemGroup>
+      <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\RuntimeMarshal.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\SafeGPtrArrayHandle.cs" />
+
+      <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
+  </ItemGroup>
+
+  <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
+  <!-- Setup ILLink.targets -->
+  <ItemGroup>
+    <PackageReference Include="ILLink.Tasks" Version="$(ILLinkTasksVersion)" ExcludeAssets="build" GeneratePathProperty="True" />
+  </ItemGroup>
+
+  <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
+    <Copy SourceFiles="$(BinDir)/IL/System.Private.CoreLib.dll;$(BinDir)/IL/System.Private.CoreLib.pdb"
+        DestinationFolder="$(BinDir)"
+        SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
