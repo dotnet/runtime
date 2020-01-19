@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -37,7 +37,6 @@ namespace System.Text.RegularExpressions
     /// </remarks>
     public class Match : Group
     {
-        private const int ReplaceBufferSize = 256;
         internal GroupCollection? _groupcoll;
 
         // input to the match
@@ -126,24 +125,24 @@ namespace System.Text.RegularExpressions
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
             RegexReplacement repl = RegexReplacement.GetOrCreate(regex._replref!, replacement, regex.caps!, regex.capsize, regex.capnames!, regex.roptions);
-            var vsb = new ValueStringBuilder(stackalloc char[ReplaceBufferSize]);
-            repl.ReplacementImpl(ref vsb, this);
-            return vsb.ToString();
+            var segments = new SegmentStringBuilder(256);
+            repl.ReplacementImpl(ref segments, this);
+            return segments.ToString();
         }
 
-        internal ReadOnlySpan<char> GroupToStringImpl(int groupnum)
+        internal ReadOnlyMemory<char> GroupToStringImpl(int groupnum)
         {
             int c = _matchcount[groupnum];
             if (c == 0)
             {
-                return string.Empty;
+                return default;
             }
 
             int[] matches = _matches[groupnum];
-            return Text.AsSpan(matches[(c - 1) * 2], matches[(c * 2) - 1]);
+            return Text.AsMemory(matches[(c - 1) * 2], matches[(c * 2) - 1]);
         }
 
-        internal ReadOnlySpan<char> LastGroupToStringImpl() =>
+        internal ReadOnlyMemory<char> LastGroupToStringImpl() =>
             GroupToStringImpl(_matchcount.Length - 1);
 
         /// <summary>

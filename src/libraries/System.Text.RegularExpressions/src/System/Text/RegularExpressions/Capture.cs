@@ -35,9 +35,9 @@ namespace System.Text.RegularExpressions
         public override string ToString() => Value;
 
         /// <summary>The substring to the left of the capture</summary>
-        internal ReadOnlySpan<char> GetLeftSubstring() => Text.AsSpan(0, Index);
+        internal ReadOnlyMemory<char> GetLeftSubstring() => Text.AsMemory(0, Index);
 
         /// <summary>The substring to the right of the capture</summary>
-        internal ReadOnlySpan<char> GetRightSubstring() => Text.AsSpan(Index + Length, Text.Length - Index - Length);
+        internal ReadOnlyMemory<char> GetRightSubstring() => Text.AsMemory(Index + Length, Text.Length - Index - Length);
     }
 }

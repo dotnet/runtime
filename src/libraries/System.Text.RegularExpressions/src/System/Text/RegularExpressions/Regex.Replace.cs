@@ -11,8 +11,6 @@ namespace System.Text.RegularExpressions
 
     public partial class Regex
     {
-        private const int ReplaceBufferSize = 256;
-
         /// <summary>
         /// Replaces all occurrences of the pattern with the <paramref name="replacement"/> pattern, starting at
         /// the first character in the input string.
@@ -180,7 +178,7 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            var vsb = new ValueStringBuilder(stackalloc char[ReplaceBufferSize]);
+            var segments = new SegmentStringBuilder(256);
 
             if (!regex.RightToLeft)
             {
@@ -192,11 +190,11 @@ namespace System.Text.RegularExpressions
 
                     if (match.Index != prevat)
                     {
-                        vsb.Append(input.AsSpan(prevat, match.Index - prevat));
+                        segments.Add(input.AsMemory(prevat, match.Index - prevat));
                     }
 
                     prevat = match.Index + match.Length;
-                    vsb.Append(evaluator(match));
+                    segments.Add(evaluator(match).AsMemory());
 
                     if (--count == 0)
                     {
@@ -207,15 +205,11 @@ namespace System.Text.RegularExpressions
 
                 if (prevat < input.Length)
                 {
-                    vsb.Append(input.AsSpan(prevat, input.Length - prevat));
+                    segments.Add(input.AsMemory(prevat, input.Length - prevat));
                 }
             }
             else
             {
-                // In right to left mode append all the inputs in reversed order to avoid an extra dynamic data structure
-                // and to be able to work with Spans. A final reverse of the transformed reversed input string generates
-                // the desired output. Similar to Tower of Hanoi.
-
                 int prevat = input.Length;
 
                 do
@@ -224,11 +218,11 @@ namespace System.Text.RegularExpressions
 
                     if (match.Index + match.Length != prevat)
                     {
-                        vsb.AppendReversed(input.AsSpan(match.Index + match.Length, prevat - match.Index - match.Length));
+                        segments.Add(input.AsMemory(match.Index + match.Length, prevat - match.Index - match.Length));
                     }
 
                     prevat = match.Index;
-                    vsb.AppendReversed(evaluator(match));
+                    segments.Add(evaluator(match).AsMemory());
 
                     if (--count == 0)
                     {
@@ -239,13 +233,13 @@ namespace System.Text.RegularExpressions
 
                 if (prevat > 0)
                 {
-                    vsb.AppendReversed(input.AsSpan(0, prevat));
+                    segments.Add(input.AsMemory(0, prevat));
                 }
 
-                vsb.Reverse();
+                segments.AsSpan().Reverse();
             }
 
-            return vsb.ToString();
+            return segments.ToString();
         }
     }
 }

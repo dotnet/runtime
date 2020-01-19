@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// The RegexReplacement class represents a substitution string for
-// use when using regexes to search/replace, etc. It's logically
-// a sequence intermixed (1) constant strings and (2) group numbers.
-
 using System.Collections;
 using System.Collections.Generic;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>
+    /// The RegexReplacement class represents a substitution string for
+    /// use when using regexes to search/replace, etc. It's logically
+    /// a sequence intermixed (1) constant strings and (2) group numbers.
+    /// </summary>
     internal sealed class RegexReplacement
     {
         // Constants for special insertion patterns
@@ -112,7 +113,7 @@ namespace System.Text.RegularExpressions
         /// Given a Match, emits into the StringBuilder the evaluated
         /// substitution pattern.
         /// </summary>
-        public void ReplacementImpl(ref ValueStringBuilder vsb, Match match)
+        public void ReplacementImpl(ref SegmentStringBuilder segments, Match match)
         {
             for (int i = 0; i < _rules.Count; i++)
             {
@@ -120,12 +121,12 @@ namespace System.Text.RegularExpressions
                 if (r >= 0)
                 {
                     // string lookup
-                    vsb.Append(_strings[r]);
+                    segments.Add(_strings[r].AsMemory());
                 }
                 else if (r < -Specials)
                 {
                     // group lookup
-                    vsb.Append(match.GroupToStringImpl(-Specials - 1 - r));
+                    segments.Add(match.GroupToStringImpl(-Specials - 1 - r));
                 }
                 else
                 {
@@ -133,16 +134,16 @@ namespace System.Text.RegularExpressions
                     switch (-Specials - 1 - r)
                     {
                         case LeftPortion:
-                            vsb.Append(match.GetLeftSubstring());
+                            segments.Add(match.GetLeftSubstring());
                             break;
                         case RightPortion:
-                            vsb.Append(match.GetRightSubstring());
+                            segments.Add(match.GetRightSubstring());
                             break;
                         case LastGroup:
-                            vsb.Append(match.LastGroupToStringImpl());
+                            segments.Add(match.LastGroupToStringImpl());
                             break;
                         case WholeString:
-                            vsb.Append(match.Text);
+                            segments.Add(match.Text.AsMemory());
                             break;
                     }
                 }
@@ -150,10 +151,10 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Given a Match, emits into the ValueStringBuilder the evaluated
+        /// Given a Match, emits into the builder the evaluated
         /// Right-to-Left substitution pattern.
         /// </summary>
-        public void ReplacementImplRTL(ref ValueStringBuilder vsb, Match match)
+        public void ReplacementImplRTL(ref SegmentStringBuilder segments, Match match)
         {
             for (int i = _rules.Count - 1; i >= 0; i--)
             {
@@ -161,28 +162,29 @@ namespace System.Text.RegularExpressions
                 if (r >= 0)
                 {
                     // string lookup
-                    vsb.AppendReversed(_strings[r]);
+                    segments.Add(_strings[r].AsMemory());
                 }
                 else if (r < -Specials)
                 {
                     // group lookup
-                    vsb.AppendReversed(match.GroupToStringImpl(-Specials - 1 - r));
+                    segments.Add(match.GroupToStringImpl(-Specials - 1 - r));
                 }
                 else
                 {
+                    // special insertion patterns
                     switch (-Specials - 1 - r)
-                    { // special insertion patterns
+                    {
                         case LeftPortion:
-                            vsb.AppendReversed(match.GetLeftSubstring());
+                            segments.Add(match.GetLeftSubstring());
                             break;
                         case RightPortion:
-                            vsb.AppendReversed(match.GetRightSubstring());
+                            segments.Add(match.GetRightSubstring());
                             break;
                         case LastGroup:
-                            vsb.AppendReversed(match.LastGroupToStringImpl());
+                            segments.Add(match.LastGroupToStringImpl());
                             break;
                         case WholeString:
-                            vsb.AppendReversed(match.Text);
+                            segments.Add(match.Text.AsMemory());
                             break;
                     }
                 }
@@ -220,7 +222,8 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            var segments = new SegmentStringBuilder(256);
+            ReadOnlyMemory<char> inputMemory = input.AsMemory();
 
             if (!regex.RightToLeft)
             {
@@ -232,11 +235,11 @@ namespace System.Text.RegularExpressions
 
                     if (match.Index != prevat)
                     {
-                        vsb.Append(input.AsSpan(prevat, match.Index - prevat));
+                        segments.Add(inputMemory.Slice(prevat, match.Index - prevat));
                     }
 
                     prevat = match.Index + match.Length;
-                    ReplacementImpl(ref vsb, match);
+                    ReplacementImpl(ref segments, match);
                     if (--count == 0)
                     {
                         break;
@@ -246,15 +249,11 @@ namespace System.Text.RegularExpressions
 
                 if (prevat < input.Length)
                 {
-                    vsb.Append(input.AsSpan(prevat, input.Length - prevat));
+                    segments.Add(inputMemory.Slice(prevat, input.Length - prevat));
                 }
             }
             else
             {
-                // In right to left mode append all the inputs in reversed order to avoid an extra dynamic data structure
-                // and to be able to work with Spans. A final reverse of the transformed reversed input string generates
-                // the desired output. Similar to Tower of Hanoi.
-
                 int prevat = input.Length;
 
                 do
@@ -263,27 +262,27 @@ namespace System.Text.RegularExpressions
 
                     if (match.Index + match.Length != prevat)
                     {
-                        vsb.AppendReversed(input.AsSpan(match.Index + match.Length, prevat - match.Index - match.Length));
+                        segments.Add(inputMemory.Slice(match.Index + match.Length, prevat - match.Index - match.Length));
                     }
 
                     prevat = match.Index;
-                    ReplacementImplRTL(ref vsb, match);
+                    ReplacementImplRTL(ref segments, match);
                     if (--count == 0)
                     {
                         break;
                     }
                 }
-                while (matches.MoveNext()) ;
+                while (matches.MoveNext());
 
                 if (prevat > 0)
                 {
-                    vsb.AppendReversed(input.AsSpan(0, prevat));
+                    segments.Add(inputMemory.Slice(0, prevat));
                 }
 
-                vsb.Reverse();
+                segments.AsSpan().Reverse();
             }
 
-            return vsb.ToString();
+            return segments.ToString();
         }
     }
 }
