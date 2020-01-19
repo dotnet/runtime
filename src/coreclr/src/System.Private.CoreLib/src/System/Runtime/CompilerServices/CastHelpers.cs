@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
         }
 
         // NOTE!!
-        // This is a copy of C++ implementation in CastCache.cpp
+        // This is a copy of C++ implementation in castcache.cpp
         // Keep the copies, if possible, in sync.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static CastResult TryGet(nuint source, nuint target)
