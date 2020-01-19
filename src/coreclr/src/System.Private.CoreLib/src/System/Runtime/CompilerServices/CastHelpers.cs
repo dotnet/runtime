@@ -214,22 +214,22 @@ namespace System.Runtime.CompilerServices
                 nuint interfaceCount = mt->InterfaceCount;
                 if (interfaceCount != 0)
                 {
-                    nuint* interfaceMap = mt->InterfaceMap;
+                    MethodTable** interfaceMap = mt->InterfaceMap;
                     for (nuint i = 0; ; i += 4)
                     {
-                        if (interfaceMap[i + 0] == (nuint)toTypeHnd)
+                        if (interfaceMap[i + 0] == toTypeHnd)
                             goto done;
                         if (--interfaceCount == 0)
                             break;
-                        if (interfaceMap[i + 1] == (nuint)toTypeHnd)
+                        if (interfaceMap[i + 1] == toTypeHnd)
                             goto done;
                         if (--interfaceCount == 0)
                             break;
-                        if (interfaceMap[i + 2] == (nuint)toTypeHnd)
+                        if (interfaceMap[i + 2] == toTypeHnd)
                             goto done;
                         if (--interfaceCount == 0)
                             break;
-                        if (interfaceMap[i + 3] == (nuint)toTypeHnd)
+                        if (interfaceMap[i + 3] == toTypeHnd)
                             goto done;
                         if (--interfaceCount == 0)
                             break;
@@ -333,6 +333,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? ChkCastAny(void* toTypeHnd, object? obj)
         {
             CastResult result;
@@ -391,22 +392,22 @@ namespace System.Runtime.CompilerServices
                     goto slowPath;
                 }
 
-                nuint* interfaceMap = mt->InterfaceMap;
+                MethodTable** interfaceMap = mt->InterfaceMap;
                 for (nuint i = 0; ; i += 4)
                 {
-                    if (interfaceMap[i + 0] == (nuint)toTypeHnd)
+                    if (interfaceMap[i + 0] == toTypeHnd)
                         goto done;
                     if (--interfaceCount == 0)
                         goto slowPath;
-                    if (interfaceMap[i + 1] == (nuint)toTypeHnd)
+                    if (interfaceMap[i + 1] == toTypeHnd)
                         goto done;
                     if (--interfaceCount == 0)
                         goto slowPath;
-                    if (interfaceMap[i + 2] == (nuint)toTypeHnd)
+                    if (interfaceMap[i + 2] == toTypeHnd)
                         goto done;
                     if (--interfaceCount == 0)
                         goto slowPath;
-                    if (interfaceMap[i + 3] == (nuint)toTypeHnd)
+                    if (interfaceMap[i + 3] == toTypeHnd)
                         goto done;
                     if (--interfaceCount == 0)
                         goto slowPath;

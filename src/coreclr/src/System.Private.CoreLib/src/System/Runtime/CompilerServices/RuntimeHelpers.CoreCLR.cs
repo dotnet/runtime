@@ -305,7 +305,7 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(ParentMethodTableOffset)]
         public MethodTable* ParentMethodTable;
         [FieldOffset(InterfaceMapOffset)]
-        public nuint* InterfaceMap;
+        public MethodTable** InterfaceMap;
 
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
