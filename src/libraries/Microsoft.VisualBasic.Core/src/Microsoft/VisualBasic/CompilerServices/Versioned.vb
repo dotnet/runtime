@@ -38,7 +38,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Return Nothing
 
                 Case Else
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "CallType"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "CallType"))
             End Select
 
         End Function

@@ -61,12 +61,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
         'Returns: The resource string if found or an error message string
         '*****************************************************************************
         Friend Shared Function GetResourceString(ByVal ResourceId As vbErrors) As String
-            Dim id as String = "ID" & CStr(ResourceId)
+            Dim id As String = "ID" & CStr(ResourceId)
             Return SR.GetResourceString(id, id)
-        End Function
-
-        Public Shared Function GetResourceString(ByVal ResourceKey As String, ByVal ParamArray Args() As String) As String
-            Return SR.Format(ResourceKey, Args)
         End Function
 
         Friend Shared Function StdFormat(ByVal s As String) As String
