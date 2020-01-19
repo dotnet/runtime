@@ -13,7 +13,7 @@ namespace System.Net.Sockets.Tests
     {
         public Connect(ITestOutputHelper output) : base(output) {}
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_Success(IPAddress listenAt)
@@ -30,7 +30,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_MultipleIPAddresses_Success(IPAddress listenAt)
@@ -64,7 +64,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // Unix currently does not support Disconnect
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task Connect_AfterDisconnect_Fails()
         {

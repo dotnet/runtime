@@ -9,7 +9,6 @@
     <Optimize>True</Optimize>
     <NoLogo>True</NoLogo>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);DESKTOP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="callconv2.cs" />

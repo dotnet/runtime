@@ -123,9 +123,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
 
-            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.ListenerStartDelegate(
+            QuicExceptionHelpers.ThrowIfFailed(MsQuicApi.Api.ListenerStartDelegate(
                 _ptr,
-                ref address));
+                ref address),
+                "Failed to start listener.");
 
             SetListenPort();
         }

@@ -531,7 +531,14 @@ int fx_muxer_t::execute(
     int result = command_line::parse_args_for_mode(mode, host_info, argc, argv, &new_argoff, app_candidate, opts);
     if (static_cast<StatusCode>(result) == AppArgNotRunnable)
     {
-        return handle_cli(host_info, argc, argv, app_candidate);
+        if (host_command.empty())
+        {
+            return handle_cli(host_info, argc, argv, app_candidate);
+        }
+        else
+        {
+            return result;
+        }
     }
 
     if (!result)

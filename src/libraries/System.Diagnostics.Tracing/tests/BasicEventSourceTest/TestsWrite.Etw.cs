@@ -30,7 +30,7 @@ namespace BasicEventSourceTests
             }
         }
 
-        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/18806", TargetFrameworkMonikers.NetFramework)]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/27106")]
         [ConditionalFact(nameof(IsProcessElevated))]
         public void Test_Write_T_In_Manifest_Serialization_WithEtwListener()

@@ -55,7 +55,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineProperty_InvalidUnicodeChars()
         {
-            // TODO: move into TestData when #7166 is fixed
+            // TODO https://github.com/dotnet/corefx/issues/7166: move into TestData
             DefineEvent("\uDC00", (EventAttributes)0x8000, typeof(int), "\uFFFD", (EventAttributes)0x8000);
             DefineEvent("\uD800", EventAttributes.None, typeof(int), "\uFFFD", EventAttributes.None);
             DefineEvent("1A\0\t\v\r\n\n\uDC81\uDC91", EventAttributes.None, typeof(int*), "1A", EventAttributes.None);

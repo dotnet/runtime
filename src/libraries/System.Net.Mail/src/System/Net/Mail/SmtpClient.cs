@@ -301,7 +301,7 @@ namespace System.Net.Mail
                     // takes a string host and an int port, bypassing the need for a Uri. We workaround that here by
                     // creating an http Uri, simply for the purposes of getting an appropriate ServicePoint instance.
                     // This has some subtle impact on behavior, e.g. the returned ServicePoint's Address property will
-                    // be usable, whereas in desktop it throws an exception that "This property is not supported for
+                    // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
                     // protocols that do not use URI."
                     _servicePoint = ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
                 }

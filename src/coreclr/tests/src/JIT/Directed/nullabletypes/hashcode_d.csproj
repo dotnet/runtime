@@ -7,7 +7,6 @@
     <DebugType>Full</DebugType>
     <Optimize />
     <NoLogo>True</NoLogo>
-    <DefineConstants>$(DefineConstants);DESKTOP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="hashcode.cs" />
