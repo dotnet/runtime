@@ -449,7 +449,7 @@ namespace System.Globalization
             DateTime time = new DateTime(ticks);
 
             // Save the Gregorian date values.
-            time.GetDatePart(out gregorianYear, out gregorianMonth, out gregorianDay);
+            time.GetDate(out gregorianYear, out gregorianMonth, out gregorianDay);
 
             DateBuffer lunarDate = new DateBuffer();    // lunar month and day for Jan 1
 
