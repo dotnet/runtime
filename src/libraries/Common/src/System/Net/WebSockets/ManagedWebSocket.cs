@@ -975,7 +975,6 @@ namespace System.Net.WebSockets
             Span<byte> receiveBufferSpan = _receiveBuffer.Span;
 
             header.Fin = (receiveBufferSpan[_receiveBufferOffset] & 0x80) != 0;
-            bool reservedSet = (receiveBufferSpan[_receiveBufferOffset] & 0x70) != 0;
             header.Opcode = (MessageOpcode)(receiveBufferSpan[_receiveBufferOffset] & 0xF);
 
             bool masked = (receiveBufferSpan[_receiveBufferOffset + 1] & 0x80) != 0;
@@ -1001,7 +1000,7 @@ namespace System.Net.WebSockets
                 ConsumeFromBuffer(8);
             }
 
-            bool shouldFail = reservedSet;
+            bool shouldFail = false;
             if (masked)
             {
                 if (!_isServer)
