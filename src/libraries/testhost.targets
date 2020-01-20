@@ -1,0 +1,87 @@
+<Project DefaultTargets="Build">
+
+  <PropertyGroup>
+      <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(ConfigurationGroup)' == 'Debug' or '$(Coverage)' == 'true') and '$(TestRuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
+  </PropertyGroup>
+
+  <!-- Setup the testing shared framework host -->
+  <Target Name="SetupTestingHost"
+          Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
+    <PropertyGroup>
+      <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+      <DotNetVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetVersion>
+
+      <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
+      <HostFxrFileName Condition="'$(TargetsWindows)' != 'true'">libhostfxr</HostFxrFileName>
+
+      <UseHardlink>true</UseHardlink>
+      <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
+      <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
+      <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(HostFxFile)"
+          DestinationFolder="$(TestHostRootPath)host\fxr\$(ProductVersion)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
+    <Copy SourceFiles="@(DotnetExe)"
+          DestinationFolder="$(TestHostRootPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OS)' != 'Windows_NT'"/>
+  </Target>
+
+  <Target Name="OverrideRuntimeCoreCLR"
+          DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild"
+          Condition="'$(TestRuntimeFlavor)' != 'Mono'">
+    <ItemGroup>
+      <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
+      <RuntimeFiles Include="@(CoreCLRFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetCoreCLRILFiles"
+          DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild"
+          Condition="'$(TestRuntimeFlavor)' != 'Mono'">
+    <ItemGroup>
+      <CoreCLRILFiles Include="$(CoreCLRArtifactsPath)/IL/*.*" />
+    </ItemGroup>
+    <Error Condition="'@(CoreCLRILFiles)' == ''" Text="Could not locate CoreCLR IL files." />
+  </Target>
+
+  <Target Name="SwapNativeForIL"
+          DependsOnTargets="GetCoreCLRILFiles;OverrideRuntimeCoreCLR"
+          Condition="'$(SwapNativeForIL)' == 'true'">
+      <ItemGroup>
+        <RuntimeFiles Remove="@(RuntimeFiles)" Condition="'@(CoreCLRILFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'" />
+        <RuntimeFiles Remove="@(RuntimeFiles)" Condition="'@(CoreCLRILFiles->'%(FileName).ni%(Extension)')' == '%(FileName)%(Extension)'" />
+        <RuntimeFiles Include="@(CoreCLRILFiles)" />
+      </ItemGroup>
+  </Target>
+
+  <Target Name="OverrideRuntimeMono"
+          DependsOnTargets="ResolveMonoFilesFromLocalBuild"
+          Condition="'$(TestRuntimeFlavor)' == 'Mono'">
+    <ItemGroup>
+      <RuntimeFiles Include="@(MonoFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyRuntimeFilesToTestSharedFrameworkPath"
+          BeforeTargets="Build"
+          DependsOnTargets="SetupTestingHost;OverrideRuntimeCoreCLR;SwapNativeForIL;OverrideRuntimeMono">
+    <Copy SourceFiles="@(RuntimeFiles)"
+      DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)"
+      SkipUnchangedFiles="true"
+      UseHardlinksIfPossible="$(UseHardlink)" />
+  </Target>
+
+</Project>

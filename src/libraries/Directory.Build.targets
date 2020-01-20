@@ -143,6 +143,9 @@
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
 
+  <!-- Import testhost targets -->
+  <Import Project="testhost.targets" />
+
   <!-- Import Packaging targets -->
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" />
 
