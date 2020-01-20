@@ -122,7 +122,9 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
 // TODO-Throughput: current implementation parses class name to find base type. Change
 //         this when we implement  SIMD intrinsic identification for the final
 //         product.
-var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */, int* is__m128 /*= nullptr*/)
+var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd,
+                                                 unsigned*            sizeBytes /*= nullptr */,
+                                                 int*                 is__m128 /*= nullptr*/)
 {
     assert(supportSIMDTypes());
     if (is__m128)
