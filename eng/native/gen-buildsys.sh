@@ -5,8 +5,7 @@
 
 scriptroot="$( cd -P "$( dirname "$0" )" && pwd )"
 
-if [ "$#" -lt 4 ]
-then
+if [[ "$#" -lt 4 ]]; then
   echo "Usage..."
   echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to tryrun.cmake directory> <path to intermediate directory> <Architecture> <compiler> <compiler major version> <compiler minor version> [build flavor] [ninja] [scan-build] [cmakeargs]"
   echo "Specify the path to the top level CMake file."
@@ -30,7 +29,7 @@ cxxCompiler="$compiler++"
 majorVersion="$6"
 minorVersion="$7"
 
-if [ "$compiler" = "gcc" ]; then cxxCompiler="g++"; fi
+if [[ "$compiler" == "gcc" ]]; then cxxCompiler="g++"; fi
 
 check_version_exists() {
     desired_version=-1
@@ -47,23 +46,23 @@ check_version_exists() {
     echo "$desired_version"
 }
 
-if [ -z "$CLR_CC" ]; then
+if [[ -z "$CLR_CC" ]]; then
 
     # Set default versions
-    if [ -z "$majorVersion" ]; then
+    if [[ -z "$majorVersion" ]]; then
         # note: gcc (all versions) and clang versions higher than 6 do not have minor version in file name, if it is zero.
-        if [ "$compiler" = "clang" ]; then versions=( 9 8 7 6.0 5.0 4.0 3.9 3.8 3.7 3.6 3.5 )
-        elif [ "$compiler" = "gcc" ]; then versions=( 9 8 7 6 5 4.9 ); fi
+        if [[ "$compiler" == "clang" ]]; then versions=( 9 8 7 6.0 5.0 4.0 3.9 3.8 3.7 3.6 3.5 )
+        elif [[ "$compiler" == "gcc" ]]; then versions=( 9 8 7 6 5 4.9 ); fi
 
         for version in "${versions[@]}"; do
             parts=(${version//./ })
             desired_version="$(check_version_exists "${parts[0]}" "${parts[1]}")"
-            if [ "$desired_version" != "-1" ]; then majorVersion="${parts[0]}"; break; fi
+            if [[ "$desired_version" != "-1" ]]; then majorVersion="${parts[0]}"; break; fi
         done
 
-        if [ -z "$majorVersion" ]; then
+        if [[ -z "$majorVersion" ]]; then
             if command -v "$compiler" > /dev/null; then
-                if [ "$(uname)" != "Darwin" ]; then
+                if [[ "$(uname)" != "Darwin" ]]; then
                     echo "WARN: Specific version of $compiler not found, falling back to use the one in PATH."
                 fi
                 CC="$(command -v "$compiler")"
@@ -73,8 +72,8 @@ if [ -z "$CLR_CC" ]; then
                 exit 1
             fi
         else
-            if [ "$compiler" = "clang" ] && [ "$majorVersion" -lt 5 ]; then
-                if [ "$build_arch" = "arm" ] || [ "$build_arch" = "armel" ]; then
+            if [[ "$compiler" == "clang" && "$majorVersion" -lt 5 ]]; then
+                if [[ "$build_arch" == "arm" || "$build_arch" == "armel" ]]; then
                     if command -v "$compiler" > /dev/null; then
                         echo "WARN: Found clang version $majorVersion which is not supported on arm/armel architectures, falling back to use clang from PATH."
                         CC="$(command -v "$compiler")"
@@ -88,19 +87,19 @@ if [ -z "$CLR_CC" ]; then
         fi
     else
         desired_version="$(check_version_exists "$majorVersion" "$minorVersion")"
-        if [ "$desired_version" = "-1" ]; then
+        if [[ "$desired_version" == "-1" ]]; then
             echo "ERROR: Could not find specific version of $compiler: $majorVersion $minorVersion."
             exit 1
         fi
     fi
 
-    if [ -z "$CC" ]; then
+    if [[ -z "$CC" ]]; then
         CC="$(command -v "$compiler$desired_version")"
         CXX="$(command -v "$cxxCompiler$desired_version")"
-        if [ -z "$CXX" ]; then CXX="$(command -v "$cxxCompiler")"; fi
+        if [[ -z "$CXX" ]]; then CXX="$(command -v "$cxxCompiler")"; fi
     fi
 else
-    if [ ! -f "$CLR_CC" ]; then
+    if [[ ! -f "$CLR_CC" ]]; then
         echo "ERROR: CLR_CC is set but path '$CLR_CC' does not exist"
         exit 1
     fi
@@ -108,7 +107,7 @@ else
     CXX="$CLR_CXX"
 fi
 
-if [ -z "$CC" ]; then
+if [[ -z "$CC" ]]; then
     echo "ERROR: Unable to find $compiler."
     exit 1
 fi
@@ -146,7 +145,7 @@ for i in "${@:8}"; do
 done
 
 cmake_extra_defines=
-if [ "$CROSSCOMPILE" == "1" ]; then
+if [[ "$CROSSCOMPILE" == "1" ]]; then
     if ! [[ -n "$ROOTFS_DIR" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
@@ -155,19 +154,19 @@ if [ "$CROSSCOMPILE" == "1" ]; then
     TARGET_BUILD_ARCH="$build_arch"
     export TARGET_BUILD_ARCH
 
-    if [ -n "$tryrun_dir" ]; then
+    if [[ -n "$tryrun_dir" ]]; then
         cmake_extra_defines="$cmake_extra_defines -C $tryrun_dir/tryrun.cmake"
     fi
     cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
 fi
 
-if [ "$build_arch" == "armel" ]; then
+if [[ "$build_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
 cmake_command=$(command -v cmake)
 
-if [[ "$scan_build" == "ON" && "$SCAN_BUILD_COMMAND" != "" ]]; then
+if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
 fi
 

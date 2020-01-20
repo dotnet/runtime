@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # resolve python-version to use
-if [ -z "$PYTHON" ] ; then
+if [[ -z "$PYTHON" ]]; then
     if ! PYTHON=$(command -v python3 || command -v python2 || command -v python || command -v py)
     then
        echo "Unable to locate build-dependency python!" 1>&2
@@ -41,7 +41,7 @@ setup_dirs_local()
     mkdir -p "$__LogsDir"
     mkdir -p "$__MsbuildDebugLogsDir"
 
-    if [ "$__CrossBuild" = 1 ]; then
+    if [[ "$__CrossBuild" == 1 ]]; then
         mkdir -p "$__CrossComponentBinDir"
     fi
 }
@@ -49,40 +49,40 @@ setup_dirs_local()
 restore_optdata()
 {
     local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
-    if [ "$__SkipRestoreOptData" = 0 ] && [ "$__IsMSBuildOnNETCoreSupported" = 1 ]; then
+    if [[ "$__SkipRestoreOptData" == 0 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
         echo "Restoring the OptimizationData package"
         "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                                $OptDataProjectFilePath /t:Restore /m \
                                                $__CommonMSBuildArgs $__UnprocessedBuildArgs
-        local exit_code=$?
-        if [ $exit_code != 0 ]; then
+        local exit_code="$?"
+        if [[ "$exit_code" != 0 ]]; then
             echo "${__ErrMsgPrefix}Failed to restore the optimization data package."
-            exit $exit_code
+            exit "$exit_code"
         fi
     fi
 
-    if [ "$__IsMSBuildOnNETCoreSupported" = 1 ]; then
+    if [[ "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 
         local PgoDataPackagePathOutputFile="${__IntermediatesDir}/optdatapath.txt"
         local IbcDataPackagePathOutputFile="${__IntermediatesDir}/ibcoptdatapath.txt"
 
         # Writes into ${PgoDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} 2>&1 > /dev/null
-        local exit_code=$?
-        if [ $exit_code != 0 ] || [ ! -f "${PgoDataPackagePathOutputFile}" ]; then
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} > /dev/null 2>&1
+        local exit_code="$?"
+        if [[ "$exit_code" != 0 || ! -f "${PgoDataPackagePathOutputFile}" ]]; then
             echo "${__ErrMsgPrefix}Failed to get PGO data package path."
-            exit $exit_code
+            exit "$exit_code"
         fi
 
         __PgoOptDataPath=$(<"${PgoDataPackagePathOutputFile}")
 
         # Writes into ${IbcDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpIbcDataPackagePath ${__CommonMSBuildArgs} /p:IbcDataPackagePathOutputFile=${IbcDataPackagePathOutputFile} 2>&1 > /dev/null
-        local exit_code=$?
-        if [ $exit_code != 0 ] || [ ! -f "${IbcDataPackagePathOutputFile}" ]; then
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpIbcDataPackagePath ${__CommonMSBuildArgs} /p:IbcDataPackagePathOutputFile=${IbcDataPackagePathOutputFile} > /dev/null 2>&1
+        local exit_code="$?"
+        if [[ "$exit_code" != 0 || ! -f "${IbcDataPackagePathOutputFile}" ]]; then
             echo "${__ErrMsgPrefix}Failed to get IBC data package path."
-            exit $exit_code
+            exit "$exit_code"
         fi
 
         __IbcOptDataPath=$(<"${IbcDataPackagePathOutputFile}")
@@ -91,21 +91,21 @@ restore_optdata()
 
 generate_event_logging_sources()
 {
-    __OutputEventingDir=$1
+    __OutputEventingDir="$1"
 
     __PythonWarningFlags="-Wall"
-    if [[ $__IgnoreWarnings == 0 ]]; then
+    if [[ "$__IgnoreWarnings" == 0 ]]; then
         __PythonWarningFlags="$__PythonWarningFlags -Werror"
     fi
 
     echo "Laying out dynamically generated EventSource classes"
-    $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genRuntimeEventSources.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__OutputEventingDir"
+    "$PYTHON" -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genRuntimeEventSources.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__OutputEventingDir"
 }
 
 generate_event_logging()
 {
     # Event Logging Infrastructure
-    if [[ $__SkipMSCorLib == 0 ]]; then
+    if [[ "$__SkipMSCorLib" == 0 ]]; then
         generate_event_logging_sources "$__ArtifactsIntermediatesDir/Eventing/$__BuildArch/$__BuildType"
     fi
 }
@@ -135,7 +135,7 @@ build_cross_architecture_components()
     export CROSSCOMPILE=0
 
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    if [ "$__SkipCrossArchBuild" = 1 ]; then
+    if [[ "$__SkipCrossArchBuild" == 1 ]]; then
         echo "Skipping cross-architecture components build."
     else
         build_native "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "cross-architecture components"
@@ -149,42 +149,42 @@ build_CoreLib_ni()
     local __CrossGenExec=$1
     local __CoreLibILDir=$2
 
-    if [ $__PartialNgen == 1 ]; then
+    if [[ "$__PartialNgen" == 1 ]]; then
         export COMPlus_PartialNGen=1
     fi
 
-    if [ -e $__CrossGenCoreLibLog ]; then
-        rm $__CrossGenCoreLibLog
+    if [[ -e "$__CrossGenCoreLibLog" ]]; then
+        rm "$__CrossGenCoreLibLog"
     fi
     echo "Generating native image of System.Private.CoreLib.dll for $__BuildOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
     echo "$__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll"
-    $__CrossGenExec /nologo /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
-    local exit_code=$?
-    if [ $exit_code != 0 ]; then
+    "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
+    local exit_code="$?"
+    if [[ "$exit_code" != 0 ]]; then
         echo "${__ErrMsgPrefix}Failed to generate native image for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
-        exit $exit_code
+        exit "$exit_code"
     fi
 
-    if [ "$__BuildOS" == "Linux" ]; then
+    if [[ "$__BuildOS" == "Linux" ]]; then
         echo "Generating symbol file for System.Private.CoreLib.dll"
         echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
-        $__CrossGenExec /nologo /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
-        local exit_code=$?
-        if [ $exit_code != 0 ]; then
+        "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
+        local exit_code="$?"
+        if [[ "$exit_code" != 0 ]]; then
             echo "${__ErrMsgPrefix}Failed to generate symbol file for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
-            exit $exit_code
+            exit "$exit_code"
         fi
     fi
 }
 
 build_CoreLib()
 {
-    if [ "$__IsMSBuildOnNETCoreSupported" = 0 ]; then
+    if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then
         echo "System.Private.CoreLib.dll build unsupported."
         return
     fi
 
-    if [ $__SkipMSCorLib == 1 ]; then
+    if [[ "$__SkipMSCorLib" == 1 ]]; then
        echo "Skipping building System.Private.CoreLib."
        return
     fi
@@ -193,7 +193,7 @@ build_CoreLib()
 
     # Invoke MSBuild
     __ExtraBuildArgs=""
-    if [[ "$__IbcTuning" == "" ]]; then
+    if [[ -z "$__IbcTuning"  ]]; then
         __ExtraBuildArgs="$__ExtraBuildArgs /p:OptimizationDataDir=\"$__IbcOptDataPath/data\""
         __ExtraBuildArgs="$__ExtraBuildArgs /p:EnableProfileGuidedOptimization=true"
     fi
@@ -209,10 +209,10 @@ build_CoreLib()
                                            /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
                                            $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
 
-    local exit_code=$?
-    if [ $exit_code != 0 ]; then
+    local exit_code="$?"
+    if [[ "$exit_code" != 0 ]]; then
         echo "${__ErrMsgPrefix}Failed to restore managed components."
-        exit $exit_code
+        exit "$exit_code"
     fi
 
     "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
@@ -222,23 +222,23 @@ build_CoreLib()
                                            /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
                                            $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
 
-    local exit_code=$?
-        if [ $exit_code != 0 ]; then
+    local exit_code="$?"
+        if [[ "$exit_code" != 0 ]]; then
         echo "${__ErrMsgPrefix}Failed to build managed components."
-        exit $exit_code
+        exit "$exit_code"
     fi
 
     if [[ "$__BuildManagedTools" -eq "1" ]]; then
         echo "Publishing crossgen2 for $__DistroRid"
         "$__RepoRootDir/dotnet.sh" publish --self-contained -r $__DistroRid -c $__BuildType -o "$__BinDir/crossgen2" "$__ProjectRoot/src/tools/crossgen2/crossgen2/crossgen2.csproj" /nologo /p:BuildArch=$__BuildArch
 
-        local exit_code=$?
-        if [ $exit_code != 0 ]; then
+        local exit_code="$?"
+        if [[ "$exit_code" != 0 ]]; then
             echo "${__ErrMsgPrefix}Failed to build crossgen2."
-            exit $exit_code
+            exit "$exit_code"
         fi
 
-        if [ "$__HostOS" = "OSX" ]; then
+        if [[ "$__HostOS" == "OSX" ]]; then
             cp "$__BinDir/libclrjit.dylib" "$__BinDir/crossgen2/libclrjitilc.dylib"
             cp "$__BinDir/libjitinterface.dylib" "$__BinDir/crossgen2/libjitinterface.dylib"
         else
@@ -249,10 +249,10 @@ build_CoreLib()
 
     local __CoreLibILDir="$__BinDir"/IL
 
-    if [ "$__SkipCrossgen" = 1 ]; then
+    if [[ "$__SkipCrossgen" == 1 ]]; then
         echo "Skipping generating native image"
 
-        if [ "$__CrossBuild" = 1 ]; then
+        if [[ "$__CrossBuild" == 1 ]]; then
             # Crossgen not performed, so treat the IL version as the final version
             cp "$__CoreLibILDir"/System.Private.CoreLib.dll "$__BinDir"/System.Private.CoreLib.dll
         fi
@@ -261,31 +261,31 @@ build_CoreLib()
     fi
 
     # The cross build generates a crossgen with the target architecture.
-    if [ $__CrossBuild == 0 ]; then
-       if [ $__SkipCoreCLR == 1 ]; then
+    if [[ "$__CrossBuild" == 0 ]]; then
+       if [[ "$__SkipCoreCLR" == 1 ]]; then
            return
        fi
 
        # The architecture of host pc must be same architecture with target.
-       if [[ ( "$__HostArch" == "$__BuildArch" ) ]]; then
-           build_CoreLib_ni "$__BinDir/crossgen" $__CoreLibILDir
+       if [[ "$__HostArch" == "$__BuildArch" ]]; then
+           build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
        elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
-           build_CoreLib_ni "$__BinDir/crossgen" $__CoreLibILDir
+           build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
        elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-           build_CoreLib_ni "$__BinDir/crossgen" $__CoreLibILDir
+           build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
        else
            exit 1
        fi
     else
        if [[ ( "$__CrossArch" == "x86" ) && ( "$__BuildArch" == "arm" ) ]]; then
-           build_CoreLib_ni "$__CrossComponentBinDir/crossgen" $__CoreLibILDir
+           build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
        elif [[ ( "$__CrossArch" == "x64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-           build_CoreLib_ni "$__CrossComponentBinDir/crossgen" $__CoreLibILDir
+           build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
        elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "arm64" ) ]]; then
-           build_CoreLib_ni "$__CrossComponentBinDir/crossgen" $__CoreLibILDir
+           build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
        else
            # Crossgen not performed, so treat the IL version as the final version
-           cp $__CoreLibILDir/System.Private.CoreLib.dll $__BinDir/System.Private.CoreLib.dll
+           cp "$__CoreLibILDir"/System.Private.CoreLib.dll "$__BinDir"/System.Private.CoreLib.dll
        fi
     fi
 }
@@ -293,32 +293,32 @@ build_CoreLib()
 generate_NugetPackages()
 {
     # We can only generate nuget package if we also support building mscorlib as part of this build.
-    if [ "$__IsMSBuildOnNETCoreSupported" = 0 ]; then
+    if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then
         echo "Nuget package generation unsupported."
         return
     fi
 
     # Since we can build mscorlib for this OS, did we build the native components as well?
-    if [[ $__SkipCoreCLR == 1 && $__CrossgenOnly == 0 ]]; then
+    if [[ "$__SkipCoreCLR" == 1 && "$__CrossgenOnly" == 0 ]]; then
         echo "Unable to generate nuget packages since native components were not built."
         return
     fi
 
-    echo "Generating nuget packages for "$__BuildOS
-    echo "DistroRid is "$__DistroRid
-    echo "ROOTFS_DIR is "$ROOTFS_DIR
+    echo "Generating nuget packages for $__BuildOS"
+    echo "DistroRid is $__DistroRid"
+    echo "ROOTFS_DIR is $ROOTFS_DIR"
     # Build the packages
     # Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
-    $__RepoRootDir/eng/common/build.sh -r -b -projects $__SourceDir/.nuget/packages.builds \
-                                       -verbosity minimal -bl:$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.binlog \
+    "$__RepoRootDir"/eng/common/build.sh -r -b -projects "$__SourceDir"/.nuget/packages.builds \
+                                       -verbosity minimal -bl:"$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.binlog" \
                                        /p:PortableBuild=true \
-                                       /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:__DoCrossArchBuild=$__CrossBuild \
+                                       /p:"__IntermediatesDir=$__IntermediatesDir" /p:"__RootBinDir=$__RootBinDir" /p:"__DoCrossArchBuild=$__CrossBuild" \
                                        $__CommonMSBuildArgs $__UnprocessedBuildArgs
 
-    local exit_code=$?
-    if [ $exit_code != 0 ]; then
+    local exit_code="$?"
+    if [[ "$exit_code" != 0 ]]; then
         echo "${__ErrMsgPrefix}Failed to generate Nuget packages."
-        exit $exit_code
+        exit "$exit_code"
     fi
 }
 
@@ -464,7 +464,7 @@ __CMakeArgs=""
 
 source "$__ProjectRoot"/_build-commons.sh
 
-if [ "${__BuildArch}" != "${__HostArch}" ]; then
+if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
 fi
 
@@ -480,15 +480,15 @@ export __ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj/coreclr"
 __CrossComponentBinDir="$__BinDir"
 
 __CrossArch="$__HostArch"
-if [ "$__CrossBuild" = 1 ]; then
+if [[ "$__CrossBuild" == 1 ]]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi
 __CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$__BuildArch.$__BuildType.log"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
 # This is needed by CLI to function.
-if [ -z "$HOME" ]; then
-    if [ ! -d "$__ProjectDir/temp_home" ]; then
+if [[ -z "$HOME" ]]; then
+    if [[ ! -d "$__ProjectDir/temp_home" ]]; then
         mkdir temp_home
     fi
     export HOME="$__ProjectDir"/temp_home
@@ -517,19 +517,19 @@ generate_event_logging
 # Build the coreclr (native) components.
 __CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
 
-if [ "$__SkipConfigure" = 0 ] && [ "$__CodeCoverage" = 1 ]; then
+if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
 fi
 
-if [ "$__SkipCoreCLR" = 1 ]; then
+if [[ "$__SkipCoreCLR" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
     build_native "$__BuildArch" "$__ProjectRoot" "$__ProjectRoot" "$__IntermediatesDir" "CoreCLR component"
 fi
 
 # Build cross-architecture components
-if [ "$__SkipCrossArchNative" != 1 ]; then
-    if [ "$__CrossBuild" = 1 ]; then
+if [[ "$__SkipCrossArchNative" != 1 ]]; then
+    if [[ "$__CrossBuild" == 1 ]]; then
         build_cross_architecture_components
     fi
 fi
@@ -538,12 +538,12 @@ fi
 
 build_CoreLib
 
-if [ "$__CrossgenOnly" = 1 ]; then
+if [[ "$__CrossgenOnly" == 1 ]]; then
     build_CoreLib_ni "$__BinDir/crossgen"
 fi
 
 # Generate nuget packages
-if [ "$__SkipNuget" != 1 ]; then
+if [[ "$__SkipNuget" != 1 ]]; then
     generate_NugetPackages
 fi
 

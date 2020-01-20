@@ -47,16 +47,16 @@ __VerboseBuild=false
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
 # Set cross build
-if [ "$__BuildArch" != wasm ]; then
+if [[ "$__BuildArch" != wasm ]]; then
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
-    if [ "$__BuildArch" != x86 ] && [ "$__BuildArch" != x64 ]; then
+    if [[ "$__BuildArch" != x86 && "$__BuildArch" != x64 ]]; then
         __CrossBuild=1
         echo "Set CrossBuild for $__BuildArch build"
     fi
 else
-    if [ -z "$EMSDK_PATH" ]; then
+    if [[ -z "$EMSDK_PATH" ]]; then
         echo "Error: Should set EMSDK_PATH environment variable pointing to emsdk root."
         exit 1
     fi
@@ -64,7 +64,7 @@ else
 fi
 
 # set default OSX deployment target
-if [ "$__BuildOS" = OSX ]; then
+if [[ "$__BuildOS" == OSX ]]; then
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
 fi
 
