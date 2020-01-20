@@ -69,7 +69,7 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
-     - subset: mono
+    - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
       exclude:
