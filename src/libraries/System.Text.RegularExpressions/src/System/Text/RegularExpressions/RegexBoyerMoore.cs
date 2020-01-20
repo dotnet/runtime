@@ -357,15 +357,17 @@ namespace System.Text.RegularExpressions
 
             if (NegativeASCII != null)
             {
-                sb.Append(indent + "Negative table\n");
+                sb.Append(indent + "Negative table: ");
                 for (int i = 0; i < NegativeASCII.Length; i++)
                 {
                     if (NegativeASCII[i] != Pattern.Length)
                     {
-                        sb.Append(indent + "  " + Regex.Escape(Convert.ToString((char)i, CultureInfo.InvariantCulture)) + " " + NegativeASCII[i].ToString(CultureInfo.InvariantCulture) + "\n");
+                        sb.Append(" {" + Regex.Escape(Convert.ToString((char)i, CultureInfo.InvariantCulture)) + " " + NegativeASCII[i].ToString(CultureInfo.InvariantCulture) + "}");
                     }
                 }
             }
+
+            sb.Append("\n");
 
             return sb.ToString();
         }
