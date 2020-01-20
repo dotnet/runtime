@@ -963,7 +963,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 #if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
     var_types unused;
-    int is__m128 = 0;
+    int       is__m128 = 0;
     if ((impNormStructType(clsHnd, &unused, &is__m128) == TYP_SIMD16) && (is__m128 == 1))
     {
         // TYP_SIMD16 should be returned in XMM0
