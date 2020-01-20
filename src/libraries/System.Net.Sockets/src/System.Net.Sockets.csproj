@@ -197,7 +197,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAConnect.cs">
       <Link>Common\Interop\Windows\WinSock\Interop.WSAConnect.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\WinSock\Interop.WSADuplicateSocket.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSADuplicateSocket.cs">
       <Link>Common\Interop\Windows\WinSock\Interop.WSADuplicateSocket.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAGetOverlappedResult.cs">
