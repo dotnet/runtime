@@ -6,7 +6,8 @@ parameters:
   framework: ''
   isOfficialBuild: false
   isOfficialAllConfigurations: false
-  liveCoreClrBuildConfig: ''
+  liveRuntimeBuildConfig: ''
+  runtimeFlavor: 'coreclr'
   timeoutInMinutes: 150
   condition: true
   container: ''
@@ -71,18 +72,24 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
 
-        - _coreClrArtifactName: ''
-        - _coreClrDownloadPath: ''
-        - _coreClrArtifactsPathArg: ''
+        - _runtimeArtifactName: ''
+        - _runtimeDownloadPath: ''
+        - _runtimeArtifactsPathArg: ''
+        - _runtimeFlavorName: ''
 
-        - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
-          - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
-          - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
-          - _coreClrArtifactsPathArg: ' /p:CoreCLRArtifactsPath=$(_coreClrDownloadPath)'
+        - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+          - _runtimeFlavorName: 'Mono'
+        - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+          - _runtimeFlavorName: 'CoreCLR'
+
+        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
+          - _runtimeArtifactName: '${{ parameters.runtimeFlavorName }}Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+          - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-            - _coreClrArtifactName: 'CoreCLRProduct_Linux_x64_${{ parameters.liveCoreClrBuildConfig }}'
+            - _runtimeArtifactName: '${{ parameters.runtimeFlavorName }}Product_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -94,7 +101,7 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_coreClrArtifactsPathArg)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg)
         - ${{ parameters.variables }}
 
       dependsOn:
@@ -109,12 +116,12 @@ jobs:
       steps:
       - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
-      - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+      - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
-            unpackFolder: $(_coreClrDownloadPath)
-            artifactFileName: '$(_coreClrArtifactName)$(archiveExtension)'
-            artifactName: '$(_coreClrArtifactName)'
-            displayName: 'CoreCLR build drop'
+            unpackFolder: $(_runtimeDownloadPath)
+            artifactFileName: '$(_runtimeArtifactName)$(archiveExtension)'
+            artifactName: '$(_runtimeArtifactName)'
+            displayName: '${{ parameters.runtimeFlavorName }} build drop'
 
       - ${{ parameters.steps }}
