@@ -20,7 +20,6 @@ __CompilerMajorVersion=
 __CompilerMinorVersion=
 __CrossBuild=0
 __IsMSBuildOnNETCoreSupported=0
-__NumProc=1
 __PortableBuild=1
 __RootBinDir="$__RepoRootDir/artifacts"
 __SkipConfigure=0

@@ -473,8 +473,8 @@ usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiprestorepackages: skip package restore.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
-__ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-__RepoRootDir="${__ProjectRoot}/../.."
+__ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
+__RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
 
 handle_arguments_local() {
     case "$1" in

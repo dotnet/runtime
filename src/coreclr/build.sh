@@ -135,11 +135,7 @@ build_cross_architecture_components()
     export CROSSCOMPILE=0
 
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    if [[ "$__SkipCrossArchBuild" == 1 ]]; then
-        echo "Skipping cross-architecture components build."
-    else
-        build_native "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "cross-architecture components"
-    fi
+    build_native "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "cross-architecture components"
 
     export CROSSCOMPILE=1
 }
@@ -409,11 +405,9 @@ echo "Commencing CoreCLR Repo build"
 #
 # Set the default arguments for build
 
-# Obtain the location of the bash script to figure out where the root of the subrepo is.
-__ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Some paths are relative to the main repo root
-__RepoRootDir="${__ProjectRoot}/../.."
+# Obtain the location of the bash script to figure out where the root of the repo is.
+__ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
+__RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
 
 __BuildArch=
 __BuildType=Debug
