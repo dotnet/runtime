@@ -256,6 +256,12 @@ jobs:
   - name: AllArtifactsDownloadPath
     value: ''
 
+  - name: runtimeFlavorName
+    ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+      value: Mono
+    ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+      value: CoreCLR
+
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - name: liveRuntimeLegName
       value: ${{ format('{0}{1}_{2}_{3}',
@@ -270,7 +276,7 @@ jobs:
         /p:RuntimeOverridePath=${{ parameters.buildCommandSourcesDirectory }}$(RuntimeDownloadPath)
         /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
     - name: RuntimeArtifactName
-      value: variables['runtimeFlavorName']Product_$(liveRuntimeLegName)
+      value: $(runtimeFlavorName)Product_$(liveRuntimeLegName)
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - name: liveLibrariesLegName
@@ -372,17 +378,17 @@ jobs:
       downloadType: specific
       downloadPath: '$(Build.SourcesDirectory)/__download__/AllPlatforms/'
       itemPattern: |
-        variables['runtimeFlavorName']Product_*/**
+        $(runtimeFlavorName)Product_*/**
         libraries_bin_*/**
 
   - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
     - ${{ each platform in parameters.platforms }}:
       - task: ExtractFiles@1
-        displayName: 'Unzip variables['runtimeFlavorName'] artifacts: ${{ platform }}'
+        displayName: 'Unzip $(runtimeFlavorName) artifacts: ${{ platform }}'
         inputs:
           archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/variables['runtimeFlavorName']Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}.*
-          destinationFolder: $(AllArtifactsDownloadPath)/variables['runtimeFlavorName']Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}/
+            $(Build.SourcesDirectory)/__download__/AllPlatforms/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}.*
+          destinationFolder: $(AllArtifactsDownloadPath)/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}/
           cleanUnpackFolder: false
       - task: ExtractFiles@1
         displayName: 'Unzip Libraries artifacts: ${{ platform }}'
@@ -398,7 +404,7 @@ jobs:
         unpackFolder: $(Build.SourcesDirectory)/$(RuntimeDownloadPath)
         artifactFileName: '$(RuntimeArtifactsName)$(archiveExtension)'
         artifactName: '$(RuntimeArtifactName)'
-        displayName: 'variables['runtimeFlavorName'] artifacts'
+        displayName: '$(runtimeFlavorName) artifacts'
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml

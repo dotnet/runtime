@@ -8,11 +8,6 @@ variables:
     value: /eng/pipelines/libraries
   - name: isFullMatrix
     value: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-  - name: runtimeFlavorName
-    ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      value: Mono
-    ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-      value: CoreCLR 
   - name: includeWindowsOuterloop
     value: ${{ or(endsWith(variables['Build.DefinitionName'], 'windows'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}
   - name: includeLinuxOuterloop
