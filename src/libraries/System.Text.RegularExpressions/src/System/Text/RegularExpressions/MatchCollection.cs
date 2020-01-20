@@ -22,13 +22,11 @@ namespace System.Text.RegularExpressions
         private readonly Regex _regex;
         private readonly List<Match> _matches;
         private readonly string _input;
-        private readonly int _beginning;
-        private readonly int _length;
         private int _startat;
         private int _prevlen;
         private bool _done;
 
-        internal MatchCollection(Regex regex, string input, int beginning, int length, int startat)
+        internal MatchCollection(Regex regex, string input, int startat)
         {
             if ((uint)startat > (uint)input.Length)
             {
@@ -37,8 +35,6 @@ namespace System.Text.RegularExpressions
 
             _regex = regex;
             _input = input;
-            _beginning = beginning;
-            _length = length;
             _startat = startat;
             _prevlen = -1;
             _matches = new List<Match>();
@@ -97,7 +93,7 @@ namespace System.Text.RegularExpressions
             Match match;
             do
             {
-                match = _regex.Run(false, _prevlen, _input, _beginning, _length, _startat)!;
+                match = _regex.Run(false, _prevlen, _input, 0, _input.Length, _startat)!;
                 if (!match.Success)
                 {
                     _done = true;

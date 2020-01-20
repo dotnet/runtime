@@ -148,7 +148,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return new MatchCollection(this, input, 0, input.Length, startat);
+            return new MatchCollection(this, input, startat);
         }
     }
 }
