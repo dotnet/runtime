@@ -82,80 +82,69 @@ namespace System.Text.RegularExpressions
 
             if (count == 1)
             {
-                return new string[] { input };
+                return new[] { input };
             }
 
-            count -= 1;
-
-            using IEnumerator<Match> enumerator = regex.Enumerate(input, startat);
-            if (!enumerator.MoveNext())
-            {
-                return new string[] { input };
-            }
-
-            var al = new List<string>();
+            count--;
+            var state = (al: new List<string>(), prevat: 0, input, count);
 
             if (!regex.RightToLeft)
             {
-                int prevat = 0;
-
-                do
+                regex.Run(input, startat, ref state, (ref (List<string> al, int prevat, string input, int count) state, Match match) =>
                 {
-                    Match match = enumerator.Current;
-                    al.Add(input.Substring(prevat, match.Index - prevat));
-
-                    prevat = match.Index + match.Length;
+                    state.al.Add(state.input.Substring(state.prevat, match.Index - state.prevat));
+                    state.prevat = match.Index + match.Length;
 
                     // add all matched capture groups to the list.
                     for (int i = 1; i < match.Groups.Count; i++)
                     {
                         if (match.IsMatched(i))
                         {
-                            al.Add(match.Groups[i].ToString());
+                            state.al.Add(match.Groups[i].ToString());
                         }
                     }
 
-                    if (--count == 0)
-                    {
-                        break;
-                    }
-                }
-                while (enumerator.MoveNext());
+                    return --state.count != 0;
+                });
 
-                al.Add(input.Substring(prevat, input.Length - prevat));
+                if (state.al.Count == 0)
+                {
+                    return new[] { input };
+                }
+
+                state.al.Add(input.Substring(state.prevat, input.Length - state.prevat));
             }
             else
             {
-                int prevat = input.Length;
+                state.prevat = input.Length;
 
-                do
+                regex.Run(input, startat, ref state, (ref (List<string> al, int prevat, string input, int count) state, Match match) =>
                 {
-                    Match match = enumerator.Current;
-                    al.Add(input.Substring(match.Index + match.Length, prevat - match.Index - match.Length));
-
-                    prevat = match.Index;
+                    state.al.Add(state.input.Substring(match.Index + match.Length, state.prevat - match.Index - match.Length));
+                    state.prevat = match.Index;
 
                     // add all matched capture groups to the list.
                     for (int i = 1; i < match.Groups.Count; i++)
                     {
                         if (match.IsMatched(i))
                         {
-                            al.Add(match.Groups[i].ToString());
+                            state.al.Add(match.Groups[i].ToString());
                         }
                     }
 
-                    if (--count == 0)
-                    {
-                        break;
-                    }
-                }
-                while (enumerator.MoveNext());
+                    return --state.count != 0;
+                });
 
-                al.Add(input.Substring(0, prevat));
-                al.Reverse(0, al.Count);
+                if (state.al.Count == 0)
+                {
+                    return new[] { input };
+                }
+
+                state.al.Add(input.Substring(0, state.prevat));
+                state.al.Reverse(0, state.al.Count);
             }
 
-            return al.ToArray();
+            return state.al.ToArray();
         }
     }
 }

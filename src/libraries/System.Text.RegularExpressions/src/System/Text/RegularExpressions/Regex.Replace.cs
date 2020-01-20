@@ -9,6 +9,8 @@ namespace System.Text.RegularExpressions
     // Callback class
     public delegate string MatchEvaluator(Match match);
 
+    internal delegate bool MatchCallback<TState>(ref TState state, Match match);
+
     public partial class Regex
     {
         /// <summary>
@@ -172,74 +174,47 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            using IEnumerator<Match> enumerator = regex.Enumerate(input, startat);
-            if (!enumerator.MoveNext())
-            {
-                return input;
-            }
-
-            var segments = new SegmentStringBuilder(256);
+            var state = (segments: new SegmentStringBuilder(256), evaluator, prevat: 0, input, count);
 
             if (!regex.RightToLeft)
             {
-                int prevat = 0;
-
-                do
+                regex.Run(input, startat, ref state, (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
                 {
-                    Match match = enumerator.Current;
+                    state.segments.Add(state.input.AsMemory(state.prevat, match.Index - state.prevat));
+                    state.prevat = match.Index + match.Length;
+                    state.segments.Add(state.evaluator(match).AsMemory());
+                    return --state.count != 0;
+                });
 
-                    if (match.Index != prevat)
-                    {
-                        segments.Add(input.AsMemory(prevat, match.Index - prevat));
-                    }
-
-                    prevat = match.Index + match.Length;
-                    segments.Add(evaluator(match).AsMemory());
-
-                    if (--count == 0)
-                    {
-                        break;
-                    }
-                }
-                while (enumerator.MoveNext());
-
-                if (prevat < input.Length)
+                if (state.segments.Count == 0)
                 {
-                    segments.Add(input.AsMemory(prevat, input.Length - prevat));
+                    return input;
                 }
+
+                state.segments.Add(input.AsMemory(state.prevat, input.Length - state.prevat));
             }
             else
             {
-                int prevat = input.Length;
+                state.prevat = input.Length;
 
-                do
+                regex.Run(input, startat, ref state, (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
                 {
-                    Match match = enumerator.Current;
+                    state.segments.Add(state.input.AsMemory(match.Index + match.Length, state.prevat - match.Index - match.Length));
+                    state.prevat = match.Index;
+                    state.segments.Add(evaluator(match).AsMemory());
+                    return --state.count != 0;
+                });
 
-                    if (match.Index + match.Length != prevat)
-                    {
-                        segments.Add(input.AsMemory(match.Index + match.Length, prevat - match.Index - match.Length));
-                    }
-
-                    prevat = match.Index;
-                    segments.Add(evaluator(match).AsMemory());
-
-                    if (--count == 0)
-                    {
-                        break;
-                    }
-                }
-                while (enumerator.MoveNext());
-
-                if (prevat > 0)
+                if (state.segments.Count == 0)
                 {
-                    segments.Add(input.AsMemory(0, prevat));
+                    return input;
                 }
 
-                segments.AsSpan().Reverse();
+                state.segments.Add(input.AsMemory(0, state.prevat));
+                state.segments.AsSpan().Reverse();
             }
 
-            return segments.ToString();
+            return state.segments.ToString();
         }
     }
 }

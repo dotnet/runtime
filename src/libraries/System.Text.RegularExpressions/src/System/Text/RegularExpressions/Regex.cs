@@ -464,10 +464,18 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal IEnumerator<Match> Enumerate(string input, int startat)
+        internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback)
         {
             System.Diagnostics.Debug.Assert((uint)startat <= (uint)input.Length);
-            return RentRunner().ScanMatches(this, input, startat, internalMatchTimeout);
+            RegexRunner runner = RentRunner();
+            try
+            {
+                runner.Scan(this, input, startat, ref state, callback, internalMatchTimeout);
+            }
+            finally
+            {
+                ReturnRunner(runner);
+            }
         }
 
         /// <summary>Gets a runner from the cache, or creates a new one.</summary>

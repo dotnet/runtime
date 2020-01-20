@@ -22,7 +22,7 @@ namespace System.Text.RegularExpressions
         public const int WholeString = -4;
 
         private readonly List<string> _strings; // table of string constants
-        private readonly List<int> _rules;      // negative -> group #, positive -> string #
+        private readonly int[] _rules;          // negative -> group #, positive -> string #
 
         /// <summary>
         /// Since RegexReplacement shares the same parser as Regex,
@@ -39,9 +39,10 @@ namespace System.Text.RegularExpressions
             Span<char> vsbStack = stackalloc char[256];
             var vsb = new ValueStringBuilder(vsbStack);
             var strings = new List<string>();
-            var rules = new List<int>();
+            var rules = new ValueListBuilder<int>(stackalloc int[64]);
 
-            for (int i = 0; i < concat.ChildCount(); i++)
+            int childCount = concat.ChildCount();
+            for (int i = 0; i < childCount; i++)
             {
                 RegexNode child = concat.Child(i);
 
@@ -58,7 +59,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Ref:
                         if (vsb.Length > 0)
                         {
-                            rules.Add(strings.Count);
+                            rules.Append(strings.Count);
                             strings.Add(vsb.ToString());
                             vsb = new ValueStringBuilder(vsbStack);
                         }
@@ -69,7 +70,7 @@ namespace System.Text.RegularExpressions
                             slot = (int)_caps[slot]!;
                         }
 
-                        rules.Add(-Specials - 1 - slot);
+                        rules.Append(-Specials - 1 - slot);
                         break;
 
                     default:
@@ -79,13 +80,15 @@ namespace System.Text.RegularExpressions
 
             if (vsb.Length > 0)
             {
-                rules.Add(strings.Count);
+                rules.Append(strings.Count);
                 strings.Add(vsb.ToString());
             }
 
             Pattern = rep;
             _strings = strings;
-            _rules = rules;
+            _rules = rules.AsSpan().ToArray();
+
+            rules.Dispose();
         }
 
         /// <summary>
@@ -115,9 +118,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public void ReplacementImpl(ref SegmentStringBuilder segments, Match match)
         {
-            for (int i = 0; i < _rules.Count; i++)
+            foreach (int r in _rules)
             {
-                int r = _rules[i];
                 if (r >= 0)
                 {
                     // string lookup
@@ -156,7 +158,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public void ReplacementImplRTL(ref SegmentStringBuilder segments, Match match)
         {
-            for (int i = _rules.Count - 1; i >= 0; i--)
+            for (int i = _rules.Length - 1; i >= 0; i--)
             {
                 int r = _rules[i];
                 if (r >= 0)
@@ -216,73 +218,47 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            using IEnumerator<Match> matches = regex.Enumerate(input, startat);
-            if (!matches.MoveNext())
-            {
-                return input;
-            }
-
-            var segments = new SegmentStringBuilder(256);
-            ReadOnlyMemory<char> inputMemory = input.AsMemory();
+            var state = (replacement: this, segments: new SegmentStringBuilder(256), inputMemory: input.AsMemory(), prevat: 0, count);
 
             if (!regex.RightToLeft)
             {
-                int prevat = 0;
-
-                do
+                regex.Run(input, startat, ref state, (ref (RegexReplacement thisRef, SegmentStringBuilder segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
                 {
-                    Match match = matches.Current;
+                    state.segments.Add(state.inputMemory.Slice(state.prevat, match.Index - state.prevat));
+                    state.prevat = match.Index + match.Length;
+                    state.thisRef.ReplacementImpl(ref state.segments, match);
+                    return --state.count != 0;
+                });
 
-                    if (match.Index != prevat)
-                    {
-                        segments.Add(inputMemory.Slice(prevat, match.Index - prevat));
-                    }
-
-                    prevat = match.Index + match.Length;
-                    ReplacementImpl(ref segments, match);
-                    if (--count == 0)
-                    {
-                        break;
-                    }
-                }
-                while (matches.MoveNext());
-
-                if (prevat < input.Length)
+                if (state.segments.Count == 0)
                 {
-                    segments.Add(inputMemory.Slice(prevat, input.Length - prevat));
+                    return input;
                 }
+
+                state.segments.Add(state.inputMemory.Slice(state.prevat, input.Length - state.prevat));
             }
             else
             {
-                int prevat = input.Length;
+                state.prevat = input.Length;
 
-                do
+                regex.Run(input, startat, ref state, (ref (RegexReplacement thisRef, SegmentStringBuilder segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
                 {
-                    Match match = matches.Current;
+                    state.segments.Add(state.inputMemory.Slice(match.Index + match.Length, state.prevat - match.Index - match.Length));
+                    state.prevat = match.Index;
+                    state.thisRef.ReplacementImplRTL(ref state.segments, match);
+                    return --state.count != 0;
+                });
 
-                    if (match.Index + match.Length != prevat)
-                    {
-                        segments.Add(inputMemory.Slice(match.Index + match.Length, prevat - match.Index - match.Length));
-                    }
-
-                    prevat = match.Index;
-                    ReplacementImplRTL(ref segments, match);
-                    if (--count == 0)
-                    {
-                        break;
-                    }
-                }
-                while (matches.MoveNext());
-
-                if (prevat > 0)
+                if (state.segments.Count == 0)
                 {
-                    segments.Add(inputMemory.Slice(0, prevat));
+                    return input;
                 }
 
-                segments.AsSpan().Reverse();
+                state.segments.Add(state.inputMemory.Slice(0, state.prevat));
+                state.segments.AsSpan().Reverse();
             }
 
-            return segments.ToString();
+            return state.segments.ToString();
         }
     }
 }

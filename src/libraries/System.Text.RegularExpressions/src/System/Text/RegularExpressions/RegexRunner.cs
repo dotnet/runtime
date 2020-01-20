@@ -206,137 +206,129 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Enumerates all of the matches with the specified regex.</summary>
+        /// <summary>Enumerates all of the matches with the specified regex, invoking the callback for each.</summary>
         /// <remarks>
-        /// This method must remain internal and used carefully.  It can reuse the same Match object,
-        /// such that any attempted use of a previously yielded Match object will see invalid results.
-        /// The logic in this method is almost exactly the same as that in <see cref="Scan(Regex, string, int, int, int, int, bool, TimeSpan)"/>
-        /// and should be kept in sync.  Key differences include yielding the same match object and so
-        /// not null'ing it out, deleting code for arguments needed by Scan but not by this, releasing
-        /// the runner instead back into the Regex only once enumeration has completed, and duplicating
-        /// some of the initialization logic to happen after a successful match has been yielded.
+        /// This repeatedly hands out the same Match instance, updated with new information.
         /// </remarks>
-        internal IEnumerator<Match> ScanMatches(Regex regex, string text, int textstart, TimeSpan timeout)
+        internal void Scan<TState>(Regex regex, string text, int textstart, ref TState state, MatchCallback<TState> callback, TimeSpan timeout)
         {
-            try
+            // Store arguments into fields for derived runner to examine
+            runregex = regex;
+            runtext = text;
+            runtextbeg = 0;
+            runtextend = text.Length;
+            runtextpos = runtextstart = textstart;
+
+            // Handle timeout argument
+            _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
+            bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
+            if (!ignoreTimeout)
             {
-                // Store arguments into fields for derived runner to examine
-                runregex = regex;
-                runtext = text;
-                runtextbeg = 0;
-                runtextend = text.Length;
-                runtextpos = runtextstart = textstart;
+                // We are using Environment.TickCount and not Timewatch for performance reasons.
+                // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
+                // overflow it will still stay ahead of Environment.TickCount for comparisons made
+                // in DoCheckTimeout().
+                _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
+                _timeoutOccursAt = Environment.TickCount + _timeout;
+                _timeoutChecksToSkip = TimeoutCheckFrequency;
+            }
 
-                // Handle timeout argument
-                _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
-                bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
-                if (!ignoreTimeout)
+            // Configure the additional value to "bump" the position along each time we loop around
+            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+            // bump by 1 and stop at runtextend, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at runtextbeg.
+            int bump = 1, stoppos = runtextend;
+            if (runregex.RightToLeft)
+            {
+                bump = -1;
+                stoppos = runtextbeg;
+            }
+
+            // Main loop: FindFirstChar/Go + bump until the ending position.
+            bool initialized = false;
+            while (true)
+            {
+#if DEBUG
+                if (runregex.Debug)
                 {
-                    // We are using Environment.TickCount and not Timewatch for performance reasons.
-                    // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
-                    // overflow it will still stay ahead of Environment.TickCount for comparisons made
-                    // in DoCheckTimeout().
-                    _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
-                    _timeoutOccursAt = Environment.TickCount + _timeout;
-                    _timeoutChecksToSkip = TimeoutCheckFrequency;
+                    Debug.WriteLine("");
+                    Debug.WriteLine("Search range: from " + runtextbeg.ToString(CultureInfo.InvariantCulture) + " to " + runtextend.ToString(CultureInfo.InvariantCulture));
+                    Debug.WriteLine("Firstchar search starting at " + runtextpos.ToString(CultureInfo.InvariantCulture) + " stopping at " + stoppos.ToString(CultureInfo.InvariantCulture));
                 }
+#endif
 
-                // Configure the additional value to "bump" the position along each time we loop around
-                // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
-                // bump by 1 and stop at runtextend, but if we're examining right-to-left, we instead bump
-                // by -1 and stop at runtextbeg.
-                int bump = 1, stoppos = runtextend;
-                if (runregex.RightToLeft)
+                // Find the next potential location for a match in the input.
+                if (FindFirstChar())
                 {
-                    bump = -1;
-                    stoppos = runtextbeg;
-                }
+                    if (!ignoreTimeout)
+                    {
+                        DoCheckTimeout();
+                    }
 
-                // Main loop: FindFirstChar/Go + bump until the ending position.
-                bool initialized = false;
-                while (true)
-                {
+                    // Ensure that the runner is initialized.  This includes initializing all of the state in the runner
+                    // that Go might use, such as the backtracking stack, as well as a Match object for it to populate.
+                    if (!initialized)
+                    {
+                        InitializeForGo();
+                        initialized = true;
+                    }
+
 #if DEBUG
                     if (runregex.Debug)
                     {
+                        Debug.WriteLine("Executing engine starting at " + runtextpos.ToString(CultureInfo.InvariantCulture));
                         Debug.WriteLine("");
-                        Debug.WriteLine("Search range: from " + runtextbeg.ToString(CultureInfo.InvariantCulture) + " to " + runtextend.ToString(CultureInfo.InvariantCulture));
-                        Debug.WriteLine("Firstchar search starting at " + runtextpos.ToString(CultureInfo.InvariantCulture) + " stopping at " + stoppos.ToString(CultureInfo.InvariantCulture));
                     }
 #endif
 
-                    // Find the next potential location for a match in the input.
-                    if (FindFirstChar())
+                    // See if there's a match at this position.
+                    Go();
+
+                    // See if we have a match.
+                    Match match = runmatch!;
+                    if (match._matchcount[0] > 0)
                     {
-                        if (!ignoreTimeout)
+                        // Hand it out to the callback in canonical form.
+                        match.Tidy(runtextpos);
+                        initialized = false;
+                        if (!callback(ref state, match))
                         {
-                            DoCheckTimeout();
+                            // If the callback returns false, we're done.
+                            return;
                         }
 
-                        // Ensure that the runner is initialized.  This includes initializing all of the state in the runner
-                        // that Go might use, such as the backtracking stack, as well as a Match object for it to populate.
-                        if (!initialized)
-                        {
-                            InitializeForGo();
-                            initialized = true;
-                        }
-
-#if DEBUG
-                        if (runregex.Debug)
-                        {
-                            Debug.WriteLine("Executing engine starting at " + runtextpos.ToString(CultureInfo.InvariantCulture));
-                            Debug.WriteLine("");
-                        }
-#endif
-
-                        // See if there's a match at this position.
-                        Go();
-
-                        // If we got a match, we're done.
-                        Match match = runmatch!;
-                        if (match._matchcount[0] > 0)
-                        {
-                            // Return the match in its canonical form.
-                            match.Tidy(runtextpos);
-                            initialized = false;
-                            yield return match;
-
-                            // Reset state for another iteration.
-                            runtrackpos = runtrack!.Length;
-                            runstackpos = runstack!.Length;
-                            runcrawlpos = runcrawl!.Length;
-                            if (match.Length == 0)
-                            {
-                                if (runtextpos == stoppos)
-                                {
-                                    yield break;
-                                }
-                                runtextpos += bump;
-                            }
-
-                            // Loop around to perform next match from where we left off.
-                            continue;
-                        }
-
-                        // Ran Go but it didn't find a match. Reset state for another iteration.
+                        // Reset state for another iteration.
                         runtrackpos = runtrack!.Length;
                         runstackpos = runstack!.Length;
                         runcrawlpos = runcrawl!.Length;
+                        if (match.Length == 0)
+                        {
+                            if (runtextpos == stoppos)
+                            {
+                                return;
+                            }
+
+                            runtextpos += bump;
+                        }
+
+                        // Loop around to perform next match from where we left off.
+                        continue;
                     }
 
-                    // We failed to match at this position.  If we're at the stopping point, we're done.
-                    if (runtextpos == stoppos)
-                    {
-                        yield break;
-                    }
-
-                    // Bump by one (in whichever direction is appropriate) and loop to go again.
-                    runtextpos += bump;
+                    // Ran Go but it didn't find a match. Reset state for another iteration.
+                    runtrackpos = runtrack!.Length;
+                    runstackpos = runstack!.Length;
+                    runcrawlpos = runcrawl!.Length;
                 }
-            }
-            finally
-            {
-                regex.ReturnRunner(this);
+
+                // We failed to match at this position.  If we're at the stopping point, we're done.
+                if (runtextpos == stoppos)
+                {
+                    return;
+                }
+
+                // Bump by one (in whichever direction is appropriate) and loop to go again.
+                runtextpos += bump;
             }
         }
 
