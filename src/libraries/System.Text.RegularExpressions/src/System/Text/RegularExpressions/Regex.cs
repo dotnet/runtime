@@ -101,6 +101,13 @@ namespace System.Text.RegularExpressions
             roptions = options;
             internalMatchTimeout = matchTimeout;
 
+#if DEBUG
+            if (Debug)
+            {
+                System.Diagnostics.Debug.Write($"Pattern:     {pattern}");
+            }
+#endif
+
             // Parse the input
             RegexTree tree = RegexParser.Parse(pattern, roptions, culture ?? ((options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
 
