@@ -717,7 +717,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                // [ActiveIssue(39136)]
+                // [ActiveIssue("https://github.com/dotnet/corefx/issues/39136")]
                 return;
             }
 

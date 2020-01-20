@@ -84,7 +84,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler && PlatformDetection.IsWindows7)
             {
-                // Issue #27612
+                // Issue https://github.com/dotnet/corefx/issues/27612
                 return;
             }
 
