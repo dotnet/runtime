@@ -88,6 +88,8 @@ namespace System
 
         public Version()
         {
+            //_Major = 0;
+            //_Minor = 0;
             _Build = -1;
             _Revision = -1;
         }
