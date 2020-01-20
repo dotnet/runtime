@@ -819,7 +819,7 @@ namespace System.Linq.Tests
             int[] source = new[] { 1, 2, 3, 4, 5 };
             IEnumerator<int> enumerator = source.Where(value => true).GetEnumerator();
 
-            // The full .NET Framework throws a NotImplementedException.
+            // The .NET Framework throws a NotImplementedException.
             // See https://github.com/dotnet/corefx/pull/2959.
             Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }

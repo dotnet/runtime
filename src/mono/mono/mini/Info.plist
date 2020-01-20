@@ -1,0 +1,16 @@
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>English</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.novell.mono</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>mono</string>
+    <key>CFBundleVersion</key>
+    <string>0.3</string>
+	<key>SecTaskAccess</key>
+	<string>allowed</string>
+</dict>
+</plist>

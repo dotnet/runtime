@@ -311,7 +311,7 @@ namespace System.Configuration
 
             public override Stream OpenStreamForWrite(string streamName, string templateStreamName, ref object writeContext)
             {
-                // On NetFX (Desktop CLR) we do a bunch of work here around ensuring permissions and quotas
+                // On .NET Framework we do a bunch of work here around ensuring permissions and quotas
                 return Host.OpenStreamForWrite(streamName, templateStreamName, ref writeContext);
             }
 

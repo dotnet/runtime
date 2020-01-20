@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(17001, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/17001", TestPlatforms.OSX)]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();
@@ -1261,7 +1261,7 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // https://github.com/dotnet/corefx/issues/18690
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 Assert.False(sign.CheckSignature(new HMACSHA256(badKey)));
             }
@@ -1297,7 +1297,7 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // https://github.com/dotnet/corefx/issues/18690
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 Assert.False(sign.CheckSignature(new HMACSHA512(badKey)));
             }
@@ -1336,7 +1336,7 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // https://github.com/dotnet/corefx/issues/18690
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 Assert.False(sign.CheckSignature(new HMACSHA384(badKey)));
             }
@@ -1375,7 +1375,7 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
             // https://github.com/dotnet/corefx/issues/18690
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 Assert.False(sign.CheckSignature(new HMACMD5(badKey)));
             }

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);STATIC;LPSTR</DefineConstants>
+    <DefineConstants>$(DefineConstants);LPSTR</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

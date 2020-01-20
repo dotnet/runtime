@@ -86,8 +86,8 @@ namespace Internal.Cryptography
                 }
             }
 
-            // Desktop compat:
-            // The desktop algorithm removed all whitespace before the loop, then went up to length/2
+            // .NET Framework compat:
+            // The .NET Framework algorithm removed all whitespace before the loop, then went up to length/2
             // of what was left.  This means that in the event of odd-length input the last char is
             // ignored, no exception should be raised.
             Debug.Assert(index == cbHex, "index == cbHex");

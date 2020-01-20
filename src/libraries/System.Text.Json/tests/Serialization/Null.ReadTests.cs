@@ -170,7 +170,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal('Y', JsonSerializer.Deserialize<char>("\"\u0059\""));
         }
 
-        [ActiveIssue(1037)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/1037")]
         [Fact]
         public static void ParseNullStringToStructShouldThrowJsonException()
         {
@@ -182,7 +182,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(nullString));
         }
 
-        [ActiveIssue(1037)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/1037")]
         [Fact]
         public static async Task ParseNullStringShouldThrowJsonExceptionAsync()
         {

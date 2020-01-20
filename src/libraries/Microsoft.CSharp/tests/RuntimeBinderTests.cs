@@ -14,7 +14,7 @@ using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
-    [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
     public class RuntimeBinderTests
     {
         [Fact]

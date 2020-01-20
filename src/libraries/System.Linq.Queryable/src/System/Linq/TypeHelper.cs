@@ -3,13 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Linq
 {
     internal static class TypeHelper
     {
-        internal static Type FindGenericType(Type definition, Type type)
+        internal static Type? FindGenericType(Type definition, Type type)
         {
             bool? definitionIsInterface = null;
             while (type != null && type != typeof(object))
@@ -22,12 +23,12 @@ namespace System.Linq
                 {
                     foreach (Type itype in type.GetInterfaces())
                     {
-                        Type found = FindGenericType(definition, itype);
+                        Type? found = FindGenericType(definition, itype);
                         if (found != null)
                             return found;
                     }
                 }
-                type = type.BaseType;
+                type = type.BaseType!;
             }
             return null;
         }

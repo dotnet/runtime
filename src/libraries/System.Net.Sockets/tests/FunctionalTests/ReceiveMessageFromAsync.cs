@@ -10,7 +10,7 @@ namespace System.Net.Sockets.Tests
 {
     public class ReceiveMessageFromAsync
     {
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
@@ -60,7 +60,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

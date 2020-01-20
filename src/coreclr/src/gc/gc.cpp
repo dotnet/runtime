@@ -672,6 +672,19 @@ void GCLogConfig (const char *fmt, ... )
 }
 #endif // GC_CONFIG_DRIVEN && !DACCESS_COMPILE
 
+void GCHeap::Shutdown()
+{
+#if defined(TRACE_GC) && !defined(DACCESS_COMPILE)
+    if (gc_log_on && (gc_log != NULL))
+    {
+        fwrite(gc_log_buffer, gc_log_buffer_offset, 1, gc_log);
+        fflush(gc_log);
+        fclose(gc_log);
+        gc_log_buffer_offset = 0;
+    }
+#endif
+}
+
 #ifdef SYNCHRONIZATION_STATS
 
 // Number of GCs have we done since we last logged.
@@ -2053,27 +2066,33 @@ ptrdiff_t round_down (ptrdiff_t add, int pitch)
 #error if GROWABLE_SEG_MAPPING_TABLE is defined, SEG_MAPPING_TABLE must be defined
 #endif
 
+// Returns true if two pointers have the same large (double than normal) alignment.
 inline
 BOOL same_large_alignment_p (uint8_t* p1, uint8_t* p2)
 {
 #ifdef RESPECT_LARGE_ALIGNMENT
-    return ((((size_t)p1 ^ (size_t)p2) & 7) == 0);
+    const size_t LARGE_ALIGNMENT_MASK = 2 * DATA_ALIGNMENT - 1;
+    return ((((size_t)p1 ^ (size_t)p2) & LARGE_ALIGNMENT_MASK) == 0);
 #else
     UNREFERENCED_PARAMETER(p1);
     UNREFERENCED_PARAMETER(p2);
     return TRUE;
-#endif //RESPECT_LARGE_ALIGNMENT
+#endif // RESPECT_LARGE_ALIGNMENT
 }
 
+// Determines the padding size required to fix large alignment during relocation.
 inline
 size_t switch_alignment_size (BOOL already_padded_p)
 {
+#ifndef RESPECT_LARGE_ALIGNMENT
+    assert (!"Should not be called");
+#endif // RESPECT_LARGE_ALIGNMENT
+
     if (already_padded_p)
         return DATA_ALIGNMENT;
     else
-        return (Align (min_obj_size) +((Align (min_obj_size)&DATA_ALIGNMENT)^DATA_ALIGNMENT));
+        return Align (min_obj_size) | DATA_ALIGNMENT;
 }
-
 
 #ifdef FEATURE_STRUCTALIGN
 void set_node_aligninfo (uint8_t *node, int requiredAlignment, ptrdiff_t pad);
@@ -2601,6 +2620,8 @@ bool        affinity_config_specified_p = false;
 GCEvent     gc_heap::bgc_start_event;
 
 gc_mechanisms gc_heap::saved_bgc_settings;
+
+gc_history_global gc_heap::bgc_data_global;
 
 GCEvent     gc_heap::background_gc_done_event;
 
@@ -3184,18 +3205,22 @@ void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per
 
 void gc_heap::fire_pevents()
 {
-    settings.record (&gc_data_global);
-    gc_data_global.print();
+    gc_history_global* current_gc_data_global = get_gc_data_global();
 
-    FIRE_EVENT(GCGlobalHeapHistory_V2,
-               gc_data_global.final_youngest_desired,
-               gc_data_global.num_heaps,
-               gc_data_global.condemned_generation,
-               gc_data_global.gen0_reduction_count,
-               gc_data_global.reason,
-               gc_data_global.global_mechanisms_p,
-               gc_data_global.pause_mode,
-               gc_data_global.mem_pressure);
+    settings.record (current_gc_data_global);
+    current_gc_data_global->print();
+
+    FIRE_EVENT(GCGlobalHeapHistory_V3,
+               current_gc_data_global->final_youngest_desired,
+               current_gc_data_global->num_heaps,
+               current_gc_data_global->condemned_generation,
+               current_gc_data_global->gen0_reduction_count,
+               current_gc_data_global->reason,
+               current_gc_data_global->global_mechanisms_p,
+               current_gc_data_global->pause_mode,
+               current_gc_data_global->mem_pressure,
+               current_gc_data_global->gen_to_condemn_reasons.get_reasons0(),
+               current_gc_data_global->gen_to_condemn_reasons.get_reasons1());
 
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
@@ -9372,8 +9397,6 @@ public:
         // BARTOKTODO (4841): this code path is disabled (see can_fit_all_blocks_p) until we take alignment requirements into account
         _ASSERTE(requiredAlignment == DATA_ALIGNMENT && false);
 #endif // FEATURE_STRUCTALIGN
-        // TODO: this is also not large alignment ready. We would need to consider alignment when choosing the
-        // the bucket.
 
         size_t plug_size_to_fit = plug_size;
 
@@ -9423,8 +9446,6 @@ retry:
             size_t free_space_size = 0;
             pad = 0;
 
-            BOOL realign_padding_p = FALSE;
-
             if (bucket_free_space[i].is_plug)
             {
                 mark* m = (mark*)(bucket_free_space[i].start);
@@ -9432,8 +9453,7 @@ retry:
 
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, plug_free_space_start)))
                 {
-                    pad += switch_alignment_size (FALSE);
-                    realign_padding_p = TRUE;
+                    pad = switch_alignment_size (FALSE);
                 }
 
                 plug_size = saved_plug_size + pad;
@@ -9459,7 +9479,7 @@ retry:
                                 index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
-                    if (realign_padding_p)
+                    if (pad != 0)
                     {
                         set_node_realigned (old_loc);
                     }
@@ -9475,7 +9495,6 @@ retry:
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, heap_segment_plan_allocated (seg))))
                 {
                     pad = switch_alignment_size (FALSE);
-                    realign_padding_p = TRUE;
                 }
 
                 plug_size = saved_plug_size + pad;
@@ -9497,7 +9516,7 @@ retry:
                                 index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
-                    if (realign_padding_p)
+                    if (pad != 0)
                         set_node_realigned (old_loc);
 
                     can_fit = TRUE;
@@ -9516,15 +9535,10 @@ retry:
             chosen_power2 = 1;
             goto retry;
         }
-        else
-        {
-            if (pad)
-            {
-                new_address += pad;
-            }
-            assert ((chosen_power2 && (i == 0)) ||
-                    ((!chosen_power2) && (i < free_space_count)));
-        }
+
+        new_address += pad;
+        assert ((chosen_power2 && (i == 0)) ||
+                ((!chosen_power2) && (i < free_space_count)));
 
         int new_bucket_power2 = index_of_highest_set_bit (new_free_space_size);
 
@@ -11653,15 +11667,18 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
 inline
 int gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* allocated, uint8_t* old_loc, size_t size, BOOL pad_front_p  REQD_ALIGN_AND_OFFSET_DCL)
 {
+    BOOL already_padded = FALSE;
 #ifdef SHORT_PLUGS
     if ((old_loc != 0) && pad_front_p)
     {
         allocated = allocated + Align (min_obj_size);
+        already_padded = TRUE;
     }
 #endif //SHORT_PLUGS
 
     if (!((old_loc == 0) || same_large_alignment_p (old_loc, allocated)))
-        size = size + switch_alignment_size (FALSE);
+        size += switch_alignment_size (already_padded);
+
 #ifdef FEATURE_STRUCTALIGN
     size_t pad = ComputeStructAlignPad(allocated, requiredAlignment, alignmentOffset);
     return grow_heap_segment (seg, allocated + pad + size);
@@ -14780,11 +14797,19 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 
     allocator* gen_allocator = generation_allocator (gen);
     BOOL discard_p = gen_allocator->discard_if_no_fit_p ();
+#ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && ((from_gen_number+1) != max_generation)) ? USE_PADDING_FRONT : 0;
+#else //SHORT_PLUGS
+    int pad_in_front = 0;
+#endif //SHORT_PLUGS
 
     size_t real_size = size + Align (min_obj_size);
     if (pad_in_front)
         real_size += Align (min_obj_size);
+
+#ifdef RESPECT_LARGE_ALIGNMENT
+    real_size += switch_alignment_size (pad_in_front);
+#endif //RESPECT_LARGE_ALIGNMENT
 
     if (! (size_fit_p (size REQD_ALIGN_AND_OFFSET_ARG, generation_allocation_pointer (gen),
                        generation_allocation_limit (gen), old_loc, USE_PADDING_TAIL | pad_in_front)))
@@ -14931,7 +14956,7 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 #else // FEATURE_STRUCTALIGN
         if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
+            pad += switch_alignment_size (pad != 0);
             set_node_realigned (old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
                          (size_t)old_loc, (size_t)(result+pad)));
@@ -15026,12 +15051,15 @@ uint8_t* gc_heap::allocate_in_expanded_heap (generation* gen,
                                           int active_new_gen_number
                                           REQD_ALIGN_AND_OFFSET_DCL)
 {
-    UNREFERENCED_PARAMETER(active_new_gen_number);
     dprintf (3, ("aie: P: %Ix, size: %Ix", old_loc, size));
 
     size = Align (size);
     assert (size >= Align (min_obj_size));
+#ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && (active_new_gen_number != max_generation)) ? USE_PADDING_FRONT : 0;
+#else //SHORT_PLUGS
+    int pad_in_front = 0;
+#endif //SHORT_PLUGS
 
     if (consider_bestfit && use_bestfit)
     {
@@ -15266,7 +15294,11 @@ uint8_t* gc_heap::allocate_in_condemned_generations (generation* gen,
 
     dprintf (3, ("aic gen%d: s: %Id", gen->gen_num, size));
 
+#ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && (to_gen_number != max_generation)) ? USE_PADDING_FRONT : 0;
+#else //SHORT_PLUGS
+    int pad_in_front = 0;
+#endif //SHORT_PLUGS
 
     if ((from_gen_number != -1) && (from_gen_number != (int)max_generation) && settings.promotion)
     {
@@ -15438,7 +15470,7 @@ retry:
 #else // FEATURE_STRUCTALIGN
         if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
+            pad += switch_alignment_size (pad != 0);
             set_node_realigned(old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
                          (size_t)old_loc, (size_t)(result+pad)));
@@ -15494,22 +15526,13 @@ retry:
     }
 }
 
-inline int power (int x, int y)
-{
-    int z = 1;
-    for (int i = 0; i < y; i++)
-    {
-        z = z*x;
-    }
-    return z;
-}
-
 int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                                            int initial_gen,
                                            int current_gen,
                                            BOOL* blocking_collection_p
                                            STRESS_HEAP_ARG(int n_original))
 {
+    gc_data_global.gen_to_condemn_reasons.init();
 #ifdef BGC_SERVO_TUNING
     if (settings.entry_memory_load == 0)
     {
@@ -15559,6 +15582,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             else
             {
                 n = max_generation - 1;
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_avoid_unproductive);
                 settings.elevation_reduced = TRUE;
             }
         }
@@ -15583,6 +15607,14 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             // where foreground GCs are asking for a compacting full GC right away
             // and not getting it.
             dprintf (GTC_LOG, ("full GC induced, not reducing gen"));
+            if (initial_gen == max_generation)
+            {
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_pm_induced_fullgc_p);
+            }
+            else
+            {
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_pm_alloc_loh);
+            }
             *blocking_collection_p = TRUE;
         }
         else if (should_expand_in_full_gc || joined_last_gc_before_oom)
@@ -15593,6 +15625,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
         {
             dprintf (GTC_LOG, ("reducing gen in PM: %d->%d->%d", initial_gen, n, (max_generation - 1)));
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_last_gen2_fragmented);
             n = max_generation - 1;
         }
     }
@@ -15614,6 +15647,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 
         if (joined_last_gc_before_oom)
         {
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_before_oom);
             full_compact_gc_p = true;
         }
         else if ((current_total_committed * 10) >= (heap_hard_limit * 9))
@@ -15624,6 +15658,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             if ((loh_frag * 8) >= heap_hard_limit)
             {
                 dprintf (GTC_LOG, ("loh frag: %Id > 1/8 of limit %Id", loh_frag, (heap_hard_limit / 8)));
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_frag);
                 full_compact_gc_p = true;
             }
             else
@@ -15631,6 +15666,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                 // If there's not much fragmentation but it looks like it'll be productive to
                 // collect LOH, do that.
                 size_t est_loh_reclaim = get_total_gen_estimated_reclaim (max_generation + 1);
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
                 full_compact_gc_p = ((est_loh_reclaim * 8) >= heap_hard_limit);
                 dprintf (GTC_LOG, ("loh est reclaim: %Id, 1/8 of limit %Id", est_loh_reclaim, (heap_hard_limit / 8)));
             }
@@ -15648,6 +15684,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 #ifdef BGC_SERVO_TUNING
     if (bgc_tuning::should_trigger_ngc2())
     {
+        gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_ngc);
         n = max_generation;
         *blocking_collection_p = TRUE;
     }
@@ -15655,12 +15692,14 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     if ((n < max_generation) && !recursive_gc_sync::background_running_p() &&
         bgc_tuning::stepping_trigger (settings.entry_memory_load, get_current_gc_index (max_generation)))
     {
+        gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_initial);
         n = max_generation;
         saved_bgc_tuning_reason = reason_bgc_stepping;
     }
 
     if ((n < max_generation) && bgc_tuning::should_trigger_bgc())
     {
+        gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_bgc);
         n = max_generation;
     }
 
@@ -15668,6 +15707,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     {
         if (bgc_tuning::should_delay_alloc (max_generation))
         {
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_postpone);
             n -= 1;
         }
     }
@@ -15707,6 +15747,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             // in gc stress, only escalate every 10th non-gen2 collection to a gen2...
             if ((current_gc_count % 10) == 0)
             {
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_stress_mix);
                 n = max_generation;
             }
         }
@@ -15721,6 +15762,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
 #endif // !FEATURE_REDHAWK
         {
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_stress);
             n = max_generation;
         }
     }
@@ -18147,8 +18189,11 @@ void gc_heap::garbage_collect (int n)
             ((settings.pause_mode == pause_interactive) || (settings.pause_mode == pause_sustained_low_latency)))
         {
             keep_bgc_threads_p = TRUE;
-            c_write (settings.concurrent,  TRUE);
+            c_write (settings.concurrent, TRUE);
+            memset (&bgc_data_global, 0, sizeof(bgc_data_global));
+            memcpy (&bgc_data_global, &gc_data_global, sizeof(gc_data_global));
         }
+
 #endif //BACKGROUND_GC
 
         settings.gc_index = (uint32_t)dd_collection_count (dynamic_data_of (0)) + 1;
@@ -32837,6 +32882,16 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
 #endif // BIT64
 
 inline
+gc_history_global* gc_heap::get_gc_data_global()
+{
+#ifdef BACKGROUND_GC
+    return (settings.concurrent ? &bgc_data_global : &gc_data_global);
+#else
+    return &gc_data_global;
+#endif //BACKGROUND_GC
+}
+
+inline
 gc_history_per_heap* gc_heap::get_gc_data_per_heap()
 {
 #ifdef BACKGROUND_GC
@@ -36397,7 +36452,7 @@ void DestructObject (CObjectHeader* hdr)
     hdr->~CObjectHeader();
 }
 
-HRESULT GCHeap::Shutdown ()
+HRESULT GCHeap::StaticShutdown ()
 {
     deleteGCShadow();
 

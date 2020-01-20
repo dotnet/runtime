@@ -229,7 +229,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\FormattableString.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\GCMemoryInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Gen2GcCallback.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\BidiCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Calendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarAlgorithmType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.cs" />
@@ -272,6 +271,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\NumberStyles.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\PersianCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\RegionInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\StrongBidiCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\SortKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\SortVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\StringInfo.cs" />
@@ -820,6 +820,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF8Encoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF8Encoding.Sealed.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ValueStringBuilder.AppendFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\GraphemeClusterBreakType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\TextSegmentationUtility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf16Utility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf16Utility.Validation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8.cs" />

@@ -179,7 +179,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            if (!PlatformDetection.IsFullFramework) // missing fix in https://github.com/dotnet/runtime/pull/993
+            if (!PlatformDetection.IsNetFramework) // missing fix in https://github.com/dotnet/runtime/pull/993
             {
                 yield return new object[]
                 {

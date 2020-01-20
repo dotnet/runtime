@@ -16,6 +16,8 @@
 
     <RunScriptHost Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
     <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
+
+    <MonoRspFile>$(RunWorkingDirectory)mono.issues.rsp</MonoRspFile>
   </PropertyGroup>
 
   <!-- Archive test binaries. -->
@@ -72,6 +74,19 @@
                        OutputPath="$(RunScriptOutputPath)" />
 
     <Exec Condition="'$(TargetOS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
+
+    <!-- Generate Mono .rsp file -->
+    <ItemGroup>
+      <MonoRspFiles Include="$(MonoProjectRoot)netcore\CoreFX.issues.rsp" />
+      <MonoRspFiles Include="$(MonoProjectRoot)netcore\CoreFX.issues_mac.rsp" Condition="'$(TargetOS)' == 'OSX'" />
+      <MonoRspFiles Include="$(MonoProjectRoot)netcore\CoreFX.issues_linux.rsp" Condition="'$(TargetOS)' == 'Linux'" />
+      <MonoRspFiles Include="$(MonoProjectRoot)netcore\CoreFX.issues_windows.rsp" Condition="'$(TargetOS)' == 'Windows_NT'" />
+    </ItemGroup>
+    <ItemGroup>
+      <MonoRspFileContent Include="$([System.IO.File]::ReadAllText(%(MonoRspFiles.Identity)))" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(MonoRspFile)" Lines="@(MonoRspFileContent)" Overwrite="true" />
   </Target>
 
   <Target Name="ValidateTestPlatform">
@@ -100,6 +115,7 @@
 
     <PropertyGroup>
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TestRuntimeFlavor)' == 'Mono'">$(RunTestsCommand) --rsp-file "$(MonoRspFile)"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != ''">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
     </PropertyGroup>
 

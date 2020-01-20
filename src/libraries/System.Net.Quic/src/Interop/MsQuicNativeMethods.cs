@@ -295,7 +295,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint ConnectionShutdownDelegate(
             IntPtr connection,
             uint flags,
-            ushort errorCode);
+            long errorCode);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataRecv
@@ -454,7 +454,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint StreamShutdownDelegate(
             IntPtr stream,
             uint flags,
-            ushort errorCode);
+            long errorCode);
 
         internal delegate uint StreamSendDelegate(
             IntPtr stream,

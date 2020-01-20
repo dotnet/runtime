@@ -28,7 +28,7 @@ namespace System.IO.Pipes.Tests
         {
             if (PlatformDetection.IsFedora)
             {
-                // [ActiveIssue(38834)]
+                // [ActiveIssue("https://github.com/dotnet/corefx/issues/38834")]
                 throw new SkipTestException("Failing on Fedora by not throwing expected exception");
             }
 

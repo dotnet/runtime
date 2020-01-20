@@ -33,6 +33,20 @@ Below table shows the combined area owners on this repository:
 | area-TypeSystem | @davidwrighton @MichalStrehovsky @fadimounir | |
 | area-UWP | @nattress | UWP-specific issues including Microsoft.NETCore.UniversalWindowsPlatform and Microsoft.Net.UWPCoreRuntimeSdk |
 | area-VM | @sergiy-k | |
+| area-AssemblyLoader-mono | @CoffeeFlux | |
+| area-Codegen-meta-mono | @vargaz | |
+| area-Codegen-JIT-mono | @SamMonoRT | |
+| area-Codegen-AOT-mono | @SamMonoRT | |
+| area-Codegen-Interpreter-mono | @BrzVlad | |
+| area-CoreLib-mono | @steveisok | |
+| area-GC-mono | @BrzVlad | |
+| area-Build-mono | @akoeplinger | |
+| area-Infrastructure-mono | @directhex | |
+| area-Debugger-mono | @thaystg | |
+| area-VM-meta-mono | @lambdageek | |
+| area-Threading-mono | @lambdageek | |
+| area-Tracing-mono | @lambdageek | |
+| area-Performance-mono | @SamMonoRT | |
 | **System contract assemblies** | | |
 | area-System.AppContext | @safern @Anipik | |
 | area-System.Buffers | @layomia @JeremyKuhne @ahsonkhan | |

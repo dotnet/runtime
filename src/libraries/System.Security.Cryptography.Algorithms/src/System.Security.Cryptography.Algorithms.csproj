@@ -307,6 +307,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Cng.cs">
       <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptImportKey.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptImportKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
     </Compile>

@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.Reset();
                 Assert.Equal(0, chain.ChainElements.Count);
 
-                // ChainPolicy did not reset (for desktop compat)
+                // ChainPolicy did not reset (for .NET Framework compat)
                 Assert.Equal(X509VerificationFlags.AllowUnknownCertificateAuthority, chain.ChainPolicy.VerificationFlags);
 
                 valid = chain.Build(sampleCert);

@@ -115,7 +115,7 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_* retTypeClass;   // if the return type is a value class, this is its handle (enums are normalized)
         public CORINFO_CLASS_STRUCT_* retTypeSigClass;// returns the value class as it is in the sig (enums are not converted to primitives)
         public byte _retType;
-        public byte flags;    // used by IL stubs code
+        public CorInfoSigInfoFlags flags;    // used by IL stubs code
         public ushort numArgs;
         public CORINFO_SIG_INST sigInst;  // information about how type variables are being instantiated in generic code
         public CORINFO_ARG_LIST_STRUCT_* args;
@@ -384,10 +384,11 @@ namespace Internal.JitInterface
         CORINFO_CONTEXTFLAGS_MASK = 0x01
     };
 
-    public enum CorInfoSigInfoFlags
+    public enum CorInfoSigInfoFlags : byte
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
+        CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
     };
 
     // These are returned from getMethodOptions

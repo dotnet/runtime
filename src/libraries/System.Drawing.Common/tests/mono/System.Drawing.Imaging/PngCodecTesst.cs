@@ -37,7 +37,7 @@ using Xunit;
 
 namespace MonoTests.System.Drawing.Imaging
 {
-    [ActiveIssue(24354, TestPlatforms.AnyUnix)]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/24354", TestPlatforms.AnyUnix)]
     public class PngCodecTest
     {
         private bool IsArm64Process()
