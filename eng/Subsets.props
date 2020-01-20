@@ -57,7 +57,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultSubsetCategories>libraries-installer-coreclr</DefaultSubsetCategories>
+    <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
