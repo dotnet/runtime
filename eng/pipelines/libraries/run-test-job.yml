@@ -17,11 +17,11 @@ parameters:
   variables: {}
 
 variables:
- - _runtimeFlavorName: ''
- - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-   - _runtimeFlavorName: 'Mono'
- - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-   - _runtimeFlavorName: 'CoreCLR'
+ runtimeFlavorName: ''
+ ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+   _runtimeFlavorName: 'Mono'
+ ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
+   _runtimeFlavorName: 'CoreCLR'
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
