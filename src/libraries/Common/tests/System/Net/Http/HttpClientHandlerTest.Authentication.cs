@@ -50,7 +50,6 @@ namespace System.Net.Http.Functional.Tests
         {
             if (PlatformDetection.IsWindowsNanoServer)
             {
-                // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
             }
 
@@ -91,7 +90,6 @@ namespace System.Net.Http.Functional.Tests
         {
             if (PlatformDetection.IsWindowsNanoServer)
             {
-                // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
             }
 
@@ -111,7 +109,6 @@ namespace System.Net.Http.Functional.Tests
         {
             if (PlatformDetection.IsWindowsNanoServer)
             {
-                // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
             }
 

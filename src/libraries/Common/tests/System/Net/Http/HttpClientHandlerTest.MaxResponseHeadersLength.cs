@@ -61,7 +61,7 @@ namespace System.Net.Http.Functional.Tests
             server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task InfiniteSingleHeader_ThrowsException()
         {
@@ -100,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(ResponseWithManyHeadersData))]
         public async Task ThresholdExceeded_ThrowsException(string responseHeaders, int? maxResponseHeadersLength, bool shouldSucceed)
         {

@@ -377,7 +377,7 @@ namespace System.IO.Tests
         [Theory, MemberData(nameof(TestData_UnicodeWhiteSpace))]
         public void GetFullPath_UnicodeWhiteSpaceStays(string component)
         {
-            // When not NetFX full path should not cut off component
+            // When not .NET Framework full path should not cut off component
             string path = "C:\\Test" + component;
             Assert.Equal(path, Path.GetFullPath(path));
         }

@@ -46,7 +46,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(string filename)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(filename);
             Gdip.CheckStatus(Gdip.GdipCreateMetafileFromFile(filename, out IntPtr metafile));
             SetNativeImage(metafile);
@@ -184,7 +184,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type, string description)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(fileName);
             if (fileName.Length > MaxPath)
             {

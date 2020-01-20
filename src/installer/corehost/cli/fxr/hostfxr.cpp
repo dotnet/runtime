@@ -353,6 +353,13 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_native_search_directories(const 
         return InvalidArgFailure;
     }
 
+    // Reset the output buffer to empty, so that if the below fails, we return a valid value.
+    *required_buffer_size = 0;
+    if (buffer_size > 0)
+    {
+        buffer[0] = '\0';
+    }
+
     host_startup_info_t startup_info;
     startup_info.parse(argc, argv);
 

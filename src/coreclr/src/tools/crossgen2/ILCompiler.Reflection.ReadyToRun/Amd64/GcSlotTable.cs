@@ -26,13 +26,10 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 Index = index;
                 RegisterNumber = registerNumber;
                 StackSlot = stack;
+                Flags = flags;
                 if (isUntracked)
                 {
-                    Flags = GcSlotFlags.GC_SLOT_UNTRACKED;
-                }
-                else
-                {
-                    Flags = flags;
+                    Flags |= GcSlotFlags.GC_SLOT_UNTRACKED;
                 }
             }
 

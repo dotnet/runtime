@@ -323,7 +323,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"[a-[a-f]]", "abcdefghijklmnopqrstuvwxyz", RegexOptions.None, 0, 26, false, string.Empty };
 
             // \c
-            if (!PlatformDetection.IsFullFramework) // missing fix for #26501
+            if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/corefx/issues/26501
             {
                 yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u00FFdogiwod", RegexOptions.None, 0, 15, false, string.Empty };
             }
@@ -884,7 +884,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework needs fix for #26484")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/corefx/issues/26484")]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeStressTestModes.JitMinOpts)]
         public void Match_ExcessPrefix()
         {

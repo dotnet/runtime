@@ -239,6 +239,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         RT_Illegal = 0xFF
     };
 
+    [Flags]
     public enum GcSlotFlags
     {
         GC_SLOT_BASE = 0x0,

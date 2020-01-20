@@ -62,8 +62,7 @@ inline void FATAL_GC_ERROR()
 
 #ifdef FEATURE_64BIT_ALIGNMENT
 // We need the following feature as part of keeping 64-bit types aligned in the GC heap.
-#define RESPECT_LARGE_ALIGNMENT //used to keep "double" objects aligned during
-                                //relocation
+#define RESPECT_LARGE_ALIGNMENT //Preserve double alignment of objects during relocation
 #endif //FEATURE_64BIT_ALIGNMENT
 
 #define SHORT_PLUGS //used to keep ephemeral plugs short so they fit better into the oldest generation free items
@@ -2911,6 +2910,8 @@ protected:
     size_t  compute_in (int gen_number);
     PER_HEAP
     void compute_new_dynamic_data (int gen_number);
+    PER_HEAP_ISOLATED
+    gc_history_global* get_gc_data_global();
     PER_HEAP
     gc_history_per_heap* get_gc_data_per_heap();
     PER_HEAP
@@ -3027,9 +3028,6 @@ protected:
     // Restores BGC settings if necessary.
     PER_HEAP_ISOLATED
     void recover_bgc_settings();
-
-    PER_HEAP
-    void save_bgc_data_per_heap();
 
     PER_HEAP
     BOOL should_commit_mark_array();
@@ -3640,6 +3638,9 @@ protected:
 
     PER_HEAP_ISOLATED
     gc_mechanisms saved_bgc_settings;
+
+    PER_HEAP_ISOLATED
+    gc_history_global bgc_data_global;
 
     PER_HEAP
     gc_history_per_heap bgc_data_per_heap;

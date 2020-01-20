@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+  </PropertyGroup>
+  <ItemGroup Label="darwin_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-darwin.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="posix_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-posix.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+</Project>

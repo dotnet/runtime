@@ -317,7 +317,7 @@ namespace System.Security.Cryptography
     }
     public sealed partial class ECDiffieHellmanCngPublicKey : System.Security.Cryptography.ECDiffieHellmanPublicKey
     {
-        // ECDiffieHellmanPublicKey parameter-less ctor only exist on netfx 4.7+
+        // ECDiffieHellmanPublicKey parameter-less ctor only exist on .NET Framework 4.7+
         private ECDiffieHellmanCngPublicKey() : base(null) { }
         public System.Security.Cryptography.CngKeyBlobFormat BlobFormat { get { throw null; } }
         protected override void Dispose(bool disposing) { }
@@ -341,7 +341,7 @@ namespace System.Security.Cryptography
         public ECDsaCng() { }
         public ECDsaCng(int keySize) { }
         public ECDsaCng(System.Security.Cryptography.CngKey key) { }
-#if FEATURE_ECPARAMETERS // types missing from netfx and net462 targeting pack
+#if FEATURE_ECPARAMETERS // types missing from .NET Framework and net462 targeting pack
         public ECDsaCng(System.Security.Cryptography.ECCurve curve) { }
 #endif
         public System.Security.Cryptography.CngAlgorithm HashAlgorithm { get { throw null; } set { } }
@@ -349,17 +349,17 @@ namespace System.Security.Cryptography
         public override int KeySize { get { throw null; } set { } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         protected override void Dispose(bool disposing) { }
-#if FEATURE_ECPARAMETERS // types missing from netfx and net462 targeting pack
+#if FEATURE_ECPARAMETERS // types missing from .NET Framework and net462 targeting pack
         public override System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
         public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
 #endif
         public void FromXmlString(string xml, System.Security.Cryptography.ECKeyXmlFormat format) { }
-#if FEATURE_ECPARAMETERS // types missing from netfx and net462 targeting pack
+#if FEATURE_ECPARAMETERS // types missing from .NET Framework and net462 targeting pack
         public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
 #endif
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
-#if FEATURE_ECPARAMETERS // types missing from netfx and net462 targeting pack
+#if FEATURE_ECPARAMETERS // types missing from .NET Framework and net462 targeting pack
         public override void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
 #endif
         public byte[] SignData(byte[] data) { throw null; }

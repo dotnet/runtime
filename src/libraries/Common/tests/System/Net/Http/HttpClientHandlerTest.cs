@@ -82,7 +82,6 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                // Same as .NET Framework (Desktop).
                 Assert.Equal(DecompressionMethods.None, handler.AutomaticDecompression);
                 Assert.True(handler.AllowAutoRedirect);
                 Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOptions);
@@ -105,13 +104,12 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                // Same as .NET Framework (Desktop).
                 Assert.Equal(64, handler.MaxResponseHeadersLength);
                 Assert.False(handler.PreAuthenticate);
                 Assert.True(handler.SupportsProxy);
                 Assert.True(handler.SupportsRedirectConfiguration);
 
-                // Changes from .NET Framework (Desktop).
+                // Changes from .NET Framework.
                 Assert.False(handler.CheckCertificateRevocationList);
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 Assert.Equal(SslProtocols.None, handler.SslProtocols);

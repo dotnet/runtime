@@ -22,9 +22,6 @@ namespace System.Net.Http.Functional.Tests
         public static int PassingTestTimeoutMilliseconds => 60 * 1000;
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {
-            // TODO (#5525): Align with the rest of tests w.r.t response parsing once the test server is finalized.
-            // Currently not adding any new dependencies
-
             // Deal with JSON encoding of '\' and '"' in value
             value = value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
@@ -35,9 +32,6 @@ namespace System.Net.Http.Functional.Tests
 
         public static bool JsonMessageContainsKey(string message, string key)
         {
-            // TODO (#5525): Align with the rest of tests w.r.t response parsing once the test server is finalized.
-            // Currently not adding any new dependencies
-
             return JsonMessageContainsKeyValue(message, key, "");
         }
 

@@ -212,7 +212,7 @@ namespace System.Text.Json
             else if (state.Current.IsProcessingObject(ClassType.Dictionary) || (state.Current.IsProcessingProperty(ClassType.Dictionary) && !setPropertyDirectly))
             {
                 string? key = state.Current.KeyName;
-                Debug.Assert(!string.IsNullOrEmpty(key));
+                Debug.Assert(key != null);
 
                 if (state.Current.TempDictionaryValues != null)
                 {
@@ -288,7 +288,7 @@ namespace System.Text.Json
             else if (state.Current.IsProcessingDictionary())
             {
                 string? key = state.Current.KeyName;
-                Debug.Assert(!string.IsNullOrEmpty(key));
+                Debug.Assert(key != null);
 
                 if (state.Current.TempDictionaryValues != null)
                 {
