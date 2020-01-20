@@ -17,7 +17,7 @@ namespace System
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class AttributeUsageAttribute : Attribute
     {
-        private readonly AttributeTargets _attributeTarget; // Defaults to all
+        private readonly AttributeTargets _attributeTarget;
         private bool _allowMultiple;
         private bool _inherited;
 
