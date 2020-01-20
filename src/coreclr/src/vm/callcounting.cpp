@@ -70,12 +70,12 @@ CallCountingManager::CallCountingInfo::~CallCountingInfo()
 
 #endif // !DACCESS_COMPILE
 
-CallCountingManager::CallCountingInfo *CallCountingManager::CallCountingInfo::From(CallCount *remainingCallCountCell)
+CallCountingManager::PTR_CallCountingInfo CallCountingManager::CallCountingInfo::From(PTR_CallCount remainingCallCountCell)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(remainingCallCountCell != nullptr);
 
-    return (CallCountingInfo *)((UINT_PTR)remainingCallCountCell - offsetof(CallCountingInfo, m_remainingCallCount));
+    return PTR_CallCountingInfo(dac_cast<TADDR>(remainingCallCountCell) - offsetof(CallCountingInfo, m_remainingCallCount));
 }
 
 NativeCodeVersion CallCountingManager::CallCountingInfo::GetCodeVersion() const
@@ -131,7 +131,7 @@ void CallCountingManager::CallCountingInfo::ClearCallCountingStub()
     m_callCountingStub = nullptr;
 }
 
-CallCountingManager::CallCount *CallCountingManager::CallCountingInfo::GetRemainingCallCountCell()
+PTR_CallCount CallCountingManager::CallCountingInfo::GetRemainingCallCountCell()
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(IsCallCountingEnabled());
@@ -1229,7 +1229,7 @@ PCODE CallCountingManager::GetTargetForMethod(PCODE callCountingStubEntryPoint)
 
     _ASSERTE(IsCallCountingStub(callCountingStubEntryPoint));
 
-    return ((const CallCountingStub *)PCODEToPINSTR(callCountingStubEntryPoint))->GetTargetForMethod();
+    return PTR_CallCountingStub(PCODEToPINSTR(callCountingStubEntryPoint))->GetTargetForMethod();
 }
 
 #ifdef DACCESS_COMPILE

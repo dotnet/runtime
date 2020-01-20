@@ -74,9 +74,6 @@ typedef DPTR(CallCountingManager) PTR_CallCountingManager;
 
 class CallCountingManager
 {
-public:
-    typedef UINT16 CallCount;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CallCountingManager::CallCountingInfo
 
@@ -121,7 +118,7 @@ private:
     #endif
 
     public:
-        static CallCountingInfo *From(CallCount *remainingCallCountCell);
+        static PTR_CallCountingInfo From(PTR_CallCount remainingCallCountCell);
         NativeCodeVersion GetCodeVersion() const;
         bool IsCallCountingEnabled() const;
 

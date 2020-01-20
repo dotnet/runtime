@@ -1350,14 +1350,17 @@ inline size_t GetARMInstructionLength(PBYTE pInstr)
     T(const T &) = delete; \
     T &operator =(const T &) = delete
 
+typedef UINT16 CallCount;
+typedef DPTR(CallCount) PTR_CallCount;
+
 ////////////////////////////////////////////////////////////////
 // CallCountingStub
 
+class CallCountingStub;
+typedef DPTR(const CallCountingStub) PTR_CallCountingStub;
+
 class CallCountingStub
 {
-protected:
-    typedef UINT16 CallCount;
-
 public:
     static const SIZE_T Alignment = sizeof(void *);
 
@@ -1378,7 +1381,7 @@ public:
 #endif
 
 public:
-    CallCount *GetRemainingCallCountCell() const;
+    PTR_CallCount GetRemainingCallCountCell() const;
     PCODE GetTargetForMethod() const;
 
     DISABLE_COPY(CallCountingStub);
@@ -1386,6 +1389,9 @@ public:
 
 ////////////////////////////////////////////////////////////////
 // CallCountingStubShort
+
+class CallCountingStubShort;
+typedef DPTR(const CallCountingStubShort) PTR_CallCountingStubShort;
 
 #pragma pack(push, 1)
 class CallCountingStubShort : public CallCountingStub
@@ -1438,18 +1444,18 @@ public:
 #endif
 
 public:
-    static bool Is(const CallCountingStub *callCountingStub)
+    static bool Is(PTR_CallCountingStub callCountingStub)
     {
         WRAPPER_NO_CONTRACT;
         return true;
     }
 
-    static const CallCountingStubShort *From(const CallCountingStub *callCountingStub)
+    static PTR_CallCountingStubShort From(PTR_CallCountingStub callCountingStub)
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(Is(callCountingStub));
 
-        return (const CallCountingStubShort *)callCountingStub;
+        return dac_cast<PTR_CallCountingStubShort>(callCountingStub);
     }
 
     PCODE GetTargetForMethod() const
@@ -1459,7 +1465,6 @@ public:
     }
 
     friend CallCountingStub;
-    friend CallCountingStubLong;
     DISABLE_COPY(CallCountingStubShort);
 };
 #pragma pack(pop)
@@ -1477,16 +1482,16 @@ inline const CallCountingStub *CallCountingStub::From(TADDR stubIdentifyingToken
 }
 #endif
 
-inline CallCountingStub::CallCount *CallCountingStub::GetRemainingCallCountCell() const
+inline PTR_CallCount CallCountingStub::GetRemainingCallCountCell() const
 {
     WRAPPER_NO_CONTRACT;
-    return ((const CallCountingStubShort *)this)->m_remainingCallCountCell;
+    return PTR_CallCount(dac_cast<PTR_CallCountingStubShort>(this)->m_remainingCallCountCell);
 }
 
 inline PCODE CallCountingStub::GetTargetForMethod() const
 {
     WRAPPER_NO_CONTRACT;
-    return CallCountingStubShort::From(this)->GetTargetForMethod();
+    return CallCountingStubShort::From(PTR_CallCountingStub(this))->GetTargetForMethod();
 }
 
 ////////////////////////////////////////////////////////////////
