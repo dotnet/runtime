@@ -34,7 +34,7 @@ namespace System.Reflection.TypeLoading.Ecma
         internal sealed override RoModule GetRoManifestModule() => _manifestModule;
         internal EcmaModule GetEcmaManifestModule() => _manifestModule;
 
-        public sealed override MethodInfo EntryPoint => GetEcmaManifestModule().ComputeEntryPoint(fileRefEntryPointAllowed: true);
+        public sealed override MethodInfo? EntryPoint => GetEcmaManifestModule().ComputeEntryPoint(fileRefEntryPointAllowed: true);
 
         public sealed override string ImageRuntimeVersion => Reader.MetadataVersion;
         public sealed override bool IsDynamic => false;
@@ -55,7 +55,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 AssemblyNameFlags flags = ar.Flags.ToAssemblyNameFlags();
                 data.Flags = flags;
                 data.Name = ar.Name.GetString(reader);
-                data.Version = ar.Version.AdjustForUnspecifiedVersionComponents();
+                data.Version = ar.Version.AdjustForUnspecifiedVersionComponents()!;
                 data.CultureName = ar.Culture.GetStringOrNull(reader) ?? string.Empty;
                 if ((flags & AssemblyNameFlags.PublicKey) != 0)
                 {

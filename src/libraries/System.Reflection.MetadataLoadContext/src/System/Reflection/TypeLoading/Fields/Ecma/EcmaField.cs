@@ -40,7 +40,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override int MetadataToken => _handle.GetToken();
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is EcmaField other))
                 return false;
@@ -61,22 +61,22 @@ namespace System.Reflection.TypeLoading.Ecma
 
         protected sealed override string ComputeName() => FieldDefinition.Name.GetString(Reader);
         protected sealed override FieldAttributes ComputeAttributes() => FieldDefinition.Attributes;
-        protected sealed override Type ComputeFieldType() => FieldDefinition.DecodeSignature(_module, TypeContext);
+        protected sealed override Type ComputeFieldType() => FieldDefinition.DecodeSignature(_module, TypeContext)!;
 
         public sealed override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(isRequired: false);
         public sealed override Type[] GetRequiredCustomModifiers() => GetCustomModifiers(isRequired: true);
 
         private Type[] GetCustomModifiers(bool isRequired)
         {
-            RoType type = FieldDefinition.DecodeSignature(new EcmaModifiedTypeProvider(_module), TypeContext);
+            RoType type = FieldDefinition.DecodeSignature(new EcmaModifiedTypeProvider(_module), TypeContext)!;
             return type.ExtractCustomModifiers(isRequired);
         }
 
-        protected sealed override object ComputeRawConstantValue() => FieldDefinition.GetDefaultValue().ToRawObject(Reader);
+        protected sealed override object? ComputeRawConstantValue() => FieldDefinition.GetDefaultValue().ToRawObject(Reader);
 
         public sealed override string ToString()
         {
-            string disposedString = Loader.GetDisposedString();
+            string? disposedString = Loader.GetDisposedString();
             if (disposedString != null)
                 return disposedString;
 
