@@ -1951,7 +1951,7 @@ class LayoutEEClass : public EEClass
 {
 public:
     EEClassLayoutInfo m_LayoutInfo;
-    PTR_EEClassNativeLayoutInfo m_nativeLayoutInfo;
+    Volatile<PTR_EEClassNativeLayoutInfo> m_nativeLayoutInfo;
 
 #ifndef DACCESS_COMPILE
     LayoutEEClass() : EEClass(sizeof(LayoutEEClass))
