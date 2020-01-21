@@ -115,7 +115,7 @@ generate_layout()
     chmod +x "$__CrossgenExe"
 
     # Make sure to copy over the pulled down packages
-    cp -r "$__BinDir/*" "$CORE_ROOT/" > /dev/null
+    cp -r "$__BinDir"/* "$CORE_ROOT/" > /dev/null
 
     if [[ "$__BuildOS" != "OSX" ]]; then
         nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
