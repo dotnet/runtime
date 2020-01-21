@@ -2838,7 +2838,7 @@ namespace System.Text.RegularExpressions
                 Call(s_spanGetLengthMethod);
                 BgeUnFar(skipUpdatesLabel);
 
-                // if (textSpan[i] != ch) goto skipUpdatesLabel;
+                // if (textSpan[textSpanPos] != ch) goto skipUpdatesLabel;
                 Ldloca(textSpanLocal);
                 Ldc(textSpanPos);
                 Call(s_spanGetItemMethod);

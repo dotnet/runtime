@@ -86,13 +86,13 @@ namespace System.Text.RegularExpressions
             }
 
             count--;
-            var state = (al: new List<string>(), prevat: 0, input, count);
+            var state = (results: new List<string>(), prevat: 0, input, count);
 
             if (!regex.RightToLeft)
             {
-                regex.Run(input, startat, ref state, (ref (List<string> al, int prevat, string input, int count) state, Match match) =>
+                regex.Run(input, startat, ref state, (ref (List<string> results, int prevat, string input, int count) state, Match match) =>
                 {
-                    state.al.Add(state.input.Substring(state.prevat, match.Index - state.prevat));
+                    state.results.Add(state.input.Substring(state.prevat, match.Index - state.prevat));
                     state.prevat = match.Index + match.Length;
 
                     // add all matched capture groups to the list.
@@ -100,27 +100,27 @@ namespace System.Text.RegularExpressions
                     {
                         if (match.IsMatched(i))
                         {
-                            state.al.Add(match.Groups[i].ToString());
+                            state.results.Add(match.Groups[i].ToString());
                         }
                     }
 
                     return --state.count != 0;
                 });
 
-                if (state.al.Count == 0)
+                if (state.results.Count == 0)
                 {
                     return new[] { input };
                 }
 
-                state.al.Add(input.Substring(state.prevat, input.Length - state.prevat));
+                state.results.Add(input.Substring(state.prevat, input.Length - state.prevat));
             }
             else
             {
                 state.prevat = input.Length;
 
-                regex.Run(input, startat, ref state, (ref (List<string> al, int prevat, string input, int count) state, Match match) =>
+                regex.Run(input, startat, ref state, (ref (List<string> results, int prevat, string input, int count) state, Match match) =>
                 {
-                    state.al.Add(state.input.Substring(match.Index + match.Length, state.prevat - match.Index - match.Length));
+                    state.results.Add(state.input.Substring(match.Index + match.Length, state.prevat - match.Index - match.Length));
                     state.prevat = match.Index;
 
                     // add all matched capture groups to the list.
@@ -128,23 +128,23 @@ namespace System.Text.RegularExpressions
                     {
                         if (match.IsMatched(i))
                         {
-                            state.al.Add(match.Groups[i].ToString());
+                            state.results.Add(match.Groups[i].ToString());
                         }
                     }
 
                     return --state.count != 0;
                 });
 
-                if (state.al.Count == 0)
+                if (state.results.Count == 0)
                 {
                     return new[] { input };
                 }
 
-                state.al.Add(input.Substring(0, state.prevat));
-                state.al.Reverse(0, state.al.Count);
+                state.results.Add(input.Substring(0, state.prevat));
+                state.results.Reverse(0, state.results.Count);
             }
 
-            return state.al.ToArray();
+            return state.results.ToArray();
         }
     }
 }

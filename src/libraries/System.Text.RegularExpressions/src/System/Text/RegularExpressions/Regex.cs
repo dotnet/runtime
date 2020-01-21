@@ -103,14 +103,18 @@ namespace System.Text.RegularExpressions
             internalMatchTimeout = matchTimeout;
 
 #if DEBUG
-            if (Debug)
+            if (IsDebug)
             {
-                System.Diagnostics.Debug.Write($"Pattern:     {pattern}");
+                Debug.Write($"Pattern:     {pattern}");
                 RegexOptions displayOptions = options & ~RegexOptions.Debug;
                 if (displayOptions != RegexOptions.None)
-                    System.Diagnostics.Debug.Write($"Options:     {displayOptions}");
-                if (matchTimeout != Regex.InfiniteMatchTimeout)
-                    System.Diagnostics.Debug.Write($"Timeout:     {matchTimeout}");
+                {
+                    Debug.Write($"Options:     {displayOptions}");
+                }
+                if (matchTimeout != InfiniteMatchTimeout)
+                {
+                    Debug.Write($"Timeout:     {matchTimeout}");
+                }
             }
 #endif
 

@@ -102,7 +102,7 @@ namespace System.Text.RegularExpressions
             bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
             if (!ignoreTimeout)
             {
-                // We are using Environment.TickCount and not Timewatch for performance reasons.
+                // We are using Environment.TickCount and not Stopwatch for performance reasons.
                 // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
                 // overflow it will still stay ahead of Environment.TickCount for comparisons made
                 // in DoCheckTimeout().
@@ -224,7 +224,7 @@ namespace System.Text.RegularExpressions
             bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
             if (!ignoreTimeout)
             {
-                // We are using Environment.TickCount and not Timewatch for performance reasons.
+                // We are using Environment.TickCount and not Stopwatch for performance reasons.
                 // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
                 // overflow it will still stay ahead of Environment.TickCount for comparisons made
                 // in DoCheckTimeout().
