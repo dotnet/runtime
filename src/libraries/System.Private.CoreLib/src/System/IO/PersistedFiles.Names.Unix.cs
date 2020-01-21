@@ -12,7 +12,7 @@ namespace System.IO
 
         internal const string TopLevelDirectory = "dotnet";
         internal const string TopLevelHiddenDirectory = "." + TopLevelDirectory;
-        // Do not update this corefx reference to libraries 
+        // Do not update this corefx reference to libraries
         // as we need to keep the original directory structure.
         internal const string SecondLevelDirectory = "corefx";
     }
