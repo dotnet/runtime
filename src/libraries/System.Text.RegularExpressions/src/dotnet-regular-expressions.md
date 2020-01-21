@@ -14,7 +14,7 @@ Key types have significant protected surface area. This is not intended as an ge
 
 Protected members are part of the public API which cannot be broken, so they may potentially make some future optimizations more difficult. In particular, we must keep them stable in order to remain compatible with regexes saved by .NET Framework.
 
-`RegexCompiler` is abstract for a different reason: to share implementation between `RegexLWCGCompiler` and `RegexAssemblyCompiler`: it based around a field of type `System.Reflection.Emit.ILGenerator` and has protected utility methods and fields to work with it. External extension by derivation of `RegexCompiler` would likely be clumsy as it contains knowledge of `RegexLWCGCompiler` and `RegexAssemblyCompiler`.
+`RegexCompiler` is internal, and it is abstract for a different reason: to share implementation between `RegexLWCGCompiler` (used when `RegexOptions.Compiled` is specified to compile the regular expression in memory) and `RegexAssemblyCompiler` (used when `CompileToAssembly` is called to compile the regular expression to an assembly to persist in the file system): it is based around a field of type `System.Reflection.Emit.ILGenerator` and has protected utility methods and fields to work with it.
 
 ## Key types - General
 
