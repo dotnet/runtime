@@ -44,7 +44,7 @@ Protected members are part of the public API which cannot be broken, so they may
 
 * Converts pattern string to `RegexTree` of `RegexNode`s
 * Invoked with `RegexTree Parse(string pattern, RegexOptions options...) {}`
-* Also has `Escape(..)` and `Unescape(..)` methods, and parses into `RegexReplacement`s
+* Also has `Escape(..)` and `Unescape(..)` methods (which serve as the implementation of the public `Regex.Escape/Unescape` methods), and parses into `RegexReplacement`s
 * Does a partial prescan to prep capture slots
 * As each `RegexNode` is added, it attempts to reduce (optimize) the newly formed subtree. When parsing completes, there is a final optimization of the whole tree.
 
