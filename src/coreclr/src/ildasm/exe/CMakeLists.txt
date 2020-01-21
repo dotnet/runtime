@@ -9,7 +9,7 @@ add_definitions(-DFEATURE_CORECLR)
 
 include_directories(..)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     build_resources(${CMAKE_CURRENT_SOURCE_DIR}/../dasm.rc dasm_rc TARGET_CPP_FILE)
 
     set(ILDASM_RESOURCES
@@ -18,7 +18,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 else()
     set(ILDASM_RESOURCES ../dasm.rc)
     add_definitions(-DFX_VER_INTERNALNAME_STR=ildasm.exe)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 set(ILDASM_SOURCES
     ../ceeload.cpp
@@ -47,7 +47,7 @@ if (WIN32)
     list(APPEND ILDASM_SOURCES ${ILDASM_HEADERS})
 endif(WIN32)
 
-if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
@@ -56,7 +56,7 @@ if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
-endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
 _add_executable(ildasm
     ${ILDASM_SOURCES}
@@ -99,7 +99,7 @@ else()
     )
 endif(WIN32)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(ildasm
         ${ILDASM_LINK_LIBRARIES}
         mscorrc_debug
@@ -120,6 +120,6 @@ else()
         oleaut32
         shell32
     )
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 install_clr(TARGETS ildasm)
