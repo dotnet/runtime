@@ -1436,8 +1436,7 @@ bool BasicBlock::isBBCallAlwaysPair()
 //
 bool BasicBlock::isBBCallAlwaysPairTail()
 {
-    return (((bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0) && (bbPreds != nullptr) && (bbPreds->flNext == nullptr) &&
-            bbPreds->flBlock->isBBCallAlwaysPair());
+    return (bbPrev != nullptr) && bbPrev->isBBCallAlwaysPair();
 }
 
 //------------------------------------------------------------------------
