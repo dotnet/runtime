@@ -6,6 +6,18 @@ The runtime tests will be available at a later date.
 ## Running Library Tests
 Running library tests against Mono is straightforward regardless of configuration.  Simply run the following commands:
 
+0. Build the "libraries" subset (see [building libraries workflow](../../building/libraries/README.md))
+Mac OS X (With Homebrew openSSL)
+```bash
+OPENSSL_ROOT_DIR="/usr/local/opt/openssl@1.1" ./build.sh --subsetCategory libraries
+```
+Linux is similar, perhaps omitting `OPENSSL_ROOT_DIR`
+
+or on Windows
+```bat
+build.cmd --subsetCategory libraries
+```
+
 1. Build and set the TestRuntimeFlavor
 
 ```bash
