@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 // This RegexCode class is internal to the regular expression package.
-// It provides operator constants for use by the Builder and the Machine.
 
 // Implementation notes:
 //
