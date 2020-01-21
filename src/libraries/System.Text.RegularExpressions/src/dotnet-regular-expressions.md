@@ -1,6 +1,6 @@
 # Implementation of System.Text.RegularExpressions
 
-The implementation uses a typical NFA approach that supports back references. Patterns are parsed into a tree (`RegexTree`), translated into an abstract tree (`RegexCode`) by a writer (`RegexWriter`), and then either used in an interpreter (`RegexInterpreter`) or compiled to IL which is executed (`CompiledRegexRunner`). Both of these are instances of `RegexRunner`: in the case of the compiled runner, one must generate a new one from the `RegexCode` using a factory each time the pattern is to be executed.
+The implementation uses a typical NFA approach that supports back references. Patterns are parsed into a tree (`RegexTree`), translated into an intermediate representation (`RegexCode`) by a writer (`RegexWriter`), and then either used in an interpreter (`RegexInterpreter`) or compiled to IL which is executed (`CompiledRegexRunner`). Both of these derive from `RegexRunner`: in the case of the compiled runner, one must generate them from the `RegexCode` using a factory.
 
 Regex engines have different features: .NET regular expressions have a couple that others do not have, such as `Capture`s (distinct from `Group`s). It does not support searching UTF-8 text, nor searching a Span over a buffer.
 
@@ -10,9 +10,11 @@ Performance is important and we welcome optimizations so long as they preserve t
 
 ## Extensibility
 
-Key types have significant protected surface area. This is probably not intended as an general extensibility point, but rather as a detail of implementing saving a compiled regex to disk. Saving to disk is implemented by saving an assembly containing three types, one that derives from each of `Regex`, `RegexRunnerFactory`, and `RegexRunner`. This mechanism accounts for all the protected methods (and even protected fields) on these classes. If we were designing them today, we would likely more carefully limit their public surface, and possibly not rely on derived types.
+Key types have significant protected (including protected internal) surface area. This is probably not intended as an general extensibility point, but rather as a detail of implementing saving a compiled regex to disk. Saving to disk is implemented by saving an assembly containing three types, one that derives from each of `Regex`, `RegexRunnerFactory`, and `RegexRunner`. This mechanism accounts for all the protected methods (and even protected fields) on these classes. If we were designing them today, we would likely more carefully limit their public surface, and possibly not rely on derived types.
 
-Protected members are part of the public API which cannot be broken, so they may potentially make some future optimizations more difficult. In particular, we must keep them stable in order to remain compatible with regexes saved by .NET Framework.
+Protected members are part of the public API which cannot be broken, so they may potentially make some future optimizations more difficult - or even features - especially the fields. For example the string `runtext` is exposed as a protected internal field on `RegexRunner`. If we wanted to expose the text instead as, for example, a `ReadOnlyMemory<char>`, in order to make it possible to use Regex over other sources beyond string, we would have to find a creative way to preserve compatibility.
+
+In particular, we must keep this API stable in order to remain compatible with regexes saved by .NET Framework.
 
 `RegexCompiler` is abstract for a different reason: to share implementation between `RegexLWCGCompiler` and `RegexAssemblyCompiler`: it based around a field of type `System.Reflection.Emit.ILGenerator` and has protected utility methods and fields to work with it. External extension by derivation of `RegexCompiler` would likely be clumsy as it contains knowledge of `RegexLWCGCompiler` and `RegexAssemblyCompiler`.
 
@@ -23,13 +25,15 @@ Protected members are part of the public API which cannot be broken, so they may
 * Represents an executable regular expression with some utility static methods
 * Several protected fields and methods but no derived classes exist in this implementation (see [Extensibility](#Extensibility) section above).
 * Constructor sets `RegexCode` using `RegexParser` and `RegexWriter`; then, if `RegexOptions.Compiled`, compiles and holds a `RegexRunnerFactory` and clears `RegexCode`; these steps only need to be done once for this `Regex` object
+* Thread-safe: no state changes are visible from concurrent threads after construction
 * Various public entry points converge on `Run()` which uses the held `RegexRunner` if any; if none or in use, creates another with the held `RegexRunnerFactory` if any; if none, interprets with held `RegexCode`
-* All static methods (such as `Regex.Match`) attempt to find a pre-existing `Regex` object for the requested pattern and options in the `RegexCache`. This is legitimate, since after construction, `Regex` options are thread-safe. If there is a cache hit, execution can begin immediately.
+* All static methods (such as `Regex.Match`) attempt to find a pre-existing `Regex` object for the requested pattern and options in the `RegexCache`. This is legitimate, since `Regex` options are thread-safe. If there is a cache hit, execution can begin immediately; if not, the cache is populated first. If the caller uses an instance instead of a static method, they are effectively performing the same caching themselves
 
 ### RegexOptions (public)
 
 * `RightToLeft` is supported throughout, but as the less common case it is less optimized.
 * `ExplicitCapture` is off by default: this is relevant to performance, as often patterns contain parentheses as a useful grouping mechanism, for example `(something){1,3}` is easier to type than the non capturing form `(?:something){1,3}`. Because explicit capture is off by default, the engine in this case will capture `something` even if it was not needed.
+* There are other various options, `CaseInsensitive` in particular is commonly used
 
 ### MatchEvaluator (public)
 
@@ -57,7 +61,7 @@ Protected members are part of the public API which cannot be broken, so they may
 
 * Representation of single, range, or class
 * Created by `RegexParser`
-* Creates packed string to be held on `RegexNode`
+* Creates packed string to be held on `RegexNode`. During execution, tihs string is passed to `CharInClass` to determine whether a given character is in the set, although the implementation (in particular in the compiler) may emit faster equivalent checks when possible.
 * Has utility methods for examining the packed string, in particular for testing membership of the class (`CharInClass(..)`)
 
 ### RegexNode
@@ -112,11 +116,10 @@ Protected members are part of the public API which cannot be broken, so they may
 ### RegexCompiler (public abstract)
 
 * Responsible for compiling `RegexCode` to a `RegexRunnerFactory`
-* As implemented, uses `RegexLWCGCompiler`
-* Ha utility method `CompileToAssembly` that invokes `RegexParser` and `RegexWriter` directly then uses `RegexAssemblyCompiler` (see note for that type)
+* Has a utility method `CompileToAssembly` that invokes `RegexParser` and `RegexWriter` directly then uses `RegexAssemblyCompiler` (see note for that type)
 * Key protected methods are `GenerateFindFirstChar()` and `GenerateGo()`
 * Created and used only from `RegexRunnerFactory Regex.Compile(RegexCode code, RegexOptions options...)`
-* Implements `RegexRunnerFactory RegexCompiler.Compile(RegexCode code, RegexOptions options...)`
+* Has a factory method `RegexRunnerFactory RegexCompiler.Compile(RegexCode code, RegexOptions options...)` that is implemented with its derived type `RegexLWCGCompiler`
 
 ### RegexLWCGCompiler (is a RegexCompiler)
 
@@ -146,7 +149,7 @@ Protected members are part of the public API which cannot be broken, so they may
 * Lots of protected members: tracking position, execution stacks, and captures:
   * `protected abstract void Go()`
   * `protected abstract bool FindFirstChar()`
-  * `public Match? Scan(System.Text.RegularExpressions.Regex regex, string text...)` calls `FindFirstChar()` and `Go()`
+  * `Match? Scan(System.Text.RegularExpressions.Regex regex, string text...)` calls `FindFirstChar()` and `Go()`
 * Has a "quick" mode that does not instantiate any captures: used by `Regex.IsMatch(..)` which does not expose captures to the caller
 * Concrete instances created by `Match? Regex.Run(...)` calling either `RegexRunner CompiledRegexRunnerFactory.CreateInstance()` or newing up a `RegexInterpreter`
 
@@ -165,6 +168,7 @@ Protected members are part of the public API which cannot be broken, so they may
 * Represents one match of the pattern: there may be several
 * Holds a `Regex` in order to call `NextMatch()`
 * Created by `RegexRunner`
+* `Match` and related objects are not thread-safe, unlike `Regex` itself
 
 ### Group (public, is a Capture)
 
