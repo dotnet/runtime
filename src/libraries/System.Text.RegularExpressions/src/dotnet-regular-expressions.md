@@ -69,7 +69,7 @@ In particular, we must keep this API stable in order to remain compatible with r
 * Node in regex parse tree
 * Created by `RegexParser`
 * Some nodes represent subsequent optimizations, rather than individual elements of the pattern
-* Holds `Children` and `Next`
+* Holds `Children` and `Next`. `Next` ends up pointing to the immediate parent
 * Holds char or string (which may be char class), and `M` and `N` constants (eg loop bounds)
 * Note: polymorphism was not used here: the interpretation of its fields depends on the integer Type field
 
@@ -216,7 +216,7 @@ In particular, we must keep this API stable in order to remain compatible with r
 
 ### Prefix matching
 
-* If the pattern begins with a literal, `FindFirstChar()` is used to run quickly to the next point in the text that matches that literal, without using the engine. If the literal is a single character, this can use `IndexOf()` which is vectorized; otherwise it uses `RegexBoyerMoore`. Future optimizations could, for example, handle an alternation of leading literals using the Aho–Corasick algorithm; or use `IndexOf` to find a low-probability char before matching the whole literal. These optimizations are likely to most help in the case of a large text, perhaps with few matches, and a pattern with leading large literals.
+* If the pattern begins with a literal, `FindFirstChar()` is used to run quickly to the next point in the text that matches that literal or character class, without using the engine. If the literal is a single character, this can use `IndexOf()` which is vectorized; otherwise it uses `RegexBoyerMoore`. Future optimizations could, for example, handle an alternation of leading literals using the Aho-Corasick algorithm; or use `IndexOf` to find a low-probability char before matching the whole literal. These optimizations are likely to most help in the case of a large text, perhaps with few matches, and a pattern with leading large literals or small character class.
 
 // TODO - more here
 
