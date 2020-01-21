@@ -81,7 +81,7 @@ if(WIN32)
     add_subdirectory(WinRT/NativeComponent)
 
     # IJW isn't supported on ARM64
-    if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+    if(NOT CLR_CMAKE_HOST_ARCH_ARM64)
         add_subdirectory(IJW/ijwhostmock)
         add_subdirectory(IJW/IjwNativeDll)
         add_subdirectory(IJW/IjwNativeCallingManagedDll)

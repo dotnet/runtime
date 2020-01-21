@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 // This RegexCode class is internal to the regular expression package.
-// It provides operator constants for use by the Builder and the Machine.
 
 // Implementation notes:
 //
@@ -292,7 +291,7 @@ namespace System.Text.RegularExpressions
             sb.AppendFormat("{0:D6} ", offset);
             sb.Append(OpcodeBacktracks(opcode & Mask) ? '*' : ' ');
             sb.Append(OperatorDescription(opcode));
-            sb.Append('(');
+            sb.Append(Indent());
 
             opcode &= Mask;
 
@@ -308,7 +307,6 @@ namespace System.Text.RegularExpressions
                 case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
-                    sb.Append("Ch = ");
                     sb.Append(RegexCharClass.CharDescription((char)Codes[offset + 1]));
                     break;
 
@@ -317,34 +315,32 @@ namespace System.Text.RegularExpressions
                 case Setloop:
                 case Setloopatomic:
                 case Setlazy:
-                    sb.Append("Set = ");
                     sb.Append(RegexCharClass.SetDescription(Strings[Codes[offset + 1]]));
                     break;
 
                 case Multi:
-                    sb.Append("String = ");
                     sb.Append(Strings[Codes[offset + 1]]);
                     break;
 
                 case Ref:
                 case Testref:
-                    sb.Append("Index = ");
+                    sb.Append("index = ");
                     sb.Append(Codes[offset + 1]);
                     break;
 
                 case Capturemark:
-                    sb.Append("Index = ");
+                    sb.Append("index = ");
                     sb.Append(Codes[offset + 1]);
                     if (Codes[offset + 2] != -1)
                     {
-                        sb.Append(", Unindex = ");
+                        sb.Append(", unindex = ");
                         sb.Append(Codes[offset + 2]);
                     }
                     break;
 
                 case Nullcount:
                 case Setcount:
-                    sb.Append("Value = ");
+                    sb.Append("value = ");
                     sb.Append(Codes[offset + 1]);
                     break;
 
@@ -354,7 +350,7 @@ namespace System.Text.RegularExpressions
                 case Lazybranchmark:
                 case Branchcount:
                 case Lazybranchcount:
-                    sb.Append("Addr = ");
+                    sb.Append("addr = ");
                     sb.Append(Codes[offset + 1]);
                     break;
             }
@@ -373,7 +369,7 @@ namespace System.Text.RegularExpressions
                 case Setloop:
                 case Setloopatomic:
                 case Setlazy:
-                    sb.Append(", Rep = ");
+                    sb.Append(", rep = ");
                     if (Codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
@@ -382,7 +378,7 @@ namespace System.Text.RegularExpressions
 
                 case Branchcount:
                 case Lazybranchcount:
-                    sb.Append(", Limit = ");
+                    sb.Append(", limit = ");
                     if (Codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
@@ -390,7 +386,7 @@ namespace System.Text.RegularExpressions
                     break;
             }
 
-            sb.Append(')');
+            string Indent() => new string(' ', Math.Max(1, 25 - sb.Length));
 
             return sb.ToString();
         }

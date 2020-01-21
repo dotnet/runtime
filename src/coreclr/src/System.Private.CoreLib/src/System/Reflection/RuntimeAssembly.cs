@@ -309,30 +309,15 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
-        internal static RuntimeAssembly InternalLoad(string assemblyString, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
-        {
-            AssemblyName an = new AssemblyName(assemblyString);
+        internal static RuntimeAssembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
+            => InternalLoad(new AssemblyName(assemblyName), ref stackMark, assemblyLoadContext);
 
-            return InternalLoadAssemblyName(an, ref stackMark, assemblyLoadContext);
-        }
-
-        internal static RuntimeAssembly InternalLoadAssemblyName(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
-        {
-            assemblyRef = (AssemblyName)assemblyRef.Clone();
-            if (assemblyRef.ProcessorArchitecture != ProcessorArchitecture.None)
-            {
-                // PA does not have a semantics for by-name binds for execution
-                assemblyRef.ProcessorArchitecture = ProcessorArchitecture.None;
-            }
-
-            Debug.Assert(assemblyRef.CodeBase == null);
-
-            return nLoad(assemblyRef, null, ref stackMark, true, assemblyLoadContext);
-        }
+        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
+            => nLoad(assemblyName, requestingAssembly: null, ref stackMark, throwOnFileNotFound: true, assemblyLoadContext);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeAssembly nLoad(AssemblyName fileName,
-                                                    RuntimeAssembly? assemblyContext,
+        private static extern RuntimeAssembly nLoad(AssemblyName assemblyName,
+                                                    RuntimeAssembly? requestingAssembly,
                                                     ref StackCrawlMark stackMark,
                                                     bool throwOnFileNotFound,
                                                     AssemblyLoadContext? assemblyLoadContext = null);
