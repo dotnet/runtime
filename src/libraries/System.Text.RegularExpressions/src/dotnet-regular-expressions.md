@@ -66,7 +66,7 @@ Protected members are part of the public API which cannot be broken, so they may
 * Created by `RegexParser`
 * Some nodes represent subsequent optimizations, rather than individual elements of the pattern
 * Holds `Children` and `Next`
-* Holds char or string (which may be char class), and `M` and `N` constants (eg loop bounds)
+* Holds char or string (which may be char class), and `M` and `N` constants; these constants are node-specific values, e.g. for a loop they represent minimum and maximum iteration counts, respectively.
 * Note: polymorphism was not used here: the interpretation of its fields depends on the integer Type field
 
 ### RegexTree
