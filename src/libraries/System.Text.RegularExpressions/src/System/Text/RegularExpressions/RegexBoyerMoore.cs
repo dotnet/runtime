@@ -367,7 +367,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            sb.Append("\n");
+            sb.AppendLine();
 
             return sb.ToString();
         }

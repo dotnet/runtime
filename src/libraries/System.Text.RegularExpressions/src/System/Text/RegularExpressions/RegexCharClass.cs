@@ -1522,7 +1522,7 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         public static readonly char[] Hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-        public static readonly string[] _categoryIdToName = PopulateCategoryIdToName();
+        public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
 
         private static string[] PopulateCategoryIdToName()
         {
