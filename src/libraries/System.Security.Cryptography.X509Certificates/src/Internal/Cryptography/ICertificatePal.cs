@@ -4,12 +4,24 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace Internal.Cryptography
 {
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PolicyData
+    {
+        internal byte[] ApplicationCertPolicies;
+        internal byte[] CertPolicies;
+        internal byte[] CertPolicyMappings;
+        internal byte[] CertPolicyConstraints;
+        internal byte[] EnhancedKeyUsage;
+        internal byte[] InhibitAnyPolicyExtension;
+    }
+
     /// <summary>Provides specific implementation for X509Certificate2.</summary>
     internal interface ICertificatePal : ICertificatePalCore
     {
@@ -27,5 +39,6 @@ namespace Internal.Cryptography
         ICertificatePal CopyWithPrivateKey(DSA privateKey);
         ICertificatePal CopyWithPrivateKey(ECDsa privateKey);
         ICertificatePal CopyWithPrivateKey(RSA privateKey);
+        PolicyData GetPolicyData();
     }
 }
