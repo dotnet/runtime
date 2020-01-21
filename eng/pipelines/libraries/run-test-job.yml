@@ -32,7 +32,7 @@ jobs:
       condition: ${{ parameters.condition }}
       pool: ${{ parameters.pool }}
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, runtimeFlavorName) }}
+        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, variables.runtimeFlavorName) }}
         name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
       ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: 'Test Run'
