@@ -5,8 +5,6 @@ parameters:
   osSubgroup: ''
   platform: ''
   container: ''
-  testGroup: ''
-  crossrootfsDir: ''
   timeoutInMinutes: ''
   stagedBuild: false
   variables: {}
@@ -15,14 +13,13 @@ parameters:
 
 ### Product build
 jobs:
-- template: ..\..\coreclr\templates\xplat-pipeline-job.yml
+- template: xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     _BuildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    testGroup: ${{ parameters.testGroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
@@ -39,37 +36,12 @@ jobs:
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
-
     gatherAssetManifests: true
     variables:
     - name: osGroup
       value: ${{ parameters.osGroup }}
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
-    - name: stripSymbolsArg
-      value: ''
-    # Strip symbols only on the release build
-    - ${{ if eq(parameters.buildConfig, 'Release') }}:
-      - name: stripSymbolsArg
-        value: '-stripsymbols'
-    - name: clangArg
-      value: ''
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - name: clangArg
-        value: '-clang9'
-      # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
-      - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-        - name: clangArg
-          value: '-clang6.0'
-      # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
-        - name: clangArg
-          value: ''
-      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
-      - ${{ if eq(parameters.osGroup, 'OSX') }}:
-        - name: clangArg
-          value: ''
 
     - ${{ parameters.variables }}
 
@@ -89,10 +61,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: mono$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg)
+      - script: $(monoRepoRootDir)mono$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: mono$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages
+      - script: $(monoRepoRootDir)mono$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages
         displayName: Build product
 
     # Publish product output directory for consumption by tests.
