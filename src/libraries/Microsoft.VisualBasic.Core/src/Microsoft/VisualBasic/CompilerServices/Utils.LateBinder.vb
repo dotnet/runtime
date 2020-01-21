@@ -44,13 +44,49 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Friend Const OptionCompareTextFlags As CompareOptions = (CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth Or CompareOptions.IgnoreKanaType)
 
+        Private Const ResourceMsgDefault As String = "Message text unavailable.  Resource file 'Microsoft.VisualBasic resources' not found."
+        Private Const VBDefaultErrorID As String = "ID95"
         Friend Shared m_achIntlSpace() As Char = {chSpace, chIntlSpace}
         Private Shared ReadOnly s_voidType As Type = System.Type.GetType("System.Void")
         Private Shared s_VBRuntimeAssembly As System.Reflection.Assembly
 
+        Private Shared Function GetFallbackMessage(ByVal name As String, ByVal ParamArray args() As Object) As String
+            'last-ditch effort; just give back name
+            Return name
+        End Function
+
         Friend Shared Function GetResourceString(ByVal ResourceId As vbErrors) As String
             Dim id As String = "ID" & CStr(ResourceId)
             Return SR.GetResourceString(id, id)
+        End Function
+
+        <System.ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)>
+        Friend Shared Function GetResourceString(ByVal ResourceKey As String) As String
+
+            Dim s As String = Nothing
+
+            Try
+                s = SR.GetResourceString(ResourceKey)
+                ' this may be unknown error, so try getting default message
+                If s Is Nothing Then
+                    s = SR.GetResourceString(VBDefaultErrorID)
+                End If
+
+                'if we have found nothing, get a fallback message.
+                If s Is Nothing Then
+                    s = GetFallbackMessage(ResourceKey)
+                End If
+            Catch ex As StackOverflowException
+                Throw ex
+            Catch ex As OutOfMemoryException
+                Throw ex
+            Catch ex As System.Threading.ThreadAbortException
+                Throw ex
+            Catch
+                s = ResourceMsgDefault
+            End Try
+
+            Return s
         End Function
 
         '*****************************************************************************
@@ -74,7 +110,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Dim FormattedString As String = Nothing
             Try
                 'Get unformatted string which may have place holders ie "Hello, {0}. How is {1}?"
-                UnformattedString = SR.GetResourceString(ResourceKey)
+                UnformattedString = GetResourceString(ResourceKey)
 
                 'Replace placeholders with items from the passed in array
                 FormattedString = String.Format(System.Threading.Thread.CurrentThread.CurrentCulture, UnformattedString, Args)
