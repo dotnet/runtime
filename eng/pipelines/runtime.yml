@@ -488,7 +488,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     runtimeFlavor: mono
-    buildConfig: release
+    buildConfig: Release
     platforms:
     - Windows_NT_x64
     - OSX_x64
