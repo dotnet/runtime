@@ -10,7 +10,7 @@ Performance is important and we welcome optimizations so long as they preserve t
 
 ## Extensibility
 
-Key types have significant protected surface area. This is probably not intended as an general extensibility point, but rather as a detail of implementing saving a compiled regex to disk. Saving to disk is implemented by saving an assembly containing three types, one that derives from each of `Regex`, `RegexRunnerFactory`, and `RegexRunner`. This mechanism accounts for all the protected methods (and even protected fields) on these classes. If we were designing them today, we would likely more carefully limit their public surface, and possibly not rely on derived types.
+Key types have significant protected surface area. This is not intended as an general extensibility point, but rather as a detail of implementing saving a compiled regex to disk. Saving to disk is implemented by saving an assembly containing three types, one that derives from each of `Regex`, `RegexRunnerFactory`, and `RegexRunner`. This mechanism accounts for all the protected methods (and even protected fields) on these classes. If we were designing them today, we would more carefully limit their public surface, and possibly not rely on derived types.
 
 Protected members are part of the public API which cannot be broken, so they may potentially make some future optimizations more difficult. In particular, we must keep them stable in order to remain compatible with regexes saved by .NET Framework.
 
