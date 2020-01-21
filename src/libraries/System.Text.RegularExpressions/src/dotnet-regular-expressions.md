@@ -113,7 +113,7 @@ Protected members are part of the public API which cannot be broken, so they may
 
 * Responsible for compiling `RegexCode` to a `RegexRunnerFactory`
 * As implemented, uses `RegexLWCGCompiler`
-* Ha utility method `CompileToAssembly` that invokes `RegexParser` and `RegexWriter` directly then uses `RegexAssemblyCompiler` (see note for that type)
+* Has utility method `CompileToAssembly` that invokes `RegexParser` and `RegexWriter` directly then uses `RegexAssemblyCompiler` (see note for that type)
 * Key protected methods are `GenerateFindFirstChar()` and `GenerateGo()`
 * Created and used only from `RegexRunnerFactory Regex.Compile(RegexCode code, RegexOptions options...)`
 * Implements `RegexRunnerFactory RegexCompiler.Compile(RegexCode code, RegexOptions options...)`
