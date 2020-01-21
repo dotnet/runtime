@@ -482,7 +482,29 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Libraries Release Test Execution against a release runtime
+# Libraries Release Test Execution against a release mono runtime.
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    - Windows_NT_x64
+    - OSX_x64
+    - Linux_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      runtimeFlavor: mono
+      isOfficialBuild: false
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      framework: netcoreapp
+      testScope: innerloop
+      liveRuntimeBuildConfig: release
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+
+#
+# Libraries Release Test Execution against a release coreclr runtime
 # Only when the PR contains a libraries change
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -506,7 +528,7 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Libraries Debug Test Execution against a release runtime
+# Libraries Debug Test Execution against a release coreclr runtime
 # Only when the PR contains a libraries change
 #
 - template: /eng/pipelines/common/platform-matrix.yml
