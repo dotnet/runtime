@@ -19,10 +19,6 @@ IpcStream::DiagnosticsIpc::~DiagnosticsIpc()
 
 IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const pIpcName, ErrorCallback callback)
 {
-    assert(pIpcName != nullptr);
-    if (pIpcName == nullptr)
-        return nullptr;
-
     char namedPipeName[MaxNamedPipeNameLength]{};
     int nCharactersWritten = -1;
 
