@@ -669,8 +669,9 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     {
         ThrowHR(COR_E_TYPELOAD);
     }
-    LayoutRawFieldInfo** pSortArray = (LayoutRawFieldInfo * *)_alloca(cbSortArraySize.Value());
-    SetOffsetsAndSortFields(pInternalImport, cl, pInfoArrayOut, cInstanceFields, fExplicitOffsets, cbAdjustedParentLayoutNativeSize, pModule, pSortArray);
+    CQuickArray<LayoutRawFieldInfo*> pSortArray;
+    pSortArray.ReSizeThrows(cbSortArraySize.Value());
+    SetOffsetsAndSortFields(pInternalImport, cl, pInfoArrayOut, cInstanceFields, fExplicitOffsets, cbAdjustedParentLayoutNativeSize, pModule, pSortArray.Ptr());
 
     ULONG classSizeInMetadata = 0;
     if (FAILED(pInternalImport->GetClassTotalSize(cl, &classSizeInMetadata)))
@@ -702,7 +703,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         parentSize,
         cInstanceFields,
         fExplicitOffsets,
-        pSortArray,
+        pSortArray.Ptr(),
         classSizeInMetadata,
         packingSize,
         parentManagedAlignmentRequirement,
@@ -868,8 +869,9 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
     BOOL fExplicitOffsets = pMT->GetClass()->HasExplicitFieldOffsetLayout();
 
-    LayoutRawFieldInfo** pSortArray = (LayoutRawFieldInfo**)_alloca(cbSortArraySize.Value());
-    SetOffsetsAndSortFields(pInternalImport, pMT->GetCl(), pInfoArray, cInstanceFields, fExplicitOffsets, cbAdjustedParentLayoutNativeSize, pModule, pSortArray);
+    CQuickArray<LayoutRawFieldInfo*> pSortArray;
+    pSortArray.ReSizeThrows(cbSortArraySize.Value());
+    SetOffsetsAndSortFields(pInternalImport, pMT->GetCl(), pInfoArray, cInstanceFields, fExplicitOffsets, cbAdjustedParentLayoutNativeSize, pModule, pSortArray.Ptr());
 
     EEClassLayoutInfo* pEEClassLayoutInfo = pMT->GetLayoutInfo();
 
@@ -891,7 +893,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
         cbAdjustedParentLayoutNativeSize,
         cInstanceFields,
         fExplicitOffsets,
-        pSortArray,
+        pSortArray.Ptr(),
         classSizeInMetadata,
         pMT->GetLayoutInfo()->GetPackingSize(),
         parentAlignmentRequirement,
