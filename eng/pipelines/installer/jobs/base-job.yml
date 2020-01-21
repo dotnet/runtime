@@ -309,7 +309,8 @@ jobs:
   - checkout
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-    - ${{ parameters.runtimeFlavor }}_product_build_${{ format('{0}{1}_{2}_{3}',
+    - ${{ format('{0}_product_build_{1}{2}_{3}_{4}',
+        parameters.runtimeFlavor,
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
