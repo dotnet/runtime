@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 ***********************************************************************************************
-Microsoft.NET.Sdk.IL.targets
-
-WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
-          created a backup copy.  Incorrect changes to this file will make it
-          impossible to load or build your projects from the command-line or the IDE.
-
+Microsoft.NET.Sdk.IL.Common.targets
 Copyright (c) .NET Foundation. All rights reserved. 
 ***********************************************************************************************
 -->
