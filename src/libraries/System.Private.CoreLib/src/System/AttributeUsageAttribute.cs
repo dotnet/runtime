@@ -17,15 +17,16 @@ namespace System
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class AttributeUsageAttribute : Attribute
     {
-        private readonly AttributeTargets _attributeTarget; // Defaults to all
-        private bool _allowMultiple = false; // Defaults to false
-        private bool _inherited = true; // Defaults to true
+        private readonly AttributeTargets _attributeTarget;
+        private bool _allowMultiple;
+        private bool _inherited;
 
         internal static readonly AttributeUsageAttribute Default = new AttributeUsageAttribute(AttributeTargets.All);
 
         public AttributeUsageAttribute(AttributeTargets validOn)
         {
             _attributeTarget = validOn;
+            _inherited = true;
         }
 
         internal AttributeUsageAttribute(AttributeTargets validOn, bool allowMultiple, bool inherited)

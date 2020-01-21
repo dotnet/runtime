@@ -145,7 +145,7 @@ namespace System.Globalization
                     SR.Format(SR.ArgumentOutOfRange_Range, -120000, 120000));
             }
 
-            time.GetDatePart(out int y, out int m, out int d);
+            time.GetDate(out int y, out int m, out int d);
             int i = m - 1 + months;
             if (i >= 0)
             {

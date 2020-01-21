@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>exe</OutputType>
-    <DefineConstants>$(DefineConstants);STATIC;CORECLR</DefineConstants>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>

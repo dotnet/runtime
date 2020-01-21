@@ -92,6 +92,8 @@ FCIMPL5(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
                         &gc.assemblyName,
                         FALSE);
 
+    spec.SetCodeBase(NULL);
+
     if (!spec.HasUniqueIdentity())
     {   // Insuficient assembly name for binding (e.g. ContentType=WindowsRuntime cannot bind by assembly name)
         EEFileLoadException::Throw(&spec, COR_E_NOTSUPPORTED);

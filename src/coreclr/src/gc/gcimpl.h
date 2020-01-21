@@ -70,7 +70,7 @@ public:
     ~GCHeap(){};
 
     /* BaseGCHeap Methods*/
-    PER_HEAP_ISOLATED   HRESULT Shutdown ();
+    PER_HEAP_ISOLATED   HRESULT StaticShutdown ();
 
     size_t  GetTotalBytesInUse ();
     // Gets the amount of bytes objects currently occupy on the GC heap.
@@ -311,6 +311,8 @@ public:
     int GetLastGCPercentTimeInGC();
 
     size_t GetLastGCGenerationSize(int gen);
+
+    virtual void Shutdown();
 };
 
 #endif  // GCIMPL_H_

@@ -50,7 +50,7 @@ _add_library(superpmi-shim-counter
 
 target_precompile_header(TARGET superpmi-shim-counter HEADER standardpch.h)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-counter
         utilcodestaticnohost
         mscorrc_debug
@@ -65,6 +65,6 @@ else()
     )
 
     _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi-shim-counter.pdb DESTINATION PDB)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS superpmi-shim-counter DESTINATION .)

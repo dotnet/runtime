@@ -29,7 +29,7 @@ namespace System.Security
         /// </summary>
         internal static string GetNormalizedUriHash(Uri uri)
         {
-            // On desktop System.Security.Url is used as evidence, it has an internal Normalize() method.
+            // On .NET Framework System.Security.Url is used as evidence, it has an internal Normalize() method.
             // Uri.ToString() appears to be functionally equivalent.
             return GetStrongHashSuitableForObjectName(uri.ToString());
         }
@@ -80,7 +80,7 @@ namespace System.Security
             }
         }
 
-        // This is from the NetFX Path class. The implementation in the runtime libraries was optimized for internal Path usage so
+        // This is from the .NET Framework Path class. The implementation in the runtime libraries was optimized for internal Path usage so
         // we can't share the implementation.
         internal static string ToBase32StringSuitableForDirName(byte[] buff)
         {

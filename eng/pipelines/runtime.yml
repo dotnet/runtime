@@ -484,8 +484,6 @@ jobs:
     platforms:
     # - Windows_NT_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
     - Windows_NT_x86
-    - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Windows_NT_arm64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:

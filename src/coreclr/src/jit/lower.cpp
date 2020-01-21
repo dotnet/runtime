@@ -3298,7 +3298,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // the control target is
     // [originalThis + firstTgtOffs]
 
-    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(originalThisExpr->TypeGet(), lclNum);
+    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, originalThisExpr->TypeGet(), lclNum);
 
     unsigned targetOffs = comp->eeGetEEInfo()->offsetOfDelegateFirstTarget;
     GenTree* result     = new (comp, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
@@ -3384,7 +3384,7 @@ GenTree* Lowering::SetGCState(int state)
 
     const CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
 
-    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(TYP_I_IMPL, comp->info.compLvFrameListRoot);
+    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot);
 
     GenTree* stateNode    = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_BYTE, state);
     GenTree* addr         = new (comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL, base, nullptr, 1, pInfo->offsetOfGCState);
@@ -4084,7 +4084,8 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     GenTree* local;
     if (thisPtr->isLclField())
     {
-        local = new (comp, GT_LCL_FLD) GenTreeLclFld(thisPtr->TypeGet(), lclNum, thisPtr->AsLclFld()->GetLclOffs());
+        local = new (comp, GT_LCL_FLD)
+            GenTreeLclFld(GT_LCL_FLD, thisPtr->TypeGet(), lclNum, thisPtr->AsLclFld()->GetLclOffs());
     }
     else
     {
