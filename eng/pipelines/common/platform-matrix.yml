@@ -186,7 +186,7 @@ jobs:
 #     osGroup: FreeBSD
 #     archType: x64
 #     jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+#       runtimeFlavor: ${{ parameters.runtimeFlavor }}
 #       buildConfig: ${{ parameters.buildConfig }}
 #       # There are no FreeBSD helix queues, so we don't run tests at the moment.
 #       helixQueues:
