@@ -11,9 +11,6 @@
     <IncludePath Condition="'$(TargetsNetCoreApp)' == 'true' or '$(OriginalTargetFramework)' == ''">include\netcoreapp</IncludePath>
     <IncludePath Condition="'$(TargetsNetFx)' == 'true'">include\netfx</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
-    <TargetFramework Condition="'$(TargetFramework)' == ''">$(BuildTargetFramework)</TargetFramework>
-    <OriginalTargetFramework Condition="'$(OriginalTargetFramework)' == ''">$(BuildTargetFramework)</OriginalTargetFramework>
-    <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)\</OutputPath>
     <TargetFrameworks>netcoreapp5.0;netstandard2.0;netstandard1.0;net45;net472</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
@@ -22,16 +19,5 @@
     <Reference Include="System.Runtime" />
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
     <ILResourceReference Include="$(Refpath)\$(TargetFileName)" />
-    <TargetFrameworksList Include="$(TargetFrameworks)"/>
-    <TargetFrameworksList Remove="$(BuildTargetFramework)" />
   </ItemGroup>
-
-  <Target Name="AllConfigurationBuild" BeforeTargets="Build" Condition="'$(BuildAllConfigurations)' == 'true'">
-    <MSBuild Projects="$(ProjectPath)"
-             Targets="Build"
-             ContinueOnError="true"
-             Properties="BuildAllConfigurations=false;TargetFramework=%(TargetFrameworksList.Identity)"
-             SkipNonexistentTargets="true">
-    </MSBuild>
-  </Target>
 </Project>
