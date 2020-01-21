@@ -347,25 +347,27 @@ namespace System.Text.RegularExpressions
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append(indent + "BM Pattern: " + Pattern + "\n");
+            sb.AppendLine($"{indent}BM Pattern: {Pattern}");
             sb.Append(indent + "Positive: ");
             for (int i = 0; i < Positive.Length; i++)
             {
                 sb.Append(Positive[i].ToString(CultureInfo.InvariantCulture) + " ");
             }
-            sb.Append("\n");
+            sb.AppendLine();
 
             if (NegativeASCII != null)
             {
-                sb.Append(indent + "Negative table\n");
+                sb.Append(indent + "Negative table: ");
                 for (int i = 0; i < NegativeASCII.Length; i++)
                 {
                     if (NegativeASCII[i] != Pattern.Length)
                     {
-                        sb.Append(indent + "  " + Regex.Escape(Convert.ToString((char)i, CultureInfo.InvariantCulture)) + " " + NegativeASCII[i].ToString(CultureInfo.InvariantCulture) + "\n");
+                        sb.Append(" {" + Regex.Escape(Convert.ToString((char)i, CultureInfo.InvariantCulture)) + " " + NegativeASCII[i].ToString(CultureInfo.InvariantCulture) + "}");
                     }
                 }
             }
+
+            sb.AppendLine();
 
             return sb.ToString();
         }

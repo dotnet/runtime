@@ -1522,14 +1522,17 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         public static readonly char[] Hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-        public static readonly string[] Categories = new string[] {"Lu", "Ll", "Lt", "Lm", "Lo", InternalRegexIgnoreCase,
-                                                                     "Mn", "Mc", "Me",
-                                                                     "Nd", "Nl", "No",
-                                                                     "Zs", "Zl", "Zp",
-                                                                     "Cc", "Cf", "Cs", "Co",
-                                                                     "Pc", "Pd", "Ps", "Pe", "Pi", "Pf", "Po",
-                                                                     "Sm", "Sc", "Sk", "So",
-                                                                     "Cn" };
+        public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
+
+        private static string[] PopulateCategoryIdToName()
+        {
+            // Populate category reverse lookup used for diagnostic output
+
+            var temp = new List<KeyValuePair<string, string>>(s_definedCategories);
+            temp.RemoveAll(kvp => kvp.Value.Length != 1);
+            temp.Sort((kvp1, kvp2) => ((short)kvp1.Value[0]).CompareTo((short)kvp2.Value[0]));
+            return temp.ConvertAll(kvp => kvp.Key).ToArray();
+        }
 
         /// <summary>
         /// Produces a human-readable description for a set string.
@@ -1684,10 +1687,10 @@ namespace System.Text.RegularExpressions
 
             if ((short)ch < 0)
             {
-                return "\\P{" + Categories[(-((short)ch) - 1)] + "}";
+                return "\\P{" + CategoryIdToName[(-((short)ch) - 1)] + "}";
             }
 
-            return "\\p{" + Categories[(ch - 1)] + "}";
+            return "\\p{" + CategoryIdToName[(ch - 1)] + "}";
         }
 #endif
 
