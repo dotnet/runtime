@@ -256,12 +256,6 @@ jobs:
   - name: AllArtifactsDownloadPath
     value: ''
 
-  - name: runtimeFlavorName
-    ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      value: Mono
-    ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-      value: CoreCLR
-
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - name: liveRuntimeLegName
       value: ${{ format('{0}{1}_{2}_{3}',
