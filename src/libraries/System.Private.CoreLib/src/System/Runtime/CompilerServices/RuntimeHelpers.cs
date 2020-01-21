@@ -106,17 +106,5 @@ namespace System.Runtime.CompilerServices
         internal static bool IsPrimitiveType(this CorElementType et)
             // COR_ELEMENT_TYPE_I1,I2,I4,I8,U1,U2,U4,U8,R4,R8,I,U,CHAR,BOOLEAN
             => ((1 << (int)et) & 0b_0011_0000_0000_0011_1111_1111_1100) != 0;
-
-        /// <summary>
-        /// Allocate memory that is associated with the <paramref name="type"/> and
-        /// will be freed if and when the <see cref="System.Type"/> is unloaded.
-        /// </summary>
-        /// <param name="type">Type associated with the allocated memory.</param>
-        /// <param name="size">Amount of memory in bytes to allocate.</param>
-        /// <returns>The allocated memory</returns>
-        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
