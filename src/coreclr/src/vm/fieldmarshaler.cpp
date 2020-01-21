@@ -372,12 +372,12 @@ BOOL IsStructMarshalable(TypeHandle th)
 }
 
 NativeFieldDescriptor::NativeFieldDescriptor()
-    :m_offset(0),
+    :m_pFD(NULL),
+    m_offset(0),
     m_category(NativeFieldCategory::ILLEGAL)
 {
     nativeSizeAndAlignment.m_nativeSize = 1;
     nativeSizeAndAlignment.m_alignmentRequirement = 1;
-    m_pFD = NULL;
 }
 
 NativeFieldDescriptor::NativeFieldDescriptor(PTR_FieldDesc pFD)
@@ -387,7 +387,6 @@ NativeFieldDescriptor::NativeFieldDescriptor(PTR_FieldDesc pFD)
 {
     nativeSizeAndAlignment.m_nativeSize = 1;
     nativeSizeAndAlignment.m_alignmentRequirement = 1;
-    m_pFD = NULL;
 }
 
 NativeFieldDescriptor::NativeFieldDescriptor(PTR_FieldDesc pFD, NativeFieldCategory flags, ULONG nativeSize, ULONG alignment)
@@ -416,10 +415,10 @@ NativeFieldDescriptor::NativeFieldDescriptor(PTR_FieldDesc pFD,  PTR_MethodTable
 }
 
 NativeFieldDescriptor::NativeFieldDescriptor(const NativeFieldDescriptor& other)
-    :m_offset(other.m_offset),
+    :m_pFD(other.m_pFD),
+    m_offset(other.m_offset),
     m_category(other.m_category)
 {
-    m_pFD = NULL;
     if (IsNestedType())
     {
         nestedTypeAndCount.m_pNestedType = other.nestedTypeAndCount.m_pNestedType;
