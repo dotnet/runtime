@@ -89,18 +89,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return s
         End Function
 
-        '*****************************************************************************
-        ';GetResourceString
-        '
-        'Summary: Retrieves a resource string and formats it by replacing placeholders
-        '         with params. For example if the unformatted string is
-        '         "Hello, {0}" then GetString("StringID", "World") will return "Hello, World"
-        '         This one is exposed because I have to be able to get at localized error
-        '         strings from the MY template
-        '  Param: ID - Identifier for the string to be retrieved
-        '  Param: Args - An array of params used to replace placeholders. 
-        'Returns: The resource string if found or an error message string
-        '*****************************************************************************
+        ''' <summary>
+        ''' Retrieves a resource string and formats it by replacing placeholders with parameters.
+        ''' </summary>
+        ''' <param name="ResourceKey">The resource string identifier</param>
+        ''' <param name="Args">An array of parameters used to replace placeholders</param>
+        ''' <returns>The resource string if found or an error message string</returns>
         Public Shared Function GetResourceString(ByVal ResourceKey As String, ByVal ParamArray Args() As String) As String
 
             System.Diagnostics.Debug.Assert(Not ResourceKey = "", "ResourceKey is missing")
