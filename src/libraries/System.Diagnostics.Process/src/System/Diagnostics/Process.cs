@@ -1346,8 +1346,11 @@ namespace System.Diagnostics
         /// for the <paramref name="cancellationToken"/> to be canceled.
         /// </summary>
         /// <remarks>
-        /// Calling this method will set <see cref="EnableRaisingEvents"/> to true.
+        /// Calling this method will set <see cref="EnableRaisingEvents"/> to <see langword="true" />.
         /// </remarks>
+        /// <returns>
+        /// A task that will complete when the process has exited.
+        /// </returns>
         public async Task WaitForExitAsync(CancellationToken cancellationToken = default)
         {
             // Because the process has already started by the time this method is called,
