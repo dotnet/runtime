@@ -33,7 +33,6 @@ CallCountingManager::CallCountingInfo::CallCountingInfo(NativeCodeVersion codeVe
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!codeVersion.IsNull());
-    _ASSERTE(!IsCallCountingEnabled());
 }
 
 CallCountingManager::CallCountingInfo *
@@ -59,13 +58,24 @@ CallCountingManager::CallCountingInfo::CallCountingInfo(NativeCodeVersion codeVe
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!codeVersion.IsNull());
     _ASSERTE(callCountThreshold != 0);
-    _ASSERTE(IsCallCountingEnabled());
 }
 
 CallCountingManager::CallCountingInfo::~CallCountingInfo()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_callCountingStub == nullptr);
+    _ASSERTE(m_stage != Stage::Disabled);
+
+    if (m_callCountingStub == nullptr)
+    {
+        return;
+    }
+
+    if (m_stage != Stage::StubIsNotActive)
+    {
+        _ASSERTE(s_activeCallCountingStubCount != 0);
+        --s_activeCallCountingStubCount;
+    }
+    ++s_completedCallCountingStubCount;
 }
 
 #endif // !DACCESS_COMPILE
@@ -84,18 +94,12 @@ NativeCodeVersion CallCountingManager::CallCountingInfo::GetCodeVersion() const
     return m_codeVersion;
 }
 
-bool CallCountingManager::CallCountingInfo::IsCallCountingEnabled() const
-{
-    WRAPPER_NO_CONTRACT;
-    return m_stage != Stage::Disabled;
-}
-
 #ifndef DACCESS_COMPILE
 
 const CallCountingStub *CallCountingManager::CallCountingInfo::GetCallCountingStub() const
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsCallCountingEnabled());
+    _ASSERTE(m_stage != Stage::Disabled);
 
     return m_callCountingStub;
 }
@@ -104,8 +108,7 @@ void CallCountingManager::CallCountingInfo::SetCallCountingStub(const CallCounti
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(g_pConfig->TieredCompilation_UseCallCountingStubs());
-    _ASSERTE(IsCallCountingEnabled());
-    _ASSERTE(GetStage() == Stage::StubIsNotActive);
+    _ASSERTE(m_stage == Stage::StubIsNotActive);
     _ASSERTE(m_callCountingStub == nullptr);
     _ASSERTE(callCountingStub != nullptr);
 
@@ -116,28 +119,21 @@ void CallCountingManager::CallCountingInfo::SetCallCountingStub(const CallCounti
 void CallCountingManager::CallCountingInfo::ClearCallCountingStub()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsCallCountingEnabled());
-    _ASSERTE(GetStage() != Stage::StubMayBeActive);
-    _ASSERTE(GetStage() != Stage::PendingCompletion);
+    _ASSERTE(m_stage == Stage::StubIsNotActive);
     _ASSERTE(m_callCountingStub != nullptr);
 
-    _ASSERTE(s_callCountingStubCount != 0);
-    --s_callCountingStubCount;
-    if (GetStage() == Stage::Complete)
-    {
-        _ASSERTE(s_completedCallCountingStubCount != 0);
-        --s_completedCallCountingStubCount;
-    }
     m_callCountingStub = nullptr;
 }
 
 PTR_CallCount CallCountingManager::CallCountingInfo::GetRemainingCallCountCell()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsCallCountingEnabled());
+    _ASSERTE(m_stage != Stage::Disabled);
 
     return &m_remainingCallCount;
 }
+
+#endif // !DACCESS_COMPILE
 
 CallCountingManager::CallCountingInfo::Stage CallCountingManager::CallCountingInfo::GetStage() const
 {
@@ -145,39 +141,32 @@ CallCountingManager::CallCountingInfo::Stage CallCountingManager::CallCountingIn
     return m_stage;
 }
 
+#ifndef DACCESS_COMPILE
 FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsCallCountingEnabled());
-    _ASSERTE(stage <= Stage::Complete);
+    _ASSERTE(m_stage != Stage::Disabled);
+    _ASSERTE(stage != Stage::Disabled);
+    _ASSERTE(stage <= Stage::PendingCompletion);
 
     switch (stage)
     {
         case Stage::StubIsNotActive:
-            _ASSERTE(GetStage() == Stage::StubMayBeActive);
+            _ASSERTE(m_stage == Stage::StubMayBeActive);
+            _ASSERTE(m_callCountingStub != nullptr);
             _ASSERTE(s_activeCallCountingStubCount != 0);
             --s_activeCallCountingStubCount;
             break;
 
         case Stage::StubMayBeActive:
+            _ASSERTE(m_callCountingStub != nullptr);
+            // fall through
+
         case Stage::PendingCompletion:
-            _ASSERTE(GetStage() == Stage::StubIsNotActive || GetStage() == Stage::StubMayBeActive);
-            if (GetStage() == Stage::StubIsNotActive)
+            _ASSERTE(m_stage == Stage::StubIsNotActive || m_stage == Stage::StubMayBeActive);
+            if (m_stage == Stage::StubIsNotActive && m_callCountingStub != nullptr)
             {
                 ++s_activeCallCountingStubCount;
-            }
-            break;
-
-        case Stage::Complete:
-            _ASSERTE(GetStage() != Stage::Complete);
-            if (GetStage() != Stage::StubIsNotActive)
-            {
-                _ASSERTE(s_activeCallCountingStubCount != 0);
-                --s_activeCallCountingStubCount;
-            }
-            if (m_callCountingStub != nullptr)
-            {
-                ++s_completedCallCountingStubCount;
             }
             break;
 
@@ -187,8 +176,7 @@ FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
 
     m_stage = stage;
 }
-
-#endif // !DACCESS_COMPILE
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CallCountingManager::CallCountingInfo::CodeVersionHashTraits
@@ -464,7 +452,7 @@ bool CallCountingManager::IsCallCountingEnabled(NativeCodeVersion codeVersion)
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
     PTR_CallCountingInfo callCountingInfo = m_callCountingInfoByCodeVersionHash.Lookup(codeVersion);
-    return callCountingInfo == NULL || callCountingInfo->IsCallCountingEnabled();
+    return callCountingInfo == NULL || callCountingInfo->GetStage() != CallCountingInfo::Stage::Disabled;
 }
 
 #ifndef DACCESS_COMPILE
@@ -548,7 +536,10 @@ bool CallCountingManager::SetCodeEntryPoint(
 
     const CallCountingStub *callCountingStub;
     CallCountingManager *callCountingManager = methodDesc->GetLoaderAllocator()->GetCallCountingManager();
-    CallCountingInfo *callCountingInfo = callCountingManager->m_callCountingInfoByCodeVersionHash.Lookup(activeCodeVersion);
+    CallCountingInfoByCodeVersionHash &callCountingInfoByCodeVersionHash =
+        callCountingManager->m_callCountingInfoByCodeVersionHash;
+    CallCountingInfo *const *callCountingInfoPtr = callCountingInfoByCodeVersionHash.LookupPtr(activeCodeVersion);
+    CallCountingInfo *callCountingInfo = callCountingInfoPtr == nullptr ? nullptr : *callCountingInfoPtr;
     do
     {
         if (callCountingInfo != nullptr)
@@ -556,14 +547,14 @@ bool CallCountingManager::SetCodeEntryPoint(
             _ASSERTE(callCountingInfo->GetCodeVersion() == activeCodeVersion);
 
             CallCountingInfo::Stage callCountingStage = callCountingInfo->GetStage();
-            if (callCountingStage == CallCountingInfo::Stage::Complete)
+            if (callCountingStage >= CallCountingInfo::Stage::PendingCompletion)
             {
-                // Call counting is complete or disabled
+                // The pending completion stage here would be rare, typically only if there was an exception somewhere, stop
+                // coming back to the prestub for now and let it be handled elsewhere
                 methodDesc->SetCodeEntryPoint(codeEntryPoint);
                 return true;
             }
 
-            _ASSERTE(callCountingInfo->IsCallCountingEnabled());
             _ASSERTE(activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
 
             // If the tiering delay is active, postpone further work
@@ -580,20 +571,18 @@ bool CallCountingManager::SetCodeEntryPoint(
 
             do
             {
-                if (callCountingStage != CallCountingInfo::Stage::PendingCompletion)
+                if (!wasMethodCalled)
                 {
-                    if (!wasMethodCalled)
-                    {
-                        break;
-                    }
-
-                    CallCount remainingCallCount = --*callCountingInfo->GetRemainingCallCountCell();
-                    if (remainingCallCount != 0)
-                    {
-                        break;
-                    }
+                    break;
                 }
 
+                CallCount remainingCallCount = --*callCountingInfo->GetRemainingCallCountCell();
+                if (remainingCallCount != 0)
+                {
+                    break;
+                }
+
+                callCountingInfo->SetStage(CallCountingInfo::Stage::PendingCompletion);
                 if (!activeCodeVersion.GetILCodeVersion().HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
                 {
                     GetAppDomain()
@@ -601,7 +590,9 @@ bool CallCountingManager::SetCodeEntryPoint(
                         ->AsyncPromoteToTier1(activeCodeVersion, scheduleTieringBackgroundWorkRef);
                 }
                 methodDesc->SetCodeEntryPoint(codeEntryPoint);
-                callCountingInfo->SetStage(CallCountingInfo::Stage::Complete);
+                callCountingManager->RemoveForwarderStub(methodDesc);
+                callCountingInfoByCodeVersionHash.RemovePtr(const_cast<CallCountingInfo **>(callCountingInfoPtr));
+                delete callCountingInfo;
                 return true;
             } while (false);
 
@@ -627,7 +618,7 @@ bool CallCountingManager::SetCodeEntryPoint(
             _ASSERTE(callCountThreshold != 0);
 
             NewHolder<CallCountingInfo> callCountingInfoHolder = new CallCountingInfo(activeCodeVersion, callCountThreshold);
-            callCountingManager->m_callCountingInfoByCodeVersionHash.Add(callCountingInfoHolder);
+            callCountingInfoByCodeVersionHash.Add(callCountingInfoHolder);
             callCountingInfo = callCountingInfoHolder.Extract();
         }
 
@@ -850,6 +841,11 @@ void CallCountingManager::CompleteCallCounting()
             for (COUNT_T i = 0; i < callCountingInfoCount; ++i)
             {
                 CallCountingInfo *callCountingInfo = callCountingInfos[i];
+                if (callCountingInfo == nullptr)
+                {
+                    continue;
+                }
+
                 CallCountingInfo::Stage callCountingStage = callCountingInfo->GetStage();
                 if (callCountingStage != CallCountingInfo::Stage::PendingCompletion)
                 {
@@ -898,7 +894,10 @@ void CallCountingManager::CompleteCallCounting()
                         methodDesc->ResetCodeEntryPoint();
                     } while (false);
 
-                    callCountingInfo->SetStage(CallCountingInfo::Stage::Complete);
+                    callCountingManager->RemoveForwarderStub(methodDesc);
+                    callCountingInfos[i] = nullptr; // in case of exception on a later iteration
+                    callCountingManager->m_callCountingInfoByCodeVersionHash.Remove(codeVersion);
+                    delete callCountingInfo;
                 }
                 EX_CATCH
                 {
@@ -935,6 +934,31 @@ void CallCountingManager::CompleteCallCounting()
     }
 }
 
+void CallCountingManager::RemoveForwarderStub(MethodDesc *methodDesc)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(methodDesc != nullptr);
+    _ASSERTE(!methodDesc->MayHaveEntryPointSlotsToBackpatch() || MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+
+    // Currently, tier 0 is the last code version that is counted, and the method is typically not counted anymore.
+    // Remove the forwarder stub if one exists, a new one will be created if necessary, for example, if a profiler
+    // adds an IL code version for the method.
+    Precode *const *forwarderStubPtr = m_methodDescForwarderStubHash.LookupPtr(methodDesc);
+    if (forwarderStubPtr != nullptr)
+    {
+        (*forwarderStubPtr)->ResetTargetInterlocked();
+        m_methodDescForwarderStubHash.RemovePtr(const_cast<Precode **>(forwarderStubPtr));
+    }
+}
+
 void CallCountingManager::StopAndDeleteAllCallCountingStubs()
 {
     CONTRACTL
@@ -945,7 +969,26 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     }
     CONTRACTL_END;
 
-    _ASSERTE(MayDeleteCallCountingStubs());
+    COUNT_T deleteCallCountingStubsAfter = g_pConfig->TieredCompilation_DeleteCallCountingStubsAfter();
+    if (deleteCallCountingStubsAfter == 0)
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+        for (auto itEnd = s_callCountingManagers->End(), it = s_callCountingManagers->Begin(); it != itEnd; ++it)
+        {
+            CallCountingManager *callCountingManager = *it;
+            callCountingManager->TrimCollections();
+        }
+        return;
+    }
+
+    // If a number of call counting stubs have completed, we can try to delete them to reclaim some memory. Deleting
+    // involves suspending the runtime and will delete all call counting stubs, and after that some call counting stubs may
+    // be recreated in the foreground. The threshold is to decrease the impact of both of those overheads.
+    if (s_completedCallCountingStubCount < deleteCallCountingStubsAfter)
+    {
+        return;
+    }
 
     TieredCompilationManager *tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
     bool scheduleTieringBackgroundWork = false;
@@ -974,7 +1017,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
 
         // Call counting has been stopped above and call counting stubs will soon be deleted. Ensure that call counting stubs
         // will not be used after resuming the runtime. The following ensures that other threads will not use an old cached
-        // entry point value that will not be valid.
+        // entry point value that will not be valid. Do this here in case of exception later.
         MemoryBarrier(); // flush writes from this thread first to guarantee ordering
         FlushProcessWriteBuffers();
 
@@ -1008,43 +1051,9 @@ void CallCountingManager::StopAllCallCounting(
     for (auto itEnd = s_callCountingManagers->End(), it = s_callCountingManagers->Begin(); it != itEnd; ++it)
     {
         CallCountingManager *callCountingManager = *it;
-        CallCountingInfoByCodeVersionHash &callCountingInfoByCodeVersionHash =
-            callCountingManager->m_callCountingInfoByCodeVersionHash;
-        for (auto itEnd = callCountingInfoByCodeVersionHash.End(), it = callCountingInfoByCodeVersionHash.Begin();
-            it != itEnd;
-            ++it)
-        {
-            CallCountingInfo *callCountingInfo = *it;
-            CallCountingInfo::Stage callCountingStage = callCountingInfo->GetStage();
-            if (callCountingStage != CallCountingInfo::Stage::StubMayBeActive &&
-                callCountingStage != CallCountingInfo::Stage::PendingCompletion)
-            {
-                continue;
-            }
 
-            NativeCodeVersion codeVersion = callCountingInfo->GetCodeVersion();
-            CallCountingInfo::Stage newCallCountingStage;
-            if (callCountingStage == CallCountingInfo::Stage::StubMayBeActive)
-            {
-                newCallCountingStage = CallCountingInfo::Stage::StubIsNotActive;
-            }
-            else
-            {
-                _ASSERTE(callCountingStage == CallCountingInfo::Stage::PendingCompletion);
-                if (!codeVersion.GetILCodeVersion().HasAnyOptimizedNativeCodeVersion(codeVersion))
-                {
-                    tieredCompilationManager->AsyncPromoteToTier1(codeVersion, scheduleTieringBackgroundWorkRef);
-                }
-
-                newCallCountingStage = CallCountingInfo::Stage::Complete;
-            }
-
-            // The intention is that all call counting stubs will be deleted shortly, and only methods that are called again
-            // will cause stubs to be recreated, so reset the code entry point
-            codeVersion.GetMethodDesc()->ResetCodeEntryPoint();
-            callCountingInfo->SetStage(newCallCountingStage);
-        }
-
+        // Clear call counting infos pending completion. An attempt is made to complete them below, but in case of exception,
+        // doing this first ensures that during any partial work done, deleted call counting infos are not referenced.
         SArray<CallCountingInfo *> &callCountingInfosPendingCompletion =
             callCountingManager->m_callCountingInfosPendingCompletion;
         if (!callCountingInfosPendingCompletion.IsEmpty())
@@ -1064,6 +1073,44 @@ void CallCountingManager::StopAllCallCounting(
             }
         }
 
+        CallCountingInfoByCodeVersionHash &callCountingInfoByCodeVersionHash =
+            callCountingManager->m_callCountingInfoByCodeVersionHash;
+        for (auto itEnd = callCountingInfoByCodeVersionHash.End(), it = callCountingInfoByCodeVersionHash.Begin();
+            it != itEnd;
+            ++it)
+        {
+            CallCountingInfo *callCountingInfo = *it;
+            CallCountingInfo::Stage callCountingStage = callCountingInfo->GetStage();
+            if (callCountingStage != CallCountingInfo::Stage::StubMayBeActive &&
+                callCountingStage != CallCountingInfo::Stage::PendingCompletion)
+            {
+                continue;
+            }
+
+            NativeCodeVersion codeVersion = callCountingInfo->GetCodeVersion();
+            if (callCountingStage == CallCountingInfo::Stage::PendingCompletion &&
+                !codeVersion.GetILCodeVersion().HasAnyOptimizedNativeCodeVersion(codeVersion))
+            {
+                tieredCompilationManager->AsyncPromoteToTier1(codeVersion, scheduleTieringBackgroundWorkRef);
+            }
+
+            // The intention is that all call counting stubs will be deleted shortly, and only methods that are called again
+            // will cause stubs to be recreated, so reset the code entry point
+            codeVersion.GetMethodDesc()->ResetCodeEntryPoint();
+
+            if (callCountingStage == CallCountingInfo::Stage::StubMayBeActive)
+            {
+                callCountingInfo->SetStage(CallCountingInfo::Stage::StubIsNotActive);
+                callCountingInfo->ClearCallCountingStub();
+                continue;
+            }
+
+            _ASSERTE(callCountingStage == CallCountingInfo::Stage::PendingCompletion);
+            callCountingManager->RemoveForwarderStub(codeVersion.GetMethodDesc());
+            callCountingInfoByCodeVersionHash.Remove(it);
+            delete callCountingInfo;
+        }
+
         // Reset forwarder stubs, they are not in use anymore
         MethodDescForwarderStubHash &methodDescForwarderStubHash = callCountingManager->m_methodDescForwarderStubHash;
         for (auto itEnd = methodDescForwarderStubHash.End(), it = methodDescForwarderStubHash.Begin(); it != itEnd; ++it)
@@ -1071,6 +1118,8 @@ void CallCountingManager::StopAllCallCounting(
             Precode *forwarderStub = *it;
             forwarderStub->ResetTargetInterlocked();
         }
+
+        callCountingManager->TrimCollections();
     }
 }
 
@@ -1093,86 +1142,6 @@ void CallCountingManager::DeleteAllCallCountingStubs()
         CallCountingManager *callCountingManager = *it;
         _ASSERTE(callCountingManager->m_callCountingInfosPendingCompletion.IsEmpty());
 
-        // Clear the call counting stub from call counting infos and delete completed infos
-        MethodDescForwarderStubHash &methodDescForwarderStubHash = callCountingManager->m_methodDescForwarderStubHash;
-        COUNT_T forwarderStubsCapacityBefore = methodDescForwarderStubHash.GetCapacity();
-        CallCountingInfoByCodeVersionHash &callCountingInfoByCodeVersionHash =
-            callCountingManager->m_callCountingInfoByCodeVersionHash;
-        COUNT_T callCountingInfosCapacityBefore = callCountingInfoByCodeVersionHash.GetCapacity();
-        for (auto itEnd = callCountingInfoByCodeVersionHash.End(), it = callCountingInfoByCodeVersionHash.Begin();
-            it != itEnd;
-            ++it)
-        {
-            CallCountingInfo *callCountingInfo = *it;
-            if (!callCountingInfo->IsCallCountingEnabled())
-            {
-                continue;
-            }
-
-            if (callCountingInfo->GetCallCountingStub() != nullptr)
-            {
-                callCountingInfo->ClearCallCountingStub();
-            }
-
-            if (callCountingInfo->GetStage() == CallCountingInfo::Stage::Complete)
-            {
-                // Currently, tier 0 is the last code version that is counted, and the method is typically not counted anymore.
-                // Remove the forwarder stub if one exists, a new one will be created if necessary, for example, if a profiler
-                // adds an IL code version for the method.
-                Precode *const *forwarderStubPtr =
-                    methodDescForwarderStubHash.LookupPtr(callCountingInfo->GetCodeVersion().GetMethodDesc());
-                if (forwarderStubPtr != nullptr)
-                {
-                    methodDescForwarderStubHash.RemovePtr(const_cast<Precode **>(forwarderStubPtr));
-                }
-
-                callCountingInfoByCodeVersionHash.Remove(it);
-                delete callCountingInfo;
-            }
-            else
-            {
-                _ASSERTE(callCountingInfo->GetStage() == CallCountingInfo::Stage::StubIsNotActive);
-            }
-        }
-
-        // Resize the hash tables if it would save some space. The hash tables' item counts typically spikes and then stabilizes
-        // at a lower value after most of the repeatedly called methods are promoted and the call counting infos deleted above.
-        COUNT_T countAfter = callCountingInfoByCodeVersionHash.GetCount();
-        if (countAfter == 0)
-        {
-            callCountingInfoByCodeVersionHash.RemoveAll();
-        }
-        else if (countAfter <= callCountingInfosCapacityBefore / 4)
-        {
-            EX_TRY
-            {
-                callCountingInfoByCodeVersionHash.Reallocate(countAfter * 2);
-            }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
-        }
-        countAfter = methodDescForwarderStubHash.GetCount();
-        if (countAfter == 0)
-        {
-            if (forwarderStubsCapacityBefore != 0)
-            {
-                methodDescForwarderStubHash.RemoveAll();
-            }
-        }
-        else if (countAfter <= forwarderStubsCapacityBefore / 4)
-        {
-            EX_TRY
-            {
-                methodDescForwarderStubHash.Reallocate(countAfter * 2);
-            }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
-        }
-
         // All call counting stubs are deleted, not just the completed stubs. Typically, there are many methods that are called
         // only a few times and don't reach the call count threshold, so many stubs may not be recreated. On the other hand,
         // some methods may still be getting called, just less frequently, then call counting stubs would be recreated in the
@@ -1182,9 +1151,66 @@ void CallCountingManager::DeleteAllCallCountingStubs()
         callCountingManager->m_callCountingStubAllocator.Reset();
     }
 
-    _ASSERTE(s_callCountingStubCount == 0);
-    _ASSERTE(s_activeCallCountingStubCount == 0);
-    _ASSERTE(s_completedCallCountingStubCount == 0);
+    s_callCountingStubCount = 0;
+    s_completedCallCountingStubCount = 0;
+}
+
+void CallCountingManager::TrimCollections()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+
+    // Resize the hash tables if it would save some space. The hash tables' item counts typically spikes and then stabilizes at
+    // a lower value after most of the repeatedly called methods are promoted and the call counting infos deleted above.
+
+    COUNT_T count = m_callCountingInfoByCodeVersionHash.GetCount();
+    COUNT_T capacity = m_callCountingInfoByCodeVersionHash.GetCapacity();
+    if (count == 0)
+    {
+        if (capacity != 0)
+        {
+            m_callCountingInfoByCodeVersionHash.RemoveAll();
+        }
+    }
+    else if (count <= capacity / 4)
+    {
+        EX_TRY
+        {
+            m_callCountingInfoByCodeVersionHash.Reallocate(count * 2);
+        }
+        EX_CATCH
+        {
+        }
+        EX_END_CATCH(RethrowTerminalExceptions);
+    }
+
+    count = m_methodDescForwarderStubHash.GetCount();
+    capacity = m_methodDescForwarderStubHash.GetCapacity();
+    if (count == 0)
+    {
+        if (capacity != 0)
+        {
+            m_methodDescForwarderStubHash.RemoveAll();
+        }
+    }
+    else if (count <= capacity / 4)
+    {
+        EX_TRY
+        {
+            m_methodDescForwarderStubHash.Reallocate(count * 2);
+        }
+        EX_CATCH
+        {
+        }
+        EX_END_CATCH(RethrowTerminalExceptions);
+    }
 }
 
 #endif // !DACCESS_COMPILE

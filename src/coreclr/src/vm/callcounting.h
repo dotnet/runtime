@@ -95,9 +95,6 @@ private:
             // Stub may be active, call counting complete, not yet promoted
             PendingCompletion,
 
-            // Stub is not active and will not become active, call counting complete, promoted, stub may be deleted
-            Complete,
-
             // Call counting is disabled, only used for the default code version to indicate that it is to be optimized
             Disabled
         };
@@ -120,7 +117,6 @@ private:
     public:
         static PTR_CallCountingInfo From(PTR_CallCount remainingCallCountCell);
         NativeCodeVersion GetCodeVersion() const;
-        bool IsCallCountingEnabled() const;
 
     #ifndef DACCESS_COMPILE
     public:
@@ -128,7 +124,12 @@ private:
         void SetCallCountingStub(const CallCountingStub *callCountingStub);
         void ClearCallCountingStub();
         CallCount *GetRemainingCallCountCell();
+    #endif
+
+    public:
         Stage GetStage() const;
+    #ifndef DACCESS_COMPILE
+    public:
         void SetStage(Stage stage);
     #endif
 
@@ -271,24 +272,14 @@ public:
     static PCODE OnCallCountThresholdReached(TransitionBlock *transitionBlock, TADDR stubIdentifyingToken);
     static COUNT_T GetCountOfCodeVersionsPendingCompletion();
     static void CompleteCallCounting();
-
-public:
-    static bool MayDeleteCallCountingStubs()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // If a number of call counting stubs have completed, we can try to delete them to reclaim some memory. Deleting
-        // involves suspending the runtime and will delete all call counting stubs, and after that some call counting stubs may
-        // be recreated in the foreground. The threshold is to decrease the impact of both of those overheads.
-        COUNT_T deleteCallCountingStubsAfter = g_pConfig->TieredCompilation_DeleteCallCountingStubsAfter();
-        return deleteCallCountingStubsAfter != 0 && s_completedCallCountingStubCount >= deleteCallCountingStubsAfter;
-    }
+    void RemoveForwarderStub(MethodDesc *methodDesc);
 
 public:
     static void StopAndDeleteAllCallCountingStubs();
 private:
     static void StopAllCallCounting(TieredCompilationManager *tieredCompilationManager, bool *scheduleTieringBackgroundWorkRef);
     static void DeleteAllCallCountingStubs();
+    void TrimCollections();
 #endif // !DACCESS_COMPILE
 
 public:

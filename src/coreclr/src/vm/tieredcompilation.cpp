@@ -731,7 +731,7 @@ void TieredCompilationManager::DoBackgroundWork()
         ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(countOfMethodsToOptimize, jittedMethodCount);
     }
 
-    if (allMethodsJitted && CallCountingManager::MayDeleteCallCountingStubs())
+    if (allMethodsJitted)
     {
         EX_TRY
         {
