@@ -487,6 +487,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - Windows_NT_x64
@@ -494,7 +495,6 @@ jobs:
     - Linux_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
-      runtimeFlavor: mono
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: netcoreapp

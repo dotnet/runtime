@@ -15,6 +15,6 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     platforms: ${{ parameters.platforms }}
     passPlatforms: true
+    runtimeFlavor: ${{ parameters.runtimeFlavor }}
     jobParameters:
-      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       ${{ insert }}: ${{ parameters.jobParameters }}
