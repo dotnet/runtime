@@ -61,13 +61,7 @@ namespace System.Net.Sockets
             errorCode = SocketPal.GetSockName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
             if (errorCode == SocketError.Success)
             {
-                try
-                {
-                    _rightEndPoint = ep.Create(socketAddress);
-                }
-                catch
-                {
-                }
+                _rightEndPoint = ep.Create(socketAddress);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
