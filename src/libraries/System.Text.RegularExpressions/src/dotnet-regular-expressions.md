@@ -10,13 +10,13 @@ Performance is important and we welcome optimizations so long as they preserve t
 
 ## Extensibility
 
-Key types have significant protected (including protected internal) surface area. This is probably not intended as an general extensibility point, but rather as a detail of implementing saving a compiled regex to disk. Saving to disk is implemented by saving an assembly containing three types, one that derives from each of `Regex`, `RegexRunnerFactory`, and `RegexRunner`. This mechanism accounts for all the protected methods (and even protected fields) on these classes. If we were designing them today, we would likely more carefully limit their public surface, and possibly not rely on derived types.
+Key types have significant protected (including protected internal) surface area. This is not intended as an general extensibility point, but rather as a detail of implementing saving a compiled regex to disk. Saving to disk is implemented by saving an assembly containing three types, one that derives from each of `Regex`, `RegexRunnerFactory`, and `RegexRunner`. This mechanism accounts for all the protected methods (and even protected fields) on these classes. If we were designing them today, we would likely more carefully limit their public surface, and possibly not rely on derived types.
 
 Protected members are part of the public API which cannot be broken, so they may potentially make some future optimizations more difficult - or even features - especially the fields. For example the string `runtext` is exposed as a protected internal field on `RegexRunner`. If we wanted to expose the text instead as, for example, a `ReadOnlyMemory<char>`, in order to make it possible to use Regex over other sources beyond string, we would have to find a creative way to preserve compatibility.
 
 In particular, we must keep this API stable in order to remain compatible with regexes saved by .NET Framework.
 
-`RegexCompiler` is abstract for a different reason: to share implementation between `RegexLWCGCompiler` and `RegexAssemblyCompiler`: it based around a field of type `System.Reflection.Emit.ILGenerator` and has protected utility methods and fields to work with it. External extension by derivation of `RegexCompiler` would likely be clumsy as it contains knowledge of `RegexLWCGCompiler` and `RegexAssemblyCompiler`.
+`RegexCompiler` is internal, and it is abstract for a different reason: to share implementation between `RegexLWCGCompiler` (used when `RegexOptions.Compiled` is specified to compile the regular expression in memory) and `RegexAssemblyCompiler` (used when `CompileToAssembly` is called to compile the regular expression to an assembly to persist in the file system): it is based around a field of type `System.Reflection.Emit.ILGenerator` and has protected utility methods and fields to work with it.
 
 ## Key types - General
 
@@ -40,7 +40,7 @@ In particular, we must keep this API stable in order to remain compatible with r
 ### RegexCompilationInfo (public)
 
 * Parameters to use for regex compilation to disk
-* Passed in by app to `Regex.CompileToAssembly(..)` - which is not currently implemented.
+* Passed in by app to `Regex.CompileToAssembly(..)` - which is not currently implemented in .NET Core
 
 ## Key types - Parsing
 
@@ -48,7 +48,7 @@ In particular, we must keep this API stable in order to remain compatible with r
 
 * Converts pattern string to `RegexTree` of `RegexNode`s
 * Invoked with `RegexTree Parse(string pattern, RegexOptions options...) {}`
-* Also has `Escape(..)` and `Unescape(..)` methods, and parses into `RegexReplacement`s
+* Also has `Escape(..)` and `Unescape(..)` methods (which serve as the implementation of the public `Regex.Escape/Unescape` methods), and parses into `RegexReplacement`s
 * Does a partial prescan to prep capture slots
 * As each `RegexNode` is added, it attempts to reduce (optimize) the newly formed subtree. When parsing completes, there is a final optimization of the whole tree.
 
@@ -59,7 +59,7 @@ In particular, we must keep this API stable in order to remain compatible with r
 
 ### RegexCharClass
 
-* Representation of single, range, or class
+* Representation of a "character class", which defines what characters should be considered a match.  It supports ranges, Unicode categories, and character class subtraction.  As part of reduction / optimization of a `RegexNode` as well as during compilation, trivial character classes may be replaced by faster equivalent forms, e.g. replacing a character class that represents just one character with the corresponding "one" `RegexNode`.
 * Created by `RegexParser`
 * Creates packed string to be held on `RegexNode`. During execution, tihs string is passed to `CharInClass` to determine whether a given character is in the set, although the implementation (in particular in the compiler) may emit faster equivalent checks when possible.
 * Has utility methods for examining the packed string, in particular for testing membership of the class (`CharInClass(..)`)
@@ -70,7 +70,7 @@ In particular, we must keep this API stable in order to remain compatible with r
 * Created by `RegexParser`
 * Some nodes represent subsequent optimizations, rather than individual elements of the pattern
 * Holds `Children` and `Next`. `Next` ends up pointing to the immediate parent
-* Holds char or string (which may be char class), and `M` and `N` constants (eg loop bounds)
+* Holds char or string (which may be char class), and `M` and `N` constants; these constants are node-specific values, e.g. for a loop they represent minimum and maximum iteration counts, respectively.
 * Note: polymorphism was not used here: the interpretation of its fields depends on the integer Type field
 
 ### RegexTree
