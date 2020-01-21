@@ -78,7 +78,7 @@ jobs:
         - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
           - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
           - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
-          - _coreClrArtifactsPathArg: ' /p:CoreCLRArtifactsPath=$(_coreClrDownloadPath)'
+          - _coreClrArtifactsPathArg: ' /p:CoreCLRArtifactsPath=${_CORECLRDOWNLOADPATH}'
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
@@ -112,7 +112,7 @@ jobs:
       - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
-            unpackFolder: $(_coreClrDownloadPath)
+            unpackFolder: ${_CORECLRDOWNLOADPATH}
             artifactFileName: '$(_coreClrArtifactName)$(archiveExtension)'
             artifactName: '$(_coreClrArtifactName)'
             displayName: 'CoreCLR build drop'
