@@ -988,8 +988,7 @@ namespace System
             second = (int)m;
             n = Math.DivRem(n, 60, out m);
             minute = (int)m;
-            n = Math.DivRem(n, 24, out m);
-            hour = (int)m;
+            hour = (int)(n % 24);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1002,8 +1001,7 @@ namespace System
             second = (int)m;
             n = Math.DivRem(n, 60, out m);
             minute = (int)m;
-            n = Math.DivRem(n, 24, out m);
-            hour = (int)m;
+            hour = (int)(n % 24);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1015,8 +1013,7 @@ namespace System
             second = (int)m;
             n = Math.DivRem(n, 60, out m);
             minute = (int)m;
-            n = Math.DivRem(n, 24, out m);
-            hour = (int)m;
+            hour = (int)(n % 24);
         }
 
         // Returns the day-of-month part of this DateTime. The returned
