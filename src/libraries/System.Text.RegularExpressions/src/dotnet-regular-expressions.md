@@ -36,7 +36,7 @@ Protected members are part of the public API which cannot be broken, so they may
 ### RegexCompilationInfo (public)
 
 * Parameters to use for regex compilation to disk
-* Passed in by app to `Regex.CompileToAssembly(..)` - which is not currently implemented.
+* Passed in by app to `Regex.CompileToAssembly(..)` - which is not currently implemented in .NET Core
 
 ## Key types - Parsing
 
