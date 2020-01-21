@@ -44,11 +44,22 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/16945")]
         [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
-        public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress)
+        public async Task SendToRecvFrom_Datagram_UDP_OuterLoop(IPAddress loopbackAddress)
+        {
+            await Run_SendToRecvFrom_Datagram_UDP(loopbackAddress);
+        }
+        
+        [Theory]
+        [MemberData(nameof(Loopbacks))]
+        public async Task SendToRecvFrom_Datagram_UDP_InnerLoop(IPAddress loopbackAddress)
+        {
+            await Run_SendToRecvFrom_Datagram_UDP(loopbackAddress);
+        }
+
+        private async Task Run_SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress)
         {
             IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
 
@@ -63,8 +74,8 @@ namespace System.Net.Sockets.Tests
             var right = new Socket(rightAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             right.BindToAnonymousPort(rightAddress);
 
-            var leftEndpoint = (IPEndPoint)left.LocalEndPoint;
-            var rightEndpoint = (IPEndPoint)right.LocalEndPoint;
+            var leftEndpoint = (IPEndPoint) left.LocalEndPoint;
+            var rightEndpoint = (IPEndPoint) right.LocalEndPoint;
 
             var receiverAck = new SemaphoreSlim(0);
             var senderAck = new SemaphoreSlim(0);
@@ -104,12 +115,13 @@ namespace System.Net.Sockets.Tests
                 for (int i = 0; i < DatagramsToSend; i++)
                 {
                     random.NextBytes(sendBuffer);
-                    sendBuffer[0] = (byte)i;
+                    sendBuffer[0] = (byte) i;
 
                     int sent = await SendToAsync(right, new ArraySegment<byte>(sendBuffer), leftEndpoint);
 
                     bool gotAck = await receiverAck.WaitAsync(AckTimeout);
-                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {AckTimeout} for receiverAck in iteration {i} after sending {sent}. Receiver is in {leftThread.Status}");
+                    Assert.True(gotAck,
+                        $"{DateTime.Now}: Timeout waiting {AckTimeout} for receiverAck in iteration {i} after sending {sent}. Receiver is in {leftThread.Status}");
                     senderAck.Release();
 
                     Assert.Equal(DatagramSize, sent);
@@ -121,7 +133,7 @@ namespace System.Net.Sockets.Tests
             for (int i = 0; i < DatagramsToSend; i++)
             {
                 Assert.NotNull(receivedChecksums[i]);
-                Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
+                Assert.Equal(sentChecksums[i], (uint) receivedChecksums[i]);
             }
         }
 
