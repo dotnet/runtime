@@ -348,7 +348,7 @@ namespace System.Text.RegularExpressions
             StringBuilder sb = new StringBuilder();
 
             sb.Append(indent + "BM Pattern: " + Pattern);
-            sb.AppendLine();
+            sb.AppendLine(indent + "BM Pattern: " + Pattern);
             sb.Append(indent + "Positive: ");
             for (int i = 0; i < Positive.Length; i++)
             {
