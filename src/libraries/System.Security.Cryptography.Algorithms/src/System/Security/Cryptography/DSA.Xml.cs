@@ -125,7 +125,7 @@ namespace System.Security.Cryptography
             {
                 if (keyParameters.X == null)
                 {
-                    // NetFx compat when a 3rd party type lets X be null when
+                    // .NET Framework compat when a 3rd party type lets X be null when
                     // includePrivateParameters is true
                     // (the exception would have been from Convert.ToBase64String)
                     throw new ArgumentNullException("inArray");

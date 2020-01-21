@@ -146,7 +146,7 @@ namespace System.Text.RegularExpressions
         {
             int newpos = runtrack![runtrackpos++];
 #if DEBUG
-            if (runmatch!.Debug)
+            if (runmatch!.IsDebug)
             {
                 if (newpos < 0)
                     Debug.WriteLine("       Backtracking (back2) to code position " + (-newpos));
@@ -387,6 +387,23 @@ namespace System.Text.RegularExpressions
 
         protected override bool FindFirstChar()
         {
+            if (!_code.RightToLeft)
+            {
+                if (runtextpos > runtextend - _code.Tree.MinRequiredLength)
+                {
+                    runtextpos = runtextend;
+                    return false;
+                }
+            }
+            else
+            {
+                if (runtextpos - _code.Tree.MinRequiredLength < runtextbeg)
+                {
+                    runtextpos = runtextbeg;
+                    return false;
+                }
+            }
+
             if (0 != (_code.Anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
             {
                 if (!_code.RightToLeft)
@@ -604,7 +621,7 @@ namespace System.Text.RegularExpressions
                     advance = -1;
                 }
 #if DEBUG
-                if (runmatch!.Debug)
+                if (runmatch!.IsDebug)
                 {
                     DumpState();
                 }

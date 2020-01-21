@@ -169,7 +169,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ValidMetadataDiscoveredByComponentCatalogTest()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -361,7 +361,7 @@ namespace System.ComponentModel.Composition
         #region Tests for weakly supported metadata as part of contract
 
         [Fact]
-        [ActiveIssue(468388)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
         public void FailureImportForNoRequiredMetadatForExportCollection()
         {
             CompositionContainer container = ContainerFactory.Create();
@@ -381,7 +381,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(472538)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/472538")]
         public void FailureImportForNoRequiredMetadataThroughComponentCatalogTest()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -403,7 +403,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(468388)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
         public void SelectiveImportBasedOnMetadataForExport()
         {
             CompositionContainer container = ContainerFactory.Create();
@@ -424,7 +424,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(468388)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
         public void SelectiveImportBasedOnMetadataForExportCollection()
         {
             CompositionContainer container = ContainerFactory.Create();
@@ -447,7 +447,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(472538)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/472538")]
         public void SelectiveImportBasedOnMetadataThruoughComponentCatalogTest()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -529,7 +529,7 @@ namespace System.ComponentModel.Composition
         #region Tests for strongly typed metadata as part of contract
 
         [Fact]
-        [ActiveIssue(468388)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
         public void SelectiveImportBySTM_Export()
         {
             CompositionContainer container = ContainerFactory.Create();
@@ -551,7 +551,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(468388)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
         public void SelectiveImportBySTM_ExportCollection()
         {
             CompositionContainer container = ContainerFactory.Create();
@@ -574,7 +574,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void SelectiveImportBySTMThroughComponentCatalog1()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -588,7 +588,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(468388)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
         public void SelectiveImportBySTMThroughComponentCatalog2()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -611,7 +611,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TestMultipleStronglyTypedAttributes()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -622,7 +622,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TestMultipleStronglyTypedAttributesAsIEnumerable()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -633,7 +633,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TestMultipleStronglyTypedAttributesAsArray()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -644,7 +644,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TestMultipleStronglyTypedAttributesWithInvalidType()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();

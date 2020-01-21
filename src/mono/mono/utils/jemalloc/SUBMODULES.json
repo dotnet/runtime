@@ -1,0 +1,10 @@
+[
+  {
+      "name": "jemalloc", 
+      "url": "git://github.com/mono/jemalloc.git",
+      "rev": "896ed3a8b3f41998d4fb4d625d30ac63ef2d51fb",
+      "remote-branch": "origin/master", 
+      "branch": "master", 
+      "directory": "jemalloc"
+  }
+]

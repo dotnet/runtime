@@ -4299,22 +4299,15 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     }
     EndPhase(PHASE_GS_COOKIE);
 
-    /* Compute bbNum, bbRefs and bbPreds */
-
-    JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
+    // GC Poll marking assumes block bbnums match lexical block order,
+    // so make sure this is the case.
     fgRenumberBlocks();
-
-    noway_assert(!fgComputePredsDone); // This is the first time full (not cheap) preds will be computed.
-    fgComputePreds();
-    EndPhase(PHASE_COMPUTE_PREDS);
 
     /* If we need to emit GC Poll calls, mark the blocks that need them now.  This is conservative and can
      * be optimized later. */
+
     fgMarkGCPollBlocks();
     EndPhase(PHASE_MARK_GC_POLL_BLOCKS);
-
-    /* From this point on the flowgraph information such as bbNum,
-     * bbRefs or bbPreds has to be kept updated */
 
     // Compute the block and edge weights
     fgComputeBlockAndEdgeWeights();

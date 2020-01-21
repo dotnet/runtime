@@ -25,7 +25,7 @@ namespace System.Net
 
         private readonly ArrayList m_list = new ArrayList();
 
-        private int m_version; // Do not rename (binary serialization). This field only exists for netfx serialization compatibility.
+        private int m_version; // Do not rename (binary serialization). This field only exists for .NET Framework serialization compatibility.
         private DateTime m_TimeStamp = DateTime.MinValue; // Do not rename (binary serialization)
         private bool m_has_other_versions; // Do not rename (binary serialization)
 

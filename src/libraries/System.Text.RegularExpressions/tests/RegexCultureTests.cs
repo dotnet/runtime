@@ -24,11 +24,13 @@ namespace System.Text.RegularExpressions.Tests
             const string S1 = "\u00D6\u200D";
             const string S2 = "\u004F\u0308";
 
+            // Validate the chosen strings to make sure they compare the way we want to test via Regex
             Assert.False(S1[0] == S2[0]);
             Assert.False(S1[1] == S2[1]);
             Assert.StartsWith(S1, S2, StringComparison.InvariantCulture);
-            Assert.True(S1.Equals(S1, StringComparison.InvariantCulture));
+            Assert.True(S1.Equals(S2, StringComparison.InvariantCulture));
 
+            // Test varying lengths of strings to validate codegen changes that kick in at longer lengths
             foreach (int multiple in new[] { 1, 10, 100 })
             {
                 string pattern = string.Concat(Enumerable.Repeat(S1, multiple));
@@ -40,7 +42,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.False(r.IsMatch(input));
                 Assert.True(r.IsMatch(pattern));
 
-                // Validate when it's not in the pattern, as it impacts "multi" matching.
+                // Validate when it's not at the beginning of the pattern, as it impacts "multi" matching.
                 r = new Regex("[abc]" + pattern, options);
                 Assert.False(r.IsMatch("a" + input));
                 Assert.True(r.IsMatch("a" + pattern));

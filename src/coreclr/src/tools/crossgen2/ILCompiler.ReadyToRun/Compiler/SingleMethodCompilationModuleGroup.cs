@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Collections.Generic;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using System.Reflection.Metadata.Ecma335;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace ILCompiler
 {
@@ -15,6 +18,7 @@ namespace ILCompiler
     public class SingleMethodCompilationModuleGroup : CompilationModuleGroup
     {
         private MethodDesc _method;
+        private Dictionary<TypeDesc, ModuleToken> _typeRefsInCompilationModuleSet;
 
         public SingleMethodCompilationModuleGroup(MethodDesc method)
         {
@@ -39,6 +43,29 @@ namespace ILCompiler
         public override bool GeneratesPInvoke(MethodDesc method)
         {
             return true;
+        }
+
+        public override bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token)
+        {
+            Debug.Assert(!VersionsWithType(type));
+
+            if (_typeRefsInCompilationModuleSet == null)
+            {
+                _typeRefsInCompilationModuleSet = new Dictionary<TypeDesc, ModuleToken>();
+
+                EcmaModule ecmaModule = ((EcmaMethod)_method.GetTypicalMethodDefinition()).Module;
+                foreach (var typeRefHandle in ecmaModule.MetadataReader.TypeReferences)
+                {
+                    try
+                    {
+                        TypeDesc typeFromTypeRef = ecmaModule.GetType(typeRefHandle);
+                        _typeRefsInCompilationModuleSet[typeFromTypeRef] = new ModuleToken(ecmaModule, typeRefHandle);
+                    }
+                    catch (TypeSystemException) { }
+                }
+            }
+
+            return _typeRefsInCompilationModuleSet.TryGetValue(type, out token);
         }
     }
 }

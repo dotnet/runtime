@@ -44,7 +44,7 @@ namespace System.Configuration
             // references to types without assembly names could be resolved if
             // they lived in System.dll.
             //
-            // On NetFX we would try to emulate that behavior by looking in
+            // On .NET Framework we would try to emulate that behavior by looking in
             // System. As types have moved around in CoreFX- we'll try to load
             // from the a variety of assemblies to mimick the old behavior.
 

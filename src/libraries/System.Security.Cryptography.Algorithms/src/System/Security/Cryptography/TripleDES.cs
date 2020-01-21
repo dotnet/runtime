@@ -61,7 +61,7 @@ namespace System.Security.Cryptography
         public static bool IsWeakKey(byte[] rgbKey)
         {
             if (rgbKey == null)
-                throw new CryptographicException(SR.Cryptography_InvalidKeySize);  // Desktop compat: Strange exception for a null value, but this is what we threw in classic CLR.
+                throw new CryptographicException(SR.Cryptography_InvalidKeySize);  // .NET Framework compat: Strange exception for a null value, but this is what we threw in classic CLR.
 
             if (!(rgbKey.Length * 8).IsLegalSize(s_legalKeySizes))
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);

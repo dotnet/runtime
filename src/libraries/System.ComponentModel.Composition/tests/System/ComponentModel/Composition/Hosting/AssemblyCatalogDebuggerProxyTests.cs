@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition.Hosting
     public class AssemblyCatalogDebuggerProxyTests
     {
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void Constructor_NullAsCatalogArgument_ShouldThrowArgumentNull()
         {
             AssertExtensions.Throws<ArgumentNullException>("catalog", () =>
@@ -21,7 +21,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void Constructor_ValueAsCatalogArgument_ShouldSetPartsProperty()
         {
             var expectations = Expectations.GetAssemblies();

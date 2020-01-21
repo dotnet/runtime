@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // Instead of round tripping we only serialize to minimize test time.
             // This will throw on .NET Framework as the artificial limit is still enabled.
             var bf = new BinaryFormatter();
-            AssertExtensions.ThrowsIf<SerializationException>(PlatformDetection.IsFullFramework, () =>
+            AssertExtensions.ThrowsIf<SerializationException>(PlatformDetection.IsNetFramework, () =>
             {
                 using (MemoryStream ms = new MemoryStream())
                 {
@@ -92,7 +92,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             // SqlException, ReflectionTypeLoadException and LicenseException aren't deserializable from Desktop --> Core.
             // Therefore we remove the second blob which is the one from Desktop.
-            if (!PlatformDetection.IsFullFramework && (obj is SqlException || obj is ReflectionTypeLoadException || obj is LicenseException))
+            if (!PlatformDetection.IsNetFramework && (obj is SqlException || obj is ReflectionTypeLoadException || obj is LicenseException))
             {
                 var tmpList = new List<TypeSerializableValue>(blobs);
                 tmpList.RemoveAt(1);
@@ -523,7 +523,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         private static bool HasObjectTypeIntegrity(ISerializable serializable)
         {
-            return !PlatformDetection.IsFullFramework ||
+            return !PlatformDetection.IsNetFramework ||
                 !(serializable is NotFiniteNumberException);
         }
 
@@ -653,7 +653,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
                 string pattern = null;
                 string replacement = null;
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     pattern = ", \"AAEAAAD[^\"]+\"(?!,)";
                     replacement = ", \"" + blobs[numberOfBlobs] + "\"";

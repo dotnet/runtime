@@ -24,7 +24,7 @@ namespace System.Reflection.TypeLoading
                     candidates.Add(candidate);
             }
 
-            // For perf and desktop compat, fast-path these specific checks before calling on the binder to break ties.
+            // For perf and .NET Framework compat, fast-path these specific checks before calling on the binder to break ties.
             if (candidates.Count == 0)
                 return null;
 
@@ -93,7 +93,7 @@ namespace System.Reflection.TypeLoading
                 if (candidates.Count == 0)
                     return null;
 
-                // For perf and desktop compat, fast-path these specific checks before calling on the binder to break ties.
+                // For perf and .NET Framework compat, fast-path these specific checks before calling on the binder to break ties.
                 if (types.Length == 0 && candidates.Count == 1)
                     return candidates[0];
 
@@ -136,7 +136,7 @@ namespace System.Reflection.TypeLoading
                 if (candidates.Count == 0)
                     return null;
 
-                // For perf and desktop compat, fast-path these specific checks before calling on the binder to break ties.
+                // For perf and .NET Framework compat, fast-path these specific checks before calling on the binder to break ties.
                 if (types == null || types.Length == 0)
                 {
                     // no arguments

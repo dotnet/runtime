@@ -280,12 +280,10 @@
     <Compile Include="System\Data\SqlClient\SqlConnectionStringBuilder.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.NetCoreApp.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIPacket.NetCoreApp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != 'AnyOS' and '$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetStandard.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.NetStandard.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIPacket.NetStandard.cs" />
   </ItemGroup>
   <!-- Manage the SNI toggle for Windows netstandard and UWP -->
   <ItemGroup Condition="('$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true') and '$(TargetsWindows)' == 'true'">

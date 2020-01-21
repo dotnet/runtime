@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Pkcs
             if (encryptionAlgorithm == null)
                 throw new ArgumentNullException(nameof(encryptionAlgorithm));
 
-            Version = 0;  // It makes little sense to ask for a version before you've decoded, but since the desktop returns 0 in that case, we will too.
+            Version = 0;  // It makes little sense to ask for a version before you've decoded, but since the .NET Framework returns 0 in that case, we will too.
             ContentInfo = contentInfo;
             ContentEncryptionAlgorithm = encryptionAlgorithm;
             Certificates = new X509Certificate2Collection();
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Pkcs
             if (recipients == null)
                 throw new ArgumentNullException(nameof(recipients));
 
-            // Desktop compat note: Unlike the desktop, we don't provide a free UI to select the recipient. The app must give it to us programmatically.
+            // .NET Framework compat note: Unlike the desktop, we don't provide a free UI to select the recipient. The app must give it to us programmatically.
             if (recipients.Count == 0)
                 throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoRecipients);
 
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Pkcs
             Certificates = originatorCerts;
             UnprotectedAttributes = unprotectedAttributes;
 
-            // Desktop compat: Encode() after a Decode() returns you the same thing that ContentInfo.Content does.
+            // .NET Framework compat: Encode() after a Decode() returns you the same thing that ContentInfo.Content does.
             _encodedMessage = contentInfo.Content.CloneByteArray();
 
             _lastCall = LastCall.Decode;
@@ -278,7 +278,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             ContentInfo = contentInfo;
 
-            // Desktop compat: Encode() after a Decrypt() returns you the same thing that ContentInfo.Content does.
+            // .NET Framework compat: Encode() after a Decrypt() returns you the same thing that ContentInfo.Content does.
             _encodedMessage = contentInfo.Content.CloneByteArray();
 
             _lastCall = LastCall.Decrypt;

@@ -11,7 +11,7 @@ namespace System.PrivateUri.Tests
 {
     public class UriBuilderTests
     {
-        //This test tests a case where the Core implementation of UriBuilder differs from Desktop Framework UriBuilder.
+        //This test tests a case where the .NET Core implementation of UriBuilder differs from .NET Framework UriBuilder.
         //The Query property will not longer prepend a ? character if the string being assigned is already prepended.
         [Fact]
         public static void TestQuery()

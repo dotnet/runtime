@@ -23,7 +23,7 @@ target_link_libraries(coreconsole
     unixcoreruncommon
 )
 
-if(NOT CLR_CMAKE_PLATFORM_ANDROID)
+if(NOT CLR_CMAKE_HOST_ANDROID)
   target_link_libraries(coreconsole
     pthread
   )

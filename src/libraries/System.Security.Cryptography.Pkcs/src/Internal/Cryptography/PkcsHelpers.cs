@@ -204,7 +204,7 @@ namespace Internal.Cryptography
         public static string OctetStringToUnicode(this byte[] octets)
         {
             if (octets.Length < 2)
-                return string.Empty;   // Desktop compat: 0-length byte array maps to string.empty. 1-length byte array gets passed to Marshal.PtrToStringUni() with who knows what outcome.
+                return string.Empty;   // .NET Framework compat: 0-length byte array maps to string.empty. 1-length byte array gets passed to Marshal.PtrToStringUni() with who knows what outcome.
 
             string s = Encoding.Unicode.GetString(octets, 0, octets.Length - 2);
             return s;
@@ -225,7 +225,7 @@ namespace Internal.Cryptography
         }
 
         /// <summary>
-        /// Desktop compat: We do not complain about multiple matches. Just take the first one and ignore the rest.
+        /// .NET Framework compat: We do not complain about multiple matches. Just take the first one and ignore the rest.
         /// </summary>
         public static X509Certificate2 TryFindMatchingCertificate(this X509Certificate2Collection certs, SubjectIdentifier recipientIdentifier)
         {

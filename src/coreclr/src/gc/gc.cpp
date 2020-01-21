@@ -29,15 +29,15 @@ public:
 
     static uint64_t get_rand()
     {
-	    x = (314159269*x+278281) & 0x7FFFFFFF;
-	    return x;
+        x = (314159269*x+278281) & 0x7FFFFFFF;
+        return x;
     }
 
     // obtain random number in the range 0 .. r-1
     static uint64_t get_rand(uint64_t r) {
-	    // require r >= 0
-	    uint64_t x = (uint64_t)((get_rand() * r) >> 31);
-	    return x;
+        // require r >= 0
+        uint64_t x = (uint64_t)((get_rand() * r) >> 31);
+        return x;
     }
 };
 
@@ -671,6 +671,19 @@ void GCLogConfig (const char *fmt, ... )
     }
 }
 #endif // GC_CONFIG_DRIVEN && !DACCESS_COMPILE
+
+void GCHeap::Shutdown()
+{
+#if defined(TRACE_GC) && !defined(DACCESS_COMPILE)
+    if (gc_log_on && (gc_log != NULL))
+    {
+        fwrite(gc_log_buffer, gc_log_buffer_offset, 1, gc_log);
+        fflush(gc_log);
+        fclose(gc_log);
+        gc_log_buffer_offset = 0;
+    }
+#endif
+}
 
 #ifdef SYNCHRONIZATION_STATS
 
@@ -1589,29 +1602,6 @@ BOOL recursive_gc_sync::allow_foreground()
 #endif //BACKGROUND_GC
 #endif //DACCESS_COMPILE
 
-
-#if  defined(COUNT_CYCLES)
-#ifdef _MSC_VER
-#pragma warning(disable:4035)
-#endif //_MSC_VER
-
-static
-unsigned        GetCycleCount32()        // enough for about 40 seconds
-{
-__asm   push    EDX
-__asm   _emit   0x0F
-__asm   _emit   0x31
-__asm   pop     EDX
-};
-
-#pragma warning(default:4035)
-
-#endif //COUNT_CYCLES
-
-#ifdef TIME_GC
-int mark_time, plan_time, sweep_time, reloc_time, compact_time;
-#endif //TIME_GC
-
 #ifndef MULTIPLE_HEAPS
 
 #endif // MULTIPLE_HEAPS
@@ -2053,27 +2043,33 @@ ptrdiff_t round_down (ptrdiff_t add, int pitch)
 #error if GROWABLE_SEG_MAPPING_TABLE is defined, SEG_MAPPING_TABLE must be defined
 #endif
 
+// Returns true if two pointers have the same large (double than normal) alignment.
 inline
 BOOL same_large_alignment_p (uint8_t* p1, uint8_t* p2)
 {
 #ifdef RESPECT_LARGE_ALIGNMENT
-    return ((((size_t)p1 ^ (size_t)p2) & 7) == 0);
+    const size_t LARGE_ALIGNMENT_MASK = 2 * DATA_ALIGNMENT - 1;
+    return ((((size_t)p1 ^ (size_t)p2) & LARGE_ALIGNMENT_MASK) == 0);
 #else
     UNREFERENCED_PARAMETER(p1);
     UNREFERENCED_PARAMETER(p2);
     return TRUE;
-#endif //RESPECT_LARGE_ALIGNMENT
+#endif // RESPECT_LARGE_ALIGNMENT
 }
 
+// Determines the padding size required to fix large alignment during relocation.
 inline
 size_t switch_alignment_size (BOOL already_padded_p)
 {
+#ifndef RESPECT_LARGE_ALIGNMENT
+    assert (!"Should not be called");
+#endif // RESPECT_LARGE_ALIGNMENT
+
     if (already_padded_p)
         return DATA_ALIGNMENT;
     else
-        return (Align (min_obj_size) +((Align (min_obj_size)&DATA_ALIGNMENT)^DATA_ALIGNMENT));
+        return Align (min_obj_size) | DATA_ALIGNMENT;
 }
-
 
 #ifdef FEATURE_STRUCTALIGN
 void set_node_aligninfo (uint8_t *node, int requiredAlignment, ptrdiff_t pad);
@@ -2601,6 +2597,8 @@ bool        affinity_config_specified_p = false;
 GCEvent     gc_heap::bgc_start_event;
 
 gc_mechanisms gc_heap::saved_bgc_settings;
+
+gc_history_global gc_heap::bgc_data_global;
 
 GCEvent     gc_heap::background_gc_done_event;
 
@@ -3184,18 +3182,22 @@ void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per
 
 void gc_heap::fire_pevents()
 {
-    settings.record (&gc_data_global);
-    gc_data_global.print();
+    gc_history_global* current_gc_data_global = get_gc_data_global();
 
-    FIRE_EVENT(GCGlobalHeapHistory_V2,
-               gc_data_global.final_youngest_desired,
-               gc_data_global.num_heaps,
-               gc_data_global.condemned_generation,
-               gc_data_global.gen0_reduction_count,
-               gc_data_global.reason,
-               gc_data_global.global_mechanisms_p,
-               gc_data_global.pause_mode,
-               gc_data_global.mem_pressure);
+    settings.record (current_gc_data_global);
+    current_gc_data_global->print();
+
+    FIRE_EVENT(GCGlobalHeapHistory_V3,
+               current_gc_data_global->final_youngest_desired,
+               current_gc_data_global->num_heaps,
+               current_gc_data_global->condemned_generation,
+               current_gc_data_global->gen0_reduction_count,
+               current_gc_data_global->reason,
+               current_gc_data_global->global_mechanisms_p,
+               current_gc_data_global->pause_mode,
+               current_gc_data_global->mem_pressure,
+               current_gc_data_global->gen_to_condemn_reasons.get_reasons0(),
+               current_gc_data_global->gen_to_condemn_reasons.get_reasons1());
 
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
@@ -9372,8 +9374,6 @@ public:
         // BARTOKTODO (4841): this code path is disabled (see can_fit_all_blocks_p) until we take alignment requirements into account
         _ASSERTE(requiredAlignment == DATA_ALIGNMENT && false);
 #endif // FEATURE_STRUCTALIGN
-        // TODO: this is also not large alignment ready. We would need to consider alignment when choosing the
-        // the bucket.
 
         size_t plug_size_to_fit = plug_size;
 
@@ -9423,8 +9423,6 @@ retry:
             size_t free_space_size = 0;
             pad = 0;
 
-            BOOL realign_padding_p = FALSE;
-
             if (bucket_free_space[i].is_plug)
             {
                 mark* m = (mark*)(bucket_free_space[i].start);
@@ -9432,8 +9430,7 @@ retry:
 
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, plug_free_space_start)))
                 {
-                    pad += switch_alignment_size (FALSE);
-                    realign_padding_p = TRUE;
+                    pad = switch_alignment_size (FALSE);
                 }
 
                 plug_size = saved_plug_size + pad;
@@ -9459,7 +9456,7 @@ retry:
                                 index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
-                    if (realign_padding_p)
+                    if (pad != 0)
                     {
                         set_node_realigned (old_loc);
                     }
@@ -9475,7 +9472,6 @@ retry:
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, heap_segment_plan_allocated (seg))))
                 {
                     pad = switch_alignment_size (FALSE);
-                    realign_padding_p = TRUE;
                 }
 
                 plug_size = saved_plug_size + pad;
@@ -9497,7 +9493,7 @@ retry:
                                 index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
-                    if (realign_padding_p)
+                    if (pad != 0)
                         set_node_realigned (old_loc);
 
                     can_fit = TRUE;
@@ -9516,15 +9512,10 @@ retry:
             chosen_power2 = 1;
             goto retry;
         }
-        else
-        {
-            if (pad)
-            {
-                new_address += pad;
-            }
-            assert ((chosen_power2 && (i == 0)) ||
-                    ((!chosen_power2) && (i < free_space_count)));
-        }
+
+        new_address += pad;
+        assert ((chosen_power2 && (i == 0)) ||
+                ((!chosen_power2) && (i < free_space_count)));
 
         int new_bucket_power2 = index_of_highest_set_bit (new_free_space_size);
 
@@ -10001,10 +9992,6 @@ void gc_heap::rearrange_heap_segments(BOOL compacting)
 
 uint8_t* g_addresses [array_size+2]; // to get around the bug in GetWriteWatch
 
-#ifdef TIME_WRITE_WATCH
-static unsigned int tot_cycles = 0;
-#endif //TIME_WRITE_WATCH
-
 #ifdef CARD_BUNDLE
 
 inline void gc_heap::verify_card_bundle_bits_set(size_t first_card_word, size_t last_card_word)
@@ -10221,21 +10208,9 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
         if (base_address < high_address)
         {
             region_size = high_address - base_address;
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_start = GetCycleCount32();
-#endif //TIME_WRITE_WATCH
             dprintf (3, ("h%d: soh ww: [%Ix(%Id)", heap_number, (size_t)base_address, region_size));
             //reset_ww_by_chunk (base_address, region_size);
             reset_write_watch_for_gc_heap(base_address, region_size);
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_stop = GetCycleCount32();
-            tot_cycles += time_stop - time_start;
-            printf ("ResetWriteWatch Duration: %d, total: %d\n",
-                    time_stop - time_start, tot_cycles);
-#endif //TIME_WRITE_WATCH
-
             switch_on_reset (concurrent_p, &reset_size, region_size);
         }
 
@@ -10261,21 +10236,9 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
         if (base_address < high_address)
         {
             region_size = high_address - base_address;
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_start = GetCycleCount32();
-#endif //TIME_WRITE_WATCH
             dprintf (3, ("h%d: loh ww: [%Ix(%Id)", heap_number, (size_t)base_address, region_size));
             //reset_ww_by_chunk (base_address, region_size);
             reset_write_watch_for_gc_heap(base_address, region_size);
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_stop = GetCycleCount32();
-            tot_cycles += time_stop - time_start;
-            printf ("ResetWriteWatch Duration: %d, total: %d\n",
-                    time_stop - time_start, tot_cycles);
-#endif //TIME_WRITE_WATCH
-
             switch_on_reset (concurrent_p, &reset_size, region_size);
         }
 
@@ -10283,10 +10246,6 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
 
         concurrent_print_time_delta ("CRWW loh");
     }
-
-#ifdef DEBUG_WRITE_WATCH
-    debug_write_watch = (uint8_t**)~0;
-#endif //DEBUG_WRITE_WATCH
 }
 
 #endif //WRITE_WATCH
@@ -11653,15 +11612,18 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
 inline
 int gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* allocated, uint8_t* old_loc, size_t size, BOOL pad_front_p  REQD_ALIGN_AND_OFFSET_DCL)
 {
+    BOOL already_padded = FALSE;
 #ifdef SHORT_PLUGS
     if ((old_loc != 0) && pad_front_p)
     {
         allocated = allocated + Align (min_obj_size);
+        already_padded = TRUE;
     }
 #endif //SHORT_PLUGS
 
     if (!((old_loc == 0) || same_large_alignment_p (old_loc, allocated)))
-        size = size + switch_alignment_size (FALSE);
+        size += switch_alignment_size (already_padded);
+
 #ifdef FEATURE_STRUCTALIGN
     size_t pad = ComputeStructAlignPad(allocated, requiredAlignment, alignmentOffset);
     return grow_heap_segment (seg, allocated + pad + size);
@@ -14780,11 +14742,19 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 
     allocator* gen_allocator = generation_allocator (gen);
     BOOL discard_p = gen_allocator->discard_if_no_fit_p ();
+#ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && ((from_gen_number+1) != max_generation)) ? USE_PADDING_FRONT : 0;
+#else //SHORT_PLUGS
+    int pad_in_front = 0;
+#endif //SHORT_PLUGS
 
     size_t real_size = size + Align (min_obj_size);
     if (pad_in_front)
         real_size += Align (min_obj_size);
+
+#ifdef RESPECT_LARGE_ALIGNMENT
+    real_size += switch_alignment_size (pad_in_front);
+#endif //RESPECT_LARGE_ALIGNMENT
 
     if (! (size_fit_p (size REQD_ALIGN_AND_OFFSET_ARG, generation_allocation_pointer (gen),
                        generation_allocation_limit (gen), old_loc, USE_PADDING_TAIL | pad_in_front)))
@@ -14931,7 +14901,7 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
 #else // FEATURE_STRUCTALIGN
         if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
+            pad += switch_alignment_size (pad != 0);
             set_node_realigned (old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
                          (size_t)old_loc, (size_t)(result+pad)));
@@ -15026,12 +14996,15 @@ uint8_t* gc_heap::allocate_in_expanded_heap (generation* gen,
                                           int active_new_gen_number
                                           REQD_ALIGN_AND_OFFSET_DCL)
 {
-    UNREFERENCED_PARAMETER(active_new_gen_number);
     dprintf (3, ("aie: P: %Ix, size: %Ix", old_loc, size));
 
     size = Align (size);
     assert (size >= Align (min_obj_size));
+#ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && (active_new_gen_number != max_generation)) ? USE_PADDING_FRONT : 0;
+#else //SHORT_PLUGS
+    int pad_in_front = 0;
+#endif //SHORT_PLUGS
 
     if (consider_bestfit && use_bestfit)
     {
@@ -15266,7 +15239,11 @@ uint8_t* gc_heap::allocate_in_condemned_generations (generation* gen,
 
     dprintf (3, ("aic gen%d: s: %Id", gen->gen_num, size));
 
+#ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && (to_gen_number != max_generation)) ? USE_PADDING_FRONT : 0;
+#else //SHORT_PLUGS
+    int pad_in_front = 0;
+#endif //SHORT_PLUGS
 
     if ((from_gen_number != -1) && (from_gen_number != (int)max_generation) && settings.promotion)
     {
@@ -15438,7 +15415,7 @@ retry:
 #else // FEATURE_STRUCTALIGN
         if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
         {
-            pad += switch_alignment_size (is_plug_padded (old_loc));
+            pad += switch_alignment_size (pad != 0);
             set_node_realigned(old_loc);
             dprintf (3, ("Allocation realignment old_loc: %Ix, new_loc:%Ix",
                          (size_t)old_loc, (size_t)(result+pad)));
@@ -15494,22 +15471,13 @@ retry:
     }
 }
 
-inline int power (int x, int y)
-{
-    int z = 1;
-    for (int i = 0; i < y; i++)
-    {
-        z = z*x;
-    }
-    return z;
-}
-
 int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                                            int initial_gen,
                                            int current_gen,
                                            BOOL* blocking_collection_p
                                            STRESS_HEAP_ARG(int n_original))
 {
+    gc_data_global.gen_to_condemn_reasons.init();
 #ifdef BGC_SERVO_TUNING
     if (settings.entry_memory_load == 0)
     {
@@ -15559,6 +15527,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             else
             {
                 n = max_generation - 1;
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_avoid_unproductive);
                 settings.elevation_reduced = TRUE;
             }
         }
@@ -15583,6 +15552,14 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             // where foreground GCs are asking for a compacting full GC right away
             // and not getting it.
             dprintf (GTC_LOG, ("full GC induced, not reducing gen"));
+            if (initial_gen == max_generation)
+            {
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_pm_induced_fullgc_p);
+            }
+            else
+            {
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_pm_alloc_loh);
+            }
             *blocking_collection_p = TRUE;
         }
         else if (should_expand_in_full_gc || joined_last_gc_before_oom)
@@ -15593,6 +15570,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
         {
             dprintf (GTC_LOG, ("reducing gen in PM: %d->%d->%d", initial_gen, n, (max_generation - 1)));
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_last_gen2_fragmented);
             n = max_generation - 1;
         }
     }
@@ -15614,6 +15592,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 
         if (joined_last_gc_before_oom)
         {
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_before_oom);
             full_compact_gc_p = true;
         }
         else if ((current_total_committed * 10) >= (heap_hard_limit * 9))
@@ -15624,6 +15603,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             if ((loh_frag * 8) >= heap_hard_limit)
             {
                 dprintf (GTC_LOG, ("loh frag: %Id > 1/8 of limit %Id", loh_frag, (heap_hard_limit / 8)));
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_frag);
                 full_compact_gc_p = true;
             }
             else
@@ -15631,6 +15611,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                 // If there's not much fragmentation but it looks like it'll be productive to
                 // collect LOH, do that.
                 size_t est_loh_reclaim = get_total_gen_estimated_reclaim (max_generation + 1);
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
                 full_compact_gc_p = ((est_loh_reclaim * 8) >= heap_hard_limit);
                 dprintf (GTC_LOG, ("loh est reclaim: %Id, 1/8 of limit %Id", est_loh_reclaim, (heap_hard_limit / 8)));
             }
@@ -15648,6 +15629,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 #ifdef BGC_SERVO_TUNING
     if (bgc_tuning::should_trigger_ngc2())
     {
+        gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_ngc);
         n = max_generation;
         *blocking_collection_p = TRUE;
     }
@@ -15655,12 +15637,14 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     if ((n < max_generation) && !recursive_gc_sync::background_running_p() &&
         bgc_tuning::stepping_trigger (settings.entry_memory_load, get_current_gc_index (max_generation)))
     {
+        gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_initial);
         n = max_generation;
         saved_bgc_tuning_reason = reason_bgc_stepping;
     }
 
     if ((n < max_generation) && bgc_tuning::should_trigger_bgc())
     {
+        gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_bgc);
         n = max_generation;
     }
 
@@ -15668,6 +15652,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     {
         if (bgc_tuning::should_delay_alloc (max_generation))
         {
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_servo_postpone);
             n -= 1;
         }
     }
@@ -15707,6 +15692,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             // in gc stress, only escalate every 10th non-gen2 collection to a gen2...
             if ((current_gc_count % 10) == 0)
             {
+                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_stress_mix);
                 n = max_generation;
             }
         }
@@ -15721,6 +15707,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
 #endif // !FEATURE_REDHAWK
         {
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_stress);
             n = max_generation;
         }
     }
@@ -16662,10 +16649,6 @@ void gc_heap::gc1()
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
 #endif //BACKGROUND_GC
 
-#ifdef TIME_GC
-    mark_time = plan_time = reloc_time = compact_time = sweep_time = 0;
-#endif //TIME_GC
-
     verify_soh_segment_list();
 
     int n = settings.condemned_generation;
@@ -16933,11 +16916,6 @@ void gc_heap::gc1()
         g_GCStatistics.AddGCStats(settings,
             dd_gc_elapsed_time(dynamic_data_of(settings.condemned_generation)));
 #endif // GC_STATS
-
-#ifdef TIME_GC
-    fprintf (stdout, "%d,%d,%d,%d,%d,%d\n",
-             n, mark_time, plan_time, reloc_time, compact_time, sweep_time);
-#endif //TIME_GC
 
 #ifdef BACKGROUND_GC
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
@@ -18076,54 +18054,54 @@ void gc_heap::garbage_collect (int n)
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
 
-    BOOL should_evaluate_elevation = TRUE;
-    BOOL should_do_blocking_collection = FALSE;
+        BOOL should_evaluate_elevation = TRUE;
+        BOOL should_do_blocking_collection = FALSE;
 
 #ifdef MULTIPLE_HEAPS
-    int gen_max = condemned_generation_num;
-    for (int i = 0; i < n_heaps; i++)
-    {
-        if (gen_max < g_heaps[i]->condemned_generation_num)
-            gen_max = g_heaps[i]->condemned_generation_num;
-        if (should_evaluate_elevation && !(g_heaps[i]->elevation_requested))
-            should_evaluate_elevation = FALSE;
-        if ((!should_do_blocking_collection) && (g_heaps[i]->blocking_collection))
-            should_do_blocking_collection = TRUE;
-    }
+        int gen_max = condemned_generation_num;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            if (gen_max < g_heaps[i]->condemned_generation_num)
+                gen_max = g_heaps[i]->condemned_generation_num;
+            if (should_evaluate_elevation && !(g_heaps[i]->elevation_requested))
+                should_evaluate_elevation = FALSE;
+            if ((!should_do_blocking_collection) && (g_heaps[i]->blocking_collection))
+                should_do_blocking_collection = TRUE;
+        }
 
-    settings.condemned_generation = gen_max;
+        settings.condemned_generation = gen_max;
 #else //MULTIPLE_HEAPS
-    settings.condemned_generation = generation_to_condemn (n,
-                                                        &blocking_collection,
-                                                        &elevation_requested,
-                                                        FALSE);
-    should_evaluate_elevation = elevation_requested;
-    should_do_blocking_collection = blocking_collection;
+        settings.condemned_generation = generation_to_condemn (n,
+                                                            &blocking_collection,
+                                                            &elevation_requested,
+                                                            FALSE);
+        should_evaluate_elevation = elevation_requested;
+        should_do_blocking_collection = blocking_collection;
 #endif //MULTIPLE_HEAPS
 
-    settings.condemned_generation = joined_generation_to_condemn (
-                                        should_evaluate_elevation,
-                                        n,
-                                        settings.condemned_generation,
-                                        &should_do_blocking_collection
-                                        STRESS_HEAP_ARG(n)
-                                        );
+        settings.condemned_generation = joined_generation_to_condemn (
+                                            should_evaluate_elevation,
+                                            n,
+                                            settings.condemned_generation,
+                                            &should_do_blocking_collection
+                                            STRESS_HEAP_ARG(n)
+                                            );
 
-    STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10,
-            "condemned generation num: %d\n", settings.condemned_generation);
+        STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10,
+                "condemned generation num: %d\n", settings.condemned_generation);
 
-    record_gcs_during_no_gc();
+        record_gcs_during_no_gc();
 
-    if (settings.condemned_generation > 1)
-        settings.promotion = TRUE;
+        if (settings.condemned_generation > 1)
+            settings.promotion = TRUE;
 
 #ifdef HEAP_ANALYZE
-    // At this point we've decided what generation is condemned
-    // See if we've been requested to analyze survivors after the mark phase
-    if (GCToEEInterface::AnalyzeSurvivorsRequested(settings.condemned_generation))
-    {
-        heap_analyze_enabled = TRUE;
-    }
+        // At this point we've decided what generation is condemned
+        // See if we've been requested to analyze survivors after the mark phase
+        if (GCToEEInterface::AnalyzeSurvivorsRequested(settings.condemned_generation))
+        {
+            heap_analyze_enabled = TRUE;
+        }
 #endif // HEAP_ANALYZE
 
         GCToEEInterface::DiagGCStart(settings.condemned_generation, settings.reason == reason_induced);
@@ -18147,8 +18125,11 @@ void gc_heap::garbage_collect (int n)
             ((settings.pause_mode == pause_interactive) || (settings.pause_mode == pause_sustained_low_latency)))
         {
             keep_bgc_threads_p = TRUE;
-            c_write (settings.concurrent,  TRUE);
+            c_write (settings.concurrent, TRUE);
+            memset (&bgc_data_global, 0, sizeof(bgc_data_global));
+            memcpy (&bgc_data_global, &gc_data_global, sizeof(gc_data_global));
         }
+
 #endif //BACKGROUND_GC
 
         settings.gc_index = (uint32_t)dd_collection_count (dynamic_data_of (0)) + 1;
@@ -19920,7 +19901,7 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                     //we are finished with this object
                     *place = 0;
                     *(place+1) = 0;
-                
+
                 more_to_do:;
                 }
                 else
@@ -20969,12 +20950,6 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     dprintf(2,("---- Mark Phase condemning %d ----", condemned_gen_number));
     BOOL  full_p = (condemned_gen_number == max_generation);
 
-#ifdef TIME_GC
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#endif //TIME_GC
-
     int gen_to_init = condemned_gen_number;
     if (condemned_gen_number == max_generation)
     {
@@ -21488,11 +21463,6 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //BACKGROUND_GC
 
     promoted_bytes (heap_number) -= promoted_bytes_live;
-
-#ifdef TIME_GC
-        finish = GetCycleCount32();
-        mark_time = finish - start;
-#endif //TIME_GC
 
     dprintf(2,("---- End of mark phase ----"));
 }
@@ -22951,11 +22921,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
     assert (settings.concurrent == FALSE);
 
     // %type%  category = quote (plan);
-#ifdef TIME_GC
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#endif //TIME_GC
 
     dprintf (2,("---- Plan Phase ---- Condemned generation %d, promotion: %d",
                 condemned_gen_number, settings.promotion ? 1 : 0));
@@ -23910,11 +23875,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
     dprintf (2,("Fragmentation: %Id", fragmentation));
     dprintf (2,("---- End of Plan phase ----"));
 
-#ifdef TIME_GC
-    finish = GetCycleCount32();
-    plan_time = finish - start;
-#endif //TIME_GC
-
     // We may update write barrier code.  We assume here EE has been suspended if we are on a GC thread.
     assert(IsGCInProgress());
 
@@ -24623,12 +24583,6 @@ uint8_t* gc_heap::allocate_at_end (size_t size)
 
 void gc_heap::make_free_lists (int condemned_gen_number)
 {
-#ifdef TIME_GC
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#endif //TIME_GC
-
     //Promotion has to happen in sweep case.
     assert (settings.promotion);
 
@@ -24743,11 +24697,6 @@ void gc_heap::make_free_lists (int condemned_gen_number)
         uint8_t* start2 = generation_allocation_start (youngest_generation);
         alloc_allocated = start2 + Align (size (start2));
     }
-
-#ifdef TIME_GC
-    finish = GetCycleCount32();
-    sweep_time = finish - start;
-#endif //TIME_GC
 }
 
 void gc_heap::make_free_list_in_brick (uint8_t* tree, make_free_args* args)
@@ -25902,13 +25851,6 @@ void gc_heap::relocate_phase (int condemned_gen_number,
     sc.promotion = FALSE;
     sc.concurrent = FALSE;
 
-
-#ifdef TIME_GC
-        unsigned start;
-        unsigned finish;
-        start = GetCycleCount32();
-#endif //TIME_GC
-
 //  %type%  category = quote (relocate);
     dprintf (2,("---- Relocate phase -----"));
 
@@ -26059,13 +26001,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
     //join all threads to make sure they are synchronized
     dprintf(3, ("Joining after end of relocation"));
     gc_t_join.join(this, gc_join_relocate_phase_done);
-
 #endif //MULTIPLE_HEAPS
-
-#ifdef TIME_GC
-        finish = GetCycleCount32();
-        reloc_time = finish - start;
-#endif //TIME_GC
 
     dprintf(2,( "---- End of Relocate phase ----"));
 }
@@ -26423,11 +26359,6 @@ void gc_heap::compact_phase (int condemned_gen_number,
                              BOOL clear_cards)
 {
 //  %type%  category = quote (compact);
-#ifdef TIME_GC
-        unsigned start;
-        unsigned finish;
-        start = GetCycleCount32();
-#endif //TIME_GC
     generation*   condemned_gen = generation_of (condemned_gen_number);
     uint8_t*  start_address = first_condemned_address;
     size_t   current_brick = brick_of (start_address);
@@ -26545,11 +26476,6 @@ void gc_heap::compact_phase (int condemned_gen_number,
     }
 
     recover_saved_pinned_info();
-
-#ifdef TIME_GC
-    finish = GetCycleCount32();
-    compact_time = finish - start;
-#endif //TIME_GC
 
     concurrent_print_time_delta ("compact end");
 
@@ -27251,12 +27177,6 @@ void gc_heap::background_mark_phase ()
 
     assert (settings.concurrent);
 
-#ifdef TIME_GC
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#endif //TIME_GC
-
     if (gen0_must_clear_bricks > 0)
         gen0_must_clear_bricks--;
 
@@ -27779,11 +27699,6 @@ void gc_heap::background_mark_phase ()
     // We need to void alloc contexts here 'cause while background_ephemeral_sweep is running
     // we can't let the user code consume the left over parts in these alloc contexts.
     repair_allocation_contexts (FALSE);
-
-#ifdef TIME_GC
-        finish = GetCycleCount32();
-        mark_time = finish - start;
-#endif //TIME_GC
 
     dprintf (2, ("end of bgc mark: gen2 free list space: %d, free obj space: %d",
         generation_free_list_space (generation_of (max_generation)),
@@ -30484,7 +30399,7 @@ bool card_marking_enumerator::move_next(heap_segment* seg, uint8_t*& low, uint8_
                 // our caller should still be in one of the previous segments
 #ifdef _DEBUG
                 for (heap_segment* cur_seg = seg; cur_seg != segment; cur_seg = heap_segment_next_in_range(cur_seg))
-                {                    
+                {
                     assert(cur_seg);
                 }
 #endif //_DEBUG
@@ -32835,6 +32750,16 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
     return final_new_allocation;
 }
 #endif // BIT64
+
+inline
+gc_history_global* gc_heap::get_gc_data_global()
+{
+#ifdef BACKGROUND_GC
+    return (settings.concurrent ? &bgc_data_global : &gc_data_global);
+#else
+    return &gc_data_global;
+#endif //BACKGROUND_GC
+}
 
 inline
 gc_history_per_heap* gc_heap::get_gc_data_per_heap()
@@ -36397,7 +36322,7 @@ void DestructObject (CObjectHeader* hdr)
     hdr->~CObjectHeader();
 }
 
-HRESULT GCHeap::Shutdown ()
+HRESULT GCHeap::StaticShutdown ()
 {
     deleteGCShadow();
 
@@ -36959,9 +36884,6 @@ bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
     return !!hs;
 }
 
-#ifdef STRESS_PINNING
-static n_promote = 0;
-#endif //STRESS_PINNING
 // promote an object
 void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 {
@@ -37394,16 +37316,6 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 
     Object* newAlloc = NULL;
 
-#ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocStart = GetCycleCount32();
-    unsigned finish;
-#elif defined(ENABLE_INSTRUMENTATION)
-    unsigned AllocStart = GetInstLogTime();
-    unsigned finish;
-#endif //COUNT_CYCLES
-#endif //TRACE_GC
-
     if (size < loh_size_threshold)
     {
 #ifdef TRACE_GC
@@ -37481,13 +37393,6 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    finish = GetCycleCount32();
-    AllocDuration += finish - AllocStart;
-#elif defined(ENABLE_INSTRUMENTATION)
-    finish = GetInstLogTime();
-    AllocDuration += finish - AllocStart;
-#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
@@ -37513,16 +37418,6 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
 
     Object* newAlloc = NULL;
 
-#ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocStart = GetCycleCount32();
-    unsigned finish;
-#elif defined(ENABLE_INSTRUMENTATION)
-    unsigned AllocStart = GetInstLogTime();
-    unsigned finish;
-#endif //COUNT_CYCLES
-#endif //TRACE_GC
-
 #ifdef MULTIPLE_HEAPS
     //take the first heap....
     gc_heap* hp = gc_heap::g_heaps[0];
@@ -37544,13 +37439,6 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    finish = GetCycleCount32();
-    AllocDuration += finish - AllocStart;
-#elif defined(ENABLE_INSTRUMENTATION)
-    finish = GetInstLogTime();
-    AllocDuration += finish - AllocStart;
-#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
@@ -37568,16 +37456,6 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 
     Object* newAlloc = NULL;
     alloc_context* acontext = static_cast<alloc_context*>(context);
-
-#ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocStart = GetCycleCount32();
-    unsigned finish;
-#elif defined(ENABLE_INSTRUMENTATION)
-    unsigned AllocStart = GetInstLogTime();
-    unsigned finish;
-#endif //COUNT_CYCLES
-#endif //TRACE_GC
 
 #ifdef MULTIPLE_HEAPS
     if (acontext->get_alloc_heap() == 0)
@@ -37618,13 +37496,6 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    finish = GetCycleCount32();
-    AllocDuration += finish - AllocStart;
-#elif defined(ENABLE_INSTRUMENTATION)
-    finish = GetInstLogTime();
-    AllocDuration += finish - AllocStart;
-#endif //COUNT_CYCLES
     AllocCount++;
 #endif //TRACE_GC
     return newAlloc;
@@ -38256,11 +38127,7 @@ void gc_heap::do_post_gc()
     }
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocStart = GetCycleCount32();
-#else
     AllocStart = GCToOSInterface::QueryPerformanceCounter();
-#endif //COUNT_CYCLES
 #endif //TRACE_GC
 
 #ifdef MULTIPLE_HEAPS
@@ -38471,16 +38338,8 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
          }
     }
 
-#ifdef COUNT_CYCLES
-    int gc_start = GetCycleCount32();
-#endif //COUNT_CYCLES
-
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocDuration += GetCycleCount32() - AllocStart;
-#else
     AllocDuration += GCToOSInterface::QueryPerformanceCounter() - AllocStart;
-#endif //COUNT_CYCLES
 #endif //TRACE_GC
 
         gc_heap::g_low_memory_status = (reason == reason_lowmemory) ||
@@ -38523,15 +38382,9 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 // MAP_EVENT_MONITORS(EE_MONITOR_GARBAGE_COLLECTIONS, NotifyEvent(EE_EVENT_TYPE_GC_STARTED, 0));
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    unsigned start;
-    unsigned finish;
-    start = GetCycleCount32();
-#else
     int64_t start;
     int64_t finish;
     start = GCToOSInterface::QueryPerformanceCounter();
-#endif //COUNT_CYCLES
     PromotedObjectCount = 0;
 #endif //TRACE_GC
 
@@ -38556,24 +38409,20 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 
     condemned_generation_number = GcCondemnedGeneration;
 #else
-        if (gc_heap::proceed_with_gc_p)
+    if (gc_heap::proceed_with_gc_p)
+    {
+        BEGIN_TIMING(gc_during_log);
+        pGenGCHeap->garbage_collect (condemned_generation_number);
+        if (gc_heap::pm_trigger_full_gc)
         {
-            BEGIN_TIMING(gc_during_log);
-            pGenGCHeap->garbage_collect (condemned_generation_number);
-            if (gc_heap::pm_trigger_full_gc)
-            {
-                pGenGCHeap->garbage_collect_pm_full_gc();
-            }
-            END_TIMING(gc_during_log);
+            pGenGCHeap->garbage_collect_pm_full_gc();
         }
+        END_TIMING(gc_during_log);
+    }
 #endif //MULTIPLE_HEAPS
 
 #ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    finish = GetCycleCount32();
-#else
     finish = GCToOSInterface::QueryPerformanceCounter();
-#endif //COUNT_CYCLES
     GcDuration += finish - start;
     dprintf (3,
              ("<GC# %d> Condemned: %d, Duration: %d, total: %d Alloc Avg: %d, Small Objects:%d Large Objects:%d",
@@ -38608,11 +38457,6 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
     }
 #endif //BACKGROUND_GC
 #endif //!MULTIPLE_HEAPS
-
-#ifdef COUNT_CYCLES
-    printf ("GC: %d Time: %d\n", GcCondemnedGeneration,
-            GetCycleCount32() - gc_start);
-#endif //COUNT_CYCLES
 
 #ifndef MULTIPLE_HEAPS
     process_sync_log_stats();
