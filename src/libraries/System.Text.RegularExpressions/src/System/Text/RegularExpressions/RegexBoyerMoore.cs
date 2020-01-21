@@ -347,13 +347,14 @@ namespace System.Text.RegularExpressions
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append(indent + "BM Pattern: " + Pattern + "\n");
+            sb.Append(indent + "BM Pattern: " + Pattern);
+            sb.AppendLine();
             sb.Append(indent + "Positive: ");
             for (int i = 0; i < Positive.Length; i++)
             {
                 sb.Append(Positive[i].ToString(CultureInfo.InvariantCulture) + " ");
             }
-            sb.Append("\n");
+            sb.AppendLine();
 
             if (NegativeASCII != null)
             {
