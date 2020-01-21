@@ -86,8 +86,6 @@ namespace System.Net.Security
             InputSecurityBuffers inputBuffers = default;
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
-            //inputSecurityBuffers._item0 = new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
-            //inputSecurityBuffers._item1 = new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY);
             if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
                 byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
