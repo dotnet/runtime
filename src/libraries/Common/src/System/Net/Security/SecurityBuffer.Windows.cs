@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 
@@ -26,6 +27,62 @@ namespace System.Net.Security
         internal SecurityBuffer _item0;
         private SecurityBuffer _item1;
         private SecurityBuffer _item2;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref struct InputSecurityBuffers
+    {
+        internal int Count;
+        private InputSecurityBuffer _item0;
+        private InputSecurityBuffer _item1;
+        private InputSecurityBuffer _item2;
+
+        internal InputSecurityBuffer GetBuffer(int index)
+        {
+            Debug.Assert(index < 3);
+            return index == 0 ? _item0 : index == 1 ? _item1 : _item2;
+        }
+
+        internal void SetNextBuffer(InputSecurityBuffer buffer)
+        {
+            Debug.Assert(Count < 3);
+            if (Count == 0)
+            {
+                _item0 = buffer;
+            }
+            else if (Count == 1)
+            {
+                _item1 = buffer;
+            }
+            else
+            {
+                _item2 = buffer;
+            }
+
+            Count++;
+        }
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    internal ref struct InputSecurityBuffer
+    {
+        public SecurityBufferType Type;
+        public ReadOnlySpan<byte> Token;
+        public SafeHandle UnmanagedToken;
+
+        public InputSecurityBuffer(ReadOnlySpan<byte> data, SecurityBufferType tokentype)
+        {
+            Token = data;
+            Type = tokentype;
+            UnmanagedToken = null;
+        }
+
+        public InputSecurityBuffer(ChannelBinding binding)
+        {
+            Type = SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS;
+            Token = default;
+            UnmanagedToken = binding;
+        }
     }
 
     [StructLayout(LayoutKind.Auto)]
