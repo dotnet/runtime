@@ -6492,6 +6492,7 @@ public:
             struct IntVal
             {
                 ssize_t  iconVal;   // integer
+                unsigned padding;   // unused; ensures iconFlags does not overlap lconVal
                 unsigned iconFlags; // gtFlags
             };
             struct Range // integer subrange

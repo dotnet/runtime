@@ -128,11 +128,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             object socketsHttpHandler = socketsHttpHandlerField.GetValue(handler);
-            if (socketsHttpHandler == null)
-            {
-                // Not using SocketsHttpHandler, e.g. using WinHttpHandler.
-                return;
-            }
+            Assert.NotNull(socketsHttpHandler);
 
             // Get HttpConnectionSettings object from SocketsHttpHandler.
             Type socketsHttpHandlerType = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.SocketsHttpHandler");

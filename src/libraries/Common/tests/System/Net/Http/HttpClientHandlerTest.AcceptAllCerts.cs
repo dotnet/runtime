@@ -14,12 +14,17 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     public abstract class HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandlerTestBase
     {
         private static bool ClientSupportsDHECipherSuites => (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1607OrGreater);
 
         public HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test(ITestOutputHelper output) : base(output) { }
 
+#if !WINHTTPHANDLER_TEST
         [Fact]
         public void SingletonReturnsTrue()
         {
@@ -27,8 +32,9 @@ namespace System.Net.Http.Functional.Tests
             Assert.Same(HttpClientHandler.DangerousAcceptAnyServerCertificateValidator, HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
             Assert.True(HttpClientHandler.DangerousAcceptAnyServerCertificateValidator(null, null, null, SslPolicyErrors.None));
         }
+#endif
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(SslProtocols.Tls, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
         [InlineData(SslProtocols.Tls, true)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]

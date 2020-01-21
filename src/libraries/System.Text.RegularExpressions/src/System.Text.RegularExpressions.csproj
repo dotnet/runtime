@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED</DefineConstants>
@@ -7,8 +7,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
     <Compile Include="System\Collections\HashtableExtensions.cs" />
+    <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
+    <Compile Include="System\Text\SegmentStringBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Capture.cs" />
     <Compile Include="System\Text\RegularExpressions\CaptureCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\CollectionDebuggerProxy.cs" />
@@ -16,8 +17,8 @@
     <Compile Include="System\Text\RegularExpressions\GroupCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\Match.cs" />
     <Compile Include="System\Text\RegularExpressions\MatchCollection.cs" />
-    <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
@@ -41,6 +42,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
+    <Compile Include="System\Text\RegularExpressions\ThrowHelper.cs" />
     <!-- Files that enable compiled feature -->
     <Compile Include="System\Text\RegularExpressions\CompiledRegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\CompiledRegexRunner.cs" />
@@ -56,7 +58,6 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
       <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
-    <Compile Include="System\Text\ValueStringBuilder.Reverse.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />

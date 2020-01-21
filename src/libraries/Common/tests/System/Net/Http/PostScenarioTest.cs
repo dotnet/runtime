@@ -14,6 +14,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
     public abstract class PostScenarioTest : HttpClientHandlerTestBase

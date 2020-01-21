@@ -23,8 +23,8 @@ namespace System
         // AssemblyName depends on the order staying the same
         private readonly int _Major; // Do not rename (binary serialization)
         private readonly int _Minor; // Do not rename (binary serialization)
-        private readonly int _Build = -1; // Do not rename (binary serialization)
-        private readonly int _Revision = -1; // Do not rename (binary serialization)
+        private readonly int _Build; // Do not rename (binary serialization)
+        private readonly int _Revision; // Do not rename (binary serialization)
 
         public Version(int major, int minor, int build, int revision)
         {
@@ -60,6 +60,7 @@ namespace System
             _Major = major;
             _Minor = minor;
             _Build = build;
+            _Revision = -1;
         }
 
         public Version(int major, int minor)
@@ -72,6 +73,8 @@ namespace System
 
             _Major = major;
             _Minor = minor;
+            _Build = -1;
+            _Revision = -1;
         }
 
         public Version(string version)
@@ -85,8 +88,10 @@ namespace System
 
         public Version()
         {
-            _Major = 0;
-            _Minor = 0;
+            //_Major = 0;
+            //_Minor = 0;
+            _Build = -1;
+            _Revision = -1;
         }
 
         private Version(Version version)
