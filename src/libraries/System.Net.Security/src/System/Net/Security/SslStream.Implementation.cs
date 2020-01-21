@@ -527,8 +527,6 @@ namespace System.Net.Security
                 throw new IOException(SR.net_frame_read_size);
             }
 
-            //int frameSize = SecureChannel.ReadHeaderSize + payloadBytes;
-
             if (_handshakeBuffer.ActiveLength < frameSize)
             {
                 readBytes = await FillBufferAsync(InnerStream, _handshakeBuffer, frameSize, cancellationToken).ConfigureAwait(false);
