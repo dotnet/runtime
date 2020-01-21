@@ -717,7 +717,6 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     }
 
     pEEClassLayoutInfoOut->SetIsManagedSequential(!fDisqualifyFromManagedSequential);
-    return;
 }
 
 void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(MethodTable* pMT)
@@ -750,8 +749,7 @@ void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(Method
 
         if (pClass->GetNativeLayoutInfo() == nullptr)
         {
-            EEClassNativeLayoutInfo* pNativeLayoutInfo;
-            CollectNativeLayoutFieldMetadataThrowing(pMT, &pNativeLayoutInfo);
+            EEClassNativeLayoutInfo* pNativeLayoutInfo = CollectNativeLayoutFieldMetadataThrowing(pMT);
 #ifdef FEATURE_HFA
             CheckForNativeHFA(pMT, pNativeLayoutInfo);
 #endif
@@ -763,7 +761,7 @@ void EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(Method
     }
 }
 
-VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTable* pMT, PTR_EEClassNativeLayoutInfo* pNativeLayoutInfoOut)
+EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTable* pMT)
 {
     CONTRACTL
     {
@@ -968,7 +966,6 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
     pNativeLayoutInfo->SetIsMarshalable(isMarshalable);
 
     pNativeLayoutInfo.SuppressRelease();
-    *pNativeLayoutInfoOut = pNativeLayoutInfo;
 
 #ifdef _DEBUG
     {
@@ -1004,7 +1001,7 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
         LOG((LF_INTEROP, LL_INFO100000, "Allocated %d %s field marshallers for %s.%s\n", numTotalInstanceFields, (!isMarshalable ? "pointless" : "usable"), szNamespace, szName));
     }
 #endif
-    return;
+    return pNativeLayoutInfo;
 }
 
 #endif // DACCESS_COMPILE

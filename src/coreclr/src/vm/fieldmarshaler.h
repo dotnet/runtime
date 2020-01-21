@@ -227,7 +227,7 @@ private:
     // equals m_numFields.
     NativeFieldDescriptor m_nativeFieldDescriptors[0];
 
-    static void CollectNativeLayoutFieldMetadataThrowing(MethodTable* pMT, PTR_EEClassNativeLayoutInfo* pNativeLayoutInfoOut);
+    static PTR_EEClassNativeLayoutInfo CollectNativeLayoutFieldMetadataThrowing(MethodTable* pMT);
 public:
     static void InitializeNativeLayoutFieldMetadataThrowing(MethodTable* pMT);
 
