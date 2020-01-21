@@ -1011,6 +1011,8 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
 
 CorElementType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
 {
+    LIMITED_METHOD_CONTRACT;
+
     uint32_t numReferenceFields = GetNumFields();
 
     CorElementType hfaType = ELEMENT_TYPE_END;
