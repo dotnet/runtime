@@ -777,6 +777,7 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
     // Internal interface for the NStruct being loaded.
     IMDInternalImport* pInternalImport = pModule->GetMDImport();
 
+#ifdef _DEBUG
     LPCUTF8 szName;
     LPCUTF8 szNamespace;
     if (FAILED(pInternalImport->GetNameOfTypeDef(pMT->GetCl(), &szName, &szNamespace)))
@@ -784,7 +785,6 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
         szName = szNamespace = "Invalid TypeDef record";
     }
 
-#ifdef _DEBUG
     if (g_pConfig->ShouldBreakOnStructMarshalSetup(szName))
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnStructMarshalSetup: '%s' ", szName));
 #endif
@@ -907,22 +907,24 @@ VOID EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetadataThrowing(MethodTab
         pNativeLayoutInfo->m_size = 1; // Bump the managed size of the structure up to 1.
     }
 
-    // The intrinsic Vector<T> type has a special size. Copy the native size and alignment
-    // from the managed size and alignment.
-
-    if (pModule->IsSystem() && strcmp(szName, "Vector`1") == 0 && strcmp(szNamespace, "System.Numerics") == 0)
-    {
-        pNativeLayoutInfo->m_size = pEEClassLayoutInfo->GetManagedSize();
-        pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
-    }
-
     // The intrinsic Vector types have specialized alignment requirements. For these types,
     // copy the managed alignment requirement as the native alignment requirement.
-    if (strcmp(szNamespace, g_IntrinsicsNS) == 0)
+    if (pMT->IsIntrinsicType())
     {
-        if (strcmp(szName, g_Vector64Name) == 0
-            || strcmp(szName, g_Vector128Name) == 0
-            || strcmp(szName, g_Vector256Name) == 0)
+        // The intrinsic Vector<T> type has a special size. Copy the native size and alignment
+        // from the managed size and alignment.
+        // Crossgen scenarios block Vector<T> from even being loaded, so only do this check when not in crossgen.
+#ifndef CROSSGEN_COMPILE
+        if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT)))
+        {
+            pNativeLayoutInfo->m_size = pEEClassLayoutInfo->GetManagedSize();
+            pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
+        }
+        else
+#endif
+        if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T)) ||
+            pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T)) ||
+            pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T)))
         {
             pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
         }
