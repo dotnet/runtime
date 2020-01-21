@@ -61,12 +61,12 @@ This document gives a quick overview of which collections are supported.
 | [`ImmutableQueue<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.immutablequeue-1?view=netcore-3.1) | Supported | Supported |
 | [`ImmutableSortedDictionary<string, TValue>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.immutablesorteddictionary-2?view=netcore-3.1) | Supported | Supported |
 | [`ImmutableSortedSet<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.immutablesortedset-1?view=netcore-3.1) | Supported | Supported |
-| [`ImmutableStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.immutablestack-1?view=netcore-3.1) | Supported | Supported |
+| [`ImmutableStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.immutablestack-1?view=netcore-3.1)* | Supported | Supported |
 | [`IImmutableDictionary<string, TValue>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.iimmutabledictionary-2?view=netcore-3.1) | Supported | Supported |
 | [`IImmutableList<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.iimmutablelist-1?view=netcore-3.1) | Supported | Supported |
 | [`IImmutableQueue<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.iimmutablequeue-1?view=netcore-3.1) | Supported | Supported |
 | [`IImmutableSet<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.iimmutableset-1?view=netcore-3.1) | Supported | Supported |
-| [`IImmutableStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.iimmutablestack-1?view=netcore-3.1) | Supported | Supported |
+| [`IImmutableStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.iimmutablestack-1?view=netcore-3.1)* | Supported | Supported |
 
 ### [`System.Collections.Specialized`](https://docs.microsoft.com/dotnet/api/system.collections.specialized?view=netcore-3.1)
 
@@ -100,18 +100,6 @@ This document gives a quick overview of which collections are supported.
 | [`ReadOnlyCollection<T>`](https://docs.microsoft.com/dotnet/api/system.collections.objectmodel.readonlycollection-1?view=netcore-3.1) | Supported | Not supported |
 | [`ReadOnlyObservableCollection<T>`](https://docs.microsoft.com/dotnet/api/system.collections.objectmodel.readonlyobservablecollection-1?view=netcore-3.1) | Supported | Not supported |
 | [`ReadOnlyDictionary<string, TValue>`](https://docs.microsoft.com/dotnet/api/system.collections.objectmodel.readonlydictionary-2?view=netcore-3.1) | Supported | Not supported |
-
-\* [`Stack`](https://docs.microsoft.com/dotnet/api/system.collections.stack?view=netcore-3.1),
-[`Stack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.generic.stack-1?view=netcore-3.1),
-[`ImmutableStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.immutablestack-1?view=netcore-3.1),
-[`IIImmutableStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.iimmutablestack-1?view=netcore-3.1),
-and [`ConcurrentStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.concurrent.concurrentstack-1?view=netcore-3.1)
-instances are reversed on serialization, thus the serializer does not have round-trippable support
-for these types. See https://github.com/dotnet/corefx/issues/41887.
-
-\** No exception is thrown when deserializing [`BitVector32`](https://docs.microsoft.com/dotnet/api/system.collections.specialized.bitvector32?view=netcore-3.1),
-but the [`Data`](https://docs.microsoft.com/en-us/dotnet/api/system.collections.specialized.bitvector32.data?view=netcore-3.1)
-property skipped because it is read-only (doesn't have a public setter).
 
 ## Custom collections
 
@@ -154,5 +142,16 @@ These include:
 
 For more information, see the [open issues in System.Text.Json](https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3Aissue+label%3Aarea-System.Text.Json).
 
-\* All instances of custom collections that implement stack types are reversed on serialization,
-thus the serializer does not have round-trippable support for these types. See https://github.com/dotnet/corefx/issues/41887.
+---
+
+\* [`Stack`](https://docs.microsoft.com/dotnet/api/system.collections.stack?view=netcore-3.1),
+[`Stack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.generic.stack-1?view=netcore-3.1),
+[`ImmutableStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.immutablestack-1?view=netcore-3.1),
+[`IImmutableStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.immutable.iimmutablestack-1?view=netcore-3.1),
+and [`ConcurrentStack<T>`](https://docs.microsoft.com/dotnet/api/system.collections.concurrent.concurrentstack-1?view=netcore-3.1)
+instances; and instances of types that derive from them; are reversed on serialization. Thus, the serializer does not have round-trippable support
+for these types. See https://github.com/dotnet/corefx/issues/41887.
+
+\** No exception is thrown when deserializing [`BitVector32`](https://docs.microsoft.com/dotnet/api/system.collections.specialized.bitvector32?view=netcore-3.1),
+but the [`Data`](https://docs.microsoft.com/en-us/dotnet/api/system.collections.specialized.bitvector32.data?view=netcore-3.1)
+property skipped because it is read-only (doesn't have a public setter).
