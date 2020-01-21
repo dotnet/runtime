@@ -186,7 +186,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' reading from a file that was write-only. The inner exception was added to provide more context.
             If (m_access <> OpenAccess.ReadWrite) AndAlso (m_access <> OpenAccess.Read) Then
                 Dim JustNeedTheMessage As New NullReferenceException ' We don't have access to the localized resources for this string.
-                Throw New NullReferenceException(JustNeedTheMessage.Message, New IO.IOException(SR.Format(SR.FileOpenedNoRead)))
+                Throw New NullReferenceException(JustNeedTheMessage.Message, New IO.IOException(SR.FileOpenedNoRead))
             End If
 
             ' read past any leading spaces or tabs

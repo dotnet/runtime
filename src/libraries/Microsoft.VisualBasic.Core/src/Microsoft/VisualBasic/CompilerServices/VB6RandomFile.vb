@@ -297,7 +297,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ValidateReadable()
 
             If (Value Is Nothing) Then
-                Throw New ArgumentException(SR.Format(SR.Argument_ArrayNotInitialized))
+                Throw New ArgumentException(SR.Argument_ArrayNotInitialized)
             End If
 
             Dim typ As Type = Value.GetType().GetElementType
@@ -319,7 +319,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 ElseIf cDims = 2 Then
                     obj = Value.GetValue(0, 0)
                 Else '0 or > 2
-                    Throw New ArgumentException(SR.Format(SR.Argument_UnsupportedArrayDimensions))
+                    Throw New ArgumentException(SR.Argument_UnsupportedArrayDimensions)
                 End If
 
                 If obj Is Nothing Then
@@ -329,7 +329,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 End If
 
                 If len = 0 Then
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidFixedLengthString))
+                    Throw New ArgumentException(SR.Argument_InvalidFixedLengthString)
                 End If
             End If
 
@@ -345,7 +345,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ElseIf cDims = 2 Then
                 SecondBound = Value.GetUpperBound(1)
             Else '0 or > 2
-                Throw New ArgumentException(SR.Format(SR.Argument_UnsupportedArrayDimensions))
+                Throw New ArgumentException(SR.Argument_UnsupportedArrayDimensions)
             End If
 
             If ArrayIsDynamic Then
@@ -600,13 +600,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Protected Sub ValidateWriteable()
             If (m_access <> OpenAccess.ReadWrite) AndAlso (m_access <> OpenAccess.Write) Then
-                Throw VbMakeExceptionEx(vbErrors.PathFileAccess, SR.Format(SR.FileOpenedNoWrite))
+                Throw VbMakeExceptionEx(vbErrors.PathFileAccess, SR.FileOpenedNoWrite)
             End If
         End Sub
 
         Protected Sub ValidateReadable()
             If (m_access <> OpenAccess.ReadWrite) AndAlso (m_access <> OpenAccess.Read) Then
-                Throw VbMakeExceptionEx(vbErrors.PathFileAccess, SR.Format(SR.FileOpenedNoRead))
+                Throw VbMakeExceptionEx(vbErrors.PathFileAccess, SR.FileOpenedNoRead)
             End If
         End Sub
 

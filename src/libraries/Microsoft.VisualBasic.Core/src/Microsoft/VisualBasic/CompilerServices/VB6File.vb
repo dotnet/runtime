@@ -946,7 +946,7 @@ NewLine:
             ElseIf cDims = 2 Then
                 SecondBound = arr.GetUpperBound(1)
             ElseIf cDims <> 0 Then
-                Throw New ArgumentException(SR.Format(SR.Argument_UnsupportedArrayDimensions))
+                Throw New ArgumentException(SR.Argument_UnsupportedArrayDimensions)
             End If
 
             SetRecord(RecordNumber)
@@ -1662,7 +1662,7 @@ NewLine:
                 ArrUBoundY = -1
                 ArrUBoundX = -1
             ElseIf (arr.GetUpperBound(0) > FirstBound) Then
-                Throw New ArgumentException(SR.Format(SR.Argument_ArrayDimensionsDontMatch))
+                Throw New ArgumentException(SR.Argument_ArrayDimensionsDontMatch)
             End If
 
             If typ Is Nothing Then
@@ -1682,7 +1682,7 @@ NewLine:
                 iUpperElementY = FirstBound
                 If Not arr Is Nothing Then
                     If arr.Rank <> 2 OrElse arr.GetUpperBound(1) <> SecondBound Then
-                        Throw New ArgumentException(SR.Format(SR.Argument_ArrayDimensionsDontMatch))
+                        Throw New ArgumentException(SR.Argument_ArrayDimensionsDontMatch)
                     End If
                     ArrUBoundY = arr.GetUpperBound(0)
                     ArrUBoundX = arr.GetUpperBound(1)
@@ -1702,7 +1702,7 @@ NewLine:
                     End If
                 End If
                 If FixedStringLength = 0 Then
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidFixedLengthString))
+                    Throw New ArgumentException(SR.Argument_InvalidFixedLengthString)
                 ElseIf FixedStringLength > 0 Then
                     FixedBlankString = StrDup(FixedStringLength, " "c)
                     FixedCharArray = FixedBlankString.ToCharArray() 'Used for padding
@@ -1849,7 +1849,7 @@ NewLine:
 
                             If ByteLength > System.Int16.MaxValue Then
                                 'Size for strings is 2 bytes, thus the Short.MaxValue limitation
-                                Throw VbMakeException(New ArgumentException(SR.Format(SR.FileIO_StringLengthExceeded)), vbErrors.IllegalFuncCall)
+                                Throw VbMakeException(New ArgumentException(SR.FileIO_StringLengthExceeded), vbErrors.IllegalFuncCall)
                             End If
 
                             'Do a length check and write out the length if not fixed length
@@ -1913,7 +1913,7 @@ NewLine:
             Dim iUpperElementY As Integer
 
             If arr Is Nothing Then
-                Throw New ArgumentException(SR.Format(SR.Argument_ArrayNotInitialized))
+                Throw New ArgumentException(SR.Argument_ArrayNotInitialized)
             End If
 
             If typ Is Nothing Then
@@ -2031,7 +2031,7 @@ NewLine:
                             arr.SetValue(obj, iElementY, iElementX)
                         End If
                     Catch Ex As IndexOutOfRangeException
-                        Throw New ArgumentException(SR.Format(SR.Argument_ArrayDimensionsDontMatch))
+                        Throw New ArgumentException(SR.Argument_ArrayDimensionsDontMatch)
                     End Try
                 Next iElementY
             Next iElementX
@@ -2671,7 +2671,7 @@ SkipWhiteSpaceExit:
         Private Sub ValidateReadable()
             If (m_access <> OpenAccess.ReadWrite) AndAlso (m_access <> OpenAccess.Read) Then
                 Dim JustNeedTheMessage As New NullReferenceException ' We don't have access to the localized resources for this string.
-                Throw New NullReferenceException(JustNeedTheMessage.Message, New IO.IOException(SR.Format(SR.FileOpenedNoRead)))
+                Throw New NullReferenceException(JustNeedTheMessage.Message, New IO.IOException(SR.FileOpenedNoRead))
             End If
         End Sub
 

@@ -58,7 +58,7 @@ Namespace Microsoft.VisualBasic
             Path = RTrim(Path) 'VB6 accepted things like "\   ", so need to trim the trailing spaces
 
             If (Path Is Nothing) OrElse (Path.Length = 0) Then
-                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_PathNullOrEmpty)), vbErrors.BadFileNameOrNumber)
+                Throw VbMakeException(New ArgumentException(SR.Argument_PathNullOrEmpty), vbErrors.BadFileNameOrNumber)
             End If
 
             ' Do this since System.IO.Directory does not accept "\"
@@ -195,7 +195,7 @@ Namespace Microsoft.VisualBasic
                 "Methods in Microsoft.VisualBasic should not call FileSystem public method.")
 
             If Path Is Nothing OrElse Path.Length = 0 Then
-                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_PathNullOrEmpty)), vbErrors.BadFileNameOrNumber)
+                Throw VbMakeException(New ArgumentException(SR.Argument_PathNullOrEmpty), vbErrors.BadFileNameOrNumber)
             End If
 
             If Directory.Exists(Path) Then
@@ -211,7 +211,7 @@ Namespace Microsoft.VisualBasic
 
             'If null or empty directory, give error
             If Path Is Nothing OrElse Path.Length = 0 Then
-                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_PathNullOrEmpty)), vbErrors.BadFileNameOrNumber)
+                Throw VbMakeException(New ArgumentException(SR.Argument_PathNullOrEmpty), vbErrors.BadFileNameOrNumber)
             End If
 
             Try
@@ -449,7 +449,7 @@ Namespace Microsoft.VisualBasic
 
             'Check pathname for errors and if file is open for any mode except sequential input
             If (PathName Is Nothing) OrElse (PathName.Length = 0) Then
-                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_PathNullOrEmpty)), vbErrors.BadFileNameOrNumber)
+                Throw VbMakeException(New ArgumentException(SR.Argument_PathNullOrEmpty), vbErrors.BadFileNameOrNumber)
             End If
 
             Dim assem As System.Reflection.Assembly = System.Reflection.Assembly.GetCallingAssembly()
@@ -720,7 +720,7 @@ Namespace Microsoft.VisualBasic
 
         <ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. http://go.microsoft.com/fwlink/?linkid=14202")>
         Public Sub FilePut(ByVal FileNumber As Object, ByVal Value As Object, Optional ByVal RecordNumber As Object = -1)
-            Throw New ArgumentException(SR.Format(SR.UseFilePutObject))
+            Throw New ArgumentException(SR.UseFilePutObject)
         End Sub
 
         Public Sub FilePut(ByVal FileNumber As Integer, ByVal Value As ValueType, Optional ByVal RecordNumber As Long = -1)
@@ -1245,7 +1245,7 @@ Namespace Microsoft.VisualBasic
 
             ' This exception should never be hit.
             ' We will throw Arguments are not valid.
-            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue), "om")
+            Throw New ArgumentException(SR.Argument_InvalidValue, "om")
         End Function
 
         Friend Sub CloseAllFiles(ByVal assem As System.Reflection.Assembly)
@@ -1408,12 +1408,12 @@ Namespace Microsoft.VisualBasic
 
                 Case OpenMode.Input
                     If (Access <> OpenAccess.Read) AndAlso (Access <> OpenAccess.Default) Then
-                        Throw New ArgumentException(SR.Format(SR.FileSystem_IllegalInputAccess))
+                        Throw New ArgumentException(SR.FileSystem_IllegalInputAccess)
                     End If
                     oFile = New VB6InputFile(FileName, Share)
                 Case OpenMode.Output
                     If (Access <> OpenAccess.Write) AndAlso (Access <> OpenAccess.Default) Then
-                        Throw New ArgumentException(SR.Format(SR.FileSystem_IllegalOutputAccess))
+                        Throw New ArgumentException(SR.FileSystem_IllegalOutputAccess)
                     End If
                     oFile = New VB6OutputFile(FileName, Share, False)
                 Case OpenMode.Random
@@ -1423,7 +1423,7 @@ Namespace Microsoft.VisualBasic
                     oFile = New VB6RandomFile(FileName, Access, Share, RecordLength)
                 Case OpenMode.Append
                     If (Access <> OpenAccess.Write) AndAlso (Access <> OpenAccess.ReadWrite) AndAlso (Access <> OpenAccess.Default) Then
-                        Throw New ArgumentException(SR.Format(SR.FileSystem_IllegalAppendAccess))
+                        Throw New ArgumentException(SR.FileSystem_IllegalAppendAccess)
                     End If
                     oFile = New VB6OutputFile(FileName, Share, True)
                 Case OpenMode.Binary

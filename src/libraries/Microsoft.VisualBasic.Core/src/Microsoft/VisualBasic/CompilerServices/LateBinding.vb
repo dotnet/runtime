@@ -468,7 +468,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If objType.BaseType.FullName = "System.__ComObject" Then
                 Return
             End If
-            Throw New InvalidOperationException(SR.Format(SR.LateboundCallToInheritedComClass))
+            Throw New InvalidOperationException(SR.LateboundCallToInheritedComClass)
 
         End Sub
 
@@ -491,7 +491,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 'Named arguments are not allowed as indexers        
                 If paramnames IsNot Nothing AndAlso paramnames.Length <> 0 Then
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidNamedArgs))
+                    Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                 End If
 
                 Dim ArgCount As Integer
@@ -722,7 +722,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 'Named arguments are not allowed as indexers        
                 If paramnames IsNot Nothing AndAlso paramnames.Length <> 0 Then
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidNamedArgs))
+                    Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                 End If
 
                 Dim ArgCount As Integer

@@ -301,7 +301,7 @@ CleanupAndExit:
 
                                 If StrComp(names(NameIndex), Parameters(ParmIndex).Name, CompareMethod.Text) = 0 Then
                                     If ParmIndex = ParamArrayIndex AndAlso SelectedCount = 1 Then
-                                        Throw VbMakeExceptionEx(vbErrors.NamedArgsNotSupported, SR.Format(SR.NamedArgumentOnParamArray))
+                                        Throw VbMakeExceptionEx(vbErrors.NamedArgsNotSupported, SR.NamedArgumentOnParamArray)
                                     Else
                                         If ParmIndex = ParamArrayIndex Then
                                             'Matched against a paramarray, force into the removal code below

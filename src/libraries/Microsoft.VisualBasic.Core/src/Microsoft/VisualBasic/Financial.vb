@@ -319,7 +319,7 @@ Namespace Microsoft.VisualBasic
                     End If
                     dNPv0 = OptPV2(ValueArray, dRate0)
                     If dNpv1 = dNPv0 Then
-                        Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                        Throw New ArgumentException(SR.Argument_InvalidValue)
                     End If
                 End If
 
@@ -359,7 +359,7 @@ Namespace Microsoft.VisualBasic
                 dRate1 = dTemp
             Next lIndex
 
-            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+            Throw New ArgumentException(SR.Argument_InvalidValue)
         End Function
 
         '-------------------------------------------------------------
@@ -402,7 +402,7 @@ Namespace Microsoft.VisualBasic
 
             dNpvNeg = LDoNPV(FinanceRate, ValueArray, -1)
             If dNpvNeg = 0.0# Then
-                Throw New DivideByZeroException(SR.Format(SR.Financial_CalcDivByZero))
+                Throw New DivideByZeroException(SR.Financial_CalcDivByZero)
             End If
 
             dNpvPos = LDoNPV(ReinvestRate, ValueArray, 1) ' npv of +ve values
@@ -412,7 +412,7 @@ Namespace Microsoft.VisualBasic
             dTemp = -dNpvPos * dTemp1 ^ dNTemp2 / (dNpvNeg * (FinanceRate + 1.0#))
 
             If dTemp < 0.0# Then
-                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             dTemp1 = 1 / (lCVal - 1.0#)
@@ -469,7 +469,7 @@ Namespace Microsoft.VisualBasic
                     dTempFv = -1 * dTempFv
                     dTempPv = -1 * dTempPv
                 ElseIf dTempFv <= 0.0# OrElse dTempPv <= 0.0# Then
-                    Throw New ArgumentException(SR.Format(SR.Financial_CannotCalculateNPer))
+                    Throw New ArgumentException(SR.Financial_CannotCalculateNPer)
                 End If
 
                 dTemp4 = Rate + 1.0#
@@ -703,7 +703,7 @@ Namespace Microsoft.VisualBasic
 
             '   Check for error condition
             If NPer <= 0.0# Then
-                Throw New ArgumentException(SR.Format(SR.Rate_NPerMustBeGTZero))
+                Throw New ArgumentException(SR.Rate_NPerMustBeGTZero)
             End If
 
             dRate0 = Guess
@@ -725,7 +725,7 @@ Namespace Microsoft.VisualBasic
                     End If
                     dY0 = LEvalRate(dRate0, NPer, Pmt, PV, FV, Due)
                     If dY1 = dY0 Then
-                        Throw New ArgumentException(SR.Format(SR.Financial_CalcDivByZero))
+                        Throw New ArgumentException(SR.Financial_CalcDivByZero)
                     End If
                 End If
 
@@ -745,7 +745,7 @@ Namespace Microsoft.VisualBasic
                 dRate1 = dTemp
             Next I
 
-            Throw New ArgumentException(SR.Format(SR.Financial_CannotCalculateRate))
+            Throw New ArgumentException(SR.Financial_CannotCalculateRate)
 
         End Function
 
@@ -765,7 +765,7 @@ Namespace Microsoft.VisualBasic
         Public Function SLN(ByVal Cost As Double, ByVal Salvage As Double, ByVal Life As Double) As Double
 
             If Life = 0.0# Then
-                Throw New ArgumentException(SR.Format(SR.Financial_LifeNEZero))
+                Throw New ArgumentException(SR.Financial_LifeNEZero)
             End If
 
             Return (Cost - Salvage) / (Life)
@@ -798,7 +798,7 @@ Namespace Microsoft.VisualBasic
                 Throw New ArgumentException(SR.Format(SR.Financial_ArgGEZero1, "Salvage"))
             End If
             If Period > Life Then
-                Throw New ArgumentException(SR.Format(SR.Financial_PeriodLELife))
+                Throw New ArgumentException(SR.Financial_PeriodLELife)
             End If
             If Period <= 0.0# Then
                 Throw New ArgumentException(SR.Format(SR.Financial_ArgGTZero1, "Period"))

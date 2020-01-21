@@ -26,7 +26,7 @@ Namespace Global.Microsoft.VisualBasic
             If service Is GetType(NumberFormatInfo) Then
                 Return nfi
             End If
-            Throw New ArgumentException(SR.Format(SR.InternalError_VisualBasicRuntime))
+            Throw New ArgumentException(SR.InternalError_VisualBasicRuntime)
         End Function
 
     End Class
@@ -113,7 +113,7 @@ Namespace Global.Microsoft.VisualBasic
                 SyncLock m_SyncObject
                     If Not m_LastUsedYesNoCulture Is ci Then
                         m_LastUsedYesNoCulture = ci
-                        m_CachedYesNoFormatStyle = SR.Format(SR.YesNoFormatStyle)
+                        m_CachedYesNoFormatStyle = SR.YesNoFormatStyle
                     End If
                     Return m_CachedYesNoFormatStyle
                 End SyncLock
@@ -128,7 +128,7 @@ Namespace Global.Microsoft.VisualBasic
                 SyncLock m_SyncObject
                     If Not m_LastUsedOnOffCulture Is ci Then
                         m_LastUsedOnOffCulture = ci
-                        m_CachedOnOffFormatStyle = SR.Format(SR.OnOffFormatStyle)
+                        m_CachedOnOffFormatStyle = SR.OnOffFormatStyle
                     End If
                     Return m_CachedOnOffFormatStyle
                 End SyncLock
@@ -143,7 +143,7 @@ Namespace Global.Microsoft.VisualBasic
                 SyncLock m_SyncObject
                     If Not m_LastUsedTrueFalseCulture Is ci Then
                         m_LastUsedTrueFalseCulture = ci
-                        m_CachedTrueFalseFormatStyle = SR.Format(SR.TrueFalseFormatStyle)
+                        m_CachedTrueFalseFormatStyle = SR.TrueFalseFormatStyle
                     End If
                     Return m_CachedTrueFalseFormatStyle
                 End SyncLock
@@ -2040,7 +2040,7 @@ RedimAndExit:
                 If (Conversion And Not (VbStrConv.Uppercase Or VbStrConv.Lowercase Or VbStrConv.Wide Or VbStrConv.Narrow _
                     Or VbStrConv.Katakana Or VbStrConv.Hiragana Or VbStrConv.SimplifiedChinese Or VbStrConv.TraditionalChinese _
                     Or VbStrConv.LinguisticCasing)) <> 0 Then
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidVbStrConv))
+                    Throw New ArgumentException(SR.Argument_InvalidVbStrConv)
                 End If
 
                 '*** VbStrConv.SimplifiedChinese/VbStrConv.TraditionalChinese handling
@@ -2049,18 +2049,18 @@ RedimAndExit:
                     Case 0
                         'Flags not used
                     Case (VbStrConv.SimplifiedChinese + VbStrConv.TraditionalChinese)
-                        Throw New ArgumentException(SR.Format(SR.Argument_StrConvSCandTC))
+                        Throw New ArgumentException(SR.Argument_StrConvSCandTC)
                     Case VbStrConv.SimplifiedChinese
                         If IsValidCodePage(CODEPAGE_SIMPLIFIED_CHINESE) AndAlso IsValidCodePage(CODEPAGE_TRADITIONAL_CHINESE) Then
                             dwMapFlags = dwMapFlags Or NativeTypes.LCMAP_SIMPLIFIED_CHINESE
                         Else
-                            Throw New ArgumentException(SR.Format(SR.Argument_SCNotSupported))
+                            Throw New ArgumentException(SR.Argument_SCNotSupported)
                         End If
                     Case VbStrConv.TraditionalChinese
                         If IsValidCodePage(CODEPAGE_SIMPLIFIED_CHINESE) AndAlso IsValidCodePage(CODEPAGE_TRADITIONAL_CHINESE) Then
                             dwMapFlags = dwMapFlags Or NativeTypes.LCMAP_TRADITIONAL_CHINESE
                         Else
-                            Throw New ArgumentException(SR.Format(SR.Argument_TCNotSupported))
+                            Throw New ArgumentException(SR.Argument_TCNotSupported)
                         End If
                 End Select
 
@@ -2069,7 +2069,7 @@ RedimAndExit:
                     Case VbStrConv.None
                         'No conversion
                         If (Conversion And VbStrConv.LinguisticCasing) <> 0 Then
-                            Throw New ArgumentException(SR.Format(SR.LinguisticRequirements))
+                            Throw New ArgumentException(SR.LinguisticRequirements)
                         End If
 
                     Case (VbStrConv.Uppercase Or VbStrConv.Lowercase)       '  VbStrConv.ProperCase is special: see below    
@@ -2091,7 +2091,7 @@ RedimAndExit:
 
                 If ((Conversion And (VbStrConv.Katakana + VbStrConv.Hiragana)) <> 0) Then
                     If (langid <> LANG_JAPANESE) OrElse (Not ValidLCID(LocaleID)) Then
-                        Throw New ArgumentException(SR.Format(SR.Argument_JPNNotSupported))
+                        Throw New ArgumentException(SR.Argument_JPNNotSupported)
                     Else
                         'Locale is ok
                     End If
@@ -2102,10 +2102,10 @@ RedimAndExit:
                        (langid = LANG_KOREAN) OrElse
                        (langid = LANG_CHINESE) Then
                         If Not ValidLCID(LocaleID) Then
-                            Throw New ArgumentException(SR.Format(SR.Argument_LocalNotSupported))
+                            Throw New ArgumentException(SR.Argument_LocalNotSupported)
                         End If
                     Else
-                        Throw New ArgumentException(SR.Format(SR.Argument_WideNarrowNotApplicable))
+                        Throw New ArgumentException(SR.Argument_WideNarrowNotApplicable)
                     End If
                 End If
 
@@ -2113,7 +2113,7 @@ RedimAndExit:
                 Select Case (Conversion And (VbStrConv.Wide Or VbStrConv.Narrow))
                     Case VbStrConv.None
                     Case VbStrConv.Wide Or VbStrConv.Narrow  '  VbStrConv.Wide+VbStrConv.Narrow is reserved
-                        Throw New ArgumentException(SR.Format(SR.Argument_IllegalWideNarrow))
+                        Throw New ArgumentException(SR.Argument_IllegalWideNarrow)
                     Case VbStrConv.Wide             '  VbStrConv.Wide
                         dwMapFlags = dwMapFlags Or NativeTypes.LCMAP_FULLWIDTH
                     Case VbStrConv.Narrow           '  VbStrConv.Narrow
@@ -2124,7 +2124,7 @@ RedimAndExit:
                 Select Case (Conversion And (VbStrConv.Katakana Or VbStrConv.Hiragana))
                     Case VbStrConv.None
                     Case (VbStrConv.Katakana Or VbStrConv.Hiragana)  '  VbStrConv.Katakana+VbStrConv.Hiragana is reserved
-                        Throw New ArgumentException(SR.Format(SR.Argument_IllegalKataHira))
+                        Throw New ArgumentException(SR.Argument_IllegalKataHira)
                     Case VbStrConv.Katakana '  VbStrConv.Katakana
                         dwMapFlags = dwMapFlags Or NativeTypes.LCMAP_KATAKANA
                     Case VbStrConv.Hiragana '  VbStrConv.Hiragana

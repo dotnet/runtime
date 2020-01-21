@@ -322,7 +322,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' <returns>A new instance of ArgumentNullException.</returns>
         Friend Shared Function GetArgumentNullException(ByVal ArgumentName As String) As ArgumentNullException
 
-            Return New ArgumentNullException(ArgumentName, SR.Format(SR.General_ArgumentNullException))
+            Return New ArgumentNullException(ArgumentName, SR.General_ArgumentNullException)
         End Function
 
         ''' <summary>
@@ -415,7 +415,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         ' default constructor
         Public Sub New()
-            MyBase.New(SR.Format(SR.InternalError_VisualBasicRuntime))
+            MyBase.New(SR.InternalError_VisualBasicRuntime)
         End Sub
 
     End Class

@@ -283,7 +283,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     failure = ResolutionFailure.InvalidArgument
 
                     If reportErrors Then
-                        Throw New ArgumentException(SR.Format(SR.Argument_InvalidNamedArgs))
+                        Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                     End If
 
                     Return Nothing
@@ -409,7 +409,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             If members(0).MemberType = MemberTypes.Field Then
                 If typeArguments.Length > 0 Then
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 End If
 
                 Dim fieldValue As Object = baseReference.GetFieldValue(DirectCast(members(0), FieldInfo))
@@ -424,7 +424,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             If argumentNames.Length > arguments.Length OrElse
                (copyBack IsNot Nothing AndAlso copyBack.Length <> arguments.Length) Then
-                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             Dim failure As OverloadResolution.ResolutionFailure
@@ -621,7 +621,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 'This is an array lookup and assignment o(a) = v.
 
                 If argumentNames.Length > 0 Then
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidNamedArgs))
+                    Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                 End If
 
                 baseReference.SetArrayValue(arguments)
@@ -629,12 +629,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
 
             If argumentNames.Length > arguments.Length Then
-                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             If arguments.Length < 1 Then
                 'We're binding to a Set, we must have at least the Value argument.
-                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             Dim methodName As String = ""
@@ -915,7 +915,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If members(0).MemberType = MemberTypes.Field Then
 
                 If TypeArguments.Length > 0 Then
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 End If
 
                 If Arguments.Length = 1 Then
@@ -940,7 +940,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             invocationFlags = BindingFlagsSetProperty
 
             If ArgumentNames.Length > Arguments.Length Then
-                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             Dim failure As OverloadResolution.ResolutionFailure
@@ -1136,7 +1136,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 failure = ResolutionFailure.InvalidArgument
 
                 If reportErrors Then
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 End If
 
                 Return Nothing
@@ -1147,7 +1147,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 If reportErrors Then
                     'If we're binding to a Set, we must have at least the Value argument.
-                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 End If
 
                 Return Nothing

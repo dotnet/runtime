@@ -58,7 +58,7 @@ Namespace Microsoft.VisualBasic
 
         Public Function ErrorToString(ByVal ErrorNumber As Integer) As String
             If ErrorNumber >= MAX_ERR_NUMBER Then
-                Throw New ArgumentException(SR.Format(SR.MaxErrNumber))
+                Throw New ArgumentException(SR.MaxErrNumber)
             End If
 
             If ErrorNumber > 0 Then

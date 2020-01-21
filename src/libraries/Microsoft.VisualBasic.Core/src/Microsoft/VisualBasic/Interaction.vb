@@ -442,7 +442,7 @@ Namespace Microsoft.VisualBasic
             ElseIf TypeOf o Is String Then ' - odd that this is required to be a string when it isn't in GetAllSettings() above...
                 Return DirectCast(o, String)
             Else
-                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
         End Function
 
@@ -489,7 +489,7 @@ Namespace Microsoft.VisualBasic
 
         Private Sub CheckPathComponent(ByVal s As String)
             If (s Is Nothing) OrElse (s.Length = 0) Then
-                Throw New ArgumentException(SR.Format(SR.Argument_PathNullOrEmpty))
+                Throw New ArgumentException(SR.Argument_PathNullOrEmpty)
             End If
         End Sub
 
