@@ -19,10 +19,10 @@ list(APPEND UNWINDER_SOURCES
 
 convert_to_absolute_path(UNWINDER_SOURCES ${UNWINDER_SOURCES})
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     add_library_clr(unwinder_wks ${UNWINDER_SOURCES})
     add_dependencies(unwinder_wks eventing_headers)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 add_library_clr(unwinder_dac ${UNWINDER_SOURCES})
 add_dependencies(unwinder_dac eventing_headers)
