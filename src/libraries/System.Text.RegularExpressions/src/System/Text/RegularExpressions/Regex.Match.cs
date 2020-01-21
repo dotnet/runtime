@@ -34,7 +34,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return IsMatch(input, UseOptionR() ? input.Length : 0);
+            return Run(quick: true, -1, input, 0, input.Length, UseOptionR() ? input.Length : 0) is null;
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Match(input, UseOptionR() ? input.Length : 0);
+            return Run(quick: false, -1, input, 0, input.Length, UseOptionR() ? input.Length : 0)!;
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Matches(input, UseOptionR() ? input.Length : 0);
+            return new MatchCollection(this, input, UseOptionR() ? input.Length : 0);
         }
 
         /// <summary>

@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions
         {
             if (concat.Type != RegexNode.Concatenate)
             {
-                throw new ArgumentException(SR.ReplacementError);
+                throw ThrowHelper.CreateArgumentException(ExceptionResource.ReplacementError);
             }
 
             Span<char> vsbStack = stackalloc char[256];
@@ -74,7 +74,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        throw new ArgumentException(SR.ReplacementError);
+                        throw ThrowHelper.CreateArgumentException(ExceptionResource.ReplacementError);
                 }
             }
 
@@ -206,11 +206,11 @@ namespace System.Text.RegularExpressions
         {
             if (count < -1)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.CountTooSmall);
             }
             if ((uint)startat > (uint)input.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
             }
 
             if (count == 0)

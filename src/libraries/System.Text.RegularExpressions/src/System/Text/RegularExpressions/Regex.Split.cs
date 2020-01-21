@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Split(input, 0, UseOptionR() ? input.Length : 0);
+            return Split(this, input, 0, UseOptionR() ? input.Length : 0);
         }
 
         /// <summary>
@@ -73,11 +73,11 @@ namespace System.Text.RegularExpressions
         {
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.CountTooSmall);
             }
             if ((uint)startat > (uint)input.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
             }
 
             if (count == 1)

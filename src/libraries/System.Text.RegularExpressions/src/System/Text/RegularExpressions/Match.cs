@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
@@ -64,9 +63,8 @@ namespace System.Text.RegularExpressions
             _textstart = startpos;
             _balancing = false;
 
-            // No need for an exception here.  This is only called internally, so we'll use an Assert instead
-            System.Diagnostics.Debug.Assert(!(_textbeg < 0 || _textstart < _textbeg || _textend < _textstart || Text.Length < _textend),
-                                            "The parameters are out of range.");
+            Debug.Assert(!(_textbeg < 0 || _textstart < _textbeg || _textend < _textstart || Text.Length < _textend),
+                "The parameters are out of range.");
         }
 
         /// <summary>Returns an empty Match object.</summary>
@@ -338,13 +336,13 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         [ExcludeFromCodeCoverage]
-        internal bool Debug => _regex != null && _regex.Debug;
+        internal bool IsDebug => _regex != null && _regex.IsDebug;
 
         internal virtual void Dump()
         {
             for (int i = 0; i < _matchcount.Length; i++)
             {
-                System.Diagnostics.Debug.WriteLine("Capnum " + i.ToString(CultureInfo.InvariantCulture) + ":");
+                Debug.WriteLine($"Capnum {i}:");
 
                 for (int j = 0; j < _matchcount[i]; j++)
                 {
@@ -355,7 +353,7 @@ namespace System.Text.RegularExpressions
                         text = Text.Substring(_matches[i][j * 2], _matches[i][j * 2 + 1]);
                     }
 
-                    System.Diagnostics.Debug.WriteLine("  (" + _matches[i][j * 2].ToString(CultureInfo.InvariantCulture) + "," + _matches[i][j * 2 + 1].ToString(CultureInfo.InvariantCulture) + ") " + text);
+                    Debug.WriteLine($"  ({_matches[i][j * 2]},{_matches[i][j * 2 + 1]}) {text}");
                 }
             }
         }
@@ -387,7 +385,7 @@ namespace System.Text.RegularExpressions
                 foreach (object? entry in _caps)
                 {
                     DictionaryEntry kvp = (DictionaryEntry)entry!;
-                    System.Diagnostics.Debug.WriteLine("Slot " + kvp.Key.ToString() + " -> " + kvp.Value!.ToString());
+                    Debug.WriteLine($"Slot {kvp.Key} -> {kvp.Value}");
                 }
             }
 

@@ -139,11 +139,11 @@ namespace System.Text.RegularExpressions
             while (true)
             {
 #if DEBUG
-                if (runregex.Debug)
+                if (runregex.IsDebug)
                 {
                     Debug.WriteLine("");
-                    Debug.WriteLine("Search range: from " + runtextbeg.ToString(CultureInfo.InvariantCulture) + " to " + runtextend.ToString(CultureInfo.InvariantCulture));
-                    Debug.WriteLine("Firstchar search starting at " + runtextpos.ToString(CultureInfo.InvariantCulture) + " stopping at " + stoppos.ToString(CultureInfo.InvariantCulture));
+                    Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
+                    Debug.WriteLine($"Firstchar search starting at {runtextpos} stopping at {stoppos}");
                 }
 #endif
 
@@ -164,9 +164,9 @@ namespace System.Text.RegularExpressions
                     }
 
 #if DEBUG
-                    if (runregex.Debug)
+                    if (runregex.IsDebug)
                     {
-                        Debug.WriteLine("Executing engine starting at " + runtextpos.ToString(CultureInfo.InvariantCulture));
+                        Debug.WriteLine($"Executing engine starting at {runtextpos}");
                         Debug.WriteLine("");
                     }
 #endif
@@ -249,11 +249,11 @@ namespace System.Text.RegularExpressions
             while (true)
             {
 #if DEBUG
-                if (runregex.Debug)
+                if (runregex.IsDebug)
                 {
                     Debug.WriteLine("");
-                    Debug.WriteLine("Search range: from " + runtextbeg.ToString(CultureInfo.InvariantCulture) + " to " + runtextend.ToString(CultureInfo.InvariantCulture));
-                    Debug.WriteLine("Firstchar search starting at " + runtextpos.ToString(CultureInfo.InvariantCulture) + " stopping at " + stoppos.ToString(CultureInfo.InvariantCulture));
+                    Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
+                    Debug.WriteLine($"Firstchar search starting at {runtextpos} stopping at {stoppos}");
                 }
 #endif
 
@@ -274,9 +274,9 @@ namespace System.Text.RegularExpressions
                     }
 
 #if DEBUG
-                    if (runregex.Debug)
+                    if (runregex.IsDebug)
                     {
-                        Debug.WriteLine("Executing engine starting at " + runtextpos.ToString(CultureInfo.InvariantCulture));
+                        Debug.WriteLine($"Executing engine starting at {runtextpos}");
                         Debug.WriteLine("");
                     }
 #endif
@@ -359,14 +359,14 @@ namespace System.Text.RegularExpressions
                 return;
 
 #if DEBUG
-            if (runregex!.Debug)
+            if (runregex!.IsDebug)
             {
                 Debug.WriteLine("");
                 Debug.WriteLine("RegEx match timeout occurred!");
-                Debug.WriteLine("Specified timeout:       " + TimeSpan.FromMilliseconds(_timeout).ToString());
-                Debug.WriteLine("Timeout check frequency: " + TimeoutCheckFrequency);
-                Debug.WriteLine("Search pattern:          " + runregex.pattern);
-                Debug.WriteLine("Input:                   " + runtext);
+                Debug.WriteLine($"Specified timeout:       {TimeSpan.FromMilliseconds(_timeout)}");
+                Debug.WriteLine($"Timeout check frequency: {TimeoutCheckFrequency}");
+                Debug.WriteLine($"Search pattern:          {runregex.pattern}");
+                Debug.WriteLine($"Input:                   {runtext}");
                 Debug.WriteLine("About to throw RegexMatchTimeoutException.");
             }
 #endif
@@ -665,9 +665,9 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage]
         internal virtual void DumpState()
         {
-            Debug.WriteLine("Text:  " + TextposDescription());
-            Debug.WriteLine("Track: " + StackDescription(runtrack!, runtrackpos));
-            Debug.WriteLine("Stack: " + StackDescription(runstack!, runstackpos));
+            Debug.WriteLine($"Text:  {TextposDescription()}");
+            Debug.WriteLine($"Track: {StackDescription(runtrack!, runtrackpos)}");
+            Debug.WriteLine($"Stack: {StackDescription(runstack!, runstackpos)}");
         }
 
         [ExcludeFromCodeCoverage]

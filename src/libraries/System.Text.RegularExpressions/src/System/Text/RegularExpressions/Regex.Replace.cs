@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-
 namespace System.Text.RegularExpressions
 {
     // Callback class
@@ -72,7 +70,6 @@ namespace System.Text.RegularExpressions
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
-
             if (replacement is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.replacement);
@@ -113,7 +110,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Replace(input, evaluator, -1, UseOptionR() ? input.Length : 0);
+            return Replace(evaluator, this, input, -1, UseOptionR() ? input.Length : 0);
         }
 
         /// <summary>
@@ -127,7 +124,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return Replace(input, evaluator, count, UseOptionR() ? input.Length : 0);
+            return Replace(evaluator, this, input, count, UseOptionR() ? input.Length : 0);
         }
 
         /// <summary>
@@ -162,11 +159,11 @@ namespace System.Text.RegularExpressions
             }
             if (count < -1)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.CountTooSmall);
             }
             if ((uint)startat > (uint)input.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
             }
 
             if (count == 0)

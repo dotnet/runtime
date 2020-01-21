@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
@@ -157,9 +157,9 @@ namespace System.Text.RegularExpressions
         /// <exception cref="ArgumentOutOfRangeException">If the specified timeout is not within a valid range.</exception>
         protected internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
         {
-            // make sure timeout is not longer then Environment.Ticks cycle length:
+            // make sure timeout is positive but not longer then Environment.Ticks cycle length
             long matchTimeoutTicks = matchTimeout.Ticks;
-            if (matchTimeoutTicks != InfiniteMatchTimeoutTicks && (matchTimeoutTicks <= 0 || matchTimeoutTicks > MaximumMatchTimeoutTicks))
+            if (matchTimeoutTicks != InfiniteMatchTimeoutTicks && ((ulong)(matchTimeoutTicks - 1) >= MaximumMatchTimeoutTicks))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.matchTimeout);
             }
@@ -284,12 +284,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public override string ToString() => pattern!;
 
-        /*
-         * Returns an array of the group names that are used to capture groups
-         * in the regular expression. Only needed if the regex is not known until
-         * runtime, and one wants to extract captured groups. (Probably unusual,
-         * but supplied for completeness.)
-         */
         /// <summary>
         /// Returns the GroupNameCollection for the regular expression. This collection contains the
         /// set of strings used to name capturing groups in the expression.
@@ -303,7 +297,7 @@ namespace System.Text.RegularExpressions
                 result = new string[capsize];
                 for (int i = 0; i < result.Length; i++)
                 {
-                    result[i] = i.ToString();
+                    result[i] = ((uint)i).ToString();
                 }
             }
             else
@@ -314,12 +308,6 @@ namespace System.Text.RegularExpressions
             return result;
         }
 
-        /*
-         * Returns an array of the group numbers that are used to capture groups
-         * in the regular expression. Only needed if the regex is not known until
-         * runtime, and one wants to extract captured groups. (Probably unusual,
-         * but supplied for completeness.)
-         */
         /// <summary>
         /// Returns the integer group number corresponding to a group name.
         /// </summary>
@@ -329,9 +317,7 @@ namespace System.Text.RegularExpressions
 
             if (caps is null)
             {
-                int max = capsize;
-                result = new int[max];
-
+                result = new int[capsize];
                 for (int i = 0; i < result.Length; i++)
                 {
                     result[i] = i;
@@ -339,9 +325,8 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                result = new int[caps.Count];
-
                 // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                result = new int[caps.Count];
                 IDictionaryEnumerator de = caps.GetEnumerator();
                 while (de.MoveNext())
                 {
@@ -352,13 +337,6 @@ namespace System.Text.RegularExpressions
             return result;
         }
 
-        /*
-         * Given a group number, maps it to a group name. Note that numbered
-         * groups automatically get a group name that is the decimal string
-         * equivalent of its number.
-         *
-         * Returns null if the number is not a recognized group number.
-         */
         /// <summary>
         /// Retrieves a group name that corresponds to a group number.
         /// </summary>
@@ -366,35 +344,20 @@ namespace System.Text.RegularExpressions
         {
             if (capslist is null)
             {
-                if (i >= 0 && i < capsize)
-                    return i.ToString();
-
-                return string.Empty;
+                return (uint)i < (uint)capsize ?
+                    ((uint)i).ToString() :
+                    string.Empty;
             }
             else
             {
-                if (caps != null)
-                {
-                    if (!caps.TryGetValue(i, out i))
-                        return string.Empty;
-                }
-
-                if (i >= 0 && i < capslist.Length)
-                    return capslist[i];
-
-                return string.Empty;
+                return caps != null && !caps.TryGetValue(i, out i) ? string.Empty :
+                    (uint)i < (uint)capslist.Length ? capslist[i] :
+                    string.Empty;
             }
         }
 
-        /*
-         * Given a group name, maps it to a group number. Note that numbered
-         * groups automatically get a group name that is the decimal string
-         * equivalent of its number.
-         *
-         * Returns -1 if the name is not a recognized group name.
-         */
         /// <summary>
-        /// Returns a group number that corresponds to a group name.
+        /// Returns a group number that corresponds to a group name, or -1 if the name is not a recognized group name.
         /// </summary>
         public int GroupNumberFromName(string name)
         {
@@ -403,50 +366,40 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.name);
             }
 
-            int result;
-
-            // look up name if we have a hashtable of names
             if (capnames != null)
             {
-                return capnames.TryGetValue(name, out result) ? result : -1;
+                // Look up name if we have a hashtable of names.
+                return capnames.TryGetValue(name, out int result) ? result : -1;
             }
-
-            // convert to an int if it looks like a number
-            result = 0;
-            for (int i = 0; i < name.Length; i++)
+            else
             {
-                uint digit = (uint)(name[i] - '0');
-                if (digit > 9)
-                {
-                    return -1;
-                }
-
-                result = (result * 10) + (int)digit;
+                // Otherwise, try to parse it as a number.
+                return uint.TryParse(name, NumberStyles.None, provider: null, out uint result) && result < capsize ? (int)result : -1;
             }
-
-            // return int if it's in range
-            return result >= 0 && result < capsize ? result : -1;
         }
 
         protected void InitializeReferences()
         {
             if (_refsInitialized)
             {
-                throw new NotSupportedException(SR.OnlyAllowedOnce);
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.OnlyAllowedOnce);
             }
 
-            _refsInitialized = true;
             _replref = new WeakReference<RegexReplacement?>(null);
+            _refsInitialized = true;
         }
 
         /// <summary>Internal worker called by the public APIs</summary>
         internal Match? Run(bool quick, int prevlen, string input, int beginning, int length, int startat)
         {
             if ((uint)startat > (uint)input.Length)
-                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
-
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
+            }
             if ((uint)length > (uint)input.Length)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.LengthNotNegative);
+            }
 
             RegexRunner runner = RentRunner();
             try
@@ -454,7 +407,7 @@ namespace System.Text.RegularExpressions
                 // Do the scan starting at the requested position
                 Match? match = runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
 #if DEBUG
-                if (Debug) match?.Dump();
+                if (IsDebug) match?.Dump();
 #endif
                 return match;
             }
@@ -466,7 +419,7 @@ namespace System.Text.RegularExpressions
 
         internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback)
         {
-            System.Diagnostics.Debug.Assert((uint)startat <= (uint)input.Length);
+            Debug.Assert((uint)startat <= (uint)input.Length);
             RegexRunner runner = RentRunner();
             try
             {
@@ -488,19 +441,19 @@ namespace System.Text.RegularExpressions
         /// <summary>Release the runner back to the cache.</summary>
         internal void ReturnRunner(RegexRunner runner) => _runner = runner;
 
+        /// <summary>True if the <see cref="RegexOptions.Compiled"/> option was set.</summary>
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 
-        /// <summary>True if the L option was set</summary>
+        /// <summary>True if the <see cref="RegexOptions.RightToLeft"/> option was set.</summary>
         protected internal bool UseOptionR() => (roptions & RegexOptions.RightToLeft) != 0;
 
+        /// <summary>True if the <see cref="RegexOptions.CultureInvariant"/> option was set.</summary>
         internal bool UseOptionInvariant() => (roptions & RegexOptions.CultureInvariant) != 0;
 
 #if DEBUG
-        /// <summary>
-        /// True if the regex has debugging enabled
-        /// </summary>
+        /// <summary>True if the regex has debugging enabled.</summary>
         [ExcludeFromCodeCoverage]
-        internal bool Debug => (roptions & RegexOptions.Debug) != 0;
+        internal bool IsDebug => (roptions & RegexOptions.Debug) != 0;
 #endif
     }
 }

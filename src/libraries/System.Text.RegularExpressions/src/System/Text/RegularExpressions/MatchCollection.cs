@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// The MatchCollection lists the successful matches that
-// result when searching a string for a regular expression.
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -30,7 +27,7 @@ namespace System.Text.RegularExpressions
         {
             if ((uint)startat > (uint)input.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
             }
 
             _regex = regex;
