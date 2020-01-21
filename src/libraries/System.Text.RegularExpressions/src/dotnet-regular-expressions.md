@@ -220,6 +220,8 @@ In particular, we must keep this API stable in order to remain compatible with r
 
 // TODO - more here
 
+More optimization opportunities are being tracked [in this issue](https://github.com/dotnet/runtime/issues/1349): you are welcome to offer more ideas, or contribute PR's.
+
 # Tracing and dumping output
 
 If the engine is built in debug configuration, and `RegexOptions.Debug` is passed, some internal datastructures will be written out with `Debug.Write()`. This includes the pattern itself, then `RegexWriter` will write out the input `RegexTree` with its nodes, and the output `RegexCode`. The `RegexBoyerMoore` dumps its tables - this would likely be relevant only if there was a bug in that class. `RegexRunner`s also dump their state as they execute the pattern. `Match` also has the ability to dump state.
