@@ -187,6 +187,29 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
+# Create the DAC module index header file containing the DAC build id
+# for xplat and the timestamp/size on Windows.
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_WIN32)
+    set(
+        DAC_MODULE_INDEX_FILE 
+        ${GENERATED_INCLUDE_DIR}/dacmoduleindex.h
+    )
+    add_custom_command(
+        OUTPUT ${DAC_MODULE_INDEX_FILE}
+        COMMAND dotnet ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:mscordaccore> > ${DAC_MODULE_INDEX_FILE}
+        DEPENDS $<TARGET_FILE:mscordaccore> 
+        COMMENT "Generating DAC module index file -> ${DAC_MODULE_INDEX_FILE}"
+    )
+    set_source_files_properties(
+        ${DAC_MODULE_INDEX_FILE} 
+        PROPERTIES GENERATED TRUE
+    )
+    add_custom_target(
+        dac_module_index_header
+        DEPENDS ${DAC_MODULE_INDEX_FILE} 
+    )
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_WIN32)
+
 # add the install targets
 install_clr(TARGETS mscordaccore ADDITIONAL_DESTINATION sharedFramework)
 

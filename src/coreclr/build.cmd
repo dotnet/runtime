@@ -384,6 +384,15 @@ if not !errorlevel! == 0 (
     goto ExitWithCode
 )
 
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
+    %__RepoRootDir%\src\coreclr\src\tools\GetModuleIndex\GetModuleIndex.csproj /restore^
+    /p:BinDir="%__BinDir%" /p:NetCoreAppCurrent=netcoreapp3.1 /p:MicrosoftNETCoreAppVersion=3.1.0
+if not !errorlevel! == 0 (
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to build tools.
+    set __exitCode=!errorlevel!
+    goto ExitWithCode
+)
+
 REM =========================================================================================
 REM ===
 REM === Restore optimization profile data

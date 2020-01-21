@@ -963,6 +963,8 @@ BOOL LOADInitializeModules()
     exe_module.prev = &exe_module;
     exe_module.pDllMain = nullptr;
     exe_module.hinstance = nullptr;
+    exe_module.pDllMain = (PDLLMAIN)dlsym(exe_module.dl_handle, "DllMain");
+    exe_module.hinstance = (HINSTANCE)&exe_module;
     exe_module.threadLibCalls = TRUE;
     return TRUE;
 }
