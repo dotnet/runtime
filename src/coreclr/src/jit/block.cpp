@@ -1425,7 +1425,7 @@ bool BasicBlock::isBBCallAlwaysPair()
 }
 
 //------------------------------------------------------------------------
-// isBBCallAlwaysPairLast: Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pari
+// isBBCallAlwaysPairTail: Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pari
 //
 // Return Value:
 //    True iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
@@ -1434,7 +1434,7 @@ bool BasicBlock::isBBCallAlwaysPair()
 // Notes:
 //    See notes on isBBCallAlwaysPair(), above.
 //
-bool BasicBlock::isBBCallAlwaysPairLast()
+bool BasicBlock::isBBCallAlwaysPairTail()
 {
     return (((bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0) && (bbPreds != nullptr) && (bbPreds->flNext == nullptr) &&
             bbPreds->flBlock->isBBCallAlwaysPair());

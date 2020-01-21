@@ -847,7 +847,7 @@ void LinearScan::setBlockSequence()
                     assert(!"Switch with single successor");
                 }
             }
-            if (block->isBBCallAlwaysPairLast() || (hasUniquePred && predBlock->hasEHBoundaryOut()))
+            if (block->isBBCallAlwaysPairTail() || (hasUniquePred && predBlock->hasEHBoundaryOut()))
             {
                 // Treat this as having incoming EH flow, since we can't insert resolution moves into
                 // the ALWAYS block of a BBCallAlwaysPair, and a unique pred with an EH out edge won't

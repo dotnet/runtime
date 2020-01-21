@@ -654,7 +654,7 @@ struct BasicBlock : private LIR::Range
     bool isBBCallAlwaysPair();
     // Returns "true" iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
     // a block corresponding to an exit from the try of a try/finally.
-    bool isBBCallAlwaysPairLast();
+    bool isBBCallAlwaysPairTail();
 
     BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
 
