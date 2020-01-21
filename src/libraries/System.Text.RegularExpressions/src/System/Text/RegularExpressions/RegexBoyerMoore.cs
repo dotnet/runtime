@@ -108,8 +108,6 @@ namespace System.Text.RegularExpressions
                         if (Positive[match] == 0)
                             Positive[match] = match - scan;
 
-                        // System.Diagnostics.Debug.WriteLine("Set positive[" + match + "] to " + (match - scan));
-
                         break;
                     }
 
