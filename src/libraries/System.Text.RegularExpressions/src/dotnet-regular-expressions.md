@@ -55,7 +55,7 @@ Protected members are part of the public API which cannot be broken, so they may
 
 ### RegexCharClass
 
-* Representation of single, range, or class
+* Representation of a "character class", which defines what characters should be considered a match.  It supports ranges, Unicode categories, and character class subtraction.  As part of reduction / optimization of a `RegexNode` as well as during compilation, trivial character classes may be replaced by faster equivalent forms, e.g. replacing a character class that represents just one character with the corresponding "one" `RegexNode`.
 * Created by `RegexParser`
 * Creates packed string to be held on `RegexNode`
 * Has utility methods for examining the packed string, in particular for testing membership of the class (`CharInClass(..)`)
