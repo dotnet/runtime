@@ -1687,10 +1687,10 @@ namespace System.Text.RegularExpressions
 
             if ((short)ch < 0)
             {
-                return "\\P{" + _categoryIdToName[(-((short)ch) - 1)] + "}";
+                return "\\P{" + CategoryIdToName[(-((short)ch) - 1)] + "}";
             }
 
-            return "\\p{" + _categoryIdToName[(ch - 1)] + "}";
+            return "\\p{" + CategoryIdToName[(ch - 1)] + "}";
         }
 #endif
 
