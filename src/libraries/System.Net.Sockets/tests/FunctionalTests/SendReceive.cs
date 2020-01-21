@@ -44,6 +44,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+
         [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
@@ -51,7 +52,7 @@ namespace System.Net.Sockets.Tests
         {
             await Run_SendToRecvFrom_Datagram_UDP(loopbackAddress);
         }
-        
+
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task SendToRecvFrom_Datagram_UDP_InnerLoop(IPAddress loopbackAddress)
@@ -65,7 +66,7 @@ namespace System.Net.Sockets.Tests
 
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 10000;
+            const int AckTimeout = 500;
             const int TestTimeout = 30000;
 
             var left = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
