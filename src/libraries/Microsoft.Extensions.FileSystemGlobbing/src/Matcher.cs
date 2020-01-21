@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <summary>
-        /// Initializes an instance of <see cref="Matcher" /> using the string comparsion method specified
+        /// Initializes an instance of <see cref="Matcher" /> using the string comparison method specified
         /// </summary>
         /// <param name="comparisonType">The <see cref="StringComparison" /> to use</param>
         public Matcher(StringComparison comparisonType)
