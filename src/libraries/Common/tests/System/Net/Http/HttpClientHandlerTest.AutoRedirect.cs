@@ -15,6 +15,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     public abstract class HttpClientHandlerTest_AutoRedirect : HttpClientHandlerTestBase
     {
         private const string ExpectedContent = "Test content";
@@ -68,6 +72,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = false;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -89,6 +99,12 @@ namespace System.Net.Http.Functional.Tests
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
             int statusCode, string oldMethod, string newMethod)
         {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             using (HttpClient client = CreateHttpClient(handler))
             {
@@ -191,6 +207,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -254,6 +276,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithoutLocation_ReturnsOriginalResponse()
         {
+            // [ActiveIssue("https://github.com/dotnet/corefx/issues/24819", TestPlatforms.Windows)]
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (HttpClient client = CreateHttpClient(handler))
@@ -301,6 +329,13 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(3, 4)]
         public async Task GetAsync_MaxAutomaticRedirectionsNServerHops_ThrowsIfTooMany(int maxHops, int hops)
         {
+            if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1703OrGreater)
+            {
+                // Skip this test if using WinHttpHandler but on a release prior to Windows 10 Creators Update.
+                _output.WriteLine("Skipping test due to Windows 10 version prior to Version 1703.");
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxAutomaticRedirections = maxHops;
             using (HttpClient client = CreateHttpClient(handler))
@@ -320,9 +355,16 @@ namespace System.Net.Http.Functional.Tests
                 }
                 else
                 {
-                    using (HttpResponseMessage response = await t)
+                    if (!IsWinHttpHandler)
                     {
-                        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+                        using (HttpResponseMessage response = await t)
+                        {
+                            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+                        }
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<HttpRequestException>(() => t);
                     }
                 }
             }
@@ -394,6 +436,20 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RetainsOriginalFragmentIfAppropriate(
             string origFragment, string redirFragment, string expectedFragment, bool useRelativeRedirect)
         {
+            if (IsWinHttpHandler)
+            {
+                // According to https://tools.ietf.org/html/rfc7231#section-7.1.2,
+                // "If the Location value provided in a 3xx (Redirection) response does
+                //  not have a fragment component, a user agent MUST process the
+                //  redirection as if the value inherits the fragment component of the
+                //  URI reference used to generate the request target(i.e., the
+                //  redirection inherits the original reference's fragment, if any)."
+                // WINHTTP is not doing this, and thus neither is WinHttpHandler.
+                // It also sometimes doesn't include the fragments for redirects
+                // even in other cases.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (HttpClient client = CreateHttpClient(handler))
@@ -482,6 +538,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
             Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
             Uri redirectUri = remoteServer.RedirectUriForCreds(
                 statusCode: statusCode,
@@ -508,6 +570,12 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndRedirectStatusCodes))]
         public async Task DefaultHeaders_SetCredentials_ClearedOnRedirect(Configuration.Http.RemoteServer remoteServer, int statusCode)
         {
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            {
+                // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {

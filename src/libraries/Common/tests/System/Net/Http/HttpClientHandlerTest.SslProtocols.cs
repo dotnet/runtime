@@ -17,6 +17,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     public abstract partial class HttpClientHandler_SslProtocols_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }
@@ -101,7 +105,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
@@ -240,6 +244,17 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowedClientSslVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedClientProtocols, SslProtocols acceptedServerProtocols)
         {
+            if (IsWinHttpHandler &&
+                allowedClientProtocols == (SslProtocols.Tls11 | SslProtocols.Tls12) &&
+                acceptedServerProtocols == SslProtocols.Tls)
+            {
+                // Native WinHTTP sometimes uses multiple TCP connections to try other TLS protocols when
+                // getting TLS protocol failures as part of its TLS fallback algorithm. The loopback server
+                // doesn't expect this and stops listening for more connections. This causes unexpected test
+                // failures. See dotnet/corefx https://github.com/dotnet/corefx/issues/8538.
+                return;
+            }
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {

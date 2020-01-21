@@ -26,7 +26,7 @@ set( GC_SOURCES
   gcload.cpp
   handletablecache.cpp)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
   include(unix/configure.cmake)
   set ( GC_SOURCES
     ${GC_SOURCES}
@@ -37,7 +37,7 @@ else()
   set ( GC_SOURCES
     ${GC_SOURCES}
     windows/gcenv.windows.cpp)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 if (WIN32)
   set(GC_HEADERS
@@ -96,18 +96,18 @@ add_dependencies(clrgc eventing_headers)
 target_link_libraries(clrgc ${GC_LINK_LIBRARIES})
 install_clr(TARGETS clrgc)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
   # dprintf causes many warnings (https://github.com/dotnet/coreclr/issues/13367)
   add_compile_options(-Wno-format)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 add_definitions(-DBUILD_AS_STANDALONE)
-if(CLR_CMAKE_PLATFORM_DARWIN)
+if(CLR_CMAKE_HOST_DARWIN)
   # The implementation of GCToOSInterface on MacOS makes use of non-POSIX
   # pthreads APIs, which by default are not included in the pthreads header
   # unless we define this macro.
   add_definitions(-D_DARWIN_C_SOURCE)
-endif(CLR_CMAKE_PLATFORM_DARWIN)
+endif(CLR_CMAKE_HOST_DARWIN)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)

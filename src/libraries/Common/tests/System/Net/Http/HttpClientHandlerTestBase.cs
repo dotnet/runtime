@@ -3,20 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Net.Test.Common;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.PlatformAbstractions;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class HttpClientHandlerTestBase : FileCleanupTestBase
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
+    public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
         public readonly ITestOutputHelper _output;
 
@@ -42,30 +43,6 @@ namespace System.Net.Http.Functional.Tests
         protected static HttpClient CreateHttpClient(HttpMessageHandler handler, string useHttp2String) =>
             new HttpClient(handler) { DefaultRequestVersion = GetVersion(bool.Parse(useHttp2String)) };
 
-        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseHttp2);
-
-        protected static HttpClientHandler CreateHttpClientHandler(string useHttp2LoopbackServerString) =>
-            CreateHttpClientHandler(bool.Parse(useHttp2LoopbackServerString));
-
-        protected static HttpClientHandler CreateHttpClientHandler(bool useHttp2LoopbackServer = false)
-        {
-            HttpClientHandler handler = new HttpClientHandler();
-
-            if (useHttp2LoopbackServer)
-            {
-                TestHelper.EnableUnencryptedHttp2IfNecessary(handler);
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            }
-
-            return handler;
-        }
-
-        protected static object GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
-        {
-            FieldInfo field = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.Instance | BindingFlags.NonPublic);
-            return field?.GetValue(handler);
-        }
-
         protected LoopbackServerFactory LoopbackServerFactory =>
 #if NETCOREAPP
             UseHttp2 ?
@@ -82,13 +59,13 @@ namespace System.Net.Http.Functional.Tests
             return CreateHttpClientForRemoteServer(remoteServer, CreateHttpClientHandler());
         }
 
-        protected HttpClient CreateHttpClientForRemoteServer(Configuration.Http.RemoteServer remoteServer, HttpClientHandler httpClientHandler)
+        protected HttpClient CreateHttpClientForRemoteServer(Configuration.Http.RemoteServer remoteServer, HttpMessageHandler httpClientHandler)
         {
             HttpMessageHandler wrappedHandler = httpClientHandler;
 
             // WinHttpHandler will downgrade to 1.1 if you set Transfer-Encoding: chunked.
             // So, skip this verification if we're not using SocketsHttpHandler.
-            if (PlatformDetection.SupportsAlpn)
+            if (PlatformDetection.SupportsAlpn && !IsWinHttpHandler)
             {
                 wrappedHandler = new VersionCheckerHttpHandler(httpClientHandler, remoteServer.HttpVersion);
             }

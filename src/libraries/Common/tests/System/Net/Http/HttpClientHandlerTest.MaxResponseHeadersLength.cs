@@ -14,6 +14,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     public abstract class HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
@@ -86,7 +90,10 @@ namespace System.Net.Http.Functional.Tests
 
                         Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
                         cts.Cancel();
-                        Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                        if (!IsWinHttpHandler)
+                        {
+                            Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                        }
                         await serverTask;
                     });
                 }
@@ -120,7 +127,10 @@ namespace System.Net.Http.Functional.Tests
                         else
                         {
                             Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
-                            Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                            if (!IsWinHttpHandler)
+                            {
+                                Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                            }
                             try { await serverTask; } catch { }
                         }
                     });

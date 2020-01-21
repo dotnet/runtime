@@ -196,16 +196,29 @@ namespace System.Net.Http.Functional.Tests
                 // Verify that the task completed.
                 Assert.True(((IAsyncResult)task).AsyncWaitHandle.WaitOne(new TimeSpan(0, 5, 0)));
                 Assert.True(task.IsCompleted, "Task was not yet completed");
-                
-                if (task.IsFaulted)
-                {
-                    // Propagate exception for debugging
-                    task.GetAwaiter().GetResult();
-                }
 
-                Assert.True(
-                    task.Status == TaskStatus.RanToCompletion ||
-                    task.Status == TaskStatus.Canceled);
+                // Verify that the task completed successfully or is canceled.
+                if (IsWinHttpHandler)
+                {
+                    // With WinHttpHandler, we may fault because canceling the task destroys the request handle
+                    // which may randomly cause an ObjectDisposedException (or other exception).
+                    Assert.True(
+                        task.Status == TaskStatus.RanToCompletion ||
+                        task.Status == TaskStatus.Canceled ||
+                        task.Status == TaskStatus.Faulted);
+                }
+                else
+                {
+                    if (task.IsFaulted)
+                    {
+                        // Propagate exception for debugging
+                        task.GetAwaiter().GetResult();
+                    }
+
+                    Assert.True(
+                        task.Status == TaskStatus.RanToCompletion ||
+                        task.Status == TaskStatus.Canceled);
+                }
             }
         }
 

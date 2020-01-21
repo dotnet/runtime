@@ -18,6 +18,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     public abstract class HttpClientHandler_Proxy_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
@@ -224,7 +228,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 handler.Proxy = new WebProxy("https://" + Guid.NewGuid().ToString("N"));
 
-                await Assert.ThrowsAsync<NotSupportedException>(() => client.GetAsync("http://" + Guid.NewGuid().ToString("N")));
+                Type expectedType = IsWinHttpHandler ? typeof(HttpRequestException) : typeof(NotSupportedException);
+
+                await Assert.ThrowsAsync(expectedType, () => client.GetAsync("http://" + Guid.NewGuid().ToString("N")));
             }
         }
 
@@ -288,6 +294,12 @@ namespace System.Net.Http.Functional.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task MultiProxy_PAC_Failover_Succeeds()
         {
+            if (IsWinHttpHandler)
+            {
+                // PAC-based failover is only supported on Windows/SocketsHttpHandler
+                return;
+            }
+
             // Create our failing proxy server.
             // Bind a port to reserve it, but don't start listening yet. The first Connect() should fail and cause a fail-over.
             using Socket failingProxyServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

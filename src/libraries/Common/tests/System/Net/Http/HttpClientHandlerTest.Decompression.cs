@@ -16,6 +16,10 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     public abstract class HttpClientHandler_Decompression_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_Decompression_Test(ITestOutputHelper output) : base(output) { }
@@ -59,6 +63,12 @@ namespace System.Net.Http.Functional.Tests
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(
             string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods)
         {
+            // Brotli only supported on SocketsHttpHandler.
+            if (IsWinHttpHandler && encodingName == "br")
+            {
+                return;
+            }
+
             var expectedContent = new byte[12345];
             new Random(42).NextBytes(expectedContent);
 
@@ -179,12 +189,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-#if NETCOREAPP
         [InlineData(DecompressionMethods.Brotli, "br", "")]
         [InlineData(DecompressionMethods.Brotli, "br", "br")]
         [InlineData(DecompressionMethods.Brotli, "br", "gzip")]
         [InlineData(DecompressionMethods.Brotli, "br", "gzip, deflate")]
-#endif
         [InlineData(DecompressionMethods.GZip, "gzip", "")]
         [InlineData(DecompressionMethods.Deflate, "deflate", "")]
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip, deflate", "")]
@@ -200,6 +208,12 @@ namespace System.Net.Http.Functional.Tests
             string encodings,
             string manualAcceptEncodingHeaderValues)
         {
+            // Brotli only supported on SocketsHttpHandler.
+            if (IsWinHttpHandler && (encodings.Contains("br") || manualAcceptEncodingHeaderValues.Contains("br")))
+            {
+                return;
+            }
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();

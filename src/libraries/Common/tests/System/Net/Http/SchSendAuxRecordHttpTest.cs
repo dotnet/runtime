@@ -10,7 +10,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
-{
+{    
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     [ActiveIssue("https://github.com/dotnet/corefx/issues/26539")]    // Flaky test
     public abstract class SchSendAuxRecordHttpTest : HttpClientHandlerTestBase
     {

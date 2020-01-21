@@ -20,6 +20,10 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     public abstract class HttpClientHandler_Cancellation_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }

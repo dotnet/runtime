@@ -13,6 +13,10 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+#if WINHTTPHANDLER_TEST
+    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
+#endif
+
     public abstract class HttpClientHandlerTest_Cookies : HttpClientHandlerTestBase
     {
         private const string s_cookieName = "ABC";
@@ -526,6 +530,13 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsyncWithBasicAuth_ReceiveSetCookie_CookieSent()
         {
+            if (IsWinHttpHandler)
+            {
+                // Issue https://github.com/dotnet/corefx/issues/26986
+                // WinHttpHandler does not process the cookie.
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
