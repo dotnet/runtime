@@ -1786,12 +1786,9 @@ private:
     RelativePointer<PTR_FieldDesc> m_pFieldDescList;
     RelativePointer<PTR_MethodDescChunk> m_pChunks;
 
+#ifdef FEATURE_COMINTEROP
     union
     {
-        // valid only if EEClass::IsBlittable() or EEClass::HasLayout() is true
-        UINT32          m_cbNativeSize; // size of fixed portion in bytes
-
-#ifdef FEATURE_COMINTEROP
         // For COM+ wrapper objects that extend an unmanaged class, this field
         // may contain a delegate to be called to allocate the aggregated
         // unmanaged class (instead of using CoCreateInstance).
@@ -1799,10 +1796,8 @@ private:
 
         // For interfaces this contains the COM interface type.
         CorIfaceAttr    m_ComInterfaceType;
-#endif // FEATURE_COMINTEROP
     };
 
-#ifdef FEATURE_COMINTEROP
     ComCallWrapperTemplate *m_pccwTemplate;   // points to interop data structures used when this type is exposed to COM
 #endif // FEATURE_COMINTEROP
 
