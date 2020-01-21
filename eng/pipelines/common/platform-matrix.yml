@@ -38,7 +38,7 @@ jobs:
       archType: arm
       platform: Linux_arm
       container:
-        image: ubuntu-16.04-cross-14.04-23cacb0-20191023143847
+        image: ubuntu-16.04-cross-14.04-23cacb0-20200121150126
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -87,7 +87,7 @@ jobs:
       archType: x64
       platform: Linux_musl_x64
       container:
-        image: alpine-3.9-WithNode-0fc54a3-20190918214015
+        image: alpine-3.9-WithNode-0fc54a3-20200121145958
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -115,7 +115,7 @@ jobs:
       archType: arm64
       platform: Linux_musl_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-alpine-406629a-20191023143847
+        image: ubuntu-16.04-cross-arm64-alpine-406629a-20200121150126
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -139,7 +139,7 @@ jobs:
       archType: x64
       platform: Linux_x64
       container:
-        image: centos-7-f39df28-20191023143754
+        image: centos-7-bfcd90a-20200121150017
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -165,7 +165,7 @@ jobs:
       archType: wasm
       platform: WebAssembly_wasm
       container:
-        image: ubuntu-16.04-a50a721-20191023143845
+        image: ubuntu-16.04-bfcd90a-20200121150106
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
