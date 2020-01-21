@@ -55,7 +55,7 @@ jobs:
     archType: ${{ parameters.archType }}
     platform: ${{ parameters.platform }}
 
-    - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
+    - ${{ if ne(parameters.jobParameters.runtimeFlavor, '') }}:
       - name: runtimeFlavorName
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
           value: Mono
