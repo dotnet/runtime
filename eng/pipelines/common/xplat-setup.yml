@@ -55,6 +55,12 @@ jobs:
     archType: ${{ parameters.archType }}
     platform: ${{ parameters.platform }}
 
+    - name: runtimeFlavorName
+      ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+        value: Mono
+      ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
+        value: CoreCLR
+
     ${{ if ne(parameters.container, '') }}:
       ${{ if eq(parameters.container.registry, 'mcr') }}:
         container: ${{ format('{0}:{1}', 'mcr.microsoft.com/dotnet-buildtools/prereqs', parameters.container.image) }}

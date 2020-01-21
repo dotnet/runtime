@@ -75,21 +75,15 @@ jobs:
         - _runtimeArtifactName: ''
         - _runtimeDownloadPath: ''
         - _runtimeArtifactsPathArg: ''
-        - _runtimeFlavorName: ''
-
-        - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-          - _runtimeFlavorName: 'Mono'
-        - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-          - _runtimeFlavorName: 'CoreCLR'
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
-          - _runtimeArtifactName: '${{ parameters.runtimeFlavorName }}Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+          - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
           - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-            - _runtimeArtifactName: '${{ parameters.runtimeFlavorName }}Product_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -122,6 +116,6 @@ jobs:
             unpackFolder: $(_runtimeDownloadPath)
             artifactFileName: '$(_runtimeArtifactName)$(archiveExtension)'
             artifactName: '$(_runtimeArtifactName)'
-            displayName: '${{ parameters.runtimeFlavorName }} build drop'
+            displayName: '$(runtimeFlavorName) build drop'
 
       - ${{ parameters.steps }}

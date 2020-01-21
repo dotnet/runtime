@@ -16,13 +16,6 @@ parameters:
   condition: true
   variables: {}
 
-variables:
- runtimeFlavorName: ''
- ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-   _runtimeFlavorName: 'Mono'
- ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-   _runtimeFlavorName: 'CoreCLR'
-
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
     parameters:
@@ -39,7 +32,7 @@ jobs:
       condition: ${{ parameters.condition }}
       pool: ${{ parameters.pool }}
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, $(_runtimeFlavorName)) }}
+        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, $(runtimeFlavorName)) }}
         name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
       ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: 'Test Run'
@@ -57,7 +50,7 @@ jobs:
         - _skipTestRestoreArg: /p:SkipTestRestore=false
         - _testRunNamePrefixSuffix: ''
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - _testRunNamePrefixSuffix: $(_runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
+          - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
         - ${{ parameters.variables }}
 
       steps:
@@ -81,12 +74,14 @@ jobs:
           - script: $(_msbuildCommand) src/libraries/restore/runtime/runtime.depproj 
                     $(_runtimeArtifactsPathArg)
                     $(_runtimeOSArg)
+                    /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /p:ArchGroup=${{ parameters.archType }}
                     /p:ConfigurationGroup=${{ parameters.buildConfig }}
-            displayName: Override $(_runtimeFlavorName) from live drop
+            displayName: Override $(runtimeFlavorName) from live drop
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            runtimeFlavor: ${{ parameters.runtimeFlavor }}
             targetOS: ${{ parameters.osGroup }}
             archGroup: ${{ parameters.archType }}
             configuration: ${{ parameters.buildConfig }}
