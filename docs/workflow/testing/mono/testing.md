@@ -4,7 +4,7 @@
 The runtime tests will be available at a later date.
 
 ## Running Library Tests
-Running library tests again mono is straightforward regardless of configuration.  Simply run the following commands:
+Running library tests against Mono is straightforward regardless of configuration.  Simply run the following commands:
 
 1. Build and set the TestRuntimeFlavor
 
