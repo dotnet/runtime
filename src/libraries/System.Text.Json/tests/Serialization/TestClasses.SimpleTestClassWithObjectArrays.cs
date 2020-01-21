@@ -142,7 +142,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(new Guid("97E9F02C-337E-4615-B26C-0020F5DC28C9"), ((JsonElement)MyGuid[0]).GetGuid());
             Assert.IsType<JsonElement>(MyUri[0]);
             Assert.Equal(JsonValueKind.String, ((JsonElement)MyUri[0]).ValueKind);
-            Assert.Equal(new Uri("https://github.com/dotnet/corefx"), new Uri(((JsonElement)MyUri[0]).GetString()));
+            Assert.Equal(new Uri("https://github.com/dotnet/runtime"), new Uri(((JsonElement)MyUri[0]).GetString()));
             Assert.IsType<JsonElement>(MyEnum[0]);
             Assert.Equal(JsonValueKind.Number, ((JsonElement)MyEnum[0]).ValueKind);
             Assert.Equal(SampleEnum.Two, (SampleEnum)((JsonElement)MyEnum[0]).GetUInt32());
