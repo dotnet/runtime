@@ -203,6 +203,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
     buildConfig: debug
     platforms:
     - OSX_x64
@@ -227,6 +228,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
     buildConfig: release
     platforms:
     - OSX_x64
