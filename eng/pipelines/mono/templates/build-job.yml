@@ -61,7 +61,7 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: CC=clang CXX=clang++ ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci
