@@ -274,8 +274,18 @@ namespace System.Runtime.CompilerServices
         /// <returns>The allocated memory</returns>
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
-            throw new NotImplementedException();
+            RuntimeType? rt = type as RuntimeType;
+            if (rt == null)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+
+            if (size < 0)
+                throw new ArgumentOutOfRangeException(nameof(size));
+
+            return AllocateTypeAssociatedMemoryInternal(new QCallTypeHandle(ref rt), (uint)size);
         }
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern IntPtr AllocateTypeAssociatedMemoryInternal(QCallTypeHandle type, uint size);
     }
 
     // Helper class to assist with unsafe pinning of arbitrary objects.
