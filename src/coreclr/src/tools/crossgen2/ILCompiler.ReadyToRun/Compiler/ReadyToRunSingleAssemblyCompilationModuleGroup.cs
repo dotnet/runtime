@@ -15,6 +15,7 @@ namespace ILCompiler
     public class ReadyToRunSingleAssemblyCompilationModuleGroup : ReadyToRunCompilationModuleGroupBase
     {
         private ProfileDataManager _profileGuidedCompileRestriction;
+        private bool _profileGuidedCompileRestrictionSet;
 
         public ReadyToRunSingleAssemblyCompilationModuleGroup(
             TypeSystemContext context, 
@@ -30,6 +31,9 @@ namespace ILCompiler
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
+            if (!_profileGuidedCompileRestrictionSet)
+                throw new InternalCompilerErrorException("Called ContainsMethodBody without setting profile guided restriction");
+
             if (_profileGuidedCompileRestriction != null)
             {
                 bool found = false;
@@ -75,6 +79,10 @@ namespace ILCompiler
 
         public sealed override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
         {
+            if (_profileGuidedCompileRestrictionSet)
+                throw new InternalCompilerErrorException("Called ApplyProfilerGuidedCompilationRestriction twice.");
+
+            _profileGuidedCompileRestrictionSet = true;
             _profileGuidedCompileRestriction = profileGuidedCompileRestriction;
         }
     }

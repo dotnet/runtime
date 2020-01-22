@@ -15,13 +15,13 @@ namespace ILCompiler
 {
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
     {
-        protected HashSet<ModuleDesc> _compilationModuleSet;
-        private HashSet<ModuleDesc> _versionBubbleModuleSet;
+        protected readonly HashSet<ModuleDesc> _compilationModuleSet;
+        private readonly HashSet<ModuleDesc> _versionBubbleModuleSet;
         private Dictionary<TypeDesc, ModuleToken> _typeRefsInCompilationModuleSet;
-        private bool _compileGenericDependenciesFromVersionBubbleModuleSet;
-        private ConcurrentDictionary<TypeDesc, bool> _containsTypeLayoutCache = new ConcurrentDictionary<TypeDesc, bool>();
-        private ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
-        private ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
+        private readonly bool _compileGenericDependenciesFromVersionBubbleModuleSet;
+        private readonly ConcurrentDictionary<TypeDesc, bool> _containsTypeLayoutCache = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
 
         public ReadyToRunCompilationModuleGroupBase(
             TypeSystemContext context,
@@ -144,7 +144,7 @@ namespace ILCompiler
             else
                 return false;
 
-            if (method == method.GetTypicalMethodDefinition())
+            if (method == method.GetMethodDefinition())
                 return true;
 
             return ComputeInstantiationVersionsWithCode(method.Instantiation, method);
@@ -215,7 +215,7 @@ namespace ILCompiler
 
         private bool ComputeTypeVersionsWithCode(TypeDesc type)
         {
-            if (type == type.Context.CanonType)
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 return true;
 
             if (type is MetadataType mdType)
@@ -236,7 +236,7 @@ namespace ILCompiler
             {
                 TypeDesc instType = inst[iInstantiation];
 
-                if (!ComputeInstantiationTypeVersionsWithCode(instType))
+                if (!ComputeInstantiationTypeVersionsWithCode(this, instType))
                 {
                     if (instType.IsPrimitive)
                     {
@@ -254,7 +254,7 @@ namespace ILCompiler
                         }
 
                         GenericParameterDesc genericParam = (GenericParameterDesc)entityDefinitionInstantiation[iInstantiation];
-                        if (genericParam.Constraints.HasFlag(GenericConstraints.ReferenceTypeConstraint))
+                        if (genericParam.HasReferenceTypeConstraint)
                             return false;
 
                         // This checks to see if the type constraints list is empty
@@ -270,19 +270,19 @@ namespace ILCompiler
             }
             return true;
 
-            bool ComputeInstantiationTypeVersionsWithCode(TypeDesc type)
+            static bool ComputeInstantiationTypeVersionsWithCode(ReadyToRunCompilationModuleGroupBase compilationGroup, TypeDesc type)
             {
                 if (type == type.Context.CanonType)
                     return true;
 
-                if (VersionsWithType(type))
+                if (compilationGroup.VersionsWithType(type))
                     return true;
 
                 if (type.IsArray)
-                    return ComputeInstantiationTypeVersionsWithCode(type.GetParameterType());
+                    return ComputeInstantiationTypeVersionsWithCode(compilationGroup, type.GetParameterType());
 
                 if (type.IsPointer)
-                    return ComputeInstantiationTypeVersionsWithCode(type.GetParameterType());
+                    return ComputeInstantiationTypeVersionsWithCode(compilationGroup, type.GetParameterType());
 
                 return false;
             }

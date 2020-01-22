@@ -285,6 +285,8 @@ namespace ILCompiler
 
                     if (_commandLineOptions.Partial)
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
+                    else
+                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
 
                     if (singleMethod == null)
                     {
