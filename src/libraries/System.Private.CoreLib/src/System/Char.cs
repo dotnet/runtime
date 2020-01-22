@@ -472,11 +472,10 @@ namespace System
 
         public static bool IsControl(char c)
         {
-            if (IsLatin1(c))
-            {
-                return GetLatin1UnicodeCategory(c) == UnicodeCategory.Control;
-            }
-            return CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.Control;
+            // This works because 'c' can never be -1.
+            // See comments in Rune.IsControl for more information.
+
+            return (((uint)c + 1) & ~0x80u) <= 0x20u;
         }
 
         public static bool IsControl(string s, int index)
@@ -487,12 +486,9 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            char c = s[index];
-            if (IsLatin1(c))
-            {
-                return GetLatin1UnicodeCategory(c) == UnicodeCategory.Control;
-            }
-            return CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.Control;
+
+            // Control chars are always in the BMP, so don't need to worry about surrogate handling.
+            return IsControl(s[index]);
         }
 
         public static bool IsDigit(string s, int index)
