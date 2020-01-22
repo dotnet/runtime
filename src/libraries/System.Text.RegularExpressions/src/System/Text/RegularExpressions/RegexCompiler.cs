@@ -922,9 +922,11 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void GenerateFindFirstChar()
         {
+            Debug.Assert(_code != null);
+
             _runtextposLocal = DeclareInt32();
             _runtextendLocal = DeclareInt32();
-            if (_code!.RightToLeft)
+            if (_code.RightToLeft)
             {
                 _runtextbegLocal = DeclareInt32();
             }
@@ -954,7 +956,8 @@ namespace System.Text.RegularExpressions
             }
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
-            int minRequiredLength = _code!.Tree.MinRequiredLength;
+            int minRequiredLength = _code.Tree.MinRequiredLength;
+            Debug.Assert(minRequiredLength >= 0);
             if (minRequiredLength > 0)
             {
                 Label finishedLengthCheck = DefineLabel();
@@ -1000,7 +1003,7 @@ namespace System.Text.RegularExpressions
             // Generate anchor checks.
             if ((_anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)) != 0)
             {
-                if (!_code!.RightToLeft)
+                if (!_code.RightToLeft)
                 {
                     if ((_anchors & RegexFCD.Beginning) != 0)
                     {
@@ -1048,7 +1051,7 @@ namespace System.Text.RegularExpressions
 
                     if ((_anchors & RegexFCD.End) != 0)
                     {
-                        if (minRequiredLength <= 0) // if it's > 0, we already output a more stringent check
+                        if (minRequiredLength == 0) // if it's > 0, we already output a more stringent check
                         {
                             Label l1 = DefineLabel();
                             Ldloc(_runtextposLocal);
@@ -1148,7 +1151,7 @@ namespace System.Text.RegularExpressions
 
                 int beforefirst;
                 int last;
-                if (!_code!.RightToLeft)
+                if (!_code.RightToLeft)
                 {
                     beforefirst = -1;
                     last = _bmPrefix.Pattern.Length - 1;
@@ -1319,7 +1322,7 @@ namespace System.Text.RegularExpressions
                 Ldc(1);
                 Ret();
             }
-            else if (_code!.RightToLeft)
+            else if (_code.RightToLeft)
             {
                 LocalBuilder charInClassLocal = _temp1Local;
                 LocalBuilder cLocal = _temp2Local;
@@ -1337,7 +1340,7 @@ namespace System.Text.RegularExpressions
                 Sub();
                 Stloc(cLocal);
 
-                if (minRequiredLength <= 0) // if minRequiredLength > 0, we already output a more stringent check
+                if (minRequiredLength == 0) // if minRequiredLength > 0, we already output a more stringent check
                 {
                     Ldloc(cLocal);
                     Ldc(0);
@@ -1402,7 +1405,7 @@ namespace System.Text.RegularExpressions
                 Label returnFalseLabel = DefineLabel();
                 Label updatePosAndReturnFalse = DefineLabel();
 
-                if (minRequiredLength <= 0) // if minRequiredLength > 0, we already output a more stringent check
+                if (minRequiredLength == 0) // if minRequiredLength > 0, we already output a more stringent check
                 {
                     // if (runtextend > runtextpos)
                     Ldloc(_runtextendLocal);
@@ -1590,6 +1593,7 @@ namespace System.Text.RegularExpressions
             LocalBuilder originalruntextposLocal = DeclareInt32();
             LocalBuilder runtextposLocal = DeclareInt32();
             LocalBuilder textSpanLocal = DeclareReadOnlySpanChar();
+            LocalBuilder runtextendLocal = DeclareInt32();
             Stack<LocalBuilder>? iterationLocals = null;
             Stack<LocalBuilder>? spanLocals = null;
             Label stopSuccessLabel = DefineLabel();
@@ -1603,8 +1607,9 @@ namespace System.Text.RegularExpressions
             InitializeCultureForGoIfNecessary();
 
             // string runtext = this.runtext;
-            Ldthisfld(s_runtextField);
-            Stloc(runtextLocal);
+            // int runtextend = this.runtextend;
+            Mvfldloc(s_runtextField, runtextLocal);
+            Mvfldloc(s_runtextendField, runtextendLocal);
 
             // int runtextpos;
             // int originalruntextpos = runtextpos = this.runtextpos;
@@ -1847,7 +1852,7 @@ namespace System.Text.RegularExpressions
                 // textSpan = runtext.AsSpan(runtextpos, this.runtextend - runtextpos);
                 Ldloc(runtextLocal);
                 Ldloc(runtextposLocal);
-                Ldthisfld(s_runtextendField);
+                Ldloc(runtextendLocal);
                 Ldloc(runtextposLocal);
                 Sub();
                 Call(s_stringAsSpanIntIntMethod);
@@ -2341,8 +2346,8 @@ namespace System.Text.RegularExpressions
                     Ldc(textSpanPos);
                     Add();
                 }
-                Ldthisfld(s_runtextbegField!);
-                Ldthisfld(s_runtextendField!);
+                Ldthisfld(s_runtextbegField);
+                Ldloc(runtextendLocal);
                 switch (node.Type)
                 {
                     case RegexNode.Boundary:
@@ -3024,8 +3029,10 @@ namespace System.Text.RegularExpressions
         /// <summary>Generates the code for "RegexRunner.Go".</summary>
         protected void GenerateGo()
         {
+            Debug.Assert(_code != null);
+
             // Generate backtrack-free code when we're dealing with simpler regexes.
-            if (TryGenerateNonBacktrackingGo(_code!.Tree.Root))
+            if (TryGenerateNonBacktrackingGo(_code.Tree.Root))
             {
                 return;
             }
