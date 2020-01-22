@@ -281,7 +281,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         // We should call this at most once.
         _ASSERTE(m_hfaType == HFAType::Unset);
-        m_hfaType = (HFAType)m_hfaType;
+        m_hfaType = (HFAType)hfaType;
     }
 #else
     bool IsNativeHFA() const
