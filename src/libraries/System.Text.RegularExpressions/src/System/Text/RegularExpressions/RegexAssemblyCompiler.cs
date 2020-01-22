@@ -125,10 +125,18 @@ namespace System.Text.RegularExpressions
             Stfld(RegexField(nameof(Regex.factory)));
 
             // Store the timeout (no need to validate as it should have happened in RegexCompilationInfo)
-            // base.internalMatchTimeout = TimeSpan.FromTick(matchTimeout.Ticks);
-            Ldthis();
-            LdcI8(matchTimeout.Ticks);
-            Call(typeof(TimeSpan).GetMethod(nameof(TimeSpan.FromTicks), BindingFlags.Public | BindingFlags.Static)!);
+            if (matchTimeout == Regex.InfiniteMatchTimeout)
+            {
+                // base.internalMatchTimeout = Regex.InfiniteMatchTimeout;
+                _ilg.Emit(OpCodes.Ldsfld, RegexField(nameof(Regex.InfiniteMatchTimeout)));
+            }
+            else
+            {
+                // base.internalMatchTimeout = TimeSpan.FromTick(matchTimeout.Ticks);
+                Ldthis();
+                LdcI8(matchTimeout.Ticks);
+                Call(typeof(TimeSpan).GetMethod(nameof(TimeSpan.FromTicks), BindingFlags.Public | BindingFlags.Static)!);
+            }
             Stfld(RegexField(nameof(Regex.internalMatchTimeout)));
 
             // Set capsize, caps, capnames, capslist.
@@ -221,7 +229,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Gets the named instance field from the Regex type.</summary>
         private static FieldInfo RegexField(string fieldname) =>
-            typeof(Regex).GetField(fieldname, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
+            typeof(Regex).GetField(fieldname, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)!;
 
         /// <summary>Saves the assembly to a file in the current directory based on the assembly's name.</summary>
         internal void Save()
