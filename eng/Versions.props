@@ -41,7 +41,7 @@
     <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.20063.2</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.20063.2</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppVersion>5.0.0-alpha.1.19562.8</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreAppVersion>5.0.0-alpha.1.20071.1</MicrosoftNETCoreAppVersion>
     <MicrosoftNETCoreDotNetHostVersion>5.0.0-alpha.1.19563.6</MicrosoftNETCoreDotNetHostVersion>
     <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-alpha.1.19563.6</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>2.1.0</MicrosoftExtensionsDependencyModelVersion>

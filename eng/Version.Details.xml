@@ -4,9 +4,9 @@
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.19563.6">
-      <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>8743c312a9d1ce4035140046d44bb959c44f194f</Sha>
+    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.20071.1">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>86bfd8d46b3817e2a027b23d829cd0d035cd8ad6</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.DotNetHost" Version="5.0.0-alpha.1.19563.6">
       <Uri>https://github.com/dotnet/core-setup</Uri>
