@@ -924,6 +924,10 @@ namespace System.Text.RegularExpressions
         {
             _runtextposLocal = DeclareInt32();
             _runtextendLocal = DeclareInt32();
+            if (_code.RightToLeft)
+            {
+                _runtextbegLocal = DeclareInt32();
+            }
             _runtextLocal = DeclareString();
             _temp1Local = DeclareInt32();
             _temp2Local = DeclareInt32();
@@ -939,6 +943,16 @@ namespace System.Text.RegularExpressions
                 }
             }
 
+            // Load necessary locals
+            // int runtextpos = this.runtextpos;
+            // int runtextend = this.runtextend;
+            Mvfldloc(s_runtextposField, _runtextposLocal);
+            Mvfldloc(s_runtextendField, _runtextendLocal);
+            if (_code.RightToLeft)
+            {
+                Mvfldloc(s_runtextbegField, _runtextbegLocal);
+            }
+
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
             int minRequiredLength = _code!.Tree.MinRequiredLength;
             if (minRequiredLength > 0)
@@ -946,36 +960,36 @@ namespace System.Text.RegularExpressions
                 Label finishedLengthCheck = DefineLabel();
                 if (!_code.RightToLeft)
                 {
-                    // if (this.runtextpos > this.runtextend - _code.Tree.MinRequiredLength)
+                    // if (runtextpos > runtextend - _code.Tree.MinRequiredLength)
                     // {
-                    //     this.runtextpos = this.runtextend;
+                    //     this.runtextpos = runtextend;
                     //     return false;
                     // }
-                    Ldthisfld(s_runtextposField);
-                    Ldthisfld(s_runtextendField);
+                    Ldloc(_runtextposLocal);
+                    Ldloc(_runtextendLocal);
                     Ldc(minRequiredLength);
                     Sub();
                     Ble(finishedLengthCheck);
                     Ldthis();
-                    Ldthisfld(s_runtextendField);
+                    Ldloc(_runtextendLocal);
                     Stfld(s_runtextposField);
                     Ldc(0);
                     Ret();
                 }
                 else
                 {
-                    // if (this.runtextpos - _code.Tree.MinRequiredLength < this.runtextbeg)
+                    // if (runtextpos - _code.Tree.MinRequiredLength < runtextbeg)
                     // {
-                    //     this.runtextpos = this.runtextbeg;
+                    //     runtextpos = runtextbeg;
                     //     return false;
                     // }
-                    Ldthisfld(s_runtextposField);
+                    Ldloc(_runtextposLocal);
                     Ldc(minRequiredLength);
                     Sub();
-                    Ldthisfld(s_runtextbegField);
+                    Ldloc(_runtextbegLocal);
                     Bge(finishedLengthCheck);
                     Ldthis();
-                    Ldthisfld(s_runtextbegField);
+                    Ldloc(_runtextbegLocal);
                     Stfld(s_runtextposField);
                     Ldc(0);
                     Ret();
@@ -991,11 +1005,11 @@ namespace System.Text.RegularExpressions
                     if ((_anchors & RegexFCD.Beginning) != 0)
                     {
                         Label l1 = DefineLabel();
-                        Ldthisfld(s_runtextposField);
+                        Ldloc(_runtextposLocal);
                         Ldthisfld(s_runtextbegField);
                         Ble(l1);
                         Ldthis();
-                        Ldthisfld(s_runtextendField);
+                        Ldloc(_runtextendLocal);
                         Stfld(s_runtextposField);
                         Ldc(0);
                         Ret();
@@ -1005,11 +1019,11 @@ namespace System.Text.RegularExpressions
                     if ((_anchors & RegexFCD.Start) != 0)
                     {
                         Label l1 = DefineLabel();
-                        Ldthisfld(s_runtextposField);
+                        Ldloc(_runtextposLocal);
                         Ldthisfld(s_runtextstartField);
                         Ble(l1);
                         Ldthis();
-                        Ldthisfld(s_runtextendField);
+                        Ldloc(_runtextendLocal);
                         Stfld(s_runtextposField);
                         Ldc(0);
                         Ret();
@@ -1019,13 +1033,13 @@ namespace System.Text.RegularExpressions
                     if ((_anchors & RegexFCD.EndZ) != 0)
                     {
                         Label l1 = DefineLabel();
-                        Ldthisfld(s_runtextposField);
-                        Ldthisfld(s_runtextendField);
+                        Ldloc(_runtextposLocal);
+                        Ldloc(_runtextendLocal);
                         Ldc(1);
                         Sub();
                         Bge(l1);
                         Ldthis();
-                        Ldthisfld(s_runtextendField);
+                        Ldloc(_runtextendLocal);
                         Ldc(1);
                         Sub();
                         Stfld(s_runtextposField);
@@ -1034,14 +1048,17 @@ namespace System.Text.RegularExpressions
 
                     if ((_anchors & RegexFCD.End) != 0)
                     {
-                        Label l1 = DefineLabel();
-                        Ldthisfld(s_runtextposField);
-                        Ldthisfld(s_runtextendField);
-                        Bge(l1);
-                        Ldthis();
-                        Ldthisfld(s_runtextendField);
-                        Stfld(s_runtextposField);
-                        MarkLabel(l1);
+                        if (minRequiredLength <= 0) // if it's > 0, we already output a more stringent check
+                        {
+                            Label l1 = DefineLabel();
+                            Ldloc(_runtextposLocal);
+                            Ldloc(_runtextendLocal);
+                            Bge(l1);
+                            Ldthis();
+                            Ldloc(_runtextendLocal);
+                            Stfld(s_runtextposField);
+                            MarkLabel(l1);
+                        }
                     }
                 }
                 else
@@ -1049,11 +1066,11 @@ namespace System.Text.RegularExpressions
                     if ((_anchors & RegexFCD.End) != 0)
                     {
                         Label l1 = DefineLabel();
-                        Ldthisfld(s_runtextposField);
-                        Ldthisfld(s_runtextendField);
+                        Ldloc(_runtextposLocal);
+                        Ldloc(_runtextendLocal);
                         Bge(l1);
                         Ldthis();
-                        Ldthisfld(s_runtextbegField);
+                        Ldloc(_runtextbegLocal);
                         Stfld(s_runtextposField);
                         Ldc(0);
                         Ret();
@@ -1064,22 +1081,22 @@ namespace System.Text.RegularExpressions
                     {
                         Label l1 = DefineLabel();
                         Label l2 = DefineLabel();
-                        Ldthisfld(s_runtextposField);
-                        Ldthisfld(s_runtextendField);
+                        Ldloc(_runtextposLocal);
+                        Ldloc(_runtextendLocal);
                         Ldc(1);
                         Sub();
                         Blt(l1);
-                        Ldthisfld(s_runtextposField);
-                        Ldthisfld(s_runtextendField);
+                        Ldloc(_runtextposLocal);
+                        Ldloc(_runtextendLocal);
                         Beq(l2);
                         Ldthisfld(s_runtextField);
-                        Ldthisfld(s_runtextposField);
+                        Ldloc(_runtextposLocal);
                         Callvirt(s_stringGetCharsMethod);
                         Ldc('\n');
                         Beq(l2);
                         MarkLabel(l1);
                         Ldthis();
-                        Ldthisfld(s_runtextbegField);
+                        Ldloc(_runtextbegLocal);
                         Stfld(s_runtextposField);
                         Ldc(0);
                         Ret();
@@ -1089,11 +1106,11 @@ namespace System.Text.RegularExpressions
                     if ((_anchors & RegexFCD.Start) != 0)
                     {
                         Label l1 = DefineLabel();
-                        Ldthisfld(s_runtextposField);
+                        Ldloc(_runtextposLocal);
                         Ldthisfld(s_runtextstartField);
                         Bge(l1);
                         Ldthis();
-                        Ldthisfld(s_runtextbegField);
+                        Ldloc(_runtextbegLocal);
                         Stfld(s_runtextposField);
                         Ldc(0);
                         Ret();
@@ -1103,11 +1120,11 @@ namespace System.Text.RegularExpressions
                     if ((_anchors & RegexFCD.Beginning) != 0)
                     {
                         Label l1 = DefineLabel();
-                        Ldthisfld(s_runtextposField);
-                        Ldthisfld(s_runtextbegField);
+                        Ldloc(_runtextposLocal);
+                        Ldloc(_runtextbegLocal);
                         Ble(l1);
                         Ldthis();
-                        Ldthisfld(s_runtextbegField);
+                        Ldloc(_runtextbegLocal);
                         Stfld(s_runtextposField);
                         MarkLabel(l1);
                     }
@@ -1145,10 +1162,10 @@ namespace System.Text.RegularExpressions
                 int chLast = _bmPrefix.Pattern[last];
 
                 Mvfldloc(s_runtextField, _runtextLocal);
-                Ldthisfld(_code.RightToLeft ? s_runtextbegField : s_runtextendField);
+                Ldloc(_code.RightToLeft ? _runtextbegLocal : _runtextendLocal);
                 Stloc(limitLocal);
 
-                Ldthisfld(s_runtextposField);
+                Ldloc(_runtextposLocal);
                 if (!_code.RightToLeft)
                 {
                     Ldc(_bmPrefix.Pattern.Length - 1);
@@ -1275,7 +1292,7 @@ namespace System.Text.RegularExpressions
                 MarkLabel(lFail);
 
                 Ldthis();
-                Ldthisfld(_code.RightToLeft ? s_runtextbegField : s_runtextendField);
+                Ldloc(_code.RightToLeft ? _runtextbegLocal : _runtextendLocal);
                 Stfld(s_runtextposField);
                 Ldc(0);
                 Ret();
@@ -1296,20 +1313,21 @@ namespace System.Text.RegularExpressions
                 Label l4 = DefineLabel();
                 Label l5 = DefineLabel();
 
-                Mvfldloc(s_runtextposField, _runtextposLocal);
                 Mvfldloc(s_runtextField, _runtextLocal);
 
                 Ldloc(_runtextposLocal);
-                Ldthisfld(s_runtextbegField);
+                Ldloc(_runtextbegLocal);
                 Sub();
                 Stloc(cLocal);
 
-                Ldloc(cLocal);
-                Ldc(0);
-                BleFar(l4);
+                if (minRequiredLength <= 0) // if minRequiredLength > 0, we already output a more stringent check
+                {
+                    Ldloc(cLocal);
+                    Ldc(0);
+                    BleFar(l4);
+                }
 
                 MarkLabel(l1);
-
                 Ldloc(cLocal);
                 Ldc(1);
                 Sub();
@@ -1367,13 +1385,13 @@ namespace System.Text.RegularExpressions
                 Label returnFalseLabel = DefineLabel();
                 Label updatePosAndReturnFalse = DefineLabel();
 
-                Mvfldloc(s_runtextposField, _runtextposLocal);
-                Mvfldloc(s_runtextendField, _runtextendLocal);
-
-                // if (runtextend > runtextpos)
-                Ldloc(_runtextendLocal);
-                Ldloc(_runtextposLocal);
-                BleFar(returnFalseLabel);
+                if (minRequiredLength <= 0) // if minRequiredLength > 0, we already output a more stringent check
+                {
+                    // if (runtextend > runtextpos)
+                    Ldloc(_runtextendLocal);
+                    Ldloc(_runtextposLocal);
+                    BleFar(returnFalseLabel);
+                }
 
                 Span<char> setChars = stackalloc char[3]; // up to 3 characters handled by IndexOf{Any} below
                 int setCharsCount;
