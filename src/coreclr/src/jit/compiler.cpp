@@ -3092,10 +3092,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // Honour COMPlus_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
     // only if VM has not asked us to generate profiler hooks in the first place.
     // That is, override VM only if it hasn't asked for a profiler callback for this method.
-    if (!compProfilerHookNeeded &&
-        ((JitConfig.JitELTHookEnabled() != 0) || compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
+    // Don't run this stress mode when pre-JITing, as we would need to emit a relocation
+    // for the call to the fake ELT hook, which wouldn't make sense, as we can't store that
+    // in the pre-JIT image.
+    if (!compProfilerHookNeeded)
     {
-        opts.compJitELTHookEnabled = true;
+        if ((JitConfig.JitELTHookEnabled() != 0) ||
+            (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
+        {
+            opts.compJitELTHookEnabled = true;
+        }
     }
 
     // TBD: Exclude PInvoke stubs
