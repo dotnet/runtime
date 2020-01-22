@@ -68,7 +68,7 @@ namespace System.Security.AccessControl
 
         public GenericAce Current
         {
-            get { return (((IEnumerator)this).Current as GenericAce)!; }
+            get { return (GenericAce)((IEnumerator)this).Current!; }
         }
 
         public bool MoveNext()

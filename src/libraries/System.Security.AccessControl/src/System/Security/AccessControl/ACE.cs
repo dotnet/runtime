@@ -323,7 +323,8 @@ nameof(binaryForm),
                 type == AceType.SystemAuditCallbackObject ||
                 type == AceType.SystemAlarmCallbackObject)
             {
-                if (ObjectAce.ParseBinaryForm(binaryForm, offset, out AceQualifier qualifier, out int accessMask, out SecurityIdentifier? sid, out ObjectAceFlags objectFlags, out Guid objectAceType, out Guid inheritedObjectAceType, out bool isCallback, out byte[]? opaque))
+                if (ObjectAce.ParseBinaryForm(binaryForm, offset, out AceQualifier qualifier, out int accessMask, out SecurityIdentifier? sid,
+                    out ObjectAceFlags objectFlags, out Guid objectAceType, out Guid inheritedObjectAceType, out bool isCallback, out byte[]? opaque))
                 {
                     AceFlags flags = (AceFlags)binaryForm[offset + 1];
                     result = new ObjectAce(flags, qualifier, accessMask, sid, objectFlags, objectAceType, inheritedObjectAceType, isCallback, opaque);

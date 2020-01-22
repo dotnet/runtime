@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 
+#nullable enable
 internal partial class Interop
 {
     internal partial class Advapi32
