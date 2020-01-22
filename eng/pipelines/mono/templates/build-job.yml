@@ -6,7 +6,6 @@ parameters:
   platform: ''
   container: ''
   timeoutInMinutes: ''
-  stagedBuild: false
   variables: {}
   pool: ''
   condition: true
@@ -16,13 +15,11 @@ jobs:
 - template: xplat-pipeline-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
-    _BuildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
-    stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
 

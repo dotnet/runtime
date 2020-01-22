@@ -90,7 +90,7 @@ jobs:
         # alpine coreclr cmake errors on newer builds
         ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
           image: alpine-3.9-WithNode-0fc54a3-20200121145958
-        ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
+        ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
           image: alpine-3.9-WithNode-0fc54a3-20190918214015
         registry: mcr
       jobParameters:
