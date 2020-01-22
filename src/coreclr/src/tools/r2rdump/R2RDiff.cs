@@ -196,7 +196,7 @@ namespace R2RDump
         {
             Dictionary<string, int> methodMap = new Dictionary<string, int>();
 
-            foreach (ReadyToRunMethod method in reader.R2RMethods)
+            foreach (ReadyToRunMethod method in reader.Methods)
             {
                 int size = method.RuntimeFunctions.Sum(rf => rf.Size);
                 methodMap.Add(method.SignatureString, size);
