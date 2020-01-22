@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Condition="'$(BuildOS)' == 'Linux'" Include="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(BuildOS)' == 'Linux'" Include="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(BuildOS)' == 'Windows_NT'" Include="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(BuildOS)' == 'Windows_NT'" Include="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(BuildOS)' == 'OSX'" Include="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(BuildOS)' == 'OSX'" Include="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)" GeneratePathProperty="True" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <LLVMFiles Include="$(Pkgruntime_linux-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Sdk)\tools\linux-x64\**" />
+    <LLVMFiles Include="$(Pkgruntime_linux-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Tools)\tools\linux-x64\**" />
+    <LLVMFiles Include="$(Pkgruntime_win-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Sdk)\tools\win-x64\**" />
+    <LLVMFiles Include="$(Pkgruntime_win-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Tools)\tools\win-x64\**" />
+    <LLVMFiles Include="$(Pkgruntime_osx_10_12-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Sdk)\tools\osx.10.12-x64\**" />
+    <LLVMFiles Include="$(Pkgruntime_osx_10_12-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Tools)\tools\osx.10.12-x64\**" />
+  </ItemGroup>
+
+  <Target Name="CopyLLVMToTree" AfterTargets="Restore">
+    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoObjDir)\llvm\%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+  </Target>
+
+</Project>
