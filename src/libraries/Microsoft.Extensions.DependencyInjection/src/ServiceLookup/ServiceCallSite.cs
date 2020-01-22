@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     /// <summary>
-    /// Summary description for IServiceCallSite
+    /// Summary description for ServiceCallSite
     /// </summary>
     internal abstract class ServiceCallSite
     {
