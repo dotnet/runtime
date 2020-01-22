@@ -37,3 +37,10 @@
 
 # https://github.com/mono/mono/issues/18067 LLVM: try-catch doesn't catch an exception
 -nomethod System.Reflection.Tests.BindingFlagsDoNotWrapTests.*
+
+# fail on Helix on RedHat systems because libgdiplus can't be loaded
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.RoundtripManyObjectsInOneStream
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateBasicObjectsRoundtrip
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.BinaryFormattedResources
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.StreamResources
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.BinaryFormattedResourcesWithoutTypeName

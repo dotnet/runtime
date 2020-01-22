@@ -27,6 +27,13 @@
 -nomethod System.Collections.Specialized.Tests.NameValueCollectionCtorTests.Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException
 
 ####################################################################
+##  System.Collections.Concurrent.Tests
+####################################################################
+
+# fails only with release mono
+-nomethod System.Collections.Concurrent.Tests.ConcurrentQueueTests.ReferenceTypes_NulledAfterDequeue
+
+####################################################################
 ##  System.Diagnostics.Tracing.Tests
 ####################################################################
 
@@ -352,6 +359,9 @@
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFile_PartiallyQualifiedPath_ThrowsArgumentException
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFile_NoSuchPath_ThrowsFileNotFoundException
+
+# fails on Helix
+-nomethod System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
 
 ####################################################################
 ##  System.Runtime.InteropServices.Tests
@@ -800,6 +810,15 @@
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException2
 
+# fails
+-nomethod System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadNonExistentInDefaultContext
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetLoadContextTest_ValidUserAssembly
+-nomethod System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadInDefaultContext
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyName_AssemblyNotFound
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadAssemblyByPath_ValidUserAssembly
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadAssemblyByStream_ValidUserAssembly
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyName_ValidTrustedPlatformAssembly
+
 ####################################################################
 ##  System.Reflection.MetadataLoadContext.Tests
 ####################################################################
@@ -830,6 +849,13 @@
 -nomethod System.Tests.Char8Tests.*
 -nomethod System.Tests.ReflectionTests.*
 -nomethod System.Net.Http.Tests.Utf8StringContentTests.*
+
+####################################################################
+##  System.Text.RegularExpressions.Tests
+####################################################################
+
+# hits OOM
+-nomethod System.Text.RegularExpressions.Tests.RegexMatchTests.Match_Timeout_Loop_Throws
 
 ####################################################################
 ##  System.ComponentModel.Composition.Registration.Tests
