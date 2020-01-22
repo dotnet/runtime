@@ -36,21 +36,27 @@ jobs:
     ${{ if ne(variables['System.TeamProject'], 'public') }}:
       name: Hosted Mac Internal
 
-  condition: ${{ and(ne(parameters.paths[0], ''), eq(variables['Build.Reason'], 'PullRequest')) }}
+  variables:
+  - name: detectPaths
+    value: ${{ and(ne(parameters.paths[0], ''), eq(variables['Build.Reason'], 'PullRequest')) }}
 
   steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 20
+  - ${{ if eq(variables.detectPaths, true) }}:
+    - checkout: self
+      clean: true
+      fetchDepth: 20
+  
+    - ${{ each path in parameters.paths }}:
+      - template: evaluate-changed-paths.yml
+        parameters:
+          subsetName: ${{ path.subset }} 
+          arguments:
+          - --difftarget origin/$(System.PullRequest.TargetBranch)
+          - --subset ${{ path.subset }}
+          - ${{ if ne(path.include[0], '') }}:
+            - --includepaths '${{ join('+', path.include) }}'
+          - ${{ if ne(path.exclude[0], '') }}:
+            - --excludepaths '${{ join('+', path.exclude) }}'
 
-  - ${{ each path in parameters.paths }}:
-    - template: evaluate-changed-paths.yml
-      parameters:
-        subsetName: ${{ path.subset }} 
-        arguments:
-        - --difftarget origin/$(System.PullRequest.TargetBranch)
-        - --subset ${{ path.subset }}
-        - ${{ if ne(path.include[0], '') }}:
-          - --includepaths '${{ join('+', path.include) }}'
-        - ${{ if ne(path.exclude[0], '') }}:
-          - --excludepaths '${{ join('+', path.exclude) }}'
+  - ${{ if ne(variables.detectPaths, true) }}:
+    - checkout: none
