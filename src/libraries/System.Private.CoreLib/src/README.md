@@ -1,6 +1,6 @@
 # System.Private.CoreLib Shared Sources
 
-This directory contains the shared sources for System.Private.CoreLib library. It represents the majority of the CoreLib implementation.  Each flavour of the runtime (e.g. coreclr, mono) provides additional files as part of their build of CoreLib to complement this directory's contents.
+This directory contains the shared sources for System.Private.CoreLib library. It represents the majority of the CoreLib implementation.  Each flavor of the runtime (e.g. coreclr, mono) provides additional files as part of their build of CoreLib to complement this directory's contents.
 
 The goal is to have the majority of code located in this folder as that code is used by both Mono and CoreCLR runtimes. The source code can be shared as whole file or also at method level by declaring a type as `partial` and having common part stored here and the rest in runtime specific location.
 
