@@ -1,7 +1,5 @@
-### Check out job creating a git bundle and publishing it
-### into an Azure artifact for reuse by the subsequent build and test execution phases.
-### If paths is specified, we will create a job using evaluate-changed-paths.yml template
-### for each path specified.
+### Check out job is the first job run for each pipeline; its purpose is to identify
+### changed files and use this information for optimizing subsequent jobs within the pipeline.
 
 parameters:
   # Object containing subset include and exclude paths in an array form.
@@ -42,13 +40,6 @@ jobs:
   - checkout: self
     clean: true
     fetchDepth: 20
-
-  - script: git bundle create $(Build.StagingDirectory)/Checkout.bundle HEAD
-    displayName: Create Checkout.bundle
-
-  - publish: $(Build.StagingDirectory)/Checkout.bundle
-    artifact: Checkout_bundle
-    displayName: Upload Checkout.bundle
 
   - ${{ if and(ne(parameters.paths[0], ''), eq(variables['Build.Reason'], 'PullRequest')) }}:
     - ${{ each path in parameters.paths }}:
