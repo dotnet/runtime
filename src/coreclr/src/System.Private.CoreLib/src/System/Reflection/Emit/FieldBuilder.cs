@@ -45,8 +45,7 @@ namespace System.Reflection.Emit
             SignatureHelper sigHelp = SignatureHelper.GetFieldSigHelper(m_typeBuilder.Module);
             sigHelp.AddArgument(type, requiredCustomModifiers, optionalCustomModifiers);
 
-            int sigLength;
-            byte[] signature = sigHelp.InternalGetSignature(out sigLength);
+            byte[] signature = sigHelp.InternalGetSignature(out int sigLength);
 
             ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
             m_fieldTok = TypeBuilder.DefineField(new QCallModule(ref module),

@@ -66,10 +66,9 @@ namespace System.Reflection
             {
                 if (m_signature == null)
                 {
-                    ConstArray sig;
 
                     GetRuntimeModule().MetadataImport.GetPropertyProps(
-                        m_token, out _, out _, out sig);
+                        m_token, out _, out _, out ConstArray sig);
 
                     m_signature = new Signature(sig.Signature.ToPointer(), sig.Length, m_declaringType);
                 }
