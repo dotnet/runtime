@@ -392,6 +392,12 @@ namespace R2RDump
                     _writer.WriteLine("Attribute presence filter");
                     _writer.WriteLine(attributes.ToString());
                     break;
+                case ReadyToRunSection.SectionType.READYTORUN_SECTION_INLINING_INFO:
+                    int iiOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int iiEndOffset = iiOffset + section.Size;
+                    InliningInfoSection inliningInfoSection = new InliningInfoSection(_r2r, iiOffset, iiEndOffset);
+                    _writer.WriteLine(inliningInfoSection.ToString());
+                    break;
             }
         }
 
