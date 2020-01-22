@@ -45,7 +45,7 @@ namespace System.Configuration
             // they lived in System.dll.
             //
             // On .NET Framework we would try to emulate that behavior by looking in
-            // System. As types have moved around in CoreFX- we'll try to load
+            // System. As types have moved around in .NET Core, we'll try to load
             // from the a variety of assemblies to mimick the old behavior.
 
             // Don't bother to look around if we've already got something that

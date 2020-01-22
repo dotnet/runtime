@@ -8,8 +8,8 @@
     <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\HResults.cs">
-      <Link>System\HResults.cs</Link>
+    <Compile Include="$(CommonPath)System\HResults.cs">
+      <Link>Common\System\HResults.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Interop.Libraries.cs</Link>
