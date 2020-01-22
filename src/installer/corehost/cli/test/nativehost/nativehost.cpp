@@ -10,6 +10,7 @@
 #include <hostfxr.h>
 #include "host_context_test.h"
 #include "resolve_component_dependencies_test.h"
+#include "get_native_search_directories_test.h"
 #include <utils.h>
 
 namespace
@@ -308,6 +309,34 @@ int main(const int argc, const pal::char_t *argv[])
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 #endif
+    else if (pal::strcmp(command, _X("get_native_search_directories")) == 0)
+    {
+        // args: ... <scenario> <hostfxrpath>
+        int min_argc = 4;
+        if (argc < min_argc)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::char_t* scenario = argv[2];
+        const pal::string_t hostfxr_path = argv[3];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t** remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+        if (pal::strcmp(scenario, _X("get_for_command_line")) == 0)
+        {
+            success = get_native_search_directories_test::get_for_command_line(hostfxr_path, remaining_argc, remaining_argv, test_output);
+        }
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
     else
     {
         std::cerr << "Invalid arguments" << std::endl;

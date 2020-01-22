@@ -128,32 +128,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return CorElementType.ELEMENT_TYPE_BYREF;
             }
 
-            // The core redhawk runtime has a slightly different concept of what CorElementType should be for a type. It matches for primitive and enum types
-            // but for other types, it doesn't match the needs in this file.
-            Internal.TypeSystem.TypeFlags typeFlags = _type.Category;
+            // We use the UnderlyingType to handle Enums properly
+            return _type.UnderlyingType.Category switch
+            {
+                Internal.TypeSystem.TypeFlags.Boolean => CorElementType.ELEMENT_TYPE_BOOLEAN,
+                Internal.TypeSystem.TypeFlags.Char => CorElementType.ELEMENT_TYPE_CHAR,
+                Internal.TypeSystem.TypeFlags.SByte => CorElementType.ELEMENT_TYPE_I1,
+                Internal.TypeSystem.TypeFlags.Byte => CorElementType.ELEMENT_TYPE_U1,
+                Internal.TypeSystem.TypeFlags.Int16 => CorElementType.ELEMENT_TYPE_I2,
+                Internal.TypeSystem.TypeFlags.UInt16 => CorElementType.ELEMENT_TYPE_U2,
+                Internal.TypeSystem.TypeFlags.Int32 => CorElementType.ELEMENT_TYPE_I4,
+                Internal.TypeSystem.TypeFlags.UInt32 => CorElementType.ELEMENT_TYPE_U4,
+                Internal.TypeSystem.TypeFlags.Int64 => CorElementType.ELEMENT_TYPE_I8,
+                Internal.TypeSystem.TypeFlags.UInt64 => CorElementType.ELEMENT_TYPE_U8,
+                Internal.TypeSystem.TypeFlags.IntPtr => CorElementType.ELEMENT_TYPE_I,
+                Internal.TypeSystem.TypeFlags.UIntPtr => CorElementType.ELEMENT_TYPE_U,
+                Internal.TypeSystem.TypeFlags.Single => CorElementType.ELEMENT_TYPE_R4,
+                Internal.TypeSystem.TypeFlags.Double => CorElementType.ELEMENT_TYPE_R8,
+                Internal.TypeSystem.TypeFlags.ValueType => CorElementType.ELEMENT_TYPE_VALUETYPE,
+                Internal.TypeSystem.TypeFlags.Nullable => CorElementType.ELEMENT_TYPE_VALUETYPE,
+                Internal.TypeSystem.TypeFlags.Void => CorElementType.ELEMENT_TYPE_VOID,
+                Internal.TypeSystem.TypeFlags.Pointer => CorElementType.ELEMENT_TYPE_PTR,
+                Internal.TypeSystem.TypeFlags.FunctionPointer => CorElementType.ELEMENT_TYPE_FNPTR,
 
-            if (((typeFlags >= Internal.TypeSystem.TypeFlags.Boolean) && (typeFlags <= Internal.TypeSystem.TypeFlags.Double)) ||
-                    (typeFlags == Internal.TypeSystem.TypeFlags.IntPtr) ||
-                    (typeFlags == Internal.TypeSystem.TypeFlags.UIntPtr))
-            {
-                return (CorElementType)typeFlags; // If Redhawk thinks the corelementtype is a primitive type, then it agree with the concept of corelement type needed in this codebase.
-            }
-            else if (_type.IsVoid)
-            {
-                return CorElementType.ELEMENT_TYPE_VOID;
-            }
-            else if (IsValueType())
-            {
-                return CorElementType.ELEMENT_TYPE_VALUETYPE;
-            }
-            else if (_type.IsPointer)
-            {
-                return CorElementType.ELEMENT_TYPE_PTR;
-            }
-            else
-            {
-                return CorElementType.ELEMENT_TYPE_CLASS;
-            }
+                _ => CorElementType.ELEMENT_TYPE_CLASS
+            };
         }
 
         private static int[] s_elemSizes = new int[]
@@ -342,8 +341,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         Debug.Assert((genRegDest & 7) == 0);
 
                         CORCOMPILE_GCREFMAP_TOKENS token = (eightByteClassification == SystemVClassificationType.SystemVClassificationTypeIntegerByRef) ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF;
-                        int eightByteIndex = (genRegDest >> 3) + i;
-                        frame[delta + eightByteIndex] = token;
+                        frame[delta + genRegDest] = token;
                     }
 
                     genRegDest += eightByteSize;
@@ -760,7 +758,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 Debug.Assert(!IsVarArg || !HasParamType);
 
-                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on desktop x86.
+                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
                 if (HasParamType)
                 {
                     numRegistersUsed++;
@@ -900,6 +898,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TargetArchitecture.X64:
                     if (_transitionBlock.IsX64UnixABI)
                     {
+                        int cbArg = _transitionBlock.StackElemSize(argSize);
+
                         _hasArgLocDescForStructInRegs = false;
                         _fX64UnixArgInRegisters = true;
                         int cFPRegs = 0;
@@ -969,11 +969,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
 
                             default:
+                                cGenRegs = cbArg / 8; // GP reg size
                                 break;
                         }
-
-                        int cbArg = _transitionBlock.StackElemSize(argSize);
-                        int cArgSlots = cbArg / _transitionBlock.StackElemSize();
 
                         if (cFPRegs > 0)
                         {
@@ -984,12 +982,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 return argOfsInner;
                             }
                         }
-                        else
+                        else if (cGenRegs > 0)
                         {
-                            if (_x64UnixIdxGenReg + cArgSlots <= _transitionBlock.NumArgumentRegisters)
+                            if (_x64UnixIdxGenReg + cGenRegs <= _transitionBlock.NumArgumentRegisters)
                             {
                                 int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _x64UnixIdxGenReg * 8;
-                                _x64UnixIdxGenReg += cArgSlots;
+                                _x64UnixIdxGenReg += cGenRegs;
                                 return argOfsInner;
                             }
                         }
@@ -997,6 +995,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         _fX64UnixArgInRegisters = false;
 
                         argOfs = _transitionBlock.OffsetOfArgs + _x64UnixIdxStack * 8;
+                        int cArgSlots = cbArg / _transitionBlock.StackElemSize();
+
                         _x64UnixIdxStack += cArgSlots;
                         return argOfs;
                     }
@@ -1325,7 +1325,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     nSizeOfArgStack += _transitionBlock.PointerSize;
                 }
 
-                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on desktop x86.
+                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
                 if (HasParamType)
                 {
                     numRegistersUsed++;

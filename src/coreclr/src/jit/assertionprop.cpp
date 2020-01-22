@@ -1081,11 +1081,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     if (op2->gtOper == GT_CNS_INT)
                     {
 #ifdef _TARGET_ARM_
-                        // Do not Constant-Prop immediate values that require relocation
-                        if (op2->AsIntCon()->ImmedValNeedsReloc(this))
-                        {
-                            goto DONE_ASSERTION;
-                        }
                         // Do not Constant-Prop large constants for ARM
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
                         // target_ssize_t type.
@@ -1640,6 +1635,14 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                 default:
                     break;
             }
+        }
+        break;
+
+        case O2K_CONST_LONG:
+        {
+            // All handles should be represented by O2K_CONST_INT,
+            // so no handle bits should be set here.
+            assert((assertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) == 0);
         }
         break;
 
@@ -2624,13 +2627,6 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
         case O2K_CONST_LONG:
 
-#ifdef _TARGET_64BIT_
-            // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && ((curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) != 0))
-            {
-                return nullptr;
-            }
-#endif
             if (newTree->gtType == TYP_LONG)
             {
                 newTree->ChangeOperConst(GT_CNS_NATIVELONG);
@@ -2646,13 +2642,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
         case O2K_CONST_INT:
 
-#ifndef _TARGET_64BIT_
             // Don't propagate handles if we need to report relocs.
             if (opts.compReloc && ((curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) != 0))
             {
                 return nullptr;
             }
-#endif
 
             if (curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK)
             {

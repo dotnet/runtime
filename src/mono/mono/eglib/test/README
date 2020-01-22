@@ -1,0 +1,113 @@
+EGlib Unit Testing
+===============================================================================
+
+	1. Writing new tests
+	2. Using the test driver
+
+===============================================================================
+1. Writing new tests
+===============================================================================
+
+Tests are easy to write, but must be grouped in to logical cases. For instance,
+the GPtrArray group has a number of tests that cover the entire GPtrArray
+implementation.
+
+These logical case groups should be in a single C file, and must have
+three elements:
+
+	#include <glib.h>
+	#include "test.h"
+
+	...
+	<define test implementations>
+	...
+
+	static Test groupname_tests [] = {
+		{"groupname_test1", groupname_test1},
+		{"groupname_test1", groupname_test2},
+		{NULL, NULL}
+	};
+
+	DEFINE_TEST_GROUP_INIT(groupname_tests_init, groupname_tests)
+
+A test implementation should look like:
+
+	RESULT groupname_test1()
+	{
+		<perform the test>
+
+		if(test_failed) {
+			return FAILED("reason: %s", "this works like printf");
+		}
+
+		return OK; /* just NULL, but OK is cute */
+	}
+
+Once a test group is written, it needs to be added to the groups table
+in tests.h:
+
+	DEFINE_TEST_GROUP_INIT_H(groupname_tests_init) // same as in impl
+
+	static Group test_groups [] = {
+		...
+		{"groupname", groupname_tests_init}
+		...
+	};
+
+===============================================================================
+2. Using the test driver
+===============================================================================
+
+When tests are written, they are rebuilt with make. Two programs will be
+built:
+
+	test-eglib: the test driver and tests linked against eglib
+	test-glib:  the test driver and tests linked against system glib-2.0
+
+Each driver program works exactly the same. Running test-eglib will run 
+the tests against eglib, and test-glib against glib-2.0.
+
+The test driver supports a few options to allow for performance measuring:
+
+	--help          show all options and available test groups
+	--time          time the overall run and report it, even if --quiet is set
+	--quiet         do not print test results, useful for timing
+	--iterations N  run all or specified test groups N times
+
+Run "test-eglib --help" for more details.
+
+Example: run the ptrarray test group 100000 times and only print the time 
+         it took to perform all iterations
+
+	./test-eglib -tqi 100000 ptrarray
+
+Example: show single iteration of test output for two groups
+	
+	./test-eglib ptrarray hashtable
+
+Example: show test output of all available groups
+
+	./test-eglib
+
+The 'test-both' script can be used to run both test-eglib and test-glib
+with the same options back to back:
+
+	$ ./test-both -tqi 100000 ptrarray
+	EGlib Total Time: 1.1961s
+	GLib Total Time: 0.955957s
+
+test-both also has a nice --speed-compare mode that shows comparison
+information about EGlib vs GLib. It can run all tests or specific tests
+with a configurable number of iterations. --speed-compare mode always runs
+the drivers with -qtni
+
+The syntax for --speed-compare is:
+
+	./test-both --speed-compare [ITERATIONS] [GROUPS...]
+
+	$ ./test-both --speed-compare       Runs all tests with default iterations
+	$ ./test-both --speed-compare 500   Runs all tests with 500 iterations
+	$ ./test-both --speed-compare ptrarray   Runs ptrarray test with default
+	                                         iterations
+
+

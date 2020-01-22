@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
     public class ArrayHandling
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void SingleRankNonSZArray()
         {
             dynamic d = Array.CreateInstance(typeof(int), new[] { 8 }, new[] { -2 });
@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void ArrayTypeNames()
         {
             dynamic d;
@@ -42,7 +42,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void MultiDimArrayTypeNames()
         {
             dynamic d = new int[3, 2, 1];
@@ -58,7 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void IncorrectNumberOfIndices()
         {
             dynamic d = new int[2, 2, 2];
@@ -116,7 +116,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31032", TargetFrameworkMonikers.NetFramework)]
         public void NonSZ1RArrayLenght()
         {
             dynamic d = Array.CreateInstance(typeof(int), new[] {23}, new[] {-2});

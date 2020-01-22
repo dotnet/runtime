@@ -322,12 +322,12 @@ namespace System.Net.Http
         protected virtual Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
             SerializeToStreamAsync(stream, context);
 
-        // TODO #38559: Expose something to enable this publicly.  For very specific HTTP/2 scenarios (e.g. gRPC), we need
-        // to be able to allow request content to continue sending after SendAsync has completed, which goes against the
-        // previous design of content, and which means that with some servers, even outside of desired scenarios we could
-        // end up unexpectedly having request content still sending even after the response completes, which could lead to
-        // spurious failures in unsuspecting client code.  To mitigate that, we prohibit duplex on all known HttpContent
-        // types, waiting for the request content to complete before completing the SendAsync task.
+        // TODO https://github.com/dotnet/corefx/issues/42160: Expose something to enable this publicly.  For very specific
+        // HTTP/2 scenarios (e.g. gRPC), we need to be able to allow request content to continue sending after SendAsync has
+        // completed, which goes against the previous design of content, and which means that with some servers, even outside
+        // of desired scenarios we could end up unexpectedly having request content still sending even after the response
+        // completes, which could lead to spurious failures in unsuspecting client code.  To mitigate that, we prohibit duplex
+        // on all known HttpContent types, waiting for the request content to complete before completing the SendAsync task.
         internal virtual bool AllowDuplex => true;
 
         public Task CopyToAsync(Stream stream) =>

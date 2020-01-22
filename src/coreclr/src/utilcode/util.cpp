@@ -1289,6 +1289,10 @@ int GetCurrentProcessCpuCount()
 
 #else // !FEATURE_PAL
     count = PAL_GetLogicalCpuCountFromOS();
+
+    uint32_t cpuLimit;
+    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
+        count = cpuLimit;
 #endif // !FEATURE_PAL
 
     cCPUs = count;

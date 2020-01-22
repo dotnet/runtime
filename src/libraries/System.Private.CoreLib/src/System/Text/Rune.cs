@@ -306,7 +306,7 @@ namespace System.Text
         /// number of <see langword="byte"/>s used in the input buffer to encode the <see cref="Rune"/>.
         /// </para>
         /// <para>
-        /// If the source buffer is empty or contains only a standalone UTF-8 high surrogate character, returns <see cref="OperationStatus.NeedMoreData"/>,
+        /// If the source buffer is empty or contains only a partial UTF-8 subsequence, returns <see cref="OperationStatus.NeedMoreData"/>,
         /// and outs via <paramref name="result"/> <see cref="ReplacementChar"/> and via <paramref name="bytesConsumed"/> the length of the input buffer.
         /// </para>
         /// <para>
@@ -1070,7 +1070,7 @@ namespace System.Text
             else
             {
                 // not an ASCII char; fall back to globalization table
-                return CharUnicodeInfo.InternalGetNumericValue(value.Value);
+                return CharUnicodeInfo.GetNumericValue(value.Value);
             }
         }
 
@@ -1237,16 +1237,10 @@ namespace System.Text
                 return (AsciiCharInfo[value.Value] & IsWhiteSpaceFlag) != 0;
             }
 
-            // U+0085 is special since it's a whitespace character but is in the Control category
-            // instead of a normal separator category. No other code point outside the ASCII range
-            // has this mismatch.
+            // Only BMP code points can be white space, so only call into CharUnicodeInfo
+            // if the incoming value is within the BMP.
 
-            if (value._value == 0x0085u)
-            {
-                return true;
-            }
-
-            return IsCategorySeparator(GetUnicodeCategoryNonAscii(value));
+            return value.IsBmp && CharUnicodeInfo.GetIsWhiteSpace((char)value._value);
         }
 
         public static Rune ToLower(Rune value, CultureInfo culture)

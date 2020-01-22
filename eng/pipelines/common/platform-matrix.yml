@@ -19,6 +19,9 @@ parameters:
   stagedBuild: false
   # When set to false, suppresses reuse of OSX managed build artifacts (for pipelines without an OSX obj)
   managedOsxBuild: true
+  # When set to true, passes the 'platforms' value as a job parameter also named 'platforms'.
+  # Handled as an opt-in parameter to avoid excessive yaml.
+  passPlatforms: false
   jobParameters: {}
 
 jobs:
@@ -39,6 +42,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Linux
         crossrootfsDir: '/crossrootfs/arm'
@@ -60,6 +65,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Linux
         crossrootfsDir: '/crossrootfs/arm64'
@@ -82,6 +89,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ if ne(parameters.managedOsxBuild, true) }}:
           managedTestBuildOsGroup: Linux
@@ -107,6 +116,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Linux
         crossrootfsDir: '/crossrootfs/arm64'
@@ -128,6 +139,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ if ne(parameters.managedOsxBuild, true) }}:
           managedTestBuildOsGroup: Linux
@@ -151,6 +164,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # FreeBSD
@@ -184,6 +199,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -201,6 +218,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -218,12 +237,13 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows arm
-
 - ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
@@ -235,6 +255,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -252,6 +274,8 @@ jobs:
       jobParameters:
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         managedTestBuildOsGroup: Windows_NT
         ${{ insert }}: ${{ parameters.jobParameters }}

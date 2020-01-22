@@ -92,7 +92,7 @@ namespace R2RDump
             }
         }
 
-        public static void WriteTo(this R2RImportSection.ImportSectionEntry theThis, TextWriter writer, DumpOptions options)
+        public static void WriteTo(this ReadyToRunImportSection.ImportSectionEntry theThis, TextWriter writer, DumpOptions options)
         {
             if (!options.Naked)
             {
@@ -110,9 +110,9 @@ namespace R2RDump
             }
         }
 
-        public static void WriteTo(this R2RSection theThis, TextWriter writer, DumpOptions options)
+        public static void WriteTo(this ReadyToRunSection theThis, TextWriter writer, DumpOptions options)
         {
-            writer.WriteLine($"Type:  {Enum.GetName(typeof(R2RSection.SectionType), theThis.Type)} ({theThis.Type:D})");
+            writer.WriteLine($"Type:  {Enum.GetName(typeof(ReadyToRunSection.SectionType), theThis.Type)} ({theThis.Type:D})");
             if (!options.Naked)
             {
                 writer.WriteLine($"RelativeVirtualAddress: 0x{theThis.RelativeVirtualAddress:X8}");
@@ -120,7 +120,7 @@ namespace R2RDump
             writer.WriteLine($"Size: {theThis.Size} bytes");
         }
 
-        public static void WriteTo(this R2RMethod theThis, TextWriter writer, DumpOptions options)
+        public static void WriteTo(this ReadyToRunMethod theThis, TextWriter writer, DumpOptions options)
         {
             writer.WriteLine(theThis.SignatureString);
 
@@ -222,7 +222,7 @@ namespace R2RDump
 
             if (theThis.EHInfo != null)
             {
-                writer.WriteLine($@"EH info @ {theThis.EHInfo.EHInfoRVA:X4}, #clauses = {theThis.EHInfo.EHClauses.Length}");
+                writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");
                 theThis.EHInfo.WriteTo(writer);
                 writer.WriteLine();
             }

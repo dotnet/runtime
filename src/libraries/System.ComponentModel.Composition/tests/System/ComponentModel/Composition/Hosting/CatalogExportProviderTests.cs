@@ -117,7 +117,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(743740)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/743740")]
         public void GetExports_AfterResurrectedDefinitionHasBeenRemovedAndReaddedToCatalog_ShouldNotBeTreatedAsRejected()
         {
             var definition1 = PartDefinitionFactory.Create(PartFactory.CreateImporterExporter("Export", "Import"));
@@ -153,7 +153,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void BasicTest()
         {
             var catalog = CatalogFactory.CreateDefaultAttributed();
@@ -176,7 +176,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void BasicTestWithRequiredMetadata_NoTypeConstraint()
         {
             var catalog = CatalogFactory.CreateDefaultAttributed();
@@ -194,7 +194,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void BasicTestWithRequiredMetadata_TypeConstraint()
         {
             var catalog = CatalogFactory.CreateDefaultAttributed();
@@ -212,7 +212,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void BasicTestWithRequiredMetadata_WrongTypeConstraint()
         {
             var catalog = CatalogFactory.CreateDefaultAttributed();
@@ -230,7 +230,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ComponentCatalogResolverGetStaticExport()
         {
             var catalog = CatalogFactory.CreateDefaultAttributed();
@@ -244,7 +244,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ComponentCatalogResolverComponentCatalogExportReference()
         {
             var catalog = CatalogFactory.CreateDefaultAttributed();
@@ -263,7 +263,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ValueTypeFromCatalog()
         {
             var catalog = CatalogFactory.CreateDefaultAttributed();
@@ -330,7 +330,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void CreationPolicyNonShared_MultipleCallsReturnsDifferentInstances()
         {
             var catalog = CatalogFactory.CreateAttributed(typeof(CreationPolicyNonShared));
@@ -352,7 +352,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(684514)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/684514")]
         public void GetExports_NoSourceProvider_ShouldThrowInvalidOperation()
         {
             var catalog = CatalogFactory.CreateAttributed();
@@ -364,7 +364,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue(561310)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/561310")]
         public void Recomposition_PartDefWithRecomposableImportIsRemoved_ExportsMatchingImportChanged_ShouldNotBeRecomposed()
         {
             string dependencyContractName = "dependency";
@@ -392,7 +392,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue(561310)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/561310")]
         public void Recomposition_PartDefWithNonRecomposableImportIsRemoved_ExportsMatchingImportChanged_ShouldNotBeRejected()
         {
             string dependencyContractName = "dependency";
@@ -419,7 +419,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void CanBeCollectedAfterDispose()
         {
             AggregateExportProvider sourceExportProvider = new AggregateExportProvider();

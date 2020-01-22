@@ -13,7 +13,7 @@ using Internal.IL;
 namespace Internal.TypeSystem.Ecma
 {
     /// <summary>
-    ///  Provides PdbSymbolReader via unmanaged SymBinder from full .NET Framework
+    ///  Provides PdbSymbolReader via unmanaged SymBinder from .NET Framework
     /// </summary>
     public sealed class UnmanagedPdbSymbolReader : PdbSymbolReader
     {

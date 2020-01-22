@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.14.2)
 
 cmake_policy(SET CMP0042 NEW)
 
@@ -134,10 +134,10 @@ include(pgosupport.cmake)
 #     - project which require platform header not clr's
 #     - do not depend on clr's compile definitions
 #-----------------------------------------
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(src/pal)
     add_subdirectory(src/hosts)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(src/pal/prebuilt/inc)
@@ -177,11 +177,11 @@ if(FEATURE_STANDALONE_GC)
   add_subdirectory(src/gc)
 endif(FEATURE_STANDALONE_GC)
 
-if (CLR_CMAKE_PLATFORM_UNIX)
+if (CLR_CMAKE_HOST_UNIX)
   include_directories("src/pal/inc")
   include_directories("src/pal/inc/rt")
   include_directories("src/pal/src/safecrt")
-endif (CLR_CMAKE_PLATFORM_UNIX)
+endif (CLR_CMAKE_HOST_UNIX)
 
 #------------------------------
 # Add Product Directory

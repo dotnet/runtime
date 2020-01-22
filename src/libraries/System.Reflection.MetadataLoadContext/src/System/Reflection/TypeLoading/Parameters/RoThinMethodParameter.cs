@@ -29,7 +29,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override bool HasDefaultValue => true; // Compat: returning "true" makes no sense but this is how it's always been.
 
-        // Returning "null" matches the desktop behavior, though this is inconsistent with the DBNull/Missing values
+        // Returning "null" matches the .NET Framework behavior, though this is inconsistent with the DBNull/Missing values
         // returned by fat ParameterInfo's without default values.
         public sealed override object RawDefaultValue => null;
     }

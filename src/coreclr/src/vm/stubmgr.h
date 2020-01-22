@@ -227,7 +227,7 @@ class StubManager
     static BOOL TraceStub(PCODE stubAddress, TraceDestination *trace);
 
     // if 'trace' indicates TRACE_STUB, keep calling TraceStub on 'trace', until you get out of all stubs
-    // returns true if successfull
+    // returns true if successful
     static BOOL FollowTrace(TraceDestination *trace);
 
 #ifdef DACCESS_COMPILE

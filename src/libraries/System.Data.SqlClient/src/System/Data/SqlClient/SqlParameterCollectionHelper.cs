@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// In the desktop version of the framework, this file is generated from ProviderBase\DbParameterCollectionHelper.cs
+// In the .NET Framework version of the framework, this file is generated from ProviderBase\DbParameterCollectionHelper.cs
 //#line 1 "e:\\fxdata\\src\\ndp\\fx\\src\\data\\system\\data\\providerbase\\dbparametercollectionhelper.cs"
 
 using System.Collections.Generic;

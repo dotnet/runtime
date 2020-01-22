@@ -257,7 +257,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void MemberExports()
         {
             var exporter = PartFactory.CreateAttributed(new ObjectWithMemberExports());
@@ -297,7 +297,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(739354)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/739354")]
         public void TestExportedValueCachesNullValue()
         {
             var container = ContainerFactory.Create();

@@ -41,7 +41,7 @@ namespace System.ConfigurationTests
         [Fact]
         public void UriSectionIdnIriParsing()
         {
-            using (var temp = new TempConfig(PlatformDetection.IsFullFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
+            using (var temp = new TempConfig(PlatformDetection.IsNetFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
             {
                 var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
                 UriSection uriSection = (UriSection)config.GetSection("uri");
@@ -53,7 +53,7 @@ namespace System.ConfigurationTests
         [Fact]
         public void UriSectionSchemeSettings()
         {
-            using (var temp = new TempConfig(PlatformDetection.IsFullFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
+            using (var temp = new TempConfig(PlatformDetection.IsNetFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
             {
                 var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
                 UriSection uriSection = (UriSection)config.GetSection("uri");

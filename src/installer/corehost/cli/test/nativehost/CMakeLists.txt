@@ -2,7 +2,6 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 # See the LICENSE file in the project root for more information.
 
-cmake_minimum_required (VERSION 2.8.12)
 project(nativehost)
 
 set(DOTNET_PROJECT_NAME "nativehost")
@@ -19,6 +18,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/../../nethost)
 
 set(SOURCES
     ./error_writer_redirector.cpp
+    ./get_native_search_directories_test.cpp
     ./hostfxr_exports.cpp
     ./hostpolicy_exports.cpp
     ./host_context_test.cpp
@@ -28,6 +28,7 @@ set(SOURCES
 
 set(HEADERS
     ./error_writer_redirector.h
+    ./get_native_search_directories_test.h
     ./hostfxr_exports.h
     ./hostpolicy_exports.h
     ./host_context_test.h

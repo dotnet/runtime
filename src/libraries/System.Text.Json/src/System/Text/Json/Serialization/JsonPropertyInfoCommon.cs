@@ -235,5 +235,10 @@ namespace System.Text.Json
 
             return collection;
         }
+
+        public override Type GetJsonPreservableArrayReferenceType()
+        {
+            return typeof(JsonPreservableArrayReference<TDeclaredProperty>);
+        }
     }
 }

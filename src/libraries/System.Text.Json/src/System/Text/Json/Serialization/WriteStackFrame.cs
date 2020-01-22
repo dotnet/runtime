@@ -28,10 +28,17 @@ namespace System.Text.Json
         public bool StartObjectWritten;
         public bool MoveToNextProperty;
 
+        public bool WriteWrappingBraceOnEndPreservedArray;
+
         // The current property.
         public int PropertyEnumeratorIndex;
         public ExtensionDataWriteStatus ExtensionDataStatus;
         public JsonPropertyInfo? JsonPropertyInfo;
+
+        // Pre-encoded metadata properties.
+        private static readonly JsonEncodedText s_metadataId = JsonEncodedText.Encode("$id", encoder: null);
+        private static readonly JsonEncodedText s_metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
+        private static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode("$values", encoder: null);
 
         public void Initialize(Type type, JsonSerializerOptions options)
         {
@@ -89,6 +96,56 @@ namespace System.Text.Json
             }
         }
 
+        public void WritePreservedObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, JsonSerializerOptions options, string referenceId)
+        {
+            if (JsonPropertyInfo?.EscapedName.HasValue == true)
+            {
+                writer.WriteStartObject(JsonPropertyInfo.EscapedName!.Value);
+            }
+            else if (KeyName != null)
+            {
+                writer.WriteStartObject(KeyName);
+            }
+            else
+            {
+                writer.WriteStartObject();
+            }
+
+
+            writer.WriteString(s_metadataId, referenceId);
+
+            if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
+            {
+                StartObjectWritten = true;
+            }
+            else
+            {
+                // Wrap array into an object with $id and $values metadata properties.
+                Debug.Assert(classType == ClassType.Enumerable);
+                writer.WriteStartArray(s_metadataValues);
+                WriteWrappingBraceOnEndPreservedArray = true;
+            }
+        }
+
+        public void WriteReferenceObject(Utf8JsonWriter writer, JsonSerializerOptions options, string referenceId)
+        {
+            if (JsonPropertyInfo?.EscapedName.HasValue == true)
+            {
+                writer.WriteStartObject(JsonPropertyInfo.EscapedName!.Value);
+            }
+            else if (KeyName != null)
+            {
+                writer.WriteStartObject(KeyName);
+            }
+            else
+            {
+                writer.WriteStartObject();
+            }
+
+            writer.WriteString(s_metadataRef, referenceId);
+            writer.WriteEndObject();
+        }
+
         public void Reset()
         {
             CurrentValue = null;
@@ -109,6 +166,7 @@ namespace System.Text.Json
             JsonPropertyInfo = null;
             KeyName = null;
             MoveToNextProperty = false;
+            WriteWrappingBraceOnEndPreservedArray = false;
         }
 
         public void EndDictionary()

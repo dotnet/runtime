@@ -40,7 +40,7 @@ namespace MonoTests.System.Runtime.Caching
     public class ObjectCacheTest
     {
         [Fact]
-        [ActiveIssue(25168)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25168")]
         private static void Host_SetToProvider()
         {
             var tns1 = new TestNotificationSystem();

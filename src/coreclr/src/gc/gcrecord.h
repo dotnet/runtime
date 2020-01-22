@@ -61,12 +61,25 @@ enum gc_condemn_reason_condition
     gen_induced_noforce_p = 14,
     gen_before_bgc = 15,
     gen_almost_max_alloc = 16,
-    gcrc_max = 17
+    gen_joined_avoid_unproductive = 17,    /* This happens when the GC detects previous attempts to do a full compacting GC is not making progress and therefore reduce its generation */
+    gen_joined_pm_induced_fullgc_p = 18,   /* This happens when a full gc is induced under provisional mode */
+    gen_joined_pm_alloc_loh = 19,          /* This happens when a large object heap allocation is requested under provisional mode */
+    gen_joined_last_gen2_fragmented = 20,  /* This happens when we had a high memory and high fragmentation detected after the last full blocking GC, indicating we have lot of pinned objects in gen 2, so reducing its generation */
+    gen_joined_limit_before_oom = 21,      /* This happens when the last gc was oom */
+    gen_joined_limit_loh_frag = 22,        /* This happens when we had a heap limit and the fragmentation is reaching 1/8 of it */
+    gen_joined_limit_loh_reclaim = 23,     /* This happens when we had a heap limit and we could reclaim 1/8 of it */
+    gen_joined_servo_initial = 24,         /* This happen when the servo tuning is trying to get some initial data */
+    gen_joined_servo_ngc = 25,             /* This happen when the servo tuning decides a background gc is appropriate */
+    gen_joined_servo_bgc = 26,             /* This happen when the servo tuning decides a background gc is appropriate */
+    gen_joined_servo_postpone = 27,        /* This happen when the servo tuning decides a gen2 gc should be postponed */
+    gen_joined_stress_mix = 28,            /* This happen in GCStress mix mode, every 10th GC is gen2  */
+    gen_joined_stress = 29,                /* This happen in GCStress, every GC is gen2  */
+    gcrc_max = 30
 };
 
 #ifdef DT_LOG
 static char* record_condemn_reasons_gen_header = "[cg]i|f|a|t|";
-static char* record_condemn_reasons_condition_header = "[cc]i|e|h|v|l|l|e|m|m|m|m|g|o|s|n|b|a|";
+static char* record_condemn_reasons_condition_header = "[cc]i|e|h|v|l|l|e|m|m|m|m|g|o|s|n|b|a|1|2|3|4|5|6|7|8|9|0|a|b";
 static char char_gen_number[4] = {'0', '1', '2', '3'};
 #endif //DT_LOG
 
@@ -410,6 +423,7 @@ struct gc_history_global
     int pause_mode;
     uint32_t mem_pressure;
     uint32_t global_mechanisms_p;
+    gen_to_condemn_tuning gen_to_condemn_reasons;
 
     void set_mechanism_p (gc_global_mechanism_p mechanism)
     {

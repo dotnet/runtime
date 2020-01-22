@@ -154,16 +154,13 @@ namespace System.Security.Principal
 
         internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceAccounts, Type targetType, bool forceSuccess)
         {
-            bool SomeFailed = false;
-            IdentityReferenceCollection Result;
+            IdentityReferenceCollection result = Translate(sourceAccounts, targetType, out bool someFailed);
 
-            Result = Translate(sourceAccounts, targetType, out SomeFailed);
-
-            if (forceSuccess && SomeFailed)
+            if (forceSuccess && someFailed)
             {
                 IdentityReferenceCollection UnmappedIdentities = new IdentityReferenceCollection();
 
-                foreach (IdentityReference id in Result)
+                foreach (IdentityReference id in result)
                 {
                     if (id.GetType() != targetType)
                     {
@@ -174,7 +171,7 @@ namespace System.Security.Principal
                 throw new IdentityNotMappedException(SR.IdentityReference_IdentityNotMapped, UnmappedIdentities);
             }
 
-            return Result;
+            return result;
         }
 
         internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceAccounts, Type targetType, out bool someFailed)
@@ -348,7 +345,7 @@ namespace System.Security.Principal
                             case SidNameUse.Alias:
                             case SidNameUse.Computer:
                             case SidNameUse.WellKnownGroup:
-                                Result.Add(new SecurityIdentifier(Lts.Sid, true));
+                                Result.Add(new SecurityIdentifier(Lts.Sid));
                                 break;
 
                             default:

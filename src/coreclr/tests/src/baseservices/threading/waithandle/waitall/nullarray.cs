@@ -10,13 +10,13 @@ class Duplicates
 	static int Main()
 	{
 		int retCode = 99;
-		
-		// Console.WriteLine(Thread.CurrentThread.GetApartmentState());
 
-		// Not supported (CoreCLR GitHub issue #2999)
-		// AppDomain.CurrentDomain.UnhandledException += Unhandled;
+        // Console.WriteLine(Thread.CurrentThread.GetApartmentState());
 
-		WaitHandle[] waitHandles = null;
+        // Not supported (https://github.com/dotnet/coreclr/issues/2999)
+        // AppDomain.CurrentDomain.UnhandledException += Unhandled;
+
+        WaitHandle[] waitHandles = null;
 
 		// Can't catch exception in v2.0. Should be fixed in Post-Orcas. VSWhidbey 543816
 		try 

@@ -42,7 +42,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(39230)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/39230")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public async Task FifoReadWriteViaFileStream()
         {

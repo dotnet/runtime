@@ -43,7 +43,7 @@ namespace System.Reflection.TypeLoading
             if (accessor.IsPrivate)
                 return null;
 
-            // If the accessor is virtual, NETFX tries to look for a overriding member starting from ReflectedType - a situation
+            // If the accessor is virtual, .NET Framework tries to look for a overriding member starting from ReflectedType - a situation
             // which probably isn't expressible in any known language. Detecting overrides veers into vtable-building business which
             // is something this library tries to avoid. If anyone ever cares about this, welcome to fix.
 
