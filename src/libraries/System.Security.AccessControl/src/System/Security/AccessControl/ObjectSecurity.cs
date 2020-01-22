@@ -35,7 +35,7 @@ namespace System.Security.AccessControl
 
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
-        internal readonly CommonSecurityDescriptor _securityDescriptor;
+        internal readonly CommonSecurityDescriptor _securityDescriptor = null!;
 
         private bool _ownerModified = false;
         private bool _groupModified = false;
@@ -288,7 +288,7 @@ namespace System.Security.AccessControl
         //
         protected virtual void Persist(bool enableOwnershipPrivilege, string name, AccessControlSections includeSections)
         {
-            Privilege ownerPrivilege = null;
+            Privilege? ownerPrivilege = null;
 
             try
             {
@@ -343,7 +343,7 @@ namespace System.Security.AccessControl
         // Sets and retrieves the owner of this object
         //
 
-        public IdentityReference GetOwner(System.Type targetType)
+        public IdentityReference? GetOwner(System.Type targetType)
         {
             ReadLock();
 
@@ -386,7 +386,7 @@ namespace System.Security.AccessControl
         // Sets and retrieves the group of this object
         //
 
-        public IdentityReference GetGroup(System.Type targetType)
+        public IdentityReference? GetGroup(System.Type targetType)
         {
             ReadLock();
 
@@ -436,7 +436,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                _securityDescriptor.PurgeAccessControl(identity.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier);
+                _securityDescriptor.PurgeAccessControl((SecurityIdentifier)identity.Translate(typeof(SecurityIdentifier)));
                 _daclModified = true;
             }
             finally
@@ -456,7 +456,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                _securityDescriptor.PurgeAudit(identity.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier);
+                _securityDescriptor.PurgeAudit((SecurityIdentifier)identity.Translate(typeof(SecurityIdentifier)));
                 _saclModified = true;
             }
             finally
