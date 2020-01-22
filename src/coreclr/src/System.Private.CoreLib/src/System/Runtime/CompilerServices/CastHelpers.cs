@@ -171,7 +171,6 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
             if (obj != null)
@@ -205,7 +204,6 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
             if (obj != null)
@@ -254,7 +252,6 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? IsInstanceOfClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
@@ -310,7 +307,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? IsInstanceHelper(void* toTypeHnd, object obj)
         {
             CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
@@ -333,7 +330,6 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? ChkCastAny(void* toTypeHnd, object? obj)
         {
             CastResult result;
@@ -364,7 +360,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? ChkCastHelper(void* toTypeHnd, object obj)
         {
             CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
@@ -380,7 +376,6 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? ChkCastInterface(void* toTypeHnd, object? obj)
         {
             if (obj != null)
@@ -424,7 +419,6 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? ChkCastClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
@@ -438,7 +432,6 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static object? ChkCastClassSpecial(void* toTypeHnd, object obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
