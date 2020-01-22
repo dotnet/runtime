@@ -267,7 +267,7 @@ jobs:
       value: 'artifacts/transport/${{ parameters.runtimeFlavor }}'
     - name: RuntimeArtifactsArgs
       value: >-
-        /p:RuntimeArtifactsPath=${{ parameters.buildCommandSourcesDirectory }}$(RuntimeDownloadPath)
+        /p:RuntimeArtifactsPath=$(buildCommandSourcesDirectory)$(RuntimeDownloadPath)
         /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
     - name: RuntimeArtifactName
       value: $(runtimeFlavorName)Product_$(liveRuntimeLegName)
