@@ -105,6 +105,8 @@ set(CORECLR_LIBRARIES
     ildbsymlib
     utilcode
     libraries-native
+    v3binder
+    interop
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
