@@ -62,7 +62,7 @@ jobs:
       archType: arm64
       platform: Linux_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-cfdd435-20191023143847
+        image: ubuntu-16.04-cross-arm64-cfdd435-20200121150126
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
