@@ -64,7 +64,10 @@ namespace System.Net.Mail
         // A FormatException will be thrown if any of the components in 'address' are invalid.
         public MailAddress(string address, string displayName, Encoding displayNameEncoding)
         {
-            bool parseSuccess = TryParse(address, displayName, displayNameEncoding, out (string displayName, string user, string host, Encoding displayNameEncoding) parsedData, throwExceptionIfFail: true);
+            bool parseSuccess = TryParse(address, displayName, displayNameEncoding,
+                                        out (string displayName, string user, string host, Encoding displayNameEncoding) parsedData,
+                                        throwExceptionIfFail: true);
+
             _displayName = parsedData.displayName;
             _userName = parsedData.user;
             _host = parsedData.host;
@@ -100,7 +103,9 @@ namespace System.Net.Mail
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
         public static bool TryCreate(string address, string displayName, Encoding displayNameEncoding, out MailAddress result)
         {
-            if (TryParse(address, displayName, displayNameEncoding, out (string displayName, string user, string host, Encoding displayNameEncoding) parsed, throwExceptionIfFail: false))
+            if (TryParse(address, displayName, displayNameEncoding,
+                        out (string displayName, string user, string host, Encoding displayNameEncoding) parsed,
+                        throwExceptionIfFail: false))
             {
                 result = new MailAddress(parsed.displayName, parsed.user, parsed.host, parsed.displayNameEncoding);
                 return true;
