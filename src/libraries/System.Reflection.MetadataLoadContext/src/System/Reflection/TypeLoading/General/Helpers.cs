@@ -147,7 +147,7 @@ namespace System.Reflection.TypeLoading
         {
             // @TODO - https://github.com/dotnet/corefxlab/issues/2447 - This is not the best way to compute the PKT as AssemblyName
             // throws if the PK isn't a valid PK blob. That's not something we should block a metadata inspection tool for so we
-            // should compute the PKT ourselves as soon as we can convince the CoreFx analyzers to let us use SHA1.
+            // should compute the PKT ourselves as soon as we can convince the libraries analyzers to let us use SHA1.
             AssemblyName an = new AssemblyName();
             an.SetPublicKey(pkt);
             return an.GetPublicKeyToken();

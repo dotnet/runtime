@@ -623,7 +623,8 @@ namespace System.Drawing.Primitives.Tests
         [Fact]
         public void GetHashCodeForUnknownNamed()
         {
-            // .NET Framework gives all such colors the same hash code. CoreFX makes more effort with them.
+            // The .NET Framework gives all unknown colors the same hashcode,
+            // .NET Core will provide a unique hashcode.
             Color c1 = Color.FromName("SomeUnknownColorName");
             Color c2 = Color.FromName("AnotherUnknownColorName");
             Assert.NotEqual(c2.GetHashCode(), c1.GetHashCode());
