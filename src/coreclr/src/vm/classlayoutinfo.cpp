@@ -611,9 +611,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     // Set some defaults based on the parent type of this type (if one exists).
     _ASSERTE(!(fHasNonTrivialParent && !(pParentMT->HasLayout())));
 
-    pEEClassLayoutInfoOut->SetIsBlittable(TRUE);
-    if (fHasNonTrivialParent)
-        pEEClassLayoutInfoOut->SetIsBlittable(pParentMT->IsBlittable());
+    pEEClassLayoutInfoOut->SetIsBlittable(fHasNonTrivialParent ? pParentMT->IsBlittable() : TRUE);
     pEEClassLayoutInfoOut->SetIsZeroSized(FALSE);
     pEEClassLayoutInfoOut->SetHasExplicitSize(FALSE);
     pEEClassLayoutInfoOut->m_cbPackingSize = packingSize;
@@ -625,12 +623,15 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     {
         pParentLayoutInfo = pParentMT->GetLayoutInfo();
         // Treat base class as an initial member.
-        cbAdjustedParentLayoutNativeSize = pParentMT->GetNumInstanceFieldBytes();
         // If the parent was originally a zero-sized explicit type but
         // got bumped up to a size of 1 for compatibility reasons, then
         // we need to remove the padding, but ONLY for inheritance situations.
         if (pParentLayoutInfo->IsZeroSized()) {
             cbAdjustedParentLayoutNativeSize = 0;
+        }
+        else
+        {
+            cbAdjustedParentLayoutNativeSize = pParentMT->GetNumInstanceFieldBytes();
         }
     }
 
