@@ -1,4 +1,5 @@
 parameters:
+  runtimeFlavor: 'coreclr'
   jobTemplate: ''
   buildConfig: ''
   platforms: []
@@ -37,9 +38,10 @@ jobs:
       archType: arm
       platform: Linux_arm
       container:
-        image: ubuntu-16.04-cross-14.04-23cacb0-20191023143847
+        image: ubuntu-16.04-cross-14.04-23cacb0-20200121150126
         registry: mcr
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -60,9 +62,10 @@ jobs:
       archType: arm64
       platform: Linux_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-cfdd435-20191023143847
+        image: ubuntu-16.04-cross-arm64-cfdd435-20200121150126
         registry: mcr
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -84,9 +87,14 @@ jobs:
       archType: x64
       platform: Linux_musl_x64
       container:
-        image: alpine-3.9-WithNode-0fc54a3-20190918214015
+        # alpine coreclr cmake errors on newer builds
+        ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+          image: alpine-3.9-WithNode-0fc54a3-20200121145958
+        ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
+          image: alpine-3.9-WithNode-0fc54a3-20190918214015
         registry: mcr
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -111,9 +119,10 @@ jobs:
       archType: arm64
       platform: Linux_musl_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-alpine-406629a-20191023143847
+        image: ubuntu-16.04-cross-arm64-alpine-406629a-20200121150126
         registry: mcr
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -134,9 +143,10 @@ jobs:
       archType: x64
       platform: Linux_x64
       container:
-        image: centos-7-f39df28-20191023143754
+        image: centos-7-bfcd90a-20200121150017
         registry: mcr
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -159,9 +169,10 @@ jobs:
       archType: wasm
       platform: WebAssembly_wasm
       container:
-        image: ubuntu-16.04-a50a721-20191023143845
+        image: ubuntu-16.04-bfcd90a-20200121150106
         registry: mcr
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -179,6 +190,7 @@ jobs:
 #     osGroup: FreeBSD
 #     archType: x64
 #     jobParameters:
+#       runtimeFlavor: ${{ parameters.runtimeFlavor }}
 #       buildConfig: ${{ parameters.buildConfig }}
 #       # There are no FreeBSD helix queues, so we don't run tests at the moment.
 #       helixQueues:
@@ -197,6 +209,7 @@ jobs:
       archType: x64
       platform: OSX_x64
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -216,6 +229,7 @@ jobs:
       archType: x64
       platform: Windows_NT_x64
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -235,6 +249,7 @@ jobs:
       archType: x86
       platform: Windows_NT_x86
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -253,6 +268,7 @@ jobs:
       archType: arm
       platform: Windows_NT_arm
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -272,6 +288,7 @@ jobs:
       archType: arm64
       platform: Windows_NT_arm64
       jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:

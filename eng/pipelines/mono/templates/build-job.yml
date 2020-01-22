@@ -1,0 +1,88 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  platform: ''
+  container: ''
+  timeoutInMinutes: ''
+  stagedBuild: false
+  variables: {}
+  pool: ''
+  condition: true
+
+### Product build
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    _BuildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    helixType: 'build/product/'
+    enableMicrobuild: true
+    stagedBuild: ${{ parameters.stagedBuild }}
+    pool: ${{ parameters.pool }}
+    condition: ${{ parameters.condition }}
+
+    # Compute job name from template parameters
+    name: ${{ format('mono_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('Mono Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    # Run all steps in the container.
+    # Note that the containers are defined in platform-matrix.yml
+    container: ${{ parameters.container }}
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    gatherAssetManifests: true
+    variables:
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
+    - name: osSubgroup
+      value: ${{ parameters.osSubgroup }}
+
+    - ${{ parameters.variables }}
+
+    steps:
+
+    # Install native dependencies
+    # Linux builds use docker images with dependencies preinstalled,
+    # and FreeBSD builds use a build agent with dependencies
+    # preinstalled, so we only need this step for OSX and Windows.
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+        displayName: Install native dependencies
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      # Necessary to install python
+      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+        displayName: Install native dependencies
+
+    # Build
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci
+        displayName: Build product
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci
+        displayName: Build product
+
+    # Publish product output directory for consumption by tests.
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(buildProductRootFolderPath)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: $(buildProductArtifactName)
+        displayName: 'product build'
+
+    # Publish Logs
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Logs
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      continueOnError: true
+      condition: always()

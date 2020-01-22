@@ -5024,21 +5024,23 @@ case "$host" in
         SQLITE3="libsqlite3.so"
 	;;
     *-*-*linux*)
-	AC_PATH_X
-	dlsearch_path=`(libtool --config ; echo eval echo \\$sys_lib_dlsearch_path_spec) | sh`
-	AC_MSG_CHECKING(for the soname of libX11.so)
-	for i in $x_libraries $dlsearch_path; do
-		for r in 4 5 6; do
-			if test -f $i/libX11.so.$r; then
-				X11=libX11.so.$r
-				AC_MSG_RESULT($X11)
-			fi
+	if test "x$with_core" != "xonly"; then
+		AC_PATH_X
+		dlsearch_path=`(libtool --config ; echo eval echo \\$sys_lib_dlsearch_path_spec) | sh`
+		AC_MSG_CHECKING(for the soname of libX11.so)
+		for i in $x_libraries $dlsearch_path; do
+			for r in 4 5 6; do
+				if test -f $i/libX11.so.$r; then
+					X11=libX11.so.$r
+					AC_MSG_RESULT($X11)
+				fi
+			done
 		done
-	done
-	
-	if test "x$X11" = "xlibX11.so"; then
-		AC_MSG_WARN([Could not find libX11.so. Do you have X.org or XFree86 installed? Assuming libX11.so.6...]);
-		X11=libX11.so.6
+		
+		if test "x$X11" = "xlibX11.so"; then
+			AC_MSG_WARN([Could not find libX11.so. Do you have X.org or XFree86 installed? Assuming libX11.so.6...]);
+			X11=libX11.so.6
+		fi
 	fi
 	;;
 esac

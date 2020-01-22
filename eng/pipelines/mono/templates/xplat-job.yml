@@ -72,10 +72,6 @@ jobs:
     - name: buildConfig
       value: ${{ parameters.buildConfig }}
 
-    - ${{ if eq(parameters.buildConfig, 'checked') }}:
-      - name: buildConfigUpper
-        value: 'Checked'
-
     - ${{ if eq(parameters.buildConfig, 'debug') }}:
       - name: buildConfigUpper
         value: 'Debug'
@@ -105,17 +101,6 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
         value: ci/dotnet/runtime/$(Build.SourceBranch)
-
-    - ${{ if ne(parameters.crossrootfsDir, '') }}:
-      - name: crossArg
-        value: 'cross'
-      - name: crossPackagesArg
-        value: '-__DoCrossArchBuild=1'
-    - ${{ if eq(parameters.crossrootfsDir, '') }}:
-      - name: crossArg
-        value: ''
-      - name: crossPackagesArg
-        value: ''
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
