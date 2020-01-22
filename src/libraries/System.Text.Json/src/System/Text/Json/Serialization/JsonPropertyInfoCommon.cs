@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -26,7 +27,7 @@ namespace System.Text.Json
             Type declaredPropertyType,
             Type runtimePropertyType,
             ClassType runtimeClassType,
-            PropertyInfo? propertyInfo,
+            MemberInfo? propertyInfo,
             Type? elementType,
             JsonConverter? converter,
             bool treatAsNullable,
@@ -45,17 +46,27 @@ namespace System.Text.Json
 
             if (propertyInfo != null)
             {
-                if (propertyInfo.GetMethod?.IsPublic == true)
+                Debug.Assert(
+                    propertyInfo is PropertyInfo ||
+                    propertyInfo is FieldInfo);
+
+                if (propertyInfo is PropertyInfo property)
                 {
-                    HasGetter = true;
-                    Get = options.MemberAccessorStrategy.CreatePropertyGetter<TClass, TDeclaredProperty>(propertyInfo);
+                    Get = property.GetMethod?.IsPublic == true
+                        ? options.MemberAccessorStrategy.CreateGetter<TClass, TDeclaredProperty>(property)
+                        : null;
+                    Set = property.SetMethod?.IsPublic == true
+                        ? options.MemberAccessorStrategy.CreateSetter<TClass, TDeclaredProperty>(property)
+                        : null;
+                }
+                else
+                {
+                    Get = options.MemberAccessorStrategy.CreateGetter<TClass, TDeclaredProperty>(Unsafe.As<FieldInfo>(propertyInfo));
+                    Set = options.MemberAccessorStrategy.CreateSetter<TClass, TDeclaredProperty>(Unsafe.As<FieldInfo>(propertyInfo));
                 }
 
-                if (propertyInfo.SetMethod?.IsPublic == true)
-                {
-                    HasSetter = true;
-                    Set = options.MemberAccessorStrategy.CreatePropertySetter<TClass, TDeclaredProperty>(propertyInfo);
-                }
+                HasGetter = Get is { };
+                HasSetter = Set is { };
             }
             else
             {

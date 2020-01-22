@@ -13,7 +13,7 @@ namespace System.Text.Json
 {
     internal partial class JsonClassInfo
     {
-        private JsonPropertyInfo AddProperty(Type propertyType, PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
+        private JsonPropertyInfo AddProperty(Type propertyType, MemberInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
         {
             bool hasIgnoreAttribute = (JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(propertyInfo) != null);
             if (hasIgnoreAttribute)
@@ -50,7 +50,7 @@ namespace System.Text.Json
         internal static JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
             Type runtimePropertyType,
-            PropertyInfo? propertyInfo,
+            MemberInfo? propertyInfo,
             Type parentClassType,
             Type? collectionElementType,
             Type? nullableUnderlyingType,

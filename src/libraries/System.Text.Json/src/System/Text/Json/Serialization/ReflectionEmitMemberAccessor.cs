@@ -141,22 +141,15 @@ namespace System.Text.Json
             return creator;
         }
 
-        public override Func<object?, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
-            (Func<object?, TProperty>)CreatePropertyGetter(propertyInfo, typeof(TClass));
+        public override Func<object?, TProperty> CreateGetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
+            (Func<object?, TProperty>)CreateGetter(typeof(TClass), propertyInfo);
 
-        private static Delegate CreatePropertyGetter(PropertyInfo propertyInfo, Type classType)
+        private static Delegate CreateGetter(Type classType, PropertyInfo propertyInfo)
         {
             MethodInfo? realMethod = propertyInfo.GetGetMethod();
-            Type objectType = typeof(object);
-
             Debug.Assert(realMethod != null);
-            var dynamicMethod = new DynamicMethod(
-                realMethod.Name,
-                propertyInfo.PropertyType,
-                new[] { objectType },
-                typeof(ReflectionEmitMemberAccessor).Module,
-                skipVisibility: true);
 
+            DynamicMethod dynamicMethod = CreateGetterMethod(propertyInfo.Name, propertyInfo.PropertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
             generator.Emit(OpCodes.Ldarg_0);
@@ -174,25 +167,48 @@ namespace System.Text.Json
 
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(objectType, propertyInfo.PropertyType));
+            return dynamicMethod
+                .CreateDelegate(typeof(Func<,>)
+                .MakeGenericType(typeof(object), propertyInfo.PropertyType));
         }
 
-        public override Action<object?, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
-            (Action<object?, TProperty>)CreatePropertySetter(propertyInfo, typeof(TClass));
+        public override Func<object?, TProperty> CreateGetter<TClass, TProperty>(FieldInfo fieldInfo) =>
+            (Func<object?, TProperty>)CreateGetter(typeof(TClass), fieldInfo);
 
-        private static Delegate CreatePropertySetter(PropertyInfo propertyInfo, Type classType)
+        private static Delegate CreateGetter(Type classType, FieldInfo fieldInfo)
         {
-            MethodInfo? realMethod = propertyInfo.GetSetMethod();
-            Type objectType = typeof(object);
+            DynamicMethod dynamicMethod = CreateGetterMethod(fieldInfo.Name, fieldInfo.FieldType);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
 
-            Debug.Assert(realMethod != null);
-            var dynamicMethod = new DynamicMethod(
-                realMethod.Name,
-                typeof(void),
-                new[] { objectType, propertyInfo.PropertyType },
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(
+                classType.IsValueType
+                    ? OpCodes.Unbox
+                    : OpCodes.Castclass,
+                classType);
+            generator.Emit(OpCodes.Ldfld, fieldInfo);
+            generator.Emit(OpCodes.Ret);
+
+            return dynamicMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(object), fieldInfo.FieldType));
+        }
+
+        private static DynamicMethod CreateGetterMethod(string memberName, Type memberType) =>
+            new DynamicMethod(
+                memberName + "Getter",
+                memberType,
+                new[] { typeof(object) },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
+        public override Action<object?, TProperty> CreateSetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
+            (Action<object?, TProperty>)CreateSetter(typeof(TClass), propertyInfo);
+
+        private static Delegate CreateSetter(Type classType, PropertyInfo propertyInfo)
+        {
+            MethodInfo? realMethod = propertyInfo.GetSetMethod();
+            Debug.Assert(realMethod != null);
+
+            DynamicMethod dynamicMethod = CreateSetterMethod(propertyInfo.Name, propertyInfo.PropertyType);
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
             generator.Emit(OpCodes.Ldarg_0);
@@ -212,8 +228,37 @@ namespace System.Text.Json
 
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(objectType, propertyInfo.PropertyType));
+            return dynamicMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(object), propertyInfo.PropertyType));
         }
+
+        public override Action<object?, TProperty> CreateSetter<TClass, TProperty>(FieldInfo fieldInfo) =>
+            (Action<object?, TProperty>)CreateSetter(typeof(TClass), fieldInfo);
+
+        private static Delegate CreateSetter(Type classType, FieldInfo fieldInfo)
+        {
+            DynamicMethod dynamicMethod = CreateSetterMethod(fieldInfo.Name, fieldInfo.FieldType);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(
+                classType.IsValueType
+                    ? OpCodes.Unbox
+                    : OpCodes.Castclass,
+                classType);
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Stfld, fieldInfo);
+            generator.Emit(OpCodes.Ret);
+
+            return dynamicMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(typeof(object), fieldInfo.FieldType));
+        }
+
+        private static DynamicMethod CreateSetterMethod(string memberName, Type memberType) =>
+            new DynamicMethod(
+                memberName + "Setter",
+                typeof(void),
+                new[] { typeof(object), memberType },
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
     }
 }
 #endif

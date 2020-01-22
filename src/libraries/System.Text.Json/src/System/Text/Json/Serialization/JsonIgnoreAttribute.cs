@@ -5,9 +5,9 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// Prevents a property from being serialized or deserialized.
+    /// Prevents a property or a field from being serialized or deserialized.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public sealed class JsonIgnoreAttribute : JsonAttribute
     {
         /// <summary>

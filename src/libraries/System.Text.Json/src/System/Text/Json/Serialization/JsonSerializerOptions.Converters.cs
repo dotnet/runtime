@@ -65,7 +65,7 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters { get; }
 
-        internal JsonConverter? DetermineConverterForProperty(Type parentClassType, Type runtimePropertyType, PropertyInfo? propertyInfo)
+        internal JsonConverter? DetermineConverterForProperty(Type parentClassType, Type runtimePropertyType, MemberInfo? propertyInfo)
         {
             JsonConverter? converter = null;
 
@@ -189,7 +189,7 @@ namespace System.Text.Json
             return GetConverter(typeToConvert) != null;
         }
 
-        private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, PropertyInfo? propertyInfo)
+        private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, MemberInfo? propertyInfo)
         {
             JsonConverter? converter;
 
@@ -223,7 +223,7 @@ namespace System.Text.Json
             return converter;
         }
 
-        private static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType, PropertyInfo propertyInfo)
+        private static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType, MemberInfo propertyInfo)
         {
             object[] attributes = propertyInfo.GetCustomAttributes(attributeType, inherit: false);
             return GetAttributeThatCanHaveMultiple(attributeType, classType, propertyInfo, attributes);
@@ -235,7 +235,7 @@ namespace System.Text.Json
             return GetAttributeThatCanHaveMultiple(attributeType, classType, null, attributes);
         }
 
-        private static Attribute? GetAttributeThatCanHaveMultiple(Type attributeType, Type classType, PropertyInfo? propertyInfo, object[] attributes)
+        private static Attribute? GetAttributeThatCanHaveMultiple(Type attributeType, Type classType, MemberInfo? propertyInfo, object[] attributes)
         {
             if (attributes.Length == 0)
             {

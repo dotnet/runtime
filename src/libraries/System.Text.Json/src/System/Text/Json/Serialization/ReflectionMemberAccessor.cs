@@ -24,6 +24,7 @@ namespace System.Text.Json
 
         private static readonly MethodInfo s_createStructPropertySetterMethod = new SetPropertyByRefFactory<int, int>(CreateStructPropertySetter!)
             .Method.GetGenericMethodDefinition();
+
         public override JsonClassInfo.ConstructorDelegate? CreateConstructor(Type type)
         {
             Debug.Assert(type != null);
@@ -92,7 +93,7 @@ namespace System.Text.Json
             return creator;
         }
 
-        public override Func<object?, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo)
+        public override Func<object?, TProperty> CreateGetter<TClass, TProperty>(PropertyInfo propertyInfo)
         {
             MethodInfo getMethodInfo = propertyInfo.GetGetMethod()!;
 
@@ -113,7 +114,7 @@ namespace System.Text.Json
             }
         }
 
-        public override Action<object?, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo)
+        public override Action<object?, TProperty> CreateSetter<TClass, TProperty>(PropertyInfo propertyInfo)
         {
             MethodInfo setMethodInfo = propertyInfo.GetSetMethod()!;
 
@@ -149,13 +150,25 @@ namespace System.Text.Json
             };
         }
 
-        private static Action<object, TProperty> CreateStructPropertySetter<TClass, TProperty>(SetPropertyByRef<TClass, TProperty> set)
+        private static Action<object?, TProperty> CreateStructPropertySetter<TClass, TProperty>(SetPropertyByRef<TClass, TProperty> set)
             where TClass : struct
         {
-            return delegate (object obj, TProperty value)
+            return delegate (object? obj, TProperty value)
             {
-                set(ref Unsafe.Unbox<TClass>(obj), value);
+                set(ref Unsafe.Unbox<TClass>(obj!), value);
             };
         }
+
+        public override Func<object?, TProperty> CreateGetter<TClass, TProperty>(FieldInfo fieldInfo) =>
+            delegate (object? obj)
+            {
+                return (TProperty)fieldInfo.GetValue(obj)!;
+            };
+
+        public override Action<object?, TProperty> CreateSetter<TClass, TProperty>(FieldInfo fieldInfo) =>
+            delegate (object? obj, TProperty value)
+            {
+                fieldInfo.SetValue(obj, value);
+            };
     }
 }

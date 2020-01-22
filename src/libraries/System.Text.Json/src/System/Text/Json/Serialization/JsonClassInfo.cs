@@ -139,6 +139,7 @@ namespace System.Text.Json
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
 
                         PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
                         Dictionary<string, JsonPropertyInfo> cache = CreatePropertyCache(properties.Length);
 
@@ -173,6 +174,29 @@ namespace System.Text.Json
                                     }
                                     // else ignore jsonPropertyInfo since it has [JsonIgnore].
                                 }
+                            }
+                        }
+
+                        foreach (FieldInfo fieldInfo in fields)
+                        {
+                            JsonPropertyInfo jsonPropertyInfo = AddProperty(fieldInfo.FieldType, fieldInfo, type, options);
+                            Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
+
+                            // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
+                            if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+                            {
+                                JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
+
+                                if (other.ShouldDeserialize == false && other.ShouldSerialize == false)
+                                {
+                                    // Overwrite the one just added since it has [JsonIgnore].
+                                    cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
+                                }
+                                else if (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true)
+                                {
+                                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(this, jsonPropertyInfo);
+                                }
+                                // else ignore jsonPropertyInfo since it has [JsonIgnore].
                             }
                         }
 
@@ -521,7 +545,7 @@ namespace System.Text.Json
         public static ClassType GetClassType(
             Type type,
             Type parentClassType,
-            PropertyInfo? propertyInfo,
+            MemberInfo? propertyInfo,
             out Type runtimeType,
             out Type? elementType,
             out Type? nullableUnderlyingType,
