@@ -3083,7 +3083,7 @@ nameof(flags));
         // after canonicalizing it
         //
 
-        public DiscretionaryAcl(bool isContainer, bool isDS, RawAcl rawAcl)
+        public DiscretionaryAcl(bool isContainer, bool isDS, RawAcl? rawAcl)
             : this(isContainer, isDS, rawAcl, false)
         {
         }
@@ -3093,7 +3093,7 @@ nameof(flags));
         // takes ownership of the given raw ACL
         //
 
-        internal DiscretionaryAcl(bool isContainer, bool isDS, RawAcl rawAcl, bool trusted)
+        internal DiscretionaryAcl(bool isContainer, bool isDS, RawAcl? rawAcl, bool trusted)
             : base(isContainer, isDS, rawAcl == null ? new RawAcl(isDS ? AclRevisionDS : AclRevision, 0) : rawAcl, trusted, true)
         {
         }

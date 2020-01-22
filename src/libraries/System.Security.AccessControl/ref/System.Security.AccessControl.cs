@@ -245,7 +245,7 @@ namespace System.Security.AccessControl
     {
         public DiscretionaryAcl(bool isContainer, bool isDS, byte revision, int capacity) { }
         public DiscretionaryAcl(bool isContainer, bool isDS, int capacity) { }
-        public DiscretionaryAcl(bool isContainer, bool isDS, System.Security.AccessControl.RawAcl rawAcl) { }
+        public DiscretionaryAcl(bool isContainer, bool isDS, System.Security.AccessControl.RawAcl? rawAcl) { }
         public void AddAccess(System.Security.AccessControl.AccessControlType accessType, System.Security.Principal.SecurityIdentifier sid, int accessMask, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags) { }
         public void AddAccess(System.Security.AccessControl.AccessControlType accessType, System.Security.Principal.SecurityIdentifier sid, int accessMask, System.Security.AccessControl.InheritanceFlags inheritanceFlags, System.Security.AccessControl.PropagationFlags propagationFlags, System.Security.AccessControl.ObjectAceFlags objectFlags, System.Guid objectType, System.Guid inheritedObjectType) { }
         public void AddAccess(System.Security.AccessControl.AccessControlType accessType, System.Security.Principal.SecurityIdentifier sid, System.Security.AccessControl.ObjectAccessRule rule) { }
@@ -478,7 +478,7 @@ namespace System.Security.AccessControl
     public sealed partial class RawSecurityDescriptor : System.Security.AccessControl.GenericSecurityDescriptor
     {
         public RawSecurityDescriptor(byte[] binaryForm, int offset) { }
-        public RawSecurityDescriptor(System.Security.AccessControl.ControlFlags flags, System.Security.Principal.SecurityIdentifier? owner, System.Security.Principal.SecurityIdentifier? group, System.Security.AccessControl.RawAcl? systemAcl, System.Security.AccessControl.RawAcl discretionaryAcl) { }
+        public RawSecurityDescriptor(System.Security.AccessControl.ControlFlags flags, System.Security.Principal.SecurityIdentifier? owner, System.Security.Principal.SecurityIdentifier? group, System.Security.AccessControl.RawAcl? systemAcl, System.Security.AccessControl.RawAcl? discretionaryAcl) { }
         public RawSecurityDescriptor(string sddlForm) { }
         public override System.Security.AccessControl.ControlFlags ControlFlags { get { throw null; } }
         public System.Security.AccessControl.RawAcl? DiscretionaryAcl { get { throw null; } set { } }
