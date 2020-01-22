@@ -102,12 +102,6 @@ namespace ILCompiler
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
-#if READYTORUN
-            else if (type.IsGenericParameter)
-            {
-                return type;
-            }
-#endif
             else
             {
                 // Validate classes, structs, enums, interfaces, and delegates
