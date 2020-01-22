@@ -84,7 +84,7 @@ namespace System.Net.Sockets
             info.SetOption(SocketInformationOptions.NonBlocking, !Blocking);
             info.SetOption(SocketInformationOptions.Listening, _isListening);
 
-            Close(-1);
+            Close(timeout: -1);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return info;
