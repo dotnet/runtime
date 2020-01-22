@@ -2948,13 +2948,6 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(shm_open)
 
 	dnl ********************************
-	dnl ***  Checks for gettext lib  ***
-	dnl ********************************
-	# This is needed for some hackery for AIX;
-	# Mono itself doesn't use it, but DllMap includes it
-	AC_SEARCH_LIBS([gettext], [intl])
-
-	dnl ********************************
 	dnl *** Checks for timezone stuff **
 	dnl ********************************
 	AC_CACHE_CHECK(for tm_gmtoff in struct tm, ac_cv_struct_tm_gmtoff,
