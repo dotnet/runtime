@@ -6,6 +6,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 {
 	public class ActivatorCreateInstance
 	{
+		[UnrecognizedReflectionAccessPattern(
+			typeof(Activator), nameof(Activator.CreateInstance) + "<T>", new Type[0])]
 		public static void Main ()
 		{
 			Activator.CreateInstance (typeof (Test1));
@@ -13,6 +15,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Activator.CreateInstance (typeof (Test3), BindingFlags.NonPublic | BindingFlags.Instance, null, null, null);
 			Activator.CreateInstance (typeof (Test4), new object [] { 1, "ss" });
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+Test5");
+			Activator.CreateInstance<Test1> ();
 		}
 
 		[Kept]

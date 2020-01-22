@@ -24,6 +24,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetType), new Type [] { typeof (string), typeof (bool) })]
 		public static void TestNull ()
 		{
 			const string reflectionTypeKeptString = null;
@@ -81,6 +83,9 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		public class AType { }
 
 		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetType), new Type[] { typeof (string), typeof (bool) },
+			typeof (AType), null, null)]
 		public static void TestType ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AType";

@@ -168,6 +168,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			VerifyLoggedMessages(original, linkResult.Logger);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
+			VerifyRecordedReflectionPatterns (original, linkResult.Customizations.ReflectionPatternRecorder);
 		}
 
 		protected virtual void InitialChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
@@ -644,7 +645,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 								$"Expected to find recorded dependency '{expectedSource} -> {expectedTarget} {expectedMarked ?? string.Empty}'{Environment.NewLine}" +
 								$"Potential dependencies matching the target: {Environment.NewLine}{targetCandidates}{Environment.NewLine}" +
 								$"Potential dependencies matching the source: {Environment.NewLine}{sourceCandidates}{Environment.NewLine}" +
-								$"If there's no matches, try to specify just a part of the source/target name and rerun the test.");
+								$"If there's no matches, try to specify just a part of the source/target name and rerun the test to get potential matches.");
 						}
 					}
 				}
@@ -655,6 +656,128 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				return $"{dependency.Source} -> {dependency.Target} Marked: {dependency.Marked}";
 			}
 		}
+
+		void VerifyRecordedReflectionPatterns (AssemblyDefinition original, TestReflectionPatternRecorder reflectionPatternRecorder)
+		{
+			foreach (var expectedSourceMethodDefinition in original.MainModule.AllDefinedTypes ().SelectMany (t => t.AllMethods ())) {
+				foreach (var attr in expectedSourceMethodDefinition.CustomAttributes) {
+					if (attr.AttributeType.Resolve ().Name == nameof (RecognizedReflectionAccessPatternAttribute)) {
+						string expectedSourceMethod = GetFullMemberNameFromDefinition (expectedSourceMethodDefinition);
+						string expectedReflectionMethod = GetFullMemberNameFromReflectionAccessPatternAttribute (attr, constructorArgumentsOffset: 0);
+						string expectedAccessedItem = GetFullMemberNameFromReflectionAccessPatternAttribute (attr, constructorArgumentsOffset: 3);
+
+						if (!reflectionPatternRecorder.RecognizedPatterns.Any (pattern => {
+							if (GetFullMemberNameFromDefinition (pattern.SourceMethod) != expectedSourceMethod)
+								return false;
+
+							if (GetFullMemberNameFromDefinition (pattern.ReflectionMethod) != expectedReflectionMethod)
+								return false;
+
+							if (GetFullMemberNameFromDefinition (pattern.AccessedItem) != expectedAccessedItem)
+								return false;
+
+							return true;
+						})) {
+							string sourceMethodCandidates = string.Join (Environment.NewLine, reflectionPatternRecorder.RecognizedPatterns
+								.Where (p => GetFullMemberNameFromDefinition (p.SourceMethod).ToLowerInvariant ().Contains (expectedSourceMethod.ToLowerInvariant ()))
+								.Select (p => "\t" + RecognizedReflectionAccessPatternToString (p)));
+							string reflectionMethodCandidates = string.Join (Environment.NewLine, reflectionPatternRecorder.RecognizedPatterns
+								.Where (p => GetFullMemberNameFromDefinition (p.ReflectionMethod).ToLowerInvariant ().Contains (expectedReflectionMethod.ToLowerInvariant ()))
+								.Select (p => "\t" + RecognizedReflectionAccessPatternToString (p)));
+
+							Assert.Fail (
+								$"Expected to find recognized reflection access pattern '{expectedSourceMethod.ToString()}: Call to {expectedReflectionMethod} accessed {expectedAccessedItem}'{Environment.NewLine}" +
+								$"Potential patterns matching the source method: {Environment.NewLine}{sourceMethodCandidates}{Environment.NewLine}" +
+								$"Potential patterns matching the reflection method: {Environment.NewLine}{reflectionMethodCandidates}{Environment.NewLine}" +
+								$"If there's no matches, try to specify just a part of the source method or reflection method name and rerun the test to get potential matches.");
+						}
+					} else if (attr.AttributeType.Resolve ().Name == nameof (UnrecognizedReflectionAccessPatternAttribute)) {
+						string expectedSourceMethod = GetFullMemberNameFromDefinition (expectedSourceMethodDefinition);
+						string expectedReflectionMethod = GetFullMemberNameFromReflectionAccessPatternAttribute (attr, constructorArgumentsOffset: 0);
+						string expectedMessage = (string)attr.ConstructorArguments [3].Value;
+
+						if (!reflectionPatternRecorder.UnrecognizedPatterns.Any (pattern => {
+							if (GetFullMemberNameFromDefinition (pattern.SourceMethod) != expectedSourceMethod)
+								return false;
+
+							if (GetFullMemberNameFromDefinition (pattern.ReflectionMethod) != expectedReflectionMethod)
+								return false;
+
+							if (expectedMessage != null && pattern.Message != expectedMessage)
+								return false;
+
+							return true;
+						})) {
+							string sourceMethodCandidates = string.Join (Environment.NewLine, reflectionPatternRecorder.UnrecognizedPatterns
+								.Where (p => GetFullMemberNameFromDefinition (p.SourceMethod).ToLowerInvariant ().Contains (expectedSourceMethod.ToLowerInvariant ()))
+								.Select (p => "\t" + UnrecognizedReflectionAccessPatternToString (p)));
+							string reflectionMethodCandidates = string.Join (Environment.NewLine, reflectionPatternRecorder.UnrecognizedPatterns
+								.Where (p => GetFullMemberNameFromDefinition (p.ReflectionMethod).ToLowerInvariant ().Contains (expectedReflectionMethod.ToLowerInvariant ()))
+								.Select (p => "\t" + UnrecognizedReflectionAccessPatternToString (p)));
+
+							Assert.Fail (
+								$"Expected to find unrecognized reflection access pattern '{expectedSourceMethod}: Call to {expectedReflectionMethod} unrecognized {expectedMessage ?? string.Empty}'{Environment.NewLine}" +
+								$"Potential patterns matching the source method: {Environment.NewLine}{sourceMethodCandidates}{Environment.NewLine}" +
+								$"Potential patterns matching the reflection method: {Environment.NewLine}{reflectionMethodCandidates}{Environment.NewLine}" +
+								$"If there's no matches, try to specify just a part of the source method or reflection method name and rerun the test to get potential matches.");
+						}
+					}
+				}
+			}
+		}
+
+		static string GetFullMemberNameFromReflectionAccessPatternAttribute (CustomAttribute attr, int constructorArgumentsOffset) 
+		{
+			var type = attr.ConstructorArguments [constructorArgumentsOffset].Value;
+			var memberName = (string)attr.ConstructorArguments [constructorArgumentsOffset + 1].Value;
+			var parameterTypes = (CustomAttributeArgument[])attr.ConstructorArguments [constructorArgumentsOffset + 2].Value;
+
+			string fullName = type.ToString ();
+			if (memberName == null) {
+				return fullName;
+			}
+
+			fullName += "::" + memberName;
+			if (parameterTypes != null) {
+				fullName += "(" + string.Join (",", parameterTypes.Select (t => t.Value.ToString ())) + ")";
+			}
+
+			return fullName;
+		}
+
+		static string GetFullMemberNameFromDefinition (IMemberDefinition member)
+		{
+			// Method which basically returns the same as member.ToString() but without the return type
+			// of a method (if it's a method).
+			// We need this as the GetFullMemberNameFromReflectionAccessPatternAttribute can't guess the return type
+			// as it would have to actually resolve the referenced method, which is very expensive and no necessary
+			// for the tests to work (the return types are redundant piece of information anyway).
+
+			if (member is TypeDefinition) {
+				return member.FullName;
+			}
+
+			string fullName = member.DeclaringType.FullName + "::";
+			if (member is MethodDefinition method) {
+				fullName += method.GetSignature ();
+			}
+			else {
+				fullName += member.Name;
+			}
+
+			return fullName;
+		}
+
+		static string RecognizedReflectionAccessPatternToString (TestReflectionPatternRecorder.ReflectionAccessPattern pattern)
+		{
+			return $"{GetFullMemberNameFromDefinition (pattern.SourceMethod)}: Call to {GetFullMemberNameFromDefinition (pattern.ReflectionMethod)} accessed {GetFullMemberNameFromDefinition (pattern.AccessedItem)}";
+		}
+
+		static string UnrecognizedReflectionAccessPatternToString (TestReflectionPatternRecorder.ReflectionAccessPattern pattern)
+		{
+			return $"{GetFullMemberNameFromDefinition (pattern.SourceMethod)}: Call to {GetFullMemberNameFromDefinition (pattern.ReflectionMethod)} unrecognized '{pattern.Message}'";
+		}
+
 
 		protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute (CustomAttribute inAssemblyAttribute)
 		{
