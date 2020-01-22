@@ -107,28 +107,14 @@ namespace System
         public static char ToCharUpper(int value)
         {
             value &= 0xF;
-            value += '0';
-
-            if (value > '9')
-            {
-                value += ('A' - '0');
-            }
-
-            return (char)value;
+            return (char)(value > 9 ? value - 10 + 'A' : value + '0');
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static char ToCharLower(int value)
         {
             value &= 0xF;
-            value += '0';
-
-            if (value > '9')
-            {
-                value += ('a' - '0');
-            }
-
-            return (char)value;
+            return (char)(value > 9 ? value - 10 + 'a' : value + '0');
         }
     }
 }
