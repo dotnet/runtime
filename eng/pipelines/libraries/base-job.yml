@@ -78,7 +78,10 @@ jobs:
         - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
           - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
           - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
-          - _coreClrArtifactsPathArg: ' /p:CoreCLRArtifactsPath=$(_coreClrDownloadPath)'
+          - ${{ if ne(parameters.container, '') }}:
+            - _coreClrArtifactsPathArg: '/p:CoreCLRArtifactsPath=${_CORECLRDOWNLOADPATH}'
+          - ${{ if eq(parameters.container, '') }}:
+            - _coreClrArtifactsPathArg: ' /p:CoreCLRArtifactsPath=$(_coreClrDownloadPath)'
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:

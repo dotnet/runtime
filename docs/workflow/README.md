@@ -18,13 +18,13 @@ Before proceeding further, please click on the link above that matches your mach
 
 The runtime repo can be built from a regular, non-administrator command prompt, from the root of the repo, as follows:
 
-For Linux:
-```
+For Linux and macOS
+```bash
 ./build.sh
 ```
 
 For Windows:
-```
+```bat
 build.cmd
 ```
 
@@ -35,9 +35,9 @@ For information about the different options available, supply the argument `--he
 build -h
 ```
 
-On Unix, arguments can be passed in with a single `-` or double hyphen `--`.
+On Unix like systems, arguments can be passed in with a single `-` or double hyphen `--`.
 
-The repository currently consists of three different major parts: the runtime (a.k.a. coreclr), the libraries, and the installer.
+The repository currently consists of different major parts: the runtimes, the libraries, and the installer.
 To build just one part you use the root build script (build.cmd/sh), and you add the `-subsetCategory` flag.
 
 ## Configurations
@@ -46,30 +46,39 @@ You may need to build the tree in a combination of configurations. This section 
 
 A quick reminder of some concepts -- see the [glossary](../project/glossary.md) for more on these:
 
-* **Debug configuration** -- Non-optimized code.  Asserts are enabled.
-* **Checked configuration** -- Optimized code. Asserts are enabled.  Only relevant to CoreCLR.
-* **Release configuration** -- Optimized code. Asserts are disabled. Runs at full speed, and suitable for performance profiling. Somewhat poorer debugging experience.
+* **Debug Configuration** -- Non-optimized code.  Asserts are enabled.
+* **Checked Configuration** -- Optimized code. Asserts are enabled.  Only relevant to CoreCLR runtime.
+* **Release Configuration** -- Optimized code. Asserts are disabled. Runs at best speed, and suitable for performance profiling. You will have limited debugging experience.
 
-When we talk about mixing configurations, we're discussing three sub-components:
+When we talk about mixing configurations, we're discussing following sub-components:
   
-* **CoreCLR** (often referred to as the runtime, most code under src/coreclr) -- this is the execution engine for managed code. It is written in C/C++. When built in a debug configuration, it is easier to debug into it, but it executes managed code more slowly - so slowly it will take a long time to run the managed code unit tests.
-* **CoreLib** (also known as System.Private.CoreLib - code under src/coreclr/System.Private.CoreLib) -- this is the lowest level managed library. It has a special relationship with the runtime -- it must be in the matching configuration, e.g., if the runtime you are using was built in a debug configuration, this must be in a debug configuration.
-* **All other libraries** (most code under src/libraries) -- the bulk of the libraries are oblivious to the configuration that CoreCLR/CoreLib were built in. Like most code they are most debuggable when built in a debug configuration, and, happily, they still run sufficiently fast in that configuration that it's acceptable for development work.
+* **Runtime** is the execution engine for managed code and there are two different implementations available. Both are written in C/C++, therefore, easier to debug when built in a Debug configuration.
+    * CoreCLR is comprehensive execution engine which if build in Debug Configuration it executes managed code very slowly. For example, it will take a long time to run the managed code unit tests. The code lives under [src/coreclr](../../src/coreclr).
+    * Mono is portable and also slimmer runtime and it's not that sensitive to Debug Configuration for running managed code. You will still need to build it without optimizations to have good runtime debugging experience though. The code lives under [src/mono](../../src/mono).
+* **CoreLib** (also known as System.Private.CoreLib) is the lowest level managed library. It has a special relationship to the runtimes and therefore it must be built in the matching configuration, e.g., if the runtime you are using was built in a Debug configuration, this must be in a Debug configuration. The runtime agnostic code for this library can be found at [src/libraries/System.Private.CoreLib/src](../../src/libraries/System.Private.CoreLib/src/README.md).
+* **Libraries** is the bulk of the dlls that are oblivious to the configuration that runtimes and CoreLib were built in. They are most debuggable when built in a Debug configuration, and, happily, they still run sufficiently fast in that configuration that it's acceptable for development work. The code lives under [src/libraries](../../src/libraries).
 
 ### What does this mean for me?
 
-At this point you probably know what you are planning to work on first: the runtime or libraries.
+At this point you probably know what you are planning to work on primary: the runtimes or libraries.
 
-* if you're working in CoreCLR proper, you may want to build everything in the debug configuration, depending on how comfortable you are debugging optimized native code.
-* if you're working in most libraries, you will want to use debug libraries with release CoreCLR and CoreLib, because the tests will run faster.
-* if you're working in CoreLib - you probably want to try to get the job done with release CoreCLR and CoreLib, and fall back to debug if you need to. The [Building libraries](building/libraries/README.md) document explains how you'll do this.
+* if you're working in runtimes, you may want to build everything in the Debug configuration, depending on how comfortable you are debugging optimized native code.
+* if you're working in libraries, you will want to use debug libraries with release version of runtime and CoreLib, because the tests will run faster.
+* if you're working in CoreLib - you probably want to try to get the job done with release runtime and CoreLib, and fall back to debug if you need to. The [Building Libraries](building/libraries/README.md) document explains how you'll do this.
 
 Now you know about configurations and how we use them, you will want to read how to build what you plan to work on. Pick one of these:
 
-- [Building coreclr](building/coreclr/README.md)
-- [Building libraries](building/libraries/README.md)
+- [Building CoreCLR runtime](building/coreclr/README.md)
+- [Building Mono runtime](building/mono/README.md)
+- [Building Libraries](building/libraries/README.md)
 
 After that, here's information about how to run tests:
 
-- [Testing coreclr](testing/coreclr/testing.md)
-- [Testing libraries](testing/libraries/testing.md)
+- [Testing CoreCLR runtime](testing/coreclr/testing.md)
+- [Testing Mono runtime](testing/mono/testing.md)
+- [Testing Libraries](testing/libraries/testing.md)
+
+And how to measure performance:
+
+- [Benchmarking workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/benchmarking-workflow-dotnet-runtime.md)
+- [Profiling workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/profiling-workflow-dotnet-runtime.md)

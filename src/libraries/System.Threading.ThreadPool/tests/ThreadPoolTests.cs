@@ -121,7 +121,7 @@ namespace System.Threading.ThreadPools.Tests
                 VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
                 Assert.True(ThreadPool.SetMaxThreads(MaxPossibleThreadCount + 1, MaxPossibleThreadCount + 1));
                 VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
-                Assert.Equal(PlatformDetection.IsFullFramework, ThreadPool.SetMaxThreads(-1, -1));
+                Assert.Equal(PlatformDetection.IsNetFramework, ThreadPool.SetMaxThreads(-1, -1));
                 VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
 
                 Assert.True(ThreadPool.SetMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount));
@@ -149,7 +149,6 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [Fact]
-        // Desktop framework doesn't check for this and instead, hits an assertion failure
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
@@ -353,7 +352,7 @@ namespace System.Threading.ThreadPools.Tests
                 ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, -2, true));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
                 ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, (long)-2, true));
-            if (!PlatformDetection.IsFullFramework) // netfx silently overflows the timeout
+            if (!PlatformDetection.IsNetFramework) // .NET Framework silently overflows the timeout
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
                     ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, (long)int.MaxValue + 1, true));
@@ -374,7 +373,7 @@ namespace System.Threading.ThreadPools.Tests
                 ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, -2, true));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
                 ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, (long)-2, true));
-            if (!PlatformDetection.IsFullFramework) // netfx silently overflows the timeout
+            if (!PlatformDetection.IsNetFramework) // .NET Framework silently overflows the timeout
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
                     ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, (long)int.MaxValue + 1, true));

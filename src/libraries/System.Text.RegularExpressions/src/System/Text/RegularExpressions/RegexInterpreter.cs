@@ -146,7 +146,7 @@ namespace System.Text.RegularExpressions
         {
             int newpos = runtrack![runtrackpos++];
 #if DEBUG
-            if (runmatch!.Debug)
+            if (runmatch!.IsDebug)
             {
                 if (newpos < 0)
                     Debug.WriteLine("       Backtracking (back2) to code position " + (-newpos));
@@ -621,7 +621,7 @@ namespace System.Text.RegularExpressions
                     advance = -1;
                 }
 #if DEBUG
-                if (runmatch!.Debug)
+                if (runmatch!.IsDebug)
                 {
                     DumpState();
                 }

@@ -97,7 +97,7 @@ namespace System.Security.Cryptography
             else
             {
                 // We truncate IV's that are longer than the block size to 8 bytes : this is
-                // done to maintain backward desktop compatibility with the behavior shipped in V1.x.
+                // done to maintain backward .NET Framework compatibility with the behavior shipped in V1.x.
                 // The call to set the IV in CryptoAPI will ignore any bytes after the first 8
                 // bytes. We'll still reject IV's that are shorter than the block size though.
                 if (rgbIV.Length < 8)

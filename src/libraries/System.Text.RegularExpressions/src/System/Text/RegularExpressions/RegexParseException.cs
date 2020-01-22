@@ -34,7 +34,7 @@ namespace System.Text.RegularExpressions
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.SetType(typeof(ArgumentException)); // To maintain serialization support with netfx.
+            info.SetType(typeof(ArgumentException)); // To maintain serialization support with .NET Framework.
         }
     }
 }

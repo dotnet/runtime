@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -14,6 +15,10 @@ namespace System.Text.Json
         public WriteStackFrame Current;
         private List<WriteStackFrame> _previous;
         private int _index;
+
+        // The bag of preservable references. It needs to be kept in the state and never in JsonSerializerOptions because
+        // the options should not have any per-serialization state since every serialization shares the same immutable state on the options.
+        public DefaultReferenceResolver ReferenceResolver;
 
         public void Push()
         {
