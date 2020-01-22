@@ -145,7 +145,7 @@ namespace System.Diagnostics.Tests
                 using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
                 {
                     Assert.NotNull(px);
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // on OSX, process name is dotnet for some reason. Refer to #23972
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/corefx/issues/23972
                     {
                         Assert.Equal(programToOpen, px.ProcessName);
                     }
@@ -355,7 +355,7 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnOsx_UsesSpecifiedProgram)}");
             using (var px = Process.Start(programToOpenWith, fileToOpen))
             {
-                // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to #23972
+                // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/corefx/issues/23972
                 Console.WriteLine($"in OSX, {nameof(programToOpenWith)} is {programToOpenWith}, while {nameof(px.ProcessName)} is {px.ProcessName}.");
                 px.Kill();
                 px.WaitForExit();

@@ -32,7 +32,7 @@ namespace System.Net.NameResolution.Tests
             }
             catch (Exception ex) when (hostName == "")
             {
-                // Additional data for debugging sporadic CI failures #24355
+                // Additional data for debugging sporadic CI failures https://github.com/dotnet/runtime/issues/1488
                 string actualHostName = Dns.GetHostName();
                 string etcHosts = "";
                 Exception getHostEntryException = null;

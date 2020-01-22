@@ -64,7 +64,7 @@ jobs:
         framework: netcoreapp
         runTests: true
         testScope: outerloop
-        liveCoreClrBuildConfig: release
+        liveRuntimeBuildConfig: release
   
   - ${{ if eq(variables['isFullMatrix'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -86,7 +86,7 @@ jobs:
           framework: netcoreapp
           runTests: true
           testScope: outerloop
-          liveCoreClrBuildConfig: release
+          liveRuntimeBuildConfig: release
 
   - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
     - template: /eng/pipelines/common/platform-matrix.yml

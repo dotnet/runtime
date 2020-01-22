@@ -68,9 +68,9 @@ namespace System.CodeDom.Compiler.Tests
             yield return new object[] { compilerInfo, CodeDomProvider.GetCompilerInfo("cs"), true };
             yield return new object[] { compilerInfo, CodeDomProvider.GetCompilerInfo("vb"), false };
 
-            // .NET Core fixes a typo in .NET Full Framework and validates that the casted object
+            // .NET Core fixes a typo in .NET Framework and validates that the casted object
             // instead of validating the object typed parameter.
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 yield return new object[] { compilerInfo, new object(), false };
             }

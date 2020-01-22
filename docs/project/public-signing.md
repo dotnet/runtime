@@ -3,7 +3,7 @@ Public Signing
 
 For reasons listed over on [Strong Naming](strong-name-signing.md), all .NET Core assemblies are strong-named.
 
-To enable you to build assemblies that have a matching identity to what Microsoft would build, we leverage a new signing mechanism called _Public Signing_. This lets you clone the dotnet/corefx repository, build and then drop the resulting assembly in your application with zero changes to consuming libraries. By default, all .NET Core projects build using public signing.
+To enable you to build assemblies that have a matching identity to what Microsoft would build, we leverage a new signing mechanism called _Public Signing_. This lets you clone the dotnet/runtime repository, build and then drop the resulting assembly in your application with zero changes to consuming libraries. By default, all .NET Core projects build using public signing.
 
 Public signing is very similar to [delay signing](http://msdn.microsoft.com/en-us/library/t07a3dye(v=vs.110).aspx) but without the need to add skip verification entries to your machine. This allows you to load the assembly in most contexts, or more precisely in any context that doesn't require validating the strong-name signature.
 

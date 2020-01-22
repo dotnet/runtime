@@ -223,13 +223,13 @@ static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
     DAC_INSTANCE* inst = g_dacImpl->m_instances.Find((TADDR)address);
     if (inst == nullptr || inst->size < size)
     {
-        inst = g_dacImpl->m_instances.Alloc((TADDR)address, size, DAC_PAL);
+        inst = g_dacImpl->m_instances.Alloc((TADDR)address, (ULONG32)size, DAC_PAL);
         if (inst == nullptr)
         {
             return FALSE;
         }
         inst->noReport = 0;
-        HRESULT hr = DacReadAll((TADDR)address, inst + 1, size, false);
+        HRESULT hr = DacReadAll((TADDR)address, inst + 1, (ULONG32)size, false);
         if (FAILED(hr))
         {
             g_dacImpl->m_instances.ReturnAlloc(inst);
@@ -246,7 +246,7 @@ static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
 }
 
 HRESULT
-DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
+DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
     if (!g_dacImpl)
     {

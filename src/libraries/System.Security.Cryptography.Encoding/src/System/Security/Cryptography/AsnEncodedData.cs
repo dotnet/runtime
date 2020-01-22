@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // Desktop compat demands we return the array without copying.
+                // .NET Framework compat demands we return the array without copying.
                 return _rawData;
             }
 

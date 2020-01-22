@@ -3111,12 +3111,6 @@ struct GenTreeLclVar : public GenTreeLclVarCommon
 {
     INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for JIT dumps)
 
-    GenTreeLclVar(var_types type,
-                  unsigned lclNum DEBUGARG(IL_OFFSET ilOffs = BAD_IL_OFFSET) DEBUGARG(bool largeNode = false))
-        : GenTreeLclVarCommon(GT_LCL_VAR, type, lclNum DEBUGARG(largeNode)) DEBUGARG(gtLclILoffs(ilOffs))
-    {
-    }
-
     GenTreeLclVar(genTreeOps oper,
                   var_types  type,
                   unsigned lclNum DEBUGARG(IL_OFFSET ilOffs = BAD_IL_OFFSET) DEBUGARG(bool largeNode = false))
@@ -3141,12 +3135,6 @@ private:
     FieldSeqNode* m_fieldSeq; // This LclFld node represents some sequences of accesses.
 
 public:
-    GenTreeLclFld(var_types type, unsigned lclNum, unsigned lclOffs)
-        : GenTreeLclVarCommon(GT_LCL_FLD, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
-    {
-        assert(lclOffs <= UINT16_MAX);
-    }
-
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs)
         : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
     {

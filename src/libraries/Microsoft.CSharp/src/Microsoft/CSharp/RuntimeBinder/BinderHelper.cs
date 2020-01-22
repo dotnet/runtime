@@ -213,16 +213,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private static bool IsTransparentProxy(object obj)
-        {
-            // In the full framework, this checks:
-            //     return obj != null && RemotingServices.IsTransparentProxy(obj);
-            // but transparent proxies don't exist in .NET Core.
-            return false;
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////
-
         private static bool IsDynamicallyTypedRuntimeProxy(DynamicMetaObject argument, CSharpArgumentInfo info)
         {
             // This detects situations where, although the argument has a value with
@@ -234,7 +224,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             bool isDynamicObject =
                 info != null &&
                 !info.UseCompileTimeType &&
-                (IsComObject(argument.Value) || IsTransparentProxy(argument.Value));
+                IsComObject(argument.Value);
 
             return isDynamicObject;
         }

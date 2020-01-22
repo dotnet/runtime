@@ -3,7 +3,7 @@
 ## In Fedora 24 container:
 - `docker ps` shows _id of existing Fedora 24 container
 - `docker exec -it _id /bin/sh`
-- `dnf install findutils` need to install findutils for building corefx to add missing xargs
+- `dnf install findutils` need to install findutils for building libraries to add missing xargs
 - `find / -name libsqlite3odbc.so` to be used in odbcinst.ini
 - `odbcinst -j` to show version and location of ini files
 - `ldconfig -p | grep sqlite`

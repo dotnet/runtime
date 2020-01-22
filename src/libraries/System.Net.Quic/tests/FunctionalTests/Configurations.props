@@ -2,7 +2,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       $(NetCoreAppCurrent)-Windows_NT;
-      $(NetCoreAppCurrent)-Unix;
+      $(NetCoreAppCurrent)-Linux;
+      $(NetCoreAppCurrent)-OSX;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

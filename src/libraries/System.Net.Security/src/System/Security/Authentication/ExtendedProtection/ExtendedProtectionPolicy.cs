@@ -150,7 +150,7 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             get
             {
-                // CoreFX is supported only on Win7+ where ExtendedProtection is supported.
+                // .NET Core is supported only on Win7+ where ExtendedProtection is supported.
                 return true;
             }
         }

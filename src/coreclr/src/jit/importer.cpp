@@ -5891,7 +5891,9 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                         if (treeToNullcheck != nullptr)
                         {
                             GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, treeToNullcheck);
-                            result             = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
+                            compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
+                            optMethodFlags |= OMF_HAS_NULLCHECK;
+                            result = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
                         }
 
                         impPushOnStack(result, typeInfo(TI_INT));
@@ -13017,6 +13019,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
                             {
                                 op1->ChangeOper(GT_NULLCHECK);
+                                block->bbFlags |= BBF_HAS_NULLCHECK;
+                                optMethodFlags |= OMF_HAS_NULLCHECK;
                                 op1->gtType = TYP_BYTE;
                             }
                             else
@@ -15229,7 +15233,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
                                 GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, op1);
-                                GenTree* result    = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                block->bbFlags |= BBF_HAS_NULLCHECK;
+                                optMethodFlags |= OMF_HAS_NULLCHECK;
+                                GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
                                 impPushOnStack(result, tiRetVal);
                                 break;
                             }

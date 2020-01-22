@@ -672,7 +672,7 @@ namespace System.Drawing.Tests
                 IntPtr hdc = graphics.GetHdc();
                 try
                 {
-                    if (PlatformDetection.IsFullFramework)
+                    if (PlatformDetection.IsNetFramework)
                     {
                         AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(null));
                         AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(null, hdc));

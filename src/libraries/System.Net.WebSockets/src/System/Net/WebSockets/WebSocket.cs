@@ -168,7 +168,7 @@ namespace System.Net.WebSockets
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void RegisterPrefixes()
         {
-            // The current WebRequest implementation in corefx does not support upgrading
+            // The current WebRequest implementation in the libraries does not support upgrading
             // web socket connections.  For now, we throw.
             throw new PlatformNotSupportedException();
         }

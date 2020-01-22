@@ -489,7 +489,7 @@ namespace System.Threading.Threads.Tests
         public static void CurrentPrincipal_SetNull()
         {
             // We run test on remote process because we need to set same principal policy
-            // On netfx default principal policy is PrincipalPolicy.UnauthenticatedPrincipal
+            // On .NET Framework default principal policy is PrincipalPolicy.UnauthenticatedPrincipal
             RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
@@ -947,7 +947,7 @@ namespace System.Threading.Threads.Tests
         [Fact]
         public static void InterruptInFinallyBlockTest_SkipOnDesktopFramework()
         {
-            // A wait in a finally block can be interrupted. The desktop framework applies the same rules as thread abort, and
+            // A wait in a finally block can be interrupted. The .NET Framework applies the same rules as thread abort, and
             // does not allow thread interrupt in a finally block. There is nothing special about thread interrupt that requires
             // not allowing it in finally blocks, so this behavior has changed in .NET Core.
             var continueThread = new AutoResetEvent(false);

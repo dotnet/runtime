@@ -13,7 +13,7 @@ namespace System.Net.Sockets.Tests
     {
         public Accept(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task Accept_Success(IPAddress listenAt)
@@ -38,7 +38,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(2)]
         [InlineData(5)]
@@ -88,7 +88,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(2)]
         [InlineData(5)]
@@ -142,7 +142,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/17209", TestPlatforms.AnyUnix)]
         public async Task Accept_WithTargetSocket_Success()
@@ -167,7 +167,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/corefx/issues/17209", TestPlatforms.AnyUnix)]
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -219,7 +219,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/17209", TestPlatforms.AnyUnix)]
         public void Accept_WithAlreadyBoundTargetSocket_Fails()
@@ -240,7 +240,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/17209", TestPlatforms.AnyUnix)]
         public async Task Accept_WithInUseTargetSocket_Fails()

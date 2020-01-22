@@ -17,9 +17,27 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 Buffer = ptr
             };
 
-            MsQuicStatusException.ThrowIfFailed(api.UnsafeGetParam(nativeObject, level, param, ref buffer));
+            QuicExceptionHelpers.ThrowIfFailed(
+                api.UnsafeGetParam(nativeObject, level, param, ref buffer),
+                "Could not get SOCKADDR_INET.");
 
             return *(SOCKADDR_INET*)ptr;
+        }
+
+        internal static unsafe ushort GetUShortParam(MsQuicApi api, IntPtr nativeObject, uint level, uint param)
+        {
+            byte* ptr = stackalloc byte[sizeof(ushort)];
+            QuicBuffer buffer = new QuicBuffer()
+            {
+                Length = sizeof(ushort),
+                Buffer = ptr
+            };
+
+            QuicExceptionHelpers.ThrowIfFailed(
+                api.UnsafeGetParam(nativeObject, level, param, ref buffer),
+                "Could not get ushort.");
+
+            return *(ushort*)ptr;
         }
 
         internal static unsafe void SetUshortParam(MsQuicApi api, IntPtr nativeObject, uint level, uint param, ushort value)
@@ -29,27 +47,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 Length = sizeof(ushort),
                 Buffer = (byte*)&value
             };
-            MsQuicStatusException.ThrowIfFailed(api.UnsafeSetParam(nativeObject, level, param, buffer));
-        }
 
-        internal static unsafe void SetULongParam(MsQuicApi api, IntPtr nativeObject, uint level, uint param, ulong value)
-        {
-            QuicBuffer buffer = new QuicBuffer()
-            {
-                Length = sizeof(ulong),
-                Buffer = (byte*)&value
-            };
-            MsQuicStatusException.ThrowIfFailed(api.UnsafeGetParam(nativeObject, level, param, ref buffer));
-        }
-
-        internal static unsafe void SetSecurityConfig(MsQuicApi api, IntPtr nativeObject, uint level, uint param, IntPtr value)
-        {
-            QuicBuffer buffer = new QuicBuffer()
-            {
-                Length = (uint)sizeof(void*),
-                Buffer = (byte*)&value
-            };
-            MsQuicStatusException.ThrowIfFailed(api.UnsafeSetParam(nativeObject, level, param, buffer));
+            QuicExceptionHelpers.ThrowIfFailed(
+                api.UnsafeSetParam(nativeObject, level, param, buffer),
+                "Could not set ushort.");
         }
 
         internal static unsafe ulong GetULongParam(MsQuicApi api, IntPtr nativeObject, uint level, uint param)
@@ -60,8 +61,38 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 Length = sizeof(ulong),
                 Buffer = ptr
             };
-            MsQuicStatusException.ThrowIfFailed(api.UnsafeGetParam(nativeObject, level, param, ref buffer));
+
+            QuicExceptionHelpers.ThrowIfFailed(
+                api.UnsafeGetParam(nativeObject, level, param, ref buffer),
+                "Could not get ulong.");
+
             return *(ulong*)ptr;
+        }
+
+        internal static unsafe void SetULongParam(MsQuicApi api, IntPtr nativeObject, uint level, uint param, ulong value)
+        {
+            QuicBuffer buffer = new QuicBuffer()
+            {
+                Length = sizeof(ulong),
+                Buffer = (byte*)&value
+            };
+
+            QuicExceptionHelpers.ThrowIfFailed(
+                api.UnsafeGetParam(nativeObject, level, param, ref buffer),
+                "Could not set ulong.");
+        }
+
+        internal static unsafe void SetSecurityConfig(MsQuicApi api, IntPtr nativeObject, uint level, uint param, IntPtr value)
+        {
+            QuicBuffer buffer = new QuicBuffer()
+            {
+                Length = (uint)sizeof(void*),
+                Buffer = (byte*)&value
+            };
+
+            QuicExceptionHelpers.ThrowIfFailed(
+                api.UnsafeSetParam(nativeObject, level, param, buffer),
+                "Could not set security configuration.");
         }
     }
 }

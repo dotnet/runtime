@@ -100,8 +100,8 @@ namespace Internal.Cryptography.Pal.Windows
         {
             byte[] oidBytes = hCryptMsg.GetMsgParamAsByteArray(CryptMsgParamType.CMSG_INNER_CONTENT_TYPE_PARAM);
 
-            // Desktop compat: If we get a null or non-terminated string back from Crypt32, throwing an exception seems more apropros but
-            // for the desktop compat, we throw the result at the ASCII Encoder and let the chips fall where they may.
+            // .NET Framework compat: If we get a null or non-terminated string back from Crypt32, throwing an exception seems more apropros but
+            // for the .NET Framework compat, we throw the result at the ASCII Encoder and let the chips fall where they may.
             int length = oidBytes.Length;
             if (length > 0 && oidBytes[length - 1] == 0)
             {
@@ -310,7 +310,7 @@ namespace Internal.Cryptography.Pal.Windows
                     break;
 
                 default:
-                    // We've exhausted all the algorithm types that the desktop used to set the KeyLength for. Key lengths are not a viable way of
+                    // We've exhausted all the algorithm types that the .NET Framework used to set the KeyLength for. Key lengths are not a viable way of
                     // identifying algorithms in the long run so we will not extend this list any further.
                     keyLength = 0;
                     break;

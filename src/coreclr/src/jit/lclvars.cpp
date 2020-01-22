@@ -7339,6 +7339,14 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_SKIP_SUBTREES;
         }
 
+        // The noway_assert in the second pass below, requires that these types match, or we have a TYP_BLK
+        //
+        if ((varDsc->lvType != lcl->gtType) && (varDsc->lvType != TYP_BLK))
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_SKIP_SUBTREES;
+        }
+
         // Weed out "small" types like TYP_BYTE as we don't mark the GT_LCL_VAR
         // node with the accurate small type. If we bash lvaTable[].lvType,
         // then there will be no indication that it was ever a small type.
@@ -7360,7 +7368,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     else
     {
         // Do the morphing
-        noway_assert(varDsc->lvType == lcl->gtType || varDsc->lvType == TYP_BLK);
+        noway_assert((varDsc->lvType == lcl->gtType) || (varDsc->lvType == TYP_BLK));
         var_types varType = varDsc->TypeGet();
 
         // Calculate padding

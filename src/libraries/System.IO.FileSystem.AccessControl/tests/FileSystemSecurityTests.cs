@@ -445,7 +445,7 @@ namespace System.IO
             });
         }
 
-        // Attempting to create a directory with a very long path in NetFX fails with DirectoryNotFoundException
+        // Attempting to create a directory with a very long path in .NET Framework fails with DirectoryNotFoundException
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public void MaxLengthPath_DirectorySecurity()
@@ -456,7 +456,7 @@ namespace System.IO
             Assert.NotNull(security);
         }
 
-        // Attempting to create a directory with a very long path in NetFX fails with DirectoryNotFoundException
+        // Attempting to create a directory with a very long path in .NET Framework fails with DirectoryNotFoundException
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public void MaxLengthPath_FileSecurity()

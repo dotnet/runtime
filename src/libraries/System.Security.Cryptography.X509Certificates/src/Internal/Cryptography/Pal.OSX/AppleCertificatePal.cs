@@ -277,6 +277,39 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public PolicyData GetPolicyData()
+        {
+            PolicyData policyData = default;
+            EnsureCertData();
+
+            foreach (X509Extension extension in _certData.Extensions)
+            {
+                switch (extension.Oid.Value)
+                {
+                    case Oids.ApplicationCertPolicies:
+                        policyData.ApplicationCertPolicies = extension.RawData;
+                        break;
+                    case Oids.CertPolicies:
+                        policyData.CertPolicies = extension.RawData;
+                        break;
+                    case Oids.CertPolicyMappings:
+                        policyData.CertPolicyMappings = extension.RawData;
+                        break;
+                    case Oids.CertPolicyConstraints:
+                        policyData.CertPolicyConstraints = extension.RawData;
+                        break;
+                    case Oids.EnhancedKeyUsage:
+                        policyData.EnhancedKeyUsage = extension.RawData;
+                        break;
+                    case Oids.InhibitAnyPolicyExtension:
+                        policyData.InhibitAnyPolicyExtension = extension.RawData;
+                        break;
+                }
+            }
+
+            return policyData;
+        }
+
         public IEnumerable<X509Extension> Extensions {
             get
             {

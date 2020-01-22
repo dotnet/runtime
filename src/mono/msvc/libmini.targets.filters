@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildThisFileDirectory)libmini-common.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-win32.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-posix.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-arch.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-interp.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-llvm.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-netcore.targets.filters" />
+  <ItemGroup Condition="'$(MonoMiniFilterSubFolder)'!=''">
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)">
+      <UniqueIdentifier>{b64924de-7e02-416b-9779-4cc7fe0270e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files$(MonoMiniFilterSubFolder)">
+      <UniqueIdentifier>{95531242-a8da-43ec-9ddb-6da7551d9c2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)">
+      <UniqueIdentifier>{f66c7e0f-6887-449d-81a5-49168ddfc4db}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
