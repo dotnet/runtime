@@ -6043,7 +6043,6 @@ namespace System.Diagnostics.Tracing
         {
             StringBuilder? stringBuilder = null;        // We lazily create this
             int writtenSoFar = 0;
-            int chIdx = -1;
             for (int i = 0; ;)
             {
                 if (i >= eventMessage.Length)
@@ -6054,6 +6053,7 @@ namespace System.Diagnostics.Tracing
                     return stringBuilder.ToString();
                 }
 
+                int chIdx;
                 if (eventMessage[i] == '%')
                 {
                     // handle format message escaping character '%' by escaping it

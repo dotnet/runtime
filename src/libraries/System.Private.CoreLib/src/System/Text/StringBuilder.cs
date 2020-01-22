@@ -1138,7 +1138,7 @@ namespace System.Text
 
             if (length > 0)
             {
-                Remove(startIndex, length, out StringBuilder chunk, out int indexInChunk);
+                Remove(startIndex, length, out _, out _);
             }
 
             return this;

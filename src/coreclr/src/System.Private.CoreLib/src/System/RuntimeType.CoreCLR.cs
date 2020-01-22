@@ -2791,7 +2791,7 @@ namespace System
         {
             if (name is null) throw new ArgumentNullException();
 
-            FilterHelper(bindingAttr, ref name, out bool ignoreCase, out MemberListType listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeEventInfo[] cache = Cache.GetEventList(listType, name);
             EventInfo? match = null;
@@ -2817,7 +2817,7 @@ namespace System
         {
             if (name is null) throw new ArgumentNullException();
 
-            FilterHelper(bindingAttr, ref name, out bool ignoreCase, out MemberListType listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeFieldInfo[] cache = Cache.GetFieldList(listType, name);
             FieldInfo? match = null;
@@ -2863,7 +2863,7 @@ namespace System
 
             string name, ns;
             SplitName(fullname, out name!, out ns!);
-            FilterHelper(bindingAttr, ref name, out ignoreCase, out MemberListType listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeType[] cache = Cache.GetInterfaceList(listType, name);
 
@@ -2891,7 +2891,7 @@ namespace System
             bindingAttr &= ~BindingFlags.Static;
             string name, ns;
             SplitName(fullname, out name!, out ns!);
-            FilterHelper(bindingAttr, ref name, out bool ignoreCase, out MemberListType listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeType[] cache = Cache.GetNestedTypeList(listType, name);
 

@@ -363,8 +363,7 @@ namespace System.Reflection
             if (m == null)
                 throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
 
-            object?[]? args = null;
-
+            object?[] args;
             if (index != null)
             {
                 args = new object[index.Length + 1];
