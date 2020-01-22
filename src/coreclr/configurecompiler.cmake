@@ -11,7 +11,7 @@ cmake_policy(SET CMP0083 NEW)
 include(CheckCXXCompilerFlag)
 
 include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
-# "configureoptimization.cmake" must be included after CLR_CMAKE_PLATFORM_UNIX has been set.
+# "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 
 #-----------------------------------------------------
@@ -20,7 +20,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 
 if(MSVC)
     add_compile_options(/Zi /FC /Zc:strictStrings)
-elseif (CLR_CMAKE_PLATFORM_UNIX)
+elseif (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -51,9 +51,9 @@ if (MSVC)
   #
   set (WINDOWS_SUBSYSTEM_VERSION 6.01)
 
-  if (CLR_CMAKE_PLATFORM_ARCH_ARM)
+  if (CLR_CMAKE_HOST_ARCH_ARM)
     set(WINDOWS_SUBSYSTEM_VERSION 6.02) #windows subsystem - arm minimum is 6.02
-  elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  elseif(CLR_CMAKE_HOST_ARCH_ARM64)
     set(WINDOWS_SUBSYSTEM_VERSION 6.03) #windows subsystem - arm64 minimum is 6.03
   endif ()
 
@@ -101,7 +101,7 @@ if (MSVC)
   # Force uCRT to be dynamically linked for Release build
   add_link_options("$<$<CONFIG:RELEASE>:/NODEFAULTLIB:libucrt.lib;/DEFAULTLIB:ucrt.lib>")
 
-elseif (CLR_CMAKE_PLATFORM_UNIX)
+elseif (CLR_CMAKE_HOST_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG;CHECKED;RELEASE;RELWITHDEBINFO")
 
@@ -173,74 +173,67 @@ endif(MSVC)
 # For example:
 #       ./build-native.sh cmakeargs "-DCLR_ADDITIONAL_COMPILER_OPTIONS=<...>" cmakeargs "-DCLR_ADDITIONAL_LINKER_FLAGS=<...>"
 #
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     add_link_options(${CLR_ADDITIONAL_LINKER_FLAGS})
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_PLATFORM_LINUX)
+if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
-endif(CLR_CMAKE_PLATFORM_LINUX)
-if(CLR_CMAKE_PLATFORM_FREEBSD)
+endif(CLR_CMAKE_HOST_LINUX)
+if(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_link_options(-fuse-ld=lld LINKER:--build-id=sha1)
-endif(CLR_CMAKE_PLATFORM_FREEBSD)
+endif(CLR_CMAKE_HOST_FREEBSD)
 
 #------------------------------------
 # Definitions (for platform)
 #-----------------------------------
-if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+if (CLR_CMAKE_HOST_ARCH_AMD64)
   add_definitions(-D_AMD64_)
-  add_definitions(-DAMD64)
   add_definitions(-DBIT64)
-elseif (CLR_CMAKE_PLATFORM_ARCH_I386)
+elseif (CLR_CMAKE_HOST_ARCH_I386)
   add_definitions(-D_X86_)
-elseif (CLR_CMAKE_PLATFORM_ARCH_ARM)
+elseif (CLR_CMAKE_HOST_ARCH_ARM)
   add_definitions(-D_ARM_)
-  add_definitions(-DARM)
-elseif (CLR_CMAKE_PLATFORM_ARCH_ARM64)
+elseif (CLR_CMAKE_HOST_ARCH_ARM64)
   add_definitions(-D_ARM64_)
-  add_definitions(-DARM64)
   add_definitions(-DBIT64)
 else ()
   clr_unknown_arch()
 endif ()
 
-if (CLR_CMAKE_PLATFORM_UNIX)
-  if(CLR_CMAKE_PLATFORM_LINUX)
-    if(CLR_CMAKE_PLATFORM_UNIX_AMD64)
+if (CLR_CMAKE_HOST_UNIX)
+  if(CLR_CMAKE_HOST_LINUX)
+    if(CLR_CMAKE_HOST_UNIX_AMD64)
       message("Detected Linux x86_64")
-      add_definitions(-DLINUX64)
-    elseif(CLR_CMAKE_PLATFORM_UNIX_ARM)
+    elseif(CLR_CMAKE_HOST_UNIX_ARM)
       message("Detected Linux ARM")
-      add_definitions(-DLINUX32)
-    elseif(CLR_CMAKE_PLATFORM_UNIX_ARM64)
+    elseif(CLR_CMAKE_HOST_UNIX_ARM64)
       message("Detected Linux ARM64")
-      add_definitions(-DLINUX64)
-    elseif(CLR_CMAKE_PLATFORM_UNIX_X86)
+    elseif(CLR_CMAKE_HOST_UNIX_X86)
       message("Detected Linux i686")
-      add_definitions(-DLINUX32)
     else()
       clr_unknown_arch()
     endif()
-  endif(CLR_CMAKE_PLATFORM_LINUX)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+  endif(CLR_CMAKE_HOST_LINUX)
+endif(CLR_CMAKE_HOST_UNIX)
 
-if (CLR_CMAKE_PLATFORM_UNIX)
+if (CLR_CMAKE_HOST_UNIX)
   add_definitions(-DPLATFORM_UNIX)
 
-  if(CLR_CMAKE_PLATFORM_DARWIN)
+  if(CLR_CMAKE_HOST_DARWIN)
     message("Detected OSX x86_64")
-  endif(CLR_CMAKE_PLATFORM_DARWIN)
+  endif(CLR_CMAKE_HOST_DARWIN)
 
-  if(CLR_CMAKE_PLATFORM_FREEBSD)
+  if(CLR_CMAKE_HOST_FREEBSD)
     message("Detected FreeBSD amd64")
-  endif(CLR_CMAKE_PLATFORM_FREEBSD)
+  endif(CLR_CMAKE_HOST_FREEBSD)
 
-  if(CLR_CMAKE_PLATFORM_NETBSD)
+  if(CLR_CMAKE_HOST_NETBSD)
     message("Detected NetBSD amd64")
-  endif(CLR_CMAKE_PLATFORM_NETBSD)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+  endif(CLR_CMAKE_HOST_NETBSD)
+endif(CLR_CMAKE_HOST_UNIX)
 
 if (WIN32)
   add_definitions(-DPLATFORM_WINDOWS)
@@ -267,7 +260,7 @@ endif ()
 #--------------------------------------
 # Compile Options
 #--------------------------------------
-if (CLR_CMAKE_PLATFORM_UNIX)
+if (CLR_CMAKE_HOST_UNIX)
   # Disable frame pointer optimizations so profilers can get better call stacks
   add_compile_options(-fno-omit-frame-pointer)
 
@@ -280,7 +273,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   # using twos-complement representation (this is normally undefined according to the C++ spec).
   add_compile_options(-fwrapv)
 
-  if(CLR_CMAKE_PLATFORM_DARWIN)
+  if(CLR_CMAKE_HOST_DARWIN)
     # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
     add_compile_options(-fstack-protector)
   else()
@@ -288,7 +281,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     if (COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
       add_compile_options(-fstack-protector-strong)
     endif()
-  endif(CLR_CMAKE_PLATFORM_DARWIN)
+  endif(CLR_CMAKE_HOST_DARWIN)
 
   # Contracts are disabled on UNIX.
   add_definitions(-DDISABLE_CONTRACTS)
@@ -348,14 +341,14 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   add_compile_options(-fvisibility=hidden)
 
   # Specify the minimum supported version of macOS
-  if(CLR_CMAKE_PLATFORM_DARWIN)
+  if(CLR_CMAKE_HOST_DARWIN)
     set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.12)
     add_compile_options(${MACOS_VERSION_MIN_FLAGS})
     add_link_options(${MACOS_VERSION_MIN_FLAGS})
-  endif(CLR_CMAKE_PLATFORM_DARWIN)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+  endif(CLR_CMAKE_HOST_DARWIN)
+endif(CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_PLATFORM_UNIX_ARM)
+if(CLR_CMAKE_HOST_UNIX_ARM)
    if (NOT DEFINED CLR_ARM_FPU_TYPE)
      set(CLR_ARM_FPU_TYPE vfpv3)
    endif(NOT DEFINED CLR_ARM_FPU_TYPE)
@@ -373,11 +366,11 @@ if(CLR_CMAKE_PLATFORM_UNIX_ARM)
      add_definitions(-DARM_SOFTFP)
      add_compile_options(-mfloat-abi=softfp)
    endif(ARM_SOFTFP)
-endif(CLR_CMAKE_PLATFORM_UNIX_ARM)
+endif(CLR_CMAKE_HOST_UNIX_ARM)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
   add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 if (MSVC)
   # Compile options for targeting windows
@@ -408,17 +401,17 @@ if (MSVC)
   add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
   add_compile_options(/source-charset:utf-8) # Force MSVC to compile source as UTF-8.
 
-  if (CLR_CMAKE_PLATFORM_ARCH_I386)
+  if (CLR_CMAKE_HOST_ARCH_I386)
     add_compile_options(/Gz)
-  endif (CLR_CMAKE_PLATFORM_ARCH_I386)
+  endif (CLR_CMAKE_HOST_ARCH_I386)
 
   add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
   add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<CONFIG:Checked>>:/O1>)
 
-  if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  if (CLR_CMAKE_HOST_ARCH_AMD64)
   # The generator expression in the following command means that the /homeparams option is added only for debug builds
   add_compile_options($<$<CONFIG:Debug>:/homeparams>) # Force parameters passed in registers to be written to the stack
-  endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   # enable control-flow-guard support for native components for non-Arm64 builds
   # Added using variables instead of add_compile_options to let individual projects override it
@@ -446,7 +439,7 @@ endif (MSVC)
 
 if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
-  if(CLR_CMAKE_PLATFORM_UNIX)
+  if(CLR_CMAKE_HOST_UNIX)
     string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
     if(NOT UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
       message( WARNING "Code coverage results with an optimised (non-Debug) build may be misleading" )
@@ -457,7 +450,7 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
     add_link_options(--coverage)
   else()
     message(FATAL_ERROR "Code coverage builds not supported on current platform")
-  endif(CLR_CMAKE_PLATFORM_UNIX)
+  endif(CLR_CMAKE_HOST_UNIX)
 
 endif(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 

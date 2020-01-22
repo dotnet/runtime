@@ -39,7 +39,7 @@ if (NOT WIN32)
 endif ()
 
 function(strip_symbols targetName outputFilename)
-    if(CLR_CMAKE_PLATFORM_UNIX)
+    if(CLR_CMAKE_HOST_UNIX)
         if(STRIP_SYMBOLS)
 
             # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
@@ -78,7 +78,7 @@ function(strip_symbols targetName outputFilename)
 
             set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
         endif(STRIP_SYMBOLS)
-    endif(CLR_CMAKE_PLATFORM_UNIX)
+    endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
 
 function(install_symbols targetName destination_path)
@@ -200,16 +200,16 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     add_definitions(-D__LINUX__)
 endif()
 
-if(CLR_CMAKE_PLATFORM_ARCH_I386)
+if(CLR_CMAKE_HOST_ARCH_I386)
     add_definitions(-D_TARGET_X86_=1)
     set(ARCH_SPECIFIC_FOLDER_NAME "i386")
-elseif(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+elseif(CLR_CMAKE_HOST_ARCH_AMD64)
     add_definitions(-D_TARGET_AMD64_=1)
     set(ARCH_SPECIFIC_FOLDER_NAME "AMD64")
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+elseif(CLR_CMAKE_HOST_ARCH_ARM)
     add_definitions(-D_TARGET_ARM_=1)
     set(ARCH_SPECIFIC_FOLDER_NAME "arm")
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+elseif(CLR_CMAKE_HOST_ARCH_ARM64)
     add_definitions(-D_TARGET_ARM64_=1)
     set(ARCH_SPECIFIC_FOLDER_NAME "arm64")
 else()
@@ -217,7 +217,7 @@ else()
 endif()
 
 # Specify the Windows SDK to be used for Arm builds
-if (WIN32 AND (CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64))
+if (WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
     if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
 	      message(FATAL_ERROR "Windows SDK is required for the Arm32 or Arm64 build.")
       else()
@@ -226,7 +226,7 @@ if (WIN32 AND (CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64))
 endif ()
 
 if (WIN32)
-    if(CLR_CMAKE_PLATFORM_ARCH_ARM)
+    if(CLR_CMAKE_HOST_ARCH_ARM)
       # Explicitly specify the assembler to be used for Arm32 compile
       file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm\\armasm.exe" CMAKE_ASM_COMPILER)
 
@@ -236,7 +236,7 @@ if (WIN32)
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
-    elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
       # Explicitly specify the assembler to be used for Arm64 compile
       file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
 

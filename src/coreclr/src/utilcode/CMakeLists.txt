@@ -107,14 +107,14 @@ add_library_clr(utilcode STATIC ${UTILCODE_SOURCES})
 add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 add_library_clr(utilcode_crossgen STATIC ${UTILCODE_CROSSGEN_SOURCES})
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(utilcodestaticnohost  nativeresourcestring)
   target_link_libraries(utilcode_crossgen  nativeresourcestring)
   target_link_libraries(utilcode_dac nativeresourcestring)
   target_link_libraries(utilcode nativeresourcestring)
   add_dependencies(utilcode_dac coreclrpal)
   add_dependencies(utilcode coreclrpal)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 
 if(WIN32)

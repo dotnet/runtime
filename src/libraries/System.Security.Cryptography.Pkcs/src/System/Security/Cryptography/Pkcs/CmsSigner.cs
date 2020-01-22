@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Pkcs
         // * Open the parameters as RSACSP (RSA PKCS#1 signature was hard-coded in netfx)
         //   * Which will fail on non-Windows
         // * Create a certificate with subject CN=CMS Signer Dummy Certificate
-        //   * Need to check against NetFx to find out what the NotBefore/NotAfter values are
+        //   * Need to check against .NET Framework to find out what the NotBefore/NotAfter values are
         //   * No extensions
         //
         // Since it would only work on Windows, it could also be just done as P/Invokes to

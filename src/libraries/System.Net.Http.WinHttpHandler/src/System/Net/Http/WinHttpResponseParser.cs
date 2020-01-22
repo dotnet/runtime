@@ -327,7 +327,6 @@ namespace System.Net.Http
                         }
                     }
 
-                    // TODO: Issue #2165. Should we log if there is an error here?
                     contentHeaders.TryAddWithoutValidation(headerName, headerValue);
                 }
             }

@@ -62,6 +62,6 @@ if(WIN32)
 endif()
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (WIN32 AND (CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64))
+if (WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
     target_link_libraries(apphost Advapi32.lib shell32.lib)
 endif()

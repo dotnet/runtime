@@ -1327,7 +1327,7 @@ zM=
   </Modulus>
 </RSA"));
 
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     Assert.Equal("System.Security.XmlSyntaxException", exception.GetType().FullName);
                 }

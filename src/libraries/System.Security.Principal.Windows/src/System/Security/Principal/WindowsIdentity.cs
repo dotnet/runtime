@@ -111,13 +111,13 @@ namespace System.Security.Principal
         /// Initializes a new instance of the WindowsIdentity class for the user represented by the specified User Principal Name (UPN).
         /// </summary>
         /// <remarks>
-        /// Unlike the desktop version, we connect to Lsa only as an untrusted caller. We do not attempt to exploit Tcb privilege or adjust the current
+        /// Unlike the .NET Framework version, we connect to Lsa only as an untrusted caller. We do not attempt to exploit Tcb privilege or adjust the current
         /// thread privilege to include Tcb.
         /// </remarks>
         public WindowsIdentity(string sUserPrincipalName)
             : base(null, null, null, ClaimTypes.Name, ClaimTypes.GroupSid)
         {
-            // Desktop compat: See comments below for why we don't validate sUserPrincipalName.
+            // .NET Framework compat: See comments below for why we don't validate sUserPrincipalName.
 
             using (SafeLsaHandle lsaHandle = ConnectToLsa())
             {
@@ -133,7 +133,7 @@ namespace System.Security.Principal
                 sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
                 Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
 
-                // Desktop compat: Desktop never null-checks sUserPrincipalName. Actual behavior is that the null makes it down to Encoding.Unicode.GetBytes() which then throws
+                // .NET Framework compat: Desktop never null-checks sUserPrincipalName. Actual behavior is that the null makes it down to Encoding.Unicode.GetBytes() which then throws
                 // the ArgumentNullException (provided that the prior LSA calls didn't fail first.) To make this compat decision explicit, we'll null check ourselves
                 // and simulate the exception from Encoding.Unicode.GetBytes().
                 if (sUserPrincipalName == null)
@@ -142,7 +142,7 @@ namespace System.Security.Principal
                 byte[] upnBytes = Encoding.Unicode.GetBytes(sUserPrincipalName);
                 if (upnBytes.Length > ushort.MaxValue)
                 {
-                    // Desktop compat: LSA only allocates 16 bits to hold the UPN size. We should throw an exception here but unfortunately, the desktop did an unchecked cast to ushort,
+                    // .NET Framework compat: LSA only allocates 16 bits to hold the UPN size. We should throw an exception here but unfortunately, the desktop did an unchecked cast to ushort,
                     // effectively truncating upnBytes to the first (N % 64K) bytes. We'll simulate the same behavior here (albeit in a way that makes it look less accidental.)
                     Array.Resize(ref upnBytes, upnBytes.Length & ushort.MaxValue);
                 }
@@ -155,11 +155,8 @@ namespace System.Security.Principal
                     // and do the marshalling into this buffer by hand.
                     //
                     int authenticationInfoLength = checked(sizeof(KERB_S4U_LOGON) + upnBytes.Length);
-                    using (SafeLocalAllocHandle authenticationInfo = Interop.Kernel32.LocalAlloc(0, new UIntPtr(checked((uint)authenticationInfoLength))))
+                    using (SafeLocalAllocHandle authenticationInfo = SafeLocalAllocHandle.LocalAlloc(authenticationInfoLength))
                     {
-                        if (authenticationInfo.IsInvalid)
-                            throw new OutOfMemoryException();
-
                         KERB_S4U_LOGON* pKerbS4uLogin = (KERB_S4U_LOGON*)(authenticationInfo.DangerousGetHandle());
                         pKerbS4uLogin->MessageType = KERB_LOGON_SUBMIT_TYPE.KerbS4ULogon;
                         pKerbS4uLogin->Flags = KerbS4uLogonFlags.None;
@@ -174,11 +171,8 @@ namespace System.Security.Principal
                         pKerbS4uLogin->ClientRealm.Buffer = IntPtr.Zero;
 
                         ushort sourceNameLength = checked((ushort)(sourceName.Length));
-                        using (SafeLocalAllocHandle sourceNameBuffer = Interop.Kernel32.LocalAlloc(0, new UIntPtr(sourceNameLength)))
+                        using (SafeLocalAllocHandle sourceNameBuffer = SafeLocalAllocHandle.LocalAlloc(sourceNameLength))
                         {
-                            if (sourceNameBuffer.IsInvalid)
-                                throw new OutOfMemoryException();
-
                             Marshal.Copy(sourceName, 0, sourceNameBuffer.DangerousGetHandle(), sourceName.Length);
                             LSA_STRING lsaOriginName = new LSA_STRING(sourceNameBuffer.DangerousGetHandle(), sourceNameLength);
 
@@ -881,13 +875,8 @@ namespace System.Security.Principal
                 case Interop.Errors.ERROR_BAD_LENGTH:
                 // special case for TokenSessionId. Falling through
                 case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
-                    // ptrLength is an [In] param to LocalAlloc
-                    UIntPtr ptrLength = new UIntPtr(dwLength);
                     safeLocalAllocHandle.Dispose();
-                    safeLocalAllocHandle = Interop.Kernel32.LocalAlloc(0, ptrLength);
-                    if (safeLocalAllocHandle == null || safeLocalAllocHandle.IsInvalid)
-                        throw new OutOfMemoryException();
-                    safeLocalAllocHandle.Initialize(dwLength);
+                    safeLocalAllocHandle = SafeLocalAllocHandle.LocalAlloc(checked((int)dwLength));
 
                     result = Interop.Advapi32.GetTokenInformation(tokenHandle,
                                                              (uint)tokenInformationClass,
@@ -1042,8 +1031,8 @@ namespace System.Security.Principal
             if (_safeTokenHandle.IsInvalid)
                 return;
 
-            SafeLocalAllocHandle safeAllocHandle = SafeLocalAllocHandle.InvalidHandle;
-            SafeLocalAllocHandle safeAllocHandlePrimaryGroup = SafeLocalAllocHandle.InvalidHandle;
+            SafeLocalAllocHandle safeAllocHandle = null;
+            SafeLocalAllocHandle safeAllocHandlePrimaryGroup = null;
             try
             {
                 // Retrieve the primary group sid
@@ -1098,8 +1087,8 @@ namespace System.Security.Principal
             }
             finally
             {
-                safeAllocHandle.Dispose();
-                safeAllocHandlePrimaryGroup.Dispose();
+                safeAllocHandle?.Dispose();
+                safeAllocHandlePrimaryGroup?.Dispose();
             }
         }
 
@@ -1112,7 +1101,7 @@ namespace System.Security.Principal
             if (_safeTokenHandle.IsInvalid)
                 return;
 
-            SafeLocalAllocHandle safeAllocHandle = SafeLocalAllocHandle.InvalidHandle;
+            SafeLocalAllocHandle safeAllocHandle = null;
             try
             {
                 safeAllocHandle = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenUser);
@@ -1136,7 +1125,7 @@ namespace System.Security.Principal
             }
             finally
             {
-                safeAllocHandle.Dispose();
+                safeAllocHandle?.Dispose();
             }
         }
 
@@ -1146,7 +1135,7 @@ namespace System.Security.Principal
             if (_safeTokenHandle.IsInvalid)
                 return;
 
-            SafeLocalAllocHandle safeAllocHandle = SafeLocalAllocHandle.InvalidHandle;
+            SafeLocalAllocHandle safeAllocHandle = null;
             try
             {
                 // Retrieve all group sids
@@ -1189,7 +1178,7 @@ namespace System.Security.Principal
             }
             finally
             {
-                safeAllocHandle?.Close();
+                safeAllocHandle?.Dispose();
             }
         }
 
@@ -1199,7 +1188,7 @@ namespace System.Security.Principal
             if (_safeTokenHandle.IsInvalid)
                 return;
 
-            SafeLocalAllocHandle safeAllocHandle = SafeLocalAllocHandle.InvalidHandle;
+            SafeLocalAllocHandle safeAllocHandle = null;
 
             try
             {
@@ -1282,7 +1271,7 @@ namespace System.Security.Principal
             }
             finally
             {
-                safeAllocHandle.Close();
+                safeAllocHandle?.Dispose();
             }
         }
     }

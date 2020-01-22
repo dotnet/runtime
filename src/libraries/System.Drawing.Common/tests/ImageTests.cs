@@ -52,7 +52,7 @@ namespace System.Drawing.Tests
         public void FromFile_LongSegment_ThrowsException()
         {
             // Throws PathTooLongException on Desktop and FileNotFoundException elsewhere.
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 string fileName = new string('a', 261);
 
@@ -164,7 +164,7 @@ namespace System.Drawing.Tests
         [MemberData(nameof(GetEncoderParameterList_ReturnsExpected_TestData))]
         public void GetEncoderParameterList_ReturnsExpected(ImageFormat format, Guid[] expectedParameters)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 throw new SkipTestException("This is a known bug for .NET Framework");
             }

@@ -1,0 +1,1 @@
+$(ProjectDir)\..\..\jay\jay.exe -ct &lt; $(ProjectDir)\..\..\jay\skeleton.cs $(ProjectDir)\Microsoft.Build.Internal\ExpressionParser.jay > $(ProjectDir)\Microsoft.Build.Internal\ExpressionParser.cs

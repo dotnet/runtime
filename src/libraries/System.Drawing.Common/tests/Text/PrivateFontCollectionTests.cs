@@ -136,7 +136,7 @@ namespace System.Drawing.Text.Tests
             using (var fontCollection = new PrivateFontCollection())
             {
                 // Throws PathTooLongException on Desktop and FileNotFoundException elsewhere.
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     Assert.Throws<PathTooLongException>(
                         () => fontCollection.AddFontFile(new string('a', 261)));

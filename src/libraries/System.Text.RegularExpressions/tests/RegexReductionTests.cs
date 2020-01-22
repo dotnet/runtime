@@ -57,7 +57,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in netfx.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
         // Two greedy one loops
         [InlineData("a*a*", "a*")]
         [InlineData("(a*a*)", "(a*)")]
@@ -273,12 +273,14 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a*b+", "(?>a*)b+")]
         [InlineData("a*b{3,4}", "(?>a*)b{3,4}")]
         [InlineData("a+b", "(?>a+)b")]
+        [InlineData("a?b", "(?>a?)b")]
         [InlineData("[^\n]*\n", "(?>[^\n]*)\n")]
         [InlineData("[^\n]*\n+", "(?>[^\n]*)\n+")]
         [InlineData("(a+)b", "((?>a+))b")]
         [InlineData("a*(?:bcd|efg)", "(?>a*)(?:bcd|efg)")]
         [InlineData("\\w*\\b", "(?>\\w*)\\b")]
         [InlineData("\\d*\\b", "(?>\\d*)\\b")]
+        [InlineData("(?:abc*|def*)g", "(?:ab(?>c*)|de(?>f*))g")]
         [InlineData("(?:a[ce]*|b*)g", "(?:a(?>[ce]*)|(?>b*))g")]
         [InlineData("(?:a[ce]*|b*)c", "(?:a[ce]*|(?>b*))c")]
         public void PatternsReduceIdentically(string pattern1, string pattern2)
@@ -289,7 +291,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in netfx.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
         // Not coalescing loops
         [InlineData("aa", "a{2}")]
         [InlineData("a[^a]", "a{2}")]

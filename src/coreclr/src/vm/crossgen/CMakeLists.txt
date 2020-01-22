@@ -253,12 +253,12 @@ if (WIN32)
   list(APPEND VM_CROSSGEN_SOURCES ${VM_CROSSGEN_HEADERS})
 endif (WIN32)
 
-if (CLR_CMAKE_PLATFORM_LINUX)
+if (CLR_CMAKE_HOST_LINUX)
   list(APPEND VM_CROSSGEN_SOURCES
     ../perfmap.cpp
     ../perfinfo.cpp
   )
-endif (CLR_CMAKE_PLATFORM_LINUX)
+endif (CLR_CMAKE_HOST_LINUX)
 
 add_library_clr(cee_crossgen ${VM_CROSSGEN_SOURCES})
 add_dependencies(cee_crossgen eventing_headers)

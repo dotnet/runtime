@@ -4,8 +4,6 @@
 
 namespace System.Net.NetworkInformation
 {
-    // TODO #3562 - properly name constants below from Win32 SDK (i.e. 11000 + k).
-
     public enum IPStatus
     {
         Success = 0,

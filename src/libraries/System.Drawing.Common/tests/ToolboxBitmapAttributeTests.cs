@@ -27,7 +27,7 @@ namespace System.Drawing.Tests
                 // On .NET Framework sometimes the size might be default or it might
                 // be disposed in which case Size property throws an ArgumentException
                 // so allow both cases see https://github.com/dotnet/corefx/issues/27361.
-                if (PlatformDetection.IsFullFramework && ex is ArgumentException)
+                if (PlatformDetection.IsNetFramework && ex is ArgumentException)
                 {
                     return;
                 }
@@ -177,7 +177,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Logical name with no extension is not supported in desktop framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Logical name with no extension is not supported in .NET Framework")]
         [InlineData(typeof(Icon_toolboxBitmapAttributeTest), 256, 256)]
         public void GetImage_NoExtension(Type type, int width, int height)
         {

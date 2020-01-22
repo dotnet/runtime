@@ -803,7 +803,6 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation("Load stylesheet with entity reference: Bug #68450 ")]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Reader, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Writer, DocType.XPathDocument)]
