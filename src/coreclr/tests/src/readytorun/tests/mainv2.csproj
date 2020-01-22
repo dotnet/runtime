@@ -32,11 +32,19 @@ IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
     Exit /b 1
 )
+if not exist mainv2.ni.exe (
+    echo FAILED to build mainv2.ni.exe
+    exit /b 1
+)
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out fieldgetter.ni.dll fieldgetter.dll 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
     Exit /b 1
+)
+if not exist fieldgetter.ni.dll (
+    echo FAILED to build fieldgetter.ni.dll
+    exit /b 1
 )
 DEL test.dll
 if exist test.dll (
@@ -53,6 +61,10 @@ set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
     ECHO Crossgen failed with exitcode - !CrossGenStatus!
     Exit /b 1
+)
+if not exist test.ni.dll (
+    echo FAILED to build test.ni.dll
+    exit /b 1
 )
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
@@ -76,11 +88,21 @@ then
   echo Crossgen failed with exitcode: $__cgExitCode
   exit 1
 fi
+if [ ! -f mainv2.ni.exe ]
+then
+  echo Failed to build mainv2.ni.exe
+  exit 1
+fi
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out fieldgetter.ni.dll fieldgetter.dll
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
 then
   echo Crossgen failed with exitcode: $__cgExitCode
+  exit 1
+fi
+if [ ! -f fieldgetter.ni.dll ]
+then
+  echo Failed to build fieldgetter.ni.dll
   exit 1
 fi
 rm -f test.dll
@@ -100,6 +122,11 @@ __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
 then
   echo Crossgen failed with exitcode: $__cgExitCode
+  exit 1
+fi
+if [ ! -f test.ni.dll ]
+then
+  echo Failed to build test.ni.dll
   exit 1
 fi
 ]]></BashCLRTestPreCommands>
