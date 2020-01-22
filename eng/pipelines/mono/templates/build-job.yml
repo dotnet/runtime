@@ -61,10 +61,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./mono$(scriptExt) $(buildConfig) $(archType) -ci -skipnuget
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci -skipnuget
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: mono$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages
+      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci -skiptests -skipbuildpackages
         displayName: Build product
 
     # Publish product output directory for consumption by tests.
