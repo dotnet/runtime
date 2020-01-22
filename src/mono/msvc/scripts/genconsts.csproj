@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">Any CPU</Platform>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>genconsts</AssemblyName>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <OutputPath>.\</OutputPath>
+    <ProjectGuid>{702AE2C0-71DD-4112-9A06-E4FABCA59986}</ProjectGuid>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
+  </PropertyGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>cd $(MSBuildProjectDirectory)
+$(TargetPath)</PostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="genconsts.cs" />
+    <Reference Include="System" />
+  </ItemGroup>
+</Project>

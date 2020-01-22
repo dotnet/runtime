@@ -30,7 +30,7 @@ namespace System.ServiceProcess.Tests
 
         private void AssertExpectedProperties(ServiceController testServiceController)
         {
-            var comparer = PlatformDetection.IsFullFramework ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal; // Full framework upper cases the name
+            var comparer = PlatformDetection.IsNetFramework ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal; // .NET Framework upper cases the name
             Assert.Equal(_testService.TestServiceName, testServiceController.ServiceName, comparer);
             Assert.Equal(_testService.TestServiceDisplayName, testServiceController.DisplayName);
             Assert.Equal(_testService.TestMachineName, testServiceController.MachineName);
@@ -193,7 +193,7 @@ namespace System.ServiceProcess.Tests
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework receives the Connected Byte Code after the Exception Thrown Byte Code")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework receives the Connected Byte Code after the Exception Thrown Byte Code")]
         public void PropagateExceptionFromOnStart()
         {
             string serviceName = nameof(PropagateExceptionFromOnStart) + Guid.NewGuid().ToString();

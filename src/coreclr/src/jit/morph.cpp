@@ -12560,38 +12560,47 @@ DONE_MORPHING_CHILDREN:
 
                 if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ))
                 {
-                    /* Fold "((x+icon1)+icon2) to (x+(icon1+icon2))" */
+                    // Fold "((x+icon1)+icon2) to (x+(icon1+icon2))"
+                    // Fold "((comma(y, x+icon1)+icon2) to comma(y, x+(icon1+icon2))"
                     CLANG_FORMAT_COMMENT_ANCHOR;
 
-                    if (op1->gtOper == GT_ADD &&                             //
-                        !gtIsActiveCSE_Candidate(op1) &&                     //
-                        !op1->gtOverflow() &&                                //
-                        op1->AsOp()->gtOp2->IsCnsIntOrI() &&                 //
-                        (op1->AsOp()->gtOp2->OperGet() == op2->OperGet()) && //
-                        (op1->AsOp()->gtOp2->TypeGet() != TYP_REF) &&        // Don't fold REFs
-                        (op2->TypeGet() != TYP_REF))                         // Don't fold REFs
+                    const bool commasOnly        = true;
+                    GenTree*   op1EffectiveValue = op1->gtEffectiveVal(commasOnly);
+
+                    if (op1EffectiveValue->gtOper == GT_ADD && !gtIsActiveCSE_Candidate(op1EffectiveValue) &&
+                        !op1EffectiveValue->gtOverflow() && op1EffectiveValue->AsOp()->gtOp2->IsCnsIntOrI() &&
+                        (op1EffectiveValue->AsOp()->gtOp2->OperGet() == op2->OperGet()) &&
+                        (op1EffectiveValue->AsOp()->gtOp2->TypeGet() != TYP_REF) && (op2->TypeGet() != TYP_REF))
                     {
-                        cns1 = op1->AsOp()->gtOp2;
-                        op2->AsIntConCommon()->SetIconValue(cns1->AsIntConCommon()->IconValue() +
-                                                            op2->AsIntConCommon()->IconValue());
+                        cns1 = op1EffectiveValue->AsOp()->gtOp2;
+
+                        cns1->AsIntConCommon()->SetIconValue(cns1->AsIntConCommon()->IconValue() +
+                                                             op2->AsIntConCommon()->IconValue());
 #ifdef _TARGET_64BIT_
-                        if (op2->TypeGet() == TYP_INT)
+                        if (cns1->TypeGet() == TYP_INT)
                         {
                             // we need to properly re-sign-extend or truncate after adding two int constants above
-                            op2->AsIntCon()->TruncateOrSignExtend32();
+                            cns1->AsIntCon()->TruncateOrSignExtend32();
                         }
 #endif //_TARGET_64BIT_
 
                         if (cns1->OperGet() == GT_CNS_INT)
                         {
-                            op2->AsIntCon()->gtFieldSeq =
+                            cns1->AsIntCon()->gtFieldSeq =
                                 GetFieldSeqStore()->Append(cns1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
                         }
-                        DEBUG_DESTROY_NODE(cns1);
+                        DEBUG_DESTROY_NODE(op2);
 
-                        tree->AsOp()->gtOp1 = op1->AsOp()->gtOp1;
-                        DEBUG_DESTROY_NODE(op1);
-                        op1 = tree->AsOp()->gtOp1;
+                        GenTree* oldTree = tree;
+                        tree             = tree->AsOp()->gtOp1;
+                        op1              = tree->AsOp()->gtOp1;
+                        op2              = tree->AsOp()->gtOp2;
+                        DEBUG_DESTROY_NODE(oldTree);
+
+                        if (tree->OperGet() != GT_ADD)
+                        {
+                            return tree;
+                        }
                     }
 
                     // Fold (x + 0).

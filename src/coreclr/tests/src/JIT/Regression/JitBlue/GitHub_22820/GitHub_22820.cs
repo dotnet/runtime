@@ -4,7 +4,8 @@
 
 using System;
 
-// Repro for issue 22820. On x86 we need to report enclosed handler
+// Repro for https://github.com/dotnet/coreclr/issues/22820.
+// On x86 we need to report enclosed handler
 // live-in locals as live into any enclosing filter.
 //
 // Run with optimized codegen and COMPlus_GCStress=0x4

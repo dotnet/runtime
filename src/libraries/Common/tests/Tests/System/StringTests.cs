@@ -1673,7 +1673,7 @@ namespace System.Tests
             }
             Assert.Equal(expected, s.EndsWith(value, comparisonType));
 
-            // Cannot use implicit cast from string to ReadOnlySpan for other runtimes, like netfx. Therefore, explicitly call AsSpan.
+            // Cannot use implicit cast from string to ReadOnlySpan for other runtimes, like .NET Framework. Therefore, explicitly call AsSpan.
             Assert.Equal(expected, s.AsSpan().EndsWith(value.AsSpan(), comparisonType));
         }
 
@@ -2628,7 +2628,7 @@ namespace System.Tests
         [InlineData("Hello", 'o', 5, 0, -1)]
         [InlineData("H" + SoftHyphen + "ello", 'e', 0, 3, 2)]
         // For some reason, this is failing on *nix with ordinal comparisons.
-        // Possibly related issue: dotnet/coreclr#2051
+        // Possibly related issue: https://github.com/dotnet/coreclr/issues/2051
         // [InlineData("Hello", '\0', 0, 5, -1)] // .NET strings are terminated with a null character, but they should not be included as part of the string
         [InlineData("\ud800\udfff", '\ud800', 0, 1, 0)] // Surrogate characters
         [InlineData("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 'A', 0, 26, 0)]

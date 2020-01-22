@@ -105,7 +105,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(SendFileSync_MemberData))]
         public void SendFile_Synchronous(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend, bool forceNonBlocking)
@@ -257,7 +257,7 @@ namespace System.Net.Sockets.Tests
             }, maxAttempts: 10);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(SendFile_MemberData))]
         public async Task SendFile_APM(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)

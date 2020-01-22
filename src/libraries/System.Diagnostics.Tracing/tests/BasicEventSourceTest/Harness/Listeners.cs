@@ -257,7 +257,7 @@ namespace BasicEventSourceTests
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-                // OnEventWritten is abstract in netfx <= 461
+                // OnEventWritten is abstract in .NET Framework <= 461
                 base.OnEventWritten(eventData);
                 _forwardTo?.OnEvent?.Invoke(new EventListenerEvent(eventData));
             }

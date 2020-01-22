@@ -1,0 +1,2 @@
+$(ProjectDir)\..\..\jay\jay.exe -ct &lt; $(ProjectDir)\..\..\jay\skeleton.cs $(ProjectDir)\Monodoc.Ecma\EcmaUrlParser.jay > $(ProjectDir)\Monodoc.Ecma\EcmaUrlParser.cs
+

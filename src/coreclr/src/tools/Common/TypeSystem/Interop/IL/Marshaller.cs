@@ -384,7 +384,7 @@ namespace Internal.TypeSystem.Interop
 
         public bool IsMarshallingRequired()
         {
-            return Out || IsMarshallingRequired(MarshallerKind);
+            return Out || IsManagedByRef || IsMarshallingRequired(MarshallerKind);
         }
         #endregion
 

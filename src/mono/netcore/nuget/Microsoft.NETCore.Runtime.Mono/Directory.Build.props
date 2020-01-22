@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ItemGroup>
+    <!-- No reference: don't permit reference to the implementation from lib -->
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>ref/netstandard1.0</TargetPath>
+    </File>
+  </ItemGroup>
+  <Import Project="../Directory.Build.props" />
+</Project>

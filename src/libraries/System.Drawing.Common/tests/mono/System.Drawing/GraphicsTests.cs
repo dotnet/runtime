@@ -2325,7 +2325,7 @@ namespace MonoTests.System.Drawing
         {
             if (PlatformDetection.IsArmOrArm64Process)
             {
-                //ActiveIssue: 35744
+                // [ActiveIssue("https://github.com/dotnet/corefx/issues/35744")]
                 throw new SkipTestException("Precision on float numbers");
             }
 

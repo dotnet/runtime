@@ -25,6 +25,7 @@ namespace System.Text.Json
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
+        private ReferenceHandling _referenceHandling = ReferenceHandling.Default;
         private JavaScriptEncoder? _encoder;
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
@@ -294,6 +295,19 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _writeIndented = value;
+            }
+        }
+
+        /// <summary>
+        /// Defines how references are treated when reading and writing JSON, this is convenient to deal with circularity.
+        /// </summary>
+        public ReferenceHandling ReferenceHandling
+        {
+            get => _referenceHandling;
+            set
+            {
+                VerifyMutable();
+                _referenceHandling = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 

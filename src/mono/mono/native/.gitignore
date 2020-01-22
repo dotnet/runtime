@@ -1,0 +1,12 @@
+/Makefile
+/Makefile.in
+/Makefile.am
+/.libs
+/.deps
+/*.lo
+/*.la
+/*.o
+/*.a
+/platform-type.c
+/platform-type-compat.c
+/platform-type-unified.c

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+  </PropertyGroup>
+  <ItemGroup Label="interp_sources">
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\hacks.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\mintops.h" />
+    <None Include="$(MonoSourceLocation)\mono\mini\interp\mintops.def" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\mintops.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\transform.c" />
+  </ItemGroup>
+</Project>

@@ -667,7 +667,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Used to throw a NullReferenceException, see issue #11702.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Used to throw a NullReferenceException, see https://github.com/dotnet/corefx/issues/11702.")]
         public void NullValueForPrimitiveTypeInConstructorArgs_ThrowsArgumentNullException()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[] { typeof(int) });
@@ -837,7 +837,7 @@ namespace System.Reflection.Emit.Tests
         {
             // Used to assert in CustomAttributeBuilder.EmitType(), not writing any CustomAttributeEncoding.
             // This created a blob that (probably) generates a CustomAttributeFormatException. In theory, this
-            // could have been something more uncontrolled, so was fixed. See issue #11703.
+            // could have been something more uncontrolled, so was fixed. See https://github.com/dotnet/corefx/issues/11703.
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             FieldInfo[] namedFields = Helpers.GetFields(typeof(TestAttribute), nameof(TestAttribute.ObjectField));
             object[] fieldValues = new object[] { value };

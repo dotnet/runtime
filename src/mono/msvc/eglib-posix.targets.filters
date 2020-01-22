@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="posix_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gdate-unix.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gdir-unix.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile-unix.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmisc-unix.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmodule-unix.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gtimer-unix.c">
+      <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(EGLibFilterSubFolder)\posix">
+      <UniqueIdentifier>{3c958a68-b6a1-40d3-834c-b50be09cb819}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

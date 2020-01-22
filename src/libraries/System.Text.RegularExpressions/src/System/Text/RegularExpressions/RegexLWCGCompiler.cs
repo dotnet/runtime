@@ -13,6 +13,10 @@ namespace System.Text.RegularExpressions
         private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
         private static int s_regexCount = 0;
 
+        public RegexLWCGCompiler() : base(persistsAssembly: false)
+        {
+        }
+
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
         public RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options, bool hasTimeout)
         {
