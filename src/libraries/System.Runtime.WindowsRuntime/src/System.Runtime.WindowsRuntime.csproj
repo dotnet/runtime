@@ -22,29 +22,22 @@
     <ProjectReference Include="$(LibrariesProjectRoot)restore\winrt\winrt.depproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ReferenceFromRuntime Include="System.Runtime" />
-    <ReferenceFromRuntime Include="System.Runtime.Extensions">
-      <Aliases>System_Runtime_Extensions</Aliases>
-    </ReferenceFromRuntime>
+    <ReferenceFromRuntime Include="System.Runtime.Extensions" />
     <ReferenceFromRuntime Include="System.Diagnostics.Debug" />
     <ReferenceFromRuntime Include="System.Diagnostics.Tools" />
     <ReferenceFromRuntime Include="System.Runtime.InteropServices.WindowsRuntime" />
     <ReferenceFromRuntime Include="System.ObjectModel" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
-      <Aliases>System_Runtime_Extensions</Aliases>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="System\InternalHelpers.cs" />
     <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.cs" />

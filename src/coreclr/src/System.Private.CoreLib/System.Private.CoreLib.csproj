@@ -291,8 +291,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
-      <Link>Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs</Link>

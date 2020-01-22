@@ -272,7 +272,7 @@ namespace System.Reflection
             return new string(dest, 0, position);
         }
 
-        // This implementation of EscapeString has been copied from System.Private.Uri from corefx repo
+        // This implementation of EscapeString has been copied from System.Private.Uri from the runtime repo
         // - forceX characters are always escaped if found
         // - rsvd character will remain unescaped
         //

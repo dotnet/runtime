@@ -59,7 +59,7 @@ namespace System.IO.IsolatedStorage
         }
 
         // On .NET Framework FileStream has an internal no arg constructor that we utilize to provide the facade. We don't have access
-        // to internals in CoreFX so we'll do the next best thing and contort ourselves into the SafeFileHandle constructor.
+        // to internals in .NET Core so we'll do the next best thing and contort ourselves into the SafeFileHandle constructor.
         // (A path constructor would try and create the requested file and give us two open handles.)
         //
         // We only expose our own nested FileStream so the base class having a handle doesn't matter. Passing a new SafeFileHandle
