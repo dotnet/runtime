@@ -56,6 +56,36 @@ namespace Mono.Linker.Tests.Extensions {
 				yield return @event;
 		}
 
+		public static IEnumerable<MethodDefinition> AllMethods (this TypeDefinition type)
+		{
+			foreach (var m in type.AllMembers()) {
+				switch (m) {
+					case MethodDefinition method: 
+						yield return method;
+						break;
+					case PropertyDefinition @property:
+						if (@property.GetMethod != null)
+							yield return @property.GetMethod;
+
+						if (@property.SetMethod != null)
+							yield return @property.SetMethod;
+
+						break;
+					case EventDefinition @event:
+						if (@event.AddMethod != null)
+							yield return @event.AddMethod;
+
+						if (@event.RemoveMethod != null)
+							yield return @event.RemoveMethod;
+
+						break;
+
+					default:
+						break;
+				}
+			}
+		}
+
 		public static bool HasAttribute (this ICustomAttributeProvider provider, string name)
 		{
 			return provider.CustomAttributes.Any (ca => ca.AttributeType.Name == name);
