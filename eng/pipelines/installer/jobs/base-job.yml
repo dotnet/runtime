@@ -267,7 +267,7 @@ jobs:
       value: 'artifacts/transport/${{ parameters.runtimeFlavor }}'
     - name: RuntimeArtifactsArgs
       value: >-
-        /p:RuntimeOverridePath=${{ parameters.buildCommandSourcesDirectory }}$(RuntimeDownloadPath)
+        /p:RuntimeArtifactsPath=${{ parameters.buildCommandSourcesDirectory }}$(RuntimeDownloadPath)
         /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
     - name: RuntimeArtifactName
       value: $(runtimeFlavorName)Product_$(liveRuntimeLegName)
@@ -397,7 +397,7 @@ jobs:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
         unpackFolder: $(Build.SourcesDirectory)/$(RuntimeDownloadPath)
-        artifactFileName: '$(RuntimeArtifactsName)$(archiveExtension)'
+        artifactFileName: '$(RuntimeArtifactName)$(archiveExtension)'
         artifactName: '$(RuntimeArtifactName)'
         displayName: '$(runtimeFlavorName) artifacts'
 
