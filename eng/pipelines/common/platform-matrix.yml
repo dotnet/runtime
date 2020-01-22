@@ -87,7 +87,7 @@ jobs:
       archType: x64
       platform: Linux_musl_x64
       container:
-        image: alpine-3.9-bfcd90a-20200121145958
+        image: alpine-3.9-WithNode-0fc54a3-20200121145958
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
