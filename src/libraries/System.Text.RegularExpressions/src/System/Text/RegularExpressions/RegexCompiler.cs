@@ -924,7 +924,7 @@ namespace System.Text.RegularExpressions
         {
             _runtextposLocal = DeclareInt32();
             _runtextendLocal = DeclareInt32();
-            if (_code.RightToLeft)
+            if (_code!.RightToLeft)
             {
                 _runtextbegLocal = DeclareInt32();
             }
@@ -950,7 +950,7 @@ namespace System.Text.RegularExpressions
             Mvfldloc(s_runtextendField, _runtextendLocal);
             if (_code.RightToLeft)
             {
-                Mvfldloc(s_runtextbegField, _runtextbegLocal);
+                Mvfldloc(s_runtextbegField, _runtextbegLocal!);
             }
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
@@ -986,10 +986,10 @@ namespace System.Text.RegularExpressions
                     Ldloc(_runtextposLocal);
                     Ldc(minRequiredLength);
                     Sub();
-                    Ldloc(_runtextbegLocal);
+                    Ldloc(_runtextbegLocal!);
                     Bge(finishedLengthCheck);
                     Ldthis();
-                    Ldloc(_runtextbegLocal);
+                    Ldloc(_runtextbegLocal!);
                     Stfld(s_runtextposField);
                     Ldc(0);
                     Ret();
@@ -1070,7 +1070,7 @@ namespace System.Text.RegularExpressions
                         Ldloc(_runtextendLocal);
                         Bge(l1);
                         Ldthis();
-                        Ldloc(_runtextbegLocal);
+                        Ldloc(_runtextbegLocal!);
                         Stfld(s_runtextposField);
                         Ldc(0);
                         Ret();
@@ -1096,7 +1096,7 @@ namespace System.Text.RegularExpressions
                         Beq(l2);
                         MarkLabel(l1);
                         Ldthis();
-                        Ldloc(_runtextbegLocal);
+                        Ldloc(_runtextbegLocal!);
                         Stfld(s_runtextposField);
                         Ldc(0);
                         Ret();
@@ -1110,7 +1110,7 @@ namespace System.Text.RegularExpressions
                         Ldthisfld(s_runtextstartField);
                         Bge(l1);
                         Ldthis();
-                        Ldloc(_runtextbegLocal);
+                        Ldloc(_runtextbegLocal!);
                         Stfld(s_runtextposField);
                         Ldc(0);
                         Ret();
@@ -1121,10 +1121,10 @@ namespace System.Text.RegularExpressions
                     {
                         Label l1 = DefineLabel();
                         Ldloc(_runtextposLocal);
-                        Ldloc(_runtextbegLocal);
+                        Ldloc(_runtextbegLocal!);
                         Ble(l1);
                         Ldthis();
-                        Ldloc(_runtextbegLocal);
+                        Ldloc(_runtextbegLocal!);
                         Stfld(s_runtextposField);
                         MarkLabel(l1);
                     }
@@ -1162,7 +1162,7 @@ namespace System.Text.RegularExpressions
                 int chLast = _bmPrefix.Pattern[last];
 
                 Mvfldloc(s_runtextField, _runtextLocal);
-                Ldloc(_code.RightToLeft ? _runtextbegLocal : _runtextendLocal);
+                Ldloc(_code.RightToLeft ? _runtextbegLocal! : _runtextendLocal);
                 Stloc(limitLocal);
 
                 Ldloc(_runtextposLocal);
@@ -1223,11 +1223,27 @@ namespace System.Text.RegularExpressions
 
                 var table = new Label[_bmPrefix.HighASCII - _bmPrefix.LowASCII + 1];
 
+                // Mapping from negative ASCII value to the label that loads it.
+                // As we create labels, we check to see if the table already has
+                // the value, and only create the label if it doesn't.  Then when
+                // spitting out the code for each label, we try to remove the entry
+                // from the dictionary, and only if we're successful (because it
+                // wasn't already removed) do we spit the code.
+                var labelMap = new Dictionary<int, Label>();
+
                 for (int i = _bmPrefix.LowASCII; i <= _bmPrefix.HighASCII; i++)
                 {
-                    table[i - _bmPrefix.LowASCII] = (_bmPrefix.NegativeASCII[i] == beforefirst) ?
-                        lDefaultAdvance :
-                        DefineLabel();
+                    Label label;
+                    if (_bmPrefix.NegativeASCII[i] == beforefirst)
+                    {
+                        label = lDefaultAdvance;
+                    }
+                    else if (!labelMap.TryGetValue(_bmPrefix.NegativeASCII[i], out label))
+                    {
+                        label = DefineLabel();
+                        labelMap.Add(_bmPrefix.NegativeASCII[i], label);
+                    }
+                    table[i - _bmPrefix.LowASCII] = label;
                 }
 
                 Ldloc(chLocal);
@@ -1235,7 +1251,8 @@ namespace System.Text.RegularExpressions
 
                 for (int i = _bmPrefix.LowASCII; i <= _bmPrefix.HighASCII; i++)
                 {
-                    if (_bmPrefix.NegativeASCII[i] == beforefirst)
+                    if (_bmPrefix.NegativeASCII[i] == beforefirst ||
+                        !labelMap.Remove(_bmPrefix.NegativeASCII[i]))
                     {
                         continue;
                     }
@@ -1292,7 +1309,7 @@ namespace System.Text.RegularExpressions
                 MarkLabel(lFail);
 
                 Ldthis();
-                Ldloc(_code.RightToLeft ? _runtextbegLocal : _runtextendLocal);
+                Ldloc(_code.RightToLeft ? _runtextbegLocal! : _runtextendLocal);
                 Stfld(s_runtextposField);
                 Ldc(0);
                 Ret();
@@ -1316,7 +1333,7 @@ namespace System.Text.RegularExpressions
                 Mvfldloc(s_runtextField, _runtextLocal);
 
                 Ldloc(_runtextposLocal);
-                Ldloc(_runtextbegLocal);
+                Ldloc(_runtextbegLocal!);
                 Sub();
                 Stloc(cLocal);
 
