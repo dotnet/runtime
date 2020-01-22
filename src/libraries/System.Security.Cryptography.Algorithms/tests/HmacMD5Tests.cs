@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         [Fact]
         public void HMacMD5_ThrowsArgumentNullForNullConstructorKey()
         {
-            Assert.Throws<ArgumentNullException>(() => new HMACMD5(null));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACMD5(null));
         }
     }
 }

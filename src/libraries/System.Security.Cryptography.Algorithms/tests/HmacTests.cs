@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         {
             using (HMAC hash = Create())
             {
-                Assert.Throws<ArgumentNullException>(() => hash.Key = null);
+                AssertExtensions.Throws<ArgumentNullException>("value", () => hash.Key = null);
             }
         }
     }

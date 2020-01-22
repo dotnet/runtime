@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         [Fact]
         public void HmacSha256_ThrowsArgumentNullForNullConstructorKey()
         {
-            Assert.Throws<ArgumentNullException>(() => new HMACSHA256(null));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA256(null));
         }
     }
 }

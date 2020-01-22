@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         [Fact]
         public void HmacSha512_ThrowsArgumentNullForNullConstructorKey()
         {
-            Assert.Throws<ArgumentNullException>(() => new HMACSHA512(null));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA512(null));
         }
     }
 }
