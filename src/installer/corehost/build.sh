@@ -183,7 +183,7 @@ __cmake_defines="${__cmake_defines} ${__arch_define}"
 # Configure environment if we are doing a cross compile.
 if [ "$__CrossBuild" == 1 ]; then
     if ! [[ -n $ROOTFS_DIR ]]; then
-        export ROOTFS_DIR="$RootRepo/eng/common/cross/rootfs/$__build_arch"
+        export ROOTFS_DIR="$RootRepo/.tools/rootfs/$__build_arch"
     fi
 fi
 

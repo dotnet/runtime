@@ -700,7 +700,7 @@ fi
 if [ $__CrossBuild == 1 ]; then
     export CROSSCOMPILE=1
     if ! [[ -n "$ROOTFS_DIR" ]]; then
-        export ROOTFS_DIR="$__RepoRootDir/eng/common/cross/rootfs/$__BuildArch"
+        export ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
     fi
 fi
 
