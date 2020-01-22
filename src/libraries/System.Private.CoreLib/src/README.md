@@ -6,7 +6,7 @@ The goal is to have the majority of code located in this folder, as that code is
 
 ### File Naming Convention
 
-Any runtime specific partial part which has also shared part sholud use runtime specific file name suffix to easy the navigation.
+Any runtime-specific `partial` part which also has a shared part sholud use a runtime-specific file name suffix to ease the navigation.
 
 * `*.CoreCLR.cs` for CoreCLR runtime
 * `*.Mono.cs` for Mono runtime
