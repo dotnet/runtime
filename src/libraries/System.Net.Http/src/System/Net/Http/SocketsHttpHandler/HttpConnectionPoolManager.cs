@@ -230,7 +230,8 @@ namespace System.Net.Http
             HttpConnectionPool pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                // TODO: #28863 Uri.IdnHost is missing '[', ']' characters around IPv6 address.
+                // TODO https://github.com/dotnet/corefx/issues/28863:
+                // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
                 // So, we need to add them manually for now.
                 bool isNonNullIPv6address = key.Host != null && request.RequestUri.HostNameType == UriHostNameType.IPv6;
 

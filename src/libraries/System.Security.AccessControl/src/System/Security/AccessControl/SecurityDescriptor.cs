@@ -686,7 +686,7 @@ nameof(sddlForm));
                 //
                 if (byteArray != IntPtr.Zero)
                 {
-                    Interop.Kernel32.LocalFree(byteArray);
+                    Marshal.FreeHGlobal(byteArray);
                 }
             }
 

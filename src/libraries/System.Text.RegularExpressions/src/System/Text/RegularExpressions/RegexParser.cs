@@ -1874,7 +1874,7 @@ namespace System.Text.RegularExpressions
                             else
                             {
                                 // Simple (unnamed) capture group.
-                                // Add unnamend parentheses if ExplicitCapture is not set
+                                // Add unnamed parentheses if ExplicitCapture is not set
                                 // and the next parentheses is not ignored.
                                 if (!UseOptionN() && !_ignoreNextParen)
                                 {
@@ -2313,7 +2313,7 @@ namespace System.Text.RegularExpressions
         private char CharAt(int i) => _pattern[i];
 
         /// <summary>Returns the char right of the current parsing position.</summary>
-        internal char RightChar() => _pattern[_currentPos];
+        private char RightChar() => _pattern[_currentPos];
 
         /// <summary>Returns the char i chars right of the current parsing position.</summary>
         private char RightChar(int i) => _pattern[_currentPos + i];

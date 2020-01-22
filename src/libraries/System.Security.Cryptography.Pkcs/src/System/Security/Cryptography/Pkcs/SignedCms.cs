@@ -165,10 +165,13 @@ namespace System.Security.Cryptography.Pkcs
 
         internal void Decode(ReadOnlyMemory<byte> encodedMessage)
         {
+            AsnValueReader reader = new AsnValueReader(encodedMessage.Span, AsnEncodingRules.BER);
+
             // Windows (and thus NetFx) reads the leading data and ignores extra.
             // So use the Decode overload which doesn't throw on extra data.
             ContentInfoAsn.Decode(
-                new AsnReader(encodedMessage, AsnEncodingRules.BER),
+                ref reader,
+                encodedMessage,
                 out ContentInfoAsn contentInfo);
 
             if (contentInfo.ContentType != Oids.Pkcs7Signed)
@@ -294,7 +297,7 @@ namespace System.Security.Cryptography.Pkcs
                 // Even if all signers have been removed, throw if doing a NoSignature signature
                 // on a loaded (from file, or from first signature) document.
                 //
-                // This matches the NetFX behavior.
+                // This matches the .NET Framework behavior.
                 throw new CryptographicException(SR.Cryptography_Cms_Sign_No_Signature_First_Signer);
             }
 
@@ -302,7 +305,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 if (silent)
                 {
-                    // NetFX compatibility, silent disallows prompting, so throws InvalidOperationException
+                    // .NET Framework compatibility, silent disallows prompting, so throws InvalidOperationException
                     // in this state.
                     //
                     // The message is different than on NetFX, because the resource string was for
@@ -418,7 +421,7 @@ namespace System.Security.Cryptography.Pkcs
 
         internal void Reencode()
         {
-            // When NetFx re-encodes it just resets the CMS handle, the ContentInfo property
+            // When .NET Framework re-encodes it just resets the CMS handle, the ContentInfo property
             // does not get changed.
             // See ReopenToDecode
             ContentInfo save = ContentInfo;

@@ -39,9 +39,19 @@ namespace System.Text.Json
                     return true;
                 }
 
-                state.Current.CollectionEnumerator = enumerable.GetEnumerator();
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                {
+                    if (WriteReference(ref state, writer, options, ClassType.Enumerable, enumerable))
+                    {
+                        return WriteEndArray(ref state);
+                    }
+                }
+                else
+                {
+                    state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
+                }
 
-                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
+                state.Current.CollectionEnumerator = enumerable.GetEnumerator();
             }
 
             if (state.Current.CollectionEnumerator.MoveNext())
@@ -75,6 +85,17 @@ namespace System.Text.Json
             // We are done enumerating.
             writer.WriteEndArray();
 
+            // Used for ReferenceHandling.Preserve
+            if (state.Current.WriteWrappingBraceOnEndPreservedArray)
+            {
+                writer.WriteEndObject();
+            }
+
+            return WriteEndArray(ref state);
+        }
+
+        private static bool WriteEndArray(ref WriteStack state)
+        {
             if (state.Current.PopStackOnEndCollection)
             {
                 state.Pop();

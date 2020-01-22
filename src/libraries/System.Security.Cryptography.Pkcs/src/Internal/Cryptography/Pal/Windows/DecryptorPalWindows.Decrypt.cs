@@ -83,7 +83,7 @@ namespace Internal.Cryptography.Pal.Windows
             if (exception != null)
                 return null;
 
-            // Desktop compat: We pass false for "silent" here (thus allowing crypto providers to display UI.)
+            // .NET Framework compat: We pass false for "silent" here (thus allowing crypto providers to display UI.)
             const bool Silent = false;
             // Note: Using CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG rather than CRYPT_ACQUIRE_PREFER_NCRYPT_KEY_FLAG
             // because wrapping an NCrypt wrapper over CAPI keys unconditionally causes some legacy features

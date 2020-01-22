@@ -398,7 +398,7 @@ namespace System.Diagnostics
         [NonEvent, MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private void BreakPointWithDebuggerFuncEval()
         {
-            new object();   // This is only here because it helps old desktop runtimes emit a GC safe point at the start of the method
+            new object();   // This is only here because it helps old .NET Framework runtimes emit a GC safe point at the start of the method
             while (_false)
             {
                 _false = false;

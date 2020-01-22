@@ -1,14 +1,14 @@
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     add_definitions(-DFEATURE_ENABLE_HARDWARE_EXCEPTIONS)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 # Set the RPATH of paltest_pal_sxs_test1 so that it can find dependencies without needing to set LD_LIBRARY
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if(CORECLR_SET_RPATH)
-  if(CLR_CMAKE_PLATFORM_LINUX)
+  if(CLR_CMAKE_HOST_LINUX)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-  endif(CLR_CMAKE_PLATFORM_LINUX)
+  endif(CLR_CMAKE_HOST_LINUX)
 endif(CORECLR_SET_RPATH)
 
 # Test DLL1

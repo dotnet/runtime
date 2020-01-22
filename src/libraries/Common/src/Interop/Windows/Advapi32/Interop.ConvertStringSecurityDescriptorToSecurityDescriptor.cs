@@ -14,7 +14,7 @@ internal partial class Interop
         internal static extern unsafe bool ConvertStringSecurityDescriptorToSecurityDescriptor(
                 string StringSecurityDescriptor,
                 int StringSDRevision,
-                out SafeLocalMemHandle pSecurityDescriptor,
+                out SafeLocalAllocHandle pSecurityDescriptor,
                 IntPtr SecurityDescriptorSize);
     }
 }

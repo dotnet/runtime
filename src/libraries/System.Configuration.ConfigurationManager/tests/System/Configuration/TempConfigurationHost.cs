@@ -9,7 +9,7 @@ using System.Reflection;
 
 public class TempConfigurationHost : DelegatingConfigHost
 {
-    private static string s_assemblyName = PlatformDetection.IsFullFramework ? "System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" : "System.Configuration.ConfigurationManager";
+    private static string s_assemblyName = PlatformDetection.IsNetFramework ? "System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" : "System.Configuration.ConfigurationManager";
     private static IInternalConfigConfigurationFactory s_configurationFactory;
 
     private ConfigurationFileMap _fileMap;

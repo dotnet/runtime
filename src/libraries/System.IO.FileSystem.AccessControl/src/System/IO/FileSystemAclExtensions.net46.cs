@@ -30,6 +30,20 @@ namespace System.IO
             directoryInfo.Create(directorySecurity);
         }
 
+        public static DirectoryInfo CreateDirectory(this DirectorySecurity directorySecurity, string path)
+        {
+            if (directorySecurity == null)
+                throw new ArgumentNullException(nameof(directorySecurity));
+
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Arg_PathEmpty);
+
+            return Directory.CreateDirectory(path, directorySecurity);
+        }
+
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo)
         {
             if (directoryInfo == null)

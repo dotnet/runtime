@@ -25,7 +25,7 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: |
           $(setScriptToEchoAndFailOnNonZero) 
-          brew install pkgconfig icu4c openssl
+          brew install pkgconfig icu4c openssl autoconf automake libtool pkg-config python3
           brew link --force icu4c
           ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
           ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/

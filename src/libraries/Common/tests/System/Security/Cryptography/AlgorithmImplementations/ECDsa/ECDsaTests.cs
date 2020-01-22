@@ -171,7 +171,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             UseAfterDispose(ecdsa, data, sig);
 
-            if (!(PlatformDetection.IsFullFramework && ecdsa.GetType().Name.EndsWith("Cng")))
+            if (!(PlatformDetection.IsNetFramework && ecdsa.GetType().Name.EndsWith("Cng")))
             {
                 Assert.Throws<ObjectDisposedException>(() => ecdsa.GenerateKey(ECCurve.NamedCurves.nistP256));
 

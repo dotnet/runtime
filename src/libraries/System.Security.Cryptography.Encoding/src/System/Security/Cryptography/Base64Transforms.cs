@@ -103,7 +103,7 @@ namespace System.Security.Cryptography
         ~ToBase64Transform()
         {
             // A finalizer is not necessary here, however since we shipped a finalizer that called
-            // Dispose(false) in desktop v2.0, we need to keep it in case any existing code had subclassed
+            // Dispose(false) in .NET Framework v2.0, we need to keep it in case any existing code had subclassed
             // this transform and expects to have a base class finalizer call its dispose method.
             Dispose(false);
         }

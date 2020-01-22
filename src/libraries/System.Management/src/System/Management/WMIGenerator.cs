@@ -4837,7 +4837,7 @@ namespace System.Management
 
                     case CodeLanguage.JScript:
                         strProvider = "JScript.NET.";
-                        bSucceeded = false; // JScriptCodeProvider does not exist on CoreFx
+                        bSucceeded = false; // JScriptCodeProvider does not exist on .NET Core
                         break;
 
                     case CodeLanguage.CSharp:
