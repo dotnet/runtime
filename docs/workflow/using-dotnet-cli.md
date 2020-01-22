@@ -7,7 +7,7 @@ For other walkthroughs see:
 
 - [Using Your Build - Update CoreCLR from raw binary output](./testing/using-your-build.md)
 - [Using CoreRun To Run .NET Core Application](./testing/using-corerun.md)
-- [Dogfooding .NET Core SDK](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md).
+- [Dogfooding .NET Core SDK](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md).
 
 ## Prerequisites
 
