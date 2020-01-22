@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Collections.Specialized</RootNamespace>
     <AssemblyName>System.Collections.Specialized</AssemblyName>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

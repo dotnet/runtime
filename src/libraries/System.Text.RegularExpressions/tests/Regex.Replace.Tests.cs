@@ -26,9 +26,9 @@ namespace System.Text.RegularExpressions.Tests
             // Stress
             string pattern = string.Concat(Enumerable.Repeat("([a-z]", 1000).Concat(Enumerable.Repeat(")", 1000)));
             string input = string.Concat(Enumerable.Repeat("abcde", 200));
-
             yield return new object[] { pattern, input, "$1000", RegexOptions.None, input.Length, 0, "e" };
             yield return new object[] { pattern, input, "$1", RegexOptions.None, input.Length, 0, input };
+            yield return new object[] { ".", new string('a', 1000), "b", RegexOptions.None, 1000, 0, new string('b', 1000) };
 
             // Undefined group
             yield return new object[] { "([a_z])(.+)", "abc", "$3", RegexOptions.None, 3, 0, "$3" };

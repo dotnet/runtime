@@ -11,14 +11,6 @@ using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    internal struct ReadyToRunHeaderConstants
-    {
-        public const uint Signature = 0x00525452; // 'RTR'
-
-        public const ushort CurrentMajorVersion = 3;
-        public const ushort CurrentMinorVersion = 0;
-    }
-
     public abstract class HeaderTableNode : ObjectNode, ISymbolDefinitionNode
     {
         public TargetDetails Target { get; private set; }

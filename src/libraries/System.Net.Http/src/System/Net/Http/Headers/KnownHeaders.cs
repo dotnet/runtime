@@ -29,11 +29,11 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader Authorization = new KnownHeader("Authorization", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.SingleValueAuthenticationParser, null, StaticTable.Authorization);
         public static readonly KnownHeader CacheControl = new KnownHeader("Cache-Control", HttpHeaderType.General | HttpHeaderType.NonTrailing, CacheControlHeaderParser.Parser, null, StaticTable.CacheControl);
         public static readonly KnownHeader Connection = new KnownHeader("Connection", HttpHeaderType.General, GenericHeaderParser.TokenListParser, new string[] { "close" });
-        public static readonly KnownHeader ContentDisposition = new KnownHeader("Content-Disposition", HttpHeaderType.Content, GenericHeaderParser.ContentDispositionParser, null, StaticTable.ContentDisposition);
+        public static readonly KnownHeader ContentDisposition = new KnownHeader("Content-Disposition", HttpHeaderType.Content | HttpHeaderType.NonTrailing, GenericHeaderParser.ContentDispositionParser, null, StaticTable.ContentDisposition);
         public static readonly KnownHeader ContentEncoding = new KnownHeader("Content-Encoding", HttpHeaderType.Content | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser, new string[] { "gzip", "deflate" }, StaticTable.ContentEncoding);
         public static readonly KnownHeader ContentLanguage = new KnownHeader("Content-Language", HttpHeaderType.Content, GenericHeaderParser.TokenListParser, null, StaticTable.ContentLanguage);
         public static readonly KnownHeader ContentLength = new KnownHeader("Content-Length", HttpHeaderType.Content | HttpHeaderType.NonTrailing, Int64NumberHeaderParser.Parser, null, StaticTable.ContentLength);
-        public static readonly KnownHeader ContentLocation = new KnownHeader("Content-Location", HttpHeaderType.Content, UriHeaderParser.RelativeOrAbsoluteUriParser, null, StaticTable.ContentLocation);
+        public static readonly KnownHeader ContentLocation = new KnownHeader("Content-Location", HttpHeaderType.Content | HttpHeaderType.NonTrailing, UriHeaderParser.RelativeOrAbsoluteUriParser, null, StaticTable.ContentLocation);
         public static readonly KnownHeader ContentMD5 = new KnownHeader("Content-MD5", HttpHeaderType.Content, ByteArrayHeaderParser.Parser);
         public static readonly KnownHeader ContentRange = new KnownHeader("Content-Range", HttpHeaderType.Content | HttpHeaderType.NonTrailing, GenericHeaderParser.ContentRangeParser, null, StaticTable.ContentRange);
         public static readonly KnownHeader ContentSecurityPolicy = new KnownHeader("Content-Security-Policy");
@@ -59,8 +59,8 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader Origin = new KnownHeader("Origin");
         public static readonly KnownHeader P3P = new KnownHeader("P3P");
         public static readonly KnownHeader Pragma = new KnownHeader("Pragma", HttpHeaderType.General | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueNameValueParser);
-        public static readonly KnownHeader ProxyAuthenticate = new KnownHeader("Proxy-Authenticate", HttpHeaderType.Response, GenericHeaderParser.MultipleValueAuthenticationParser, null, StaticTable.ProxyAuthenticate);
-        public static readonly KnownHeader ProxyAuthorization = new KnownHeader("Proxy-Authorization", HttpHeaderType.Request, GenericHeaderParser.SingleValueAuthenticationParser, null, StaticTable.ProxyAuthorization);
+        public static readonly KnownHeader ProxyAuthenticate = new KnownHeader("Proxy-Authenticate", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueAuthenticationParser, null, StaticTable.ProxyAuthenticate);
+        public static readonly KnownHeader ProxyAuthorization = new KnownHeader("Proxy-Authorization", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.SingleValueAuthenticationParser, null, StaticTable.ProxyAuthorization);
         public static readonly KnownHeader ProxyConnection = new KnownHeader("Proxy-Connection");
         public static readonly KnownHeader ProxySupport = new KnownHeader("Proxy-Support");
         public static readonly KnownHeader PublicKeyPins = new KnownHeader("Public-Key-Pins");
@@ -75,7 +75,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader SecWebSocketVersion = new KnownHeader("Sec-WebSocket-Version");
         public static readonly KnownHeader Server = new KnownHeader("Server", HttpHeaderType.Response, ProductInfoHeaderParser.MultipleValueParser, null, StaticTable.Server);
         public static readonly KnownHeader SetCookie = new KnownHeader("Set-Cookie", HttpHeaderType.Custom | HttpHeaderType.NonTrailing, null, null, StaticTable.SetCookie);
-        public static readonly KnownHeader SetCookie2 = new KnownHeader("Set-Cookie2");
+        public static readonly KnownHeader SetCookie2 = new KnownHeader("Set-Cookie2", HttpHeaderType.Custom | HttpHeaderType.NonTrailing, null, null);
         public static readonly KnownHeader StrictTransportSecurity = new KnownHeader("Strict-Transport-Security", StaticTable.StrictTransportSecurity);
         public static readonly KnownHeader TE = new KnownHeader("TE", HttpHeaderType.Request | HttpHeaderType.NonTrailing, TransferCodingHeaderParser.MultipleValueWithQualityParser);
         public static readonly KnownHeader TSV = new KnownHeader("TSV");
@@ -86,7 +86,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader UserAgent = new KnownHeader("User-Agent", HttpHeaderType.Request, ProductInfoHeaderParser.MultipleValueParser, null, StaticTable.UserAgent);
         public static readonly KnownHeader Vary = new KnownHeader("Vary", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser, null, StaticTable.Vary);
         public static readonly KnownHeader Via = new KnownHeader("Via", HttpHeaderType.General, GenericHeaderParser.MultipleValueViaParser, null, StaticTable.Via);
-        public static readonly KnownHeader WWWAuthenticate = new KnownHeader("WWW-Authenticate", HttpHeaderType.Response, GenericHeaderParser.MultipleValueAuthenticationParser, null, StaticTable.WwwAuthenticate);
+        public static readonly KnownHeader WWWAuthenticate = new KnownHeader("WWW-Authenticate", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueAuthenticationParser, null, StaticTable.WwwAuthenticate);
         public static readonly KnownHeader Warning = new KnownHeader("Warning", HttpHeaderType.General | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueWarningParser);
         public static readonly KnownHeader XAspNetVersion = new KnownHeader("X-AspNet-Version");
         public static readonly KnownHeader XContentDuration = new KnownHeader("X-Content-Duration");

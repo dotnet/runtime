@@ -909,6 +909,18 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     regNumber op1reg = op1->isUsedFromReg() ? op1->GetRegNum() : REG_NA;
     regNumber op2reg = op2->isUsedFromReg() ? op2->GetRegNum() : REG_NA;
 
+    if (varTypeIsFloating(treeNode->TypeGet()))
+    {
+        // floating-point addition, subtraction, multiplication, and division
+        // all have RMW semantics if VEX support is not available
+
+        bool isRMW = !compiler->canUseVexEncoding();
+        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW);
+
+        genProduceReg(treeNode);
+        return;
+    }
+
     GenTree* dst;
     GenTree* src;
 
@@ -954,9 +966,10 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // reg3 = reg3 op reg2
     else
     {
-        inst_RV_RV(ins_Copy(targetType), targetReg, op1reg, targetType);
+        var_types op1Type = op1->TypeGet();
+        inst_RV_RV(ins_Copy(op1Type), targetReg, op1reg, op1Type);
         regSet.verifyRegUsed(targetReg);
-        gcInfo.gcMarkRegPtrVal(targetReg, targetType);
+        gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
         dst = treeNode;
         src = op2;
     }
@@ -1366,7 +1379,7 @@ void CodeGen::genFloatReturn(GenTree* treeNode)
         {
             op1->gtFlags |= GTF_SPILL;
             inst_TT_RV(ins_Store(op1->gtType, compiler->isSIMDTypeLocalAligned(op1->AsLclVarCommon()->GetLclNum())),
-                       op1, op1->GetRegNum());
+                       emitTypeSize(op1->TypeGet()), op1, op1->GetRegNum());
         }
         // Now, load it to the fp stack.
         GetEmitter()->emitIns_S(INS_fld, emitTypeSize(op1), op1->AsLclVarCommon()->GetLclNum(), 0);

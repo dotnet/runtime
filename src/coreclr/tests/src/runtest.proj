@@ -93,7 +93,7 @@ $(_XunitEpilog)
         <![CDATA[
 <Project>
 
-  <Import Project="$(ProjectDir)dir.sdkbuild.props" />
+  <Import Project="$(TestProjectDir)dir.sdkbuild.props" />
 
   <PropertyGroup>
     <OutputPath>$(XUnitTestBinBase)\$(CategoryWithSlash)</OutputPath>
@@ -107,7 +107,7 @@ $(_XunitEpilog)
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
   </ItemGroup>
 
   <ItemGroup>

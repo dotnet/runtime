@@ -28,7 +28,18 @@ namespace System.Text.Json
                     return WriteEndObject(ref state);
                 }
 
-                state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                {
+                    if (WriteReference(ref state, writer, options, ClassType.Object, state.Current.CurrentValue))
+                    {
+                        return WriteEndObject(ref state);
+                    }
+                }
+                else
+                {
+                    state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
+                }
+
                 state.Current.MoveToNextProperty = true;
             }
 
@@ -41,9 +52,9 @@ namespace System.Text.Json
             if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Finished)
             {
                 // If ClassType.Unknown at this point, we are typeof(object) which should not have any properties.
-                Debug.Assert(state.Current.JsonClassInfo.ClassType != ClassType.Unknown);
+                Debug.Assert(state.Current.JsonClassInfo!.ClassType != ClassType.Unknown);
 
-                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.PropertyCacheArray[state.Current.PropertyEnumeratorIndex - 1];
+                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.PropertyCacheArray![state.Current.PropertyEnumeratorIndex - 1];
                 HandleObject(jsonPropertyInfo, options, writer, ref state);
 
                 return false;
@@ -72,7 +83,7 @@ namespace System.Text.Json
             ref WriteStack state)
         {
             Debug.Assert(
-                state.Current.JsonClassInfo.ClassType == ClassType.Object ||
+                state.Current.JsonClassInfo!.ClassType == ClassType.Object ||
                 state.Current.JsonClassInfo.ClassType == ClassType.Unknown);
 
             if (!jsonPropertyInfo.ShouldSerialize)
@@ -82,7 +93,7 @@ namespace System.Text.Json
             }
 
             bool obtainedValue = false;
-            object currentValue = null;
+            object? currentValue = null;
 
             // Check for polymorphism.
             if (jsonPropertyInfo.ClassType == ClassType.Unknown)
@@ -104,7 +115,7 @@ namespace System.Text.Json
             // A property that returns an enumerator keeps the same stack frame.
             if (jsonPropertyInfo.ClassType == ClassType.Enumerable)
             {
-                bool endOfEnumerable = HandleEnumerable(jsonPropertyInfo.ElementClassInfo, options, writer, ref state);
+                bool endOfEnumerable = HandleEnumerable(jsonPropertyInfo.ElementClassInfo!, options, writer, ref state);
                 if (endOfEnumerable)
                 {
                     state.Current.MoveToNextProperty = true;
@@ -116,7 +127,7 @@ namespace System.Text.Json
             // A property that returns a dictionary keeps the same stack frame.
             if (jsonPropertyInfo.ClassType == ClassType.Dictionary)
             {
-                bool endOfEnumerable = HandleDictionary(jsonPropertyInfo.ElementClassInfo, options, writer, ref state);
+                bool endOfEnumerable = HandleDictionary(jsonPropertyInfo.ElementClassInfo!, options, writer, ref state);
                 if (endOfEnumerable)
                 {
                     state.Current.MoveToNextProperty = true;
@@ -147,6 +158,7 @@ namespace System.Text.Json
             {
                 if (!jsonPropertyInfo.IgnoreNullValues)
                 {
+                    Debug.Assert(jsonPropertyInfo.EscapedName != null);
                     writer.WriteNull(jsonPropertyInfo.EscapedName.Value);
                 }
 

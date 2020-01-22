@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static void GetRuntimeClassInfo(object value, ref JsonClassInfo jsonClassInfo, JsonSerializerOptions options)
+        private static void GetRuntimeClassInfo(object? value, ref JsonClassInfo jsonClassInfo, JsonSerializerOptions options)
         {
             if (value != null)
             {
@@ -22,7 +23,7 @@ namespace System.Text.Json
             }
         }
 
-        private static void GetRuntimePropertyInfo(object value, JsonClassInfo jsonClassInfo, ref JsonPropertyInfo jsonPropertyInfo, JsonSerializerOptions options)
+        private static void GetRuntimePropertyInfo(object? value, JsonClassInfo jsonClassInfo, ref JsonPropertyInfo jsonPropertyInfo, JsonSerializerOptions options)
         {
             if (value != null)
             {
@@ -36,14 +37,11 @@ namespace System.Text.Json
             }
         }
 
-        private static void VerifyValueAndType(object value, Type type)
+        private static void VerifyValueAndType(object? value, Type type)
         {
             if (type == null)
             {
-                if (value != null)
-                {
-                    throw new ArgumentNullException(nameof(type));
-                }
+                throw new ArgumentNullException(nameof(type));
             }
             else if (value != null)
             {
@@ -54,7 +52,7 @@ namespace System.Text.Json
             }
         }
 
-        private static byte[] WriteCoreBytes(object value, Type type, JsonSerializerOptions options)
+        private static byte[] WriteCoreBytes(object? value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -72,7 +70,7 @@ namespace System.Text.Json
             return result;
         }
 
-        private static string WriteCoreString(object value, Type type, JsonSerializerOptions options)
+        private static string WriteCoreString(object? value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -90,7 +88,7 @@ namespace System.Text.Json
             return result;
         }
 
-        private static void WriteValueCore(Utf8JsonWriter writer, object value, Type type, JsonSerializerOptions options)
+        private static void WriteValueCore(Utf8JsonWriter writer, object? value, Type type, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -105,7 +103,7 @@ namespace System.Text.Json
             WriteCore(writer, value, type, options);
         }
 
-        private static void WriteCore(PooledByteBufferWriter output, object value, Type type, JsonSerializerOptions options)
+        private static void WriteCore(PooledByteBufferWriter output, object? value, Type type, JsonSerializerOptions options)
         {
             using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
@@ -113,7 +111,7 @@ namespace System.Text.Json
             }
         }
 
-        private static void WriteCore(Utf8JsonWriter writer, object value, Type type, JsonSerializerOptions options)
+        private static void WriteCore(Utf8JsonWriter writer, object? value, Type type, JsonSerializerOptions options)
         {
             Debug.Assert(type != null || value == null);
             Debug.Assert(writer != null);
@@ -131,6 +129,11 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                {
+                    state.ReferenceResolver = new DefaultReferenceResolver(writing: true);
+                }
+                Debug.Assert(type != null);
                 state.Current.Initialize(type, options);
                 state.Current.CurrentValue = value;
 
@@ -138,6 +141,30 @@ namespace System.Text.Json
             }
 
             writer.Flush();
+        }
+
+        private static bool WriteReference(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, ClassType classType, object currentValue)
+        {
+            // Avoid emitting metadata for value types.
+            Type currentType = state.Current.JsonPropertyInfo?.DeclaredPropertyType ?? state.Current.JsonClassInfo!.Type;
+            if (currentType.IsValueType)
+            {
+                // Value type, fallback on regular Write method.
+                state.Current.WriteObjectOrArrayStart(classType, writer, options);
+                return false;
+            }
+
+            if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(currentValue, out string referenceId))
+            {
+                // Object written before, write { "$ref": "#" } and jump to the next property/element.
+                state.Current.WriteReferenceObject(writer, options, referenceId);
+                return true;
+            }
+
+            // New object reference, write start and append $id.
+            // OR New array reference, write as object and append $id and $values; at the end writes EndObject token using WriteWrappingBraceOnEndCollection.
+            state.Current.WritePreservedObjectOrArrayStart(classType, writer, options, referenceId);
+            return false;
         }
     }
 }

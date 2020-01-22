@@ -11,7 +11,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
@@ -409,6 +408,50 @@ namespace Internal.Cryptography.Pal
 
                 return _issuerName;
             }
+        }
+
+        public PolicyData GetPolicyData()
+        {
+            PolicyData policyData = default;
+
+            int extensionCount = Interop.Crypto.X509GetExtCount(_cert);
+
+            for (int i = 0; i < extensionCount; i++)
+            {
+                IntPtr ext = Interop.Crypto.X509GetExt(_cert, i);
+                Interop.Crypto.CheckValidOpenSslHandle(ext);
+
+                IntPtr oidPtr = Interop.Crypto.X509ExtensionGetOid(ext);
+                Interop.Crypto.CheckValidOpenSslHandle(oidPtr);
+                string oidValue = Interop.Crypto.GetOidValue(oidPtr);
+
+                IntPtr dataPtr = Interop.Crypto.X509ExtensionGetData(ext);
+                Interop.Crypto.CheckValidOpenSslHandle(dataPtr);
+
+                switch (oidValue)
+                {
+                    case Oids.ApplicationCertPolicies:
+                        policyData.ApplicationCertPolicies = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        break;
+                    case Oids.CertPolicies:
+                        policyData.CertPolicies = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        break;
+                    case Oids.CertPolicyMappings:
+                        policyData.CertPolicyMappings = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        break;
+                    case Oids.CertPolicyConstraints:
+                       policyData.CertPolicyConstraints = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                       break;
+                    case Oids.EnhancedKeyUsage:
+                        policyData.EnhancedKeyUsage = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        break;
+                    case Oids.InhibitAnyPolicyExtension:
+                        policyData.InhibitAnyPolicyExtension = Interop.Crypto.GetAsn1StringBytes(dataPtr);
+                        break;
+                }
+            }
+
+            return policyData;
         }
 
         public IEnumerable<X509Extension> Extensions

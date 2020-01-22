@@ -1708,7 +1708,7 @@ namespace System.Xml
             return pDst + 3;
         }
 
-        protected unsafe void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
+        protected void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
         {
             if (allowOnlyWhitespace)
             {

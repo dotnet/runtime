@@ -54,7 +54,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                // On full framework , we set _dataContractSet = Options.GetSurrogate());
+                // On .NET Framework , we set _dataContractSet = Options.GetSurrogate());
                 // But Options.GetSurrogate() is not available on NetCore because IDataContractSurrogate
                 // is not in NetStandard.
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_IDataContractSurrogate);

@@ -3368,7 +3368,10 @@ void emitter::emitIns(instruction ins)
     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
     insFormat  fmt = emitInsFormat(ins);
 
-    assert(fmt == IF_SN_0A);
+    if (ins != INS_BREAKPOINT)
+    {
+        assert(fmt == IF_SN_0A);
+    }
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -5248,7 +5251,7 @@ void emitter::emitIns_R_R_R(
         case INS_cmgt:
         case INS_cmhi:
         case INS_cmhs:
-        case INS_ctst:
+        case INS_cmtst:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -5304,6 +5307,15 @@ void emitter::emitIns_R_R_R(
         case INS_uabd:
         case INS_umax:
         case INS_umin:
+            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
+            __fallthrough;
+
+        case INS_uzp1:
+        case INS_uzp2:
+        case INS_zip1:
+        case INS_zip2:
+        case INS_trn1:
+        case INS_trn2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -5313,7 +5325,6 @@ void emitter::emitIns_R_R_R(
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
-            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
 
             fmt = IF_DV_3A;
             break;
@@ -5384,6 +5395,8 @@ void emitter::emitIns_R_R_R(
         case INS_fabd:
         case INS_fmul:
         case INS_fmulx:
+        case INS_facge:
+        case INS_facgt:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -12547,7 +12560,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SN_0A: // bkpt, nop
+        case IF_SN_0A: // bkpt, brk, nop
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_ZERO;
             break;
@@ -12890,11 +12903,29 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_umax:
                 case INS_smin:
                 case INS_smax:
+                case INS_uzp1:
+                case INS_uzp2:
+                case INS_zip1:
+                case INS_zip2:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
-                case INS_ctst:
+                case INS_trn1:
+                case INS_trn2:
+                    if (id->idInsOpt() == INS_OPTS_2D)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    }
+
+                    result.insLatency = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_cmtst:
                 case INS_pmul:
                 case INS_sabd:
                 case INS_uabd:

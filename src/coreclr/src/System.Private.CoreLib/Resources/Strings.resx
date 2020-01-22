@@ -1129,6 +1129,9 @@
   <data name="Argument_InvalidCultureName" xml:space="preserve">
     <value>Culture name '{0}' is not supported.</value>
   </data>
+  <data name="Argument_InvalidPredefinedCultureName" xml:space="preserve">
+    <value>Culture name '{0}' is not a predefined culture.</value>
+  </data>
   <data name="Argument_InvalidDateTimeKind" xml:space="preserve">
     <value>Invalid DateTimeKind value.</value>
   </data>
@@ -2892,6 +2895,9 @@
   </data>
   <data name="NotSupported_MaxWaitHandles" xml:space="preserve">
     <value>The number of WaitHandles must be less than or equal to 64.</value>
+  </data>
+  <data name="NotSupported_MaxWaitHandles_STA" xml:space="preserve">
+    <value>The number of WaitHandles on a STA thread must be less than or equal to 63.</value>
   </data>
   <data name="NotSupported_MemStreamNotExpandable" xml:space="preserve">
     <value>Memory stream is not expandable.</value>

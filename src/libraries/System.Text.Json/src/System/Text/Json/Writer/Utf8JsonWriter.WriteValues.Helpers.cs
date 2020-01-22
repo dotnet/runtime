@@ -39,7 +39,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Base64EncodeAndWrite(ReadOnlySpan<byte> bytes, Span<byte> output, int encodingLength)
         {
-            byte[] outputText = null;
+            byte[]? outputText = null;
 
             Span<byte> encodedBytes = encodingLength <= JsonConstants.StackallocThreshold ?
                 stackalloc byte[encodingLength] :

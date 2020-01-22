@@ -15,16 +15,16 @@ namespace System.Text.Json
             Utf8JsonWriter writer,
             ref WriteStack state)
         {
-            Debug.Assert(state.Current.JsonPropertyInfo.ClassType == ClassType.Enumerable);
+            Debug.Assert(state.Current.JsonPropertyInfo!.ClassType == ClassType.Enumerable);
 
             if (state.Current.CollectionEnumerator == null)
             {
-                IEnumerable enumerable = (IEnumerable)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
+                IEnumerable? enumerable = (IEnumerable?)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
 
                 if (enumerable == null)
                 {
                     // If applicable, we only want to ignore object properties.
-                    if (state.Current.JsonClassInfo.ClassType != ClassType.Object ||
+                    if (state.Current.JsonClassInfo!.ClassType != ClassType.Object ||
                         !state.Current.JsonPropertyInfo.IgnoreNullValues)
                     {
                         // Write a null object or enumerable.
@@ -39,9 +39,19 @@ namespace System.Text.Json
                     return true;
                 }
 
-                state.Current.CollectionEnumerator = enumerable.GetEnumerator();
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                {
+                    if (WriteReference(ref state, writer, options, ClassType.Enumerable, enumerable))
+                    {
+                        return WriteEndArray(ref state);
+                    }
+                }
+                else
+                {
+                    state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
+                }
 
-                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
+                state.Current.CollectionEnumerator = enumerable.GetEnumerator();
             }
 
             if (state.Current.CollectionEnumerator.MoveNext())
@@ -49,13 +59,13 @@ namespace System.Text.Json
                 // Check for polymorphism.
                 if (elementClassInfo.ClassType == ClassType.Unknown)
                 {
-                    object currentValue = state.Current.CollectionEnumerator.Current;
+                    object? currentValue = state.Current.CollectionEnumerator.Current;
                     GetRuntimeClassInfo(currentValue, ref elementClassInfo, options);
                 }
 
                 if (elementClassInfo.ClassType == ClassType.Value)
                 {
-                    elementClassInfo.PolicyProperty.WriteEnumerable(ref state, writer);
+                    elementClassInfo.PolicyProperty!.WriteEnumerable(ref state, writer);
                 }
                 else if (state.Current.CollectionEnumerator.Current == null)
                 {
@@ -75,6 +85,17 @@ namespace System.Text.Json
             // We are done enumerating.
             writer.WriteEndArray();
 
+            // Used for ReferenceHandling.Preserve
+            if (state.Current.WriteWrappingBraceOnEndPreservedArray)
+            {
+                writer.WriteEndObject();
+            }
+
+            return WriteEndArray(ref state);
+        }
+
+        private static bool WriteEndArray(ref WriteStack state)
+        {
             if (state.Current.PopStackOnEndCollection)
             {
                 state.Pop();

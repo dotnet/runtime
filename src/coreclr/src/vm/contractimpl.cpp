@@ -45,7 +45,7 @@ MethodDesc * DispatchSlot::GetMethodDesc()
 }
 
 //------------------------------------------------------------------------
-void TypeIDMap::Init(UINT32 idStartValue, UINT32 idIncrementValue, BOOL fUseFatTokensForUniqueness)
+void TypeIDMap::Init(UINT32 idStartValue, UINT32 idIncrementValue)
 {
     STANDARD_VM_CONTRACT;
 
@@ -54,7 +54,6 @@ void TypeIDMap::Init(UINT32 idStartValue, UINT32 idIncrementValue, BOOL fUseFatT
     m_mtMap.Init(11, TRUE, &lock);
     m_idProvider.Init(idStartValue, idIncrementValue);
     m_entryCount = 0;
-    m_fUseFatIdsForUniqueness = fUseFatTokensForUniqueness;
 }
 
 #endif // !DACCESS_COMPILE
@@ -70,7 +69,7 @@ UINT32 TypeIDMap::LookupTypeID(PTR_MethodTable pMT)
     } CONTRACTL_END;
 
     UINT32 id = (UINT32) m_mtMap.LookupValue((UPTR)dac_cast<TADDR>(pMT), 0);
-    _ASSERTE(!m_fUseFatIdsForUniqueness || !pMT->RequiresFatDispatchTokens() || (DispatchToken::RequiresDispatchTokenFat(id, 0)));
+    _ASSERTE(!pMT->RequiresFatDispatchTokens() || (DispatchToken::RequiresDispatchTokenFat(id, 0)));
 
     return id;
 }
@@ -124,7 +123,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
             return id;
         }
         // Get the next ID
-        if (m_fUseFatIdsForUniqueness && pMT->RequiresFatDispatchTokens())
+        if (pMT->RequiresFatDispatchTokens())
         {
             id = GetNextFatID();
         }

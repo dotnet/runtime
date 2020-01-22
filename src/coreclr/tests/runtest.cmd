@@ -16,7 +16,7 @@ set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
-set "__RootBinDir=%__ProjectDir%\..\artifacts"
+set "__RootBinDir=%~dp0..\..\..\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set __ToolsDir=%__ProjectDir%\..\Tools
@@ -185,7 +185,6 @@ if defined RunInUnloadableContext (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
-REM __ProjectDir is poorly named, it is actually <projectDir>/tests
 set NEXTCMD=python "%__ProjectDir%\runtest.py" %__RuntestPyArgs%
 echo !NEXTCMD!
 !NEXTCMD!
@@ -332,7 +331,7 @@ REM Skip mscorlib since it is already precompiled.
 if /I "%3" == "mscorlib.dll" exit /b 0
 if /I "%3" == "mscorlib.ni.dll" exit /b 0
 
-"%1\crossgen.exe" /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
+"%1\crossgen.exe" /nologo /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
 set /a __exitCode = %errorlevel%
 if "%__exitCode%" == "-2146230517" (
     echo %2 is not a managed assembly.

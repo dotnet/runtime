@@ -663,7 +663,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Entries may be added in any order. The table is automatically sorted when serialized.
         /// </remarks>
         /// <exception cref="ArgumentException"><paramref name="parent"/> doesn't have the expected handle kind.</exception>
-        public ConstantHandle AddConstant(EntityHandle parent, object value)
+        public ConstantHandle AddConstant(EntityHandle parent, object? value)
         {
             int parentCodedIndex = CodedIndex.HasConstant(parent);
 

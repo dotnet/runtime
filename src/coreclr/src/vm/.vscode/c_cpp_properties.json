@@ -9,7 +9,6 @@
                 "../../src/pal/prebuilt/inc",
                 "../../../../artifacts/obj",
                 "../../src/inc",
-                "../../src/strongname/inc",
                 "../../src/inc/winrt",
                 "../../src/debug/inc",
                 "../../src/debug/inc/amd64",

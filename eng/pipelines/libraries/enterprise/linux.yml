@@ -11,6 +11,7 @@ pr:
 
   paths:
     include:
+      - eng/pipelines/libraries/enterprise/*
       - src/libraries/Common/src/System/Net/*
       - src/libraries/Common/tests/System/Net/*
       - src/libraries/Native/Unix/System.Net.Security.Native/*
@@ -49,7 +50,8 @@ steps:
   displayName: Test linuxclient connection to web server
 
 - bash: |
-    docker exec linuxclient bash /repo/libraries.sh
+    docker exec linuxclient bash /repo/src/coreclr/build.sh -release -skiptests -clang9
+    docker exec linuxclient bash /repo/libraries.sh /p:CoreCLRConfiguration=Release
   displayName: Build product sources
 
 - bash: |

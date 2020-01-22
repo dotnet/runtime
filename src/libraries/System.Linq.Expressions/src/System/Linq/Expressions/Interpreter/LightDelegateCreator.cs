@@ -27,7 +27,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public Delegate CreateDelegate() => CreateDelegate(closure: null);
 
-        internal Delegate CreateDelegate(IStrongBox[] closure)
+        internal Delegate CreateDelegate(IStrongBox[]? closure)
         {
             // we'll create an interpreted LightLambda
             return new LightLambda(this, closure).MakeDelegate(_lambda.Type);

@@ -1375,6 +1375,9 @@ AGAIN:
 
     if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
+        // We should not be building address modes out of non-foldable constants
+        assert(op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()));
+
         /* We're adding a constant */
 
         cns += op2->AsIntConCommon()->IconValue();
@@ -3799,7 +3802,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         varDsc = compiler->lvaTable + varNum;
 
 #ifndef _TARGET_64BIT_
-        // If not a stack arg go to the next one
+        // If this arg is never on the stack, go to the next one.
         if (varDsc->lvType == TYP_LONG)
         {
             if (regArgTab[argNum].slot == 1 && !regArgTab[argNum].stackArg)
@@ -3814,7 +3817,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         else
 #endif // !_TARGET_64BIT_
         {
-            // If not a stack arg go to the next one
+            // If this arg is never on the stack, go to the next one.
             if (!regArgTab[argNum].stackArg)
             {
                 continue;

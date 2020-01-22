@@ -50,6 +50,18 @@ namespace System.Net.Test.Common
             {
                 return true;
             }
+
+            return false;
+        }
+
+        public static bool SecurityForceSocketStreams()
+        {
+            string value = Configuration.Security.SecurityForceSocketStreams;
+            if (value != null && (value.Equals("true", StringComparison.OrdinalIgnoreCase) || value.Equals("1")))
+            {
+                return true;
+            }
+
             return false;
         }
 

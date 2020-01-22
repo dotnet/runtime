@@ -21,6 +21,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets an untyped reference to the array.
         /// </summary>
-        Array Array { get; }
+        Array? Array { get; }
     }
 }

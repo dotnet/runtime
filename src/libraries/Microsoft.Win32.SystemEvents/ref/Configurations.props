@@ -2,7 +2,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard2.0;
-      netfx;
+      $(NetFrameworkCurrent);
       net461;
     </BuildConfigurations>
   </PropertyGroup>

@@ -336,7 +336,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
         [InlineData(false, 0)]
         [InlineData(true, 0)]
         [InlineData(false, 1)]

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.IO;
 using System.Net.Quic.Implementations;
 using System.Threading;
@@ -103,9 +104,23 @@ namespace System.Net.Quic
 
         public override Task FlushAsync(CancellationToken cancellationToken) => _provider.FlushAsync(cancellationToken);
 
-        public void ShutdownRead() => _provider.ShutdownRead();
+        public void AbortRead(long errorCode) => _provider.AbortRead(errorCode);
 
-        public void ShutdownWrite() => _provider.ShutdownWrite();
+        public void AbortWrite(long errorCode) => _provider.AbortWrite(errorCode);
+
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffer, endStream, cancellationToken);
+
+        public ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, cancellationToken);
+
+        public ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, endStream, cancellationToken);
+
+        public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, cancellationToken);
+
+        public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, endStream, cancellationToken);
+
+        public ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownWriteCompleted(cancellationToken);
+
+        public void Shutdown() => _provider.Shutdown();
 
         protected override void Dispose(bool disposing)
         {

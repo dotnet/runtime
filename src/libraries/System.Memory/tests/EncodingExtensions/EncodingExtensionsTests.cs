@@ -85,7 +85,7 @@ namespace System.Text.Tests
             inputData = Encoding.UTF8.GetBytes(new string('x', 20_000_000)).Concat(new byte[] { 0xE0, 0xA0 }).ToArray();
             EncodingExtensions.Convert(decoder, inputData, writer, flush: false, out charsUsed, out completed);
             Assert.Equal(20_000_000, charsUsed);
-            Assert.False(completed);
+            Assert.True(completed);
 
             // Then, a large input with flushing and leftover data (should be replaced).
 
@@ -133,7 +133,7 @@ namespace System.Text.Tests
                 new byte[] { 0xF4, 0x80 }); // U+100000 (continues on next line)
             EncodingExtensions.Convert(decoder, inputData, writer, flush: false, out charsUsed, out completed);
             Assert.Equal(0, charsUsed);
-            Assert.False(completed);
+            Assert.True(completed);
 
             // Then, input with flushing and leftover data (should be replaced).
 
@@ -177,7 +177,7 @@ namespace System.Text.Tests
             inputData = new string('x', 20_000_000) + '\ud800';
             EncodingExtensions.Convert(encoder, inputData, writer, flush: false, out bytesUsed, out completed);
             Assert.Equal(20_000_000, bytesUsed);
-            Assert.False(completed);
+            Assert.True(completed);
 
             // Then, a large input with flushing and leftover data (should be replaced).
 
@@ -224,7 +224,7 @@ namespace System.Text.Tests
                 new char[] { '\udbc0' }); // U+100000 (continues on next line)
             EncodingExtensions.Convert(encoder, inputData, writer, flush: false, out bytesUsed, out completed);
             Assert.Equal(0, bytesUsed);
-            Assert.False(completed);
+            Assert.True(completed);
 
             // Then, input with flushing and leftover data (should be replaced).
 

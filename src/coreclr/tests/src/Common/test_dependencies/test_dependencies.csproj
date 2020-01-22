@@ -16,10 +16,16 @@
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
   <PropertyGroup>
-    <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+
+  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(BuildOS)' == 'Windows_NT'">
+    <ItemGroup>
+      <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="AddLibrariesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">
     <ItemGroup>

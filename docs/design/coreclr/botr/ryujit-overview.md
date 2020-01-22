@@ -27,7 +27,7 @@ implements the JIT side of the JIT/EE interfaces:
 * `ICorJitCompiler` – this is the interface that the JIT compiler implements. This interface is defined in
 [src/inc/corjit.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/inc/corjit.h)
 and its implementation is in
-[src/jit/ee_il_dll.cpp](https://github.com/dotnet/dotnet/blob/master/src/coreclr/src/jit/ee_il_dll.cpp).
+[src/jit/ee_il_dll.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/jit/ee_il_dll.cpp).
 The following are the key methods on this interface:
   * `compileMethod` is the main entry point for the JIT. The EE passes it a `ICorJitInfo` object,
   and the "info" containing the IL, the method header, and various other useful tidbits.
@@ -521,6 +521,11 @@ t79 = ▌  LEA(b+(i*4)+16) byref
       ┌──▌  t79    byref
 t44 = ▌  IND       int
 ```
+Sometimes `Lowering` will insert nodes into the execution order before the node that it is currently handling.
+In such cases, it must ensure that they themselves are properly lowered. This includes:
+
+* Generating only legal `LIR` nodes that do not themselves require lowering.
+* Performing any needed containment analysis (e.g. `ContainCheckRange()`) on the newly added node(s).
 
 After all nodes are lowered, liveness is run in preparation for register allocation.
 

@@ -1,2 +1,7 @@
 @echo off
-"%~dp0build.cmd" -subsetCategory libraries %*
+setlocal
+
+set _args=-subsetCategory libraries %*
+if "%~1"=="-?" set _args=-help
+
+"%~dp0build.cmd" %_args%

@@ -346,6 +346,9 @@ namespace Internal.JitInterface
 #if !READYTORUN
             _sequencePoints = null;
             _variableToTypeDesc = null;
+
+            _parameterIndexToNameMap = null;
+            _localSlotToInfoMap = null;
 #endif
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -433,6 +436,11 @@ namespace Internal.JitInterface
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
 
+            if (method.IsPInvoke && method.IsSuppressGCTransition())
+            {
+                sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
+            }
+
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
 
@@ -505,7 +513,7 @@ namespace Internal.JitInterface
             sig->_retType = (byte)CorInfoType.CORINFO_TYPE_VOID;
             sig->retTypeClass = null;
             sig->retTypeSigClass = null;
-            sig->flags = (byte)CorInfoSigInfoFlags.CORINFO_SIGFLAG_IS_LOCAL_SIG;
+            sig->flags = CorInfoSigInfoFlags.CORINFO_SIGFLAG_IS_LOCAL_SIG;
 
             sig->numArgs = (ushort)locals.Length;
 
@@ -677,7 +685,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             // Check for SIMD intrinsics
             DefType owningDefType = method.OwningType as DefType;
-            if (owningDefType != null && VectorFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+            if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
             {
                 throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
             }
@@ -1271,7 +1279,7 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR;
 
                 // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
-                if (metadataType.IsExplicitLayout || metadataType.IsWellKnownType(WellKnownType.TypedReference))
+                if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))
                     result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
 
                 // TODO
@@ -2423,6 +2431,7 @@ namespace Internal.JitInterface
                 new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = TargetABI;
+            pEEInfoOut.osType = _compilation.NodeFactory.Target.IsWindows ? CORINFO_OS.CORINFO_WINNT : CORINFO_OS.CORINFO_UNIX;
         }
 
         private string getJitTimeLogFilename()
@@ -2545,8 +2554,12 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
+
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
-        { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
+        {
+            ppIndirection = null;
+            return null;
+        }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)

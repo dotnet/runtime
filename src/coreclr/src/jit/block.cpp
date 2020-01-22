@@ -40,8 +40,8 @@ flowList* ShuffleHelper(unsigned hash, flowList* res)
         {
             // Swap res with head.
             prev->flNext = head;
-            jitstd::swap(head->flNext, res->flNext);
-            jitstd::swap(head, res);
+            std::swap(head->flNext, res->flNext);
+            std::swap(head, res);
         }
     }
     return head;
@@ -332,6 +332,10 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_HAS_NEWOBJ)
     {
         printf("newobj ");
+    }
+    if (bbFlags & BBF_HAS_NULLCHECK)
+    {
+        printf("nullcheck ");
     }
 #if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     if (bbFlags & BBF_FINALLY_TARGET)

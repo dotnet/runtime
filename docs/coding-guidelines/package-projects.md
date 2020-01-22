@@ -214,9 +214,10 @@ Sample `System.IO.FileSystem.pkgproj`
 ```
 
 ## Asset selection
+
 The makeup of a package folder is primarily a grouping of project references to the projects that compose that package.  Settings within each referenced project determines where that asset will be placed in the package.  For example, reference assembly projects will be placed under the `ref/{targetMoniker}` folder in the package and implementations will be under either `lib/{targetMoniker}` or `runtimes/{rid}/lib/{targetMoniker}`.  Whenever NuGet evaluates a package in the context of a referencing project it will choose the best compile time asset (preferring `ref`, then falling back to `lib`) and runtime asset (preferring `runtimes/{rid}/lib` and falling back to `lib`) for every package that is referenced.  For more information see http://docs.nuget.org/.
 
-Asset projects (`.csproj`, `.vbproj`, or `.depproj`) can control their `{targetMoniker}` using the `PackageTargetFramework` property in the project file.  Similarly `{rid}` is controlled using the `PackageTargetRuntime` property.  In the corefx repo we automatically select default values for these properties based on the [Build pivots](#build-pivots).  These can be overridden in the project reference using metadata of the same name, but this is rarely needed.
+Asset projects (`.csproj`, `.vbproj`, or `.depproj`) can control their `{targetMoniker}` using the `PackageTargetFramework` property in the project file.  Similarly `{rid}` is controlled using the `PackageTargetRuntime` property.  For the libraries we automatically select default values for these properties based on the build pivots.  These can be overridden in the project reference using metadata of the same name, but this is rarely needed.
 
 The primary thing that the library author needs to do in order to ensure the correct asset selection is:
 

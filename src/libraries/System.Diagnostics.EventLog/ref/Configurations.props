@@ -1,7 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netfx;
+      $(NetFrameworkCurrent);
       net461;
       netstandard2.0;
     </BuildConfigurations>

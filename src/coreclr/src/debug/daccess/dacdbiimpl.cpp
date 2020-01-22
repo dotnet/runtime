@@ -2433,8 +2433,8 @@ void DacDbiInterfaceImpl::GetArrayTypeInfo(TypeHandle                      typeH
                                            AppDomain *                     pAppDomain)
 {
     _ASSERTE(typeHandle.IsArray());
-    pTypeInfo->ArrayTypeData.arrayRank = typeHandle.AsArray()->GetRank();
-    TypeHandleToBasicTypeInfo(typeHandle.AsArray()->GetArrayElementTypeHandle(),
+    pTypeInfo->ArrayTypeData.arrayRank = typeHandle.GetRank();
+    TypeHandleToBasicTypeInfo(typeHandle.GetArrayElementTypeHandle(),
                               &(pTypeInfo->ArrayTypeData.arrayTypeArg),
                               pAppDomain);
 } // DacDbiInterfaceImpl::GetArrayTypeInfo
@@ -2644,24 +2644,7 @@ void DacDbiInterfaceImpl::GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed box
 {
     DD_ENTER_MAY_THROW;
 
-    PTR_MethodTable pMT(TO_TADDR(id.token1));
-
-    if (pMT->IsArray())
-    {
-        // ArrayBase::GetTypeHandle() may return a NULL handle in corner case scenarios.  This check prevents
-        // us from an AV but doesn't actually fix the problem.  See DevDiv 653441 for more info.
-        TypeHandle arrayHandle = ArrayBase::GetTypeHandle(pMT);
-        if (arrayHandle.IsNull())
-        {
-            ThrowHR(CORDBG_E_CLASS_NOT_LOADED);
-        }
-
-        TypeHandleToExpandedTypeInfoImpl(boxed, vmAppDomain, arrayHandle, pTypeInfo);
-    }
-    else
-    {
-        TypeHandleToExpandedTypeInfoImpl(boxed, vmAppDomain, TypeHandle::FromPtr(TO_TADDR(id.token1)), pTypeInfo);
-    }
+    TypeHandleToExpandedTypeInfoImpl(boxed, vmAppDomain, TypeHandle::FromPtr(TO_TADDR(id.token1)), pTypeInfo);
 }
 
 void DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed,

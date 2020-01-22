@@ -32,6 +32,7 @@ set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
+for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
 set "__TestDir=%__ProjectDir%\tests"
 set "__ProjectFilesDir=%__TestDir%"
@@ -205,7 +206,7 @@ REM Set the environment for the native build
 
 REM Eval the output from set-cmake-path.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
-REM echo Using CMake from %CMakePath%
+echo %__MsgPrefix%Using CMake from !CMakePath!
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
 REM processor(s). It is used to set optimal level of CL parallelism during native build step
@@ -234,7 +235,7 @@ if not defined VSINSTALLDIR (
 )
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
-set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
+set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
 call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
 
 if not !errorlevel! == 0 (
@@ -259,7 +260,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-"%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+"%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: native test build failed.
@@ -319,7 +320,7 @@ if defined __SkipManaged goto SkipManagedBuild
 echo %__MsgPrefix%Starting the Managed Tests Build
 
 if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md for build instructions.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/master/docs/workflow for build instructions.
     exit /b 1
 )
 set __AppendToLog=false
@@ -516,8 +517,12 @@ set __CrossgenArg = ""
 if defined __DoCrossgen (
     set __CrossgenArg="/p:Crossgen=true"
     if "%__TargetsWindows%" == "1" (
-        echo %__MsgPrefix%Running crossgen on framework assemblies
+        echo %__MsgPrefix%Running crossgen on framework assemblies in CORE_ROOT: %CORE_ROOT%
         call :PrecompileFX
+        if ERRORLEVEL 1 (
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: crossgen precompilation of framework assemblies failed
+            exit /b 1
+        )
     ) else (
         echo "%__MsgPrefix%Crossgen only supported on Windows, for now"
     )
@@ -526,8 +531,12 @@ if defined __DoCrossgen (
 if defined __DoCrossgen2 (
     set __CrossgenArg="/p:Crossgen2=true"
     if "%__BuildArch%" == "x64" (
-        echo %__MsgPrefix%Running crossgen2 on framework assemblies
+        echo %__MsgPrefix%Running crossgen2 on framework assemblies in CORE_ROOT: %CORE_ROOT%
         call :PrecompileFX
+        if ERRORLEVEL 1 (
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: crossgen2 precompilation of framework assemblies failed
+            exit /b 1
+        )
     ) else (
         echo "%__MsgPrefix%Crossgen2 only supported on x64, for now"
     )
@@ -593,67 +602,82 @@ exit /b 1
 
 :NoDIA
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-This is due to a bug in the Visual Studio installer. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
-at the install location of previous Visual Studio version. The workaround is to copy the DIA SDK folder from the Visual Studio install location ^
-of the previous version to "%VSINSTALLDIR%" and then build.
-REM DIA SDK not included in Express editions
-echo Visual Studio Express does not include the DIA SDK. ^
-You need Visual Studio 2017 or 2019 (Community is free).
-echo See: https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md#prerequisites
+Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
+Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
+Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
+may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1
 
 :PrecompileFX
-for %%F in (%CORE_ROOT%\*.dll) do call :PrecompileAssembly "%%F" %%~nF%%~xF
-exit /b 0
+set __TotalPrecompiled=0
+set __FailedToPrecompile=0
+set __FailedAssemblies=
+for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll") do (
+    if not "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" (
+    if not "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" (
+    if not "%%~nxF"=="Microsoft.CodeAnalysis.dll" (
+    if not "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (
+        call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
+        echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
+    )))))
+)
+
+if !__FailedToPrecompile! NEQ 0 (
+    echo Failed assemblies:
+    FOR %%G IN (!__FailedAssemblies!) do echo   %%G
+)
+
+exit /b !__FailedToPrecompile!
 
 REM Compile the managed assemblies in Core_ROOT before running the tests
 :PrecompileAssembly
 
-REM Skip mscorlib since it is already precompiled.
-if /I "%2" == "mscorlib.dll" exit /b 0
-if /I "%2" == "mscorlib.ni.dll" exit /b 0
-REM don't precompile anything from CoreCLR
-if /I exist %CORE_ROOT_STAGE%\%2 exit /b 0
+set AssemblyPath=%1
+set AssemblyName=%2
 
-REM Don't precompile xunit.* files
-echo "%2" | findstr /b "xunit." >nul && (
-  exit /b 0
-)
-
-set __CrossgenExe="%CORE_ROOT_STAGE%\crossgen.exe"
-if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT_STAGE%\x86\crossgen.exe" )
-if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%CORE_ROOT_STAGE%\x64\crossgen.exe" )
+set __CrossgenExe="%CORE_ROOT%\crossgen.exe"
+if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT%\x86\crossgen.exe" )
+if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%CORE_ROOT%\x64\crossgen.exe" )
 set __CrossgenExe=%__CrossgenExe%
 
 if defined __DoCrossgen2 (
-    set __CrossgenExe="%CORE_ROOT_STAGE%\crossgen2\crossgen2.exe"
+    set __CrossgenExe="%CORE_ROOT%\crossgen2\crossgen2.exe"
 )
 
-set __CrossgenOutputFile="%CORE_ROOT%\temp.ni.dll"
+REM Intentionally avoid using the .dll extension to prevent
+REM subsequent compilations from picking it up as a reference
+set __CrossgenOutputFile="%CORE_ROOT%\temp.ni._dll"
+set __CrossgenCmd=
 
-if defined __Crossgen (
-    "!__CrossgenExe!" /Platform_Assemblies_Paths "!CORE_ROOT!" /in "%1" /out "!__CrossgenOutputFile" >nul 2>nul
-    set /a __exitCode = !errorlevel!
+if defined __DoCrossgen (
+    set __CrossgenCmd=!__CrossgenExe! /Platform_Assemblies_Paths "!CORE_ROOT!" /in !AssemblyPath! /out !__CrossgenOutputFile!
 ) else (
-    "!CORE_ROOT_STAGE!\crossgen2\crossgen2 -r:"!CORE_ROOT!\*.dll" -O --inputbubble -out:"__CrossgenOutputFile" "%1" >nul 2>nul
-    set /a __exitCode = !errorlevel!
+    set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath!
 )
+
+echo %__CrossgenCmd%
+%__CrossgenCmd%
+set /a __exitCode = !errorlevel!
+
+set /a "%~3+=1"
 
 if "%__exitCode%" == "-2146230517" (
-    echo %2 is not a managed assembly.
+    echo %AssemblyPath% is not a managed assembly.
     exit /b 0
 )
 
 if %__exitCode% neq 0 (
-    echo Unable to precompile %2, Exit Code is %__exitCode%
+    echo Unable to precompile %AssemblyPath%, exit code is %__exitCode%
+    set /a "%~4+=1"
+    set "%~5=!%~5!,!AssemblyName!"
     exit /b 0
 )
 
 REM Delete original .dll & replace it with the Crossgened .dll
-del %1
-ren "%__CrossgenOutputFile%" %2
+del %AssemblyPath%
+ren "%__CrossgenOutputFile%" %AssemblyName%
 
-echo Successfully precompiled %2
+echo Successfully precompiled %AssemblyPath%
 exit /b 0
 
 :Exit_Failure

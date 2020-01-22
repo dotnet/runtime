@@ -37,7 +37,7 @@ namespace System.IO.IsolatedStorage
 
         internal IsolatedStorageFile() { }
 
-        // Using this property to match NetFX for testing
+        // Using this property to match .NET Framework for testing
         private string RootDirectory
         {
             get { return _rootDirectory; }
@@ -472,11 +472,11 @@ namespace System.IO.IsolatedStorage
             // Not currently supported: https://github.com/dotnet/corefx/issues/10936
 
             // Implementing this would require serializing/deserializing identity objects which is particularly
-            // complicated given the normal identity objects used by NetFX aren't available on CoreFX.
+            // complicated given the normal identity objects used by .NET Framework aren't available on CoreFX.
             //
             // Starting expectation is that a given store's location would be identical between implementations
-            // (say, for a particular StrongName). You could iterate any store opened at least once by NetFX on
-            // NetFX as it would create the needed identity file. You wouldn't be able to iterate if it was only
+            // (say, for a particular StrongName). You could iterate any store opened at least once by .NET Framework on
+            // .NET Framework as it would create the needed identity file. You wouldn't be able to iterate if it was only
             // ever opened by CoreFX, as the needed file isn't there yet.
             return new IsolatedStorageFileEnumerator();
         }
@@ -487,7 +487,7 @@ namespace System.IO.IsolatedStorage
             {
                 get
                 {
-                    // Getting current throws on NetFX if there is no current item.
+                    // Getting current throws on .NET Framework if there is no current item.
                     throw new InvalidOperationException();
                 }
             }
@@ -565,7 +565,7 @@ namespace System.IO.IsolatedStorage
 
         public static IsolatedStorageFile GetUserStoreForSite()
         {
-            // NetFX and Mono both throw for this method
+            // .NET Framework and Mono both throw for this method
             throw new NotSupportedException(SR.IsolatedStorage_NotValidOnDesktop);
         }
 
@@ -593,7 +593,7 @@ namespace System.IO.IsolatedStorage
 
         // Notes on the GetStore methods:
         //
-        // The System.Security types that NetFX would be getting aren't available. We could potentially map the two
+        // The System.Security types that .NET Framework would be getting aren't available. We could potentially map the two
         // we implicitly support (StrongName and Url) to AssemblyName and Uri. We could also consider accepting those two
         // types.
         //
@@ -719,7 +719,7 @@ namespace System.IO.IsolatedStorage
             // Deletes the current IsoFile's directory and the identity folder if possible.
             // (e.g. @"C:\Users\jerem\AppData\Local\IsolatedStorage\10v31ho4.bo2\eeolfu22.f2w\Url.qgeirsoc3cznuklvq5xlalurh1m0unxl\AssemFiles\")
 
-            // This matches NetFX logic. We want to try and clean as well as possible without being more aggressive with the identity folders.
+            // This matches .NET Framework logic. We want to try and clean as well as possible without being more aggressive with the identity folders.
             // (e.g. Url.qgeirsoc3cznuklvq5xlalurh1m0unxl, etc.) We don't want to inadvertently yank folders for a different scope under the same
             // identity (at least no more so than NetFX).
 
@@ -829,7 +829,7 @@ namespace System.IO.IsolatedStorage
             // Check if we have unknown files
 
             // Note that we don't generate these files in CoreFX, but we want to match
-            // NetFX removal semantics as NetFX will generate these.
+            // .NET Framework removal semantics as .NET Framework will generate these.
 
             if (Helper.IsRoaming(Scope))
                 return ((files.Length > 1) || !IsIdFile(files[0]));

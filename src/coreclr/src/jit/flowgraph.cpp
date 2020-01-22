@@ -419,23 +419,31 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
     return block;
 }
 
-/*****************************************************************************
- *
- *  Ensures that fgFirstBB is a scratch BasicBlock that we have added.
- *  This can be used to add initialization code (without worrying
- *  about other blocks jumping to it).
- *
- *  Callers have to be careful that they do not mess up the order of things
- *  added to fgEnsureFirstBBisScratch in a way as to change semantics.
- */
-
+//------------------------------------------------------------------------
+// fgEnsureFirstBBisScratch: Ensure that fgFirstBB is a scratch BasicBlock
+//
+// Returns:
+//   Nothing. May allocate a new block and alter the value of fgFirstBB.
+//
+// Notes:
+//   This should be called before adding on-entry initialization code to
+//   the method, to ensure that fgFirstBB is not part of a loop.
+//
+//   Does nothing, if fgFirstBB is already a scratch BB. After calling this,
+//   fgFirstBB may already contain code. Callers have to be careful
+//   that they do not mess up the order of things added to this block and
+//   inadvertently change semantics.
+//
+//   We maintain the invariant that a scratch BB ends with BBJ_NONE or
+//   BBJ_ALWAYS, so that when adding independent bits of initialization,
+//   callers can generally append to the fgFirstBB block without worring
+//   about what code is there already.
+//
+//   Can be called at any time, and can be called multiple times.
+//
 void Compiler::fgEnsureFirstBBisScratch()
 {
-    // This method does not update predecessor lists and so must only be called before they are computed.
-    assert(!fgComputePredsDone);
-
     // Have we already allocated a scratch block?
-
     if (fgFirstBBisScratch())
     {
         return;
@@ -453,6 +461,15 @@ void Compiler::fgEnsureFirstBBisScratch()
             block->inheritWeight(fgFirstBB);
         }
 
+        // The first block has an implicit ref count which we must
+        // remove. Note the ref count could be greater that one, if
+        // the first block is not scratch and is targeted by a
+        // branch.
+        assert(fgFirstBB->bbRefs >= 1);
+        fgFirstBB->bbRefs--;
+
+        // The new scratch bb will fall through to the old first bb
+        fgAddRefPred(fgFirstBB, block);
         fgInsertBBbefore(fgFirstBB, block);
     }
     else
@@ -466,6 +483,9 @@ void Compiler::fgEnsureFirstBBisScratch()
 
     block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
 
+    // This new first BB has an implicit ref, and no others.
+    block->bbRefs = 1;
+
     fgFirstBBScratch = fgFirstBB;
 
 #ifdef DEBUG
@@ -476,6 +496,12 @@ void Compiler::fgEnsureFirstBBisScratch()
 #endif
 }
 
+//------------------------------------------------------------------------
+// fgFirstBBisScratch: Check if fgFirstBB is a scratch block
+//
+// Returns:
+//   true if fgFirstBB is a scratch block.
+//
 bool Compiler::fgFirstBBisScratch()
 {
     if (fgFirstBBScratch != nullptr)
@@ -497,6 +523,15 @@ bool Compiler::fgFirstBBisScratch()
     }
 }
 
+//------------------------------------------------------------------------
+// fgBBisScratch: Check if a given block is a scratch block.
+//
+// Arguments:
+//   block - block in question
+//
+// Returns:
+//   true if this block is the first block and is a scratch block.
+//
 bool Compiler::fgBBisScratch(BasicBlock* block)
 {
     return fgFirstBBisScratch() && (block == fgFirstBB);
@@ -8244,7 +8279,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
     block->bbJumpKind = BBJ_ALWAYS;
     block->bbJumpDest = genReturnBB;
-    block->bbJumpDest->bbRefs++;
+    fgAddRefPred(genReturnBB, block);
 
 #ifdef DEBUG
     if (verbose)
@@ -8531,7 +8566,7 @@ private:
         newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
         comp->fgReturnCount++;
 
-        newReturnBB->bbFlags |= BBF_INTERNAL;
+        newReturnBB->bbFlags |= (BBF_INTERNAL | BBF_JMP_TARGET);
 
         noway_assert(newReturnBB->bbNext == nullptr);
 
@@ -13102,6 +13137,7 @@ void Compiler::fgComputeBlockAndEdgeWeights()
     const bool usingProfileWeights = fgIsUsingProfileWeights();
     const bool isOptimizing        = opts.OptimizationEnabled();
 
+    fgModified             = false;
     fgHaveValidEdgeWeights = false;
     fgCalledCount          = BB_UNITY_WEIGHT;
 

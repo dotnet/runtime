@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.14.2)
 
 cmake_policy(SET CMP0042 NEW)
 project(Tests)
@@ -10,7 +10,7 @@ endif()
 
 # Include global configure settings
 include(${CMAKE_CURRENT_SOURCE_DIR}/../configurecompiler.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../configuretools.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 # Compile options
 
 if (WIN32)

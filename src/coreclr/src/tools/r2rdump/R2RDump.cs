@@ -4,23 +4,24 @@
 
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
+using System.Collections.Immutable;
 using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
+using ILCompiler.Reflection.ReadyToRun;
 
 namespace R2RDump
 {
-    public class DumpOptions
+    public class DumpOptions : IAssemblyResolver
     {
         public FileInfo[] In { get; set; }
         public FileInfo Out { get; set; }
-
-        public bool Xml { get; set; }
         public bool Raw { get; set; }
         public bool Header { get; set; }
         public bool Disasm { get; set; }
@@ -46,8 +47,6 @@ namespace R2RDump
         public bool SignatureBinary { get; set; }
         public bool InlineSignatureBinary { get; set; }
 
-        public Dictionary<string, EcmaMetadataReader> AssemblyCache = new Dictionary<string, EcmaMetadataReader>(StringComparer.OrdinalIgnoreCase);
-
         /// <summary>
         /// Probing extensions to use when looking up assemblies under reference paths.
         /// </summary>
@@ -60,13 +59,15 @@ namespace R2RDump
         /// <param name="simpleName">Simple name of the assembly to look up</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
-        public string FindAssembly(string simpleName, string parentFile)
+
+        public MetadataReader FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
+            string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
             foreach (FileInfo refAsm in Reference ?? Enumerable.Empty<FileInfo>())
             {
                 if (Path.GetFileNameWithoutExtension(refAsm.FullName).Equals(simpleName, StringComparison.OrdinalIgnoreCase))
                 {
-                    return refAsm.FullName;
+                    return Open(refAsm.FullName);
                 }
             }
 
@@ -80,23 +81,37 @@ namespace R2RDump
                     string probeFile = Path.Combine(refPath, simpleName + extension);
                     if (File.Exists(probeFile))
                     {
-                        return probeFile;
+                        return Open(probeFile);
                     }
                 }
             }
 
             return null;
         }
+
+        private static unsafe MetadataReader Open(string filename)
+        {
+            byte[] image = File.ReadAllBytes(filename);
+
+            PEReader peReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
+
+            if (!peReader.HasMetadata)
+            {
+                throw new Exception($"ECMA metadata not found in file '{filename}'");
+            }
+
+            return peReader.GetMetadataReader();
+        }
     }
 
     public abstract class Dumper
     {
-        protected readonly R2RReader _r2r;
-        protected readonly TextWriter _writer;
+        protected readonly ReadyToRunReader _r2r;
+        protected TextWriter _writer;
         protected readonly Disassembler _disassembler;
         protected readonly DumpOptions _options;
 
-        public Dumper(R2RReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
+        public Dumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
         {
             _r2r = r2r;
             _writer = writer;
@@ -104,9 +119,9 @@ namespace R2RDump
             _options = options;
         }
 
-        public IEnumerable<R2RSection> NormalizedSections()
+        public IEnumerable<ReadyToRunSection> NormalizedSections()
         {
-            IEnumerable<R2RSection> sections = _r2r.R2RHeader.Sections.Values;
+            IEnumerable<ReadyToRunSection> sections = _r2r.ReadyToRunHeader.Sections.Values;
             if (_options.Normalize)
             {
                 sections = sections.OrderBy((s) => s.Type);
@@ -114,9 +129,9 @@ namespace R2RDump
             return sections;
         }
 
-        public IEnumerable<R2RMethod> NormalizedMethods()
+        public IEnumerable<ReadyToRunMethod> NormalizedMethods()
         {
-            IEnumerable<R2RMethod> methods = _r2r.R2RMethods;
+            IEnumerable<ReadyToRunMethod> methods = _r2r.Methods;
             if (_options.Normalize)
             {
                 methods = methods.OrderBy((m) => m.SignatureString);
@@ -137,22 +152,22 @@ namespace R2RDump
         abstract internal void WriteSubDivider();
         abstract internal void SkipLine();
         abstract internal void DumpHeader(bool dumpSections);
-        abstract internal void DumpSection(R2RSection section, XmlNode parentNode = null);
+        abstract internal void DumpSection(ReadyToRunSection section);
         abstract internal void DumpEntryPoints();
         abstract internal void DumpAllMethods();
-        abstract internal void DumpMethod(R2RMethod method, XmlNode parentNode = null);
-        abstract internal void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null);
-        abstract internal void DumpDisasm(RuntimeFunction rtf, int imageOffset, XmlNode parentNode = null);
-        abstract internal void DumpBytes(int rva, uint size, XmlNode parentNode = null, string name = "Raw", bool convertToOffset = true);
-        abstract internal void DumpSectionContents(R2RSection section, XmlNode parentNode = null);
-        abstract internal XmlNode DumpQueryCount(string q, string title, int count);
+        abstract internal void DumpMethod(ReadyToRunMethod method);
+        abstract internal void DumpRuntimeFunction(RuntimeFunction rtf);
+        abstract internal void DumpDisasm(RuntimeFunction rtf, int imageOffset);
+        abstract internal void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true);
+        abstract internal void DumpSectionContents(ReadyToRunSection section);
+        abstract internal void DumpQueryCount(string q, string title, int count);
     }
 
     class R2RDump
     {
         private readonly DumpOptions _options;
         private readonly TextWriter _writer;
-        private readonly Dictionary<R2RSection.SectionType, bool> _selectedSections = new Dictionary<R2RSection.SectionType, bool>();
+        private readonly Dictionary<ReadyToRunSection.SectionType, bool> _selectedSections = new Dictionary<ReadyToRunSection.SectionType, bool>();
         private Dumper _dumper;
 
         private R2RDump(DumpOptions options)
@@ -219,7 +234,7 @@ namespace R2RDump
         /// <param name="title">The title to print, "R2R Methods by Query" or "R2R Methods by Keyword"</param>
         /// <param name="queries">The keywords/ids to search for</param>
         /// <param name="exact">Specifies whether to look for methods with names/signatures/ids matching the method exactly or partially</param>
-        private void QueryMethod(R2RReader r2r, string title, IReadOnlyList<string> queries, bool exact)
+        private void QueryMethod(ReadyToRunReader r2r, string title, IReadOnlyList<string> queries, bool exact)
         {
             if (queries.Count > 0)
             {
@@ -227,11 +242,11 @@ namespace R2RDump
             }
             foreach (string q in queries)
             {
-                IList<R2RMethod> res = FindMethod(r2r, q, exact);
-                XmlNode queryNode = _dumper.DumpQueryCount(q, "Methods", res.Count);
-                foreach (R2RMethod method in res)
+                IList<ReadyToRunMethod> res = FindMethod(r2r, q, exact);
+                _dumper.DumpQueryCount(q, "Methods", res.Count);
+                foreach (ReadyToRunMethod method in res)
                 {
-                    _dumper.DumpMethod(method, queryNode);
+                    _dumper.DumpMethod(method);
                 }
             }
         }
@@ -241,7 +256,7 @@ namespace R2RDump
         /// </summary>
         /// <param name="r2r">Contains all the extracted info about the ReadyToRun image</param>
         /// <param name="queries">The names/values to search for</param>
-        private void QuerySection(R2RReader r2r, IReadOnlyList<string> queries)
+        private void QuerySection(ReadyToRunReader r2r, IReadOnlyList<string> queries)
         {
             if (queries.Count > 0)
             {
@@ -249,11 +264,11 @@ namespace R2RDump
             }
             foreach (string q in queries)
             {
-                IList<R2RSection> res = FindSection(r2r, q);
-                XmlNode queryNode = _dumper.DumpQueryCount(q, "Sections", res.Count);
-                foreach (R2RSection section in res)
+                IList<ReadyToRunSection> res = FindSection(r2r, q);
+                _dumper.DumpQueryCount(q, "Sections", res.Count);
+                foreach (ReadyToRunSection section in res)
                 {
-                    _dumper.DumpSection(section, queryNode);
+                    _dumper.DumpSection(section);
                 }
             }
         }
@@ -264,7 +279,7 @@ namespace R2RDump
         /// </summary>
         /// <param name="r2r">Contains all the extracted info about the ReadyToRun image</param>
         /// <param name="queries">The ids to search for</param>
-        private void QueryRuntimeFunction(R2RReader r2r, IEnumerable<string> queries)
+        private void QueryRuntimeFunction(ReadyToRunReader r2r, IEnumerable<string> queries)
         {
             if (queries.Any())
             {
@@ -279,8 +294,8 @@ namespace R2RDump
                     WriteWarning("Unable to find by id " + q);
                     continue;
                 }
-                XmlNode queryNode = _dumper.DumpQueryCount(q.ToString(), "Runtime Function", 1);
-                _dumper.DumpRuntimeFunction(rtf, queryNode);
+                _dumper.DumpQueryCount(q.ToString(), "Runtime Function", 1);
+                _dumper.DumpRuntimeFunction(rtf);
             }
         }
 
@@ -288,7 +303,7 @@ namespace R2RDump
         /// Outputs specified headers, sections, methods or runtime functions for one ReadyToRun image
         /// </summary>
         /// <param name="r2r">The structure containing the info of the ReadyToRun image</param>
-        public void Dump(R2RReader r2r)
+        public void Dump(ReadyToRunReader r2r)
         {
             _dumper.Begin();
 
@@ -345,7 +360,7 @@ namespace R2RDump
         /// </summary>
         /// <param name="exact">Specifies exact or partial match</param>
         /// <remarks>Case-insensitive and ignores whitespace</remarks>
-        private bool Match(R2RMethod method, string query, bool exact)
+        private bool Match(ReadyToRunMethod method, string query, bool exact)
         {
             int id;
             bool isNum = ArgStringToInt(query, out id);
@@ -376,11 +391,11 @@ namespace R2RDump
         /// Returns true if the name or value of the ReadyToRunSectionType of <param>section</param> matches <param>query</param>
         /// </summary>
         /// <remarks>Case-insensitive</remarks>
-        private bool Match(R2RSection section, string query)
+        private bool Match(ReadyToRunSection section, string query)
         {
             int queryInt;
             bool isNum = ArgStringToInt(query, out queryInt);
-            string typeName = Enum.GetName(typeof(R2RSection.SectionType), section.Type);
+            string typeName = Enum.GetName(typeof(ReadyToRunSection.SectionType), section.Type);
 
             return (isNum && (int)section.Type == queryInt) || typeName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
         }
@@ -393,10 +408,10 @@ namespace R2RDump
         /// <param name="exact">Specifies exact or partial match</param>
         /// <out name="res">List of all matching methods</out>
         /// <remarks>Case-insensitive and ignores whitespace</remarks>
-        public IList<R2RMethod> FindMethod(R2RReader r2r, string query, bool exact)
+        public IList<ReadyToRunMethod> FindMethod(ReadyToRunReader r2r, string query, bool exact)
         {
-            List<R2RMethod> res = new List<R2RMethod>();
-            foreach (R2RMethod method in r2r.R2RMethods)
+            List<ReadyToRunMethod> res = new List<ReadyToRunMethod>();
+            foreach (ReadyToRunMethod method in r2r.Methods)
             {
                 if (Match(method, query, exact))
                 {
@@ -413,10 +428,10 @@ namespace R2RDump
         /// <param name="query">The name or value to search for</param>
         /// <out name="res">List of all matching sections</out>
         /// <remarks>Case-insensitive</remarks>
-        public IList<R2RSection> FindSection(R2RReader r2r, string query)
+        public IList<ReadyToRunSection> FindSection(ReadyToRunReader r2r, string query)
         {
-            List<R2RSection> res = new List<R2RSection>();
-            foreach (R2RSection section in r2r.R2RHeader.Sections.Values)
+            List<ReadyToRunSection> res = new List<ReadyToRunSection>();
+            foreach (ReadyToRunSection section in r2r.ReadyToRunHeader.Sections.Values)
             {
                 if (Match(section, query))
                 {
@@ -431,9 +446,9 @@ namespace R2RDump
         /// </summary>
         /// <param name="r2r">Contains all extracted info about the ReadyToRun image</param>
         /// <param name="rtfQuery">The name or value to search for</param>
-        public RuntimeFunction FindRuntimeFunction(R2RReader r2r, int rtfQuery)
+        public RuntimeFunction FindRuntimeFunction(ReadyToRunReader r2r, int rtfQuery)
         {
-            foreach (R2RMethod m in r2r.R2RMethods)
+            foreach (ReadyToRunMethod m in r2r.Methods)
             {
                 foreach (RuntimeFunction rtf in m.RuntimeFunctions)
                 {
@@ -463,12 +478,12 @@ namespace R2RDump
                     throw new ArgumentException("The option '--naked' is incompatible with '--raw'");
                 }
 
-                R2RReader previousReader = null;
+                ReadyToRunReader previousReader = null;
 
                 foreach (FileInfo filename in _options.In)
                 {
                     // parse the ReadyToRun image
-                    R2RReader r2r = new R2RReader(_options, filename.FullName);
+                    ReadyToRunReader r2r = new ReadyToRunReader(_options, filename.FullName);
 
                     if (_options.Disasm)
                     {
@@ -482,14 +497,7 @@ namespace R2RDump
                         }
                     }
 
-                    if (_options.Xml)
-                    {
-                        _dumper = new XmlDumper(_options.IgnoreSensitive, r2r, _writer, disassembler, _options);
-                    }
-                    else
-                    {
-                        _dumper = new TextDumper(r2r, _writer, disassembler, _options);
-                    }
+                    _dumper = new TextDumper(r2r, _writer, disassembler, _options);
 
                     if (!_options.Diff)
                     {
@@ -510,17 +518,6 @@ namespace R2RDump
                 if (e is ArgumentException)
                 {
                     Console.WriteLine();
-                }
-                if (_options.Xml)
-                {
-                    XmlDocument document = new XmlDocument();
-                    XmlNode node = document.CreateNode("element", "Error", "");
-                    node.InnerText = e.Message;
-                    document.AppendChild(node);
-                    if (_writer != null)
-                    {
-                        document.Save(_writer);
-                    }
                 }
                 return 1;
             }

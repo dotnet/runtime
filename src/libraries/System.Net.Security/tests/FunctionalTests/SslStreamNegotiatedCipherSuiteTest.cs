@@ -593,7 +593,7 @@ namespace System.Net.Security.Tests
             return new CipherSuitesPolicy(cipherSuites);
         }
 
-        private static async Task<Exception> WaitForSecureConnection(VirtualNetwork connection, Func<Task> server, Func<Task> client)
+        private static async Task<Exception> WaitForSecureConnection(SslStream client, SslClientAuthenticationOptions clientOptions, SslStream server, SslServerAuthenticationOptions serverOptions)
         {
             Task serverTask = null;
             Task clientTask = null;
@@ -601,12 +601,13 @@ namespace System.Net.Security.Tests
             // check if failed synchronously
             try
             {
-                serverTask = server();
-                clientTask = client();
+                serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
             }
             catch (Exception e)
             {
-                connection.BreakConnection();
+                client.Close();
+                server.Close();
 
                 if (!(e is AuthenticationException || e is Win32Exception))
                 {
@@ -625,6 +626,7 @@ namespace System.Net.Security.Tests
                     catch (AuthenticationException) { }
                     catch (Win32Exception) { }
                     catch (VirtualNetwork.VirtualNetworkConnectionBroken) { }
+                    catch (IOException) { }
                 }
 
                 return e;
@@ -635,32 +637,42 @@ namespace System.Net.Security.Tests
             // Now we expect both sides to fail or both to succeed
 
             Exception failure = null;
+            Task task = null;
 
             try
             {
-                await serverTask.ConfigureAwait(false);
+                task = await Task.WhenAny(serverTask, clientTask).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await task ;
             }
             catch (Exception e) when (e is AuthenticationException || e is Win32Exception)
             {
                 failure = e;
-
                 // avoid client waiting for server's response
-                connection.BreakConnection();
+                if (task == serverTask)
+                {
+                    server.Close();
+                }
+                else
+                {
+                    client.Close();
+                }
             }
 
             try
             {
-                await clientTask.ConfigureAwait(false);
+                // Now wait for the other task to finish.
+                task = (task == serverTask ? clientTask : serverTask);
+                await task.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
 
                 // Fail if server has failed but client has succeeded
                 Assert.Null(failure);
             }
-            catch (Exception e) when (e is VirtualNetwork.VirtualNetworkConnectionBroken || e is AuthenticationException || e is Win32Exception)
+            catch (Exception e) when (e is VirtualNetwork.VirtualNetworkConnectionBroken || e is AuthenticationException || e is Win32Exception || e is IOException)
             {
                 // Fail if server has succeeded but client has failed
                 Assert.NotNull(failure);
 
-                if (e.GetType() != typeof(VirtualNetwork.VirtualNetworkConnectionBroken))
+                if (e.GetType() != typeof(VirtualNetwork.VirtualNetworkConnectionBroken) && e.GetType() != typeof(IOException))
                 {
                     failure = new AggregateException(new Exception[] { failure, e });
                 }
@@ -671,9 +683,10 @@ namespace System.Net.Security.Tests
 
         private static NegotiatedParams ConnectAndGetNegotiatedParams(ConnectionParams serverParams, ConnectionParams clientParams)
         {
-            VirtualNetwork vn = new VirtualNetwork();
-            using (VirtualNetworkStream serverStream = new VirtualNetworkStream(vn, isServer: true),
-                                        clientStream = new VirtualNetworkStream(vn, isServer: false))
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+
+            using (clientStream)
+            using (serverStream)
             using (SslStream server = new SslStream(serverStream, leaveInnerStreamOpen: false),
                              client = new SslStream(clientStream, leaveInnerStreamOpen: false))
             {
@@ -696,10 +709,7 @@ namespace System.Net.Security.Tests
                                                                  return true;
                                                              });
 
-                Func<Task> serverTask = () => server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-                Func<Task> clientTask = () => client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-
-                Exception failure = WaitForSecureConnection(vn, serverTask, clientTask).Result;
+                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).GetAwaiter().GetResult();
 
                 if (failure == null)
                 {

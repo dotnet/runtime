@@ -14,15 +14,10 @@ Getting Started
 - [Installing the .NET SDK](https://dotnet.microsoft.com/download)
 - [Official .NET Docs](https://docs.microsoft.com/dotnet/core/)
 
-Software requirements
-===============
-
-- [Windows Requirements](workflow/windows-requirements.md)
-- [Linux Requirements](workflow/linux-requirements.md)
-- [MacOS Requirements](workflow/macos-requirements.md)
-
 Workflow (Building, testing, etc.)
 ===============
+
+If you want to contribute a code change to this repo, start here.
 
 - [Workflow Instructions](workflow/README.md)
 

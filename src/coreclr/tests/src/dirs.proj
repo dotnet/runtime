@@ -6,7 +6,6 @@
       <DisabledProjects Include="TestWrappers*\**\*.csproj" />
       <DisabledProjects Include="*\**\cs_template.csproj" />
       <DisabledProjects Include="Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
-      <DisabledProjects Include="Common\test_runtime\test_runtime.csproj" />
       <DisabledProjects Include="Common\test_dependencies\test_dependencies.csproj" />
       <DisabledProjects Include="Common\CoreFX\TestFileSetup\CoreFX.TestUtils.TestFileSetup.csproj" />
       <DisabledProjects Include="Common\PerfHarness\PerfHarness.csproj" />

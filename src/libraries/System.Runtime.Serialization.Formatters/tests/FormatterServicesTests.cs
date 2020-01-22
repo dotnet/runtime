@@ -141,7 +141,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(GetUninitializedObject_ByRefLikeType_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "full .NET Framework has bug that allows allocating instances of byref-like types.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has bug that allows allocating instances of byref-like types.")]
         public void GetUninitializedObject_ByRefLikeType_NonNetfx_ThrowsNotSupportedException(Type type)
         {
             Assert.Throws<NotSupportedException>(() => FormatterServices.GetUninitializedObject(type));
@@ -172,7 +172,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework doesn't support GetUninitializedObject for subclasses of ContextBoundObject")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The .NET Framework doesn't support GetUninitializedObject for subclasses of ContextBoundObject")]
         public void GetUninitializedObject_ContextBoundObjectSubclass_NetCore_InitializesValue()
         {
             Assert.Equal(0, ((ContextBoundSubclass)FormatterServices.GetUninitializedObject(typeof(ContextBoundSubclass))).Value);
@@ -314,18 +314,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("assem", () => FormatterServices.GetTypeFromAssembly(null, "name"));
             Assert.Null(FormatterServices.GetTypeFromAssembly(GetType().Assembly, Guid.NewGuid().ToString("N"))); // non-existing type doesn't throw
-        }
-    }
-}
-
-namespace System.Runtime.CompilerServices
-{
-    // Local definition of IsByRefLikeAttribute while the real one becomes available in corefx
-    [AttributeUsage(AttributeTargets.Struct)]
-    public sealed class IsByRefLikeAttribute : Attribute
-    {
-        public IsByRefLikeAttribute()
-        {
         }
     }
 }

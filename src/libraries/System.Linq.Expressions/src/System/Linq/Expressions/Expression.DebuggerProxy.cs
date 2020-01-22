@@ -21,12 +21,12 @@ namespace System.Linq.Expressions
             }
 
             public bool CanReduce => _node.CanReduce;
-            public LambdaExpression Conversion => _node.Conversion;
+            public LambdaExpression? Conversion => _node.Conversion;
             public string DebugView => _node.DebugView;
             public bool IsLifted => _node.IsLifted;
             public bool IsLiftedToNull => _node.IsLiftedToNull;
             public Expression Left => _node.Left;
-            public MethodInfo Method => _node.Method;
+            public MethodInfo? Method => _node.Method;
             public ExpressionType NodeType => _node.NodeType;
             public Expression Right => _node.Right;
             public Type Type => _node.Type;
@@ -62,9 +62,9 @@ namespace System.Linq.Expressions
             }
 
             public Expression Body => _node.Body;
-            public Expression Filter => _node.Filter;
+            public Expression? Filter => _node.Filter;
             public Type Test => _node.Test;
-            public ParameterExpression Variable => _node.Variable;
+            public ParameterExpression? Variable => _node.Variable;
         }
 
         internal class ConditionalExpressionProxy
@@ -100,7 +100,7 @@ namespace System.Linq.Expressions
             public string DebugView => _node.DebugView;
             public ExpressionType NodeType => _node.NodeType;
             public Type Type => _node.Type;
-            public object Value => _node.Value;
+            public object? Value => _node.Value;
         }
 
         internal class DebugInfoExpressionProxy
@@ -156,8 +156,8 @@ namespace System.Linq.Expressions
             public GotoExpressionKind Kind => _node.Kind;
             public ExpressionType NodeType => _node.NodeType;
             public LabelTarget Target => _node.Target;
-            public Type Type => _node.Type;
-            public Expression Value => _node.Value;
+            public Type? Type => _node.Type;
+            public Expression? Value => _node.Value;
         }
 
         internal class IndexExpressionProxy
@@ -173,9 +173,9 @@ namespace System.Linq.Expressions
             public ReadOnlyCollection<Expression> Arguments => _node.Arguments;
             public bool CanReduce => _node.CanReduce;
             public string DebugView => _node.DebugView;
-            public PropertyInfo Indexer => _node.Indexer;
+            public PropertyInfo? Indexer => _node.Indexer;
             public ExpressionType NodeType => _node.NodeType;
-            public Expression Object => _node.Object;
+            public Expression? Object => _node.Object;
             public Type Type => _node.Type;
         }
 
@@ -209,7 +209,7 @@ namespace System.Linq.Expressions
 
             public bool CanReduce => _node.CanReduce;
             public string DebugView => _node.DebugView;
-            public Expression DefaultValue => _node.DefaultValue;
+            public Expression? DefaultValue => _node.DefaultValue;
             public ExpressionType NodeType => _node.NodeType;
             public LabelTarget Target => _node.Target;
             public Type Type => _node.Type;
@@ -228,7 +228,7 @@ namespace System.Linq.Expressions
             public Expression Body => _node.Body;
             public bool CanReduce => _node.CanReduce;
             public string DebugView => _node.DebugView;
-            public string Name => _node.Name;
+            public string? Name => _node.Name;
             public ExpressionType NodeType => _node.NodeType;
             public ReadOnlyCollection<ParameterExpression> Parameters => _node.Parameters;
             public Type ReturnType => _node.ReturnType;
@@ -265,9 +265,9 @@ namespace System.Linq.Expressions
             }
 
             public Expression Body => _node.Body;
-            public LabelTarget BreakLabel => _node.BreakLabel;
+            public LabelTarget? BreakLabel => _node.BreakLabel;
             public bool CanReduce => _node.CanReduce;
-            public LabelTarget ContinueLabel => _node.ContinueLabel;
+            public LabelTarget? ContinueLabel => _node.ContinueLabel;
             public string DebugView => _node.DebugView;
             public ExpressionType NodeType => _node.NodeType;
             public Type Type => _node.Type;
@@ -285,7 +285,7 @@ namespace System.Linq.Expressions
 
             public bool CanReduce => _node.CanReduce;
             public string DebugView => _node.DebugView;
-            public Expression Expression => _node.Expression;
+            public Expression? Expression => _node.Expression;
             public MemberInfo Member => _node.Member;
             public ExpressionType NodeType => _node.NodeType;
             public Type Type => _node.Type;
@@ -324,7 +324,7 @@ namespace System.Linq.Expressions
             public string DebugView => _node.DebugView;
             public MethodInfo Method => _node.Method;
             public ExpressionType NodeType => _node.NodeType;
-            public Expression Object => _node.Object;
+            public Expression? Object => _node.Object;
             public Type Type => _node.Type;
         }
 
@@ -357,9 +357,9 @@ namespace System.Linq.Expressions
 
             public ReadOnlyCollection<Expression> Arguments => _node.Arguments;
             public bool CanReduce => _node.CanReduce;
-            public ConstructorInfo Constructor => _node.Constructor;
+            public ConstructorInfo? Constructor => _node.Constructor;
             public string DebugView => _node.DebugView;
-            public ReadOnlyCollection<MemberInfo> Members => _node.Members;
+            public ReadOnlyCollection<MemberInfo>? Members => _node.Members;
             public ExpressionType NodeType => _node.NodeType;
             public Type Type => _node.Type;
         }
@@ -377,7 +377,7 @@ namespace System.Linq.Expressions
             public bool CanReduce => _node.CanReduce;
             public string DebugView => _node.DebugView;
             public bool IsByRef => _node.IsByRef;
-            public string Name => _node.Name;
+            public string? Name => _node.Name;
             public ExpressionType NodeType => _node.NodeType;
             public Type Type => _node.Type;
         }
@@ -425,9 +425,9 @@ namespace System.Linq.Expressions
 
             public bool CanReduce => _node.CanReduce;
             public ReadOnlyCollection<SwitchCase> Cases => _node.Cases;
-            public MethodInfo Comparison => _node.Comparison;
+            public MethodInfo? Comparison => _node.Comparison;
             public string DebugView => _node.DebugView;
-            public Expression DefaultBody => _node.DefaultBody;
+            public Expression? DefaultBody => _node.DefaultBody;
             public ExpressionType NodeType => _node.NodeType;
             public Expression SwitchValue => _node.SwitchValue;
             public Type Type => _node.Type;
@@ -446,8 +446,8 @@ namespace System.Linq.Expressions
             public Expression Body => _node.Body;
             public bool CanReduce => _node.CanReduce;
             public string DebugView => _node.DebugView;
-            public Expression Fault => _node.Fault;
-            public Expression Finally => _node.Finally;
+            public Expression? Fault => _node.Fault;
+            public Expression? Finally => _node.Finally;
             public ReadOnlyCollection<CatchBlock> Handlers => _node.Handlers;
             public ExpressionType NodeType => _node.NodeType;
             public Type Type => _node.Type;
@@ -485,7 +485,7 @@ namespace System.Linq.Expressions
             public string DebugView => _node.DebugView;
             public bool IsLifted => _node.IsLifted;
             public bool IsLiftedToNull => _node.IsLiftedToNull;
-            public MethodInfo Method => _node.Method;
+            public MethodInfo? Method => _node.Method;
             public ExpressionType NodeType => _node.NodeType;
             public Expression Operand => _node.Operand;
             public Type Type => _node.Type;

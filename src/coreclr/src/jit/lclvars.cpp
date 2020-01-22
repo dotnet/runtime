@@ -2369,6 +2369,33 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum)
     lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_AddrExposed));
 }
 
+//------------------------------------------------------------------------
+// lvaSetVarLiveInOutOfHandler: Set the local varNum as being live in and/or out of a handler
+//
+// Arguments:
+//    varNum - the varNum of the local
+//
+void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+    INDEBUG(varDsc->lvLiveInOutOfHndlr = 1);
+
+    if (varDsc->lvPromoted)
+    {
+        noway_assert(varTypeIsStruct(varDsc));
+
+        for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
+        {
+            noway_assert(lvaTable[i].lvIsStructField);
+            INDEBUG(lvaTable[i].lvLiveInOutOfHndlr = 1);
+            lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
+        }
+    }
+
+    lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+}
+
 /*****************************************************************************
  *
  *  Record that the local var "varNum" should not be enregistered (for one of several reasons.)
@@ -6779,6 +6806,11 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         printf(" HFA(%s) ", varTypeName(varDsc->GetHfaType()));
     }
 
+    if (varDsc->lvLiveInOutOfHndlr)
+    {
+        printf(" EH");
+    }
+
     if (varDsc->lvDoNotEnregister)
     {
         printf(" do-not-enreg[");
@@ -7254,6 +7286,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     switch (oper)
     {
         case GT_LCL_VAR:
+        case GT_LCL_VAR_ADDR:
             lcl = tree;
             break;
 
@@ -7269,12 +7302,13 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_CONTINUE;
     }
 
-    Compiler* pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_pCompiler;
-    bool      bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
-    noway_assert(lcl->gtOper == GT_LCL_VAR);
-    unsigned   lclNum = lcl->AsLclVarCommon()->GetLclNum();
-    var_types  type   = lcl->TypeGet();
-    LclVarDsc* varDsc = &pComp->lvaTable[lclNum];
+    noway_assert(lcl->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR));
+
+    Compiler* const  pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_pCompiler;
+    const bool       bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
+    const unsigned   lclNum     = lcl->AsLclVarCommon()->GetLclNum();
+    var_types        type       = lcl->TypeGet();
+    LclVarDsc* const varDsc     = pComp->lvaGetDesc(lclNum);
 
     if (varDsc->lvNoLclFldStress)
     {
@@ -7305,6 +7339,14 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_SKIP_SUBTREES;
         }
 
+        // The noway_assert in the second pass below, requires that these types match, or we have a TYP_BLK
+        //
+        if ((varDsc->lvType != lcl->gtType) && (varDsc->lvType != TYP_BLK))
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_SKIP_SUBTREES;
+        }
+
         // Weed out "small" types like TYP_BYTE as we don't mark the GT_LCL_VAR
         // node with the accurate small type. If we bash lvaTable[].lvType,
         // then there will be no indication that it was ever a small type.
@@ -7326,7 +7368,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     else
     {
         // Do the morphing
-        noway_assert(varDsc->lvType == lcl->gtType || varDsc->lvType == TYP_BLK);
+        noway_assert((varDsc->lvType == lcl->gtType) || (varDsc->lvType == TYP_BLK));
         var_types varType = varDsc->TypeGet();
 
         // Calculate padding
@@ -7356,6 +7398,11 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             /* Change lclVar(lclNum) to lclFld(lclNum,padding) */
 
             tree->ChangeOper(GT_LCL_FLD);
+            tree->AsLclFld()->SetLclOffs(padding);
+        }
+        else if (oper == GT_LCL_VAR_ADDR)
+        {
+            tree->ChangeOper(GT_LCL_FLD_ADDR);
             tree->AsLclFld()->SetLclOffs(padding);
         }
         else

@@ -1422,6 +1422,6 @@ HRESULT __stdcall CtxEntry::EnterContextCallback(ComCallData* pComCallData)
     // callback data.
     pData->m_UserCallbackHR = pData->m_pUserCallbackFunc(pData->m_pUserData);
 
-    // Return S_OK to indicate the context transition was successfull.
+    // Return S_OK to indicate the context transition was successful.
     return S_OK;
 }

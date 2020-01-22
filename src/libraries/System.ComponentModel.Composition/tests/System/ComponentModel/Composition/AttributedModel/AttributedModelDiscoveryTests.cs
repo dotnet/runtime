@@ -33,7 +33,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             public override int MyProp { get; set; }
         }
 
-        [ActiveIssue(551341)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/551341")]
         [Fact]
         public void ShowIssueWithVirtualPropertiesInReflectionAPI()
         {
@@ -232,7 +232,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void IsDiscoverable()
         {
             var expectations = new ExpectationCollection<Type, bool>();
@@ -257,7 +257,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void CreatePartDefinition_EnsureIsDiscoverable()
         {
             var expectations = new ExpectationCollection<Type, bool>();
@@ -331,7 +331,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(710352)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/710352")]
         public void MixedDuplicateExports_ShouldOnlyCollapseInheritedExport()
         {
             var def = AttributedModelServices.CreatePartDefinition(typeof(DuplicateMixedExporter1), null);

@@ -344,7 +344,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
     CONTRACT_END;
 
 #ifdef _DEBUG
-    if (pModule->IsSystem() || pModule->GetDomain()->IsSharedDomain() || pModule->GetDomain()->AsAppDomain()->IsCompilationDomain())
+    if (pModule->IsSystem() || pModule->GetDomain()->AsAppDomain()->IsCompilationDomain())
     {
         // in the shared domain and compilation AD we are associated with the module
         CONSISTENCY_CHECK(pModule->GetILStubCache() == this);

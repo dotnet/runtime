@@ -22,7 +22,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="TValue">The type of values stored by the dictionary.</typeparam>
         /// <returns>The immutable collection.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> Create<TKey, TValue>()
+        public static ImmutableSortedDictionary<TKey, TValue> Create<TKey, TValue>() where TKey : notnull
         {
             return ImmutableSortedDictionary<TKey, TValue>.Empty;
         }
@@ -35,7 +35,7 @@ namespace System.Collections.Immutable
         /// <param name="keyComparer">The key comparer.</param>
         /// <returns>The immutable collection.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> Create<TKey, TValue>(IComparer<TKey> keyComparer)
+        public static ImmutableSortedDictionary<TKey, TValue> Create<TKey, TValue>(IComparer<TKey>? keyComparer) where TKey : notnull
         {
             return ImmutableSortedDictionary<TKey, TValue>.Empty.WithComparers(keyComparer);
         }
@@ -49,7 +49,7 @@ namespace System.Collections.Immutable
         /// <param name="valueComparer">The value comparer.</param>
         /// <returns>The immutable collection.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> Create<TKey, TValue>(IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public static ImmutableSortedDictionary<TKey, TValue> Create<TKey, TValue>(IComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer) where TKey : notnull
         {
             return ImmutableSortedDictionary<TKey, TValue>.Empty.WithComparers(keyComparer, valueComparer);
         }
@@ -63,7 +63,7 @@ namespace System.Collections.Immutable
         /// <returns>The new immutable collection.</returns>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> items)
+        public static ImmutableSortedDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableSortedDictionary<TKey, TValue>.Empty.AddRange(items);
         }
@@ -78,7 +78,7 @@ namespace System.Collections.Immutable
         /// <returns>The new immutable collection.</returns>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> CreateRange<TKey, TValue>(IComparer<TKey> keyComparer, IEnumerable<KeyValuePair<TKey, TValue>> items)
+        public static ImmutableSortedDictionary<TKey, TValue> CreateRange<TKey, TValue>(IComparer<TKey>? keyComparer, IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableSortedDictionary<TKey, TValue>.Empty.WithComparers(keyComparer).AddRange(items);
         }
@@ -94,7 +94,7 @@ namespace System.Collections.Immutable
         /// <returns>The new immutable collection.</returns>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> CreateRange<TKey, TValue>(IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer, IEnumerable<KeyValuePair<TKey, TValue>> items)
+        public static ImmutableSortedDictionary<TKey, TValue> CreateRange<TKey, TValue>(IComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer, IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableSortedDictionary<TKey, TValue>.Empty.WithComparers(keyComparer, valueComparer).AddRange(items);
         }
@@ -106,7 +106,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="TValue">The type of values stored by the dictionary.</typeparam>
         /// <returns>The immutable collection builder.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>()
+        public static ImmutableSortedDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>() where TKey : notnull
         {
             return Create<TKey, TValue>().ToBuilder();
         }
@@ -119,7 +119,7 @@ namespace System.Collections.Immutable
         /// <param name="keyComparer">The key comparer.</param>
         /// <returns>The immutable collection builder.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(IComparer<TKey> keyComparer)
+        public static ImmutableSortedDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(IComparer<TKey>? keyComparer) where TKey : notnull
         {
             return Create<TKey, TValue>(keyComparer).ToBuilder();
         }
@@ -133,7 +133,7 @@ namespace System.Collections.Immutable
         /// <param name="valueComparer">The value comparer.</param>
         /// <returns>The immutable collection builder.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public static ImmutableSortedDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(IComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer) where TKey : notnull
         {
             return Create<TKey, TValue>(keyComparer, valueComparer).ToBuilder();
         }
@@ -151,7 +151,7 @@ namespace System.Collections.Immutable
         /// <param name="valueComparer">The value comparer to use for the map.</param>
         /// <returns>The immutable map.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector, IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector, IComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer) where TKey : notnull
         {
             Requires.NotNull(source, nameof(source));
             Requires.NotNull(keySelector, nameof(keySelector));
@@ -167,7 +167,7 @@ namespace System.Collections.Immutable
         /// <param name="builder">The builder to create the immutable map from.</param>
         /// <returns>An immutable map.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this ImmutableSortedDictionary<TKey, TValue>.Builder builder)
+        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this ImmutableSortedDictionary<TKey, TValue>.Builder builder) where TKey : notnull
         {
             Requires.NotNull(builder, nameof(builder));
 
@@ -186,7 +186,7 @@ namespace System.Collections.Immutable
         /// <param name="keyComparer">The key comparer to use for the map.</param>
         /// <returns>The immutable map.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector, IComparer<TKey> keyComparer)
+        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector, IComparer<TKey>? keyComparer) where TKey : notnull
         {
             return ToImmutableSortedDictionary(source, keySelector, elementSelector, keyComparer, null);
         }
@@ -202,7 +202,7 @@ namespace System.Collections.Immutable
         /// <param name="elementSelector">The function that will produce the value for the map from each sequence element.</param>
         /// <returns>The immutable map.</returns>
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector)
+        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector) where TKey : notnull
         {
             return ToImmutableSortedDictionary(source, keySelector, elementSelector, null, null);
         }
@@ -218,7 +218,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable map.</returns>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer) where TKey : notnull
         {
             Requires.NotNull(source, nameof(source));
 
@@ -241,7 +241,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable map.</returns>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IComparer<TKey> keyComparer)
+        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IComparer<TKey>? keyComparer) where TKey : notnull
         {
             return ToImmutableSortedDictionary(source, keyComparer, null);
         }
@@ -255,7 +255,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable map.</returns>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         [Pure]
-        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source)
+        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source) where TKey : notnull
         {
             return ToImmutableSortedDictionary(source, null, null);
         }

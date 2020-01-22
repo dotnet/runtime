@@ -546,7 +546,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            if (Helpers.BitwiseSelect(firstOp[0], secondOp[0], thirdOp[0]) != result[0])
+            if (BitConverter.SingleToInt32Bits(Helpers.BitwiseSelect(firstOp[0], secondOp[0], thirdOp[0])) != BitConverter.SingleToInt32Bits(result[0]))
             {
                 succeeded = false;
             }
@@ -554,7 +554,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (Helpers.BitwiseSelect(firstOp[i], secondOp[i], thirdOp[i]) != result[i])
+                    if (BitConverter.SingleToInt32Bits(Helpers.BitwiseSelect(firstOp[i], secondOp[i], thirdOp[i])) != BitConverter.SingleToInt32Bits(result[i]))
                     {
                         succeeded = false;
                         break;

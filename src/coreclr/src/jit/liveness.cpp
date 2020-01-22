@@ -2472,37 +2472,26 @@ void Compiler::fgInterBlockLocalVarLiveness()
         }
 
         // Mark all variables that are live on entry to an exception handler
-        // or on exit from a filter handler or finally as DoNotEnregister */
+        // or on exit from a filter handler or finally.
 
-        if (VarSetOps::IsMember(this, exceptVars, varDsc->lvVarIndex) ||
+        bool isFinallyVar = VarSetOps::IsMember(this, finallyVars, varDsc->lvVarIndex);
+        if (isFinallyVar || VarSetOps::IsMember(this, exceptVars, varDsc->lvVarIndex) ||
             VarSetOps::IsMember(this, filterVars, varDsc->lvVarIndex))
         {
-            /* Mark the variable appropriately */
-            lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
-        }
+            // Mark the variable appropriately.
+            lvaSetVarLiveInOutOfHandler(varNum);
 
-        /* Mark all pointer variables live on exit from a 'finally'
-           block as either volatile for non-GC ref types or as
-           'explicitly initialized' (volatile and must-init) for GC-ref types */
+            // Mark all pointer variables live on exit from a 'finally' block as
+            // 'explicitly initialized' (must-init) for GC-ref types.
 
-        if (VarSetOps::IsMember(this, finallyVars, varDsc->lvVarIndex))
-        {
-            lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
-
-            /* Don't set lvMustInit unless we have a non-arg, GC pointer */
-
-            if (varDsc->lvIsParam)
+            if (isFinallyVar)
             {
-                continue;
+                // Set lvMustInit only if we have a non-arg, GC pointer.
+                if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()))
+                {
+                    varDsc->lvMustInit = true;
+                }
             }
-
-            if (!varTypeIsGC(varDsc->TypeGet()))
-            {
-                continue;
-            }
-
-            /* Mark it */
-            varDsc->lvMustInit = true;
         }
     }
 

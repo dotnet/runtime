@@ -1924,8 +1924,8 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
             op1LclNum = lvaGrabTemp(true DEBUGARG("SIMD Min/Max"));
-            dupOp1    = gtNewLclvNode(op1LclNum, op1->TypeGet());
             lvaSetStruct(op1LclNum, typeHnd, false);
+            dupOp1    = gtNewLclvNode(op1LclNum, op1->TypeGet());
             op1Assign = gtNewTempAssign(op1LclNum, op1);
             op1       = gtNewLclvNode(op1LclNum, op1->TypeGet());
         }
@@ -1937,8 +1937,8 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
             op2LclNum = lvaGrabTemp(true DEBUGARG("SIMD Min/Max"));
-            dupOp2    = gtNewLclvNode(op2LclNum, op2->TypeGet());
             lvaSetStruct(op2LclNum, typeHnd, false);
+            dupOp2    = gtNewLclvNode(op2LclNum, op2->TypeGet());
             op2Assign = gtNewTempAssign(op2LclNum, op2);
             op2       = gtNewLclvNode(op2LclNum, op2->TypeGet());
         }
@@ -2112,6 +2112,26 @@ bool Compiler::areFieldsContiguous(GenTree* first, GenTree* second)
     return false;
 }
 
+//----------------------------------------------------------------------
+// areLocalFieldsContiguous: Check whether two local field are contiguous
+//
+// Arguments:
+//    first - the first local field
+//    second - the second local field
+//
+// Return Value:
+//    If the first field is located before second field, and they are located contiguously,
+//    then return true. Otherwise, return false.
+//
+bool Compiler::areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second)
+{
+    assert(first->TypeIs(TYP_FLOAT));
+    assert(second->TypeIs(TYP_FLOAT));
+
+    return (first->TypeGet() == second->TypeGet()) &&
+           (first->GetLclOffs() + genTypeSize(first->TypeGet()) == second->GetLclOffs());
+}
+
 //-------------------------------------------------------------------------------
 // Check whether two array element nodes are located contiguously or not.
 // Arguments:
@@ -2176,6 +2196,10 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
     else if (op1->OperGet() == GT_FIELD && op2->OperGet() == GT_FIELD)
     {
         return areFieldsContiguous(op1, op2);
+    }
+    else if (op1->OperIs(GT_LCL_FLD) && op2->OperIs(GT_LCL_FLD))
+    {
+        return areLocalFieldsContiguous(op1->AsLclFld(), op2->AsLclFld());
     }
     return false;
 }

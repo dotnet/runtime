@@ -18,8 +18,7 @@ echo ^<tests dir^>           -- Path to corefx test tree, e.g., _\fx\bin\tests
 echo ^<test exclusion file^> -- Path to test exclusion file, e.g., C:\coreclr\tests\arm\corefx_test_exclusions.txt
 echo ^<architecture^>        -- Architecture to run, either ARM or ARM64. (We can't depend on PROCESSOR_ARCHITECTURE because
 echo                            the batch script might be invoked with an ARM64 CMD but we need to run ARM.)
-echo ^<exclusion rsp file^>  -- Path to test exclusion response file, passed to RunTests.cmd and then xunit, e.g.,
-echo                            C:\coreclr\tests\CoreFX\CoreFX.issues.rsp
+echo ^<exclusion rsp file^>  -- Path to test exclusion response file, passed to RunTests.cmd and then xunit.
 echo.
 echo The ^<test exclusion file^> is a file with a list of assemblies for which the
 echo tests should not be run. This allows excluding failing tests by excluding the

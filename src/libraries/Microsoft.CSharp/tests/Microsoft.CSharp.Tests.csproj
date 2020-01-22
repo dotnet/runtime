@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release</Configurations>
     <!-- 
     We wish to test operations that would result in
     "Operator '-' cannot be applied to operands of type 'ushort' and 'EnumArithmeticTests.UInt16Enum'"

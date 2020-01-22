@@ -3,9 +3,9 @@
     <AssemblyName>System.IO.Compression.ZipFile</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="System\IO\Compression\ZipFile.Create.cs" />
     <Compile Include="System\IO\Compression\ZipFile.Extract.cs" />

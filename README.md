@@ -1,6 +1,6 @@
 # .NET Runtime
 
-[![Build Status](https://dnceng.visualstudio.com/public/_apis/build/status/dotnet/runtime/runtime-libraries?branchName=master)](https://dnceng.visualstudio.com/public/_build/latest?definitionId=647&branchName=master)
+[![Build Status](https://dnceng.visualstudio.com/public/_apis/build/status/dotnet/runtime/runtime?branchName=master)](https://dnceng.visualstudio.com/public/_build/latest?definitionId=686&branchName=master)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/runtime)
 
 This repo contains the code to build the .NET Core runtime, libraries and shared host (`dotnet`) installers for
@@ -22,7 +22,8 @@ Official Starting Page: https://dotnet.microsoft.com/
 
 We welcome contributions! Many people all over the world have helped make this project better.
 
-For further information see [Contributing](CONTRIBUTING.md).
+* [Contributing](CONTRIBUTING.md) explains what kinds of changes we welcome
+- [Workflow Instructions](docs/workflow/README.md) explains how to build and test
 
 ## Reporting security issues and security bugs
 

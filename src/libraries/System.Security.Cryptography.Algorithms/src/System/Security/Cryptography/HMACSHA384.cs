@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
 {
     //
     // If you change anything in this class, you must make the same change in the other HMAC* classes. This is a pain but given that the
-    // preexisting contract from the desktop locks all of these into deriving directly from HMAC, it can't be helped.
+    // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
     public class HMACSHA384 : HMAC

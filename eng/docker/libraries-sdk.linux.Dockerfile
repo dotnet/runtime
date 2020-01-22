@@ -8,13 +8,13 @@ WORKDIR /repo
 COPY . .
 
 ARG CONFIGURATION=Release
-ARG BUILD_SCRIPT_NAME=libraries
-RUN ./libraries.sh -c $CONFIGURATION
+RUN ./src/coreclr/build.sh -release -skiptests -clang9 && \
+    ./libraries.sh -c $CONFIGURATION /p:CoreCLRConfiguration=Release
 
 FROM $SDK_BASE_IMAGE as target
 
 ARG TESTHOST_LOCATION=/repo/artifacts/bin/testhost
-ARG TFM=netcoreapp
+ARG TFM=netcoreapp5.0
 ARG OS=Linux
 ARG ARCH=x64
 ARG CONFIGURATION=Release

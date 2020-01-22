@@ -42,7 +42,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Backing field for the <see cref="BackwardsReversed"/> property.
         /// </summary>
-        private ImmutableStack<T> _backwardsReversed;
+        private ImmutableStack<T>? _backwardsReversed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableQueue{T}"/> class.

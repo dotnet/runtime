@@ -144,7 +144,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(20294, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20294", TargetFrameworkMonikers.Netcoreapp)]
         public async Task ContentLength_ManuallyRemovedFromHeaders_DoesNotAffect()
         {
             HttpListenerRequest request = await GetRequest("POST", null, new string[] { "Content-Length: 1" }, content: "\r\n");

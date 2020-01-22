@@ -13,12 +13,12 @@ namespace System.Reflection.Metadata
         {
         }
 
-        public ImageFormatLimitationException(string message)
+        public ImageFormatLimitationException(string? message)
             : base(message)
         {
         }
 
-        public ImageFormatLimitationException(string message, Exception innerException)
+        public ImageFormatLimitationException(string? message, Exception? innerException)
             : base(message, innerException)
         {
         }

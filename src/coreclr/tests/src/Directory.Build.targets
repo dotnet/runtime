@@ -183,8 +183,8 @@
           Condition="'$(_CopyNativeProjectBinaries)' == 'true'"
           BeforeTargets="Build" >
      <ItemGroup Condition="'@(NativeProjectReferenceNormalized)' != ''">
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))" Condition="'$(RunningOnUnix)' == 'true'" />
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\" Condition="'$(RunningOnUnix)' != 'true'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\src\))" Condition="'$(RunningOnUnix)' == 'true'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\" Condition="'$(RunningOnUnix)' != 'true'" />
      </ItemGroup>
 
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
@@ -227,7 +227,7 @@
   </Target>
 
   <PropertyGroup>
-    <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' != 'true'">

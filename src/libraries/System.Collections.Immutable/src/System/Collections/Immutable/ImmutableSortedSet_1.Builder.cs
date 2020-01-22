@@ -49,7 +49,7 @@ namespace System.Collections.Immutable
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableSortedSet<T> _immutable;
+            private ImmutableSortedSet<T>? _immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.
@@ -59,7 +59,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The object callers may use to synchronize access to this collection.
             /// </summary>
-            private object _syncRoot;
+            private object? _syncRoot;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Builder"/> class.
@@ -128,6 +128,7 @@ namespace System.Collections.Immutable
             /// Gets the maximum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The maximum value in the set.</value>
+            [MaybeNull]
             public T Max
             {
                 get { return _root.Max; }
@@ -137,6 +138,7 @@ namespace System.Collections.Immutable
             /// Gets the minimum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The minimum value in the set.</value>
+            [MaybeNull]
             public T Min
             {
                 get { return _root.Min; }
@@ -492,7 +494,7 @@ namespace System.Collections.Immutable
                 {
                     if (_syncRoot == null)
                     {
-                        Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
+                        Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
                     }
 
                     return _syncRoot;

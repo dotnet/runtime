@@ -1,0 +1,81 @@
+<Project>
+  <Import Project="Directory.Build.props" />
+  <Import Project="Directory.Build.targets" />
+
+  <PropertyGroup>
+    <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
+    <MonoEnableLLVM Condition=" '$(MonoEnableLLVM)' == '' ">false</MonoEnableLLVM>
+  </PropertyGroup>
+
+  <!-- OSX/Linux Mono runtime build -->
+  <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac" Outputs="$(MonoObjDir)config.h">
+      <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <_MonoExtraCFLAGS>-O0 -ggdb3 -fno-omit-frame-pointer</_MonoExtraCFLAGS>
+        <_MonoExtraCXXFLAGS>-O0 -ggdb3 -fno-omit-frame-pointer</_MonoExtraCXXFLAGS>
+        <_MonoConfigureParams>--enable-checked-build=private_types</_MonoConfigureParams>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <_MonoExtraCFLAGS>-O2 -g</_MonoExtraCFLAGS>
+        <_MonoExtraCXXFLAGS>-O2 -g</_MonoExtraCXXFLAGS>
+    </PropertyGroup>
+    <PropertyGroup>
+        <_MonoConfigureParams Condition="$(MonoEnableLLVM) == true">$(_MonoConfigureParams) --enable--llvm </_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) --with-core=only CFLAGS="$(_MonoExtraCFLAGS)" CXXFLAGS="$(_MonoExtraCXXFLAGS)"</_MonoConfigureParams>
+    </PropertyGroup>
+
+    <Message Text="Configuring Mono with '$(_MonoConfigureParams)'" Importance="High" />
+    <MakeDir Directories="$(MonoObjDir)" />
+    <Exec Command="NOCONFIGURE=1 $(MonoProjectRoot)autogen.sh" />
+    <Exec Command="$(MonoProjectRoot)configure $(_MonoConfigureParams)" WorkingDirectory="$(MonoObjDir)" />
+    <Touch Files="$(MonoObjDir)config.h" />
+  </Target>
+
+  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" DependsOnTargets="ConfigureMonoRuntimeUnix">
+    <Exec Command="make -j8" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
+  </Target>
+
+  <!-- Windows Mono runtime build -->
+  <Target Name="BuildMonoRuntimeWindows" Condition="'$(OS)' == 'Windows_NT'">
+    <PropertyGroup>
+        <_MonoBuildParams>/p:MONO_BUILD_DIR_PREFIX=&quot;&quot;$(MonoObjDir)&quot;&quot; /p:MONO_ENABLE_NETCORE=true /p:CL_MPCount=8 /v:minimal</_MonoBuildParams>
+        <_MonoBuildParams Condition="$(MonoEnableLLVM) == true">/p:MONO_ENABLE_LLVM=true $(_MonoBuildParams)</_MonoBuildParams>
+    </PropertyGroup>
+    <Exec Command="msvc\run-msbuild.bat build $(Platform) $(Configuration) sgen &quot;$(_MonoBuildParams)&quot; msvc\mono-netcore.sln" IgnoreStandardErrorWarningFormat="true" />
+  </Target>
+
+  <!-- General targets -->
+  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
+    <PropertyGroup>
+      <_MonoRuntimeFilePath Condition="'$(BuildOS)' == 'Windows_NT'">$(MonoObjDir)$(Platform)\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(BuildOS)' == 'OSX'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
+
+      <_CoreClrFileName Condition="'$(BuildOS)' == 'Windows_NT'">coreclr.dll</_CoreClrFileName>
+      <_CoreClrFileName Condition="'$(BuildOS)' == 'OSX'">libcoreclr.dylib</_CoreClrFileName>
+      <_CoreClrFileName Condition="'$(_CoreClrFileName)' == ''">libcoreclr.so</_CoreClrFileName>
+    </PropertyGroup>
+
+    <!-- Copy Mono runtime files to artifacts directory -->
+    <ItemGroup>
+      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)">
+        <Destination>$(BinDir)$(_CoreClrFileName)</Destination>
+      </_MonoRuntimeArtifacts>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
+          DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"
+          SkipUnchangedFiles="true" />
+
+  </Target>
+
+  <Target Name="Restore">
+    <MSBuild Projects="$(MonoProjectRoot)netcore\nuget\packages.builds" Targets="Restore" />
+  </Target>
+
+  <Target Name="Pack">
+    <MSBuild Projects="$(MonoProjectRoot)netcore\nuget\packages.builds" Targets="Build" />
+  </Target>
+
+  <Target Name="Test" />
+
+</Project>

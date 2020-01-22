@@ -221,7 +221,7 @@ namespace System.Tests
         {
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
             
-            // [ActiveIssue(40226)]
+            // [ActiveIssue("https://github.com/dotnet/corefx/issues/40226")]
             if (PlatformDetection.IsWindowsNanoServer && target == EnvironmentVariableTarget.User)
             {
                 lookForSetValue = false;

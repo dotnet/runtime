@@ -43,20 +43,15 @@ BOOL TypeHandle::Verify()
     if (!IsRestored_NoLogging())
         return TRUE;
 
-    if (!IsTypeDesc())
+    if (IsArray())
+    {
+        GetArrayElementTypeHandle().Verify();
+    }
+    else if (!IsTypeDesc())
     {
         _ASSERTE(AsMethodTable()->SanityCheck());   // Sane method table
+    }
 
-        // @TODO: See TypeHandle::IsArrayType() for an explanation
-        // of why this assert is commented out.
-        //
-        // _ASSERTE(!AsMethodTable()->IsArray());
-    }
-    else
-    {
-        if (IsArray())
-            AsArray()->Verify();
-    }
     return(TRUE);
 }
 
@@ -98,20 +93,7 @@ Assembly* TypeHandle::GetAssembly() const {
 BOOL TypeHandle::IsArray() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return(IsTypeDesc() && AsTypeDesc()->IsArray());
-}
-
-BOOL TypeHandle::IsArrayType() const {
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsTypeDesc())
-    {
-        return AsTypeDesc()->IsArray();
-    }
-    else
-    {
-        return AsMethodTable()->IsArray();
-    }
+    return !IsTypeDesc() && AsMethodTable()->IsArray();
 }
 
 BOOL TypeHandle::IsGenericVariable() const {
@@ -123,7 +105,11 @@ BOOL TypeHandle::IsGenericVariable() const {
 BOOL TypeHandle::HasTypeParam() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (!IsTypeDesc()) return FALSE;
+    if (IsArray())
+        return TRUE;
+
+    if (!IsTypeDesc())
+        return FALSE;
 
     CorElementType etype = AsTypeDesc()->GetInternalCorElementType();
     return(CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE);
@@ -161,21 +147,18 @@ BOOL TypeHandle::ContainsGenericVariables(BOOL methodOnly /*=FALSE*/) const
     STATIC_CONTRACT_NOTHROW;
     SUPPORTS_DAC;
 
-    if (IsTypeDesc())
+    if (HasTypeParam())
     {
-        if (IsGenericVariable())
-        {
-            if (!methodOnly)
-                return TRUE;
+        return GetTypeParam().ContainsGenericVariables(methodOnly);
+    }
 
-            PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc());
-            return TypeFromToken(pTyVar->GetTypeOrMethodDef()) == mdtMethodDef;
-        }
+    if (IsGenericVariable())
+    {
+        if (!methodOnly)
+            return TRUE;
 
-        if (HasTypeParam())
-        {
-            return GetTypeParam().ContainsGenericVariables(methodOnly);
-        }
+        PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc());
+        return TypeFromToken(pTyVar->GetTypeOrMethodDef()) == mdtMethodDef;
     }
     else if (HasInstantiation())
     {
@@ -196,7 +179,7 @@ DWORD TypeHandle::GetNumGenericArgs() const {
     if (IsTypeDesc())
         return 0;
     else
-        return GetMethodTable()->GetNumGenericArgs();
+        return AsMethodTable()->GetNumGenericArgs();
 }
 
 BOOL TypeHandle::IsGenericTypeDefinition() const {
@@ -235,7 +218,7 @@ Instantiation TypeHandle::GetClassOrArrayInstantiation() const
     {
         return AsTypeDesc()->GetClassOrArrayInstantiation();
     }
-    else if (IsArrayType())
+    else if (IsArray())
     {
         return AsMethodTable()->GetArrayInstantiation();
     }
@@ -252,15 +235,18 @@ Instantiation TypeHandle::GetInstantiationOfParentClass(MethodTable *pWhichParen
     return GetMethodTable()->GetInstantiationOfParentClass(pWhichParent);
 }
 
-// Obtain element type from an array or pointer type
+// Obtain element type from a byref or pointer type
 TypeHandle TypeHandle::GetTypeParam() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+    if (IsArray())
+        return GetArrayElementTypeHandle();
+
     if (IsTypeDesc())
         return AsTypeDesc()->GetTypeParam();
-    else
-        return TypeHandle();
+    
+    return TypeHandle();
 }
 
 #ifndef DACCESS_COMPILE
@@ -357,18 +343,16 @@ BOOL TypeHandle::IsSharedByGenericInstantiations() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (IsTypeDesc())
+    if (IsArray())
     {
-        // Arrays are the only typedesc in valid generic instantiations (see code:Generics::CheckInstantiation)
-
-        if (HasTypeParam())
-        {
-            return GetTypeParam().IsCanonicalSubtype();
-        }
-        return FALSE;
+        return GetArrayElementTypeHandle().IsCanonicalSubtype();
     }
-    else
+    else if (!IsTypeDesc())
+    {
         return AsMethodTable()->IsSharedByGenericInstantiations();
+    }
+
+    return FALSE;
 }
 
 BOOL TypeHandle::IsCanonicalSubtype() const
@@ -468,21 +452,17 @@ BOOL TypeHandle::IsBlittable() const
 {
     LIMITED_METHOD_CONTRACT;
 
+    if (IsArray())
+    {
+        // Single dimentional array's of blittable types are also blittable.
+        return (GetRank() == 1 && GetArrayElementTypeHandle().IsBlittable());
+    }
+
     if (!IsTypeDesc())
     {
         // This is a simple type (not an array, ptr or byref) so if
         // simply check to see if the type is blittable.
         return AsMethodTable()->IsBlittable();
-    }
-
-    if (AsTypeDesc()->IsArray())
-    {
-        // Single dimentional array's of blittable types are also blittable.
-        if (AsArray()->GetRank() == 1)
-        {
-            if (AsArray()->GetArrayElementTypeHandle().IsBlittable())
-                return TRUE;
-        }
     }
     else if (AsTypeDesc()->IsNativeValueType())
     {
@@ -560,12 +540,8 @@ BOOL TypeHandle::IsExportedToWinRT() const
 ComCallWrapperTemplate *TypeHandle::GetComCallWrapperTemplate() const
 {
     LIMITED_METHOD_CONTRACT;
-    PRECONDITION(IsArray() || !IsTypeDesc());
+    PRECONDITION(!IsTypeDesc());
 
-    if (IsTypeDesc())
-    {
-        return AsArray()->GetComCallWrapperTemplate();
-    }
     return AsMethodTable()->GetComCallWrapperTemplate();
 }
 
@@ -579,12 +555,8 @@ BOOL TypeHandle::SetComCallWrapperTemplate(ComCallWrapperTemplate *pTemplate)
     }
     CONTRACTL_END;
 
-    PRECONDITION(IsArray() || !IsTypeDesc());
+    PRECONDITION(!IsTypeDesc());
 
-    if (IsTypeDesc())
-    {
-        return AsArray()->SetComCallWrapperTemplate(pTemplate);
-    }
     return AsMethodTable()->SetComCallWrapperTemplate(pTemplate);
 }
 
@@ -682,7 +654,7 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
         }
 #endif  //!CROSSGEN_COMPILE
 
-        return AsMethodTable()->CanCastToClassOrInterface(type.AsMethodTable(), pVisited);
+        return AsMethodTable()->CanCastTo(type.AsMethodTable(), pVisited);
     }
 }
 
@@ -951,11 +923,11 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
         return tb;
 
     // Get the rank and kind of the first array
-    DWORD rank = ta.AsArray()->GetRank();
+    DWORD rank = ta.GetRank();
     CorElementType mergeKind = taKind;
 
     // if no match on the rank the common ancestor is System.Array
-    if (rank != tb.AsArray()->GetRank())
+    if (rank != tb.GetRank())
         return TypeHandle(g_pArrayClass);
 
     if (tbKind != taKind)
@@ -969,22 +941,22 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
 
     // If both are arrays of reference types, return an array of the common
     // ancestor.
-    taElem = ta.AsArray()->GetArrayElementTypeHandle();
-    if (taElem.IsEquivalentTo(tb.AsArray()->GetArrayElementTypeHandle()))
+    taElem = ta.GetArrayElementTypeHandle();
+    if (taElem.IsEquivalentTo(tb.GetArrayElementTypeHandle()))
     {
         // The element types match/are equivalent, so we are good to go.
         tMergeElem = taElem;
     }
-    else if (taElem.IsArray() && tb.AsArray()->GetArrayElementTypeHandle().IsArray())
+    else if (taElem.IsArray() && tb.GetArrayElementTypeHandle().IsArray())
     {
         // Arrays - Find the common ancestor of the element types.
-        tMergeElem = MergeArrayTypeHandlesToCommonParent(taElem, tb.AsArray()->GetArrayElementTypeHandle());
+        tMergeElem = MergeArrayTypeHandlesToCommonParent(taElem, tb.GetArrayElementTypeHandle());
     }
     else if (CorTypeInfo::IsObjRef(taElem.GetSignatureCorElementType()) &&
-            CorTypeInfo::IsObjRef(tb.AsArray()->GetArrayElementTypeHandle().GetSignatureCorElementType()))
+            CorTypeInfo::IsObjRef(tb.GetArrayElementTypeHandle().GetSignatureCorElementType()))
     {
         // Find the common ancestor of the element types.
-        tMergeElem = MergeTypeHandlesToCommonParent(taElem, tb.AsArray()->GetArrayElementTypeHandle());
+        tMergeElem = MergeTypeHandlesToCommonParent(taElem, tb.GetArrayElementTypeHandle());
     }
     else
     {
@@ -1028,7 +1000,7 @@ BOOL TypeHandle::IsRestored_NoLogging() const
 
     if (!IsTypeDesc())
     {
-        return GetMethodTable()->IsRestored_NoLogging();
+        return AsMethodTable()->IsRestored_NoLogging();
     }
     else
     {
@@ -1042,7 +1014,7 @@ BOOL TypeHandle::IsRestored() const
 
     if (!IsTypeDesc())
     {
-        return GetMethodTable()->IsRestored();
+        return AsMethodTable()->IsRestored();
     }
     else
     {
@@ -1084,10 +1056,9 @@ void TypeHandle::DoRestoreTypeKey()
     {
         AsTypeDesc()->DoRestoreTypeKey();
     }
-
-    if (!IsTypeDesc() || IsArray())
+    else
     {
-        MethodTable* pMT = GetMethodTable();
+        MethodTable* pMT = AsMethodTable();
         PREFIX_ASSUME(pMT != NULL);
         pMT->DoRestoreTypeKey();
     }
@@ -1138,7 +1109,7 @@ BOOL TypeHandle::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited)
     _ASSERTE(GetAppDomain()->IsCompilationDomain());
 
     if (!IsTypeDesc())
-        return GetMethodTable()->ComputeNeedsRestore(image, pVisited);
+        return AsMethodTable()->ComputeNeedsRestore(image, pVisited);
     else
         return AsTypeDesc()->ComputeNeedsRestore(image, pVisited);
 }
@@ -1170,7 +1141,7 @@ TypeHandle::IsExternallyVisible() const
         // Function pointer has to check its all argument types
         return AsFnPtrType()->IsExternallyVisible();
     }
-    // ARRAY, SZARRAY, PTR, BYREF
+    // PTR, BYREF
     _ASSERTE(HasTypeParam());
 
     TypeHandle paramType = AsTypeDesc()->GetTypeParam();
@@ -1392,11 +1363,7 @@ TypeHandle::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
     (
-        if (IsArray())
-        {
-            AsArray()->EnumMemoryRegions(flags);
-        }
-        else if (IsGenericVariable())
+        if (IsGenericVariable())
         {
             AsGenericVariable()->EnumMemoryRegions(flags);
         }
@@ -1410,7 +1377,7 @@ TypeHandle::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         }
         else
         {
-            GetMethodTable()->EnumMemoryRegions(flags);
+            AsMethodTable()->EnumMemoryRegions(flags);
         }
     );
 }
@@ -1576,12 +1543,7 @@ TypeKey TypeHandle::GetTypeKey() const
     {
         TypeDesc *pTD = AsTypeDesc();
         CorElementType etype = pTD->GetInternalCorElementType();
-        if (CorTypeInfo::IsArray_NoThrow(etype))
-        {
-            TypeKey tk(etype, pTD->GetTypeParam(), FALSE, pTD->GetMethodTable()->GetRank());
-            return tk;
-        }
-        else if (CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE)
+        if (CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE)
         {
             TypeKey tk(etype, pTD->GetTypeParam());
             return tk;
@@ -1599,7 +1561,7 @@ TypeKey TypeHandle::GetTypeKey() const
         MethodTable *pMT = AsMethodTable();
         if (pMT->IsArray())
         {
-            TypeKey tk(pMT->GetInternalCorElementType(), pMT->GetArrayElementTypeHandle(), TRUE, pMT->GetRank());
+            TypeKey tk(pMT->GetInternalCorElementType(), pMT->GetArrayElementTypeHandle(), pMT->GetRank());
             return tk;
         }
         else if (pMT->IsTypicalTypeDefinition())
@@ -1653,11 +1615,6 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
             {
                 CHECK_MSGF(pTD->GetTypeParam() == pKey->GetElementType(),
                            ("Element type of TypeDesc does not match key %S",typeKeyString.GetUnicode()));
-            }
-            if (CorTypeInfo::IsArray(pKey->GetKind()))
-            {
-                CHECK_MSGF(pTD->GetMethodTable()->GetRank() == pKey->GetRank(),
-                           ("Rank %d of array TypeDesc does not match key %S", pTD->GetMethodTable()->GetRank(), typeKeyString.GetUnicode()));
             }
         }
         else

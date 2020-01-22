@@ -3,7 +3,7 @@
     <BuildConfigurations>
       netstandard2.0;
       netstandard2.0-Windows_NT;
-      _netfx;
+      _$(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -407,7 +407,7 @@ namespace System.Net.Http
                     throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength * 1024L));
                 }
 
-                // TODO: ISSUE 31309: Optimize HPACK static table decoding
+                // TODO https://github.com/dotnet/runtime/issues/1505: Optimize HPACK static table decoding
 
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
@@ -973,7 +973,7 @@ namespace System.Net.Http
             {
                 ReadOnlyMemory<byte> remaining = buffer;
 
-                // Deal with ActiveIssue #9071:
+                // Deal with [ActiveIssue("https://github.com/dotnet/corefx/issues/9071")]
                 // Custom HttpContent classes do not get passed the cancellationToken.
                 // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
                 CancellationTokenSource customCancellationSource = null;

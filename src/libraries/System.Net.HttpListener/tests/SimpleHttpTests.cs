@@ -168,7 +168,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(39552)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/39552")]
         public void ListenerRestart_BeginGetContext_Success()
         {
             using (HttpListenerFactory factory = new HttpListenerFactory())
@@ -182,7 +182,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue(39552)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/39552")]
         public async Task ListenerRestart_GetContext_Success()
         {
             const string Content = "ListenerRestart_GetContext_Success";

@@ -12,6 +12,7 @@
 // need to be examined.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -106,8 +107,6 @@ namespace System.Text.RegularExpressions
                         // to the tail suffix.
                         if (Positive[match] == 0)
                             Positive[match] = match - scan;
-
-                        // System.Diagnostics.Debug.WriteLine("Set positive[" + match + "] to " + (match - scan));
 
                         break;
                     }
@@ -338,31 +337,35 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Used when dumping for debugging.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         public override string ToString() => Pattern;
 
+        [ExcludeFromCodeCoverage]
         public string Dump(string indent)
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append(indent + "BM Pattern: " + Pattern + "\n");
+            sb.AppendLine($"{indent}BM Pattern: {Pattern}");
             sb.Append(indent + "Positive: ");
             for (int i = 0; i < Positive.Length; i++)
             {
                 sb.Append(Positive[i].ToString(CultureInfo.InvariantCulture) + " ");
             }
-            sb.Append("\n");
+            sb.AppendLine();
 
             if (NegativeASCII != null)
             {
-                sb.Append(indent + "Negative table\n");
+                sb.Append(indent + "Negative table: ");
                 for (int i = 0; i < NegativeASCII.Length; i++)
                 {
                     if (NegativeASCII[i] != Pattern.Length)
                     {
-                        sb.Append(indent + "  " + Regex.Escape(Convert.ToString((char)i, CultureInfo.InvariantCulture)) + " " + NegativeASCII[i].ToString(CultureInfo.InvariantCulture) + "\n");
+                        sb.Append(" {" + Regex.Escape(Convert.ToString((char)i, CultureInfo.InvariantCulture)) + " " + NegativeASCII[i].ToString(CultureInfo.InvariantCulture) + "}");
                     }
                 }
             }
+
+            sb.AppendLine();
 
             return sb.ToString();
         }

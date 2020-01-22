@@ -23,7 +23,6 @@
 #include "field.h"
 #include "assemblyname.hpp"
 #include "eeconfig.h"
-#include "strongname.h"
 #include "interoputil.h"
 #include "frames.h"
 #include "typeparse.h"
@@ -32,8 +31,7 @@
 #include "../binder/inc/bindertracing.h"
 #include "../binder/inc/clrprivbindercoreclr.h"
 
-FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE,
-        StringObject* codeBaseUNSAFE,
+FCIMPL5(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE,
         AssemblyBaseObject* requestingAssemblyUNSAFE,
         StackCrawlMark* stackMark,
         CLR_BOOL fThrowOnFileNotFound,
@@ -44,14 +42,12 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     struct _gc
     {
         ASSEMBLYNAMEREF        assemblyName;
-        STRINGREF              codeBase;
         ASSEMBLYREF            requestingAssembly;
         ASSEMBLYREF            rv;
         ASSEMBLYLOADCONTEXTREF assemblyLoadContext;
     } gc;
 
     gc.assemblyName        = (ASSEMBLYNAMEREF)        assemblyNameUNSAFE;
-    gc.codeBase            = (STRINGREF)              codeBaseUNSAFE;
     gc.requestingAssembly  = (ASSEMBLYREF)            requestingAssemblyUNSAFE;
     gc.rv                  = NULL;
     gc.assemblyLoadContext = (ASSEMBLYLOADCONTEXTREF) assemblyLoadContextUNSAFE;
@@ -70,8 +66,7 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
 
     if(gc.assemblyName->GetSimpleName() == NULL)
     {
-        if (gc.codeBase == NULL)
-            COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
+        COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
     }
     else
     {
@@ -97,13 +92,12 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
                         &gc.assemblyName,
                         FALSE);
 
+    spec.SetCodeBase(NULL);
+
     if (!spec.HasUniqueIdentity())
     {   // Insuficient assembly name for binding (e.g. ContentType=WindowsRuntime cannot bind by assembly name)
         EEFileLoadException::Throw(&spec, COR_E_NOTSUPPORTED);
     }
-
-    if (gc.codeBase != NULL)
-        spec.SetCodeBase(pStackingAllocator, &gc.codeBase);
 
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
@@ -1461,6 +1455,18 @@ void QCALLTYPE AssemblyNative::TraceAssemblyLoadFromResolveHandlerInvoked(LPCWST
     BEGIN_QCALL;
 
     FireEtwAssemblyLoadFromResolveHandlerInvoked(GetClrInstanceId(), assemblyName, isTrackedAssembly, requestingAssemblyPath, requestedAssemblyPath);
+
+    END_QCALL;
+}
+
+// static
+void QCALLTYPE AssemblyNative::TraceSatelliteSubdirectoryPathProbed(LPCWSTR filePath, HRESULT hr)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    BinderTracing::PathProbed(filePath, BinderTracing::PathSource::SatelliteSubdirectory, hr);
 
     END_QCALL;
 }

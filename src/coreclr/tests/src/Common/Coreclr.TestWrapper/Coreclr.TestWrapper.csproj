@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ProjectAssetsFile>$(SourceDir)Common\Coreclr.TestWrapper\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(TestSourceDir)Common\Coreclr.TestWrapper\obj\project.assets.json</ProjectAssetsFile>
     <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
   </PropertyGroup>

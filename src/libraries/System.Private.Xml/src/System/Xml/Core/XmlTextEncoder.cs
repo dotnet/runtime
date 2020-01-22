@@ -143,12 +143,9 @@ namespace System.Xml
             while (true)
             {
                 int startPos = i;
-                unsafe
+                while (i < endPos && _xmlCharType.IsAttributeValueChar(ch = array[i]))
                 {
-                    while (i < endPos && _xmlCharType.IsAttributeValueChar(ch = array[i]))
-                    {
-                        i++;
-                    }
+                    i++;
                 }
 
                 if (startPos < i)
@@ -272,13 +269,11 @@ namespace System.Xml
             char ch = (char)0;
             while (true)
             {
-                unsafe
+                while (i < len && _xmlCharType.IsAttributeValueChar(ch = text[i]))
                 {
-                    while (i < len && _xmlCharType.IsAttributeValueChar(ch = text[i]))
-                    {
-                        i++;
-                    }
+                    i++;
                 }
+
                 if (i == len)
                 {
                     // reached the end of the string -> write it whole out
@@ -387,12 +382,9 @@ namespace System.Xml
                 }
                 i++;
                 startPos = i;
-                unsafe
+                while (i < len && _xmlCharType.IsAttributeValueChar(ch = text[i]))
                 {
-                    while (i < len && _xmlCharType.IsAttributeValueChar(ch = text[i]))
-                    {
-                        i++;
-                    }
+                    i++;
                 }
             }
         }
@@ -414,12 +406,9 @@ namespace System.Xml
 
             while (true)
             {
-                unsafe
+                while (i < len && (_xmlCharType.IsCharData((ch = text[i])) || ch < 0x20))
                 {
-                    while (i < len && (_xmlCharType.IsCharData((ch = text[i])) || ch < 0x20))
-                    {
-                        i++;
-                    }
+                    i++;
                 }
                 if (i == len)
                 {
