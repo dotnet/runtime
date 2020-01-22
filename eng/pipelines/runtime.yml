@@ -212,7 +212,7 @@ jobs:
     # - Linux_arm64
     - Linux_musl_x64
     # - Linux_musl_arm64
-    # - Windows_NT_x64
+    - Windows_NT_x64
     # - Windows_NT_x86
     # - Windows_NT_arm
     # - Windows_NT_arm64
@@ -237,7 +237,7 @@ jobs:
     # - Linux_arm64
     - Linux_musl_x64
     # - Linux_musl_arm64
-    # - Windows_NT_x64
+    - Windows_NT_x64
     # - Windows_NT_x86
     # - Windows_NT_arm
     # - Windows_NT_arm64
@@ -492,7 +492,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    # - Windows_NT_x64
     - OSX_x64
     - Linux_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
