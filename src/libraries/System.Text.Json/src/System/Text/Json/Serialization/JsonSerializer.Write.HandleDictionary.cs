@@ -39,16 +39,26 @@ namespace System.Text.Json
                     return true;
                 }
 
+                if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
+                {
+                    if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                    {
+                        if (WriteReference(ref state, writer, options, ClassType.Dictionary, enumerable))
+                        {
+                            return WriteEndDictionary(ref state);
+                        }
+                    }
+                    else
+                    {
+                        state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
+                    }
+                }
+
                 // Let the dictionary return the default IEnumerator from its IEnumerable.GetEnumerator().
                 // For IDictionary-derived classes this is normally be IDictionaryEnumerator.
                 // For IDictionary<TKey, TVale>-derived classes this is normally IDictionaryEnumerator as well
                 // but may be IEnumerable<KeyValuePair<TKey, TValue>> if the dictionary only supports generics.
                 state.Current.CollectionEnumerator = enumerable.GetEnumerator();
-
-                if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
-                {
-                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
-                }
             }
 
             if (state.Current.CollectionEnumerator.MoveNext())
@@ -108,6 +118,11 @@ namespace System.Text.Json
                 writer.WriteEndObject();
             }
 
+            return WriteEndDictionary(ref state);
+        }
+
+        private static bool WriteEndDictionary(ref WriteStack state)
+        {
             if (state.Current.PopStackOnEndCollection)
             {
                 state.Pop();

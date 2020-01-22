@@ -598,7 +598,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 // count the number of set bits in the couldBeLive bit array
                 foreach (var slot in SlotTable.GcSlots)
                 {
-                    if (slot.Flags == GcSlotFlags.GC_SLOT_UNTRACKED)
+                    if ((slot.Flags & GcSlotFlags.GC_SLOT_UNTRACKED) != 0)
                         break;
 
                     if (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)

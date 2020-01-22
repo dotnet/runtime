@@ -514,7 +514,7 @@ namespace System.Data
             for (int i = 0; i < count; i++)
             {
                 DataTable table = (DataTable)_list[i];
-                // this may be needed to check wether the cascading is creating some conflicts
+                // this may be needed to check whether the cascading is creating some conflicts
                 string ns = checkProperty ? table.Namespace : table._tableNamespace;
                 if (NamesEqual(table.TableName, name, true, _dataSet.Locale) == 1 && (ns == tableNamespace))
                 {

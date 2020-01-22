@@ -758,7 +758,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 Debug.Assert(!IsVarArg || !HasParamType);
 
-                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on desktop x86.
+                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
                 if (HasParamType)
                 {
                     numRegistersUsed++;
@@ -1325,7 +1325,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     nSizeOfArgStack += _transitionBlock.PointerSize;
                 }
 
-                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on desktop x86.
+                // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
                 if (HasParamType)
                 {
                     numRegistersUsed++;

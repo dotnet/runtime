@@ -10,7 +10,7 @@ using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
 namespace System.Reflection.Runtime.BindingFlagSupport
 {
     /// <summary>
-    /// This class encapsulates the minimum set of arcane desktop CLR policies needed to implement the Get*(BindingFlags) apis.
+    /// This class encapsulates the minimum set of arcane .NET Framework CLR policies needed to implement the Get*(BindingFlags) apis.
     /// In particular, it encapsulates behaviors such as what exactly determines the "visibility" of a property and event, and
     /// what determines whether and how they are overridden.
     /// </summary>
@@ -61,7 +61,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         //
         // Policy to decide how or if members in more derived types hide same-named members in base types.
-        // Due to desktop compat concerns, the definitions are a bit more arbitrary than we'd like.
+        // Due to .NET Framework compat concerns, the definitions are a bit more arbitrary than we'd like.
         //
         public abstract bool IsSuppressedByMoreDerivedMember(M member, M[] priorMembers, int startIndex, int endIndex);
 

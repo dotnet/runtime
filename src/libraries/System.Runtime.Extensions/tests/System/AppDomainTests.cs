@@ -936,7 +936,7 @@ namespace System.Tests
                     return null;
                 };
 
-                // The issue resolved by coreclr#24450, was only reproduced when there was a Resolving handler present
+                // The issue resolved by https://github.com/dotnet/coreclr/issues/24450, was only reproduced when there was a Resolving handler present
                 System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += resolvingHandler;
 
                 assembly.GetType("System.Tests.AGenericClass`1[[Bogus, BogusAssembly]]", false);

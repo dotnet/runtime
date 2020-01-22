@@ -48,7 +48,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         //
-        // Desktop compat: Events hide events in base types if they have the same name.
+        // .NET Framework compat: Events hide events in base types if they have the same name.
         //
         public sealed override bool IsSuppressedByMoreDerivedMember(EventInfo member, EventInfo[] priorMembers, int startIndex, int endIndex)
         {

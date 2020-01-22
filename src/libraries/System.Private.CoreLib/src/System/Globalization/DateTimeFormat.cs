@@ -1154,38 +1154,45 @@ namespace System
             // Hoist most of the bounds checks on destination.
             { _ = destination[MinimumBytesNeeded - 1]; }
 
-            WriteFourDecimalDigits((uint)dateTime.Year, destination, 0);
+            dateTime.GetDate(out int year, out int month, out int day);
+            dateTime.GetTimePrecise(out int hour, out int minute, out int second, out int tick);
+
+            WriteFourDecimalDigits((uint)year, destination, 0);
             destination[4] = '-';
-            WriteTwoDecimalDigits((uint)dateTime.Month, destination, 5);
+            WriteTwoDecimalDigits((uint)month, destination, 5);
             destination[7] = '-';
-            WriteTwoDecimalDigits((uint)dateTime.Day, destination, 8);
+            WriteTwoDecimalDigits((uint)day, destination, 8);
             destination[10] = 'T';
-            WriteTwoDecimalDigits((uint)dateTime.Hour, destination, 11);
+            WriteTwoDecimalDigits((uint)hour, destination, 11);
             destination[13] = ':';
-            WriteTwoDecimalDigits((uint)dateTime.Minute, destination, 14);
+            WriteTwoDecimalDigits((uint)minute, destination, 14);
             destination[16] = ':';
-            WriteTwoDecimalDigits((uint)dateTime.Second, destination, 17);
+            WriteTwoDecimalDigits((uint)second, destination, 17);
             destination[19] = '.';
-            WriteDigits((uint)((ulong)dateTime.Ticks % (ulong)TimeSpan.TicksPerSecond), destination.Slice(20, 7));
+            WriteDigits((uint)tick, destination.Slice(20, 7));
 
             if (kind == DateTimeKind.Local)
             {
+                int offsetTotalMinutes = (int)(offset.Ticks / TimeSpan.TicksPerMinute);
+
                 char sign;
-                if (offset < default(TimeSpan) /* a "const" version of TimeSpan.Zero */)
+                if (offsetTotalMinutes < 0)
                 {
                     sign = '-';
-                    offset = TimeSpan.FromTicks(-offset.Ticks);
+                    offsetTotalMinutes = -offsetTotalMinutes;
                 }
                 else
                 {
                     sign = '+';
                 }
 
+                int offsetHours = Math.DivRem(offsetTotalMinutes, 60, out int offsetMinutes);
+
                 // Writing the value backward allows the JIT to optimize by
                 // performing a single bounds check against buffer.
-                WriteTwoDecimalDigits((uint)offset.Minutes, destination, 31);
+                WriteTwoDecimalDigits((uint)offsetMinutes, destination, 31);
                 destination[30] = ':';
-                WriteTwoDecimalDigits((uint)offset.Hours, destination, 28);
+                WriteTwoDecimalDigits((uint)offsetHours, destination, 28);
                 destination[27] = sign;
             }
             else if (kind == DateTimeKind.Utc)
@@ -1216,7 +1223,8 @@ namespace System
                 dateTime -= offset;
             }
 
-            dateTime.GetDatePart(out int year, out int month, out int day);
+            dateTime.GetDate(out int year, out int month, out int day);
+            dateTime.GetTime(out int hour, out int minute, out int second);
 
             string dayAbbrev = InvariantAbbreviatedDayNames[(int)dateTime.DayOfWeek];
             Debug.Assert(dayAbbrev.Length == 3);
@@ -1237,11 +1245,11 @@ namespace System
             destination[11] = ' ';
             WriteFourDecimalDigits((uint)year, destination, 12);
             destination[16] = ' ';
-            WriteTwoDecimalDigits((uint)dateTime.Hour, destination, 17);
+            WriteTwoDecimalDigits((uint)hour, destination, 17);
             destination[19] = ':';
-            WriteTwoDecimalDigits((uint)dateTime.Minute, destination, 20);
+            WriteTwoDecimalDigits((uint)minute, destination, 20);
             destination[22] = ':';
-            WriteTwoDecimalDigits((uint)dateTime.Second, destination, 23);
+            WriteTwoDecimalDigits((uint)second, destination, 23);
             destination[25] = ' ';
             destination[26] = 'G';
             destination[27] = 'M';

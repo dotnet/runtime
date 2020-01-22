@@ -1081,11 +1081,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     if (op2->gtOper == GT_CNS_INT)
                     {
 #ifdef _TARGET_ARM_
-                        // Do not Constant-Prop immediate values that require relocation
-                        if (op2->AsIntCon()->ImmedValNeedsReloc(this))
-                        {
-                            goto DONE_ASSERTION;
-                        }
                         // Do not Constant-Prop large constants for ARM
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
                         // target_ssize_t type.
@@ -1640,6 +1635,14 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                 default:
                     break;
             }
+        }
+        break;
+
+        case O2K_CONST_LONG:
+        {
+            // All handles should be represented by O2K_CONST_INT,
+            // so no handle bits should be set here.
+            assert((assertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) == 0);
         }
         break;
 

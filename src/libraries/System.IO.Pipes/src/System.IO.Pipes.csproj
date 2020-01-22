@@ -26,10 +26,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs" Link="Common\Interop\Windows\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs" Link="Common\CoreLib\Interop\Windows\Interop.FreeLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs" Link="Common\CoreLib\Interop\Windows\Interop.SecurityOptions.cs" />
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" Link="Common\CoreLib\Microsoft\Win32\SafeLibraryHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\CoreLib\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Common\CoreLib\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleOptions.cs" Link="Common\Interop\Windows\Interop.HandleOptions.cs" />
@@ -76,7 +74,7 @@
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateNamedPipeClient.cs" Link="Common\Interop\Windows\Interop.CreateNamedPipeClient.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs" Link="Common\CoreLib\Interop\Windows\Interop.LoadLibraryEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs" Link="Common\Interop\Windows\Interop.LoadLibraryEx_IntPtr.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Win32.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">

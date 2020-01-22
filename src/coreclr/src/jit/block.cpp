@@ -333,6 +333,10 @@ void BasicBlock::dspFlags()
     {
         printf("newobj ");
     }
+    if (bbFlags & BBF_HAS_NULLCHECK)
+    {
+        printf("nullcheck ");
+    }
 #if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
     if (bbFlags & BBF_FINALLY_TARGET)
     {
