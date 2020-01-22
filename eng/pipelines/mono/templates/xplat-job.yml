@@ -106,6 +106,8 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    - checkout: self
+      clean: true
+      fetchDepth: 20
 
     - ${{ parameters.steps }}

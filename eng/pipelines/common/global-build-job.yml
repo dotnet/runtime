@@ -32,7 +32,9 @@ jobs:
           ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
         displayName: Install Build Dependencies
 
-    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+    - checkout: self
+      clean: true
+      fetchDepth: 20
 
     # Build
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -c ${{ parameters.buildConfig }} -arch ${{ parameters.archType }}

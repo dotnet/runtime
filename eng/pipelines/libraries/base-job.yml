@@ -111,7 +111,9 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
       steps:
-      - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+      - checkout: self
+        clean: true
+        fetchDepth: 20
 
       - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         - template: /eng/pipelines/common/download-artifact-step.yml

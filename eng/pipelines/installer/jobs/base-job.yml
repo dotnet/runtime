@@ -363,7 +363,9 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-  - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+  - checkout: self
+    clean: true
+    fetchDepth: 20
 
   # Download and extract artifacts for earlier subsets.
   - task: DownloadBuildArtifacts@0
