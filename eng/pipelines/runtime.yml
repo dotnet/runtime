@@ -217,7 +217,7 @@ jobs:
     # - Windows_NT_arm
     # - Windows_NT_arm64
     jobParameters:
-      condition: >- 
+      condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
@@ -244,7 +244,7 @@ jobs:
     # - Windows_NT_arm
     # - Windows_NT_arm64
     jobParameters:
-      condition: >- 
+      condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
@@ -513,7 +513,7 @@ jobs:
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
-      condition: >- 
+      condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
