@@ -21,6 +21,7 @@ using QUOTA_LIMITS = Interop.SspiCli.QUOTA_LIMITS;
 using SECURITY_LOGON_TYPE = Interop.SspiCli.SECURITY_LOGON_TYPE;
 using TOKEN_SOURCE = Interop.SspiCli.TOKEN_SOURCE;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 
 namespace System.Security.Principal
 {
@@ -697,6 +698,24 @@ namespace System.Security.Principal
             return result;
         }
 
+        /// <summary>
+        /// Runs the specified asynchronous action as the impersonated Windows identity
+        /// </summary>
+        /// <param name="safeAccessTokenHandle">The SafeAccessTokenHandle of the impersonated Windows identity.</param>
+        /// <param name="func">The <see cref="System.Func{Task}"/> to run.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous operation of the provided <see cref="System.Func{Task}"/>.</returns>
+        public static Task RunImpersonatedAsync(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task> func)
+            => RunImpersonated(safeAccessTokenHandle, func);
+
+        /// <summary>
+        /// Runs the specified asynchronous action as the impersonated Windows identity
+        /// </summary>
+        /// <typeparam name="T">The type of the object to return.</typeparam>
+        /// <param name="safeAccessTokenHandle">The SafeAccessTokenHandle of the impersonated Windows identity.</param>
+        /// <param name="func">The <see cref="System.Func{Task}"/> of <see cref="System.Threading.Tasks.Task{T}"/> to run.</param>
+        /// <returns>A <see cref="Task{T}"/> that represents the asynchronous operation of the <see cref="System.Func{Task}"/> of <see cref="System.Threading.Tasks.Task{T}"/> provided.</returns>
+        public static Task<T> RunImpersonatedAsync<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<Task<T>> func)
+            => RunImpersonated(safeAccessTokenHandle, func);
 
         protected virtual void Dispose(bool disposing)
         {
