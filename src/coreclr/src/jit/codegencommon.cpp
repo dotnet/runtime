@@ -1719,7 +1719,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
     // Make sure that the return register is reported as live GC-ref so that any GC that kicks in while
     // executing GS cookie check will not collect the object pointed to by REG_INTRET (R0).
-    if (!pushReg && (compiler->info.compRetType == TYP_REF))
+    if (!pushReg && (compiler->info.compRetNativeType == TYP_REF))
         gcInfo.gcRegGCrefSetCur |= RBM_INTRET;
 
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
@@ -2253,6 +2253,7 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
         {
             if (JitConfig.JitForceFallback() || compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 5))
             {
+                JITDUMP("\n\n*** forcing no-way fallback -- current jit request will be abandoned ***\n\n");
                 NO_WAY_NOASSERT("Stress failure");
             }
         }
@@ -2289,8 +2290,8 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 
     codeSize =
         GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(), IsFullPtrRegMapRequired(),
-                                     (compiler->info.compRetType == TYP_REF), compiler->compHndBBtabCount, &prologSize,
-                                     &epilogSize, codePtr, &coldCodePtr, &consPtr);
+                                     (compiler->info.compRetNativeType == TYP_REF), compiler->compHndBBtabCount,
+                                     &prologSize, &epilogSize, codePtr, &coldCodePtr, &consPtr);
 
     compiler->EndPhase(PHASE_EMIT_CODE);
 
@@ -6713,6 +6714,8 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
                 default:
                     break;
             }
+
+            JITDUMP("Extending return value GC liveness to epilog\n");
         }
     }
 
@@ -11143,9 +11146,9 @@ void CodeGen::genReturn(GenTree* treeNode)
             regCount = retTypeDesc.GetReturnRegCount();
         }
 
-        if (varTypeIsGC(compiler->info.compRetType))
+        if (varTypeIsGC(compiler->info.compRetNativeType))
         {
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetType);
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
         }
         else if (compiler->compMethodReturnsMultiRegRetType())
         {
@@ -11160,7 +11163,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 
         genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
 
-        if (varTypeIsGC(compiler->info.compRetType))
+        if (varTypeIsGC(compiler->info.compRetNativeType))
         {
             gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
         }
