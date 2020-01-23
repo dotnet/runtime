@@ -102,14 +102,6 @@
     <ProjectToBuild Include="$(RepoToolsLocalDir)regenerate-readme-table.proj" />
   </ItemGroup>
 
-  <!-- Honor the generic RuntimeConfiguration property. -->
-  <PropertyGroup>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(RuntimeConfiguration)</CoreCLRConfiguration>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
-    <!-- There's no checked configuration on Mono. -->
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
-  </PropertyGroup>
-
   <ItemDefinitionGroup Condition="'$(CoreCLRConfiguration)' != ''">
     <CoreClrProjectToBuild>
       <Properties>Configuration=$(CoreCLRConfiguration)</Properties>
