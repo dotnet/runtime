@@ -8717,6 +8717,7 @@ public:
     }
 
     const char* compGetTieringName() const;
+    const char* compGetStressMessage() const;
 
     codeOptimize compCodeOpt()
     {

@@ -1712,18 +1712,14 @@ CLRRandom* InlineStrategy::GetRandom()
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
-// IsNoInline: allow strategy to disable inlining in a method
-//
-// Arguments:
-//    info -- compiler interface from the EE
-//    method -- handle for the root method
+// IsInliningDisabled: allow strategy to disable inlining in the method being jitted
 //
 // Notes:
 //    Only will return true in debug or special release builds.
 //    Expects JitNoInlineRange to be set to the hashes of methods
 //    where inlining is disabled.
 
-bool InlineStrategy::IsNoInline(ICorJitInfo* info, CORINFO_METHOD_HANDLE method)
+bool InlineStrategy::IsInliningDisabled()
 {
 
 #if defined(DEBUG) || defined(INLINE_DATA)
@@ -1750,7 +1746,8 @@ bool InlineStrategy::IsNoInline(ICorJitInfo* info, CORINFO_METHOD_HANDLE method)
 
     range.EnsureInit(noInlineRange, 2 * entryCount);
     assert(!range.Error());
-    return range.Contains(info, method);
+
+    return range.Contains(m_Compiler->info.compMethodHash());
 
 #else
 

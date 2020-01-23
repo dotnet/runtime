@@ -2892,7 +2892,7 @@ inline bool Compiler::shouldDumpASCIITrees()
  *   2:   Check-all stress. Performance will be REALLY horrible
  */
 
-inline DWORD getJitStressLevel()
+inline int getJitStressLevel()
 {
     return JitConfig.JitStress();
 }
