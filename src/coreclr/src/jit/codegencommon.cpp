@@ -7116,7 +7116,7 @@ void CodeGen::genFnProlog()
     if (compiler->compJitHaltMethod())
     {
         /* put a nop first because the debugger and other tools are likely to
-           put an int3 at the begining and we don't want to confuse them */
+           put an int3 at the beginning and we don't want to confuse them */
 
         instGen(INS_nop);
         instGen(INS_BREAKPOINT);

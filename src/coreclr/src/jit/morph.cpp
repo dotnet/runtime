@@ -356,7 +356,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     {
         // We are casting away GC information.  we would like to just
         // change the type to int, however this gives the emitter fits because
-        // it believes the variable is a GC variable at the begining of the
+        // it believes the variable is a GC variable at the beginning of the
         // instruction group, but is not turned non-gc by the code generator
         // we fix this by copying the GC pointer to a non-gc pointer temp.
         noway_assert(!varTypeIsGC(dstType) && "How can we have a cast to a GCRef here?");

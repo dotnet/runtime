@@ -846,7 +846,7 @@ FCIMPL0(UINT64, GCInterface::GetSegmentSize)
 FCIMPLEND
 
 /*================================CollectionCount=================================
-**Action: Returns the number of collections for this generation since the begining of the life of the process
+**Action: Returns the number of collections for this generation since the beginning of the life of the process
 **Returns: The collection count.
 **Arguments: args->generation -- The generation
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();

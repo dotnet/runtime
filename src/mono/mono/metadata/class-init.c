@@ -3297,7 +3297,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 	/*
 	 * If a method occupies more than one place in the vtable, and it is
-	 * overriden, then change the other occurances too.
+	 * overriden, then change the other occurrences too.
 	 */
 	if (override_map) {
 		MonoMethod *cm;
