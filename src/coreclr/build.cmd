@@ -162,6 +162,9 @@ if [!__PassThroughArgs!]==[] (
     set __PassThroughArgs=%__PassThroughArgs% %1
 )
 
+if /i "%1" == "-alpinedac"           (set __BuildCoreLib=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-linuxdac"            (set __BuildCoreLib=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
 if /i "%1" == "-freebsdmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=FreeBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-linuxmscorlib"       (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-netbsdmscorlib"      (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=NetBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -338,7 +341,7 @@ REM Set the remaining variables based upon the determined build configuration
 echo %__MsgPrefix%Checking prerequisites
 
 set __CMakeNeeded=1
-if %__BuildNative%==0 if %__BuildNativeCoreLib%==0 if %__BuildTests%==0 set __CMakeNeeded=0
+if %__BuildNative%==0 if %__BuildCrossArchNative%==0 if %__BuildNativeCoreLib%==0 if %__BuildTests%==0 set __CMakeNeeded=0
 if %__CMakeNeeded%==1 (
     REM Eval the output from set-cmake-path.ps1
     for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
@@ -479,9 +482,9 @@ if %__BuildCrossArchNative% EQU 1 (
 
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
+    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
-    
+
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
         goto ExitWithError
