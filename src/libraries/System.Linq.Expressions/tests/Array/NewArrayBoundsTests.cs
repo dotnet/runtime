@@ -131,6 +131,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/14912", TargetFrameworkMonikers.Mono)]
         [PerCompilationType(nameof(TestData))]
         public static void NewArrayBounds(Type arrayType, object size, Type sizeType, object defaultValue, bool useInterpreter)
         {

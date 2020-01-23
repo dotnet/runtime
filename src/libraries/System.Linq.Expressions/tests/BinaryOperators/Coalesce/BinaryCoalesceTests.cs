@@ -497,6 +497,7 @@ namespace System.Linq.Expressions.Tests
 
 #if FEATURE_COMPILE
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14919", TargetFrameworkMonikers.Mono)]
         public static void VerifyIL_NullableIntCoalesceToNullableInt()
         {
             ParameterExpression x = Expression.Parameter(typeof(int?));
