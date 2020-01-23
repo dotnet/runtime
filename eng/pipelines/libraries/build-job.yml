@@ -193,3 +193,4 @@ jobs:
               testScope: ${{ parameters.testScope }}
               creator: dotnet-bot
               helixToken: ''
+              extraHelixArguments: $(_extraHelixArguments)

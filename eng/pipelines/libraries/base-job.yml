@@ -46,6 +46,7 @@ jobs:
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
         - _warnAsErrorArg: ''
         - _testScopeArg: ''
+        - _extraHelixArguments: ''
 
         - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
@@ -69,9 +70,11 @@ jobs:
 
         - ${{ if ne(parameters.framework, '') }}:
           - _finalFrameworkArg: -framework ${{ parameters.framework }}
+          - _extraHelixArguments: /p:TargetGroup=${{ parameters.framework }}
 
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
+          - _extraHelixArguments: /p:PackageTesting=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - _skipTestHostCopy: true
