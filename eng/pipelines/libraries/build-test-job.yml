@@ -5,7 +5,7 @@ parameters:
   archType: ''
   framework: ''
   isOfficialBuild: false
-  liveCoreClrBuildConfig: ''
+  liveRuntimeBuildConfig: ''
   timeoutInMinutes: 150
   container: ''
   publishTestArtifacs: true
@@ -25,7 +25,7 @@ jobs:
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       condition: ${{ parameters.condition }}
-      liveCoreClrBuildConfig: ${{ parameters.liveCoreClrBuildConfig }}
+      liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}
       pool: ${{ parameters.pool }}

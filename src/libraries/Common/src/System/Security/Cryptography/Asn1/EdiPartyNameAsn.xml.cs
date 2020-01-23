@@ -15,16 +15,16 @@ namespace System.Security.Cryptography.Asn1
     {
         internal System.Security.Cryptography.Asn1.DirectoryStringAsn? NameAssigner;
         internal System.Security.Cryptography.Asn1.DirectoryStringAsn PartyName;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
 
             if (NameAssigner.HasValue)
             {
@@ -43,39 +43,33 @@ namespace System.Security.Cryptography.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static EdiPartyNameAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out EdiPartyNameAsn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out EdiPartyNameAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out EdiPartyNameAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out EdiPartyNameAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out EdiPartyNameAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out EdiPartyNameAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnReader explicitReader;
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            AsnValueReader explicitReader;
+
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
                 explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                 System.Security.Cryptography.Asn1.DirectoryStringAsn tmpNameAssigner;
-                System.Security.Cryptography.Asn1.DirectoryStringAsn.Decode(explicitReader, out tmpNameAssigner);
+                System.Security.Cryptography.Asn1.DirectoryStringAsn.Decode(ref explicitReader, rebind, out tmpNameAssigner);
                 decoded.NameAssigner = tmpNameAssigner;
 
                 explicitReader.ThrowIfNotEmpty();
@@ -83,7 +77,7 @@ namespace System.Security.Cryptography.Asn1
 
 
             explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
-            System.Security.Cryptography.Asn1.DirectoryStringAsn.Decode(explicitReader, out decoded.PartyName);
+            System.Security.Cryptography.Asn1.DirectoryStringAsn.Decode(ref explicitReader, rebind, out decoded.PartyName);
             explicitReader.ThrowIfNotEmpty();
 
 

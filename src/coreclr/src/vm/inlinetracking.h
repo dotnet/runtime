@@ -228,8 +228,6 @@ typedef DPTR(InlineTrackingMap) PTR_InlineTrackingMap;
 //
 // The resulting serialized format is a sequence of blobs:
 // 1) Header (4 byte aligned)
-//       short   MajorVersion - currently set to 1, increment on breaking change
-//       short   MinorVersion - currently set to 0, increment on non-breaking format addition
 //       int     SizeOfInlineIndex - size in bytes of the inline index
 //
 // 2) InlineIndex - Immediately following header. This is a sorted (by ZapInlineeRecord.key) array of ZapInlineeRecords, given a method token (32 bits)

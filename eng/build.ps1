@@ -14,6 +14,8 @@ Param(
   [string]$arch,
   [string]$subsetCategory,
   [string]$subset,
+  [string]$runtimeConfiguration,
+  [string]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -64,14 +66,26 @@ $subsetCategory = $subsetCategory.ToLowerInvariant()
 if ($vs) {
   . $PSScriptRoot\common\tools.ps1
 
-  if (-Not (Test-Path $vs)) {
-    $vs = Join-Path "$PSScriptRoot\..\src\libraries" $vs | Join-Path -ChildPath "$vs.sln"
+  # Microsoft.DotNet.CoreSetup.sln is special - hosting tests are currently meant to run on the
+  # bootstrapped .NET Core, not on the live-built runtime.
+  if ([System.IO.Path]::GetFileName($vs) -ieq "Microsoft.DotNet.CoreSetup.sln") {
+    if (-Not (Test-Path $vs)) {
+      $vs = Join-Path "$PSScriptRoot\..\src\installer" $vs
+    }
+
+    # This tells .NET Core to use the bootstrapped runtime to run the tests
+    $env:DOTNET_ROOT=InitializeDotNetCli -install:$false
   }
+  else {
+    if (-Not (Test-Path $vs)) {
+      $vs = Join-Path "$PSScriptRoot\..\src\libraries" $vs | Join-Path -ChildPath "$vs.sln"
+    }
 
-  $archTestHost = if ($arch) { $arch } else { "x64" }
+    $archTestHost = if ($arch) { $arch } else { "x64" }
 
-  # This tells .NET Core to use the same dotnet.exe that build scripts use
-  $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-$configuration-$archTestHost";
+    # This tells .NET Core to use the same dotnet.exe that build scripts use
+    $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-$configuration-$archTestHost";
+  }
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
   $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=InitializeDotNetCli -install:$false
@@ -118,16 +132,17 @@ foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
   {
-    "build"             { $arguments += " -build" }
-    "buildtests"        { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
-    "test"              { $arguments += " -test" }
-    "configuration"     { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
-    "framework"         { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())" }
-    "os"                { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
-    "allconfigurations" { $arguments += " /p:BuildAllConfigurations=true" }
-    "arch"              { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }
-    "properties"        { $arguments += " " + $properties }
-    default             { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
+    "build"                { $arguments += " -build" }
+    "buildtests"           { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
+    "test"                 { $arguments += " -test" }
+    "configuration"        { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
+    "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
+    "framework"            { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())" }
+    "os"                   { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
+    "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
+    "arch"                 { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }
+    "properties"           { $arguments += " " + $properties }
+    default                { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
 

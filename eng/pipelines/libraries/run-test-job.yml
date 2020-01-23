@@ -5,7 +5,8 @@ parameters:
   archType: ''
   framework: ''
   isOfficialBuild: false
-  liveCoreClrBuildConfig: ''
+  liveRuntimeBuildConfig: ''
+  runtimeFlavor: 'coreclr'
   timeoutInMinutes: 150
   pool: ''
   testScope: ''
@@ -24,15 +25,16 @@ jobs:
       archType:  ${{ parameters.archType }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
-      liveCoreClrBuildConfig: ${{ parameters.liveCoreClrBuildConfig }}
+      liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: '' # we just send to helix, no need to use a container.
       condition: ${{ parameters.condition }}
       pool: ${{ parameters.pool }}
-      ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
-        displayName: ${{ format('Test Run {0} CoreCLR', parameters.liveCoreClrBuildConfig) }}
-        name: ${{ format('test_run_{0}_coreclr', parameters.liveCoreClrBuildConfig) }}
-      ${{ if eq(parameters.liveCoreClrBuildConfig, '') }}:
+      ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
+        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
+      ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: 'Test Run'
         name: test_run
 
@@ -43,16 +45,16 @@ jobs:
       - ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ format('libraries_test_build_{0}_{1}_{2}_{3}', parameters.framework, parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
-      - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
-        - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveCoreClrBuildConfig) }}
+      - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
         - _skipTestRestoreArg: /p:SkipTestRestore=false
         - _testRunNamePrefixSuffix: ''
-        - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
-          - _testRunNamePrefixSuffix: CoreCLR_${{ parameters.liveCoreClrBuildConfig }}
+        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
         - ${{ parameters.variables }}
 
       steps:
@@ -72,16 +74,18 @@ jobs:
             artifactName: $(librariesTestsArtifactName)
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
 
-        - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_msbuildCommand) src/libraries/restore/runtime/runtime.depproj 
-                    $(_coreClrArtifactsPathArg)
+                    $(_runtimeArtifactsPathArg)
                     $(_runtimeOSArg)
+                    /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /p:ArchGroup=${{ parameters.archType }}
                     /p:ConfigurationGroup=${{ parameters.buildConfig }}
-            displayName: Override CoreCLR from live drop
+            displayName: Override $(runtimeFlavorName) from live drop
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            runtimeFlavor: ${{ parameters.runtimeFlavor }}
             targetOS: ${{ parameters.osGroup }}
             archGroup: ${{ parameters.archType }}
             configuration: ${{ parameters.buildConfig }}

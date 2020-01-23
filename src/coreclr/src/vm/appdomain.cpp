@@ -32,6 +32,7 @@
 #include "comdelegate.h"
 #include "siginfo.hpp"
 #include "typekey.h"
+#include "castcache.h"
 
 #include "caparser.h"
 #include "ecall.h"
@@ -1986,6 +1987,13 @@ void SystemDomain::LoadBaseSystemClasses()
 
     MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_I);
     MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_U);
+
+    // further loading of nonprimitive types may need casting support.
+    // initialize cast cache here.
+#ifndef CROSSGEN_COMPILE
+    CastCache::Initialize();
+    ECall::PopulateManagedCastHelpers();
+#endif // CROSSGEN_COMPILE
 
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot

@@ -62,8 +62,7 @@ inline void FATAL_GC_ERROR()
 
 #ifdef FEATURE_64BIT_ALIGNMENT
 // We need the following feature as part of keeping 64-bit types aligned in the GC heap.
-#define RESPECT_LARGE_ALIGNMENT //used to keep "double" objects aligned during
-                                //relocation
+#define RESPECT_LARGE_ALIGNMENT //Preserve double alignment of objects during relocation
 #endif //FEATURE_64BIT_ALIGNMENT
 
 #define SHORT_PLUGS //used to keep ephemeral plugs short so they fit better into the oldest generation free items
@@ -133,31 +132,22 @@ inline void FATAL_GC_ERROR()
 #define array_size 100
 #endif //WRITE_WATCH
 
-//#define SHORT_PLUGS           //keep plug short
-
 #define FFIND_DECAY  7      //Number of GC for which fast find will be active
 
 #ifndef MAX_LONGPATH
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-//#define DEBUG_WRITE_WATCH //Additional debug for write watch
-
-//#define STRESS_PINNING    //Stress pinning by pinning randomly
-
 //#define TRACE_GC          //debug trace gc operation
 //#define SIMPLE_DPRINTF
 
-//#define TIME_GC           //time allocation and garbage collection
-//#define TIME_WRITE_WATCH  //time GetWriteWatch and ResetWriteWatch calls
-//#define COUNT_CYCLES  //Use cycle counter for timing
 //#define JOIN_STATS         //amount of time spent in the join
 //also, see TIME_SUSPEND in switches.h.
 
 //#define SYNCHRONIZATION_STATS
 //#define SEG_REUSE_STATS
 
-#if defined (SYNCHRONIZATION_STATS) || defined (STAGE_STATS)
+#ifdef SYNCHRONIZATION_STATS
 #define BEGIN_TIMING(x) \
     int64_t x##_start; \
     x##_start = GCToOSInterface::QueryPerformanceCounter()
@@ -172,7 +162,7 @@ inline void FATAL_GC_ERROR()
 #define END_TIMING(x)
 #define BEGIN_TIMING_CYCLES(x)
 #define END_TIMING_CYCLES(x)
-#endif //SYNCHRONIZATION_STATS || STAGE_STATS
+#endif //SYNCHRONIZATION_STATS
 
 /* End of optional features */
 
@@ -2911,6 +2901,8 @@ protected:
     size_t  compute_in (int gen_number);
     PER_HEAP
     void compute_new_dynamic_data (int gen_number);
+    PER_HEAP_ISOLATED
+    gc_history_global* get_gc_data_global();
     PER_HEAP
     gc_history_per_heap* get_gc_data_per_heap();
     PER_HEAP
@@ -3027,9 +3019,6 @@ protected:
     // Restores BGC settings if necessary.
     PER_HEAP_ISOLATED
     void recover_bgc_settings();
-
-    PER_HEAP
-    void save_bgc_data_per_heap();
 
     PER_HEAP
     BOOL should_commit_mark_array();
@@ -3640,6 +3629,9 @@ protected:
 
     PER_HEAP_ISOLATED
     gc_mechanisms saved_bgc_settings;
+
+    PER_HEAP_ISOLATED
+    gc_history_global bgc_data_global;
 
     PER_HEAP
     gc_history_per_heap bgc_data_per_heap;

@@ -52,7 +52,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             {
                 StringBuilder sb = new StringBuilder();
 
-                if (Flags == GcSlotFlags.GC_SLOT_UNTRACKED)
+                if ((Flags & GcSlotFlags.GC_SLOT_UNTRACKED) != 0)
                 {
                     if (StackOffset < 0)
                     {
@@ -80,7 +80,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                 sb.AppendLine($"\t\t\tFlags: {Flags}");
 
                 sb.Append($"\t\t\tLowBits: ");
-                if (Flags == GcSlotFlags.GC_SLOT_UNTRACKED)
+                if ((Flags & GcSlotFlags.GC_SLOT_UNTRACKED) != 0)
                 {
                     if((LowBits & pinned_OFFSET_FLAG) != 0) sb.Append("pinned ");
                     if ((LowBits & byref_OFFSET_FLAG) != 0) sb.Append("byref ");

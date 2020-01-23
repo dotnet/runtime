@@ -188,7 +188,7 @@ int g_rgCrstLevelMap[] =
     0,          // CrstAssemblyList
     7,          // CrstAssemblyLoader
     3,          // CrstAvailableClass
-    3,          // CrstAvailableParamTypes
+    4,          // CrstAvailableParamTypes
     7,          // CrstBaseDomain
     -1,         // CrstCCompRC
     9,          // CrstCer

@@ -44,7 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Null(cws.Options.Proxy);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Proxy_SetNull_ConnectsSuccessfully(Uri server)
         {
@@ -63,7 +63,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/corefx/issues/28027")]
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Proxy_ConnectThruProxy_Success(Uri server)
         {

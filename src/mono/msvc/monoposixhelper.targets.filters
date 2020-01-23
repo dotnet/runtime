@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\adler32.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\compress.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\crc32.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\deflate.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\errno.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\infback.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inffast.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inflate.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inftrees.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\map.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\signal.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\stdio.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\stdlib.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\string.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\trees.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\uncompr.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\zlib-helper.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\zutil.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\minizip\unzip.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\minizip\zip.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\minizip\ioapi.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\fcntl.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\support\sys-stat.c">
+      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\crc32.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\deflate.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\gzguts.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inffast.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inffixed.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inflate.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inftrees.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\support\map.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\mph.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\trees.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\zconf.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\zutil.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\support\minizip\crypt.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\support\minizip\unzip.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\support\minizip\zip.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\zlib.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\support\minizip\ioapi.h">
+      <Filter>Header Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="monoposixhelper.def">
+      <Filter>Resource Files$(MonoPosixHelperFilterSubFolder)</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(MonoPosixHelperFilterSubFolder)'!=''">
+    <Filter Include="Header Files$(MonoPosixHelperFilterSubFolder)">
+      <UniqueIdentifier>{BFBB15BB-C843-4A56-8909-B832B33FED9B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files$(MonoPosixHelperFilterSubFolder)">
+      <UniqueIdentifier>{C024824E-DFC4-4A50-AA57-AA7F1B4B014E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoPosixHelperFilterSubFolder)">
+      <UniqueIdentifier>{E91A4E9A-3F86-4412-BBA5-8C2F3C243845}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

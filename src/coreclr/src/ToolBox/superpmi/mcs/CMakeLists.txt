@@ -48,7 +48,7 @@ _add_executable(mcs
 )
 target_precompile_header(TARGET mcs HEADER standardpch.h)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(mcs
         utilcodestaticnohost
         mscorrc_debug
@@ -63,6 +63,6 @@ else()
     )
 
     _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mcs.pdb DESTINATION PDB)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS mcs DESTINATION .)

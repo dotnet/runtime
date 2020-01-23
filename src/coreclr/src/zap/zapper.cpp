@@ -1271,10 +1271,10 @@ void Zapper::DefineOutputAssembly(SString& strAssemblyName, ULONG * pHashAlgId)
         metadata.szLocale = NULL;
         metadata.cbLocale = 0;
     }
-    metadata.rProcessor = internalMetadata.rProcessor;
-    metadata.ulProcessor = internalMetadata.ulProcessor;
-    metadata.rOS = internalMetadata.rOS;
-    metadata.ulOS = internalMetadata.ulOS;
+    metadata.rProcessor = NULL;
+    metadata.ulProcessor = 0;
+    metadata.rOS = NULL;
+    metadata.ulOS = 0;
 
     LPCWSTR wszAssemblyName = strAssemblyName.GetUnicode();
 

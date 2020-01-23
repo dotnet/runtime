@@ -248,7 +248,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             using (RSA rsa = RSAFactory.Create())
             {
-                if (rsa is RSACng && PlatformDetection.IsFullFramework)
+                if (rsa is RSACng && PlatformDetection.IsNetFramework)
                     AssertExtensions.Throws<ArgumentException>(null, () => rsa.ImportParameters(imported));
                 else
                     Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
@@ -265,7 +265,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             using (RSA rsa = RSAFactory.Create())
             {
-                if (rsa is RSACng && PlatformDetection.IsFullFramework)
+                if (rsa is RSACng && PlatformDetection.IsNetFramework)
                     AssertExtensions.Throws<ArgumentException>(null, () => rsa.ImportParameters(imported));
                 else
                     Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
@@ -305,7 +305,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Throws<ObjectDisposedException>(() => rsa.ExportParameters(false));
             Assert.Throws<ObjectDisposedException>(() => rsa.ExportParameters(true));
 
-            if (!(PlatformDetection.IsFullFramework && rsa.GetType().Name.EndsWith("Cng")))
+            if (!(PlatformDetection.IsNetFramework && rsa.GetType().Name.EndsWith("Cng")))
             {
                 Assert.Throws<ObjectDisposedException>(() => rsa.ImportParameters(TestData.RSA1024Params));
             }

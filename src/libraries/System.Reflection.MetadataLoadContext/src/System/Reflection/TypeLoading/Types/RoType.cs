@@ -102,7 +102,7 @@ namespace System.Reflection.TypeLoading
         private volatile RoType _lazyDeclaringType;
 
         public abstract override MethodBase DeclaringMethod { get; }
-        // Desktop compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as if BindingFlags.DeclaredOnly was passed.
+        // .NET Framework compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as if BindingFlags.DeclaredOnly was passed.
         // For non-nested types, the concept of a ReflectedType doesn't even make sense.
         public sealed override Type ReflectedType => DeclaringType;
 
@@ -122,7 +122,7 @@ namespace System.Reflection.TypeLoading
             RoType baseType = ComputeBaseTypeWithoutDesktopQuirk();
             if (baseType != null && baseType.IsGenericParameter)
             {
-                // NETFX quirk: a generic parameter whose constraint is another generic parameter reports its BaseType as System.Object
+                // .NET Framework quirk: a generic parameter whose constraint is another generic parameter reports its BaseType as System.Object
                 // unless that other generic parameter has a "class" constraint.
                 GenericParameterAttributes genericParameterAttributes = baseType.GenericParameterAttributes;
                 if (0 == (genericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint))
@@ -133,13 +133,13 @@ namespace System.Reflection.TypeLoading
         private volatile RoType _lazyBaseType = Sentinels.RoType;
 
         //
-        // This internal method implements BaseType without the following NETFX quirk:
+        // This internal method implements BaseType without the following .NET Framework quirk:
         //
         //     class Foo<X,Y>
         //       where X:Y
         //       where Y:MyReferenceClass
         //
-        // NETFX reports "X"'s base type as "System.Object" rather than "Y", even though it does
+        // .NET Framework reports "X"'s base type as "System.Object" rather than "Y", even though it does
         // report any interfaces that are in MyReferenceClass's interface list.
         //
         // This seriously messes up the implementation of Type.GetInterfaces() which assumes

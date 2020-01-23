@@ -191,7 +191,7 @@ namespace System.Tests
         {
             // Primitive widening not supported for "params" arguments.
             //
-            // (This is probably an accidental behavior on the desktop as the default binder specifically checks to see if the params arguments are widenable to the
+            // (This is probably an accidental behavior on the .NET Framework as the default binder specifically checks to see if the params arguments are widenable to the
             // params array element type and gives it the go-ahead if it is. Unfortunately, the binder then bollixes itself by using Array.Copy() to copy
             // the params arguments. Since Array.Copy() doesn't tolerate this sort of type mismatch, it throws an InvalidCastException which bubbles out
             // out of Activator.CreateInstance. Accidental or not, we'll inherit that behavior on .NET Native.)

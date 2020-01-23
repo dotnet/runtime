@@ -11915,45 +11915,52 @@ MethodTableBuilder::GatherGenericsInfo(
         }
 
         TypeHandle * pDestInst = (TypeHandle *)inst.GetRawArgs();
-        for (unsigned int i = 0; i < numGenericArgs; i++)
         {
-            pInternalImport->EnumNext(&hEnumGenericPars, &tkTyPar);
-            DWORD flags;
-            if (FAILED(pInternalImport->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
-            {
-                pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
-            }
+            // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
+            // to break type recursion dead-locks
 
-            if (bmtGenericsInfo->fTypicalInstantiation)
+            // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
+            GCX_COOP();
+            CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
+
+            for (unsigned int i = 0; i < numGenericArgs; i++)
             {
-                // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
-                // instances so that we do not leak by allocating them all over again, if the type
-                // repeatedly fails to load.
-                TypeVarTypeDesc *pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
-                if (pTypeVarTypeDesc == NULL)
+                pInternalImport->EnumNext(&hEnumGenericPars, &tkTyPar);
+                DWORD flags;
+                if (FAILED(pInternalImport->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
                 {
-                    // Do NOT use the alloc tracker for this memory as we need it stay allocated even if the load fails.
-                    void *mem = (void *)pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
-                    pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, cl, i, tkTyPar);
-
-                    // No race here - the row in GenericParam table is owned exclusively by this type and we
-                    // are holding a lock preventing other threads from concurrently loading it.
-                    pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
+                    pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
                 }
-                pDestInst[i] = TypeHandle(pTypeVarTypeDesc);
-            }
 
-            DWORD varianceAnnotation = flags & gpVarianceMask;
-            bmtGenericsInfo->pVarianceInfo[i] = static_cast<BYTE>(varianceAnnotation);
-            if (varianceAnnotation != gpNonVariant)
-            {
-                if (varianceAnnotation != gpContravariant && varianceAnnotation != gpCovariant)
+                if (bmtGenericsInfo->fTypicalInstantiation)
                 {
-                    pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADVARIANCE);
+                    // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
+                    // instances so that we do not leak by allocating them all over again, if the type
+                    // repeatedly fails to load.
+                    TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
+                    if (pTypeVarTypeDesc == NULL)
+                    {
+                        // Do NOT use the alloc tracker for this memory as we need it stay allocated even if the load fails.
+                        void* mem = (void*)pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
+                        pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, cl, i, tkTyPar);
+
+                        pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
+                    }
+                    pDestInst[i] = TypeHandle(pTypeVarTypeDesc);
                 }
-                else
+
+                DWORD varianceAnnotation = flags & gpVarianceMask;
+                bmtGenericsInfo->pVarianceInfo[i] = static_cast<BYTE>(varianceAnnotation);
+                if (varianceAnnotation != gpNonVariant)
                 {
-                    fHasVariance = TRUE;
+                    if (varianceAnnotation != gpContravariant && varianceAnnotation != gpCovariant)
+                    {
+                        pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADVARIANCE);
+                    }
+                    else
+                    {
+                        fHasVariance = TRUE;
+                    }
                 }
             }
         }

@@ -1,0 +1,5 @@
+/Makefile.in
+/Makefile
+/*.stdout
+/.deps
+/.libs

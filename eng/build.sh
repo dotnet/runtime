@@ -119,6 +119,15 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:BuildNativeStripSymbols=true"
       shift 1
       ;;
+     -runtimeconfiguration)
+      val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
+      arguments="$arguments /p:RuntimeConfiguration=$val"
+      shift 2
+      ;;
+     -librariesconfiguration)
+      arguments="$arguments /p:LibrariesConfiguration=$2"
+      shift 2
+      ;;
       *)
       ea=$1
 

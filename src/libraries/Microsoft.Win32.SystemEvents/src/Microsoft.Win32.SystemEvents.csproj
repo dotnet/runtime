@@ -124,8 +124,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\WtsApi32\Interop.WTSUnRegisterSessionNotification.cs">
       <Link>Common\Interop\Windows\WtsApi32\Interop.WTSUnRegisterSessionNotification.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\PowerModeChangedEventArgs.cs" />
     <Compile Include="Microsoft\Win32\PowerModeChangedEventHandler.cs" />

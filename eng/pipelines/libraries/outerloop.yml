@@ -63,7 +63,7 @@ jobs:
         isFullMatrix: ${{ variables['isFullMatrix'] }}
         runTests: true
         testScope: outerloop
-        liveCoreClrBuildConfig: release
+        liveRuntimeBuildConfig: release
   
   - ${{ if eq(variables['isFullMatrix'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -84,7 +84,7 @@ jobs:
           isFullMatrix: ${{ variables['isFullMatrix'] }}
           runTests: true
           testScope: outerloop
-          liveCoreClrBuildConfig: release
+          liveRuntimeBuildConfig: release
 
   - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
     - template: /eng/pipelines/common/platform-matrix.yml

@@ -82,9 +82,6 @@ namespace ILCompiler.Reflection.ReadyToRun
     {
         private readonly IAssemblyResolver _assemblyResolver;
         private Dictionary<int, MetadataReader> _assemblyCache;
-        private Dictionary<int, DebugInfo> _runtimeFunctionToDebugInfo;
-        private MetadataReader _manifestReader;
-        private List<AssemblyReferenceHandle> _manifestReferences;
 
         // Header
         private OperatingSystem _operatingSystem;
@@ -92,6 +89,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         private Architecture _architecture;
         private ulong _imageBase;
         private ReadyToRunHeader _readyToRunHeader;
+
+        // DebugInfo
+        private Dictionary<int, DebugInfo> _runtimeFunctionToDebugInfo;
+
+        // ManifestReferences
+        private MetadataReader _manifestReader;
+        private List<AssemblyReferenceHandle> _manifestReferences;
+
+        // ExceptionInfo
+        private Dictionary<int, EHInfo> _runtimeFunctionToEHInfo;
 
         /// <summary>
         /// Underlying PE image reader is used to access raw PE structures like header
@@ -128,9 +135,10 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             get
             {
-                foreach (AssemblyReferenceHandle _manifestReference in _manifestReferences)
+                // TODO (refactoring) make this a IReadOnlyList<string> to be consistent with the rest of the interface
+                foreach (AssemblyReferenceHandle manifestReference in ManifestReferences)
                 {
-                    yield return _manifestReader.GetString(_manifestReader.GetAssemblyReference(_manifestReference).Name);
+                    yield return ManifestReader.GetString(ManifestReader.GetAssemblyReference(manifestReference).Name);
                 }
             }
         }
@@ -199,7 +207,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The runtime functions and method signatures of each method
         /// </summary>
-        public IList<ReadyToRunMethod> R2RMethods { get; private set; }
+        public IList<ReadyToRunMethod> Methods { get; private set; }
 
         /// <summary>
         /// Parsed instance entrypoint table entries.
@@ -217,11 +225,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         public string CompilerIdentifier { get; private set; }
 
         /// <summary>
-        /// Exception lookup table is used to map runtime function addresses to EH clauses.
-        /// </summary>
-        public EHLookupTable EHLookupTable { get; private set; }
-
-        /// <summary>
         /// List of import sections present in the R2R executable.
         /// </summary>
         public IList<ReadyToRunImportSection> ImportSections { get; private set; }
@@ -235,9 +238,35 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             get
             {
-                EnsureRuntimeFunctionToDebugInfo();
-                
+                EnsureDebugInfo();
                 return _runtimeFunctionToDebugInfo;
+            }
+        }
+
+        internal Dictionary<int, EHInfo> RuntimeFunctionToEHInfo
+        {
+            get
+            {
+                EnsureExceptionInfo();
+                return _runtimeFunctionToEHInfo;
+            }
+        }
+
+        internal List<AssemblyReferenceHandle> ManifestReferences
+        {
+            get
+            {
+                EnsureManifestReferences();
+                return _manifestReferences;
+            }
+        }
+
+        internal MetadataReader ManifestReader
+        {
+            get
+            {
+                EnsureManifestReferences();
+                return _manifestReader;
             }
         }
 
@@ -270,7 +299,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         private unsafe void Initialize()
         {
             _assemblyCache = new Dictionary<int, MetadataReader>();
-            this._manifestReferences = new List<AssemblyReferenceHandle>();
 
             if (MetadataReader == null)
             {
@@ -301,36 +329,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             // This is a work in progress toward lazy initialization.
             // Ideally, here should be the end of the Initialize() method
 
-            EnsureHeader();
-
-            EnsureRuntimeFunctionToDebugInfo();
-
-            if (ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA))
-            {
-                ReadyToRunSection manifestMetadata = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA];
-                fixed (byte* image = Image)
-                {
-                    _manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
-                    int assemblyRefCount = _manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
-                    for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
-                    {
-                        AssemblyReferenceHandle asmRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
-                        _manifestReferences.Add(asmRefHandle);
-                    }
-                }
-            }
-
-            if (ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO))
-            {
-                ReadyToRunSection exceptionInfoSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO];
-                EHLookupTable = new EHLookupTable(Image, GetOffset(exceptionInfoSection.RelativeVirtualAddress), exceptionInfoSection.Size);
-            }
-
             ImportSections = new List<ReadyToRunImportSection>();
             ImportCellNames = new Dictionary<int, string>();
             ParseImportSections();
 
-            R2RMethods = new List<ReadyToRunMethod>();
+            Methods = new List<ReadyToRunMethod>();
             InstanceMethods = new List<InstanceMethod>();
 
             if (ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
@@ -413,6 +416,84 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        private void EnsureDebugInfo()
+        {
+            if (_runtimeFunctionToDebugInfo != null)
+            {
+                return;
+            }
+            _runtimeFunctionToDebugInfo = new Dictionary<int, DebugInfo>();
+            if (!ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_DEBUG_INFO))
+            {
+                return;
+            }
+
+            ReadyToRunSection debugInfoSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_DEBUG_INFO];
+            int debugInfoSectionOffset = GetOffset(debugInfoSection.RelativeVirtualAddress);
+
+            NativeArray debugInfoArray = new NativeArray(Image, (uint)debugInfoSectionOffset);
+            for (uint i = 0; i < debugInfoArray.GetCount(); ++i)
+            {
+                int offset = 0;
+                if (!debugInfoArray.TryGetAt(Image, i, ref offset))
+                {
+                    continue;
+                }
+
+                var debugInfo = new DebugInfo(this, offset);
+                _runtimeFunctionToDebugInfo.Add((int)i, debugInfo);
+            }
+        }
+
+        private unsafe void EnsureManifestReferences()
+        {
+            if (_manifestReferences != null)
+            {
+                return;
+            }
+            _manifestReferences = new List<AssemblyReferenceHandle>();
+            if (ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA))
+            {
+                ReadyToRunSection manifestMetadata = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA];
+                fixed (byte* image = Image)
+                {
+                    _manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
+                    int assemblyRefCount = _manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
+                    for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
+                    {
+                        AssemblyReferenceHandle asmRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
+                        _manifestReferences.Add(asmRefHandle);
+                    }
+                }
+            }
+        }
+
+        private unsafe void EnsureExceptionInfo()
+        {
+            if (_runtimeFunctionToEHInfo != null)
+            {
+                return;
+            }
+            _runtimeFunctionToEHInfo = new Dictionary<int, EHInfo>();
+            if (ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO))
+            {
+                ReadyToRunSection exceptionInfoSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO];
+                int offset = GetOffset(exceptionInfoSection.RelativeVirtualAddress);
+                int length = exceptionInfoSection.Size;
+                int methodRva = BitConverter.ToInt32(Image, offset);
+                int ehInfoRva = BitConverter.ToInt32(Image, offset + sizeof(uint));
+                while ((length -= 2 * sizeof(uint)) >= 8)
+                {
+                    offset += 2 * sizeof(uint);
+                    int nextMethodRva = BitConverter.ToInt32(Image, offset);
+                    int nextEhInfoRva = BitConverter.ToInt32(Image, offset + sizeof(uint));
+                    _runtimeFunctionToEHInfo.Add(methodRva, new EHInfo(this, ehInfoRva, methodRva, GetOffset(ehInfoRva), (nextEhInfoRva - ehInfoRva) / EHClause.Length));
+                    methodRva = nextMethodRva;
+                    ehInfoRva = nextEhInfoRva;
+                }
+            }
+        }
+
         public bool InputArchitectureSupported()
         {
             return Machine != Machine.ArmThumb2; // CoreDisTools often fails to decode when disassembling ARM images (see https://github.com/dotnet/coreclr/issues/19637)
@@ -420,7 +501,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         // TODO: Fix R2RDump issue where an R2R image cannot be dissassembled with the x86 CoreDisTools
         // For the short term, we want to error out with a decent message explaining the unexpected error
-        // Issue #19564: https://github.com/dotnet/coreclr/issues/19564
+        // Issue https://github.com/dotnet/coreclr/issues/19564
         public bool DisassemblerArchitectureSupported()
         {
             System.Runtime.InteropServices.Architecture val = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
@@ -462,14 +543,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     int runtimeFunctionId;
                     FixupCell[] fixups;
                     GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixups);
-                    ReadyToRunMethod method = new ReadyToRunMethod(R2RMethods.Count, this.MetadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixups: fixups);
+                    ReadyToRunMethod method = new ReadyToRunMethod(Methods.Count, this.MetadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixups: fixups);
 
                     if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= isEntryPoint.Length)
                     {
                         throw new BadImageFormatException("EntryPointRuntimeFunctionId out of bounds");
                     }
                     isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
-                    R2RMethods.Add(method);
+                    Methods.Add(method);
                 }
             }
         }
@@ -537,7 +618,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 FixupCell[] fixups;
                 GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixups);
                 ReadyToRunMethod method = new ReadyToRunMethod(
-                    R2RMethods.Count,
+                    Methods.Count,
                     mdReader == null ? MetadataReader : mdReader,
                     methodHandle,
                     runtimeFunctionId,
@@ -549,7 +630,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
                 }
-                R2RMethods.Add(method);
+                Methods.Add(method);
                 InstanceMethods.Add(new InstanceMethod(curParser.LowHashcode, method));
                 curParser = allEntriesEnum.GetNext();
             }
@@ -562,7 +643,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private void ParseRuntimeFunctions(bool[] isEntryPoint, int runtimeFunctionOffset, int runtimeFunctionSize)
         {
             int curOffset = 0;
-            foreach (ReadyToRunMethod method in R2RMethods)
+            foreach (ReadyToRunMethod method in Methods)
             {
                 int runtimeFunctionId = method.EntryPointRuntimeFunctionId;
                 if (runtimeFunctionId == -1)
@@ -616,11 +697,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     }
 
                     EHInfo ehInfo = null;
-                    EHInfoLocation ehInfoLocation;
-                    if (EHLookupTable != null && EHLookupTable.RuntimeFunctionToEHInfoMap.TryGetValue(startRva, out ehInfoLocation))
-                    {
-                        ehInfo = new EHInfo(this, ehInfoLocation.EHInfoRVA, startRva, GetOffset(ehInfoLocation.EHInfoRVA), ehInfoLocation.ClauseCount);
-                    }
+                    RuntimeFunctionToEHInfo.TryGetValue(startRva, out ehInfo);
 
                     RuntimeFunction rtf = new RuntimeFunction(
                         this,
@@ -771,35 +848,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        private void EnsureRuntimeFunctionToDebugInfo()
-        {
-            if (_runtimeFunctionToDebugInfo != null)
-            {
-                return;
-            }
-            _runtimeFunctionToDebugInfo = new Dictionary<int, DebugInfo>();
-            if (!ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSection.SectionType.READYTORUN_SECTION_DEBUG_INFO))
-            {
-                return;
-            }
-
-            ReadyToRunSection debugInfoSection = ReadyToRunHeader.Sections[ReadyToRunSection.SectionType.READYTORUN_SECTION_DEBUG_INFO];
-            int debugInfoSectionOffset = GetOffset(debugInfoSection.RelativeVirtualAddress);
-
-            NativeArray debugInfoArray = new NativeArray(Image, (uint)debugInfoSectionOffset);
-            for (uint i = 0; i < debugInfoArray.GetCount(); ++i)
-            {
-                int offset = 0;
-                if (!debugInfoArray.TryGetAt(Image, i, ref offset))
-                {
-                    continue;
-                }
-
-                var debugInfo = new DebugInfo(this, offset);
-                _runtimeFunctionToDebugInfo.Add((int)i, debugInfo);
-            }
-        }
-
         /// <summary>
         /// Get the index in the image byte array corresponding to the RVA
         /// </summary>
@@ -929,8 +977,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             else
             {
-                metadataReader = _manifestReader;
-                assemblyReferenceHandle = _manifestReferences[refAsmIndex - assemblyRefCount - 2];
+                metadataReader = ManifestReader;
+                assemblyReferenceHandle = ManifestReferences[refAsmIndex - assemblyRefCount - 2];
             }
 
 

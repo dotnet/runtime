@@ -65,6 +65,8 @@
     -->
     <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
     <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <!-- TODO: remove rsp argument when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
+    <HelixCommand Condition="'$(RuntimeFlavor)' == 'mono'">$(HelixCommand) --rsp-file "$(MonoRspFileName)"</HelixCommand>
   </PropertyGroup>
 
   <!--

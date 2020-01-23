@@ -73,7 +73,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             // .NET Core fixed a bug where whitespace strings were allowed as CustomDataType.
             // See https://github.com/dotnet/corefx/issues/4465.
-            yield return new object[] { "   ", PlatformDetection.IsFullFramework };
+            yield return new object[] { "   ", PlatformDetection.IsNetFramework };
         }
 
         [Theory]

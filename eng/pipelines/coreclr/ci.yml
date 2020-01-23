@@ -86,7 +86,7 @@ jobs:
     platformGroup: all
     jobParameters:
       isOfficialBuild: false
-      liveCoreClrBuildConfig: checked
+      liveRuntimeBuildConfig: checked
 
 #
 # Checked test builds

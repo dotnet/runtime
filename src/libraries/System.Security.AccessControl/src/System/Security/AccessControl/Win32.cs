@@ -47,7 +47,7 @@ namespace System.Security.AccessControl
             // Now is a good time to get rid of the returned pointer
             //
 
-            Interop.Kernel32.LocalFree(ByteArray);
+            Marshal.FreeHGlobal(ByteArray);
 
             return 0;
 
@@ -193,7 +193,7 @@ nameof(handle));
 
             Marshal.Copy(ByteArray, BinaryForm, 0, (int)Length);
 
-            Interop.Kernel32.LocalFree(ByteArray);
+            Marshal.FreeHGlobal(ByteArray);
 
             resultSd = new RawSecurityDescriptor(BinaryForm, 0);
 

@@ -4,14 +4,12 @@
 
 Here is one example of a daily workflow for a developer working mainly on the libraries, in this case using Windows:
 
-```
-:: From root in the morning:
+```bat
+:: From root:
 git clean -xdf
 git pull upstream master & git push origin master
-cd src\coreclr
-build -release -skiptests
-cd ..\..\
-build -subsetCategory libraries /p:CoreCLRConfiguration=Release
+build -subsetCategory coreclr -c Release
+build -subsetCategory libraries -runtimeConfiguration release
 
 :: The above you may only perform once in a day, or when
 :: you pull down significant new changes.
@@ -29,16 +27,14 @@ cd tests
 pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
 ```
 
-The instructions for Linux are essentially the same:
+The instructions for Linux and macOS are essentially the same:
 
-```
-# From root in the morning:
+```bash
+# From root:
 git clean -xdf
 git pull upstream master & git push origin master
-cd src/coreclr
-build -release -skiptests
-cd ../../
-./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release
+./build.sh -subsetcategory coreclr -c Release
+./build.sh -subsetcategory libraries -runtimeconfiguration Release
 
 # The above you may only perform once in a day, or when
 # you pull down significant new changes.
@@ -57,23 +53,21 @@ The steps above may be all you need to know to make a change. Want more details 
 
 ## Building everything
 
-This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built CoreCLR (aka, the "runtime") to give the libraries something to run on. You should normally build CoreCLR in release configuration and libraries in debug configuration. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
+This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. You should normally build CoreCLR runtime in release configuration and libraries in debug configuration. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 
-These example commands will build a release CoreCLR (and CoreLib) and debug libraries:
+These example commands will build a release CoreCLR (and CoreLib), debug libraries, and debug installer:
 
 For Linux:
-```
-src/coreclr/build.sh -release -skiptests
-./build.sh -subsetCategory libraries /p:CoreCLRConfiguration=Release
+```bash
+./build.sh -runtimeconfiguration Release
 ```
 
 For Windows:
-```
-src\coreclr\build.cmd -release -skiptests
-build.cmd -subsetCategory libraries /p:CoreCLRConfiguration=Release
+```bat
+./build.cmd -runtimeconfiguration Release
 ```
 
-Detailed information about building and testing CoreCLR and the libraries is in the documents linked below.
+Detailed information about building and testing runtimes and the libraries is in the documents linked below.
 
 ### More details if you need them
 
@@ -96,28 +90,28 @@ By default build only builds the product libraries and none of the tests. If you
 
 **Examples**
 - Building in release mode for platform x64 (restore and build are implicit here as no actions are passed in)
-```
+```bash
 ./build.sh -subsetCategory libraries -c Release -arch x64
 ```
 
 - Building the src assemblies and build and run tests (running all tests takes a considerable amount of time!)
-```
+```bash
 ./build.sh -subsetCategory libraries -restore -build -buildtests -test
 ```
 
 - Building for different target frameworks (restore and build are implicit again as no action is passed in)
-```
+```bash
 ./build.sh -subsetCategory libraries -framework netcoreapp
 ./build.sh -subsetCategory libraries -framework netfx
 ```
 
 - Build only managed components and skip the native build
-```
+```bash
 ./build.sh -subsetCategory libraries /p:BuildNative=false
 ```
 
 - Clean the entire solution
-```
+```bash
 ./build.sh -subsetCategory libraries -clean
 ```
 
@@ -130,12 +124,12 @@ The libraries build contains some native code. This includes shims over libc, op
 **Examples**
 
 - Building in debug mode for platform x64
-```
+```bash
 ./src/libraries/Native/build-native.sh debug x64
 ```
 
 - The following example shows how you would do an arm cross-compile build.
-```
+```bash
 ./src/libraries/Native/build-native.sh debug arm cross verbose
 ```
 
@@ -149,17 +143,17 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 
 - Build all projects for a given library (e.g.: System.Collections) including running the tests
 
-```
+```bash
  ./build.sh -subsetCategory libraries src/libraries/System.Collections
 ```
 
 - Build just the tests for a library project.
-```
+```bash
  ./build.sh -subsetCategory libraries src/libraries/System.Collections/tests
 ```
 
 - All the options listed above like framework and configuration are also supported (note they must be after the directory)
-```
+```bash
  ./build.sh -subsetCategory libraries System.Collections -f netfx -c Release
 ```
 

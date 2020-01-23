@@ -14,7 +14,7 @@ namespace System.Xml.Tests
     //   should use randomized hashing even on Desktop
     public class XmlMiscTests
     {
-        // Hashes of string for full .NET 2.0-4.6.2
+        // Hashes of string for .NET Framework 2.0-4.6.2
         // if that algorithm will be used the test will fail
         private static readonly string[] _strings = new string[] { "foo", "asdf", "randhashing" };
         private static readonly Tuple<int, int, int>[] _knownNonRandomizedHashesOfStrings = new Tuple<int, int, int>[] {

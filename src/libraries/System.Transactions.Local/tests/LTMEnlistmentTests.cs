@@ -77,7 +77,7 @@ namespace System.Transactions.Tests
         }
 
         [Theory]
-        // TODO: Issue #10353 - This test needs to change once we have promotion support.
+        // This test needs to change once we have promotion support.
         // Right now any attempt to create a two phase durable enlistment will attempt to promote and will fail because promotion is not supported. This results in the transaction being
         // aborted.
         [InlineData(0, EnlistmentOptions.None, EnlistmentOptions.None, Phase1Vote.Prepared, true, EnlistmentOutcome.Aborted, EnlistmentOutcome.Aborted, TransactionStatus.Aborted)]
@@ -104,7 +104,7 @@ namespace System.Transactions.Tests
                     }
 
                     TestEnlistment durable = new TestEnlistment(Phase1Vote.Prepared, expectedDurableOutcome);
-                    // TODO: Issue #10353 - This needs to change once we have promotion support.
+                    // This needs to change once we have promotion support.
                     Assert.Throws<PlatformNotSupportedException>(() => // Creation of two phase durable enlistment attempts to promote to MSDTC
                     {
                         tx.EnlistDurable(Guid.NewGuid(), durable, durableEnlistmentOption);

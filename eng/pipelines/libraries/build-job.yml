@@ -7,12 +7,13 @@ parameters:
   isOfficialBuild: false
   isOfficialAllConfigurations: false
 
-  # When set to a non-empty value (Debug / Release), it determines CoreCLR
+  # When set to a non-empty value (Debug / Release), it determines the runtime's
   # build configuration to use for building libraries and tests. Setting this
-  # property implies a dependency of this job on the appropriate CoreCLR build
+  # property implies a dependency of this job on the appropriate runtime build
   # and is used to construct the name of the Azure artifact representing
-  # CoreCLR build to use for building the libraries and library tests.
-  liveCoreClrBuildConfig: ''
+  # runtime build to use for building the libraries and library tests.
+  liveRuntimeBuildConfig: ''
+  runtimeFlavor: 'coreclr'
 
   timeoutInMinutes: 150
   preBuildSteps: []
@@ -33,7 +34,7 @@ jobs:
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}
-      liveCoreClrBuildConfig: ${{ parameters.liveCoreClrBuildConfig }}
+      liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
@@ -43,12 +44,12 @@ jobs:
       name: build
       displayName: 'Build'
 
-      ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+      ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         dependsOn:
         - ${{ if ne(parameters.osGroup, 'WebAssembly') }}:
-          - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveCoreClrBuildConfig) }}
+          - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-          - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', 'linux', parameters.osSubgroup, 'x64', parameters.liveCoreClrBuildConfig) }}
+          - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, 'linux', parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - _skipTestRestoreArg: /p:SkipTestRestore=true
@@ -80,7 +81,7 @@ jobs:
 
         - ${{ if eq(parameters.osGroup, 'OSX') }}:
           - script: |
-              brew install pkgconfig icu4c openssl
+              brew install pkgconfig icu4c openssl autoconf automake libtool pkg-config python3
               brew link --force icu4c
               ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
               ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
