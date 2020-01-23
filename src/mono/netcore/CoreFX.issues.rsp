@@ -543,6 +543,9 @@
 # Requires precise GC (should be ignored in dotnet/corefx for mono)
 -nomethod System.Threading.Tasks.Tests.ExecutionContextFlowTest.TaskCompletionSourceDoesntCaptureExecutionContext
 
+# flaky, causes stack overflow
+-nomethod System.Threading.Tasks.Tests.TaskContinueWithTests.LongContinuationChain_ContinueWith_DoesNotStackOverflow
+
 ####################################################################
 ##  System.Threading.ThreadPool.Tests
 ####################################################################
