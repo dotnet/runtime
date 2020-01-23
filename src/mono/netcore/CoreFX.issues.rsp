@@ -6,14 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Diagnostics.Tracing.Tests
-####################################################################
-
-# System.SR needs implemented.
-# https://github.com/mono/mono/issues/14907
--nomethod BasicEventSourceTests.TestsManifestNegative.Test_GenerateManifest_InvalidEventSources
-
-####################################################################
 ##  System.Drawing.Common.Tests
 ####################################################################
 
