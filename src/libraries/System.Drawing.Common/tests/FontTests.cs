@@ -594,7 +594,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22571")] // PR issue, This causes an AccessViolation in GDI+.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2060")] // causes an AccessViolation in GDI+
         public void GetHeight_DisposedGraphics_ThrowsArgumentException()
         {
             using (FontFamily family = FontFamily.GenericMonospace)

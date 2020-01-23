@@ -717,8 +717,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                // [ActiveIssue("https://github.com/dotnet/corefx/issues/39136")]
-                return;
+                return; // see https://github.com/dotnet/corefx/issues/39136#issuecomment-508330958
             }
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>

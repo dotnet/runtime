@@ -102,7 +102,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(IPAddress.IPv6Loopback, entry.AddressList[0]);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/37362", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/32797")]
         public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
         {
@@ -112,7 +112,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(Dns.GetHostName(), entry.HostName, StringComparison.OrdinalIgnoreCase);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/37362", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/32797")]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
