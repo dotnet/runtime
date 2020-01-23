@@ -53,7 +53,7 @@ namespace System.Reflection.TypeLoading
         public sealed override Type[] GetTypes() => IsSingleModule ? ManifestModule.GetTypes() : base.GetTypes();
         public sealed override IEnumerable<TypeInfo> DefinedTypes => GetDefinedRoTypes()!;
 
-        private IEnumerable<RoType>? GetDefinedRoTypes() => IsSingleModule ? GetRoManifestModule().GetDefinedRoTypes()! : MultiModuleGetDefinedRoTypes();
+        private IEnumerable<RoType>? GetDefinedRoTypes() => IsSingleModule ? GetRoManifestModule().GetDefinedRoTypes() : MultiModuleGetDefinedRoTypes();
         private IEnumerable<RoType> MultiModuleGetDefinedRoTypes()
         {
             foreach (RoModule module in ComputeRoModules(getResourceModules: false))
