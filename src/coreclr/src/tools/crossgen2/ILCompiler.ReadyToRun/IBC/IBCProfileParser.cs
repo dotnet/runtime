@@ -68,6 +68,7 @@ namespace ILCompiler.IBC
                 // alone.
 
                 const uint scenarioMaskIfMissing = 1u;
+                HashSet<MethodDesc> methodsFoundInData = new HashSet<MethodDesc>();
 
                 foreach (TokenData entry in TokenList)
                 {
@@ -106,7 +107,15 @@ namespace ILCompiler.IBC
                         case CorTokenType.mdtMethodDef:
                         case CorTokenType.mdtMemberRef:
                         case CorTokenType.mdtMethodSpec:
-                            associatedMethod = ecmaModule.GetMethod(System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle((int)entry.Token));
+                            object metadataObject = ecmaModule.GetObject(System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle((int)entry.Token));
+                            if (metadataObject is MethodDesc)
+                            {
+                                associatedMethod = (MethodDesc)metadataObject;
+                            }
+                            else
+                            {
+                                _logger.Writer.WriteLine($"Token {0:x} does not refer to a method");
+                            }
                             break;
 
                         case CorTokenType.ibcMethodSpec:
@@ -130,7 +139,14 @@ namespace ILCompiler.IBC
 
                     if (associatedMethod != null)
                     {
-                        methodProfileData.Add(new MethodProfileData(associatedMethod, (MethodProfilingDataFlags)entry.Flags, scenarioMask));
+                        if (methodsFoundInData.Add(associatedMethod))
+                        {
+                            methodProfileData.Add(new MethodProfileData(associatedMethod, (MethodProfilingDataFlags)entry.Flags, scenarioMask));
+                        }
+                        else
+                        {
+                            _logger.Writer.WriteLine($"Multiple copies of data for method '{associatedMethod}' found.");
+                        }
                     }
                 }
             }
@@ -659,11 +675,13 @@ namespace ILCompiler.IBC
                     var result = (MetadataType)ecmaModule.GetType(MetadataTokens.EntityHandle((int)token));
                     if ((typ == CorElementType.ELEMENT_TYPE_VALUETYPE) != result.IsValueType)
                     {
-                        throw new Exception("Mismatch between valuetype and reference type in while parsing generic instantiation");
+                        _logger.Writer.WriteLine("Mismatch between valuetype and reference type in while parsing generic instantiation");
+                        return null;
                     }
                     return result;
                 default:
-                    throw new Exception("Unexpected token type parsing ELEMENT_TYPE_GENERICINST");
+                    _logger.Writer.WriteLine("Unexpected token type parsing ELEMENT_TYPE_GENERICINST");
+                    return null;
             }
         }
 
@@ -715,7 +733,11 @@ namespace ILCompiler.IBC
                     List<TypeDesc> instantiationArguments = new List<TypeDesc>();
                     for (int i = 0; i < instantiationArgumentCount; i++)
                     {
-                        instantiationArguments.Add(GetSigTypeFromIBCZapSig(ibcModule, ibcModule.EcmaModule, sig));
+                        TypeDesc instantiationType = GetSigTypeFromIBCZapSig(ibcModule, ibcModule.EcmaModule, sig);
+                        if (instantiationType == null)
+                            return null;
+
+                        instantiationArguments.Add(instantiationType);
                         SkipTypeInIBCZapSig(ref sig);
                     }
 
