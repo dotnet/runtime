@@ -3113,8 +3113,6 @@ protected:
     PER_HEAP_ISOLATED
     void fire_alloc_wait_event_end (alloc_wait_reason awr);
     PER_HEAP
-    void background_gc_wait_lh (alloc_wait_reason awr = awr_ignored);
-    PER_HEAP
     uint32_t background_gc_wait (alloc_wait_reason awr = awr_ignored, int time_out_ms = INFINITE);
     PER_HEAP_ISOLATED
     void start_c_gc();
@@ -3664,9 +3662,6 @@ protected:
 
     PER_HEAP_ISOLATED
     GCEvent ee_proceed_event;
-
-    PER_HEAP
-    GCEvent gc_lh_block_event;
 
     PER_HEAP_ISOLATED
     bool gc_can_use_concurrent;
