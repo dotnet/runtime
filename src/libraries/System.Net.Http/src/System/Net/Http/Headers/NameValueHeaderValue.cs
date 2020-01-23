@@ -361,7 +361,7 @@ namespace System.Net.Http.Headers
             }
 
             // Trailing/leading space are not allowed
-            if (value[0] == ' ' || value[^1] == ' ')
+            if (value[0] == ' ' || value[0] == '\t' || value[^1] == ' ' || value[^1] == '\t')
             {
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }

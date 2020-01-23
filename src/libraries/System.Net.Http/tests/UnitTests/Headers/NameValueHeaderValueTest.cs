@@ -27,16 +27,21 @@ namespace System.Net.Http.Tests
             AssertExtensions.Throws<ArgumentException>("name", () => { NameValueHeaderValue nameValue = new NameValueHeaderValue(string.Empty); });
         }
 
-        [Fact]
-        public void Ctor_NameInvalidFormat_ThrowFormatException()
+        [Theory]
+        [InlineData(" text ")]
+        [InlineData("text ")]
+        [InlineData(" text")]
+        [InlineData("\ttext\t")]
+        [InlineData("text\t")]
+        [InlineData("\ttext")]
+        [InlineData("te xt")]
+        // The ctor takes a name which must not contain '='.
+        [InlineData("te=xt")]
+        [InlineData("te\u00E4xt")]
+        public void Ctor_NameInvalidFormat_ThrowFormatException(string value)
         {
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
-            AssertFormatException(" text ", null);
-            AssertFormatException("text ", null);
-            AssertFormatException(" text", null);
-            AssertFormatException("te xt", null);
-            AssertFormatException("te=xt", null); // The ctor takes a name which must not contain '='.
-            AssertFormatException("te\u00E4xt", null);
+            AssertFormatException(value, null);
         }
 
         [Theory]
@@ -55,6 +60,9 @@ namespace System.Net.Http.Tests
         [InlineData(" token ")]
         [InlineData("token ")]
         [InlineData(" token")]
+        [InlineData("\ttoken")]
+        [InlineData("\ttoken\t")]
+        [InlineData("token\t")]
         [InlineData("\"quoted string with \" quotes\"")]
         [InlineData("\"quoted string with \"two\" quotes\"")]
         [InlineData("\"")]
