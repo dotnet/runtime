@@ -1587,8 +1587,20 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					}
 					break;
 				case OP_STRLEN:
-					MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, ins->dreg,
-														 ins->sreg1, MONO_STRUCT_OFFSET (MonoString, length), ins->flags | MONO_INST_INVARIANT_LOAD);
+					if (ins->prev && ins->prev->opcode == OP_I8CONST) {
+						// Optimize String.get_length for ldstr, e.g.:
+						// "hello".Length => 5
+						mono_domain_lock(cfg->domain);
+						MonoGHashTable* table = cfg->domain->ldstr_table;
+						MonoString* str = (MonoString*)mono_g_hash_table_lookup(table, GUINT_TO_POINTER(ins->prev->data.i8const));
+						mono_domain_unlock(cfg->domain);
+						if (str && str->length >= 0) {
+							MONO_EMIT_NEW_ICONST(cfg, ins->dreg, str->length);
+							break;
+						}
+					}
+					MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS(cfg, OP_LOADI4_MEMBASE, ins->dreg,
+						ins->sreg1, MONO_STRUCT_OFFSET(MonoString, length), ins->flags | MONO_INST_INVARIANT_LOAD);
 					break;
 				default:
 					break;
