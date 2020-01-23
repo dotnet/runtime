@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -126,6 +127,10 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
+        // Call to execute the abstract instance function
+        internal static unsafe ComInterfaceEntry* CallComputeVtables(ComWrappers instance, object obj, CreateComInterfaceFlags flags, out int count)
+            => instance.ComputeVtables(obj, flags, out count);
+
         /// <summary>
         /// Get the currently registered managed object or creates a new managed object and registers it.
         /// </summary>
@@ -144,6 +149,10 @@ namespace System.Runtime.InteropServices
         /// <param name="flags">Flags used to describe the external object.</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         protected abstract object CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
+
+        // Call to execute the abstract instance function
+        internal static object CallCreateObject(ComWrappers instance, IntPtr externalComObject, CreateObjectFlags flags)
+            => instance.CreateObject(externalComObject, flags);
 
         /// <summary>
         /// Register this class's implementation to be used when a Reference Tracker Host instance is requested from another runtime.
@@ -165,8 +174,9 @@ namespace System.Runtime.InteropServices
         /// <param name="fpRelease">Function pointer to Release.</param>
         /// [TODO] Consider just returning a struct. Perhaps an Enum for input?
         protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
-        {
-            throw new NotImplementedException();
-        }
+            => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
     }
 }

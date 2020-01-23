@@ -991,6 +991,10 @@ FCFuncStart(gWinRTTypeNameConverterFuncs)
     FCFuncElement("GetTypeFromWinRTTypeName", StubHelpers::WinRTTypeNameConverter__GetTypeFromWinRTTypeName)
 FCFuncEnd()
 
+FCFuncStart(gComWrappersFuncs)
+    QCFuncElement("GetIUnknownImplInternal", ComWrappersNative::GetIUnknownImpl)
+FCFuncEnd()
+
 #endif // FEATURE_COMINTEROP
 
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
@@ -1210,6 +1214,9 @@ FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
+#ifdef FEATURE_COMINTEROP
+FCClassElement("ComWrappers", "System.Runtime.InteropServices", gComWrappersFuncs)
+#endif // FEATURE_COMINTEROP
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
