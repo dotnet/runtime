@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifndef _INTEROP_INTEROPLIB_H_
-#define _INTEROP_INTEROPLIB_H_
+#ifndef _INTEROP_INC_INTEROPLIB_H_
+#define _INTEROP_INC_INTEROPLIB_H_
 
 namespace InteropLib
 {
@@ -20,5 +20,5 @@ void GetIUnknownImpl(
 
 }
 
-#endif // _INTEROP_INTEROPLIB_H_
+#endif // _INTEROP_INC_INTEROPLIB_H_
 

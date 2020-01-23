@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include <interoplibimports.h>
 #include "comwrappers.h"
 
 namespace ABI
@@ -430,12 +431,12 @@ void* ManagedObjectWrapper::GetObjectGCHandle() const
 
 bool ManagedObjectWrapper::IsAlive() const
 {
-    return rt::IsGCHandleLive(GetObjectGCHandle());
+    return true; // rt::IsGCHandleLive(GetObjectGCHandle()); [TODO]
 }
 
-bool ManagedObjectWrapper::IsSet(_In_ CreateCCWFlags flag) const
+bool ManagedObjectWrapper::IsSet(_In_ CreateComInterfaceFlags flag) const
 {
-    return (_flags & flag) != CreateCCWFlags::None;
+    return (_flags & flag) != CreateComInterfaceFlags::None;
 }
 
 ULONG ManagedObjectWrapper::AddRefFromReferenceTracker()

@@ -1,13 +1,12 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-#include_directories(BEFORE "../vm/${ARCH_SOURCES_DIR}")
-#include_directories(BEFORE "../vm")
-#include_directories(BEFORE "inc")
+include_directories(BEFORE inc)
 
 set(INTEROP_COMMON_SOURCES
 )
 
 set(INTEROP_COMMON_HEADERS
-    interoplib.h
+    inc/interoplibimports.h
+    inc/interoplib.h
     platform.h
 )
 
