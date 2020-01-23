@@ -141,6 +141,9 @@ void
 mono_llvm_add_func_attr (LLVMValueRef func, AttrKind kind);
 
 void
+mono_llvm_add_func_attr_nv (LLVMValueRef func, const char *attr_name, const char *attr_value);
+
+void
 mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind);
 
 void
