@@ -531,8 +531,8 @@ namespace System.Buffers
         /// <summary>
         /// Translate opaque <see cref="System.SequencePosition"/> value to numerical position offset
         /// </summary>
-        /// <param name="position"><see cref="System.SequencePosition"/> to translate to offset</param>
-        /// <returns>Returns the translated offset from the start of the sequence</returns>
+        /// <param name="position">The <see cref="System.SequencePosition"/> of which to get the offset.</param>
+        /// <returns>The offset from the start of the sequence.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown when provided <see cref="System.SequencePosition"/> is invalid</exception>
         public long GetOffset(SequencePosition position)
         {
