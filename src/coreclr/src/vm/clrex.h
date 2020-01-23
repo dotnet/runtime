@@ -22,17 +22,23 @@ class AssemblySpec;
 class PEFile;
 class PEAssembly;
 
+enum StackTraceElementFlags
+{
+    // Set if this element represents the last frame of the foreign exception stack trace
+    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001,
+
+    // Set if the "ip" field has already been adjusted (decremented)
+    STEF_IP_ADJUSTED = 0x0002,
+};
+
+// This struct is used by SOS in the diagnostic repo and needs to remain backwards compatible.
+// See: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/strike.cpp#L2245
 struct StackTraceElement
 {
     UINT_PTR        ip;
     UINT_PTR        sp;
     PTR_MethodDesc  pFunc;
-    // TRUE if this element represents the last frame of the foreign
-    // exception stack trace.
-    BOOL			fIsLastFrameFromForeignStackTrace;
-    // TRUE if the ip needs to be adjusted back to the calling or
-    // throwing instruction.
-    BOOL            fAdjustOffset;
+    INT             flags;      // This is StackTraceElementFlags but it needs to always be "int" sized for compatibility with SOS.
 
     bool operator==(StackTraceElement const & rhs) const
     {
@@ -47,6 +53,8 @@ struct StackTraceElement
     }
 };
 
+// This struct is used by SOS in the diagnostic repo and needs to remain backwards compatible.
+// See: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/strike.cpp#L2669
 class StackTraceInfo
 {
 private:

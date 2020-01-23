@@ -96,16 +96,11 @@ public:
 private:
 #endif // DACCESS_COMPILE
     struct DebugStackTraceElement {
-        DWORD dwOffset;  // native offset
+        DWORD dwOffset;     // native offset
         DWORD dwILOffset;
         MethodDesc *pFunc;
         PCODE ip;
-        // TRUE if this element represents the last frame of the foreign
-        // exception stack trace.
-        BOOL fIsLastFrameFromForeignStackTrace;
-        // TRUE if the dwOffset (native offset) needs to be adjusted back to the
-        // calling or throwing instruction.
-        BOOL fAdjustOffset;
+        INT flags;          // StackStackElementFlags
 
         // Initialization done under TSL.
         // This is used when first collecting the stack frame data.
@@ -113,8 +108,7 @@ private:
             DWORD dwNativeOffset,
             MethodDesc *pFunc,
             PCODE ip,
-            BOOL fIsLastFrameFromForeignStackTrace = FALSE,
-            BOOL fAdjustOffset = FALSE
+            INT flags       // StackStackElementFlags
         );
 
         // Initialization done outside the TSL.

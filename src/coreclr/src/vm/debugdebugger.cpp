@@ -510,7 +510,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
                 U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
                                             ->GetDirectPointerToNonObjectElements();
-                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1) data.pElements[i].fIsLastFrameFromForeignStackTrace;
+                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1)(data.pElements[i].flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE);
             }
 
             MethodDesc *pMethod = data.pElements[i].pFunc;
@@ -1027,17 +1027,14 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
         dwNativeOffset = 0;
     }
 
-    // We can assume that dwNativeOffset points to an the instruction after [call IL_Throw] when these conditions are met:
-    //  1. !pCf->HasFaulted() - It wasn't a "hardware" exception (Access violation, dev by 0, etc.)
-    //  2. !pCf->IsIPadjusted() - It hasn't been previously adjusted to point to a call (like [call IL_Throw], etc.)
-    BOOL fAdjustOffset = !pCf->HasFaulted() && !pCf->IsIPadjusted();
+    // Pass on to InitPass2 that the IP has already been adjusted (decremented by 1)
+    INT flags = pCf->IsIPadjusted() ? STEF_IP_ADJUSTED : 0;
 
     pData->pElements[pData->cElements].InitPass1(
             dwNativeOffset,
             pFunc,
             ip,
-            FALSE,
-            fAdjustOffset);
+            flags);
 
     // We'll init the IL offsets outside the TSL lock.
 
@@ -1116,7 +1113,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 // If we come across any frame representing foreign exception stack trace,
                 // then set the flag indicating so. This will be used to allocate the
                 // corresponding array in StackFrameHelper.
-                if (cur.fIsLastFrameFromForeignStackTrace)
+                if ((cur.flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0)
                 {
                     pData->fDoWeHaveAnyFramesFromForeignStackTrace = TRUE;
                 }
@@ -1145,8 +1142,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                     dwNativeOffset,
                     pMD,
                     (PCODE)cur.ip,
-                    cur.fIsLastFrameFromForeignStackTrace,
-                    cur.fAdjustOffset);
+                    cur.flags);
 #ifndef DACCESS_COMPILE
                 pData->pElements[i].InitPass2();
 #endif
@@ -1167,8 +1163,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     DWORD dwNativeOffset,
     MethodDesc *pFunc,
     PCODE ip,
-    BOOL fIsLastFrameFromForeignStackTrace, /*= FALSE*/
-    BOOL fAdjustOffset /*= FALSE*/
+    INT flags
 )
 {
     LIMITED_METHOD_CONTRACT;
@@ -1180,8 +1175,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;
     this->ip = ip;
-    this->fIsLastFrameFromForeignStackTrace = fIsLastFrameFromForeignStackTrace;
-    this->fAdjustOffset = fAdjustOffset;
+    this->flags = flags;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1216,18 +1210,18 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
         //    JIT_OverFlow, etc.) that caused a software exception.
         // 3) The instruction after the call to a managed function (non-leaf node).
         //
-        // #2 and #3 are the cases that need to adjust dwOffset because they point after the call instructionand
-        // may point to the next (incorrect) IL instruction/source line. fAdjustOffset is false if the dwOffset/ip
-        // has already been adjusted or is case #1. fAdjustOffset is true if the dwOffset/IP hasn't been already
-        // adjusted for cases #2 or #3.
+        // #2 and #3 are the cases that need to adjust dwOffset because they point after the call instruction
+        // and may point to the next (incorrect) IL instruction/source line. If STEF_IP_ADJUSTED is set,
+        // IP/dwOffset has already be decremented so don't decrement it again.
         //
         // When the dwOffset needs to be adjusted it is a lot simpler to decrement instead of trying to figure out
         // the beginning of the instruction. It is enough for GetILOffsetFromNative to return the IL offset of the
         // instruction throwing the exception.
+        bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset >= STACKWALK_CONTROLPC_ADJUST_OFFSET;
         bRes = g_pDebugInterface->GetILOffsetFromNative(
             pFunc,
             (LPCBYTE)this->ip,
-            this->fAdjustOffset && this->dwOffset >= STACKWALK_CONTROLPC_ADJUST_OFFSET ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset,
+            fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset,
             &this->dwILOffset);
     }
 
