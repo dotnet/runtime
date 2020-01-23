@@ -6975,6 +6975,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
+#ifdef DEBUG
+    if (opts.compGcChecks && (info.compRetType == TYP_REF))
+    {
+        failTailCall("COMPlus_JitGCChecks or stress might have interposed a call to CORINFO_HELP_CHECK_OBJ, "
+                     "invalidating tailcall opportunity");
+        return nullptr;
+    }
+#endif
+
     // We have to ensure to pass the incoming retValBuf as the
     // outgoing one. Using a temp will not do as this function will
     // not regain control to do the copy. This can happen when inlining
@@ -16560,6 +16569,12 @@ void Compiler::fgMorph()
 
                 fgEnsureFirstBBisScratch();
                 fgNewStmtAtEnd(fgFirstBB, op);
+
+                if (verbose)
+                {
+                    printf("\ncompGcChecks tree:\n");
+                    gtDispTree(op);
+                }
             }
         }
     }
