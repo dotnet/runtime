@@ -276,8 +276,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithoutLocation_ReturnsOriginalResponse()
         {
-            // [ActiveIssue("https://github.com/dotnet/corefx/issues/24819", TestPlatforms.Windows)]
-            if (IsWinHttpHandler)
+            if (IsWinHttpHandler) // see https://github.com/dotnet/corefx/issues/24819#issuecomment-338776074 for details
             {
                 return;
             }

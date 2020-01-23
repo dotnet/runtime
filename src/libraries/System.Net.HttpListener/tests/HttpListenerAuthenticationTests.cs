@@ -106,7 +106,7 @@ namespace System.Net.Tests
             yield return new object[] { "abc", HttpStatusCode.InternalServerError };
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20098", TestPlatforms.Unix)]
+        [Theory]
         [InlineData("ExampleRealm")]
         [InlineData("  ExampleRealm  ")]
         [InlineData("")]
