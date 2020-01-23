@@ -14,7 +14,7 @@ Param(
   [string]$arch,
   [string]$subsetCategory,
   [string]$subset,
-  [string]$coreClrConfiguration,
+  [string]$runtimeConfiguration,
   [string]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
@@ -132,17 +132,18 @@ foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
   {
-    "build"             { $arguments += " -build" }
-    "buildtests"        { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
-    "test"              { $arguments += " -test" }
-    "configuration"     { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
+    "build"                { $arguments += " -build" }
+    "buildtests"           { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
+    "test"                 { $arguments += " -test" }
+    "configuration"        { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
+    "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     # This should be removed after we have finalized our ci build pipeline.
-    "framework"         { if ($PSBoundParameters[$argument].ToLowerInvariant() -eq 'netcoreapp') { $arguments += " /p:TargetGroup=netcoreapp5.0" } else { if ($PSBoundParameters[$argument].ToLowerInvariant() -eq 'netfx') { $arguments += " /p:TargetGroup=net472" } else { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())"}}}
-    "os"                { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
-    "allconfigurations" { $arguments += " /p:BuildAllConfigurations=true" }
-    "arch"              { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }
-    "properties"        { $arguments += " " + $properties }
-    default             { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
+    "framework"            { if ($PSBoundParameters[$argument].ToLowerInvariant() -eq 'netcoreapp') { $arguments += " /p:TargetGroup=netcoreapp5.0" } else { if ($PSBoundParameters[$argument].ToLowerInvariant() -eq 'netfx') { $arguments += " /p:TargetGroup=net472" } else { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())"}}}
+    "os"                   { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
+    "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
+    "arch"                 { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }
+    "properties"           { $arguments += " " + $properties }
+    default                { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
 

@@ -328,14 +328,14 @@ namespace Internal.Cryptography.Pal
 
         internal static ISet<string> ReadCertPolicyExtension(byte[] rawData)
         {
-            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
+            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+            AsnValueReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 
             HashSet<string> policies = new HashSet<string>();
             while (sequenceReader.HasData)
             {
-                PolicyInformationAsn.Decode(sequenceReader, out PolicyInformationAsn policyInformation);
+                PolicyInformationAsn.Decode(ref sequenceReader, rawData, out PolicyInformationAsn policyInformation);
                 policies.Add(policyInformation.PolicyIdentifier);
 
                 // There is an optional policy qualifier here, but it is for information
@@ -350,14 +350,14 @@ namespace Internal.Cryptography.Pal
 
         private static List<CertificatePolicyMappingAsn> ReadCertPolicyMappingsExtension(byte[] rawData)
         {
-            AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
+            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+            AsnValueReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 
             List<CertificatePolicyMappingAsn> mappings = new List<CertificatePolicyMappingAsn>();
             while (sequenceReader.HasData)
             {
-                CertificatePolicyMappingAsn.Decode(sequenceReader, out CertificatePolicyMappingAsn mapping);
+                CertificatePolicyMappingAsn.Decode(ref sequenceReader, rawData, out CertificatePolicyMappingAsn mapping);
                 mappings.Add(mapping);
             }
 

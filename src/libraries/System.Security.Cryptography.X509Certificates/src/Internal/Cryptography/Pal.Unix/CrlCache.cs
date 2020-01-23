@@ -244,13 +244,13 @@ namespace Internal.Cryptography.Pal
 
             try
             {
-                AsnReader reader = new AsnReader(crlDistributionPoints, AsnEncodingRules.DER);
-                AsnReader sequenceReader = reader.ReadSequence();
+                AsnValueReader reader = new AsnValueReader(crlDistributionPoints, AsnEncodingRules.DER);
+                AsnValueReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 while (sequenceReader.HasData)
                 {
-                    DistributionPointAsn.Decode(sequenceReader, out DistributionPointAsn distributionPoint);
+                    DistributionPointAsn.Decode(ref sequenceReader, crlDistributionPoints, out DistributionPointAsn distributionPoint);
 
                     // Only distributionPoint is supported
                     // Only fullName is supported, nameRelativeToCRLIssuer is for LDAP-based lookup.

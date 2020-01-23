@@ -139,13 +139,13 @@ namespace Internal.Cryptography
                 }
             }
 
-            AsnReader reader = new AsnReader(normalizedValue, AsnEncodingRules.DER);
-            AsnReader setReader = reader.ReadSetOf();
+            AsnValueReader reader = new AsnValueReader(normalizedValue, AsnEncodingRules.DER);
+            AsnValueReader setReader = reader.ReadSetOf();
             AttributeAsn[] decodedSet = new AttributeAsn[setItems.Length];
             int i = 0;
             while (setReader.HasData)
             {
-                AttributeAsn.Decode(setReader, out AttributeAsn item);
+                AttributeAsn.Decode(ref setReader, normalizedValue, out AttributeAsn item);
                 decodedSet[i] = item;
                 i++;
             }

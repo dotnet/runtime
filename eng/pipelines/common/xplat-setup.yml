@@ -50,6 +50,13 @@ jobs:
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
 
+      - ${{ if ne(parameters.jobParameters.runtimeFlavor, '') }}:
+        - name: runtimeFlavorName
+          ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+            value: Mono
+          ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
+            value: CoreCLR
+
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}

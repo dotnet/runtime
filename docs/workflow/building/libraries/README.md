@@ -9,7 +9,7 @@ Here is one example of a daily workflow for a developer working mainly on the li
 git clean -xdf
 git pull upstream master & git push origin master
 build -subsetCategory coreclr -c Release
-build -subsetCategory libraries -coreclrConfiguration Release
+build -subsetCategory libraries -runtimeConfiguration release
 
 :: The above you may only perform once in a day, or when
 :: you pull down significant new changes.
@@ -34,7 +34,7 @@ The instructions for Linux and macOS are essentially the same:
 git clean -xdf
 git pull upstream master & git push origin master
 ./build.sh -subsetcategory coreclr -c Release
-./build.sh -subsetcategory libraries -coreclrconfiguration Release
+./build.sh -subsetcategory libraries -runtimeconfiguration Release
 
 # The above you may only perform once in a day, or when
 # you pull down significant new changes.
@@ -59,12 +59,12 @@ These example commands will build a release CoreCLR (and CoreLib), debug librari
 
 For Linux:
 ```bash
-./build.sh -coreclrconfiguration Release
+./build.sh -runtimeconfiguration Release
 ```
 
 For Windows:
 ```bat
-./build.cmd -coreclrConfiguration Release
+./build.cmd -runtimeconfiguration Release
 ```
 
 Detailed information about building and testing runtimes and the libraries is in the documents linked below.

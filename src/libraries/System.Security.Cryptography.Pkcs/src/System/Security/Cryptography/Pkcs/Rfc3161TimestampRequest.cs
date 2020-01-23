@@ -85,10 +85,10 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                AsnReader reader = new AsnReader(source, AsnEncodingRules.DER);
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
                 int localBytesRead = reader.PeekEncodedValue().Length;
 
-                Rfc3161TimeStampResp.Decode(reader, out resp);
+                Rfc3161TimeStampResp.Decode(ref reader, source, out resp);
                 bytesConsumed = localBytesRead;
             }
             catch (CryptographicException) when (!shouldThrow)
@@ -346,10 +346,10 @@ namespace System.Security.Cryptography.Pkcs
                 // Since nothing says BER, assume DER only.
                 const AsnEncodingRules RuleSet = AsnEncodingRules.DER;
 
-                AsnReader reader = new AsnReader(encodedBytes, RuleSet);
-                ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
+                AsnValueReader reader = new AsnValueReader(encodedBytes.Span, RuleSet);
+                ReadOnlySpan<byte> firstElement = reader.PeekEncodedValue();
 
-                Rfc3161TimeStampReq.Decode(reader, out Rfc3161TimeStampReq req);
+                Rfc3161TimeStampReq.Decode(ref reader, encodedBytes, out Rfc3161TimeStampReq req);
 
                 request = new Rfc3161TimestampRequest
                 {
