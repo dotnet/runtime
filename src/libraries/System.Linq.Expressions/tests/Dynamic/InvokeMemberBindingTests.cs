@@ -245,7 +245,7 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        public void NonIndexerparameterized GetterAndSetterIndexAccess()
+        public void NonIndexerParameterizedGetterAndSetterIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, true);
             RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => d.ItemProp[2] = 3);
@@ -255,7 +255,7 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        public void NonIndexerparameterized GetterOnlyIndexAccess()
+        public void NonIndexerParameterizedGetterOnlyIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, false);
             int dump;
@@ -265,7 +265,7 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        public void NonIndexerparameterized SetterOnlyIndexAccess()
+        public void NonIndexerParameterizedSetterOnlyIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(false, true);
             RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => d.ItemProp[2] = 9);
