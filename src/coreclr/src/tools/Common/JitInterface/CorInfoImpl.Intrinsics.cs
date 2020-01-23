@@ -179,7 +179,7 @@ namespace Internal.JitInterface
             if (pMustExpand != null)
                 *pMustExpand = 0;
 
-            Debug.Assert(method.IsIntrinsic || method.IsInternalCall);
+            Debug.Assert(method.IsIntrinsic);
 
             IntrinsicKey key = new IntrinsicKey();
             key.MethodName = method.Name;
