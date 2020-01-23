@@ -236,7 +236,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void NonIndexerParameterizedDirectAccess()
         {
-            // If a parameterized  property isn't the type's indexer, we should be allowed to use the
+            // If a parameterized property isn't the type's indexer, we should be allowed to use the
             // getter or setter directly.
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, true);
             d.set_ItemProp(2, 19);
