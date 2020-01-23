@@ -13,14 +13,6 @@
 -nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrix_InvalidFlags_ThrowsArgumentException
 
 ####################################################################
-##  System.Dynamic.Runtime.Tests
-####################################################################
-
-# ambigous methods
-# https://github.com/mono/mono/issues/14906
--nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms004.twoprms004.Test.DynamicCSharpRunTest
-
-####################################################################
 ##  System.IO.Tests
 ####################################################################
 
