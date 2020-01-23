@@ -455,7 +455,8 @@ __CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:
 
 # Configure environment if we are doing a verbose build
 if [[ "$__VerboseBuild" == 1 ]]; then
-    export VERBOSE=1
+    VERBOSE=1
+    export VERBOSE
     __CommonMSBuildArgs="$__CommonMSBuildArgs /v:detailed"
 fi
 
@@ -465,9 +466,11 @@ fi
 
 # Configure environment if we are doing a cross compile.
 if [[ "$__CrossBuild" == 1 ]]; then
-    export CROSSCOMPILE=1
+    CROSSCOMPILE=1
+    export CROSSCOMPILE
     if [[ ! -n "$ROOTFS_DIR" ]]; then
-        export ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
+        ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
+        export ROOTFS_DIR
     fi
 fi
 
