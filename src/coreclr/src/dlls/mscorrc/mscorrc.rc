@@ -608,8 +608,6 @@ BEGIN
     IDS_EE_BADMARSHAL_SAFEHANDLEARRAY       "Invalid managed/unmanaged type combination (Arrays of SafeHandles are not supported)."
     IDS_EE_BADMARSHAL_CRITICALHANDLEARRAY   "Invalid managed/unmanaged type combination (Arrays of CriticalHandles are not supported)."
     IDS_EE_BADMARSHAL_SYSARRAY              "Invalid managed/unmanaged type combination (System.Array must be paired with SafeArray or Interface)."
-    IDS_EE_BADMARSHAL_PTRSUBTYPE            "Pointers cannot reference managed objects.  Use ByRef instead."
-    IDS_EE_BADMARSHAL_PTRNONBLITTABLE       "Pointers cannot reference marshaled structures.  Use ByRef instead."
     IDS_EE_BADMARSHAL_RESTRICTION           "This type can only be marshaled in restricted ways."
     IDS_EE_BADMARSHAL_ASANYRESTRICTION      "AsAny cannot be used on return types, ByRef parameters, ArrayWithOffset, or parameters passed from unmanaged to managed."
     IDS_EE_BADMARSHAL_VBBYVALSTRRESTRICTION "VBByRefStr can only be used in combination with in/out, ByRef managed-to-unmanaged strings."
