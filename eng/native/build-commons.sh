@@ -29,7 +29,7 @@ isMSBuildOnNETCoreSupported()
 
     if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "arm64" ) ]]; then
         __IsMSBuildOnNETCoreSupported=1
-    elif [[ "$__HostArch" == "x64" && ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) ]]; then
+    elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
         __IsMSBuildOnNETCoreSupported=1
     fi
 }
@@ -213,7 +213,6 @@ case "$CPUName" in
         ;;
 
     armv7l)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
         __BuildArch=arm
         __HostArch=arm
         ;;
