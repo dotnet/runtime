@@ -6,7 +6,7 @@ cmake_policy(SET CMP0042 NEW)
 project(CoreCLR)
 
 # Include cmake functions
-include(functions.cmake)
+include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 
 if (WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
