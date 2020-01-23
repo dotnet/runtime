@@ -6,8 +6,8 @@ This document describes the concept of a version bubble, how to specify them to 
 
 ## Behavior of code that shares a version bubble
 
-- Inlining is only permitted within a version bubble unless the method is marked with `System.Runtime.Versioning.NonVersionableAttribute`. If the inlinee is marked as NonVersionable, it may ALWAYS be inlined into the method being compiled.
-- Generic instantiations may only be ahead of time compiled into the application if the definition of the generic is defined within the version bubble as well as the instantiation arguments to the generic. As an exception to the requirement for the instantiation arguments to be defined within the bubble, the shared generic type `System.__Canon` will always be considered to be part of the version bubble. Also, the list of very well known types (object, string, int, uint, short, ushort, byte, sbyte, long, ulong, float, double, IntPtr, and UIntPtr) are also considered to be part of the version bubble as long as the generic is not constrained on an interface or class. For Example
+1. Inlining is only permitted within a version bubble unless the method is marked with `System.Runtime.Versioning.NonVersionableAttribute`. If the inlinee is marked as NonVersionable, it may ALWAYS be inlined into the method being compiled.
+2. Generic instantiations may only be ahead of time compiled into the application if the definition of the generic is defined within the version bubble as well as the instantiation arguments to the generic. As an exception to the requirement for the instantiation arguments to be defined within the bubble, the shared generic type `System.__Canon` will always be considered to be part of the version bubble. Also, the list of very well known types (object, string, int, uint, short, ushort, byte, sbyte, long, ulong, float, double, IntPtr, and UIntPtr) are also considered to be part of the version bubble as long as the generic is not constrained on an interface or class. For Example
 
 ```csharp
 class MyGeneric<T> {}
@@ -41,9 +41,9 @@ The default value of the CompilationVersionBubble flag would be dependent on how
 
 There are 3 sets of files to pass to crossgen2:
 
-- The set of files that are referenceable by the compilation. These are specified via the --reference switch.
-- The set of files that comprise the set of assemblies being compiled at once. These are specified via the --input-file-path switch. (The first assembly specified in this list describes module actually to be compiled and output. When we add support for composite R2R images, we will produce a single module file from all of these input assemblies at once.)
-- The set of modules that comprise the version bubble tied to the assembly being compiled. The specification of this is complicated and unclear at this time. My current idea is to have two modes. Input bubble mode (where the set of input files matches the version bubble), and all mode (where all assemblies are considered to be part of the bubble. For framework ahead of time compilation scenarios such as containers and such where we may be compiling the framework and supporting scenarios where not all files in the framework are necessarily unified in the bubble, we may need an exclude function to exclude specific binaries.
+1. The set of files that are referenceable by the compilation. These are specified via the --reference switch.
+2. The set of files that comprise the set of assemblies being compiled at once. These are specified via the --input-file-path switch. (The first assembly specified in this list describes module actually to be compiled and output. When we add support for composite R2R images, we will produce a single module file from all of these input assemblies at once.)
+3. The set of modules that comprise the version bubble tied to the assembly being compiled. The specification of this is complicated and unclear at this time. My current idea is to have two modes. Input bubble mode (where the set of input files matches the version bubble), and all mode (where all assemblies are considered to be part of the bubble. For framework ahead of time compilation scenarios such as containers and such where we may be compiling the framework and supporting scenarios where not all files in the framework are necessarily unified in the bubble, we may need an exclude function to exclude specific binaries.
 
 ## Choice of what code to compile
 
