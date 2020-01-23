@@ -712,11 +712,6 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (method.HasCustomAttribute("System.Runtime.CompilerServices", "IntrinsicAttribute"))
-            {
-                result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
-            }
-
             result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;
 
             return (uint)result;
