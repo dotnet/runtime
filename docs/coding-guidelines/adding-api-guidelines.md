@@ -43,7 +43,7 @@ the implementation without compat concerns in future releases.
 ## Making the changes in repo
 
 **If changing the library version**
-  - Update the `AssemblyVersion` property in `<Library>\Directory.Build.props` (ex: [System.Runtime\Directory.Build.props](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/Directory.Build.props#L4)) to the version determined above.
+  - Update the `AssemblyVersion` property in `<Library>\Directory.Build.props` (ex: [Microsoft.CSharp\Directory.Build.props](https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.CSharp/Directory.Build.props#L4)) to the version determined above.
 
 **If changing the target group**
 - Update both the `Configurations` property in the library's csproj file and the `BuildConfigurations` property in the library's Configurations.props file.
