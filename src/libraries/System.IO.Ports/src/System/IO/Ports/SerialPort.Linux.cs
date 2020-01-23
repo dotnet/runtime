@@ -33,7 +33,7 @@ namespace System.IO.Ports
                     // checking for that for non-ttyS entries is incorrect as some uart
                     // devices are incorrectly filtered out
                     bool isTtyS = entry.Name.StartsWith("ttyS");
-                    bool isTtyGS = entry.Name.StartsWith("ttyGS");
+                    bool isTtyGS = !isTtyS && entry.Name.StartsWith("ttyGS");
                     if ((isTtyS &&
                          (File.Exists(entry.FullName + "/device/id") ||
                           Directory.Exists(entry.FullName + "/device/of_node"))) ||
