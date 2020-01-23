@@ -622,7 +622,7 @@ namespace Internal.JitInterface
 
             if (method.IsSynchronized)
                 result |= CorInfoFlag.CORINFO_FLG_SYNCH;
-            if (method.IsIntrinsic || method.IsInternalCall)
+            if (method.IsIntrinsic)
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             if (method.IsVirtual)
                 result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
