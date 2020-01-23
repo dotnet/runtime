@@ -233,14 +233,31 @@ namespace ILCompiler
 
                     var logger = new Logger(Console.Out, _commandLineOptions.Verbose);
 
-                    foreach (var referenceFile in _referenceFilePaths.Values)
-
-
                     List<string> mibcFiles = new List<string>();
-                    foreach (var file in _commandLineOptions.Mibc)
+                    if (_commandLineOptions.Mibc != null)
                     {
-                        mibcFiles.Add(file.FullName);
+                        foreach (var file in _commandLineOptions.Mibc)
+                        {
+                            mibcFiles.Add(file.FullName);
+                        }
                     }
+
+                    foreach (var referenceFile in _referenceFilePaths.Values)
+                    {
+                        try
+                        {
+                            EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
+                            referenceableModules.Add(module);
+                            if (_commandLineOptions.InputBubble)
+                            {
+                                // In large version bubble mode add reference paths to the compilation group
+                                versionBubbleModulesHash.Add(module);
+                            }
+                        }
+                        catch { } // Ignore non-managed pe files
+                    }
+
+                    List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>(versionBubbleModulesHash);
 
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();

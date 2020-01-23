@@ -220,6 +220,9 @@ namespace ILCompiler
                     {
                         foreach (MetadataType t in ecmaType.EcmaModule.GetAllTypes())
                         {
+                            if (!(t is EcmaType))
+                                continue;
+
                             string name = t.GetFullName();
 
                             // Include encapsulating type
