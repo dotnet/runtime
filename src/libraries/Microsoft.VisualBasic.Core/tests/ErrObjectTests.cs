@@ -11,6 +11,7 @@ namespace Microsoft.VisualBasic.Tests
     public class ErrObjectTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14854", TargetFrameworkMonikers.Mono)]
         public void Clear()
         {
             ProjectData.ClearProjectError();

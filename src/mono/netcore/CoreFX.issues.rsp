@@ -6,19 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  Microsoft.VisualBasic.Core.Tests
-####################################################################
-
-# https://github.com/mono/mono/issues/14854
--nomethod Microsoft.VisualBasic.Tests.ErrObjectTests.Clear
-
-# Windows-only tests, incorrect platform guards (https://github.com/dotnet/corefx/pull/40365)
--nomethod Microsoft.VisualBasic.Tests.InteractionTests.SaveSetting
--nomethod Microsoft.VisualBasic.Tests.InteractionTests.DeleteSetting
--nomethod Microsoft.VisualBasic.Tests.InteractionTests.GetAllSettings
--nomethod Microsoft.VisualBasic.Tests.InteractionTests.GetSetting
-
-####################################################################
 ##  System.Collections.Specialized.Tests
 ####################################################################
 
