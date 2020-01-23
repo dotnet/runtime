@@ -7186,12 +7186,13 @@ interp_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_sta
 {
 	g_assert (jit_tls);
 	ThreadContext *context = (ThreadContext*)jit_tls->interp_context;
-	g_assert (context);
-	*has_resume_state = context->has_resume_state;
-	if (context->has_resume_state) {
-		*interp_frame = context->handler_frame;
-		*handler_ip = (gpointer)context->handler_ip;
-	}
+
+	*has_resume_state = context ? context->has_resume_state : FALSE;
+	if (!*has_resume_state)
+		return;
+
+	*interp_frame = context->handler_frame;
+	*handler_ip = (gpointer)context->handler_ip;
 }
 
 /*
