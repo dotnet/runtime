@@ -1187,7 +1187,7 @@ static MonoClass*
 make_generic_param_class (MonoGenericParam *param)
 {
 	MonoClass *klass, **ptr;
-	int count, pos, i;
+	int count, pos, i, min_align;
 	MonoGenericParamInfo *pinfo = mono_generic_param_info (param);
 	MonoGenericContainer *container = mono_generic_param_owner (param);
 	g_assert_checked (container);
@@ -1260,13 +1260,12 @@ make_generic_param_class (MonoGenericParam *param)
 	/* We don't use type_token for VAR since only classes can use it (not arrays, pointer, VARs, etc) */
 	klass->sizes.generic_param_token = !is_anonymous ? pinfo->token : 0;
 
-	/*Init these fields to sane values*/
-	klass->min_align = 1;
 	/*
 	 * This makes sure the the value size of this class is equal to the size of the types the gparam is
 	 * constrained to, the JIT depends on this.
 	 */
-	klass->instance_size = MONO_ABI_SIZEOF (MonoObject) + mono_type_stack_size_internal (m_class_get_byval_arg (klass), NULL, TRUE);
+	klass->instance_size = MONO_ABI_SIZEOF (MonoObject) + mono_type_size (m_class_get_byval_arg (klass), &min_align);
+	klass->min_align = min_align;
 	mono_memory_barrier ();
 	klass->size_inited = 1;
 
@@ -3905,7 +3904,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 	MonoType *klass_byval_arg = m_class_get_byval_arg (klass);
 	if (klass_byval_arg->type == MONO_TYPE_VAR || klass_byval_arg->type == MONO_TYPE_MVAR)
-		instance_size = MONO_ABI_SIZEOF (MonoObject) + mono_type_stack_size_internal (klass_byval_arg, NULL, TRUE);
+		instance_size = MONO_ABI_SIZEOF (MonoObject) + mono_type_size (klass_byval_arg, &min_align);
 	else if (klass_byval_arg->type == MONO_TYPE_PTR)
 		instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
 

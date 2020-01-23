@@ -183,6 +183,8 @@ jobs:
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+      - name: _PortableBuild
+        value: true
 
     - name: BuildArguments
       value: >-
