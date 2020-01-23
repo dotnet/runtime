@@ -6153,9 +6153,9 @@ protected:
         unsigned csdDefWtCnt; // weighted def count
         unsigned csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
-        GenTree*    csdTree;  // treenode containing the 1st occurance
-        Statement*  csdStmt;  // stmt containing the 1st occurance
-        BasicBlock* csdBlock; // block containing the 1st occurance
+        GenTree*    csdTree;  // treenode containing the 1st occurrence
+        Statement*  csdStmt;  // stmt containing the 1st occurrence
+        BasicBlock* csdBlock; // block containing the 1st occurrence
 
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
