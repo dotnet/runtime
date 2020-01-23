@@ -39,7 +39,7 @@ namespace System.IO.Ports
                           Directory.Exists(entry.FullName + "/device/of_node"))) ||
                         (!isTtyS && Directory.Exists(entry.FullName + "/device/tty")) ||
                         Directory.Exists(sysUsbDir + entry.Name) ||
-                        isTtyGS)
+                        (isTtyGS && (File.Exists(entry.FullName + "/dev"))))
                     {
                         string deviceName = devDir + entry.Name;
                         if (File.Exists(deviceName))
