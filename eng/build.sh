@@ -192,5 +192,4 @@ if [ ${#actInt[@]} -eq 0 ]; then
 fi
 
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
-echo $arguments
 "$scriptroot/common/build.sh" $arguments
