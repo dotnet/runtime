@@ -6,13 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Collections.Concurrent.Tests
-####################################################################
-
-# fails only with release mono
--nomethod System.Collections.Concurrent.Tests.ConcurrentQueueTests.ReferenceTypes_NulledAfterDequeue
-
-####################################################################
 ##  System.Diagnostics.Tracing.Tests
 ####################################################################
 
