@@ -13,13 +13,6 @@
 -nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrix_InvalidFlags_ThrowsArgumentException
 
 ####################################################################
-##  System.IO.Tests
-####################################################################
-
-# flaky test (The process cannot access the file ...)
--nomethod System.IO.Tests.*.CopyFileWithData_MemberData
-
-####################################################################
 ##  System.Linq.Expressions.Tests
 ####################################################################
 
