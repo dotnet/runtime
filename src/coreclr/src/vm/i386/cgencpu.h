@@ -579,19 +579,6 @@ protected:
 
     CallCountingStub() = default;
 
-    template<class T> static INT_PTR GetRelativeOffset(const T *relRef, PCODE target)
-    {
-        WRAPPER_NO_CONTRACT;
-        static_assert_no_msg(sizeof(T) != 0);
-        static_assert_no_msg(sizeof(T) <= sizeof(void *));
-        static_assert_no_msg((sizeof(T) & (sizeof(T) - 1)) == 0); // is a power of 2
-        _ASSERTE(relRef != nullptr);
-
-        TADDR targetAddress = PCODEToPINSTR(target);
-        _ASSERTE(targetAddress != NULL);
-        return (INT_PTR)targetAddress - (INT_PTR)(relRef + 1);
-    }
-
 public:
     static const CallCountingStub *From(TADDR stubIdentifyingToken);
 

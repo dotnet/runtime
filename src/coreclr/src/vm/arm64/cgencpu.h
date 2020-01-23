@@ -839,12 +839,7 @@ public:
 
 public:
     PTR_CallCount GetRemainingCallCountCell() const;
-
-    PCODE GetTargetForMethod() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_targetForMethod;
-    }
+    PCODE GetTargetForMethod() const;
 
     DISABLE_COPY(CallCountingStub);
 };
@@ -920,7 +915,11 @@ public:
         return dac_cast<PTR_CallCountingStubShort>(callCountingStub);
     }
 
-    PCODE GetTargetForMethod() const;
+    PCODE GetTargetForMethod() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_targetForMethod;
+    }
 
     friend CallCountingStub;
     DISABLE_COPY(CallCountingStubShort);
