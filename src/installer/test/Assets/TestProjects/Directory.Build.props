@@ -4,6 +4,10 @@
   <PropertyGroup>
     <RestorePackagesPath>$(TestRestorePackagesPath)</RestorePackagesPath>
     <RestoreNoCache>true</RestoreNoCache>
+
+    <!-- Default AssemblyVersion for test projects. We need to set it as it is set for all projects
+         in Versions.props to match our product version scheme and test projects are sensitive to assembly versions -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
 </Project>

@@ -10,10 +10,6 @@
     <InternalNupkgCacheDir>$(ArtifactsObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>$(NetCoreAppCurrent)</TestInfraTargetFramework>
-
-    <!-- Default AssemblyVersion for test projects. We need to set it as it is set for all projects
-         in Versions.props to match our product version scheme -->
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup>
