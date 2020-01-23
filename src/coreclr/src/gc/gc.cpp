@@ -2825,8 +2825,6 @@ BOOL    gc_heap::bgc_thread_running;
 
 CLRCriticalSection gc_heap::bgc_threads_timeout_cs;
 
-GCEvent gc_heap::gc_lh_block_event;
-
 #endif //BACKGROUND_GC
 
 #ifdef MARK_LIST
@@ -16542,8 +16540,6 @@ void gc_heap::init_background_gc ()
             background_saved_lowest_address,
             background_saved_highest_address));
     }
-
-    gc_lh_block_event.Reset();
 }
 
 #endif //BACKGROUND_GC
@@ -28352,36 +28348,18 @@ cleanup:
 
 BOOL gc_heap::create_bgc_thread_support()
 {
-    BOOL ret = FALSE;
     uint8_t** parr;
-
-    if (!gc_lh_block_event.CreateManualEventNoThrow(FALSE))
-    {
-        goto cleanup;
-    }
 
     //needs to have room for enough smallest objects fitting on a page
     parr = new (nothrow) uint8_t*[1 + OS_PAGE_SIZE / MIN_OBJECT_SIZE];
     if (!parr)
     {
-        goto cleanup;
+        return FALSE;
     }
 
     make_c_mark_list (parr);
 
-    ret = TRUE;
-
-cleanup:
-
-    if (!ret)
-    {
-        if (gc_lh_block_event.IsValid())
-        {
-            gc_lh_block_event.CloseEvent();
-        }
-    }
-
-    return ret;
+    return TRUE;
 }
 
 int gc_heap::check_for_ephemeral_alloc()
@@ -28466,7 +28444,6 @@ void gc_heap::kill_gc_thread()
     // In the secodn stage, we have the Loader lock and only one thread is
     // alive.  Hence we do not need to kill gc thread.
     background_gc_done_event.CloseEvent();
-    gc_lh_block_event.CloseEvent();
     bgc_start_event.CloseEvent();
     bgc_threads_timeout_cs.Destroy();
     bgc_thread = 0;
@@ -34152,10 +34129,6 @@ void gc_heap::background_sweep()
 
     //block concurrent allocation for large objects
     dprintf (3, ("lh state: planning"));
-    if (gc_lh_block_event.IsValid())
-    {
-        gc_lh_block_event.Reset();
-    }
 
     for (int i = 0; i <= (max_generation + 1); i++)
     {
@@ -34518,11 +34491,6 @@ void gc_heap::background_sweep()
     }
 
     disable_preemptive (true);
-
-    if (gc_lh_block_event.IsValid())
-    {
-        gc_lh_block_event.Set();
-    }
 
     add_saved_spinlock_info (true, me_release, mt_bgc_loh_sweep);
     leave_spin_lock (&more_space_lock_loh);
