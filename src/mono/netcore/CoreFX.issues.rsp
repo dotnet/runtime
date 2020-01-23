@@ -6,14 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Collections.Specialized.Tests
-####################################################################
-
-# TODO: Wrong exception
-# https://github.com/mono/mono/issues/14858
--nomethod System.Collections.Specialized.Tests.NameValueCollectionCtorTests.Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException
-
-####################################################################
 ##  System.Collections.Concurrent.Tests
 ####################################################################
 
