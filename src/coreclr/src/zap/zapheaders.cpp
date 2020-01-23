@@ -235,7 +235,7 @@ void ZapWin32ResourceDirectory::Save(ZapWriter * pZapWriter)
     }
     pZapWriter->Write(&directory, sizeof(IMAGE_RESOURCE_DIRECTORY));
 
-    // Offsets are based from the begining of the resources blob (see PE format documentation)
+    // Offsets are based from the beginning of the resources blob (see PE format documentation)
     DWORD dataEntryRVA = this->GetRVA() - m_pWin32ResourceSection->GetRVA()
         + sizeof(IMAGE_RESOURCE_DIRECTORY) +
         (DWORD)m_entries.size() * sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY);
@@ -247,7 +247,7 @@ void ZapWin32ResourceDirectory::Save(ZapWriter * pZapWriter)
 
         if (entry.m_nameOrIdIsString)
         {
-            // Offsets are based from the begining of the resources blob (see PE format documentation)
+            // Offsets are based from the beginning of the resources blob (see PE format documentation)
             dirEntry.NameOffset = ((ZapWin32ResourceString*)(entry.m_pNameOrId))->GetRVA() - m_pWin32ResourceSection->GetRVA();
             dirEntry.NameIsString = true;
         }
@@ -259,7 +259,7 @@ void ZapWin32ResourceDirectory::Save(ZapWriter * pZapWriter)
 
         if (entry.m_dataIsSubDirectory)
         {
-            // Offsets are based from the begining of the resources blob (see PE format documentation)
+            // Offsets are based from the beginning of the resources blob (see PE format documentation)
             dirEntry.OffsetToDirectory = entry.m_pDataOrSubDirectory->GetRVA() - m_pWin32ResourceSection->GetRVA();
             dirEntry.DataIsDirectory = true;
         }

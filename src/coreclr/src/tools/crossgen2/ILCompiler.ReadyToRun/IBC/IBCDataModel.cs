@@ -436,7 +436,7 @@ namespace ILCompiler.IBC
     public enum BlobType : int
     {
         // IMPORTANT: Keep the first four enums together in the same order and at the
-        //  very begining of this enum.  See MetaModelPub.h for the order
+        //  very beginning of this enum.  See MetaModelPub.h for the order
 
         MetadataStringPool = 0,
         MetadataGuidPool = 1,
