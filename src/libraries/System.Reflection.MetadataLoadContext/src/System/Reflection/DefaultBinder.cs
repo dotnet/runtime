@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.TypeLoading;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -230,7 +231,8 @@ namespace System
                 paramOrder[i] = i;
             for (i = 1; i < curIdx; i++)
             {
-                int newMin = FindMostSpecificType(candidates[currentMin].PropertyType, candidates[i].PropertyType, returnType!);
+                Debug.Assert(returnType != null);
+                int newMin = FindMostSpecificType(candidates[currentMin].PropertyType, candidates[i].PropertyType, returnType);
                 if (newMin == 0 && indexes != null)
                     newMin = FindMostSpecific(
                         candidates[currentMin].GetIndexParameters(),
