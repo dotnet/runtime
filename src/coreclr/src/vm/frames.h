@@ -1018,7 +1018,7 @@ protected:
 // TransitionFrames for exceptions
 //-----------------------------------------------------------------------
 
-// The define USE_FEF controls how this class is used.  Look for occurances
+// The define USE_FEF controls how this class is used.  Look for occurrences
 //  of USE_FEF.
 
 class FaultingExceptionFrame : public Frame

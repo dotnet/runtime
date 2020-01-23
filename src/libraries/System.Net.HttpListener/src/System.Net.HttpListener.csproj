@@ -189,28 +189,13 @@
       <Link>Common\Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.CancelIoEx.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.CancelIoEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.FreeLibrary.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.LoadLibraryEx.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
-      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs">
-      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
-      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.Constants.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>

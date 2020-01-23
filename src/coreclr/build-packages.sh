@@ -12,12 +12,12 @@ usage()
 
 initDistroRid()
 {
-    source ${__ProjectRoot}/init-distro-rid.sh
+    source $__RepoRootDir/eng/native/init-distro-rid.sh
 
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
-    if (( ${__CrossBuild} == 1 )); then
+    if (( __CrossBuild == 1 )); then
         passedRootfsDir=${ROOTFS_DIR}
     fi
 

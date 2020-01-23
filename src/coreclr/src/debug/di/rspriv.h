@@ -4786,7 +4786,7 @@ public:
                           CordbType ** ppResultType);
 
     // Some derived constructors...  Use this one if the type is definitely not
-    // a paramterized type, e.g. to implement functions on the API where types cannot
+    // a parameterized type, e.g. to implement functions on the API where types cannot
     // be parameterized.
     static HRESULT MkUnparameterizedType(CordbAppDomain *appdomain, CorElementType et, CordbClass *cl, CordbType **ppType);
 

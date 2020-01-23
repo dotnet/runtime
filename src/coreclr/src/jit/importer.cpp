@@ -13063,7 +13063,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 if (tiVerificationNeeded)
                 {
-                    // Dup could start the begining of delegate creation sequence, remember that
+                    // Dup could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 1;
                     impStackTop(0);
                 }
@@ -13384,7 +13384,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (tiVerificationNeeded)
                 {
-                    // LDFTN could start the begining of delegate creation sequence, remember that
+                    // LDFTN could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 2;
 
                     // check any constraints on the callee's class and type parameters

@@ -45,7 +45,7 @@ public:
     virtual void ResetState() = 0;
     virtual BOOL IsRequestPending() = 0;
 
-	//This functions marks the begining of requests queued for the domain.
+    //This functions marks the beginning of requests queued for the domain.
     //It needs to notify the scheduler of work-arrival among other things.
     virtual void SetAppDomainRequestsActive() = 0;
 

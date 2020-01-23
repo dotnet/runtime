@@ -33,9 +33,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
-    <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
