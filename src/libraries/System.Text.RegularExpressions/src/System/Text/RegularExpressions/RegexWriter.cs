@@ -135,7 +135,7 @@ namespace System.Text.RegularExpressions
             CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
             RegexBoyerMoore? bmPrefix = null;
-            if (prefix.Prefix.Length > 1) // if it's == 1, we're better off using fcPrefix
+            if (prefix.Prefix.Length > 1 && prefix.Prefix.Length <= RegexBoyerMoore.MaxLimit) // if it's <= 1 || > MaxLimit, perf is better using fcPrefix
             {
                 bmPrefix = new RegexBoyerMoore(prefix.Prefix, prefix.CaseInsensitive, rtl, culture);
             }
