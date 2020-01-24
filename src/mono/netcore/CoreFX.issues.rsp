@@ -16,10 +16,6 @@
 ##  System.Net.Http.Functional.Tests
 ####################################################################
 
-# TODO: Crashes runtime inside Interop.Http.MultiPerform (marshalling issue?)
-# https://github.com/mono/mono/issues/15005
--nomethod *PlatformHandler*
-
 # Works, but may trigger UI!
 # NOTE: KEEPING THIS HERE BUT COMMENTED OUT - in the event the UI is shown (wasn't for me)
 #-nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test.SetDelegate_ConnectionSucceeds
