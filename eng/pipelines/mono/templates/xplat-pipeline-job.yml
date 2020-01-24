@@ -9,6 +9,7 @@ parameters:
   liveLibrariesBuildConfig: ''
   strategy: ''
   pool: ''
+  llvm: ''
 
   # arcade-specific parameters
   condition: true
@@ -33,6 +34,7 @@ jobs:
     container: ${{ parameters.container }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
+    llvm: ${{ parameters.llvm }}
 
     # arcade-specific parameters
     condition: and(succeeded(), ${{ parameters.condition }})

@@ -73,7 +73,7 @@
 
   <Target Name="Restore">
     <MSBuild Projects="$(MonoProjectRoot)netcore\nuget\packages.builds" Targets="Restore" />
-    <MSBuild Condition=" '$(MonoEnableLLVM)' != 'false' " Projects="$(MonoProjectRoot)llvm\llvm-init.proj" Targets="Restore" Properties="MonoObjDir=$(MonoObjDir)" />
+    <MSBuild Condition=" '$(MonoEnableLLVM)' == true " Projects="$(MonoProjectRoot)llvm\llvm-init.proj" Targets="Restore" Properties="MonoObjDir=$(MonoObjDir)" />
   </Target>
 
   <Target Name="Pack">

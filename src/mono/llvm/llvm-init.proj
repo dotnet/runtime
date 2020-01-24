@@ -5,12 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(BuildOS)' == 'Linux'" Include="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)" GeneratePathProperty="True" />
-    <PackageReference Condition="'$(BuildOS)' == 'Linux'" Include="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)" GeneratePathProperty="True" />
-    <PackageReference Condition="'$(BuildOS)' == 'Windows_NT'" Include="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)" GeneratePathProperty="True" />
-    <PackageReference Condition="'$(BuildOS)' == 'Windows_NT'" Include="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)" GeneratePathProperty="True" />
-    <PackageReference Condition="'$(BuildOS)' == 'OSX'" Include="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)" GeneratePathProperty="True" />
-    <PackageReference Condition="'$(BuildOS)' == 'OSX'" Include="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(OSGroup)' == 'Linux'" Include="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(OSGroup)' == 'Linux'" Include="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(OSGroup)' == 'Windows_NT'" Include="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(OSGroup)' == 'Windows_NT'" Include="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(OSGroup)' == 'OSX'" Include="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion)" GeneratePathProperty="True" />
+    <PackageReference Condition="'$(OSGroup)' == 'OSX'" Include="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)" GeneratePathProperty="True" />
   </ItemGroup>
 
   <ItemGroup>
