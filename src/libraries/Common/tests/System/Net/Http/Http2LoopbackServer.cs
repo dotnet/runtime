@@ -94,7 +94,7 @@ namespace System.Net.Test.Common
 
         public async Task<Http2LoopbackConnection> EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
         {
-            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync().ConfigureAwait(false);
+            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync(settingsEntries).ConfigureAwait(false);
             return connection;
         }
 
