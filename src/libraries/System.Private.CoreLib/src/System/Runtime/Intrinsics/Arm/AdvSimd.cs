@@ -1965,99 +1965,99 @@ namespace System.Runtime.Intrinsics.Arm
 
         /// <summary>
         /// uint8x8_t vcgt_u8 (uint8x8_t a, uint8x8_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U8 Dd, Dn, Dm
+        ///   A64: CMHI Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> CompareGreaterThan(Vector64<byte> left, Vector64<byte> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// int16x4_t vcgt_s16 (int16x4_t a, int16x4_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint16x4_t vcgt_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VCGT.S16 Dd, Dn, Dm
+        ///   A64: CMGT Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<short> CompareGreaterThan(Vector64<short> left, Vector64<short> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// int32x2_t vcgt_s32 (int32x2_t a, int32x2_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint32x2_t vcgt_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VCGT.S32 Dd, Dn, Dm
+        ///   A64: CMGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<int> CompareGreaterThan(Vector64<int> left, Vector64<int> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// int8x8_t vcgt_s8 (int8x8_t a, int8x8_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint8x8_t vcgt_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VCGT.S8 Dd, Dn, Dm
+        ///   A64: CMGT Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> CompareGreaterThan(Vector64<sbyte> left, Vector64<sbyte> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// float32x2_t vcgt_f32 (float32x2_t a, float32x2_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: FCMGT Dd, Dn, Dm
+        /// uint32x2_t vcgt_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VCGT.F32 Dd, Dn, Dm
+        ///   A64: FCMGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> CompareGreaterThan(Vector64<float> left, Vector64<float> right) => CompareGreaterThan(left, right);
 
         /// <summary>
         /// uint16x4_t vcgt_u16 (uint16x4_t a, uint16x4_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U16 Dd, Dn, Dm
+        ///   A64: CMHI Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<ushort> CompareGreaterThan(Vector64<ushort> left, Vector64<ushort> right) => CompareGreaterThan(left, right);
 
         /// <summary>
         /// uint32x2_t vcgt_u32 (uint32x2_t a, uint32x2_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U32 Dd, Dn, Dm
+        ///   A64: CMHI Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<uint> CompareGreaterThan(Vector64<uint> left, Vector64<uint> right) => CompareGreaterThan(left, right);
 
         /// <summary>
         /// uint8x16_t vcgtq_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U8 Qd, Qn, Qm
+        ///   A64: CMHI Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> CompareGreaterThan(Vector128<byte> left, Vector128<byte> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// int16x8_t vcgtq_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint16x8_t vcgtq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VCGT.S16 Qd, Qn, Qm
+        ///   A64: CMGT Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<short> CompareGreaterThan(Vector128<short> left, Vector128<short> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// int32x4_t vcgtq_s32 (int32x4_t a, int32x4_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint32x4_t vcgtq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VCGT.S32 Qd, Qn, Qm
+        ///   A64: CMGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<int> CompareGreaterThan(Vector128<int> left, Vector128<int> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// int8x16_t vcgtq_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint8x16_t vcgtq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VCGT.S8 Qd, Qn, Qm
+        ///   A64: CMGT Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> CompareGreaterThan(Vector128<sbyte> left, Vector128<sbyte> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// float32x4_t vcgtq_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: FCMGT Vd, Vn, Vm
+        /// uint32x4_t vcgtq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VCGT.F32 Qd, Qn, Qm
+        ///   A64: FCMGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> CompareGreaterThan(Vector128<float> left, Vector128<float> right) => CompareGreaterThan(left, right);
 
         /// <summary>
         /// uint16x8_t vcgtq_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U16 Qd, Qn, Qm
+        ///   A64: CMHI Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<ushort> CompareGreaterThan(Vector128<ushort> left, Vector128<ushort> right) => CompareGreaterThan(left, right);
 
         /// <summary>
         /// uint32x4_t vcgtq_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U32 Qd, Qn, Qm
+        ///   A64: CMHI Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> CompareGreaterThan(Vector128<uint> left, Vector128<uint> right) => CompareGreaterThan(left, right);
 
