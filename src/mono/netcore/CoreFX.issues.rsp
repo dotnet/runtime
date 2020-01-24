@@ -179,31 +179,12 @@
 ##  System.Runtime.Tests
 ####################################################################
 
-# https://github.com/mono/mono/issues/14291 incorrect line numbers
-# See https://github.com/mono/mono/issues/15140 and https://github.com/mono/mono/issues/15141
--nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineSameMethod
--nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineOtherMethod
-
-# RuntimeAssembly.IsCollectible is not implemented yet
-# Implementation task https://github.com/mono/mono/issues/15142
--nomethod System.Reflection.Tests.IsCollectibleTests.*
-
-# Mono ignores [Optional] attribute defined on parameters in delegates
-# https://github.com/mono/mono/issues/15148
--nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter_WithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
-
 # mono doesn't support termination signals, the test kills a process via libc's kill(pid)
 # and expects it to trigger domain.ProcessExit event
 -nomethod System.Tests.ExitCodeTests.SigTermExitCode
 
 # error: Invalid IL code in (wrapper dynamic-method) object:<xsl:apply-templates> (System.Xml.Xsl.Runtime.XmlQueryRuntime,System.Xml.XPath.XPathNavigator,double): IL_0179: ret
 -nomethod System.Tests.Types.VoidTests.IsByRef_Get_ReturnsExpected
-
-# throws ArgumentException
-# https://github.com/mono/mono/issues/15152
--nomethod System.Reflection.Tests.PointerTests.PointerPropertyGetValue
 
 # GCSettings.LatencyMode is not implemented
 -nomethod System.Tests.GCTests.LatencyRoundtrips
