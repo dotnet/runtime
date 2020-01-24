@@ -16,9 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MsQuicPackage.win-x64" Version="1.0.5" >
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    <PackageReference Include="MsQuicPackage.win-x64" Version="1.0.9">
     </PackageReference>
   </ItemGroup>
 
