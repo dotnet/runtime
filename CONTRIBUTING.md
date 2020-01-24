@@ -51,7 +51,7 @@ We use and recommend the following workflow:
 3. Create a branch off of master (`git checkout -b mybranch`).
     - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue.
     - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
-4. Make and commit your changes to your branch
+4. Make and commit your changes to your branch.
     - Please follow our [Commit Messages](#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
 6. Build the repository with your changes.
