@@ -13,46 +13,6 @@
 -nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrix_InvalidFlags_ThrowsArgumentException
 
 ####################################################################
-##  System.Linq.Expressions.Tests
-####################################################################
-
-# InvalidOperationException - Sequence contains no matching element
-# https://github.com/mono/mono/issues/14920
--nomethod System.Linq.Expressions.Tests.ArrayAccessTests.ArrayAccess_MultiDimensionalOf1
--nomethod System.Linq.Expressions.Tests.ArrayAccessTests.ArrayIndex_MultiDimensionalOf1
--nomethod System.Linq.Expressions.Tests.MemberAccessTests.Property_NoGetOrSetAccessors_ThrowsArgumentException
--nomethod System.Linq.Expressions.Tests.IndexExpressionTests.NoAccessorIndexedProperty
-
-# IndexOutOfRangeException
-# https://github.com/mono/mono/issues/14921
--nomethod System.Linq.Expressions.Tests.ArrayAccessTests.NonZeroBasedOneDimensionalArrayAccess
-
-# System.InvalidOperationException : Operation is not valid due to the current state of the object.
-# https://github.com/mono/mono/issues/14924
--nomethod System.Linq.Expressions.Tests.ExceptionHandlingExpressions.ExceptionThrownInFilter
-
-# legit test failure... Expected 4 / actual 0
-# https://github.com/mono/mono/issues/14925
--nomethod System.Linq.Expressions.Tests.ExceptionHandlingExpressions.ExpressionsUnwrapeExternallyThrownRuntimeWrappedException
-
-# Expected exception but none was thrown
-# https://github.com/mono/mono/issues/14927
--nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertySetterValueTypeNotMatchPropertyType
--nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertyGetReturnsWrongType
-
-# Expected ArgumentException got IndexOutOfRangeException https://github.com/mono/mono/issues/14930
--nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndex
--nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndexMethod
-
-# OOM Exception.  Weird
-# https://github.com/mono/mono/issues/14933
--nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.SingleNegativeBoundErrorMessage
-
-# Arithmetic operation resulted in an overflow.
-# https://github.com/mono/mono/issues/14934
--nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.MultipleNegativeBoundErrorMessage
-
-####################################################################
 ##  System.Linq.Parallel.Tests
 ####################################################################
 

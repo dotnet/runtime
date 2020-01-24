@@ -288,6 +288,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14933", TargetFrameworkMonikers.Mono)]
         public static void SingleNegativeBoundErrorMessage(bool useInterpreter)
         {
             string localizedMessage = null;
@@ -308,6 +309,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14934", TargetFrameworkMonikers.Mono)]
         public static void MultipleNegativeBoundErrorMessage(bool useInterpreter)
         {
             string localizedMessage = null;
