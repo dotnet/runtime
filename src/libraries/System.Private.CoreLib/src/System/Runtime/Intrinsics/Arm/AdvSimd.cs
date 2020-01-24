@@ -282,41 +282,47 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector64<ulong> CompareGreaterThanScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareGreaterThanScalar(left, right);
 
-            // /// <summary>
-            // /// float64x1_t vceq_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: CMGE Dd, Dn, Dm
-            // /// </summary>
-            // public static Vector64<double> CompareGreaterThanOrEqual(Vector64<double> left, Vector64<double> right) => CompareGreaterThanOrEqual(left, right);
-
-            // /// <summary>
-            // /// int64x1_t vcge_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMGE Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareGreaterThanOrEqual(Vector64<long> left, Vector64<long> right) => CompareGreaterThanOrEqual(left, right);
-
-            // /// <summary>
-            // /// uint64x1_t vceq_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMHS Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareGreaterThanOrEqual(Vector64<ulong> left, Vector64<ulong> right) => CompareGreaterThanOrEqual(left, right);
-
             /// <summary>
-            /// float64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: CMGE Vd, Vn, Vm
+            /// uint64x2_t vcgeq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FCMGE Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareGreaterThanOrEqual(left, right);
 
             /// <summary>
-            /// int64x2_t vcgeq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMGE Vd, Vn, Vm
+            /// uint64x2_t vcgeq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMGE Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareGreaterThanOrEqual(Vector128<long> left, Vector128<long> right) => CompareGreaterThanOrEqual(left, right);
 
             /// <summary>
-            /// uint64x2_t vceqq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMHS Vd, Vn, Vm
+            /// uint64x2_t vcgeq_u64 (uint64x2_t a, uint64x2_t b)
+            ///   A64: CMHS Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareGreaterThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareGreaterThanOrEqual(left, right);
+
+            /// <summary>
+            /// uint64x1_t vcge_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FCMGE Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> CompareGreaterThanOrEqualScalar(Vector64<double> left, Vector64<double> right) => CompareGreaterThanOrEqualScalar(left, right);
+
+            /// <summary>
+            /// uint64x1_t vcge_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMGE Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<long> CompareGreaterThanOrEqualScalar(Vector64<long> left, Vector64<long> right) => CompareGreaterThanOrEqualScalar(left, right);
+
+            /// <summary>
+            /// uint32_t vcges_f32 (float32_t a, float32_t b)
+            ///   A64: FCMGE Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> CompareGreaterThanOrEqualScalar(Vector64<float> left, Vector64<float> right) => CompareGreaterThanOrEqualScalar(left, right);
+
+            /// <summary>
+            /// uint64x1_t vcge_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMHS Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareGreaterThanOrEqualScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareGreaterThanOrEqualScalar(left, right);
 
             // /// <summary>
             // /// float64x1_t vclt_f64 (float64x1_t a, float64x1_t b)
