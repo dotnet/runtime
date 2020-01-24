@@ -13,13 +13,6 @@
 -nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrix_InvalidFlags_ThrowsArgumentException
 
 ####################################################################
-##  System.Linq.Parallel.Tests
-####################################################################
-
-# fails w/ an ArgumentException: Arg_ObjObjEx https://github.com/mono/mono/issues/14956
--nomethod System.Linq.Parallel.Tests.PlinqModesTests.WithExecutionMode_Multiple
-
-####################################################################
 ##  System.Memory.Tests
 ####################################################################
 
