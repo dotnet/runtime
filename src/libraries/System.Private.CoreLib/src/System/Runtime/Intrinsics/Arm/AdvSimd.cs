@@ -121,6 +121,18 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> AbsoluteDifference(Vector128<double> left, Vector128<double> right) => AbsoluteDifference(left, right);
 
             /// <summary>
+            /// float64x1_t vabd_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FABD Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> AbsoluteDifferenceScalar(Vector64<double> left, Vector64<double> right) => AbsoluteDifferenceScalar(left, right);
+
+            /// <summary>
+            /// float32_t vabds_f32 (float32_t a, float32_t b)
+            ///   A64: FABD Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> AbsoluteDifferenceScalar(Vector64<float> left, Vector64<float> right) => AbsoluteDifferenceScalar(left, right);
+
+            /// <summary>
             /// float64x2_t vaddq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FADD Vd.2D, Vn.2D, Vm.2D
             /// </summary>
