@@ -34,6 +34,12 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector128<ulong> Abs(Vector128<long> value) { throw new PlatformNotSupportedException(); }
 
+            /// <summary>
+            /// int64x1_t vabs_s64 (int64x1_t a)
+            ///   A64: ABS Dd, Dn
+            /// </summary>
+            public static Vector64<ulong> AbsScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
             // /// <summary>
             // /// float64x1_t vcagt (float64x1_t a, float64x1_t b)
             // ///   A64: FACGT Vd, Vn, Vm
@@ -87,12 +93,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FABD Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> AbsoluteDifference(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// int64x1_t vabs_s64 (int64x1_t a)
-            // ///   A64: ABS Dd, Dn
-            // /// </summary>
-            // public static Vector64<ulong> AbsScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vaddq_f64 (float64x2_t a, float64x2_t b)
@@ -1022,13 +1022,6 @@ namespace System.Runtime.Intrinsics.Arm
         }
 
         /// <summary>
-        /// int8x8_t vabs_s8 (int8x8_t a)
-        ///   A32: VABS.S8 Dd, Dm
-        ///   A64: ABS Vd.8B, Vn.8B
-        /// </summary>
-        public static Vector64<byte> Abs(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int16x4_t vabs_s16 (int16x4_t a)
         ///   A32: VABS.S16 Dd, Dm
         ///   A64: ABS Vd.4H, Vn.4H
@@ -1043,18 +1036,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<uint> Abs(Vector64<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int8x8_t vabs_s8 (int8x8_t a)
+        ///   A32: VABS.S8 Dd, Dm
+        ///   A64: ABS Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<byte> Abs(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float32x2_t vabs_f32 (float32x2_t a)
         ///   A32: VABS.F32 Dd, Dm
         ///   A64: FABS Vd.2S, Vn.2S
         /// </summary>
         public static Vector64<float> Abs(Vector64<float> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int8x16_t vabsq_s8 (int8x16_t a)
-        ///   A32: VABS.S8 Qd, Qm
-        ///   A64: ABS Vd.16B, Vn.16B
-        /// </summary>
-        public static Vector128<byte> Abs(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vabsq_s16 (int16x8_t a)
@@ -1071,11 +1064,33 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> Abs(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int8x16_t vabsq_s8 (int8x16_t a)
+        ///   A32: VABS.S8 Qd, Qm
+        ///   A64: ABS Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<byte> Abs(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float32x4_t vabsq_f32 (float32x4_t a)
         ///   A32: VABS.F32 Qd, Qm
         ///   A64: FABS Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<float> Abs(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vabs_f64 (float64x1_t a)
+        ///   A32: VABS.F64 Dd, Dm
+        ///   A64: FABS Dd, Dn
+        /// </summary>
+        public static Vector64<double> AbsScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vabss_f32 (float32_t a)
+        ///   A32: VABS.F32 Sd, Sm
+        ///   A64: FABS Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> AbsScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vcagt (float32x2_t a, float32x2_t b)
@@ -1230,19 +1245,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UABD Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> AbsoluteDifference(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// float64x1_t vabs_f64 (float64x1_t a)
-        // ///   A32: VABS.F64 Dd, Dm
-        // ///   A64: FABS Dd, Dn
-        // /// </summary>
-        // public static Vector64<double> AbsScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   A32: VABS.F32 Sd, Sm
-        ///   A64: FABS Sd, Sn
-        /// </summary>
-        public static Vector64<float> AbsScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vadd_u8 (uint8x8_t a, uint8x8_t b)
