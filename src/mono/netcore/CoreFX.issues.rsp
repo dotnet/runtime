@@ -24,13 +24,6 @@
 #-nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test.AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable
 
 ####################################################################
-##  System.Net.Sockets.Tests
-####################################################################
-
-# flaky test
--nomethod System.Net.Sockets.Tests.SocketOptionNameTest.MulticastInterface_Set_AnyInterface_Succeeds
-
-####################################################################
 ##  System.Reflection.Emit.ILGeneration.Tests
 ####################################################################
 
