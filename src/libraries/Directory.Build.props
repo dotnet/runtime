@@ -13,17 +13,6 @@
   <!-- Import configuration data model -->
   <Import Project="$(RepositoryEngineeringDir)configurations/properties.props" />
 
-  <PropertyGroup>
-    <ConfigurationGroup>Debug</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(Configuration)' != ''">$(Configuration)</ConfigurationGroup>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(Configuration)' != ''">
-    <!-- When building in VS setup the ConfigurationGroup based on the given Configuration -->
-    <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
-    <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
-  </PropertyGroup>
-
   <!-- Platform detection -->
   <PropertyGroup>
     <!--
@@ -64,10 +53,10 @@
     <RuntimeOS Condition="'$(OSGroup)' == 'WebAssembly'">$(OSGroup.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
-    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(BuildTargetFramework)-$(BuildOS)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
+    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(BuildTargetFramework)-$(BuildOS)-$(Configuration)-$(ArchGroup)</BuildConfiguration>
     <!-- Versionless netcoreapp and netfx needs to be removed after .yml scripts are finalized.-->
-    <BuildConfiguration Condition="'$(TargetGroup)' == 'netcoreapp'">$(NetCoreAppCurrent)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
-    <BuildConfiguration Condition="'$(TargetGroup)' == 'netfx'">$(NetFrameworkCurrent)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
+    <BuildConfiguration Condition="'$(TargetGroup)' == 'netcoreapp'">$(NetCoreAppCurrent)-$(OSGroup)-$(Configuration)-$(ArchGroup)</BuildConfiguration>
+    <BuildConfiguration Condition="'$(TargetGroup)' == 'netfx'">$(NetFrameworkCurrent)-$(OSGroup)-$(Configuration)-$(ArchGroup)</BuildConfiguration>
 
     <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' and '$(BuildConfigurations)' == ''">package</BuildConfigurations>
@@ -145,7 +134,7 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(BuildOS)-$(ConfigurationGroup)-$(ArchGroup)'))</NativeBinDir>
+    <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(BuildOS)-$(Configuration)-$(ArchGroup)'))</NativeBinDir>
 
     <PkgDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'pkg'))</PkgDir>
   </PropertyGroup>
@@ -249,7 +238,7 @@
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
-    <When Condition="'$(ConfigurationGroup)' == 'Debug'">
+    <When Condition="'$(Configuration)' == 'Debug'">
       <PropertyGroup>
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
@@ -257,7 +246,7 @@
         <DefineConstants>$(DefineConstants),TRACE,DEBUG</DefineConstants>
       </PropertyGroup>
     </When>
-    <When Condition="'$(ConfigurationGroup)' == 'Release'">
+    <When Condition="'$(Configuration)' == 'Release'">
       <PropertyGroup>
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
@@ -316,9 +305,9 @@
     <ILAsmToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ilasm'))</ILAsmToolPath>
 
     <!-- Helix properties -->
-    <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
-    <AnyOSPlatformConfig>AnyOS.AnyCPU.$(ConfigurationGroup)</AnyOSPlatformConfig>
-    <UnixPlatformConfig>Unix.$(Platform).$(ConfigurationGroup)</UnixPlatformConfig>
+    <OSPlatformConfig>$(OSGroup).$(Platform).$(Configuration)</OSPlatformConfig>
+    <AnyOSPlatformConfig>AnyOS.AnyCPU.$(Configuration)</AnyOSPlatformConfig>
+    <UnixPlatformConfig>Unix.$(Platform).$(Configuration)</UnixPlatformConfig>
     <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
     <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
@@ -344,9 +333,9 @@
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
 
   <PropertyGroup Condition="'$(IsReferenceAssembly)' != 'true'">
-    <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)\</OutputPath>
+    <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(Configuration)\</OutputPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)</IntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(OriginalTargetFramework)-$(Configuration)</IntermediateOutputPath>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 

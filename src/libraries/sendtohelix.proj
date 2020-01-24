@@ -14,13 +14,13 @@
     <EnableXunitReporter Condition="'$(TargetGroup)' != 'AllConfigurations'">true</EnableXunitReporter>
     
     <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildConfiguration).zip</TestArchiveRuntimeFile>
-    <TestArchiveRuntimeFile Condition="'$(TargetGroup)' == 'AllConfigurations'">$(TestArchiveRuntimeRoot)packages-testPayload-$(ConfigurationGroup).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(TargetGroup)' == 'AllConfigurations'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
 
     <!-- The helix runtime payload and the tests to run -->
     <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
     <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
 
-    <HelixConfiguration>$(ConfigurationGroup)</HelixConfiguration>
+    <HelixConfiguration>$(Configuration)</HelixConfiguration>
     <HelixArchitecture>$(ArchGroup)</HelixArchitecture>
 
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the

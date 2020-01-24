@@ -2,7 +2,7 @@
   <!-- Make sure that the DebuggableAttribute is set properly. -->
   <PropertyGroup>
     <DebugOptimization>IMPL</DebugOptimization>
-    <DebugOptimization Condition="'$(ConfigurationGroup)' == 'Release'">OPT</DebugOptimization>
+    <DebugOptimization Condition="'$(Configuration)' == 'Release'">OPT</DebugOptimization>
   </PropertyGroup>
   <PropertyGroup>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
