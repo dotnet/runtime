@@ -74,7 +74,7 @@ jobs:
 
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
-          - _extraHelixArguments: /p:PackageTesting=true
+          - _extraHelixArguments: /p:BuildAllConfigurations=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - _skipTestHostCopy: true
