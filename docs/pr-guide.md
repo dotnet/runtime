@@ -3,7 +3,7 @@
 ## Contributing Rules
 All contributions to dotnet/runtime repo are made via pull requests (PRs) rather than through direct commits. The pull requests are reviewed and merged by the repository maintainers after a review and approval from at least one area maintainer.
 
-To merge pull requests, you must have write permissions in the repository. If you are a member of the .NET team or have an official partnership you can request the access [here](https://repos.opensource.microsoft.com/dotnet/teams/dotnet-corefx/join/).
+To merge pull requests, you must have write permissions in the repository. If you are a member of the .NET team or have an official partnership you can request access [here](https://repos.opensource.microsoft.com/dotnet/teams/dotnet-corefx/join/).
 
 ## Quick Code Review Rules
 
@@ -36,4 +36,3 @@ If for whatever reason you would like to move your pull request back to in-progr
 
 ## Old Pull Request Policy
 From time to time we will review older PR's (> 1 month) and check them for relevance. If we find the PR is inactive or no longer applies, we will close it. As the PR owner, you can simply reopen it if you feel your closed PR needs our attention.
-
