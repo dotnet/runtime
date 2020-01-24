@@ -2,7 +2,7 @@
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
   <PropertyGroup>
-    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard2.0-$(OSGroup)-$(Configuration)-$(ArchGroup);netstandard2.1-$(OSGroup)-$(Configuration)</AdditionalBuildConfigurations>
+    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);netstandard2.0;netstandard2.1</AdditionalBuildTargetFrameworks>    
   </PropertyGroup>
 
   <ItemGroup>

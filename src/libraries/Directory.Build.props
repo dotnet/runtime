@@ -10,9 +10,6 @@
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
   </PropertyGroup>
 
-  <!-- Import configuration data model -->
-  <Import Project="$(RepositoryEngineeringDir)configurations/properties.props" />
-
   <!-- Platform detection -->
   <PropertyGroup>
     <!--
@@ -42,6 +39,7 @@
   
   <PropertyGroup>
     <OSGroup>$(TargetFrameworkSuffix)</OSGroup>
+    <RuntimeOS Condition="'$(RuntimeOS)' == ''">win10</RuntimeOS>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm'">arm</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm64'">arm64</ArchGroup>
@@ -335,7 +333,6 @@
     <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(Configuration)\</OutputPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(OriginalTargetFramework)-$(Configuration)</IntermediateOutputPath>
-    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
