@@ -2537,6 +2537,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector64<byte> LoadVector64(byte* address) => LoadVector64(address);
 
         /// <summary>
+        /// float64x1_t vld1_f64 (float64_t const * ptr)
+        ///   A32: VLD1.64 Dd, [Rn]
+        ///   A64: LD1 Vt.1D, [Xn]
+        /// </summary>
+        public static unsafe Vector64<double> LoadVector64(double* address) => LoadVector64(address);
+
+        /// <summary>
         /// int16x4_t vld1_s16 (int16_t const * ptr)
         ///   A32: VLD1.16 Dd, [Rn]
         ///   A64: LD1 Vt.4H, [Xn]
@@ -2549,6 +2556,13 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 Vt.2S, [Xn]
         /// </summary>
         public static unsafe Vector64<int> LoadVector64(int* address) => LoadVector64(address);
+
+        /// <summary>
+        /// int64x1_t vld1_s64 (int64_t const * ptr)
+        ///   A32: VLD1.64 Dd, [Rn]
+        ///   A64: LD1 Vt.1D, [Xn]
+        /// </summary>
+        public static unsafe Vector64<long> LoadVector64(long* address) => LoadVector64(address);
 
         /// <summary>
         /// int8x8_t vld1_s8 (int8_t const * ptr)
@@ -2577,6 +2591,13 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 Vt.2S, [Xn]
         /// </summary>
         public static unsafe Vector64<uint> LoadVector64(uint* address) => LoadVector64(address);
+
+        /// <summary>
+        /// uint64x1_t vld1_u64 (uint64_t const * ptr)
+        ///   A32: VLD1.64 Dd, [Rn]
+        ///   A64: LD1 Vt.1D, [Xn]
+        /// </summary>
+        public static unsafe Vector64<ulong> LoadVector64(ulong* address) => LoadVector64(address);
 
         /// <summary>
         /// uint8x16_t vld1q_u8 (uint8_t const * ptr)
