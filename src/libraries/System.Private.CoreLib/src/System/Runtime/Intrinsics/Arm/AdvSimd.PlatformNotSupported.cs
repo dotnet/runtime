@@ -2472,46 +2472,46 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> CompareTest(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vcls_s8 (int8x8_t a)
-        ///   A32: VCLS Dd, Dm
-        ///   A64: CLS Vd, Vn
-        /// </summary>
-        public static Vector64<sbyte> LeadingSignCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
-        ///   A32: VCLS Dd, Dm
-        ///   A64: CLS Vd, Vn
+        ///   A32: VCLS.S16 Dd, Dm
+        ///   A64: CLS Vd.4H, Vn.4H
         /// </summary>
         public static Vector64<short> LeadingSignCount(Vector64<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x2_t vcls_s32 (int32x2_t a)
-        ///   A32: VCLS Dd, Dm
-        ///   A64: CLS Vd, Vn
+        ///   A32: VCLS.S32 Dd, Dm
+        ///   A64: CLS Vd.2S, Vn.2S
         /// </summary>
         public static Vector64<int> LeadingSignCount(Vector64<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vclsq_s8 (int8x16_t a)
-        ///   A32: VCLS Qd, Qm
-        ///   A64: CLS Vd, Vn
+        /// int8x8_t vcls_s8 (int8x8_t a)
+        ///   A32: VCLS.S8 Dd, Dm
+        ///   A64: CLS Vd.8B, Vn.8B
         /// </summary>
-        public static Vector128<sbyte> LeadingSignCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector64<sbyte> LeadingSignCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vclsq_s16 (int16x8_t a)
-        ///   A32: VCLS Qd, Qm
-        ///   A64: CLS Vd, Vn
+        ///   A32: VCLS.S16 Qd, Qm
+        ///   A64: CLS Vd.8H, Vn.8H
         /// </summary>
         public static Vector128<short> LeadingSignCount(Vector128<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vclsq_s32 (int32x4_t a)
-        ///   A32: VCLS Qd, Qm
-        ///   A64: CLS Vd, Vn
+        ///   A32: VCLS.S32 Qd, Qm
+        ///   A64: CLS Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<int> LeadingSignCount(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vclsq_s8 (int8x16_t a)
+        ///   A32: VCLS.S8 Qd, Qm
+        ///   A64: CLS Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> LeadingSignCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vclz_s8 (int8x8_t a)
