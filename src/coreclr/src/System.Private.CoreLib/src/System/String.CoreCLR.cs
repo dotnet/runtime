@@ -26,7 +26,7 @@ namespace System
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public extern char this[int index]
         {
-            [System.Runtime.CompilerServices.Intrinsic]
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
@@ -40,7 +40,7 @@ namespace System
         //
         public extern int Length
         {
-            [System.Runtime.CompilerServices.Intrinsic]
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
