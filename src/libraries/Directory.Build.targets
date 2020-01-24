@@ -2,6 +2,8 @@
   <PropertyGroup>
     <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(BuildOS)</CoreCLROSGroup>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(ConfigurationGroup)</CoreCLRConfiguration>
+    <MonoOSGroup Condition="'$(MonoCLROSGroup)' == ''">$(BuildOS)</MonoOSGroup>
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(ConfigurationGroup)</MonoConfiguration>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.targets" />

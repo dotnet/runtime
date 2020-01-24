@@ -181,7 +181,7 @@ namespace System.IO
 
             Assert.Throws<ArgumentNullException>("directoryInfo", () =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, security);
                 }
@@ -199,7 +199,7 @@ namespace System.IO
 
             Assert.Throws<ArgumentNullException>("directorySecurity", () =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, null);
                 }
@@ -220,7 +220,7 @@ namespace System.IO
 
             Assert.Throws<UnauthorizedAccessException>(() =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, security);
                 }
@@ -265,7 +265,7 @@ namespace System.IO
 
             Assert.Throws<ArgumentNullException>("fileInfo", () =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
                 }
@@ -283,7 +283,7 @@ namespace System.IO
 
             Assert.Throws<ArgumentNullException>("fileSecurity", () =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, null);
                 }
@@ -304,7 +304,7 @@ namespace System.IO
 
             Assert.Throws<DirectoryNotFoundException>(() =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
                 }
@@ -326,7 +326,7 @@ namespace System.IO
 
             Assert.Throws<ArgumentOutOfRangeException>("mode", () =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, invalidMode, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, security); ;
                 }
@@ -347,7 +347,7 @@ namespace System.IO
 
             Assert.Throws<ArgumentOutOfRangeException>("share", () =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, invalidFileShare, DefaultBufferSize, FileOptions.None, security);
                 }
@@ -368,7 +368,7 @@ namespace System.IO
 
             Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, FileMode.Create, FileSystemRights.WriteData, FileShare.Read, invalidBufferSize, FileOptions.None, security);
                 }
@@ -395,7 +395,7 @@ namespace System.IO
 
             Assert.Throws<ArgumentException>(() =>
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     FileSystemAclExtensions.Create(info, mode, rights, FileShare.Read, DefaultBufferSize, FileOptions.None, security);
                 }

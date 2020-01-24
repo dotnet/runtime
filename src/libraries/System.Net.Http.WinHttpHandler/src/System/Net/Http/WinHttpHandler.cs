@@ -644,7 +644,8 @@ namespace System.Net.Http
             // Serialize entity-body (content) headers.
             if (requestMessage.Content != null)
             {
-                // TODO (#5523): Content-Length header isn't getting correctly placed using ToString()
+                // TODO https://github.com/dotnet/corefx/issues/5523:
+                // Content-Length header isn't getting correctly placed using ToString()
                 // This is a bug in HttpContentHeaders that needs to be fixed.
                 if (requestMessage.Content.Headers.ContentLength.HasValue)
                 {

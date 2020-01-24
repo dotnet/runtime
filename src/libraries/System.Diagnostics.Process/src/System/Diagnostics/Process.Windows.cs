@@ -791,7 +791,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                // If we dispose of our contained handle we'll be in a bad state. NetFX dealt with this
+                // If we dispose of our contained handle we'll be in a bad state. .NET Framework dealt with this
                 // by doing a try..finally around every usage of GetProcessHandle and only disposed if
                 // it wasn't our handle.
                 return new SafeProcessHandle(_processHandle.DangerousGetHandle(), ownsHandle: false);

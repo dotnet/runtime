@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                 Assert.Equal(CipherMode.CBC, s.Mode);
                 Assert.Equal(PaddingMode.PKCS7, s.Padding);
 
-                // Desktop compat: LegalBlockSizes and LegalKeySizes have to be overridden for these
+                // .NET Framework compat: LegalBlockSizes and LegalKeySizes have to be overridden for these
                 // properties (and the class as a whole) to be of any use.
                 Assert.Throws<NullReferenceException>(() => ignored = s.LegalBlockSizes);
                 Assert.Throws<NullReferenceException>(() => ignored = s.LegalKeySizes);

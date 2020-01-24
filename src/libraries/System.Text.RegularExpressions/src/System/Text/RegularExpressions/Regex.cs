@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
@@ -101,6 +102,22 @@ namespace System.Text.RegularExpressions
             roptions = options;
             internalMatchTimeout = matchTimeout;
 
+#if DEBUG
+            if (IsDebug)
+            {
+                Debug.Write($"Pattern:     {pattern}");
+                RegexOptions displayOptions = options & ~RegexOptions.Debug;
+                if (displayOptions != RegexOptions.None)
+                {
+                    Debug.Write($"Options:     {displayOptions}");
+                }
+                if (matchTimeout != InfiniteMatchTimeout)
+                {
+                    Debug.Write($"Timeout:     {matchTimeout}");
+                }
+            }
+#endif
+
             // Parse the input
             RegexTree tree = RegexParser.Parse(pattern, roptions, culture ?? ((options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
 
@@ -118,28 +135,21 @@ namespace System.Text.RegularExpressions
         {
             if (pattern is null)
             {
-                throw new ArgumentNullException(nameof(pattern));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pattern);
             }
         }
 
         internal static void ValidateOptions(RegexOptions options)
         {
-            if (options < RegexOptions.None || (((int)options) >> MaxOptionShift) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options));
-            }
-
-            if ((options & RegexOptions.ECMAScript) != 0 &&
-                (options & ~(RegexOptions.ECMAScript |
-                             RegexOptions.IgnoreCase |
-                             RegexOptions.Multiline |
-                             RegexOptions.Compiled |
+            if (((((uint)options) >> MaxOptionShift) != 0) ||
+                ((options & RegexOptions.ECMAScript) != 0 &&
+                 (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled |
 #if DEBUG
                              RegexOptions.Debug |
 #endif
-                             RegexOptions.CultureInvariant)) != 0)
+                             RegexOptions.CultureInvariant)) != 0))
             {
-                throw new ArgumentOutOfRangeException(nameof(options));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.options);
             }
         }
 
@@ -148,18 +158,15 @@ namespace System.Text.RegularExpressions
         /// The valid range is <code>TimeSpan.Zero &lt; matchTimeout &lt;= Regex.MaximumMatchTimeout</code>.
         /// </summary>
         /// <param name="matchTimeout">The timeout value to validate.</param>
-        /// <exception cref="ArgumentOutOfRangeException">If the specified timeout is not within a valid range.
-        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">If the specified timeout is not within a valid range.</exception>
         protected internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
         {
-            if (InfiniteMatchTimeout == matchTimeout)
-                return;
-
-            // make sure timeout is not longer then Environment.Ticks cycle length:
-            if (TimeSpan.Zero < matchTimeout && matchTimeout <= s_maximumMatchTimeout)
-                return;
-
-            throw new ArgumentOutOfRangeException(nameof(matchTimeout));
+            // make sure timeout is positive but not longer then Environment.Ticks cycle length
+            long matchTimeoutTicks = matchTimeout.Ticks;
+            if (matchTimeoutTicks != InfiniteMatchTimeoutTicks && ((ulong)(matchTimeoutTicks - 1) >= MaximumMatchTimeoutTicks))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.matchTimeout);
+            }
         }
 
         protected Regex(SerializationInfo info, StreamingContext context) =>
@@ -174,8 +181,10 @@ namespace System.Text.RegularExpressions
             get => caps;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                if (value is null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+                }
 
                 caps = value as Hashtable ?? new Hashtable(value);
             }
@@ -187,8 +196,10 @@ namespace System.Text.RegularExpressions
             get => capnames;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                if (value is null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+                }
 
                 capnames = value as Hashtable ?? new Hashtable(value);
             }
@@ -201,25 +212,33 @@ namespace System.Text.RegularExpressions
         /// instantiating a non-compiled regex.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout)
-        {
-            return RegexCompiler.Compile(code, options, hasTimeout);
-        }
+        private static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout) =>
+            RegexCompiler.Compile(code, options, hasTimeout);
 #endif
 
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-        }
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname) =>
+            CompileToAssembly(regexinfos, assemblyname, null, null);
 
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-        }
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes) =>
+            CompileToAssembly(regexinfos, assemblyname, attributes, null);
 
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes, string resourceFile)
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
         {
+            if (assemblyname is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.assemblyname);
+            }
+
+            if (regexinfos is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.regexinfos);
+            }
+
+#if DEBUG // until it can be fully implemented
+            RegexCompiler.CompileToAssembly(regexinfos, assemblyname, attributes, resourceFile);
+#else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+#endif
         }
 
         /// <summary>
@@ -233,8 +252,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static string Escape(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            if (str is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.str);
+            }
 
             return RegexParser.Escape(str);
         }
@@ -244,8 +265,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static string Unescape(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            if (str is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.str);
+            }
 
             return RegexParser.Unescape(str);
         }
@@ -265,12 +288,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public override string ToString() => pattern!;
 
-        /*
-         * Returns an array of the group names that are used to capture groups
-         * in the regular expression. Only needed if the regex is not known until
-         * runtime, and one wants to extract captured groups. (Probably unusual,
-         * but supplied for completeness.)
-         */
         /// <summary>
         /// Returns the GroupNameCollection for the regular expression. This collection contains the
         /// set of strings used to name capturing groups in the expression.
@@ -279,12 +296,12 @@ namespace System.Text.RegularExpressions
         {
             string[] result;
 
-            if (capslist == null)
+            if (capslist is null)
             {
                 result = new string[capsize];
                 for (int i = 0; i < result.Length; i++)
                 {
-                    result[i] = i.ToString();
+                    result[i] = ((uint)i).ToString();
                 }
             }
             else
@@ -295,12 +312,6 @@ namespace System.Text.RegularExpressions
             return result;
         }
 
-        /*
-         * Returns an array of the group numbers that are used to capture groups
-         * in the regular expression. Only needed if the regex is not known until
-         * runtime, and one wants to extract captured groups. (Probably unusual,
-         * but supplied for completeness.)
-         */
         /// <summary>
         /// Returns the integer group number corresponding to a group name.
         /// </summary>
@@ -308,11 +319,9 @@ namespace System.Text.RegularExpressions
         {
             int[] result;
 
-            if (caps == null)
+            if (caps is null)
             {
-                int max = capsize;
-                result = new int[max];
-
+                result = new int[capsize];
                 for (int i = 0; i < result.Length; i++)
                 {
                     result[i] = i;
@@ -320,9 +329,8 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                result = new int[caps.Count];
-
                 // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                result = new int[caps.Count];
                 IDictionaryEnumerator de = caps.GetEnumerator();
                 while (de.MoveNext())
                 {
@@ -333,134 +341,123 @@ namespace System.Text.RegularExpressions
             return result;
         }
 
-        /*
-         * Given a group number, maps it to a group name. Note that numbered
-         * groups automatically get a group name that is the decimal string
-         * equivalent of its number.
-         *
-         * Returns null if the number is not a recognized group number.
-         */
         /// <summary>
         /// Retrieves a group name that corresponds to a group number.
         /// </summary>
         public string GroupNameFromNumber(int i)
         {
-            if (capslist == null)
+            if (capslist is null)
             {
-                if (i >= 0 && i < capsize)
-                    return i.ToString();
-
-                return string.Empty;
+                return (uint)i < (uint)capsize ?
+                    ((uint)i).ToString() :
+                    string.Empty;
             }
             else
             {
-                if (caps != null)
-                {
-                    if (!caps.TryGetValue(i, out i))
-                        return string.Empty;
-                }
-
-                if (i >= 0 && i < capslist.Length)
-                    return capslist[i];
-
-                return string.Empty;
+                return caps != null && !caps.TryGetValue(i, out i) ? string.Empty :
+                    (uint)i < (uint)capslist.Length ? capslist[i] :
+                    string.Empty;
             }
         }
 
-        /*
-         * Given a group name, maps it to a group number. Note that numbered
-         * groups automatically get a group name that is the decimal string
-         * equivalent of its number.
-         *
-         * Returns -1 if the name is not a recognized group name.
-         */
         /// <summary>
-        /// Returns a group number that corresponds to a group name.
+        /// Returns a group number that corresponds to a group name, or -1 if the name is not a recognized group name.
         /// </summary>
         public int GroupNumberFromName(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            if (name is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.name);
+            }
 
-            int result;
-
-            // look up name if we have a hashtable of names
             if (capnames != null)
             {
-                return capnames.TryGetValue(name, out result) ? result : -1;
+                // Look up name if we have a hashtable of names.
+                return capnames.TryGetValue(name, out int result) ? result : -1;
             }
-
-            // convert to an int if it looks like a number
-            result = 0;
-            for (int i = 0; i < name.Length; i++)
+            else
             {
-                uint digit = (uint)(name[i] - '0');
-                if (digit > 9)
-                {
-                    return -1;
-                }
-
-                result = (result * 10) + (int)digit;
+                // Otherwise, try to parse it as a number.
+                return uint.TryParse(name, NumberStyles.None, provider: null, out uint result) && result < capsize ? (int)result : -1;
             }
-
-            // return int if it's in range
-            return result >= 0 && result < capsize ? result : -1;
         }
 
         protected void InitializeReferences()
         {
             if (_refsInitialized)
-                throw new NotSupportedException(SR.OnlyAllowedOnce);
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.OnlyAllowedOnce);
+            }
 
-            _refsInitialized = true;
             _replref = new WeakReference<RegexReplacement?>(null);
+            _refsInitialized = true;
         }
 
-        /// <summary>
-        /// Internal worker called by all the public APIs
-        /// </summary>
-        /// <returns></returns>
+        /// <summary>Internal worker called by the public APIs</summary>
         internal Match? Run(bool quick, int prevlen, string input, int beginning, int length, int startat)
         {
-            if (startat < 0 || startat > input.Length)
-                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
+            if ((uint)startat > (uint)input.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
+            }
+            if ((uint)length > (uint)input.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.LengthNotNegative);
+            }
 
-            if (length < 0 || length > input.Length)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
-
-            RegexRunner runner =
-                Interlocked.Exchange(ref _runner, null) ?? // use a cached runner if there is one
-                (factory != null ? factory.CreateInstance() : // use the compiled RegexRunner factory if there is one
-                 new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
+            RegexRunner runner = RentRunner();
             try
             {
                 // Do the scan starting at the requested position
                 Match? match = runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, internalMatchTimeout);
 #if DEBUG
-                if (Debug) match?.Dump();
+                if (IsDebug) match?.Dump();
 #endif
                 return match;
             }
             finally
             {
-                // Release the runner back to the cache
-                _runner = runner;
+                ReturnRunner(runner);
             }
         }
 
+        internal void Run<TState>(string input, int startat, ref TState state, MatchCallback<TState> callback)
+        {
+            Debug.Assert((uint)startat <= (uint)input.Length);
+            RegexRunner runner = RentRunner();
+            try
+            {
+                runner.Scan(this, input, startat, ref state, callback, internalMatchTimeout);
+            }
+            finally
+            {
+                ReturnRunner(runner);
+            }
+        }
+
+        /// <summary>Gets a runner from the cache, or creates a new one.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // factored out to be used by only two call sites
+        private RegexRunner RentRunner() =>
+            Interlocked.Exchange(ref _runner, null) ?? // use a cached runner if there is one
+            (factory != null ? factory.CreateInstance() : // use the compiled RegexRunner factory if there is one
+            new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
+
+        /// <summary>Release the runner back to the cache.</summary>
+        internal void ReturnRunner(RegexRunner runner) => _runner = runner;
+
+        /// <summary>True if the <see cref="RegexOptions.Compiled"/> option was set.</summary>
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 
-        /// <summary>True if the L option was set</summary>
+        /// <summary>True if the <see cref="RegexOptions.RightToLeft"/> option was set.</summary>
         protected internal bool UseOptionR() => (roptions & RegexOptions.RightToLeft) != 0;
 
+        /// <summary>True if the <see cref="RegexOptions.CultureInvariant"/> option was set.</summary>
         internal bool UseOptionInvariant() => (roptions & RegexOptions.CultureInvariant) != 0;
 
 #if DEBUG
-        /// <summary>
-        /// True if the regex has debugging enabled
-        /// </summary>
+        /// <summary>True if the regex has debugging enabled.</summary>
         [ExcludeFromCodeCoverage]
-        internal bool Debug => (roptions & RegexOptions.Debug) != 0;
+        internal bool IsDebug => (roptions & RegexOptions.Debug) != 0;
 #endif
     }
 }

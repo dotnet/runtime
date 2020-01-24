@@ -19,7 +19,7 @@ namespace System.Text
 
     // StreamWriter calls Encoding.GetPreamble() to write the initial bits to the stream.
     // In case of Console we do not want to write the preamble as the user does not expect these bits.
-    // In desktop this is handled by setting an internal property on the StreamWriter HasPreambleBeenWritten = true
+    // In .NET Framework this is handled by setting an internal property on the StreamWriter HasPreambleBeenWritten = true
     // Since portable library does not have access to the internal property we wrap the encoding into a ConsoleEncoding
     // which delegates every call to the original encoding except GetPreamble() which does not do anything.
     internal sealed class ConsoleEncoding : Encoding

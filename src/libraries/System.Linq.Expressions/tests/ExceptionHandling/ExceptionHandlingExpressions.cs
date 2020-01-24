@@ -984,7 +984,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void TryFinallyWithinFilterCompiledProhibited()
         {
-            // Ideally we can change this behaviour (see issue 15719 above),
+            // Ideally we can change this behaviour (see https://github.com/dotnet/corefx/issues/15719),
             // but for now, check correct exception thrown.
 
             TryExpression tryExp = Expression.TryCatch(

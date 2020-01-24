@@ -715,6 +715,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeCircularMB, W("EventPipeCircularMB"),
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"), 0, "Enable/disable capturing processor numbers in EventPipe event headers")
 
 //
+// Diagnostics Server
+//
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_DiagnosticsServerTransportPath, W("DiagnosticsServerTransportPath"), "The full path including filename for the OS transport (NamedPipe on Windows; Unix Domain Socket on Linux) to be used by the Diagnostics Server");
+
+//
 // LTTng
 //
 RETAIL_CONFIG_STRING_INFO(INTERNAL_LTTngConfig, W("LTTngConfig"), "Configuration for LTTng.")

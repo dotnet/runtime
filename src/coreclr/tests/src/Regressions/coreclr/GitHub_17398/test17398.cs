@@ -5,7 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-// Repro case for CoreCLR 17398
+// Repro case for https://github.com/dotnet/coreclr/pull/17398
 
 class X
 {

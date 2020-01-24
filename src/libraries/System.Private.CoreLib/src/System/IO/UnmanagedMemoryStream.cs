@@ -294,9 +294,6 @@ namespace System.IO
             _isOpen = false;
             unsafe { _mem = null; }
 
-            // Stream allocates WaitHandles for async calls. So for correctness
-            // call base.Dispose(disposing) for better perf, avoiding waiting
-            // for the finalizers to run on those types.
             base.Dispose(disposing);
         }
 

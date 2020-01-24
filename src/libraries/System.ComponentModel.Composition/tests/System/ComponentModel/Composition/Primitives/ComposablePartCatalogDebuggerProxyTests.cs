@@ -31,30 +31,5 @@ namespace System.ComponentModel.Composition.Primitives
                 EqualityExtensions.CheckEquals(e.Parts, proxy.Parts);
             }
         }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
-        public void Parts_ShouldNotCacheUnderlyingParts()
-        {
-            var catalog = CatalogFactory.CreateAggregateCatalog();
-            var proxy = CreateComposablePartCatalogDebuggerProxy(catalog);
-
-            Assert.Empty(proxy.Parts);
-
-            var expectations = Expectations.GetCatalogs();
-            foreach (var e in expectations)
-            {
-                catalog.Catalogs.Add(e);
-
-                EqualityExtensions.CheckEquals(catalog.Parts, proxy.Parts);
-
-                catalog.Catalogs.Remove(e);
-            }
-        }
-
-        private ComposablePartCatalogDebuggerProxy CreateComposablePartCatalogDebuggerProxy(ComposablePartCatalog catalog)
-        {
-            return new ComposablePartCatalogDebuggerProxy(catalog);
-        }
    }
 }

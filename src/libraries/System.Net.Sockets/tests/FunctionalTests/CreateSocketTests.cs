@@ -32,7 +32,7 @@ namespace System.Net.Sockets.Tests
         private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
         private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(DualModeSuccessInputs))]
         public void DualMode_Success(SocketType socketType, ProtocolType protocolType)
         {
@@ -41,7 +41,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(DualModeFailureInputs))]
         public void DualMode_Failure(SocketType socketType, ProtocolType protocolType)
         {
@@ -55,7 +55,7 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp },
         };
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(CtorSuccessInputs))]
         public void Ctor_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
@@ -77,7 +77,7 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.InterNetwork, SocketType.Unknown, ProtocolType.Udp },
         };
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(CtorFailureInputs))]
         public void Ctor_Failure(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {

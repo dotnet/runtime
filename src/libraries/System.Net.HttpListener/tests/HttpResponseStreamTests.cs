@@ -378,7 +378,6 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/corefx/issues/20246")] // CI hanging frequently
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19534", TestPlatforms.OSX)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -417,7 +416,6 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/corefx/issues/20246")] // CI hanging frequently
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19534", TestPlatforms.OSX)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -456,11 +454,11 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19534", TestPlatforms.OSX)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/18188", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/19534", TestPlatforms.OSX)]
         public async Task Write_ContentToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -496,11 +494,11 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19534", TestPlatforms.OSX)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/18188", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/19534", TestPlatforms.OSX)]
         public async Task Write_ContentToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";

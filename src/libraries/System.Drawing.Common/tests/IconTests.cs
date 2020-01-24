@@ -187,7 +187,7 @@ namespace System.Drawing.Tests
 
                 // There is no such thing as a negative number in the native struct, we're throwing ArgumentException
                 // here now as the data size doesn't match what is expected (as other inputs above).
-                PlatformDetection.IsFullFramework ? typeof(Win32Exception) : typeof(ArgumentException)
+                PlatformDetection.IsNetFramework ? typeof(Win32Exception) : typeof(ArgumentException)
             };
 
             // The size of an entry is negative.
@@ -205,7 +205,7 @@ namespace System.Drawing.Tests
                 new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 127, 255, 255, 255, 127 },
 
                 // Another case where we weren't checking data integrity before invoking.
-                PlatformDetection.IsFullFramework ? typeof(Win32Exception) : typeof(ArgumentException)
+                PlatformDetection.IsNetFramework ? typeof(Win32Exception) : typeof(ArgumentException)
             };
 
             // The offset and the size of the list of entries overflows.
@@ -401,7 +401,7 @@ namespace System.Drawing.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // UNC
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix for #34122")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix for https://github.com/dotnet/corefx/issues/34122")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_UNCFilePath_Success()
         {
@@ -439,7 +439,7 @@ namespace System.Drawing.Tests
         public void ExtractAssociatedIcon_NonFilePath_ThrowsFileNotFound()
         {
             // Used to return null at the expense of creating a URI
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Null(Icon.ExtractAssociatedIcon("http://microsoft.com"));
             }
@@ -849,7 +849,7 @@ namespace System.Drawing.Tests
                         }
                         else
                         {
-                            string fieldName = PlatformDetection.IsFullFramework ? "bitDepth" : "s_bitDepth";
+                            string fieldName = PlatformDetection.IsNetFramework ? "bitDepth" : "s_bitDepth";
                             FieldInfo fi = typeof(Icon).GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic);
                             expectedBitDepth = (int)fi.GetValue(null);
                         }

@@ -1354,6 +1354,8 @@ namespace System.Text.RegularExpressions
             if ((Options & RegexOptions.IgnorePatternWhitespace) != 0) argSb.Append("-X");
             if ((Options & RegexOptions.ECMAScript) != 0) argSb.Append("-E");
 
+            argSb.Append(Indent());
+
             switch (Type)
             {
                 case Oneloop:
@@ -1364,23 +1366,25 @@ namespace System.Text.RegularExpressions
                 case Notonelazy:
                 case One:
                 case Notone:
-                    argSb.Append("(Ch = " + RegexCharClass.CharDescription(Ch) + ")");
+                    argSb.Append(RegexCharClass.CharDescription(Ch));
                     break;
                 case Capture:
-                    argSb.Append("(index = " + M.ToString(CultureInfo.InvariantCulture) + ", unindex = " + N.ToString(CultureInfo.InvariantCulture) + ")");
+                    argSb.Append("index = " + M);
+                    if (N != -1)
+                        argSb.Append(", unindex = " + N);
                     break;
                 case Ref:
                 case Testref:
-                    argSb.Append("(index = " + M.ToString(CultureInfo.InvariantCulture) + ")");
+                    argSb.Append("index = " + M);
                     break;
                 case Multi:
-                    argSb.Append("(String = " + Str + ")");
+                    argSb.Append(Str);
                     break;
                 case Set:
                 case Setloop:
                 case Setloopatomic:
                 case Setlazy:
-                    argSb.Append("(Set = " + RegexCharClass.SetDescription(Str!) + ")");
+                    argSb.Append(RegexCharClass.SetDescription(Str!));
                     break;
             }
 
@@ -1397,9 +1401,17 @@ namespace System.Text.RegularExpressions
                 case Setlazy:
                 case Loop:
                 case Lazyloop:
-                    argSb.Append("(Min = " + M.ToString(CultureInfo.InvariantCulture) + ", Max = " + (N == int.MaxValue ? "inf" : Convert.ToString(N, CultureInfo.InvariantCulture)) + ")");
+                    if (argSb[^1] != ' ')
+                        argSb.Append(", ");
+                    argSb.Append("min = " + M + ", max = ");
+                    if (N == int.MaxValue)
+                        argSb.Append("inf");
+                    else
+                        argSb.Append(N);
                     break;
             }
+
+            string Indent() => new string(' ', Math.Max(1, 25 - argSb.Length));
 
             return argSb.ToString();
         }
@@ -1421,7 +1433,7 @@ namespace System.Text.RegularExpressions
                     curNode = curNode.Child(curChild);
                     curChild = 0;
 
-                    Debug.WriteLine(new string(' ', stack.Count) + curNode.Description());
+                    Debug.WriteLine(new string(' ', stack.Count * 2) + curNode.Description());
                 }
                 else
                 {

@@ -4,8 +4,8 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -85,6 +85,11 @@ namespace System.Text.Json
             }
 
             ReadStack readStack = default;
+            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            {
+                readStack.ReferenceResolver = new DefaultReferenceResolver(writing: false);
+            }
+
             readStack.Current.Initialize(returnType, options);
 
             var readerState = new JsonReaderState(options.GetReaderOptions());

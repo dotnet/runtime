@@ -900,28 +900,6 @@ namespace MonoTests.System.Drawing
             return new BinaryFormatter().Deserialize(s);
         }
 
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20844")]
-        public void Serialize_Icon()
-        {
-            // this cause a problem with resgen, see http://bugzilla.ximian.com/show_bug.cgi?id=80565
-            string filename = Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico");
-            using (Bitmap icon = new Bitmap(filename))
-            {
-                using (Stream s = Serialize(icon))
-                {
-                    using (Bitmap copy = (Bitmap)Deserialize(s))
-                    {
-                        Assert.Equal(icon.Height, copy.Height);
-                        Assert.Equal(icon.Width, copy.Width);
-                        Assert.Equal(icon.PixelFormat, copy.PixelFormat);
-                        Assert.Equal(icon.RawFormat, ImageFormat.Icon);
-                        Assert.Equal(copy.RawFormat, ImageFormat.Png);
-                    }
-                }
-            }
-        }
-
         static int[] palette1 = {
             -16777216,
             -1,

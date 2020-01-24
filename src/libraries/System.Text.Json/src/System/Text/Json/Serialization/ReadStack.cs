@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -13,11 +14,19 @@ namespace System.Text.Json
     {
         internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
 
+        internal static byte[] s_idMetadataPropertyName = { (byte)'$', (byte)'i', (byte)'d' };
+        internal static byte[] s_refMetadataPropertyName = { (byte)'$', (byte)'r', (byte)'e', (byte)'f' };
+        internal static byte[] s_valuesMetadataPropertyName = { (byte)'$', (byte)'v', (byte)'a', (byte)'l', (byte)'u', (byte)'e', (byte)'s' };
+
         // A field is used instead of a property to avoid value semantics.
         public ReadStackFrame Current;
 
         private List<ReadStackFrame> _previous;
         public int _index;
+
+        // The bag of preservable references. It needs to be kept in the state and never in JsonSerializerOptions because
+        // the options should not have any per-serialization state since every serialization shares the same immutable state on the options.
+        public DefaultReferenceResolver ReferenceResolver;
 
         public void Push()
         {

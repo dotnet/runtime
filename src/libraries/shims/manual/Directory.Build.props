@@ -14,12 +14,20 @@
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(OutDirName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(OriginalTargetFramework)-$(ConfigurationGroup)</IntermediateOutputPath>
     <!-- Use runtime assemblies for the TargetFramework, using build configuration OSGroup -->
+<<<<<<< HEAD
     <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(BuildOS)-$(ConfigurationGroup)-$(ArchGroup)/</RefPath>
     <CoreCLROSGroup>$(BuildOS)</CoreCLROSGroup>
     <CoreCLRConfiguration>$(ConfigurationGroup)</CoreCLRConfiguration>
     <TargetFrameworks>netcoreapp5.0</TargetFrameworks>
     <!-- This is a temporary workaround and should be removed. -->
     <SkipRefClean>true</SkipRefClean>
+=======
+    <RefPath>$(ArtifactsBinDir)runtime/$(TargetFramework)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)-$(ArchGroup)/</RefPath>
+    <CoreCLROSGroup>$(_bc_OSGroup)</CoreCLROSGroup>
+    <CoreCLRConfiguration>$(_bc_ConfigurationGroup)</CoreCLRConfiguration>
+    <MonoOSGroup>$(_bc_OSGroup)</MonoOSGroup>
+    <MonoConfiguration>$(_bc_ConfigurationGroup)</MonoConfiguration>
+>>>>>>> master
   </PropertyGroup>
 
   <ItemGroup>

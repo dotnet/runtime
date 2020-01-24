@@ -27,7 +27,7 @@ namespace LoadIjwFromModuleHandle
             {
                 HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
 
-                // Load our fake mscoree to prevent desktop from loading.
+                // Load our fake mscoree to prevent .NET Framework from loading.
                 NativeLibrary.Load(Path.Combine(Environment.CurrentDirectory, "mscoree.dll"));
 
                 Console.WriteLine("Verify that we can load an IJW assembly from native code.");

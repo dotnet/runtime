@@ -44,6 +44,7 @@
       <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
       <TargetingPackBrandName>$(ProductBrandPrefix) Targeting Pack - $(ProductBrandSuffix)</TargetingPackBrandName>
       <AppHostPackBrandName>$(ProductBrandPrefix) AppHost Pack - $(ProductBrandSuffix)</AppHostPackBrandName>
+      <Crossgen2PackBrandName>$(ProductBrandPrefix) Crossgen2 Pack - $(ProductBrandSuffix)</Crossgen2PackBrandName>
       <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
 
       <SharedHostComponentId>com.microsoft.dotnet.sharedhost.component.osx.x64</SharedHostComponentId>

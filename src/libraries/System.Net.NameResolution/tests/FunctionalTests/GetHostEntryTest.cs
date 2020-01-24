@@ -20,7 +20,7 @@ namespace System.Net.NameResolution.Tests
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/37362", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/32797")]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
@@ -32,7 +32,7 @@ namespace System.Net.NameResolution.Tests
             }
             catch (Exception ex) when (hostName == "")
             {
-                // Additional data for debugging sporadic CI failures #24355
+                // Additional data for debugging sporadic CI failures https://github.com/dotnet/runtime/issues/1488
                 string actualHostName = Dns.GetHostName();
                 string etcHosts = "";
                 Exception getHostEntryException = null;
@@ -69,7 +69,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/37362", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/32797")]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]

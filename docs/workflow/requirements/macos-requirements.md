@@ -6,41 +6,42 @@ This guide will walk you through the requirements needed to build dotnet/runtime
 Environment
 ===========
 
-These instructions were validated on macOS 10.13 High Sierra.
+These instructions were validated on macOS 10.15 (Catalina).
 
 Xcode
 -----
 
 Install Apple Xcode developer tools from the Mac App Store ([link](https://apps.apple.com/us/app/xcode/id497799835)).
 
-CMake
------
+Toolchain Setup
+---------------
 
-dotnet/runtime has a dependency on CMake 3.15.5 for the build. You can download it from [CMake downloads](http://www.cmake.org/download/).
+Building dotnet/runtime depends on several tools to be installed. You can download them individually or use [Homebrew](http://brew.sh) for easier toolchain setup.
 
-Alternatively, you can install CMake from [Homebrew](http://brew.sh/).
+Install the following packages:
 
-```sh
-brew install cmake
+- cmake 3.15.5 or newer
+- autoconf
+- automake
+- libtool
+- pkg-config
+- python3
+- icu4c
+
+The lines to install all the packages above using Homebrew.
+
 ```
-
-ICU
----
-
-ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](http://brew.sh/).
-
-```sh
-brew install icu4c
+brew install cmake autoconf automake libtool pkg-config python3 icu4c
 brew link --force icu4c
 ```
 
 OpenSSL
 -------
 
-To build the libraries on macOS, you must install and configure links for OpenSSL 1.1, and install `pkg-config` to use it. Using [Homebrew](http://brew.sh/):
+To build the libraries on macOS, you must install and configure links for OpenSSL 1.1.
 
 ```sh
-brew install pkg-config openssl
+brew install openssl
 
 # You might need to "link" pkg-config:
 brew link pkg-config
