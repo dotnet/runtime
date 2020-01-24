@@ -27,7 +27,7 @@ function Get-Help() {
   Write-Host "  -os                       Build operating system: Windows_NT or Unix"
   Write-Host "  -arch                     Build platform: x86, x64, arm or arm64"
   Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
-  Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Checked or Release"
+  Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
   Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release"
   Write-Host "  -verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
   Write-Host "  -binaryLog                Output binary log (short: -bl)"
