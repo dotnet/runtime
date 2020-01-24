@@ -452,12 +452,18 @@ DEFINE_METHOD(ICUSTOM_MARSHALER,    MARSHAL_NATIVE_TO_MANAGED,MarshalNativeToMan
 DEFINE_METHOD(ICUSTOM_MARSHALER,    MARSHAL_MANAGED_TO_NATIVE,MarshalManagedToNative,   IM_Obj_RetIntPtr)
 DEFINE_METHOD(ICUSTOM_MARSHALER,    CLEANUP_NATIVE_DATA,    CleanUpNativeData,          IM_IntPtr_RetVoid)
 DEFINE_METHOD(ICUSTOM_MARSHALER,    CLEANUP_MANAGED_DATA,   CleanUpManagedData,         IM_Obj_RetVoid)
-DEFINE_METHOD(ICUSTOM_MARSHALER,    GET_NATIVE_DATA_SIZE,   GetNativeDataSize,         IM_RetInt)
+DEFINE_METHOD(ICUSTOM_MARSHALER,    GET_NATIVE_DATA_SIZE,   GetNativeDataSize,          IM_RetInt)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(ICUSTOM_QUERYINTERFACE,      Interop,          ICustomQueryInterface)
-DEFINE_METHOD(ICUSTOM_QUERYINTERFACE,     GET_INTERFACE,    GetInterface,                IM_RefGuid_OutIntPtr_RetCustomQueryInterfaceResult)
+DEFINE_METHOD(ICUSTOM_QUERYINTERFACE,     GET_INTERFACE,    GetInterface,               IM_RefGuid_OutIntPtr_RetCustomQueryInterfaceResult)
 DEFINE_CLASS(CUSTOMQUERYINTERFACERESULT,  Interop,          CustomQueryInterfaceResult)
+
+DEFINE_CLASS(COMWRAPPERS,                 Interop,          ComWrappers)
+DEFINE_CLASS(CREATECOMINTERFACEFLAGS,     Interop,          CreateComInterfaceFlags)
+DEFINE_CLASS(CREATEOBJECTFLAGS,           Interop,          CreateObjectFlags)
+DEFINE_METHOD(COMWRAPPERS,                COMPUTE_VTABLES,  CallComputeVtables,         SM_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid)
+DEFINE_METHOD(COMWRAPPERS,                CREATE_OBJECT,    CallCreateObject,           SM_ComWrappers_IntPtr_CreateFlags_RetObj)
 #endif //FEATURE_COMINTEROP
 
 DEFINE_CLASS(SERIALIZATION_INFO,        Serialization,      SerializationInfo)

@@ -135,7 +135,7 @@ namespace System.Runtime.InteropServices
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         // Call to execute the abstract instance function
-        internal static unsafe ComInterfaceEntry* CallComputeVtables(ComWrappers comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
+        internal static unsafe void* CallComputeVtables(ComWrappers comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
             => comWrappersImpl.ComputeVtables(obj, flags, out count);
 
         /// <summary>

@@ -9,6 +9,78 @@
 
 #include "interoplibinterface.h"
 
+// void ____()
+// {
+//     CONTRACTL
+//     {
+//         THROWS;
+//         //NOTHROW;
+//         MODE_COOPERATIVE;
+//         // MODE_PREEMPTIVE;
+//         // MODE_ANY;
+//         // PRECONDITION(pSrc != NULL);
+//     }
+//     CONTRACTL_END;
+// }
+
+namespace
+{
+    void* CallComputeVTables(
+        _In_ OBJECTREF impl,
+        _In_ OBJECTREF instance,
+        _In_ INT32 flags,
+        _Out_ DWORD* vtableCount)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+            PRECONDITION(impl != NULL);
+            PRECONDITION(instance != NULL);
+            PRECONDITION(vtableCount != NULL);
+        }
+        CONTRACTL_END;
+
+        void* vtables = NULL;
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__COMPUTE_VTABLES);
+        DECLARE_ARGHOLDER_ARRAY(args, 4);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(impl);
+        args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(instance);
+        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
+        args[ARGNUM_3]  = PTR_TO_ARGHOLDER(vtableCount);
+        CALL_MANAGED_METHOD(vtables, void*, args);
+
+        return vtables;
+    }
+
+    OBJECTREF CallGetObject(
+        _In_ OBJECTREF impl,
+        _In_ IUnknown* externalComObject,
+        _In_ INT32 flags)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+            PRECONDITION(impl != NULL);
+            PRECONDITION(externalComObject != NULL);
+        }
+        CONTRACTL_END;
+
+        OBJECTREF retObjRef = NULL;
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CREATE_OBJECT);
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(impl);
+        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(externalComObject);
+        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
+        CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
+
+        return retObjRef;
+    }
+}
+
 namespace InteropLibImports
 {
     void* MemAlloc(_In_ size_t sizeInBytes)
@@ -25,6 +97,53 @@ namespace InteropLibImports
 
         ::free(mem);
     }
+
+    HRESULT GetOrCreateTrackerTargetForExternal(
+        _In_ InteropLib::OBJECTHANDLE impl,
+        _In_ IUnknown* externalComObject,
+        _In_ INT32 externalObjectFlags,
+        _In_ INT32 trackerTargetFlags,
+        _Outptr_ IUnknown** trackerTarget) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROWS;
+            MODE_ANY;
+            PRECONDITION(impl != NULL);
+            PRECONDITION(externalComObject != NULL);
+            PRECONDITION(trackerTarget != NULL);
+        }
+        CONTRACTL_END;
+
+        ::OBJECTHANDLE implHandle = static_cast<::OBJECTHANDLE>(impl);
+
+        {
+            GCX_COOP();
+
+            struct
+            {
+                OBJECTREF implRef;
+                OBJECTREF newObjRef;
+            } gc;
+            ::ZeroMemory(&gc, sizeof(gc));
+            GCPROTECT_BEGIN(gc);
+
+            gc.implRef = ObjectFromHandle(implHandle);
+            _ASSERTE(gc.implRef != NULL);
+
+            //
+            // Get wrapper for external object
+            //
+
+            //
+            // Get wrapper for managed object
+            //
+
+            GCPROTECT_END();
+        }
+
+        return S_OK;
+    }
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -36,9 +155,9 @@ void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
 {
     QCALL_CONTRACT;
 
-    _ASSERTE(fpQueryInterface != nullptr);
-    _ASSERTE(fpAddRef != nullptr);
-    _ASSERTE(fpRelease != nullptr);
+    _ASSERTE(fpQueryInterface != NULL);
+    _ASSERTE(fpAddRef != NULL);
+    _ASSERTE(fpRelease != NULL);
 
     BEGIN_QCALL;
 
@@ -54,7 +173,7 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
 {
     QCALL_CONTRACT;
 
-    void* wrapper = nullptr;
+    void* wrapper = NULL;
 
     BEGIN_QCALL;
 
@@ -69,17 +188,29 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
             OBJECTREF instRef;
         } gc;
         ::ZeroMemory(&gc, sizeof(gc));
-
         GCPROTECT_BEGIN(gc);
 
         gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
+        _ASSERTE(gc.implRef != NULL);
+
+        //
+        // Check the objects SyncBlock for an existing COM object
+        //
+
         gc.instRef = ObjectToOBJECTREF(*instance.m_ppObject);
-        _ASSERTE(gc.implRef != NULL && gc.instRef != NULL);
+        _ASSERTE(gc.instRef != NULL);
 
+        //
+        // Compute VTables for the new existing COM object
+        //
 
-        // If it does, then return the
-        // existing wrapper. If the object doesn't, then compute the
-        // VTables for the type.
+        DWORD vtableCount;
+        void* vtables = CallComputeVTables(gc.implRef, gc.instRef, flags, &vtableCount);
+
+        //
+        // 
+        //
+
         GCPROTECT_END();
     }
 
@@ -90,15 +221,47 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
 
 void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
-    _In_ void* externalComObject,
+    _In_ void* ext,
     _In_ INT32 flags,
     _Inout_ QCall::ObjectHandleOnStack retValue)
 {
     QCALL_CONTRACT;
 
-    _ASSERTE(externalComObject != nullptr);
+    _ASSERTE(ext != NULL);
 
     BEGIN_QCALL;
+
+    HRESULT hr;
+    IUnknown* externalComObject = reinterpret_cast<IUnknown*>(ext);
+
+    // Determine the true identity of the object
+    SafeComHolder<IUnknown> identity = NULL;
+    hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
+    _ASSERTE(hr == S_OK);
+
+    // Switch to COOP mode in order to check if the the InteropLib already
+    // has an object for the external COM object or to create a new one.
+    {
+        GCX_COOP();
+
+        struct
+        {
+            OBJECTREF implRef;
+            OBJECTREF newObjRef;
+        } gc;
+        ::ZeroMemory(&gc, sizeof(gc));
+        GCPROTECT_BEGIN(gc);
+
+        gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
+        _ASSERTE(gc.implRef != NULL);
+
+        gc.newObjectRef = CallGetObject(gc.implRef, identity, flags);
+
+        // Set the return value
+        retValue.Set(gc.newObjectRef);
+
+        GCPROTECT_END();
+    }
 
     END_QCALL;
 }

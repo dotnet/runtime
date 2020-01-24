@@ -14,6 +14,16 @@ namespace InteropLibImports
 
     // Free the previously allocated memory.
     void MemFree(_In_ void* mem);
+
+    // Given a ComWrappers implementation, get or create
+    // an IReferenceTrackerTarget instance for the supplied
+    // external object.
+    HRESULT GetOrCreateTrackerTargetForExternal(
+        _In_ InteropLib::OBJECTHANDLE impl,
+        _In_ IUnknown* externalComObject,
+        _In_ INT32 externalObjectFlags,
+        _In_ INT32 trackerTargetFlags,
+        _Outptr_ IUnknown** trackerTarget) noexcept;
 }
 
 #endif // _INTEROP_INC_INTEROPLIBIMPORTS_H_
