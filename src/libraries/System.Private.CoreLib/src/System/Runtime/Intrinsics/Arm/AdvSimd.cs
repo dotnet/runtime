@@ -408,43 +408,43 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector64<ulong> CompareLessThanOrEqualScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareLessThanOrEqualScalar(left, right);
 
-            // /// <summary>
-            // /// float64x1_t vtst_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: CMTST Dd, Dn, Dm
-            // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-            // /// </summary>
-            // public static Vector64<double> CompareTest(Vector64<double> left, Vector64<double> right) => CompareTest(left, right);
-
-            // /// <summary>
-            // /// int64x1_t vtst_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMTST Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareTest(Vector64<long> left, Vector64<long> right) => CompareTest(left, right);
-
-            // /// <summary>
-            // /// uint64x1_t vtst_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMTST Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareTest(Vector64<ulong> left, Vector64<ulong> right) => CompareTest(left, right);
-
             /// <summary>
-            /// float64x2_t vtstq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: CMTST Vd, Vn, Vm
+            /// uint64x2_t vtstq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: CMTST Vd.2D, Vn.2D, Vm.2D
             /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
             /// </summary>
             public static Vector128<double> CompareTest(Vector128<double> left, Vector128<double> right) => CompareTest(left, right);
 
             /// <summary>
-            /// int64x2_t vtstq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMTST Vd, Vn, Vm
+            /// uint64x2_t vtstq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMTST Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareTest(Vector128<long> left, Vector128<long> right) => CompareTest(left, right);
 
             /// <summary>
             /// uint64x2_t vtstq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMTST Vd, Vn, Vm
+            ///   A64: CMTST Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareTest(Vector128<ulong> left, Vector128<ulong> right) => CompareTest(left, right);
+
+            /// <summary>
+            /// uint64x1_t vtst_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: CMTST Dd, Dn, Dm
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+            /// </summary>
+            public static Vector64<double> CompareTestScalar(Vector64<double> left, Vector64<double> right) => CompareTestScalar(left, right);
+
+            /// <summary>
+            /// uint64x1_t vtst_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMTST Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<long> CompareTestScalar(Vector64<long> left, Vector64<long> right) => CompareTestScalar(left, right);
+
+            /// <summary>
+            /// uint64x1_t vtst_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMTST Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareTestScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareTestScalar(left, right);
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
