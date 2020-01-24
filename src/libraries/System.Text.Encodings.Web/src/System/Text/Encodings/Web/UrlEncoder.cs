@@ -176,8 +176,8 @@ namespace System.Text.Encodings.Web
                 }
 
                 *buffer = '%'; buffer++;
-                *buffer = HexConverter.ToCharUpper((int)asUtf8); buffer++;
                 *buffer = HexConverter.ToCharUpper((int)asUtf8 >> 4); buffer++;
+                *buffer = HexConverter.ToCharUpper((int)asUtf8); buffer++;
 
                 numberOfCharactersWritten += 3;
             }
