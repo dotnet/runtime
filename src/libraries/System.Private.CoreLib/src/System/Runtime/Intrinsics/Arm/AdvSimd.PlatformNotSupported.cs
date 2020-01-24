@@ -1394,32 +1394,34 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector128<ulong> Add(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vadd_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VADD.F64 Dd, Dn, Dm
-        // ///   A64: FADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<double> AddScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// int64x1_t vadd_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VADD.I64 Dd, Dn, Dm
-        // ///   A64: ADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<long> AddScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// uint64x1_t vadd_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VADD.I64 Dd, Dn, Dm
-        // ///   A64: ADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<ulong> AddScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vadd_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VADD.F64 Dd, Dn, Dm
+        ///   A64: FADD Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> AddScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int64x1_t vadd_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VADD.I64 Dd, Dn, Dm
+        ///   A64: ADD Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> AddScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vadds_f32 (float32_t a, float32_t b)
         ///   A32: VADD.F32 Sd, Sn, Sm
-        ///   A64:
+        ///   A64: FADD Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> AddScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vadd_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VADD.I64 Dd, Dn, Dm
+        ///   A64: ADD Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> AddScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vand_u8 (uint8x8_t a, uint8x8_t b)
