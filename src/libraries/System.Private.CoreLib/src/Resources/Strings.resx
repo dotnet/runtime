@@ -2941,9 +2941,6 @@
   <data name="NotSupported_OutputStreamUsingTypeBuilder" xml:space="preserve">
     <value>Output streams do not support TypeBuilders.</value>
   </data>
-  <data name="NotSupported_Overlapped" xml:space="preserve">
-    <value>This API is not supported on this platform.</value>
-  </data>
   <data name="NotSupported_PIAInAppxProcess" xml:space="preserve">
     <value>A Primary Interop Assembly is not supported in AppX.</value>
   </data>
