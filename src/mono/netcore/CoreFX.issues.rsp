@@ -176,30 +176,6 @@
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
 
 ####################################################################
-##  System.Runtime.Serialization.Formatters.Tests
-####################################################################
-
-# Expected MemberAccessException but none was thrown
-# https://github.com/mono/mono/issues/15111
--nomethod System.Runtime.Serialization.Formatters.Tests.FormatterServicesTests.GetUninitializedObject_OpenGenericClass_ThrowsMemberAccessException
-
-# NotNull Assertion failure
-# https://github.com/mono/mono/issues/15112
--nomethod System.Runtime.Serialization.Formatters.Tests.SerializationGuardTests.BlockReflectionDodging
-
-# Expected AE but none thrown
-# https://github.com/mono/mono/issues/15113
--nomethod System.Runtime.Serialization.Formatters.Tests.FormatterServicesTests.GetUninitializedObject_NotSupportedType_ThrowsArgumentException
-
-# Expected TypeInitializationException but none thrown 
-# https://github.com/mono/mono/issues/15114
--nomethod System.Runtime.Serialization.Formatters.Tests.FormatterServicesTests.GetUninitializedObject_StaticConstructorThrows_ThrowsTypeInitializationException
-
-# Object reference not set to an instance of an object error
-# https://github.com/mono/mono/issues/15115
--nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateAgainstBlobs
-
-####################################################################
 ##  System.Runtime.Tests
 ####################################################################
 
