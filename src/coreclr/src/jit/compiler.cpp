@@ -4230,7 +4230,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         return;
     }
 
-    // By this point we are only jitting the root method (and not an inlinee)
+    // At this point in the phase list, all the inlinee phases have
+    // been run, and inlinee compiles have exited, so we should only
+    // get this far if we are jitting the root method.
     noway_assert(!compIsForInlining());
 
     // Maybe the caller was not interested in generating code
@@ -4277,9 +4279,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // Initialize the BlockSet epoch
     NewBasicBlockEpoch();
 
-    // Start of the code that used to make up fgMorph
-    //
-    // Massage the trees so that we can generate code out of them
+    // Start phases that are broadly called morphing, and includes
+    // global morph, as well as other phases that massage the trees so
+    // that we can generate code out of them.
     fgOutgoingArgTemps = nullptr;
 
 #ifdef DEBUG
@@ -4476,8 +4478,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     compCurBB = nullptr;
 #endif // DEBUG
 
-    // End of the code that used to make up fgMorph
-    //
+    // End of the morphing phases
     EndPhase(PHASE_MORPH_END);
 
     // GS security checks for unsafe buffers
@@ -4775,7 +4776,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     ///////////////////////////////////////////////////////////////////////////////
     fgDomsComputed = false;
 
-    // Create LSRA before Lowering, this way Lowering can initialize the TreeNode Map
+    // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
+    // for determining whether locals are register candidates and (for xarch) whether
+    // a node is a containable memory op.
     m_pLinearScan = getLinearScanAllocator(this);
 
     // Lower
@@ -4785,7 +4788,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     StackLevelSetter stackLevelSetter(this); // PHASE_STACK_LEVEL_SETTER
     stackLevelSetter.Run();
 
-    lvaTrackedFixed = true; // We can not add any new tracked variables after this point.
+    // We can not add any new tracked variables after this point.
+    lvaTrackedFixed = true;
 
     // Now that lowering is completed we can proceed to perform register allocation
     m_pLinearScan->doLinearScan();
