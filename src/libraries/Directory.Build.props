@@ -125,7 +125,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RuntimeOS Condition="'$(RuntimeOS)' == ''">win10</RuntimeOS>
     <EnableProjectRestore Condition="'$(IsTestProject)' == 'true'">true</EnableProjectRestore>
   </PropertyGroup>
 
