@@ -285,9 +285,6 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
   endif(CLR_CMAKE_HOST_DARWIN)
 
-  # Contracts are disabled on UNIX.
-  add_definitions(-DDISABLE_CONTRACTS)
-
   if (CLR_CMAKE_WARNINGS_ARE_ERRORS)
     # All warnings that are not explicitly disabled are reported as errors
     add_compile_options(-Werror)
@@ -349,6 +346,11 @@ if (CLR_CMAKE_HOST_UNIX)
     add_link_options(${MACOS_VERSION_MIN_FLAGS})
   endif(CLR_CMAKE_HOST_DARWIN)
 endif(CLR_CMAKE_HOST_UNIX)
+
+if(CLR_CMAKE_TARGET_UNIX)
+  # Contracts are disabled on UNIX.
+  add_definitions(-DDISABLE_CONTRACTS)
+endif(CLR_CMAKE_TARGET_UNIX)
 
 if(CLR_CMAKE_HOST_UNIX_ARM)
    if (NOT DEFINED CLR_ARM_FPU_TYPE)
