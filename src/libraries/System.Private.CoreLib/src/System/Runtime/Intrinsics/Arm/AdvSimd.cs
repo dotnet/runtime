@@ -3172,32 +3172,32 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> OrNot(Vector128<ulong> left, Vector128<ulong> right) => OrNot(left, right);
 
         /// <summary>
-        /// int8x8_t vcnt_s8 (int8x8_t a)
-        ///   A32: VCNT Dd, Dm
-        ///   A64: CNT Vd, Vn
-        /// </summary>
-        public static Vector64<sbyte> PopCount(Vector64<sbyte> value) => PopCount(value);
-
-        /// <summary>
         /// uint8x8_t vcnt_u8 (uint8x8_t a)
-        ///   A32: VCNT Dd, Dm
-        ///   A64: CNT Vd, Vn
+        ///   A32: VCNT.I8 Dd, Dm
+        ///   A64: CNT Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<byte> PopCount(Vector64<byte> value) => PopCount(value);
 
         /// <summary>
-        /// int8x16_t vcntq_s8 (int8x16_t a)
-        ///   A32: VCNT Qd, Qm
-        ///   A64: CNT Vd, Vn
+        /// int8x8_t vcnt_s8 (int8x8_t a)
+        ///   A32: VCNT.I8 Dd, Dm
+        ///   A64: CNT Vd.8B, Vn.8B
         /// </summary>
-        public static Vector128<sbyte> PopCount(Vector128<sbyte> value) => PopCount(value);
+        public static Vector64<sbyte> PopCount(Vector64<sbyte> value) => PopCount(value);
 
         /// <summary>
         /// uint8x16_t vcntq_u8 (uint8x16_t a)
-        ///   A32: VCNT Qd, Qm
-        ///   A64: CNT Vd, Vn
+        ///   A32: VCNT.I8 Qd, Qm
+        ///   A64: CNT Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<byte> PopCount(Vector128<byte> value) => PopCount(value);
+
+        /// <summary>
+        /// int8x16_t vcntq_s8 (int8x16_t a)
+        ///   A32: VCNT.I8 Qd, Qm
+        ///   A64: CNT Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> PopCount(Vector128<sbyte> value) => PopCount(value);
 
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)
