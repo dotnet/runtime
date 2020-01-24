@@ -40,9 +40,13 @@ namespace System.Net.Sockets
             return (SocketError)win32Error;
         }
 
+        [DllImport("kernel32.dll")]
+        private static extern bool GetHandleInformation(SafeHandle hObject, out Interop.Kernel32.HandleFlags flags);
+
         public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
-            IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED | Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);;
+            IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
+                                                                                                                Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
 
             socket = new SafeSocketHandle(handle, ownsHandle: true);
             if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
@@ -62,13 +66,22 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
             }
 
-            fixed (byte* pinnedBuffer = socketInformation.ProtocolInformation)
+            fixed (byte* pinnedProtocolInformation = socketInformation.ProtocolInformation)
             {
+                // Sockets are non-inheritable in .NET Core.
+                // Handle properties like HANDLE_FLAG_INHERIT are not cloned with socket duplication, therefore
+                // we need to disable handle inheritance when constructing the new socket handle from Protcol Info.
+                // Additionally, it looks like WSA_FLAG_NO_HANDLE_INHERIT has no effect when being used with the Protocol Info
+                // variant of WSASocketW, so it is being passed to that call only for consistency.
+                // Inheritance is being disabled with SetHandleInformation(...) after the WSASocketW call.
                 IntPtr handle = Interop.Winsock.WSASocketW(
                     (AddressFamily)(-1),
                     (SocketType)(-1),
                     (ProtocolType)(-1),
-                    (IntPtr)pinnedBuffer, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED);
+                    (IntPtr)pinnedProtocolInformation,
+                    0,
+                    Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
+                    Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
 
                 socket = new SafeSocketHandle(handle, ownsHandle: true);
                 if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
@@ -78,7 +91,9 @@ namespace System.Net.Sockets
                     return GetLastSocketError();
                 }
 
-                Interop.Winsock.WSAProtocolInfo protocolInfo = Marshal.PtrToStructure<Interop.Winsock.WSAProtocolInfo>((IntPtr)pinnedBuffer);
+                Interop.Kernel32.SetHandleInformation(socket, Interop.Kernel32.HandleFlags.Inherit, 0);
+
+                Interop.Winsock.WSAProtocolInfo protocolInfo = Marshal.PtrToStructure<Interop.Winsock.WSAProtocolInfo>((IntPtr)pinnedProtocolInformation);
                 addressFamily = protocolInfo.AddressFamily;
                 socketType = protocolInfo.SocketType;
                 protocolType = protocolInfo.ProtocolType;

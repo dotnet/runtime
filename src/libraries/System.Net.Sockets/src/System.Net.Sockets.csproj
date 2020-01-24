@@ -239,6 +239,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Net\CompletionPortHelper.Windows.cs">
       <Link>Common\System\Net\CompletionPortHelper.Windows.cs</Link>
     </Compile>

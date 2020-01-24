@@ -142,6 +142,53 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(TestMessage, receivedMessage);
         }
 
+        [OuterLoop] // long-running
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Fact]
+        public void DuplicateSocket_IsNotInheritable()
+        {
+            // The test is based on CreateSocket.CtorAndAccept_SocketNotKeptAliveViaInheritance,
+            // but contains simpler validation logic, sufficient to test the behavior on Windows
+            static void RunTest()
+            {
+                using Socket listenerProto = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                listenerProto.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listenerProto.Listen(1);
+                EndPoint ep = listenerProto.LocalEndPoint;
+
+                using Socket listenerDuplicate = new Socket(listenerProto.DuplicateAndClose(CurrentProcessId));
+
+                using var serverPipe = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable);
+
+                static void ChildProcessBody(string clientPipeHandle)
+                {
+                    using var clientPipe = new AnonymousPipeClientStream(PipeDirection.In, clientPipeHandle);
+                    Assert.Equal(42, clientPipe.ReadByte());
+                }
+
+                // Create a child process that blocks waiting to receive a signal on the anonymous pipe.
+                // The whole purpose of the child is to test whether handles are inherited, so we
+                // keep the child process alive until we're done validating that handles close as expected.
+                using (RemoteExecutor.Invoke(ChildProcessBody, serverPipe.GetClientHandleAsString()))
+                {
+                    using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                    // Close the listening socket:
+                    listenerDuplicate.Dispose();
+
+                    // Validate that we after closing the listening socket, we're not able to connect:
+                    SocketException ex = Assert.ThrowsAny<SocketException>(() => client.Connect(ep));
+                    Debug.Print(ex.Message);
+
+                    serverPipe.WriteByte(42);
+                }
+            }
+
+            // Run the test in another process so as to not have trouble with other tests
+            // launching child processes that might impact inheritance.
+            RemoteExecutor.Invoke(RunTest).Dispose();
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task DoAsyncOperation_OnBothOriginalAndClone_ThrowsInvalidOperationException()
