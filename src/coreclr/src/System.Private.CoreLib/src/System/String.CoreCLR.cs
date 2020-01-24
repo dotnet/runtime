@@ -23,7 +23,7 @@ namespace System
 
         // Gets the character at a specified position.
         //
-        [System.Runtime.CompilerServices.IndexerName("Chars")]
+        [IndexerName("Chars")]
         public extern char this[int index]
         {
             [Intrinsic]
