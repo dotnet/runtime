@@ -42,17 +42,23 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector64<ulong> AbsScalar(Vector64<long> value) => AbsScalar(value);
 
-            // /// <summary>
-            // /// float64x1_t vcagt (float64x1_t a, float64x1_t b)
-            // ///   A64: FACGT Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<double> AbsoluteCompareGreaterThan(Vector64<double> left, Vector64<double> right) => AbsoluteCompareGreaterThan(left, right);
-
             /// <summary>
-            /// float64x2_t vcagt (float64x2_t a, float64x2_t b)
-            ///   A64: FACGT Vd, Vn, Vm
+            /// uint64x2_t vcagtq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FACGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> AbsoluteCompareGreaterThan(Vector128<double> left, Vector128<double> right) => AbsoluteCompareGreaterThan(left, right);
+
+            /// <summary>
+            /// uint64x1_t vcagt_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FACGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> AbsoluteCompareGreaterThanScalar(Vector64<double> left, Vector64<double> right) => AbsoluteCompareGreaterThanScalar(left, right);
+
+            /// <summary>
+            /// uint32_t vcagts_f32 (float32_t a, float32_t b)
+            ///   A64: FACGT Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> AbsoluteCompareGreaterThanScalar(Vector64<float> left, Vector64<float> right) => AbsoluteCompareGreaterThanScalar(left, right);
 
             // /// <summary>
             // /// float64x1_t vcage (float64x1_t a, float64x1_t b)
@@ -1095,16 +1101,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> AbsScalar(Vector64<float> value) => AbsScalar(value);
 
         /// <summary>
-        /// float32x2_t vcagt (float32x2_t a, float32x2_t b)
-        ///   A32: VACGT Dd, Dn, Dm
-        ///   A64: FACGT Vd, Vn, Vm
+        /// uint32x2_t vcagt_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VACGT.F32 Dd, Dn, Dm
+        ///   A64: FACGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> AbsoluteCompareGreaterThan(Vector64<float> left, Vector64<float> right) => AbsoluteCompareGreaterThan(left, right);
 
         /// <summary>
-        /// float32x4_t vcagt (float32x4_t a, float32x4_t b)
-        ///   A32: VACGT Qd, Qn, Qm
-        ///   A64: FACGT Vd, Vn, Vm
+        /// uint32x4_t vcagtq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VACGT.F32 Qd, Qn, Qm
+        ///   A64: FACGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> AbsoluteCompareGreaterThan(Vector128<float> left, Vector128<float> right) => AbsoluteCompareGreaterThan(left, right);
 
