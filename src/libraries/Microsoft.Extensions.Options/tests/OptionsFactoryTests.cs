@@ -23,6 +23,19 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public void NamesAreCaseSensitive()
+        {
+            var services = new ServiceCollection();
+            services.Configure<FakeOptions>("UP", options => options.Message += "UP");
+            services.Configure<FakeOptions>("up", options => options.Message += "up");
+
+            var sp = services.BuildServiceProvider();
+            var factory = sp.GetRequiredService<IOptionsFactory<FakeOptions>>();
+            Assert.Equal("UP", factory.Create("UP").Message);
+            Assert.Equal("up", factory.Create("up").Message);
+        }        
+        
+        [Fact]
         public void CanConfigureAllOptions()
         {
             var services = new ServiceCollection();
