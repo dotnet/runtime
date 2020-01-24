@@ -2514,86 +2514,86 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> LeadingSignCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vclz_s8 (int8x8_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
-        /// </summary>
-        public static Vector64<sbyte> LeadingZeroCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// uint8x8_t vclz_u8 (uint8x8_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I8 Dd, Dm
+        ///   A64: CLZ Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<byte> LeadingZeroCount(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vclz_s16 (int16x4_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I16 Dd, Dm
+        ///   A64: CLZ Vd.4H, Vn.4H
         /// </summary>
         public static Vector64<short> LeadingZeroCount(Vector64<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x4_t vclz_u16 (uint16x4_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
-        /// </summary>
-        public static Vector64<ushort> LeadingZeroCount(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int32x2_t vclz_s32 (int32x2_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I32 Dd, Dm
+        ///   A64: CLZ Vd.2S, Vn.2S
         /// </summary>
         public static Vector64<int> LeadingZeroCount(Vector64<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int8x8_t vclz_s8 (int8x8_t a)
+        ///   A32: VCLZ.I8 Dd, Dm
+        ///   A64: CLZ Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<sbyte> LeadingZeroCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vclz_u16 (uint16x4_t a)
+        ///   A32: VCLZ.I16 Dd, Dm
+        ///   A64: CLZ Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<ushort> LeadingZeroCount(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint32x2_t vclz_u32 (uint32x2_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I32 Dd, Dm
+        ///   A64: CLZ Vd.2S, Vn.2S
         /// </summary>
         public static Vector64<uint> LeadingZeroCount(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vclzq_s8 (int8x16_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
-        /// </summary>
-        public static Vector128<sbyte> LeadingZeroCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// uint8x16_t vclzq_u8 (uint8x16_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I8 Qd, Qm
+        ///   A64: CLZ Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<byte> LeadingZeroCount(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vclzq_s16 (int16x8_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I16 Qd, Qm
+        ///   A64: CLZ Vd.8H, Vn.8H
         /// </summary>
         public static Vector128<short> LeadingZeroCount(Vector128<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vclzq_u16 (uint16x8_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
-        /// </summary>
-        public static Vector128<ushort> LeadingZeroCount(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int32x4_t vclzq_s32 (int32x4_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I32 Qd, Qm
+        ///   A64: CLZ Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<int> LeadingZeroCount(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int8x16_t vclzq_s8 (int8x16_t a)
+        ///   A32: VCLZ.I8 Qd, Qm
+        ///   A64: CLZ Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> LeadingZeroCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vclzq_u16 (uint16x8_t a)
+        ///   A32: VCLZ.I16 Qd, Qm
+        ///   A64: CLZ Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<ushort> LeadingZeroCount(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint32x4_t vclzq_u32 (uint32x4_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I32 Qd, Qm
+        ///   A64: CLZ Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<uint> LeadingZeroCount(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
