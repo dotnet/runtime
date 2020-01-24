@@ -71,6 +71,11 @@ namespace System.Collections.Generic
 
         private int[]? _buckets;
         private Slot[] _slots = default!; // TODO-NULLABLE: This should be Slot[]?, but the resulting annotations causes GenPartialFacadeSource to blow up: error : Unable to cast object of type 'Microsoft.CodeAnalysis.CSharp.Syntax.CompilationUnitSyntax' to type 'Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeDeclarationSyntax'
+
+#if BIT64
+        private ulong _fastModMultiplier;
+#endif
+
         private int _count;
         private int _lastIndex;
         private int _freeList;
@@ -93,6 +98,9 @@ namespace System.Collections.Generic
             }
 
             _comparer = comparer;
+#if BIT64
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier(0);
+#endif
             _lastIndex = 0;
             _count = 0;
             _freeList = -1;
@@ -174,6 +182,9 @@ namespace System.Collections.Generic
             {
                 _buckets = (int[])source._buckets.Clone();
                 _slots = (Slot[])source._slots.Clone();
+#if BIT64
+                _fastModMultiplier =  source._fastModMultiplier;
+#endif
 
                 _lastIndex = source._lastIndex;
                 _freeList = source._freeList;
@@ -241,6 +252,9 @@ namespace System.Collections.Generic
                 // clear only up to _lastIndex for _slots
                 Array.Clear(_slots, 0, _lastIndex);
                 Array.Clear(_buckets, 0, _buckets.Length);
+#if BIT64
+                _fastModMultiplier = HashHelpers.GetFastModMultiplier(0);
+#endif
                 _lastIndex = 0;
                 _count = 0;
                 _freeList = -1;
@@ -270,7 +284,7 @@ namespace System.Collections.Generic
                     if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                     {
                         // see note at "HashSet" level describing why "- 1" appears in for loop
-                        for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
+                        for (int i = buckets[FastMod(hashCode, buckets.Length)] - 1; i >= 0; i = slots[i].next)
                         {
                             if (slots[i].hashCode == hashCode && EqualityComparer<T>.Default.Equals(slots[i].value, item))
                             {
@@ -293,7 +307,7 @@ namespace System.Collections.Generic
                         EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 
                         // see note at "HashSet" level describing why "- 1" appears in for loop
-                        for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
+                        for (int i = buckets[FastMod(hashCode, buckets.Length)] - 1; i >= 0; i = slots[i].next)
                         {
                             if (slots[i].hashCode == hashCode && defaultComparer.Equals(slots[i].value, item))
                             {
@@ -314,7 +328,7 @@ namespace System.Collections.Generic
                     int hashCode = item == null ? 0 : InternalGetHashCode(comparer.GetHashCode(item));
 
                     // see note at "HashSet" level describing why "- 1" appears in for loop
-                    for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
+                    for (int i = buckets[FastMod(hashCode, buckets.Length)] - 1; i >= 0; i = slots[i].next)
                     {
                         if (slots[i].hashCode == hashCode && comparer.Equals(slots[i].value, item))
                         {
@@ -367,7 +381,7 @@ namespace System.Collections.Generic
                 if (comparer == null)
                 {
                     hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
-                    bucket = hashCode % _buckets!.Length;
+                    bucket = FastMod(hashCode, _buckets!.Length);
 
                     if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                     {
@@ -412,7 +426,7 @@ namespace System.Collections.Generic
                 else
                 {
                     hashCode = item == null ? 0 : InternalGetHashCode(comparer.GetHashCode(item));
-                    bucket = hashCode % _buckets!.Length;
+                    bucket = FastMod(hashCode, _buckets!.Length);
 
                     for (i = _buckets[bucket] - 1; i >= 0; last = i, i = slots[i].next)
                     {
@@ -545,7 +559,9 @@ namespace System.Collections.Generic
             {
                 _buckets = new int[capacity];
                 _slots = new Slot[capacity];
-
+#if BIT64
+                _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)capacity);
+#endif
                 T[]? array = (T[]?)_siInfo.GetValue(ElementsName, typeof(T[]));
 
                 if (array == null)
@@ -571,6 +587,7 @@ namespace System.Collections.Generic
         #endregion
 
         #region HashSet methods
+
 
         /// <summary>
         /// Add item to this HashSet. Returns bool indicating whether item was added (won't be
@@ -1209,7 +1226,9 @@ namespace System.Collections.Generic
                 int newSize = HashHelpers.GetPrime(_count);
                 Slot[] newSlots = new Slot[newSize];
                 int[] newBuckets = new int[newSize];
-
+#if BIT64
+                _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
+#endif
                 // move down slots and rehash at the same time. newIndex keeps track of current
                 // position in newSlots array
                 int newIndex = 0;
@@ -1220,7 +1239,7 @@ namespace System.Collections.Generic
                         newSlots[newIndex] = _slots[i];
 
                         // rehash
-                        int bucket = newSlots[newIndex].hashCode % newSize;
+                        int bucket = FastMod(newSlots[newIndex].hashCode, newSize);
                         newSlots[newIndex].next = newBuckets[bucket] - 1;
                         newBuckets[bucket] = newIndex + 1;
 
@@ -1263,6 +1282,9 @@ namespace System.Collections.Generic
 
             _buckets = new int[size];
             _slots = new Slot[size];
+#if BIT64
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)size);
+#endif
             return size;
         }
 
@@ -1303,12 +1325,15 @@ namespace System.Collections.Generic
             }
 
             int[] newBuckets = new int[newSize];
+#if BIT64
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
+#endif
             for (int i = 0; i < _lastIndex; i++)
             {
                 int hashCode = newSlots[i].hashCode;
                 if (hashCode >= 0)
                 {
-                    int bucket = hashCode % newSize;
+                    int bucket = FastMod(hashCode, newSize);
                     newSlots[i].next = newBuckets[bucket] - 1;
                     newBuckets[bucket] = i + 1;
                 }
@@ -1340,7 +1365,7 @@ namespace System.Collections.Generic
             if (comparer == null)
             {
                 hashCode = value == null ? 0 : InternalGetHashCode(value.GetHashCode());
-                bucket = hashCode % _buckets!.Length;
+                bucket = FastMod(hashCode, _buckets!.Length);
 
                 if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                 {
@@ -1385,7 +1410,7 @@ namespace System.Collections.Generic
             else
             {
                 hashCode = value == null ? 0 : InternalGetHashCode(comparer.GetHashCode(value));
-                bucket = hashCode % _buckets!.Length;
+                bucket = FastMod(hashCode, _buckets!.Length);
 
                 for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
                 {
@@ -1416,7 +1441,7 @@ namespace System.Collections.Generic
                     IncreaseCapacity();
                     // this will change during resize
                     slots = _slots;
-                    bucket = hashCode % _buckets.Length;
+                    bucket = FastMod(hashCode, _buckets.Length);
                 }
                 index = _lastIndex;
                 _lastIndex++;
@@ -1435,7 +1460,7 @@ namespace System.Collections.Generic
         // when constructing from another HashSet.
         private void AddValue(int index, int hashCode, T value)
         {
-            int bucket = hashCode % _buckets!.Length;
+            int bucket = FastMod(hashCode, _buckets!.Length);
 
 #if DEBUG
             IEqualityComparer<T> comparer = _comparer ?? EqualityComparer<T>.Default;
@@ -1581,7 +1606,7 @@ namespace System.Collections.Generic
                 if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                 {
                     // see note at "HashSet" level describing why "- 1" appears in for loop
-                    for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
+                    for (int i = buckets[FastMod(hashCode, buckets.Length)] - 1; i >= 0; i = slots[i].next)
                     {
                         if (slots[i].hashCode == hashCode && EqualityComparer<T>.Default.Equals(slots[i].value, item))
                         {
@@ -1604,7 +1629,7 @@ namespace System.Collections.Generic
                     EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 
                     // see note at "HashSet" level describing why "- 1" appears in for loop
-                    for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
+                    for (int i = buckets[FastMod(hashCode, buckets.Length)] - 1; i >= 0; i = slots[i].next)
                     {
                         if (slots[i].hashCode == hashCode && defaultComparer.Equals(slots[i].value, item))
                         {
@@ -1625,7 +1650,7 @@ namespace System.Collections.Generic
                 int hashCode = item == null ? 0 : InternalGetHashCode(comparer.GetHashCode(item));
 
                 // see note at "HashSet" level describing why "- 1" appears in for loop
-                for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
+                for (int i = buckets[FastMod(hashCode, buckets.Length)] - 1; i >= 0; i = slots[i].next)
                 {
                     if (slots[i].hashCode == hashCode && comparer.Equals(slots[i].value, item))
                     {
@@ -1747,7 +1772,7 @@ namespace System.Collections.Generic
 
             IEqualityComparer<T>? comparer = _comparer;
             int hashCode = InternalGetHashCode(value, comparer);
-            int bucket = hashCode % _buckets.Length;
+            int bucket = FastMod(hashCode, _buckets.Length);
             int collisionCount = 0;
             Slot[] slots = _slots;
             for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
@@ -1778,7 +1803,7 @@ namespace System.Collections.Generic
                     IncreaseCapacity();
                     // this will change during resize
                     slots = _slots;
-                    bucket = hashCode % _buckets.Length;
+                    bucket = FastMod(hashCode, _buckets.Length);
                 }
                 index = _lastIndex;
                 _lastIndex++;
@@ -1978,6 +2003,14 @@ namespace System.Collections.Generic
         {
             return hashCode & Lower31BitMask;
         }
+
+#if BIT64
+        private int FastMod(int value, int divisor)
+            => (int) HashHelpers.FastMod((uint)value, (uint)divisor, _fastModMultiplier);
+#else
+        private static int FastMod(int value, int divisor)
+             => value % divisor;
+#endif
 
         #endregion
 
