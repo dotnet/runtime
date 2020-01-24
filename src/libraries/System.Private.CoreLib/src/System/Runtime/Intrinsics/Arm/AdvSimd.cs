@@ -324,41 +324,47 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector64<ulong> CompareGreaterThanOrEqualScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareGreaterThanOrEqualScalar(left, right);
 
-            // /// <summary>
-            // /// float64x1_t vclt_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: FCMGT Dd, Dn, Dm
-            // /// </summary>
-            // public static Vector64<double> CompareLessThan(Vector64<double> left, Vector64<double> right) => CompareLessThan(left, right);
-
-            // /// <summary>
-            // /// int64x1_t vclt_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMGT Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareLessThan(Vector64<long> left, Vector64<long> right) => CompareLessThan(left, right);
-
-            // /// <summary>
-            // /// uint64x1_t vclt_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMHI Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareLessThan(Vector64<ulong> left, Vector64<ulong> right) => CompareLessThan(left, right);
-
             /// <summary>
-            /// float64x2_t vcltq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: FCMGT Vd, Vn, Vm
+            /// uint64x2_t vcltq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FCMGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> CompareLessThan(Vector128<double> left, Vector128<double> right) => CompareLessThan(left, right);
 
             /// <summary>
-            /// int64x2_t vcltq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMGT Vd, Vn, Vm
+            /// uint64x2_t vcltq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareLessThan(Vector128<long> left, Vector128<long> right) => CompareLessThan(left, right);
 
             /// <summary>
             /// uint64x2_t vcltq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMHI Vd, Vn, Vm
+            ///   A64: CMHI Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareLessThan(Vector128<ulong> left, Vector128<ulong> right) => CompareLessThan(left, right);
+
+            /// <summary>
+            /// uint64x1_t vclt_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FCMGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> CompareLessThanScalar(Vector64<double> left, Vector64<double> right) => CompareLessThanScalar(left, right);
+
+            /// <summary>
+            /// uint64x1_t vclt_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<long> CompareLessThanScalar(Vector64<long> left, Vector64<long> right) => CompareLessThanScalar(left, right);
+
+            /// <summary>
+            /// uint32_t vclts_f32 (float32_t a, float32_t b)
+            ///   A64: FCMGT Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> CompareLessThanScalar(Vector64<float> left, Vector64<float> right) => CompareLessThanScalar(left, right);
+
+            /// <summary>
+            /// uint64x1_t vclt_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMHI Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareLessThanScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareLessThanScalar(left, right);
 
             // /// <summary>
             // /// float64x1_t vcle_f64 (float64x1_t a, float64x1_t b)
