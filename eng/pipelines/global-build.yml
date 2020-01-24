@@ -34,27 +34,27 @@ jobs:
 #
 - template: /eng/pipelines/common/checkout-job.yml
 
-#
-# Build the combined runtime repo
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    platforms:
-    - Windows_NT_x86
-    - OSX_x64
-    jobParameters:
-      testGroup: innerloop
+# #
+# # Build the combined runtime repo
+# #
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     buildConfig: release
+#     platforms:
+#     - Windows_NT_x86
+#     - OSX_x64
+#     jobParameters:
+#       testGroup: innerloop
 
-#
-# Build the combined runtime repo
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
-    platforms:
-    - Linux_x64
-    jobParameters:
-      testGroup: innerloop
+# #
+# # Build the combined runtime repo
+# #
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     buildConfig: debug
+#     platforms:
+#     - Linux_x64
+#     jobParameters:
+#       testGroup: innerloop
