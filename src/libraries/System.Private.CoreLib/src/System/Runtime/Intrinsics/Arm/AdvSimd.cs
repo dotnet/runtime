@@ -198,41 +198,47 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector128<uint> AddAcross(Vector128<uint> value) => AddAcross(value);
 
-            // /// <summary>
-            // /// int64x1_t vceq_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMEQ Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareEqual(Vector64<long> left, Vector64<long> right) => CompareEqual(left, right);
-
-            // /// <summary>
-            // /// uint64x1_t vceq_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMEQ Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareEqual(Vector64<ulong> left, Vector64<ulong> right) => CompareEqual(left, right);
+            /// <summary>
+            /// uint64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FCMEQ Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> CompareEqual(Vector128<double> left, Vector128<double> right) => CompareEqual(left, right);
 
             /// <summary>
-            /// int64x2_t vceqq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMEQ Vd, Vn, Vm
+            /// uint64x2_t vceqq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMEQ Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareEqual(Vector128<long> left, Vector128<long> right) => CompareEqual(left, right);
 
             /// <summary>
             /// uint64x2_t vceqq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMEQ Vd, Vn, Vm
+            ///   A64: CMEQ Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareEqual(left, right);
 
-            // /// <summary>
-            // /// float64x1_t vceq_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: FCMEQ Dd, Dn, Dm
-            // /// </summary>
-            // public static Vector64<double> CompareEqual(Vector64<double> left, Vector64<double> right) => CompareEqual(left, right);
+            /// <summary>
+            /// uint64x1_t vceq_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FCMEQ Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> CompareEqualScalar(Vector64<double> left, Vector64<double> right) => CompareEqualScalar(left, right);
 
             /// <summary>
-            /// float64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: FCMEQ Vd, Vn, Vm
+            /// uint64x1_t vceq_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMEQ Dd, Dn, Dm
             /// </summary>
-            public static Vector128<double> CompareEqual(Vector128<double> left, Vector128<double> right) => CompareEqual(left, right);
+            public static Vector64<long> CompareEqualScalar(Vector64<long> left, Vector64<long> right) => CompareEqualScalar(left, right);
+
+            /// <summary>
+            /// uint32_t vceqs_f32 (float32_t a, float32_t b)
+            ///   A64: FCMEQ Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> CompareEqualScalar(Vector64<float> left, Vector64<float> right) => CompareEqualScalar(left, right);
+
+            /// <summary>
+            /// uint64x1_t vceq_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMEQ Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareEqualScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareEqualScalar(left, right);
 
             // /// <summary>
             // /// float64x1_t vcgt_f64 (float64x1_t a, float64x1_t b)
