@@ -25,7 +25,9 @@ namespace ILCompiler
         {
             EnsureLoadableType(method.OwningType);
 
-            if (method.HasInstantiation)
+            // If this is an instantiated generic method, check the instantiation.
+            MethodDesc methodDef = method.GetMethodDefinition();
+            if (methodDef != method)
             {
                 foreach (var instType in method.Instantiation)
                     EnsureLoadableType(instType);
@@ -102,12 +104,6 @@ namespace ILCompiler
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
-#if READYTORUN
-            else if (type.IsGenericParameter)
-            {
-                return type;
-            }
-#endif
             else
             {
                 // Validate classes, structs, enums, interfaces, and delegates
