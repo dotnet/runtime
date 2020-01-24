@@ -369,7 +369,7 @@ jobs:
 
 #
 # Libraries Test Build
-# Only when CoreCLR or Libraries is changed
+# Only when CoreCLR, Mono or Libraries is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -387,6 +387,7 @@ jobs:
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
