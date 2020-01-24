@@ -2941,6 +2941,9 @@
   <data name="NotSupported_OutputStreamUsingTypeBuilder" xml:space="preserve">
     <value>Output streams do not support TypeBuilders.</value>
   </data>
+  <data name="NotSupported_Overlapped" xml:space="preserve">
+    <value>This API is not supported on this platform.</value>
+  </data>
   <data name="NotSupported_PIAInAppxProcess" xml:space="preserve">
     <value>A Primary Interop Assembly is not supported in AppX.</value>
   </data>
@@ -3300,6 +3303,9 @@
   </data>
   <data name="Serialization_StringBuilderMaxCapacity" xml:space="preserve">
     <value>The serialized MaxCapacity property of StringBuilder must be positive and greater than or equal to the String length.</value>
+  </data>
+  <data name="SetterHasNoParams" xml:space="preserve">
+    <value>Setter must have parameters.</value>
   </data>
   <data name="SpinLock_Exit_SynchronizationLockException" xml:space="preserve">
     <value>The calling thread does not hold the lock.</value>

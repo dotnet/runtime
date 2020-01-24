@@ -144,10 +144,6 @@
 
   <!-- Sources -->
   <ItemGroup>
-      <Compile Include="resources\SR.extra.cs" />
-  </ItemGroup>
-  <ItemGroup>
-      <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />
