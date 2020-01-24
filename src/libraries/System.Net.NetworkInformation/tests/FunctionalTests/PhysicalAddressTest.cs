@@ -259,7 +259,7 @@ namespace System.Net.NetworkInformation.Tests
         public void ToString_NullAddress_NullReferenceException()
         {
             var pa = new PhysicalAddress(null);
-            Assert.Throws<NullReferenceException>(() => pa.ToString());
+            Assert.Equal("", pa.ToString());
         }
 
         [Theory]
