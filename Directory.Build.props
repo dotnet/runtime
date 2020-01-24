@@ -34,14 +34,7 @@
     <NetFrameworkCurrent>net472</NetFrameworkCurrent>
   </PropertyGroup>
 
-  <!-- Honor the generic RuntimeConfiguration property. -->
-  <PropertyGroup>
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(ConfigurationGroup)</RuntimeConfiguration>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(RuntimeConfiguration)</CoreCLRConfiguration>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
-    <!-- There's no checked configuration on Mono. -->
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
-  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
 
   <!--
     Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
