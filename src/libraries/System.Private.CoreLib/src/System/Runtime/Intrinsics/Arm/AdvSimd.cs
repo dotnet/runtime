@@ -1716,140 +1716,140 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint8x8_t vbsl_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> BitwiseSelect(Vector64<byte> select, Vector64<byte> left, Vector64<byte> right) => BitwiseSelect(select, left, right);
 
-        // /// <summary>
-        // /// float64x1_t vbsl_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
-        // ///   A32: VBSL Dd, Dn, Dm
-        // ///   A64: BSL Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<double> BitwiseSelect(Vector64<double> select, Vector64<double> left, Vector64<double> right) => BitwiseSelect(select, left, right);
+        /// <summary>
+        /// float64x1_t vbsl_f64 (uint64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VBSL Dd, Dn, Dm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<double> BitwiseSelect(Vector64<double> select, Vector64<double> left, Vector64<double> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// int16x4_t vbsl_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        /// int16x4_t vbsl_s16 (uint16x4_t a, int16x4_t b, int16x4_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> BitwiseSelect(Vector64<short> select, Vector64<short> left, Vector64<short> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// int32x2_t vbsl_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        /// int32x2_t vbsl_s32 (uint32x2_t a, int32x2_t b, int32x2_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> BitwiseSelect(Vector64<int> select, Vector64<int> left, Vector64<int> right) => BitwiseSelect(select, left, right);
 
-        // /// <summary>
-        // /// int64x1_t vbsl_s64 (int64x1_t a, int64x1_t b, int64x1_t c)
-        // ///   A32: VBSL Dd, Dn, Dm
-        // ///   A64: BSL Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> BitwiseSelect(Vector64<long> select, Vector64<long> left, Vector64<long> right) => BitwiseSelect(select, left, right);
+        /// <summary>
+        /// int64x1_t vbsl_s64 (uint64x1_t a, int64x1_t b, int64x1_t c)
+        ///   A32: VBSL Dd, Dn, Dm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> BitwiseSelect(Vector64<long> select, Vector64<long> left, Vector64<long> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// int8x8_t vbsl_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        /// int8x8_t vbsl_s8 (uint8x8_t a, int8x8_t b, int8x8_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> BitwiseSelect(Vector64<sbyte> select, Vector64<sbyte> left, Vector64<sbyte> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// float32x2_t vbsl_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        /// float32x2_t vbsl_f32 (uint32x2_t a, float32x2_t b, float32x2_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<float> BitwiseSelect(Vector64<float> select, Vector64<float> left, Vector64<float> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// uint16x4_t vbsl_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> BitwiseSelect(Vector64<ushort> select, Vector64<ushort> left, Vector64<ushort> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// uint32x2_t vbsl_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> BitwiseSelect(Vector64<uint> select, Vector64<uint> left, Vector64<uint> right) => BitwiseSelect(select, left, right);
 
-        // /// <summary>
-        // /// uint64x1_t vbsl_u64 (uint64x1_t a, uint64x1_t b, uint64x1_t c)
-        // ///   A32: VBSL Dd, Dn, Dm
-        // ///   A64: BSL Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> BitwiseSelect(Vector64<ulong> select, Vector64<ulong> left, Vector64<ulong> right) => BitwiseSelect(select, left, right);
+        /// <summary>
+        /// uint64x1_t vbsl_u64 (uint64x1_t a, uint64x1_t b, uint64x1_t c)
+        ///   A32: VBSL Dd, Dn, Dm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> BitwiseSelect(Vector64<ulong> select, Vector64<ulong> left, Vector64<ulong> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// uint8x16_t vbslq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> BitwiseSelect(Vector128<byte> select, Vector128<byte> left, Vector128<byte> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// float64x2_t vbslq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+        /// float64x2_t vbslq_f64 (uint64x2_t a, float64x2_t b, float64x2_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<double> BitwiseSelect(Vector128<double> select, Vector128<double> left, Vector128<double> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// int16x8_t vbslq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        /// int16x8_t vbslq_s16 (uint16x8_t a, int16x8_t b, int16x8_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> BitwiseSelect(Vector128<short> select, Vector128<short> left, Vector128<short> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// int32x4_t vbslq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        /// int32x4_t vbslq_s32 (uint32x4_t a, int32x4_t b, int32x4_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> BitwiseSelect(Vector128<int> select, Vector128<int> left, Vector128<int> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// int64x2_t vbslq_s64 (int64x2_t a, int64x2_t b, int64x2_t c)
+        /// int64x2_t vbslq_s64 (uint64x2_t a, int64x2_t b, int64x2_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> BitwiseSelect(Vector128<long> select, Vector128<long> left, Vector128<long> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// int8x16_t vbslq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        /// int8x16_t vbslq_s8 (uint8x16_t a, int8x16_t b, int8x16_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> BitwiseSelect(Vector128<sbyte> select, Vector128<sbyte> left, Vector128<sbyte> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
-        /// float32x4_t vbslq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        /// float32x4_t vbslq_f32 (uint32x4_t a, float32x4_t b, float32x4_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<float> BitwiseSelect(Vector128<float> select, Vector128<float> left, Vector128<float> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// uint16x8_t vbslq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> BitwiseSelect(Vector128<ushort> select, Vector128<ushort> left, Vector128<ushort> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// uint32x4_t vbslq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> BitwiseSelect(Vector128<uint> select, Vector128<uint> left, Vector128<uint> right) => BitwiseSelect(select, left, right);
 
         /// <summary>
         /// uint64x2_t vbslq_u64 (uint64x2_t a, uint64x2_t b, uint64x2_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> BitwiseSelect(Vector128<ulong> select, Vector128<ulong> left, Vector128<ulong> right) => BitwiseSelect(select, left, right);
 
