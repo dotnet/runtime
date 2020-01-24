@@ -13,31 +13,6 @@
 -nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrix_InvalidFlags_ThrowsArgumentException
 
 ####################################################################
-##  System.Memory.Tests
-####################################################################
-
-# Reflection TargetException: Non-static method requires a target. 
-# https://github.com/mono/mono/issues/14962
--nomethod System.SpanTests.SpanTests.ReadOnlyMemory_PropertyReturningReadOnlySpan
-
-# Should throw NotSupportedException, but we do not. 
-# https://github.com/mono/mono/issues/14993
--nomethod System.SpanTests.SpanTests.ReadOnlySpan_Constructor
--nomethod System.SpanTests.SpanTests.Span_Constructor
-
-# Should throw NotSupportedException - Non static method requires a target
-# https://github.com/mono/mono/issues/14998
--nomethod System.SpanTests.SpanTests.Span_InstanceMethod
--nomethod System.SpanTests.SpanTests.Memory_PropertyReturningSpan
--nomethod System.SpanTests.SpanTests.ReadOnlySpan_InstanceMethod
-
-# Should throw OutOfMemory Exception, but does not throw
-# https://github.com/mono/mono/issues/15002
--nomethod System.Buffers.Tests.ArrayBufferWriterTests_String.Invalid_Ctor
--nomethod System.Buffers.Tests.ArrayBufferWriterTests_Char.Invalid_Ctor
--nomethod System.Buffers.Tests.ArrayBufferWriterTests_Byte.Invalid_Ctor
-
-####################################################################
 ##  System.Net.Http.Functional.Tests
 ####################################################################
 
