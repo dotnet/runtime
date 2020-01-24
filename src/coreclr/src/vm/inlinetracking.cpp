@@ -612,7 +612,8 @@ BOOL PersistentInlineTrackingMapR2R2::TryLoad(Module* pModule, const BYTE* pBuff
     pMap->m_module = pModule;
 
     pMap->m_reader = NativeReader(pBuffer, cbBuffer);
-    pMap->m_hashtable = NativeHashtable(NativeParser(&pMap->m_reader, 0));
+    NativeParser parser = NativeParser(&pMap->m_reader, 0);
+    pMap->m_hashtable = NativeHashtable(parser);
     *ppLoadedMap = pMap;
     return TRUE;
 }
