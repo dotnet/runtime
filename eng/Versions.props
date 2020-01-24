@@ -6,10 +6,12 @@
     <MajorVersion>5</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <!-- Always use shipping version instead of dummy version -->
-    <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
     <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
+
+    <!-- Set assembly version to align with major and minor version,
+         as for the patches and revisions should be manually updated per assembly if it is serviced. -->
+    <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
@@ -43,7 +45,7 @@
     <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.20071.3</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.20071.3</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppVersion>5.0.0-alpha.1.19562.8</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreAppVersion>5.0.0-alpha.1.20071.1</MicrosoftNETCoreAppVersion>
     <MicrosoftNETCoreDotNetHostVersion>5.0.0-alpha.1.19563.6</MicrosoftNETCoreDotNetHostVersion>
     <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-alpha.1.19563.6</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>2.1.0</MicrosoftExtensionsDependencyModelVersion>
