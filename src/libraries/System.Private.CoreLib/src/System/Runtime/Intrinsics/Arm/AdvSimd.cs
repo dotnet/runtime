@@ -2068,100 +2068,100 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> CompareGreaterThan(Vector128<uint> left, Vector128<uint> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// uint8x8_t vceq_u8 (uint8x8_t a, uint8x8_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint8x8_t vcge_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VCGE.U8 Dd, Dn, Dm
+        ///   A64: CMHS Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> CompareGreaterThanOrEqual(Vector64<byte> left, Vector64<byte> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// int16x4_t vcge_s16 (int16x4_t a, int16x4_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint16x4_t vcge_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VCGE.S16 Dd, Dn, Dm
+        ///   A64: CMGE Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<short> CompareGreaterThanOrEqual(Vector64<short> left, Vector64<short> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// int32x2_t vcge_s32 (int32x2_t a, int32x2_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint32x2_t vcge_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VCGE.S32 Dd, Dn, Dm
+        ///   A64: CMGE Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<int> CompareGreaterThanOrEqual(Vector64<int> left, Vector64<int> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// int8x8_t vcge_s8 (int8x8_t a, int8x8_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint8x8_t vcge_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VCGE.S8 Dd, Dn, Dm
+        ///   A64: CMGE Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> CompareGreaterThanOrEqual(Vector64<sbyte> left, Vector64<sbyte> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// float32x2_t vceq_f32 (float32x2_t a, float32x2_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMGE Dd, Dn, Dm
+        /// uint32x2_t vcge_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VCGE.F32 Dd, Dn, Dm
+        ///   A64: FCMGE Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> CompareGreaterThanOrEqual(Vector64<float> left, Vector64<float> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// uint16x4_t vceq_u16 (uint16x4_t a, uint16x4_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint16x4_t vcge_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VCGE.U16 Dd, Dn, Dm
+        ///   A64: CMHS Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<ushort> CompareGreaterThanOrEqual(Vector64<ushort> left, Vector64<ushort> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// uint32x2_t vceq_u32 (uint32x2_t a, uint32x2_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint32x2_t vcge_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VCGE.U32 Dd, Dn, Dm
+        ///   A64: CMHS Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<uint> CompareGreaterThanOrEqual(Vector64<uint> left, Vector64<uint> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// uint8x16_t vceqq_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint8x16_t vcgeq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VCGE.U8 Qd, Qn, Qm
+        ///   A64: CMHS Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> CompareGreaterThanOrEqual(Vector128<byte> left, Vector128<byte> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// int16x8_t vcgeq_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint16x8_t vcgeq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VCGE.S16 Qd, Qn, Qm
+        ///   A64: CMGE Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<short> CompareGreaterThanOrEqual(Vector128<short> left, Vector128<short> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// int32x4_t vcgeq_s32 (int32x4_t a, int32x4_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint32x4_t vcgeq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VCGE.S32 Qd, Qn, Qm
+        ///   A64: CMGE Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<int> CompareGreaterThanOrEqual(Vector128<int> left, Vector128<int> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// int8x16_t vcgeq_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint8x16_t vcgeq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VCGE.S8 Qd, Qn, Qm
+        ///   A64: CMGE Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> CompareGreaterThanOrEqual(Vector128<sbyte> left, Vector128<sbyte> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// float32x4_t vceqq_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint32x4_t vcgeq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VCGE.F32 Qd, Qn, Qm
+        ///   A64: FCMGE Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> CompareGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// uint16x8_t vceqq_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint16x8_t vcgeq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VCGE.U16 Qd, Qn, Qm
+        ///   A64: CMHS Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<ushort> CompareGreaterThanOrEqual(Vector128<ushort> left, Vector128<ushort> right) => CompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// uint32x4_t vceqq_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint32x4_t vcgeq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VCGE.U32 Qd, Qn, Qm
+        ///   A64: CMHS Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> CompareGreaterThanOrEqual(Vector128<uint> left, Vector128<uint> right) => CompareGreaterThanOrEqual(left, right);
 
