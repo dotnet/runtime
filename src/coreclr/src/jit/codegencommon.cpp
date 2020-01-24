@@ -11122,7 +11122,7 @@ void CodeGen::genReturn(GenTree* treeNode)
     // BBJ_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
     // maintain such an invariant irrespective of whether profiler hook needed or not.
     // Also, there is not much to be gained by materializing it as an explicit node.
-    if (compiler->compIsProfilerHookNeeded())
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsProfilerHookNeeded())
     {
         // There should be a single return block while generating profiler ELT callbacks.
         assert(compiler->compCurBB == compiler->genReturnBB);
