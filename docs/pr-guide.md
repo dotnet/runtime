@@ -30,6 +30,10 @@ Anyone with write access can merge a pull request manually or by setting the [au
 
 Please always squash the pull request unless explicitly requested by the PR author. Do so, even if the PR contains only one commit. It creates a simpler history than a Merge Commit.
 
+## Blocking Pull Request Merging
+
+If for whatever reason you would like to move your pull request back to in-progress status to avoid merging it in the current form. You can do that by adding [WIP] prefix to the pull request title.
+
 ## Old Pull Request Policy
 From time to time we will review older PR's (> 1 month) and check them for relevance. If we find the PR is inactive or no longer applies, we will close it. As the PR owner, you can simply reopen it if you feel your closed PR needs our attention.
 
