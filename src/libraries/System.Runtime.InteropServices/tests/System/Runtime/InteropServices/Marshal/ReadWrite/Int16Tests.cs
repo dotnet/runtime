@@ -5,6 +5,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
@@ -44,6 +45,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/mono/mono/issues/15085 - Marshal Methods WILL NOT BE Implemented in MonoVM")]
         public void WriteInt16_BlittableObject_Roundtrips()
         {
             int offset1 = Marshal.OffsetOf<BlittableStruct>(nameof(BlittableStruct.value1)).ToInt32();
@@ -65,6 +67,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/mono/mono/issues/15085 - Marshal Methods WILL NOT BE Implemented in MonoVM")]
         public void WriteInt16_StructWithReferenceTypes_ReturnsExpected()
         {
             int pointerOffset = Marshal.OffsetOf<StructWithReferenceTypes>(nameof(StructWithReferenceTypes.pointerValue)).ToInt32();
@@ -89,6 +92,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/mono/mono/issues/15085 - Marshal Methods WILL NOT BE Implemented in MonoVM")]
         public void ReadInt16_BlittableObject_ReturnsExpected()
         {
             int offset1 = Marshal.OffsetOf<BlittableStruct>(nameof(BlittableStruct.value1)).ToInt32();
@@ -105,6 +109,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/mono/mono/issues/15085 - Marshal Methods WILL NOT BE Implemented in MonoVM")]
         public void ReadInt16_StructWithReferenceTypes_ReturnsExpected()
         {
             int pointerOffset = Marshal.OffsetOf<StructWithReferenceTypes>(nameof(StructWithReferenceTypes.pointerValue)).ToInt32();
@@ -130,12 +135,14 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/mono/mono/issues/15085 - Marshal Methods WILL NOT BE Implemented in MonoVM")]
         public void ReadInt16_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.ReadInt16(null, 2));
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/mono/mono/issues/15085 - Marshal Methods WILL NOT BE Implemented in MonoVM")]
         public void ReadInt16_NotReadable_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
@@ -155,12 +162,14 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/mono/mono/issues/15085 - Marshal Methods WILL NOT BE Implemented in MonoVM")]
         public void WriteInt16_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.WriteInt16(null, 2, 0));
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/mono/mono/issues/15085 - Marshal Methods WILL NOT BE Implemented in MonoVM")]
         public void WriteInt16_NotReadable_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
