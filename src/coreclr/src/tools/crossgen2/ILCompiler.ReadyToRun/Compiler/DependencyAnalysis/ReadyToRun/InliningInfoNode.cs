@@ -14,6 +14,9 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
+    /// <summary>
+    /// Stores information about what methods got inlined into other methods.
+    /// </summary>
     public class InliningInfoNode : HeaderTableNode
     {
         private readonly EcmaModule _globalContext;

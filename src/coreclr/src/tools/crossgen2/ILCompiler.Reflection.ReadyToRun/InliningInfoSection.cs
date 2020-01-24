@@ -24,6 +24,49 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             StringBuilder sb = new StringBuilder();
 
+            int iiOffset = _startOffset;
+            int sizeOfInlineIndex = NativeReader.ReadInt32(_r2r.Image, ref iiOffset);
+            int inlineIndexEndOffset = iiOffset + sizeOfInlineIndex;
+            while (iiOffset < inlineIndexEndOffset)
+            {
+                int inlineeRid = NativeReader.ReadInt32(_r2r.Image, ref iiOffset);
+                int inlinersOffset = NativeReader.ReadInt32(_r2r.Image, ref iiOffset);
+                sb.AppendLine($"Inliners for inlinee {RidToMethodDef(inlineeRid):X8}:");
+                var inlinersReader = new NibbleReader(_r2r.Image, inlineIndexEndOffset + inlinersOffset);
+                uint sameModuleCount = inlinersReader.ReadUInt();
+
+                int baseRid = 0;
+                for (uint i = 0; i < sameModuleCount; i++)
+                {
+                    int currentRid = baseRid + (int)inlinersReader.ReadUInt();
+                    sb.AppendLine($"  {RidToMethodDef(currentRid):X8}");
+                    baseRid = currentRid;
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        static int RidToMethodDef(int rid) => MetadataTokens.GetToken(MetadataTokens.MethodDefinitionHandle(rid));
+    }
+
+    public class InliningInfoSection2
+    {
+        private readonly ReadyToRunReader _r2r;
+        private readonly int _startOffset;
+        private readonly int _endOffset;
+
+        public InliningInfoSection2(ReadyToRunReader reader, int offset, int endOffset)
+        {
+            _r2r = reader;
+            _startOffset = offset;
+            _endOffset = endOffset;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+
             NativeParser parser = new NativeParser(_r2r.Image, (uint)_startOffset);
             NativeHashtable hashtable = new NativeHashtable(_r2r.Image, parser, (uint)_endOffset);
 
@@ -59,39 +102,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                         uint module = curParser.GetUnsigned();
                         count--;
                         string moduleName = _r2r.GetReferenceAssemblyName((int)module);
-                        sb.AppendLine($"  {inlinerToken:X8} (module {moduleName}):");
+                        sb.AppendLine($"  {inlinerToken:X8} (module {moduleName})");
                     }
                     else
                     {
-                        sb.AppendLine($" {inlinerToken:X8}:");
+                        sb.AppendLine($" {inlinerToken:X8}");
                     }
 
                 }
-                
+
                 curParser = enumerator.GetNext();
             }
-
-            /*int iiOffset = _startOffset;
-            int sizeOfInlineIndex = NativeReader.ReadInt32(_r2r.Image, ref iiOffset);
-            int inlineIndexEndOffset = iiOffset + sizeOfInlineIndex;
-            while (iiOffset < inlineIndexEndOffset)
-            {
-                int inlineeRid = NativeReader.ReadInt32(_r2r.Image, ref iiOffset);
-                int inlinersOffset = NativeReader.ReadInt32(_r2r.Image, ref iiOffset);
-                sb.AppendLine($"Inliners for inlinee {RidToMethodDef(inlineeRid):X8}:");
-                var inlinersReader = new NibbleReader(_r2r.Image, inlineIndexEndOffset + inlinersOffset);
-                uint sameModuleCount = inlinersReader.ReadUInt();
-
-                int baseRid = 0;
-                for (uint i = 0; i < sameModuleCount; i++)
-                {
-                    int currentRid = baseRid + (int)inlinersReader.ReadUInt();
-                    sb.AppendLine($"  {RidToMethodDef(currentRid):X8}");
-                    baseRid = currentRid;
-                }
-            }*/
-
-
 
             return sb.ToString();
         }

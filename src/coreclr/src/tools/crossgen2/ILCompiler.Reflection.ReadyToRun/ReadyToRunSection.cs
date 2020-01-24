@@ -29,6 +29,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             READYTORUN_SECTION_PROFILEDATA_INFO = 111,
             READYTORUN_SECTION_MANIFEST_METADATA = 112, // Added in v2.3
             READYTORUN_SECTION_ATTRIBUTEPRESENCE = 113, // Added in V3.1
+            READYTORUN_SECTION_INLINING_INFO2 = 114, // Added in 4.1
         }
 
         /// <summary>
