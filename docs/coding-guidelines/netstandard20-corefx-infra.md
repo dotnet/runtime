@@ -1,5 +1,7 @@
-## dotnet/CoreFx
+## dotnet/runtime
+
 ### Libraries in NETStandard
+
 - ref
   - Default targetgroup should be NETCoreApp build
   - P2P references to other reference assembly CSProjs.
@@ -77,6 +79,6 @@ Provides compatibility between NETCore.App and libraries built against NETStanda
 
 ### End goal
 
-- CoreFx does not build any reference assemblies for NETStandard.
-- For every library in NETStandard.Library, the only configurations in CoreFx are framework-specific.  EG: netcoreapp3.0, net472
+- dotnet/runtime does not build any reference assemblies for NETStandard.
+- For every library in NETStandard.Library, the only configurations in dotnet/runtime are framework-specific.  EG: netcoreapp3.0, net472
 - For every library in NETCore.App but not in NETStandard.Library there must be a framework-specific configuration for NETCoreApp1.2.  Other configurations may exist to ship in a package, but those will not be built by folks building just NETCore.App.
