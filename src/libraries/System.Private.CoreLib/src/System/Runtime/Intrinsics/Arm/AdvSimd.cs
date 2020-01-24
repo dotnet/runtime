@@ -78,17 +78,23 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector64<float> AbsoluteCompareGreaterThanOrEqualScalar(Vector64<float> left, Vector64<float> right) => AbsoluteCompareGreaterThanOrEqualScalar(left, right);
 
-            // /// <summary>
-            // /// float64x1_t vcalt (float64x1_t a, float64x1_t b)
-            // ///   A64: FACGT Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<double> AbsoluteCompareLessThan(Vector64<double> left, Vector64<double> right) => AbsoluteCompareLessThan(left, right);
-
             /// <summary>
-            /// float64x2_t vcalt (float64x2_t a, float64x2_t b)
-            ///   A64: FACGT Vd, Vn, Vm
+            /// uint64x2_t vcaltq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FACGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> AbsoluteCompareLessThan(Vector128<double> left, Vector128<double> right) => AbsoluteCompareLessThan(left, right);
+
+            /// <summary>
+            /// uint64x1_t vcalt_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FACGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> AbsoluteCompareLessThanScalar(Vector64<double> left, Vector64<double> right) => AbsoluteCompareLessThanScalar(left, right);
+
+            /// <summary>
+            /// uint32_t vcalts_f32 (float32_t a, float32_t b)
+            ///   A64: FACGT Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> AbsoluteCompareLessThanScalar(Vector64<float> left, Vector64<float> right) => AbsoluteCompareLessThanScalar(left, right);
 
             // /// <summary>
             // /// float64x1_t vcale (float64x1_t a, float64x1_t b)
@@ -1135,16 +1141,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<float> AbsoluteCompareGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => AbsoluteCompareGreaterThanOrEqual(left, right);
 
         /// <summary>
-        /// float32x2_t vcalt (float32x2_t a, float32x2_t b)
-        ///   A32: VACLT Dd, Dn, Dm
-        ///   A64: FACGT Vd, Vn, Vm
+        /// uint32x2_t vcalt_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VACLT.F32 Dd, Dn, Dm
+        ///   A64: FACGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> AbsoluteCompareLessThan(Vector64<float> left, Vector64<float> right) => AbsoluteCompareLessThan(left, right);
 
         /// <summary>
-        /// float32x4_t vcalt (float32x4_t a, float32x4_t b)
-        ///   A32: VACLT Qd, Qn, Qm
-        ///   A64: FACGT Vd, Vn, Vm
+        /// uint32x4_t vcaltq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VACLT.F32 Qd, Qn, Qm
+        ///   A64: FACGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> AbsoluteCompareLessThan(Vector128<float> left, Vector128<float> right) => AbsoluteCompareLessThan(left, right);
 
