@@ -34081,6 +34081,9 @@ void gc_heap::background_sweep()
 
     concurrent_print_time_delta ("Swe eph");
 
+    // capture ephemeral segment before releasing gc_lock;
+    heap_segment* eph_seg = ephemeral_heap_segment;
+
 #ifdef MULTIPLE_HEAPS
     bgc_t_join.join(this, gc_join_after_ephemeral_sweep);
     if (bgc_t_join.joined())
@@ -34117,7 +34120,7 @@ void gc_heap::background_sweep()
 
         if (i == max_generation)
         {
-            start_seg = ephemeral_heap_segment;
+            start_seg = eph_seg;
             prev_seg = heap_segment_next(start_seg);
             align_const = get_alignment_constant (TRUE);
         }
