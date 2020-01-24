@@ -32,11 +32,7 @@ jobs:
   displayName: Checkout
 
   pool:
-    ${{ if eq(variables['System.TeamProject'], 'public') }}:
-      name: Hosted MacOS
-
-    ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      name: Hosted Mac Internal
+    name: Hosted MacOS
 
   steps:
   - checkout: self
