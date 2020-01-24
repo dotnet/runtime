@@ -29,4 +29,45 @@ void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
     END_QCALL;
 }
 
+void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
+    _In_ QCall::ObjectHandleOnStack comWrappersImpl,
+    _In_ QCall::ObjectHandleOnStack instance,
+    _In_ INT32 flags)
+{
+    QCALL_CONTRACT;
+
+    void* wrapper = nullptr;
+
+    BEGIN_QCALL;
+
+    END_QCALL;
+
+    return wrapper;
+}
+
+void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
+    _In_ QCall::ObjectHandleOnStack comWrappersImpl,
+    _In_ void* externalComObject,
+    _In_ INT32 flags,
+    _Inout_ QCall::ObjectHandleOnStack retValue)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(externalComObject != nullptr);
+
+    BEGIN_QCALL;
+
+    END_QCALL;
+}
+
+void QCALLTYPE ComWrappersNative::RegisterForReferenceTrackerHost(
+    _In_ QCall::ObjectHandleOnStack comWrappersImpl)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    END_QCALL;
+}
+
 #endif // FEATURE_COMINTEROP

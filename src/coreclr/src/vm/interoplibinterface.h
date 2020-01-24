@@ -16,6 +16,20 @@ public:
         _Out_ void** fpQueryInterface,
         _Out_ void** fpAddRef,
         _Out_ void** fpRelease);
+
+    static void* QCALLTYPE GetOrCreateComInterfaceForObject(
+        _In_ QCall::ObjectHandleOnStack comWrappersImpl,
+        _In_ QCall::ObjectHandleOnStack instance,
+        _In_ INT32 flags);
+
+    static void QCALLTYPE GetOrCreateObjectForComInstance(
+        _In_ QCall::ObjectHandleOnStack comWrappersImpl,
+        _In_ void* externalComObject,
+        _In_ INT32 flags,
+        _Inout_ QCall::ObjectHandleOnStack retValue);
+
+    static void QCALLTYPE RegisterForReferenceTrackerHost(
+        _In_ QCall::ObjectHandleOnStack comWrappersImpl);
 };
 
 #endif // FEATURE_COMINTEROP

@@ -111,8 +111,15 @@ namespace System.Runtime.InteropServices
         /// <returns>The generated COM interface that can be passed outside the .NET runtime.</returns>
         public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
-            throw new NotImplementedException();
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+
+            ComWrappers impl = this;
+            return GetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack.Create(ref impl), ObjectHandleOnStack.Create(ref instance), flags);
         }
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern IntPtr GetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, ObjectHandleOnStack instance, CreateComInterfaceFlags flags);
 
         /// <summary>
         /// Compute the desired VTables for <paramref name="obj"/> respecting the values of <paramref name="flags"/>.
@@ -128,8 +135,8 @@ namespace System.Runtime.InteropServices
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         // Call to execute the abstract instance function
-        internal static unsafe ComInterfaceEntry* CallComputeVtables(ComWrappers instance, object obj, CreateComInterfaceFlags flags, out int count)
-            => instance.ComputeVtables(obj, flags, out count);
+        internal static unsafe ComInterfaceEntry* CallComputeVtables(ComWrappers comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
+            => comWrappersImpl.ComputeVtables(obj, flags, out count);
 
         /// <summary>
         /// Get the currently registered managed object or creates a new managed object and registers it.
@@ -139,8 +146,18 @@ namespace System.Runtime.InteropServices
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
-            throw new NotImplementedException();
+            if (externalComObject == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(externalComObject));
+
+            ComWrappers impl = this;
+            object? retValue = null;
+            GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref retValue));
+
+            return retValue!;
         }
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern void GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags, ObjectHandleOnStack retValue);
 
         /// <summary>
         /// Create a managed object for <paramref name="externalComObject"/> respecting the values of <paramref name="flags"/>.
@@ -151,8 +168,8 @@ namespace System.Runtime.InteropServices
         protected abstract object CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 
         // Call to execute the abstract instance function
-        internal static object CallCreateObject(ComWrappers instance, IntPtr externalComObject, CreateObjectFlags flags)
-            => instance.CreateObject(externalComObject, flags);
+        internal static object CallCreateObject(ComWrappers comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags)
+            => comWrappersImpl.CreateObject(externalComObject, flags);
 
         /// <summary>
         /// Register this class's implementation to be used when a Reference Tracker Host instance is requested from another runtime.
@@ -163,8 +180,12 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public void RegisterForReferenceTrackerHost()
         {
-            throw new NotImplementedException();
+            ComWrappers impl = this;
+            RegisterForReferenceTrackerHostInternal(ObjectHandleOnStack.Create(ref impl));
         }
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern void RegisterForReferenceTrackerHostInternal(ObjectHandleOnStack comWrappersImpl);
 
         /// <summary>
         /// Get the runtime provided IUnknown implementation.
@@ -172,7 +193,6 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        /// [TODO] Consider just returning a struct. Perhaps an Enum for input?
         protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 
