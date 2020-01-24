@@ -34461,9 +34461,6 @@ void gc_heap::background_sweep()
         reset_seg = heap_segment_next_rw (reset_seg);
     }
 
-    generation* loh_gen = generation_of (max_generation + 1);
-    generation_allocation_segment (loh_gen) = heap_segment_rw (generation_start_segment (loh_gen));
-
     // We calculate dynamic data here because if we wait till we signal the lh event,
     // the allocation thread can change the fragmentation and we may read an intermediate
     // value (which can be greater than the generation size). Plus by that time it won't
