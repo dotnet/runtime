@@ -18,26 +18,18 @@
 
 bool Compiler::optDoEarlyPropForFunc()
 {
-#if DEBUG
-    return true;
-#else
     bool propArrayLen  = (optMethodFlags & OMF_HAS_NEWARRAY) && (optMethodFlags & OMF_HAS_ARRAYREF);
     bool propGetType   = (optMethodFlags & (OMF_HAS_NEWOBJ | OMF_HAS_NEWARRAY)) && (optMethodFlags & OMF_HAS_VTABLEREF);
     bool propNullCheck = (optMethodFlags & OMF_HAS_NULLCHECK) != 0;
     return propArrayLen || propGetType || propNullCheck;
-#endif
 }
 
 bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 {
-#if DEBUG
-    return true;
-#else
     bool bbHasArrayRef  = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
     bool bbHasVtableRef = (block->bbFlags & BBF_HAS_VTABREF) != 0;
     bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
     return bbHasArrayRef || bbHasVtableRef || bbHasNullCheck;
-#endif
 }
 
 //--------------------------------------------------------------------
@@ -92,7 +84,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
             {
-#if DEBUG
+#ifdef DEBUG
                 optCheckFlagsAreSet(OMF_HAS_NEWARRAY, "OMF_HAS_NEWARRAY", BBF_HAS_NEWARRAY, "BBF_HAS_NEWARRAY", tree,
                                     block);
 #endif
@@ -138,7 +130,7 @@ GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree DEBUGARG(Basi
                              call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
                              call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8);
 
-#if DEBUG
+#ifdef DEBUG
             if (hasNewObj)
             {
                 optCheckFlagsAreSet(OMF_HAS_NEWOBJ, "OMF_HAS_NEWOBJ", BBF_HAS_NEWOBJ, "BBF_HAS_NEWOBJ", tree, block);
@@ -163,7 +155,7 @@ GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree DEBUGARG(Basi
     return nullptr;
 }
 
-#if DEBUG
+#ifdef DEBUG
 //-----------------------------------------------------------------------------
 // optCheckFlagsAreSet: Check that the method flag and the basic block flag are set.
 //
@@ -231,21 +223,23 @@ void Compiler::optEarlyProp()
     {
         printf("*************** In optEarlyProp()\n");
     }
-#endif
-
-    assert(fgSsaPassesCompleted == 1);
-
+#else
     if (!optDoEarlyPropForFunc())
     {
         return;
     }
+#endif
+
+    assert(fgSsaPassesCompleted == 1);
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
+#ifndef DEBUG
         if (!optDoEarlyPropForBlock(block))
         {
             continue;
         }
+#endif
 
         compCurBB = block;
 
@@ -276,6 +270,8 @@ void Compiler::optEarlyProp()
             // Update the evaluation order and the statement info if the stmt has been rewritten.
             if (isRewritten)
             {
+                // Make sure the transformation happens in debug, check, and release build.
+                assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(block));
                 gtSetStmtInfo(stmt);
                 fgSetStmtSeq(stmt);
             }
@@ -352,7 +348,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     {
         return nullptr;
     }
-#if DEBUG
+#ifdef DEBUG
     else
     {
         if (propKind == optPropKind::OPK_ARRAYLEN)
@@ -577,18 +573,18 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 
 void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-#if DEBUG
+#ifdef DEBUG
     if (tree->OperGet() == GT_NULLCHECK)
     {
         optCheckFlagsAreSet(OMF_HAS_NULLCHECK, "OMF_HAS_NULLCHECK", BBF_HAS_NULLCHECK, "BBF_HAS_NULLCHECK", tree,
                             compCurBB);
     }
-#endif // DEBUG
-
+#else
     if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
     {
         return;
     }
+#endif
 
     GenTree*   nullCheckTree   = optFindNullCheckToFold(tree, nullCheckMap);
     GenTree*   nullCheckParent = nullptr;
@@ -596,6 +592,9 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     if ((nullCheckTree != nullptr) && optIsNullCheckFoldingLegal(tree, nullCheckTree, &nullCheckParent, &nullCheckStmt))
     {
 #ifdef DEBUG
+        // Make sure the transformation happens in debug, check, and release build.
+        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) &&
+               (compCurBB->bbFlags & BBF_HAS_NULLCHECK) != 0);
         if (verbose)
         {
             printf("optEarlyProp Marking a null check for removal\n");
