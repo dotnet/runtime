@@ -58,17 +58,23 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector64<float> AbsoluteCompareGreaterThanScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vcage (float64x1_t a, float64x1_t b)
-            // ///   A64: FACGE Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<double> AbsoluteCompareGreaterThanOrEqual(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
             /// <summary>
-            /// float64x2_t vcage (float64x2_t a, float64x2_t b)
-            ///   A64: FACGE Vd, Vn, Vm
+            /// uint64x2_t vcageq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FACGE Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> AbsoluteCompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcage_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FACGE Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> AbsoluteCompareGreaterThanOrEqualScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vcages_f32 (float32_t a, float32_t b)
+            ///   A64: FACGE Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> AbsoluteCompareGreaterThanOrEqualScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
             // /// <summary>
             // /// float64x1_t vcalt (float64x1_t a, float64x1_t b)
@@ -1113,16 +1119,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<float> AbsoluteCompareGreaterThan(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vcage (float32x2_t a, float32x2_t b)
-        ///   A32: VACGE Dd, Dn, Dm
-        ///   A64: FACGE Vd, Vn, Vm
+        /// uint32x2_t vcage_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VACGE.F32 Dd, Dn, Dm
+        ///   A64: FACGE Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> AbsoluteCompareGreaterThanOrEqual(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vcage (float32x4_t a, float32x4_t b)
-        ///   A32: VACGE Qd, Qn, Qm
-        ///   A64: FACGE Vd, Vn, Vm
+        /// uint32x4_t vcageq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VACGE.F32 Qd, Qn, Qm
+        ///   A64: FACGE Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> AbsoluteCompareGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
