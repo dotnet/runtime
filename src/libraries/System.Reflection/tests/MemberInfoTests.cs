@@ -341,6 +341,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15069", TargetFrameworkMonikers.Mono)]
         public static void HasSameMetadataDefinitionAs_GenericTypeParameters()
         {
             Type theT = typeof(GenericTestClass<>).GetTypeInfo().GenericTypeParameters[0];

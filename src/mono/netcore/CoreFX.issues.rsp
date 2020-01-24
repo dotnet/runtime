@@ -164,43 +164,8 @@
 ##  System.Reflection.Tests
 ####################################################################
 
-# Expected ArgumentException, but none was thrown
-# https://github.com/mono/mono/issues/15024
--nomethod System.Reflection.Tests.MethodInfoTests.Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException
-
-# Static ctors cannot be invoke with one Invoke overload
-# https://github.com/mono/mono/issues/15025
--nomethod System.Reflection.Tests.ConstructorInfoTests.Invoke_StaticConstructor_ThrowsMemberAccessException
-
-# Expected MemberAccessException, but we're throwing TargetException
-# https://github.com/mono/mono/issues/15026
--nomethod System.Reflection.Tests.ConstructorInfoTests.Invoke_AbstractClass_ThrowsMemberAccessException
-
-# Expected TargetParameterCountException, but we have ArgumentException
-# https://github.com/mono/mono/issues/15027
--nomethod System.Reflection.Tests.PropertyInfoTests.GetValue_Invalid
-
-# Expected empty string, but got enumType instead 
-# https://github.com/mono/mono/issues/15028
--nomethod System.Reflection.Tests.TypeInfoTests.IsEnumDefined_Invalid
-
-# Fails because our Object class has extra instance methods
-# https://github.com/mono/mono/issues/15029
--nomethod System.Reflection.Tests.TypeInfoTests.FindMembers
--nomethod System.Reflection.Tests.TypeInfoTests.GetMethods
--nomethod System.Reflection.Tests.TypeInfoTests.GetMembers
--nomethod System.Reflection.Tests.TypeInfoTests.GetMethod
-
-# CustomConstantAttribute not supported
-# https://github.com/mono/mono/issues/15037
--nomethod System.Reflection.Tests.ParameterInfoTests.RawDefaultValueFromAttribute
-
 # SKIPPED
 -nomethod System.Reflection.Tests.MemberInfoTests.HasSameMetadataDefinitionAs__CornerCase_HasElementTypes
-
-# Assertion failed... Not sure why 
-# https://github.com/mono/mono/issues/15069
--nomethod System.Reflection.Tests.MemberInfoTests.HasSameMetadataDefinitionAs_GenericTypeParameters
 
 # relies on specific exception message
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath
