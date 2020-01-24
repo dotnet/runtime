@@ -76,7 +76,7 @@ namespace System
             buffer[startingIndex] = (char)(packedResult >> 8);
         }
 
-        public static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
+        internal static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
 #if NET461 || NET462 || NET472 || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD2_0
             Span<char> result = stackalloc char[bytes.Length * 2];
