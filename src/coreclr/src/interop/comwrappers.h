@@ -6,8 +6,11 @@
 #define _INTEROP_COMWRAPPERS_H_
 
 #include "platform.h"
+#include <interoplib.h>
 #include "referencetrackertypes.h"
 #include <objidl.h> // COM interfaces
+
+using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 
 enum class CreateComInterfaceFlags
 {
@@ -44,7 +47,7 @@ namespace ABI
 class ManagedObjectWrapper
 {
 public:
-    void* Target;
+    OBJECTHANDLE Target;
 
 private:
     const int32_t _runtimeDefinedCount;
@@ -63,14 +66,14 @@ public: // static
     // Create a ManagedObjectWrapper instance
     static ManagedObjectWrapper* Create(
         _In_ CreateComInterfaceFlags flags,
-        _In_ void* gcHandleToObject,
+        _In_ OBJECTHANDLE objectHandle,
         _In_ int32_t userDefinedCount,
         _In_ ComInterfaceEntry* userDefined);
 
 private:
     ManagedObjectWrapper(
         _In_ CreateComInterfaceFlags flags,
-        _In_ void* gcHandleToObject,
+        _In_ OBJECTHANDLE objectHandle,
         _In_ int32_t runtimeDefinedCount,
         _In_ const ComInterfaceEntry* runtimeDefined,
         _In_ int32_t userDefinedCount,
@@ -81,7 +84,7 @@ public:
     ~ManagedObjectWrapper();
 
     void* As(_In_ REFIID riid);
-    void* GetObjectGCHandle() const;
+    OBJECTHANDLE GetObjectHandle() const;
     bool IsAlive() const;
     bool IsSet(_In_ CreateComInterfaceFlags flag) const;
 

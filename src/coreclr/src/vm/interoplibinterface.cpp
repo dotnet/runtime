@@ -3,11 +3,29 @@
 // See the LICENSE file in the project root for more information.
 
 #include "common.h"
+
+// Interop library header
+#include <interoplibimports.h>
+
 #include "interoplibinterface.h"
 
-// Interop library exports/imports
-#include <interoplib.h>
-#include <interoplibimports.h>
+namespace InteropLibImports
+{
+    void* MemAlloc(_In_ size_t sizeInBytes)
+    {
+        STANDARD_VM_CONTRACT;
+
+        _ASSERTE(0 != sizeInBytes);
+        return ::malloc(sizeInBytes);
+    }
+
+    void MemFree(_In_ void* mem)
+    {
+        STANDARD_VM_CONTRACT;
+
+        ::free(mem);
+    }
+}
 
 #ifdef FEATURE_COMINTEROP
 
@@ -40,6 +58,31 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
 
     BEGIN_QCALL;
 
+    // Switch to COOP mode to check if the object already
+    // has a wrapper in its syncblock.
+    {
+        GCX_COOP();
+
+        struct
+        {
+            OBJECTREF implRef;
+            OBJECTREF instRef;
+        } gc;
+        ::ZeroMemory(&gc, sizeof(gc));
+
+        GCPROTECT_BEGIN(gc);
+
+        gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
+        gc.instRef = ObjectToOBJECTREF(*instance.m_ppObject);
+        _ASSERTE(gc.implRef != NULL && gc.instRef != NULL);
+
+
+        // If it does, then return the
+        // existing wrapper. If the object doesn't, then compute the
+        // VTables for the type.
+        GCPROTECT_END();
+    }
+
     END_QCALL;
 
     return wrapper;
@@ -65,7 +108,32 @@ void QCALLTYPE ComWrappersNative::RegisterForReferenceTrackerHost(
 {
     QCALL_CONTRACT;
 
+    const HandleType implHandleType{ HNDTYPE_STRONG };
+    OBJECTHANDLE implHandle;
+
     BEGIN_QCALL;
+
+    // Enter cooperative mode to create the handle and store it
+    // for future use in the reference tracker host scenario.
+    {
+        GCX_COOP();
+
+        OBJECTREF implRef = NULL;
+        GCPROTECT_BEGIN(implRef);
+
+        implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
+        _ASSERTE(implRef != NULL);
+
+        implHandle = GetAppDomain()->CreateTypedHandle(implRef, implHandleType);
+
+        if (!InteropLib::RegisterReferenceTrackerHostCallback(implHandle))
+        {
+            DestroyHandleCommon(implHandle, implHandleType);
+            COMPlusThrow(kInvalidOperationException, IDS_EE_RESET_REFERENCETRACKERHOST_CALLBACKS);
+        }
+
+        GCPROTECT_END();
+    }
 
     END_QCALL;
 }

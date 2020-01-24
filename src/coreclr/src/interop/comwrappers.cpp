@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include <interoplibimports.h>
 #include "comwrappers.h"
+#include <interoplibimports.h>
 
 namespace ABI
 {
@@ -222,6 +222,17 @@ namespace InteropLib
         *fpAddRef = ManagedObjectWrapper_IUnknownImpl.AddRef;
         *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
     }
+
+    bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) // [TODO]
+    {
+        static OBJECTHANDLE g_objectHandle = nullptr;
+
+        if (g_objectHandle != nullptr)
+            return false;
+
+        g_objectHandle = objectHandle;
+        return true;
+    }
 }
 
 namespace
@@ -309,7 +320,7 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapIUnknownToWrapper(_In_ IUnknown* 
 
 ManagedObjectWrapper* ManagedObjectWrapper::Create(
     _In_ CreateComInterfaceFlags flags,
-    _In_ void* gcHandleToObject,
+    _In_ OBJECTHANDLE objectHandle,
     _In_ int32_t userDefinedCount,
     _In_ ComInterfaceEntry* userDefined)
 {
@@ -344,7 +355,7 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
     const size_t totalDispatchSectionSize = totalDispatchSectionCount * sizeof(void*);
 
     // Allocate memory for the ManagedObjectWrapper
-    char* wrapperMem = (char*)0;// rt::Alloc(sizeof(ManagedObjectWrapper) + totalRuntimeDefinedSize + totalDispatchSectionSize + ABI::AlignmentThisPtrMaxPadding); [TODO]
+    char* wrapperMem = (char*)InteropLibImports::MemAlloc(sizeof(ManagedObjectWrapper) + totalRuntimeDefinedSize + totalDispatchSectionSize + ABI::AlignmentThisPtrMaxPadding);
 
     // Compute Runtime defined offset
     char* runtimeDefinedOffset = wrapperMem + sizeof(ManagedObjectWrapper);
@@ -369,7 +380,7 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
     ManagedObjectWrapper* wrappers = new (wrapperMem) ManagedObjectWrapper
         {
             flags,
-            gcHandleToObject,
+            objectHandle,
             runtimeDefinedCount,
             runtimeDefined,
             userDefinedCount,
@@ -382,13 +393,13 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
 
 ManagedObjectWrapper::ManagedObjectWrapper(
     _In_ CreateComInterfaceFlags flags,
-    _In_ void* gcHandleToObject,
+    _In_ OBJECTHANDLE objectHandle,
     _In_ int32_t runtimeDefinedCount,
     _In_ const ComInterfaceEntry* runtimeDefined,
     _In_ int32_t userDefinedCount,
     _In_ const ComInterfaceEntry* userDefined,
     _In_ ABI::ComInterfaceDispatch* dispatches)
-    : Target{ gcHandleToObject }
+    : Target{ objectHandle }
     , _runtimeDefinedCount{ runtimeDefinedCount }
     , _userDefinedCount{ userDefinedCount }
     , _runtimeDefined{ runtimeDefined }
@@ -424,7 +435,7 @@ void* ManagedObjectWrapper::As(_In_ REFIID riid)
     return nullptr;
 }
 
-void* ManagedObjectWrapper::GetObjectGCHandle() const
+OBJECTHANDLE ManagedObjectWrapper::GetObjectHandle() const
 {
     return Target;
 }
@@ -504,7 +515,7 @@ ULONG ManagedObjectWrapper::Release(void)
         // Manually trigger the destructor since placement
         // new was used to allocate object.
         this->~ManagedObjectWrapper();
-        // rt::Free(this); [TODO]
+        InteropLibImports::MemFree(this);
     }
 
     return refCount;

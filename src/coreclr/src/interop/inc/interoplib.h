@@ -7,6 +7,8 @@
 
 namespace InteropLib
 {
+    using Ptr_OBJECTREF = void*;
+    using OBJECTHANDLE = void*;
 
 #ifdef _WIN32
 
@@ -15,6 +17,10 @@ void GetIUnknownImpl(
     _Out_ void** fpQueryInterface,
     _Out_ void** fpAddRef,
     _Out_ void** fpRelease);
+
+// Register the default callback in the Reference Tracker Host scenario.
+// Returns true if registration succeeded, otherwise false.
+bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle);
 
 #endif // _WIN32
 

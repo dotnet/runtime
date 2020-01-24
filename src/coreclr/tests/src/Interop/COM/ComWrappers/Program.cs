@@ -37,11 +37,31 @@ namespace ComWrappersTests
         static void ValidateIUnknownImpls()
             => MyComWrappers.ValidateIUnknownImpls();
 
+        static void ValidateRegisterForReferenceTrackerHost()
+        {
+            var wrappers1 = new MyComWrappers();
+            wrappers1.RegisterForReferenceTrackerHost();
+
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    wrappers1.RegisterForReferenceTrackerHost();
+                }, "Should not be able to re-register for ReferenceTrackerHost");
+
+            var wrappers2 = new MyComWrappers();
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    wrappers2.RegisterForReferenceTrackerHost();
+                }, "Should not be able to reset for ReferenceTrackerHost");
+        }
+
         static int Main(string[] doNotUse)
         {
             try
             {
                 ValidateIUnknownImpls();
+                ValidateRegisterForReferenceTrackerHost();
             }
             catch (Exception e)
             {
