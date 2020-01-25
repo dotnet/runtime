@@ -18,6 +18,39 @@ namespace System.IO.MemoryMappedFiles
             HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)
         {
+            bool isSpecial = false;
+
+            if (fileStream != null)
+            {
+                if (fileStream.Length == 0)
+                {
+                    // If the file does not have length, it may be special unix device.
+                    Interop.Sys.FileStatus status;
+                    if (Interop.Sys.FStat(fileStream.SafeFileHandle, out status) == 0)
+                    {
+                        if ((status.Mode & Interop.Sys.FileTypes.S_IFCHR) != 0)
+                        {
+                            isSpecial = true;
+                        }
+                    }
+                }
+
+                // perform deferred argument check.
+                if (!isSpecial)
+                {
+                    // perform defered argument check.
+                    if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
+                    {
+                        throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
+                    }
+
+                    if (access == MemoryMappedFileAccess.Write)
+                    {
+                        throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
+                    }
+                }
+            }
+
             if (mapName != null)
             {
                 // Named maps are not supported in our Unix implementation.  We could support named maps on Linux using
@@ -35,10 +68,12 @@ namespace System.IO.MemoryMappedFiles
             bool ownsFileStream = false;
             if (fileStream != null)
             {
-                // This map is backed by a file.  Make sure the file's size is increased to be
-                // at least as big as the requested capacity of the map.
-                if (fileStream.Length < capacity)
+
+
+                if (capacity > fileStream.Length && !isSpecial)
                 {
+                    // This map is backed by a file.  Make sure the file's size is increased to be
+                    // at least as big as the requested capacity of the map for Write* access.
                     try
                     {
                         fileStream.SetLength(capacity);

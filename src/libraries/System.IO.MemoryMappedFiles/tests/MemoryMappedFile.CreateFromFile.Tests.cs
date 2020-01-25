@@ -5,6 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -868,5 +869,40 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
+        /// <summary>
+        /// Test that we can map special character devices on Unix.
+        /// </summary>
+        [ConditionalTheory]
+        [InlineData(MemoryMappedFileAccess.Read)]
+        [InlineData(MemoryMappedFileAccess.ReadWrite)]
+        [InlineData(MemoryMappedFileAccess.Write)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void OpenCharacterDevice(MemoryMappedFileAccess access)
+        {
+            string device = "/dev/zero";
+            if (!File.Exists(device))
+            {
+                throw new SkipTestException($"'{device}' is not available.");
+            }
+
+            long viewCapacity = 0xFF;
+
+            using (FileStream fs = new FileStream(device, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+            using (MemoryMappedFile memMap = MemoryMappedFile.CreateFromFile(fs, null, viewCapacity, access, HandleInheritability.None, false))
+            using (MemoryMappedViewAccessor view = memMap.CreateViewAccessor(0, viewCapacity, access))
+            {
+                if (access != MemoryMappedFileAccess.Write)
+                {
+                    byte b = view.ReadByte(0);
+                    // /dev/zero return zeroes.
+                    Assert.Equal(0, b);
+                }
+
+                if (access != MemoryMappedFileAccess.Read)
+                {
+                    view.Write(0, (byte)1);
+                }
+            }
+        }
     }
 }

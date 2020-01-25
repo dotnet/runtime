@@ -154,12 +154,6 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_EmptyFile);
             }
 
-            if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
-            {
-                CleanupFile(fileStream, existed, path);
-                throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
-            }
-
             if (capacity == DefaultSize)
             {
                 capacity = fileStream.Length;
@@ -217,16 +211,6 @@ namespace System.IO.MemoryMappedFiles
                 access > MemoryMappedFileAccess.ReadWriteExecute)
             {
                 throw new ArgumentOutOfRangeException(nameof(access));
-            }
-
-            if (access == MemoryMappedFileAccess.Write)
-            {
-                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
-            }
-
-            if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
-            {
-                throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
             }
 
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
@@ -291,11 +275,6 @@ namespace System.IO.MemoryMappedFiles
                 access > MemoryMappedFileAccess.ReadWriteExecute)
             {
                 throw new ArgumentOutOfRangeException(nameof(access));
-            }
-
-            if (access == MemoryMappedFileAccess.Write)
-            {
-                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
             if (((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0)

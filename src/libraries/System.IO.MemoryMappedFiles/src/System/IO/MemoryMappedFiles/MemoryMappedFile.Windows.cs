@@ -24,6 +24,18 @@ namespace System.IO.MemoryMappedFiles
             SafeFileHandle? fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
+            if (fileStream != null)
+            {
+                if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
+                {
+                    throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
+                }
+
+                if (access == MemoryMappedFileAccess.Write)
+                {
+                    throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
+                }
+            }
 
             SafeMemoryMappedFileHandle handle = fileHandle != null ?
                 Interop.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName) :
