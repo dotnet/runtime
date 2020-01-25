@@ -123,7 +123,6 @@
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />

@@ -249,7 +249,6 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Drawing.Primitives" />
     <Reference Include="System.Globalization" />

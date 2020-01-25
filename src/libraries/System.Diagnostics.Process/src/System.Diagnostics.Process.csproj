@@ -449,7 +449,6 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.FileVersionInfo" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />

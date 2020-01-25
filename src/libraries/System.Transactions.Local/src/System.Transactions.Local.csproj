@@ -41,7 +41,6 @@
     <Compile Include="System\Transactions\Configuration\MachineSettingsSection.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />

@@ -55,7 +55,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Reflection.Extensions" />
     <Reference Include="System.Resources.ResourceManager" />
