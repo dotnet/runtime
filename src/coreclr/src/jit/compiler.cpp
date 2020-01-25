@@ -3428,7 +3428,8 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
     // Should we allow unlimited stress ?
     if (stressArea > STRESS_COUNT_VARN && stressLevel == 2)
     {
-        return true;
+        doStress = true;
+        goto _done;
     }
 
     if (weight == MAX_STRESS_WEIGHT)
