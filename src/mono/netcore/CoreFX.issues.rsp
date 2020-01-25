@@ -183,7 +183,6 @@
 -noclass System.Reflection.Emit.Tests.CustomAttributeBuilderTests
 -nomethod System.Reflection.Emit.Tests.SignatureHelperAddArgument.*
 -nomethod System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.*
--nomethod System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_TooManyLocals_ThrowsInvalidOperationException
 -nomethod System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_LocalFromDifferentMethod_ThrowsArgumentException
 -nomethod System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_TypeCreated_ThrowsInvalidOperationException
 -nomethod System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_GlobalFunctionsCreated_ThrowsInvalidOperationException
