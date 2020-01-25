@@ -45,7 +45,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />

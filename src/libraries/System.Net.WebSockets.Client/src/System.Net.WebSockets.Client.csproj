@@ -37,7 +37,6 @@
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Net.WebSockets" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Handles" />

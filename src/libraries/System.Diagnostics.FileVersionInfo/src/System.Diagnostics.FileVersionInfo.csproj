@@ -50,7 +50,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />

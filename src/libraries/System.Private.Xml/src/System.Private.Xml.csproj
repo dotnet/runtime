@@ -580,7 +580,6 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />

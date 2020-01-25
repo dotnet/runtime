@@ -64,7 +64,6 @@
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj " />
     <ProjectReference Include="..\..\System.Diagnostics.Process\src\System.Diagnostics.Process.csproj " />
     <ProjectReference Include="..\..\System.IO.FileSystem\src\System.IO.FileSystem.csproj " />
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj " />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
