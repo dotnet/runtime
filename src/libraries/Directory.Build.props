@@ -52,9 +52,6 @@
  
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(BuildTargetFramework)-$(BuildOS)-$(Configuration)-$(ArchGroup)</BuildConfiguration>
-    <!-- Versionless netcoreapp and netfx needs to be removed after .yml scripts are finalized.-->
-    <BuildConfiguration Condition="'$(TargetGroup)' == 'netcoreapp'">$(NetCoreAppCurrent)-$(OSGroup)-$(Configuration)-$(ArchGroup)</BuildConfiguration>
-    <BuildConfiguration Condition="'$(TargetGroup)' == 'netfx'">$(NetFrameworkCurrent)-$(OSGroup)-$(Configuration)-$(ArchGroup)</BuildConfiguration>
 
     <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' and '$(BuildConfigurations)' == ''">package</BuildConfigurations>

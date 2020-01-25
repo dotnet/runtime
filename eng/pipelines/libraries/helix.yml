@@ -20,7 +20,7 @@ steps:
             /p:ConfigurationGroup=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
             /p:TestScope=${{ parameters.testScope }}
-            /p:TargetGroup=${{ parameters.framework }}
+            /p:BuildTargetFramework=${{ parameters.framework }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
             /p:Creator=${{ parameters.creator }}
