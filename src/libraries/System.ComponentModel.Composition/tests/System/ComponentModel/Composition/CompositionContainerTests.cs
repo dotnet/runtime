@@ -144,32 +144,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/579990")]  // NullReferenceException
-        public void ExportsChanged_Add_WhenDisposed_ShouldThrowObjectDisposed()
-        {
-            var container = CreateCompositionContainer();
-            container.Dispose();
-
-            ExceptionAssert.ThrowsDisposed(container, () =>
-            {
-                container.ExportsChanged += (o, s) => { };
-            });
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/579990")] // NullReferenceException
-        public void ExportsChanged_Remove_WhenDisposed_ShouldThrowObjectDisposed()
-        {
-            var container = CreateCompositionContainer();
-            container.Dispose();
-
-            ExceptionAssert.ThrowsDisposed(container, () =>
-            {
-                container.ExportsChanged -= (o, s) => { };
-            });
-        }
-
-        [Fact]
         public void AddPart1_ImportOnlyPart_ShouldNotGetGarbageCollected()
         {
             var container = CreateCompositionContainer();
@@ -2457,30 +2431,6 @@ namespace System.ComponentModel.Composition
             Assert.Equal(1, export.Value);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
-        public void ContainerXGetXTest()
-        {
-            CompositionContainer container = CreateCompositionContainer();
-            CompositionBatch batch = new CompositionBatch();
-            batch.AddPart(new MyExporterWithNoFoo());
-            container.Compose(batch);
-            ContainerXGetExportBoundValue(container);
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/468388")]
-        public void ContainerXGetXByComponentCatalogTest()
-        {
-            CompositionContainer container = ContainerFactory.CreateWithDefaultAttributedCatalog();
-            ContainerXGetExportBoundValue(container);
-        }
-
-        private void ContainerXGetExportBoundValue(CompositionContainer container)
-        {
-            throw new NotImplementedException();
-        }
-
         [Export("MyExporterWithNoFoo")]
         public class MyExporterWithNoFoo
         {
@@ -2981,20 +2931,6 @@ namespace System.ComponentModel.Composition
             var exports = container.GetExports(importDefinition);
             Assert.Equal(1, exports.Count());
             Assert.Equal(expectedContractName, exports.Single().Definition.ContractName);
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/812029")]
-        public void ComposeExportedValueOfT_ValidContractName_ExportedValue_ExportContainsEmptyMetadata()
-        {
-            string expectedContractName = "ContractName";
-            var container = CreateCompositionContainer();
-            container.ComposeExportedValue<string>(expectedContractName, "Value");
-
-            var importDefinition = new ImportDefinition(ed => ed.ContractName == expectedContractName, null, ImportCardinality.ZeroOrMore, false, false);
-            var exports = container.GetExports(importDefinition);
-            Assert.Equal(1, exports.Count());
-            Assert.Equal(1, exports.Single().Metadata.Count); // contains type identity
         }
 
         [Fact]

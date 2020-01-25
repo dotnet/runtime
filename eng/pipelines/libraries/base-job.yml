@@ -3,6 +3,7 @@ parameters:
   osGroup: ''
   archType: ''
   osSubgroup: ''
+  crossrootfsDir: ''
   framework: ''
   isOfficialBuild: false
   isOfficialAllConfigurations: false
@@ -49,6 +50,9 @@ jobs:
 
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
+
+        - ${{ if eq(parameters.osGroup, 'Linux') }}:
+          - _crossBuildPropertyArg: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
           - _runtimeOSArg: /p:RuntimeOS=linux-musl
@@ -98,7 +102,7 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
       dependsOn:

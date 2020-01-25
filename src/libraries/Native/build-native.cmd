@@ -127,6 +127,11 @@ may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try a
 exit /b 1
 
 :GenVSSolution
+:: generate version file
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__repoRoot%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
+    %__repoRoot%\eng\empty.csproj /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
+    /t:GenerateNativeVersionFile /restore
+
 :: Regenerate the VS solution
 
 pushd "%__IntermediatesDir%"

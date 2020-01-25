@@ -77,7 +77,7 @@ namespace CoreXml.Test.XLinq
             /*
              * Use this method to load the above data from disk
              * Comment the above code when using this method.
-             * Also the arguments for the folowing tests: XAttributeSuccessValidate
+             * Also the arguments for the following tests: XAttributeSuccessValidate
              * XAttributeFailValidate, XAttributeThrowExceptionValidate, XElementSuccessValidate
              * XElementFailValidate,XElementThrowExceptionValidate, XAttributeGetSchemaInfo
              * XElementGetSchemaInfo may need to be changed.

@@ -8559,6 +8559,9 @@ emit_method_inner (EmitContext *ctx)
 
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
 
+	if (cfg->disable_omit_fp)
+		mono_llvm_add_func_attr_nv (method, "no-frame-pointer-elim", "true");
+
 	if (cfg->compile_aot) {
 		if (is_externally_callable (ctx, cfg->method)) {
 			LLVMSetLinkage (method, LLVMExternalLinkage);

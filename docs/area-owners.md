@@ -15,7 +15,7 @@ Below table shows the combined area owners on this repository:
 | area-ILTools | @BruceForstall @dotnet/jit-contrib | |
 | area-Infrastructure-coreclr | @jeffschwMSFT @jashook @trylek | |
 | area-Infrastructure-installer | @dleeapho @wtgodbe @dagood | |
-| area-Infrastructure-libraries | @ViktorHofer @ericstj @wtgodbe @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for CoreFX repo</li><li>VS integration</li></ul><br/> |
+| area-Infrastructure-libraries | @ViktorHofer @ericstj @wtgodbe @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for libraries in dotnet/runtime repo</li><li>VS integration</li></ul><br/> |
 | area-Infrastructure | @ViktorHofer @jeffschwMSFT @dleeapho | |
 | area-Interop | @jeffschwMSFT @AaronRobinsonMSFT | |
 | area-Meta | @joperezr | Issues without clear association to any specific API/contract, e.g. <ul><li>new contract proposals</li><li>cross-cutting code/test pattern changes (e.g. FxCop failures)</li><li>project-wide docs</li></ul><br/> |

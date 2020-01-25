@@ -36,12 +36,12 @@ add_definitions(-DFEATURE_LIBHOST=1)
 convert_to_absolute_path(SOURCES ${SOURCES})
 convert_to_absolute_path(ASM_HELPERS_SOURCES ${ASM_HELPERS_SOURCES})
 
-if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
+if (WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
     preprocess_compile_asm(ASM_FILES ${ASM_HELPERS_SOURCES} OUTPUT_OBJECTS ASM_HELPERS_OBJECTS)
     list(APPEND ASM_HELPERS_SOURCES ${ASM_HELPERS_OBJECTS})
 endif ()
 
-if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_I386)
+if (WIN32 AND CLR_CMAKE_HOST_ARCH_I386)
     set_source_files_properties(${ASM_HELPERS_SOURCES} PROPERTIES COMPILE_FLAGS "/safeseh")
 endif ()
 
@@ -50,9 +50,9 @@ list(APPEND SOURCES ${ASM_HELPERS_SOURCES})
 include(../lib.cmake)
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
+if (WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
     target_link_libraries(ijwhost Advapi32.lib Ole32.lib)
 endif()
 
 install(TARGETS ijwhost DESTINATION corehost)
-install_symbols (ijwhost corehost) 
+install_symbols (ijwhost corehost)

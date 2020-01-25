@@ -62,17 +62,17 @@ namespace System.Data.Tests
             Assert.Equal("Column5", dc.ColumnName);
             Assert.Equal(5, dt.Columns.Count);
 
-            //----------------------------- check Add/Remove from begining --------------------
+            //----------------------------- check Add/Remove from beginning --------------------
             dt = InitTable();
 
             dt.Columns.Remove(dt.Columns[0]);
             dt.Columns.Remove(dt.Columns[0]);
             dt.Columns.Remove(dt.Columns[0]);
 
-            // check column 4 - remove - from begining
+            // check column 4 - remove - from beginning
             Assert.Equal("Column4", dt.Columns[0].ColumnName);
 
-            // check column 5 - remove - from begining
+            // check column 5 - remove - from beginning
             Assert.Equal("Column5", dt.Columns[1].ColumnName);
             Assert.Equal(2, dt.Columns.Count);
 
@@ -81,22 +81,22 @@ namespace System.Data.Tests
             dt.Columns.Add();
             dt.Columns.Add();
 
-            // check column 0 - Add new  - from begining
+            // check column 0 - Add new  - from beginning
             Assert.Equal("Column4", dt.Columns[0].ColumnName);
 
-            // check column 1 - Add new - from begining
+            // check column 1 - Add new - from beginning
             Assert.Equal("Column5", dt.Columns[1].ColumnName);
 
-            // check column 2 - Add new - from begining
+            // check column 2 - Add new - from beginning
             Assert.Equal("Column6", dt.Columns[2].ColumnName);
 
-            // check column 3 - Add new - from begining
+            // check column 3 - Add new - from beginning
             Assert.Equal("Column7", dt.Columns[3].ColumnName);
 
-            // check column 4 - Add new - from begining
+            // check column 4 - Add new - from beginning
             Assert.Equal("Column8", dt.Columns[4].ColumnName);
 
-            // check column 5 - Add new - from begining
+            // check column 5 - Add new - from beginning
             Assert.Equal("Column9", dt.Columns[5].ColumnName);
 
             //----------------------------- check Add/Remove from middle --------------------

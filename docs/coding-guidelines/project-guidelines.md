@@ -1,5 +1,5 @@
 # Build Project Guidelines
-In order to work in corefx repo you must first run build.cmd/sh from the root of the repo at least
+In order to work in dotnet/runtime repo you must first run build.cmd/sh from the root of the repo at least
 once before you can iterate and work on a given library project.
 
 ## Behind the scenes with build.cmd/sh

@@ -21,7 +21,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public const uint READYTORUN_SIGNATURE = 0x00525452; // 'RTR'
 
         /// <summary>
-        /// RVA to the begining of the ReadyToRun header
+        /// RVA to the beginning of the ReadyToRun header
         /// </summary>
         public int RelativeVirtualAddress { get; set; }
 
