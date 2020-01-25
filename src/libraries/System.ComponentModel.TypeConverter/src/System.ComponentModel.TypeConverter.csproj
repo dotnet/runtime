@@ -263,7 +263,6 @@
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.Timer" />
     <Reference Include="System.Xml.XDocument" />
   </ItemGroup>
 </Project>
