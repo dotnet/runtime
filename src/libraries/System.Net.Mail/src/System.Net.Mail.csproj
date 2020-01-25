@@ -292,7 +292,6 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Globalization.Extensions" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NetworkInformation" />

@@ -13,8 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Globalization" />
-    <Reference Include="System.IO" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
