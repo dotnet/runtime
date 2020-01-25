@@ -12,6 +12,21 @@ namespace System.Text.Json.Serialization.Tests
     public static class PropertyVisibilityTests
     {
         [Fact]
+
+
+
+        public static void ReadOnlyField()
+        {
+            var obj = new ClassWithReadOnlyField();
+
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Contains(@"""MyString"":""DefaultValue""", json);
+
+            obj = JsonSerializer.Deserialize<ClassWithReadOnlyField>(@"{""MyString"":""DeserializedValue""}");
+            Assert.Equal("DefaultValue", obj.MyString);
+        }
+
+        [Fact]
         public static void NoSetter()
         {
             var obj = new ClassWithNoSetter();
@@ -278,6 +293,11 @@ namespace System.Text.Json.Serialization.Tests
         public class WrapperForClassWithIgnoredUnsupportedBigInteger
         {
             public ClassWithIgnoredUnsupportedBigInteger MyClass { get; set; }
+        }
+
+        public class ClassWithReadOnlyField
+        {
+            public readonly string MyString = "DefaultValue";
         }
 
         // Todo: add tests with missing object property and missing collection property.

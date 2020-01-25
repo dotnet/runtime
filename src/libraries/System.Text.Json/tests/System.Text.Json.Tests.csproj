@@ -84,11 +84,13 @@
     <Compile Include="Serialization\TestClasses.NonGenericCollections.cs" />
     <Compile Include="Serialization\TestClasses.Polymorphic.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClass.cs" />
+    <Compile Include="Serialization\TestClasses.SimpleTestClassWithFields.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithNullables.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithObject.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithObjectArrays.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithSimpleObject.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestStruct.cs" />
+    <Compile Include="Serialization\TestClasses.SimpleTestStructWithFields.cs" />
     <Compile Include="Serialization\TestData.cs" />
     <Compile Include="Serialization\ReadScenarioTests.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
