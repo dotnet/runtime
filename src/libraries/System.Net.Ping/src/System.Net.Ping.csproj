@@ -138,7 +138,6 @@
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />

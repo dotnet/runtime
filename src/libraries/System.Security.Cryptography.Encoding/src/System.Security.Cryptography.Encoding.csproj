@@ -131,7 +131,6 @@
     <Compile Include="Internal\Cryptography\OidLookup.OSX.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />

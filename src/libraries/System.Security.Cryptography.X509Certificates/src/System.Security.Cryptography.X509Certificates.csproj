@@ -749,7 +749,6 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.ManagedDecode.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />

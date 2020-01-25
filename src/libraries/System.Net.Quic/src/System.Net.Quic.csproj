@@ -71,7 +71,6 @@
     <Compile Include="Interop\Linux\MsQuicStatusHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Console" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />

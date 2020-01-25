@@ -25,7 +25,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />

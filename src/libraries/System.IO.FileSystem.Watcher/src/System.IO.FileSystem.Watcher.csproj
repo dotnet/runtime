@@ -131,7 +131,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Buffers" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.ComponentModel.TypeConverter" />

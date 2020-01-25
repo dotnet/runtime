@@ -712,7 +712,6 @@
     <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -728,9 +727,6 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Text.Encoding.Extensions" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Reference Include="System.Runtime.Numerics" />
   </ItemGroup>
   <ItemGroup>
     <None Include="@(AsnXml)" />

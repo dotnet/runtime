@@ -44,7 +44,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
