@@ -10,7 +10,6 @@
     <ProjectReference Include="..\..\System.ComponentModel\ref\System.ComponentModel.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.EventBasedAsync\ref\System.ComponentModel.EventBasedAsync.csproj" />
-    <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
     <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Net.Requests\ref\System.Net.Requests.csproj" />
     <ProjectReference Include="..\..\System.Net.WebHeaderCollection\ref\System.Net.WebHeaderCollection.csproj" />

@@ -7,7 +7,6 @@
     <Compile Include="System.IO.MemoryMappedFiles.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
     <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\ref\System.IO.FileSystem.Primitives.csproj" />
     <ProjectReference Include="..\..\System.IO.FileSystem\ref\System.IO.FileSystem.csproj" />
     <ProjectReference Include="..\..\System.IO.UnmanagedMemoryStream\ref\System.IO.UnmanagedMemoryStream.csproj" />

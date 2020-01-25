@@ -11,7 +11,6 @@
     <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Handles\ref\System.Runtime.Handles.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
-    <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />
     <ProjectReference Include="..\..\System.Text.Encoding\ref\System.Text.Encoding.csproj" />
     <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" />
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
