@@ -11,7 +11,7 @@ namespace System.Threading
             private Interop.Sys.ProcessCpuInformation _cpuInfo;
 
             public int CurrentUtilization =>
-                Interop.Sys.GetCpuUtilization(ref cpuInfo) / Environment.ProcessorCount;
+                Interop.Sys.GetCpuUtilization(ref _cpuInfo) / Environment.ProcessorCount;
         }
     }
 }
