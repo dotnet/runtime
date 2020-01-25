@@ -98,9 +98,6 @@ namespace System.Collections.Generic
             }
 
             _comparer = comparer;
-#if BIT64
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier(0);
-#endif
             _lastIndex = 0;
             _count = 0;
             _freeList = -1;
@@ -252,9 +249,7 @@ namespace System.Collections.Generic
                 // clear only up to _lastIndex for _slots
                 Array.Clear(_slots, 0, _lastIndex);
                 Array.Clear(_buckets, 0, _buckets.Length);
-#if BIT64
-                _fastModMultiplier = HashHelpers.GetFastModMultiplier(0);
-#endif
+
                 _lastIndex = 0;
                 _count = 0;
                 _freeList = -1;
