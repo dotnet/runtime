@@ -179,6 +179,12 @@ namespace System.Text.Json
 
                         foreach (FieldInfo fieldInfo in fields)
                         {
+                            if (fieldInfo.GetCustomAttribute(typeof(CompilerGeneratedAttribute)) is { })
+                            {
+                                // Ignore compiler generated fields
+                                continue;
+                            }
+
                             JsonPropertyInfo jsonPropertyInfo = AddProperty(fieldInfo.FieldType, fieldInfo, type, options);
                             Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
