@@ -87,8 +87,6 @@
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 

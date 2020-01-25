@@ -45,7 +45,6 @@
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Text.Encoding" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Sockets" />

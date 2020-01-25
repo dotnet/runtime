@@ -27,6 +27,5 @@
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Threading\src\System.Threading.csproj" />
-    <ProjectReference Include="..\..\System.Threading.Tasks\src\System.Threading.Tasks.csproj" />
   </ItemGroup>
 </Project>

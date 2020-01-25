@@ -49,7 +49,6 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading.Overlapped" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading" />
   </ItemGroup>
   <!-- Windows files -->
