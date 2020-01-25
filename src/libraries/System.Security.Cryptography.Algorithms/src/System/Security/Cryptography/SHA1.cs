@@ -14,7 +14,10 @@ namespace System.Security.Cryptography
 
     public abstract class SHA1 : HashAlgorithm
     {
-        protected SHA1() { }
+        protected SHA1()
+        {
+            HashSizeValue = 160;
+        }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
         public static new SHA1 Create() => new Implementation();
