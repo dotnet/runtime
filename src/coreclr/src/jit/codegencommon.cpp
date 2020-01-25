@@ -2288,10 +2288,9 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 
     compiler->EndPhase(PHASE_GENERATE_CODE);
 
-    codeSize =
-        GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(), IsFullPtrRegMapRequired(),
-                                     (compiler->info.compRetNativeType == TYP_REF), compiler->compHndBBtabCount,
-                                     &prologSize, &epilogSize, codePtr, &coldCodePtr, &consPtr);
+    codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
+                                            IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
+                                            &epilogSize, codePtr, &coldCodePtr, &consPtr);
 
     compiler->EndPhase(PHASE_EMIT_CODE);
 
@@ -11117,15 +11116,16 @@ void CodeGen::genReturn(GenTree* treeNode)
     //                  in the handling of the GT_RETURN statement.
     //                  Such structs containing GC pointers need to be handled by calling gcInfo.gcMarkRegSetNpt
     //                  for the return registers containing GC refs.
-
-    // There will be a single return block while generating profiler ELT callbacks.
     //
     // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
     // In flowgraph and other places assert that the last node of a block marked as
     // BBJ_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
     // maintain such an invariant irrespective of whether profiler hook needed or not.
     // Also, there is not much to be gained by materializing it as an explicit node.
-    if (compiler->compCurBB == compiler->genReturnBB)
+    //
+    // There should be a single return block while generating profiler ELT callbacks,
+    // so we just look for that block to trigger insertion of the profile hook.
+    if ((compiler->compCurBB == compiler->genReturnBB) && compiler->compIsProfilerHookNeeded())
     {
         // !! NOTE !!
         // Since we are invalidating the assumption that we would slip into the epilog
@@ -11160,6 +11160,10 @@ void CodeGen::genReturn(GenTree* treeNode)
                 }
             }
         }
+        else if (compiler->compMethodReturnsRetBufAddr())
+        {
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
+        }
 
         genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
 
@@ -11176,6 +11180,10 @@ void CodeGen::genReturn(GenTree* treeNode)
                     gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
                 }
             }
+        }
+        else if (compiler->compMethodReturnsRetBufAddr())
+        {
+            gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
         }
     }
 #endif // PROFILING_SUPPORTED
