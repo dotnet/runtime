@@ -78,7 +78,7 @@ namespace System
 
         internal static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
-#if NET461 || NET462 || NET472 || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD2_0
+#if NET45 || NET461 || NET462 || NET472 || NETSTANDARD1_0 || NETSTANDARD1_3 || NETSTANDARD2_0
             Span<char> result = stackalloc char[bytes.Length * 2];
             int pos = 0;
             foreach (byte b in bytes)
