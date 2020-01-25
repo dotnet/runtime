@@ -26,7 +26,7 @@
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
   <ItemGroup Label="Embedded Resources">
-    <EmbeddedResource Include="$(CoreClrProjectRoot)\src\System.Private.CoreLib\Resources\Strings.resx">
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
     </EmbeddedResource>
@@ -144,11 +144,6 @@
 
   <!-- Sources -->
   <ItemGroup>
-      <Compile Include="resources\SR.extra.cs" />
-      <Compile Include="$(CoreClrProjectRoot)\src\System.Private.CoreLib\src\System\SR.cs" />
-  </ItemGroup>
-  <ItemGroup>
-      <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />
