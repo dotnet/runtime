@@ -67,7 +67,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     appxutil.cpp
     dacutil.cpp
     dlwrap.cpp
-    loadrc.cpp
     securitywrapper.cpp
     securityutil.cpp
     stacktrace.cpp
