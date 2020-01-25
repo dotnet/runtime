@@ -36,5 +36,14 @@ jobs:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -c ${{ parameters.buildConfig }} -runtimeConfiguration ${{ parameters.runtimeConfig }} -arch ${{ parameters.archType }}
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -c ${{ parameters.buildConfig }} -runtimeConfiguration ${{ parameters.runtimeConfig }} -arch ${{ parameters.archType }} -bl
       displayName: Build product
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Logs
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
+        PublishLocation: Container
+        ArtifactName: $(Agent.Os)_PublishBuildAssets
+      continueOnError: true
+      condition: always()
