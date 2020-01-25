@@ -216,7 +216,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection.Emit" />

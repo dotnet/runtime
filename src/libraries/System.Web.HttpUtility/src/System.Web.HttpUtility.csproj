@@ -13,7 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Globalization" />
     <Reference Include="System.IO" />
     <Reference Include="System.Memory" />

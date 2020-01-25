@@ -26,7 +26,6 @@
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Numerics.Vectors" />

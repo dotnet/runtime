@@ -49,7 +49,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Globalization" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Resources.ResourceManager" />
