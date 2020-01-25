@@ -260,6 +260,8 @@ create_write_barrier_bitmap (MonoCompile *cfg, MonoClass *klass, unsigned *wb_bi
 			*wb_bitmap |= 1 << ((offset + foffset) / TARGET_SIZEOF_VOID_P);
 		} else {
 			MonoClass *field_class = mono_class_from_mono_type_internal (field->type);
+			if (cfg->gshared)
+				field_class = mono_class_from_mono_type_internal (mini_get_underlying_type (m_class_get_byval_arg (field_class)));
 			if (m_class_has_references (field_class))
 				create_write_barrier_bitmap (cfg, field_class, wb_bitmap, offset + foffset);
 		}

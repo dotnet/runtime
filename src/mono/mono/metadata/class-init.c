@@ -1260,6 +1260,11 @@ make_generic_param_class (MonoGenericParam *param)
 	/* We don't use type_token for VAR since only classes can use it (not arrays, pointer, VARs, etc) */
 	klass->sizes.generic_param_token = !is_anonymous ? pinfo->token : 0;
 
+	if (param->gshared_constraint) {
+		MonoClass *constraint_class = mono_class_from_mono_type_internal (param->gshared_constraint);
+		mono_class_init_sizes (constraint_class);
+		klass->has_references = m_class_has_references (constraint_class);
+	}
 	/*
 	 * This makes sure the the value size of this class is equal to the size of the types the gparam is
 	 * constrained to, the JIT depends on this.
