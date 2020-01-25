@@ -32,7 +32,7 @@ jobs:
   displayName: Checkout
 
   pool:
-    name: Hosted MacOS
+    vmImage: 'macOS-10.14'
 
   steps:
   - checkout: self
