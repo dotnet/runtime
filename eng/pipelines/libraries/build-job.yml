@@ -67,20 +67,6 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
-        # TODO: (Consolidation) Fix internal tool restore and re-enable. https://github.com/dotnet/runtime/issues/1024
-        # - ${{ if eq(parameters.isOfficialBuild, true) }}:
-        #   - task: DotNetCoreCLI@2
-        #     displayName: Restore internal tools
-        #     condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
-        #     inputs:
-        #       command: restore
-        #       feedsToUse: config
-        #       projects: 'eng/common/internal/Tools.csproj'
-        #       nugetConfigPath: 'eng/internal/NuGet.config'
-        #       restoreDirectory: '$(Build.SourcesDirectory)\.packages'
-        #       verbosityRestore: 'normal'
-        #       externalFeedCredentials: 'dotnet-core-internal-tooling'
-
         - ${{ if eq(parameters.osGroup, 'OSX') }}:
           - script: |
               brew install pkgconfig icu4c openssl
@@ -101,6 +87,11 @@ jobs:
 
         - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
           displayName: Restore
+
+        - ${{ if eq(parameters.isOfficialBuild, true) }}:
+          - template: /eng/pipelines/common/restore-internal-tools.yml
+            parameters:
+              installDotnet: false
 
         - script: $(_buildScript)
                 $(_buildAction)
