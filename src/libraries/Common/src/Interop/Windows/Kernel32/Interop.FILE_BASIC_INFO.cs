@@ -6,6 +6,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        // From FILE_INFO_BY_HANDLE_CLASS
         // Use for GetFileInformationByHandleEx/SetFileInformationByHandle
         internal const int FileBasicInfo = 0;
 

@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
+        // From PROCESSINFOCLASS
         // Use for NtQueryInformationProcess
         internal const int ProcessBasicInformation = 0;
 
