@@ -1238,8 +1238,10 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	}
 
 #if defined(HOST_DARWIN)
-	if (native_stack_with_lldb (crashed_pid, argv, commands_handle, commands_filename))
-		goto exec;
+	// lldb hangs on attaching on Catalina
+	return;
+	//if (native_stack_with_lldb (crashed_pid, argv, commands_handle, commands_filename))
+	//	goto exec;
 #endif
 
 	if (native_stack_with_gdb (crashed_pid, argv, commands_handle, commands_filename))
