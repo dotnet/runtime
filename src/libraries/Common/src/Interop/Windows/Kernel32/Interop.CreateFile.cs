@@ -27,9 +27,9 @@ internal static partial class Interop
         internal static unsafe SafeFileHandle CreateFile(
             string lpFileName,
             int dwDesiredAccess,
-            System.IO.FileShare dwShareMode,
+            FileShare dwShareMode,
             SECURITY_ATTRIBUTES* lpSecurityAttributes,
-            System.IO.FileMode dwCreationDisposition,
+            FileMode dwCreationDisposition,
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile)
         {
