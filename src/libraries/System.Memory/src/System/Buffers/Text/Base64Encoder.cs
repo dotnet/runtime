@@ -30,7 +30,7 @@ namespace System.Buffers.Text
         /// Set to <see langword="false"/> if this method is being called in a loop and if more input data may follow.
         /// At the end of the loop, call this (potentially with an empty source buffer) passing <see langword="true"/>.</param>
         /// <returns>It returns the OperationStatus enum values:
-        /// - Done - on successful processing of the entire input span (also when <paramref name="isFinalBlock"/> is set to <see langword="false"/>)
+        /// - Done - on successful processing of the entire input span
         /// - DestinationTooSmall - if there is not enough space in the output span to fit the encoded input
         /// - NeedMoreData - only if <paramref name="isFinalBlock"/> is <see langword="false"/>, otherwise the output is padded if the input is not a multiple of 3
         /// It does not return InvalidData since that is not possible for base64 encoding.
