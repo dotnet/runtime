@@ -259,16 +259,6 @@
 -nomethod System.Diagnostics.Tests.StackTraceTests.ToString_Invoke_ReturnsExpected
 
 ####################################################################
-##  System.Numerics.Vectors.Tests
-####################################################################
-
-# Expects NotSupportedException, but actual was TypeInitializationException
-# https://github.com/mono/mono/issues/15190
--nomethod System.Numerics.Tests.GenericVectorTests.ConstructorWithUnsupportedTypes_DateTime
--nomethod System.Numerics.Tests.GenericVectorTests.ConstructorWithUnsupportedTypes_Char
--nomethod System.Numerics.Tests.GenericVectorTests.ConstructorWithUnsupportedTypes_Guid
-
-####################################################################
 ##  System.Reflection.Context.Tests
 ####################################################################
 
