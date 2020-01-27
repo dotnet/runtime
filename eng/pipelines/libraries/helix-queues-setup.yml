@@ -40,11 +40,10 @@ jobs:
         - (Alpine.310.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-3043688-20190918214010
         - (Alpine.311.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-08e8e40-20200107182408
 
-    # Issue tracking this being re-enabled https://github.com/dotnet/runtime/issues/1723
     # Linux musl arm64
-    #- ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
-    #  - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-    #    - (Alpine.38.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
+    - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+        - (Alpine.38.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
