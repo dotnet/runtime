@@ -9,13 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        internal const int MEM_COMMIT = 0x1000;
-        internal const int MEM_RESERVE = 0x2000;
-        internal const int MEM_RELEASE = 0x8000;
-        internal const int MEM_FREE = 0x10000;
-        internal const int PAGE_READWRITE = 0x04;
-
-        [DllImport(Libraries.Kernel32)]
+        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
         internal static extern unsafe void* VirtualAlloc(void* lpAddress, UIntPtr dwSize, int flAllocationType, int flProtect);
     }
 }

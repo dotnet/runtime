@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -15,7 +14,7 @@ internal static partial class Interop
         /// WARNING: This method does not implicitly handle long paths. Use CreateFile.
         /// </summary>
         [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
-        private static extern unsafe SafeFileHandle CreateFilePrivate(
+        private static extern unsafe IntPtr CreateFilePrivate_IntPtr(
             string lpFileName,
             int dwDesiredAccess,
             FileShare dwShareMode,
@@ -24,20 +23,7 @@ internal static partial class Interop
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile);
 
-        internal static unsafe SafeFileHandle CreateFile(
-            string lpFileName,
-            int dwDesiredAccess,
-            FileShare dwShareMode,
-            SECURITY_ATTRIBUTES* lpSecurityAttributes,
-            FileMode dwCreationDisposition,
-            int dwFlagsAndAttributes,
-            IntPtr hTemplateFile)
-        {
-            lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName);
-            return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
-        }
-
-        internal static unsafe SafeFileHandle CreateFile(
+        internal static unsafe IntPtr CreateFile_IntPtr(
             string lpFileName,
             int dwDesiredAccess,
             FileShare dwShareMode,
@@ -45,7 +31,7 @@ internal static partial class Interop
             int dwFlagsAndAttributes)
         {
             lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName);
-            return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, null, dwCreationDisposition, dwFlagsAndAttributes, IntPtr.Zero);
+            return CreateFilePrivate_IntPtr(lpFileName, dwDesiredAccess, dwShareMode, null, dwCreationDisposition, dwFlagsAndAttributes, IntPtr.Zero);
         }
     }
 }

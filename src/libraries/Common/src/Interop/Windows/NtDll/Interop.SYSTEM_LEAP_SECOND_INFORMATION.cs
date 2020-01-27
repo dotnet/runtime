@@ -8,16 +8,15 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
-        [DllImport(Libraries.NtDll)]
-        internal static extern unsafe int NtQuerySystemInformation(int SystemInformationClass, void* SystemInformation, int SystemInformationLength, uint* ReturnLength);
+        // From SYSTEM_INFORMATION_CLASS
+        // Use for NtQuerySystemInformation
+        internal const int SystemLeapSecondInformation = 206;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct SYSTEM_LEAP_SECOND_INFORMATION
         {
-            public bool Enabled;
+            public BOOLEAN Enabled;
             public uint Flags;
         }
-
-        internal const int SystemLeapSecondInformation = 206;
     }
 }
