@@ -227,9 +227,13 @@ namespace System.Text.RegularExpressions
                                     case Alternate:
                                     case Loop:
                                     case Lazyloop:
-                                        var atomic = new RegexNode(Atomic, Options);
-                                        atomic.AddChild(existingChild);
-                                        node.ReplaceChild(node.ChildCount() - 1, atomic);
+                                        // Make the node atomic if it isn't already (as conferred by a parent node being atomic).
+                                        if (!existingChild.IsAtomicByParent())
+                                        {
+                                            var atomic = new RegexNode(Atomic, Options);
+                                            atomic.AddChild(existingChild);
+                                            node.ReplaceChild(node.ChildCount() - 1, atomic);
+                                        }
                                         break;
                                 }
                                 continue;
@@ -299,13 +303,36 @@ namespace System.Text.RegularExpressions
             // Optimization: Unnecessary root atomic.
             // If the root node under the implicit Capture is an Atomic, the Atomic is useless as there's nothing
             // to backtrack into it, so we can remove it.
-            if (rootNode.Child(0).Type == Atomic)
+            while (rootNode.Child(0).Type == Atomic)
             {
                 rootNode.ReplaceChild(0, rootNode.Child(0).Child(0));
             }
 
             // Done optimizing.  Return the final tree.
             return rootNode;
+        }
+
+        /// <summary>Whether this node is considered to be atomic based on its parent.</summary>
+        /// <remarks>
+        /// This is used to determine whether additional atomic nodes may be valuable to
+        /// be introduced into the tree.  It should not be used to determine for sure whether
+        /// a node will be backtracked into.
+        /// </remarks>
+        public bool IsAtomicByParent()
+        {
+            RegexNode? next = Next;
+            if (next is null) return false;
+            if (next.Type == Atomic) return true;
+
+            // We only walk up one group as a balance between optimization and cost.
+            if ((next.Type != Concatenate && next.Type != Capture) ||
+                next.Child(next.ChildCount() - 1) != this)
+            {
+                return false;
+            }
+
+            next = next.Next;
+            return next != null && next.Type == Atomic;
         }
 
         /// <summary>
@@ -545,137 +572,321 @@ namespace System.Text.RegularExpressions
             return this;
         }
 
-        /// <summary>
-        /// Combine adjacent sets/chars.
-        /// Basic optimization. Single-letter alternations can be replaced
-        /// by faster set specifications, and nested alternations with no
-        /// intervening operators can be flattened:
-        ///
-        /// a|b|c|def|g|h -> [a-c]|def|[gh]
-        /// apple|(?:orange|pear)|grape -> apple|orange|pear|grape
-        /// </summary>
+        /// <summary>Optimize an alternation.</summary>
         private RegexNode ReduceAlternation()
         {
-            int childCount = ChildCount();
-            if (childCount == 0)
+            switch (ChildCount())
             {
-                return new RegexNode(Nothing, Options);
+                case 0:
+                    return new RegexNode(Nothing, Options);
+
+                case 1:
+                    return Child(0);
+
+                default:
+                    ReduceSingleLetterAndNestedAlternations();
+                    RegexNode newThis = StripEnation(Nothing);
+                    return newThis != this ? newThis : ExtractCommonPrefix();
             }
 
-            if (childCount == 1)
+            // This function performs two optimizations:
+            // - Single-letter alternations can be replaced by faster set specifications
+            //   e.g. "a|b|c|def|g|h" -> "[a-c]|def|[gh]"
+            // - Nested alternations with no intervening operators can be flattened:
+            //   e.g. "apple|(?:orange|pear)|grape" -> "apple|orange|pear|grape"
+            void ReduceSingleLetterAndNestedAlternations()
             {
-                return Child(0);
-            }
+                bool wasLastSet = false;
+                bool lastNodeCannotMerge = false;
+                RegexOptions optionsLast = 0;
+                RegexOptions optionsAt;
+                int i;
+                int j;
+                RegexNode at;
+                RegexNode prev;
 
-            bool wasLastSet = false;
-            bool lastNodeCannotMerge = false;
-            RegexOptions optionsLast = 0;
-            RegexOptions optionsAt;
-            int i;
-            int j;
-            RegexNode at;
-            RegexNode prev;
-
-            List<RegexNode> children = (List<RegexNode>)Children!;
-            for (i = 0, j = 0; i < children.Count; i++, j++)
-            {
-                at = children[i];
-
-                if (j < i)
-                    children[j] = at;
-
-                while (true)
+                List<RegexNode> children = (List<RegexNode>)Children!;
+                for (i = 0, j = 0; i < children.Count; i++, j++)
                 {
-                    if (at.Type == Alternate)
-                    {
-                        if (at.Children is List<RegexNode> atChildren)
-                        {
-                            for (int k = 0; k < atChildren.Count; k++)
-                            {
-                                atChildren[k].Next = this;
-                            }
-                            children.InsertRange(i + 1, atChildren);
-                        }
-                        else
-                        {
-                            RegexNode atChild = (RegexNode)at.Children!;
-                            atChild.Next = this;
-                            children.Insert(i + 1, atChild);
-                        }
-                        j--;
-                    }
-                    else if (at.Type == Set || at.Type == One)
-                    {
-                        // Cannot merge sets if L or I options differ, or if either are negated.
-                        optionsAt = at.Options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase);
+                    at = children[i];
 
-                        if (at.Type == Set)
+                    if (j < i)
+                        children[j] = at;
+
+                    while (true)
+                    {
+                        if (at.Type == Alternate)
                         {
-                            if (!wasLastSet || optionsLast != optionsAt || lastNodeCannotMerge || !RegexCharClass.IsMergeable(at.Str))
+                            if (at.Children is List<RegexNode> atChildren)
+                            {
+                                for (int k = 0; k < atChildren.Count; k++)
+                                {
+                                    atChildren[k].Next = this;
+                                }
+                                children.InsertRange(i + 1, atChildren);
+                            }
+                            else
+                            {
+                                RegexNode atChild = (RegexNode)at.Children!;
+                                atChild.Next = this;
+                                children.Insert(i + 1, atChild);
+                            }
+                            j--;
+                        }
+                        else if (at.Type == Set || at.Type == One)
+                        {
+                            // Cannot merge sets if L or I options differ, or if either are negated.
+                            optionsAt = at.Options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase);
+
+                            if (at.Type == Set)
+                            {
+                                if (!wasLastSet || optionsLast != optionsAt || lastNodeCannotMerge || !RegexCharClass.IsMergeable(at.Str!))
+                                {
+                                    wasLastSet = true;
+                                    lastNodeCannotMerge = !RegexCharClass.IsMergeable(at.Str!);
+                                    optionsLast = optionsAt;
+                                    break;
+                                }
+                            }
+                            else if (!wasLastSet || optionsLast != optionsAt || lastNodeCannotMerge)
                             {
                                 wasLastSet = true;
-                                lastNodeCannotMerge = !RegexCharClass.IsMergeable(at.Str);
+                                lastNodeCannotMerge = false;
                                 optionsLast = optionsAt;
                                 break;
                             }
+
+
+                            // The last node was a Set or a One, we're a Set or One and our options are the same.
+                            // Merge the two nodes.
+                            j--;
+                            prev = children[j];
+
+                            RegexCharClass prevCharClass;
+                            if (prev.Type == One)
+                            {
+                                prevCharClass = new RegexCharClass();
+                                prevCharClass.AddChar(prev.Ch);
+                            }
+                            else
+                            {
+                                prevCharClass = RegexCharClass.Parse(prev.Str!);
+                            }
+
+                            if (at.Type == One)
+                            {
+                                prevCharClass.AddChar(at.Ch);
+                            }
+                            else
+                            {
+                                RegexCharClass atCharClass = RegexCharClass.Parse(at.Str!);
+                                prevCharClass.AddCharClass(atCharClass);
+                            }
+
+                            prev.Type = Set;
+                            prev.Str = prevCharClass.ToStringClass();
                         }
-                        else if (!wasLastSet || optionsLast != optionsAt || lastNodeCannotMerge)
+                        else if (at.Type == Nothing)
                         {
-                            wasLastSet = true;
+                            j--;
+                        }
+                        else
+                        {
+                            wasLastSet = false;
                             lastNodeCannotMerge = false;
-                            optionsLast = optionsAt;
-                            break;
                         }
-
-
-                        // The last node was a Set or a One, we're a Set or One and our options are the same.
-                        // Merge the two nodes.
-                        j--;
-                        prev = children[j];
-
-                        RegexCharClass prevCharClass;
-                        if (prev.Type == One)
-                        {
-                            prevCharClass = new RegexCharClass();
-                            prevCharClass.AddChar(prev.Ch);
-                        }
-                        else
-                        {
-                            prevCharClass = RegexCharClass.Parse(prev.Str!);
-                        }
-
-                        if (at.Type == One)
-                        {
-                            prevCharClass.AddChar(at.Ch);
-                        }
-                        else
-                        {
-                            RegexCharClass atCharClass = RegexCharClass.Parse(at.Str!);
-                            prevCharClass.AddCharClass(atCharClass);
-                        }
-
-                        prev.Type = Set;
-                        prev.Str = prevCharClass.ToStringClass();
+                        break;
                     }
-                    else if (at.Type == Nothing)
-                    {
-                        j--;
-                    }
-                    else
-                    {
-                        wasLastSet = false;
-                        lastNodeCannotMerge = false;
-                    }
-                    break;
+                }
+
+                if (j < i)
+                {
+                    children.RemoveRange(j, i - j);
                 }
             }
 
-            if (j < i)
+            // Analyzes all the branches of the alternation for text that's identical at the beginning
+            // of every branch.  That text is then pulled out into its own one or multi node in a
+            // concatenation with the alternation (whose branches are updated to remove that prefix).
+            // This is valuable for a few reasons.  One, it exposes potentially more text to the
+            // expression prefix analyzer used to influence FindFirstChar.  Second, it exposes more
+            // potential alternation optimizations, e.g. if the same prefix is followed in two branches
+            // by sets that can be merged.  Third, it reduces the amount of duplicated comparisons required
+            // if we end up backtracking into subsequent branches.
+            RegexNode ExtractCommonPrefix()
             {
-                children.RemoveRange(j, i - j);
-            }
+                // To keep things relatively simple, we currently only handle:
+                // - Branches that are one or multi nodes, or that are concatenations beginning with one or multi nodes.
+                // - All branches having the same options.
+                // - Text, rather than also trying to combine identical sets that start each branch.
 
-            return StripEnation(Nothing);
+                Debug.Assert(Children is List<RegexNode>);
+                var children = (List<RegexNode>)Children;
+                Debug.Assert(children.Count >= 2);
+
+                // Process the first branch to get the maximum possible common string.
+                RegexNode? startingNode = FindBranchOneMultiStart(children[0]);
+                if (startingNode is null)
+                {
+                    return this;
+                }
+
+                RegexOptions startingNodeOptions = startingNode.Options;
+                string? originalStartingString = startingNode.Str;
+                ReadOnlySpan<char> startingSpan = startingNode.Type == One ? stackalloc char[1] { startingNode.Ch } : (ReadOnlySpan<char>)originalStartingString;
+                Debug.Assert(startingSpan.Length > 0);
+
+                // Now compare the rest of the branches against it.
+                for (int i = 1; i < children.Count; i++)
+                {
+                    // Get the starting node of the next branch.
+                    startingNode = FindBranchOneMultiStart(children[i]);
+                    if (startingNode is null || startingNode.Options != startingNodeOptions)
+                    {
+                        return this;
+                    }
+
+                    // See if the new branch's prefix has a shared prefix with the current one.
+                    // If it does, shorten to that; if it doesn't, bail.
+                    if (startingNode.Type == One)
+                    {
+                        if (startingSpan[0] != startingNode.Ch)
+                        {
+                            return this;
+                        }
+
+                        if (startingSpan.Length != 1)
+                        {
+                            startingSpan = startingSpan.Slice(0, 1);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(startingNode.Type == Multi);
+                        Debug.Assert(startingNode.Str!.Length > 0);
+
+                        int minLength = Math.Min(startingSpan.Length, startingNode.Str.Length);
+                        int c = 0;
+                        while (c < minLength && startingSpan[c] == startingNode.Str[c]) c++;
+                        if (c == 0)
+                        {
+                            return this;
+                        }
+
+                        startingSpan = startingSpan.Slice(0, c);
+                    }
+                }
+
+                // If we get here, we have a starting string prefix shared by all branches.
+                Debug.Assert(startingSpan.Length > 0);
+
+                // Now remove the prefix from each branch.
+                for (int i = 0; i < children.Count; i++)
+                {
+                    RegexNode branch = children[i];
+                    if (branch.Type == Concatenate)
+                    {
+                        ProcessOneOrMulti(branch.Child(0), startingSpan);
+                        ReplaceChild(i, branch.Reduce());
+                    }
+                    else
+                    {
+                        ProcessOneOrMulti(branch, startingSpan);
+                    }
+
+                    // Remove the starting text from the one or multi node.  This may end up changing
+                    // the type of the node to be Empty if the starting text matches the node's full value.
+                    static void ProcessOneOrMulti(RegexNode node, ReadOnlySpan<char> startingSpan)
+                    {
+                        if (node.Type == One)
+                        {
+                            Debug.Assert(startingSpan.Length == 1);
+                            Debug.Assert(startingSpan[0] == node.Ch);
+                            node.Type = Empty;
+                            node.Ch = '\0';
+                        }
+                        else
+                        {
+                            Debug.Assert(node.Type == Multi);
+                            Debug.Assert(node.Str.AsSpan().StartsWith(startingSpan, StringComparison.Ordinal));
+                            if (node.Str!.Length == startingSpan.Length)
+                            {
+                                node.Type = Empty;
+                                node.Str = null;
+                            }
+                            else if (node.Str.Length - 1 == startingSpan.Length)
+                            {
+                                node.Type = One;
+                                node.Ch = node.Str[^1];
+                                node.Str = null;
+                            }
+                            else
+                            {
+                                node.Str = node.Str.Substring(startingSpan.Length);
+                            }
+                        }
+                    }
+                }
+
+                // We may have changed multiple branches to be Empty, but we only need to keep
+                // the first (keeping the rest would just duplicate work in backtracking, though
+                // it would also mean the original regex had at least two identical branches).
+                for (int firstEmpty = 0; firstEmpty < children.Count; firstEmpty++)
+                {
+                    if (children[firstEmpty].Type != Empty)
+                    {
+                        continue;
+                    }
+
+                    // Found the first empty.  Now starting after it, remove all subsequent found Empty nodes,
+                    // pushing everything else down. (In the future, should we want to there's also the opportunity
+                    // here to remove other duplication, but such duplication is a more egregious mistake on the
+                    // part of the expression author.)
+                    int i = firstEmpty + 1;
+                    int j = i;
+                    while (i < children.Count)
+                    {
+                        if (children[i].Type != Empty)
+                        {
+                            if (j != i)
+                            {
+                                children[j] = children[i];
+                            }
+                            j++;
+                        }
+                        i++;
+                    }
+
+                    if (j < i)
+                    {
+                        children.RemoveRange(j, i - j);
+                    }
+
+                    break;
+                }
+
+                var concat = new RegexNode(Concatenate, Options); // use same options as the Alternate
+                concat.AddChild(startingSpan.Length == 1 ? // use same options as the branches
+                    new RegexNode(One, startingNodeOptions) { Ch = startingSpan[0] } :
+                    new RegexNode(Multi, startingNodeOptions) { Str = originalStartingString?.Length == startingSpan.Length ? originalStartingString : startingSpan.ToString() });
+                concat.AddChild(this); // this will re-reduce the node, allowing for newly exposed possible optimizations in what came after the prefix
+                return concat;
+
+                // Finds the starting one or multi of the branch, if it has one; otherwise, returns null.
+                // For simplicity, this only considers branches that are One or Multi, or a Concatenation
+                // beginning with a One or Multi.  We don't traverse more than one level to avoid the
+                // complication of then having to later update that hierarchy when removing the prefix,
+                // but it could be done in the future if proven beneficial enough.
+                static RegexNode? FindBranchOneMultiStart(RegexNode branch)
+                {
+                    if (branch.Type == Concatenate)
+                    {
+                        branch = branch.Child(0);
+                    }
+
+                    return branch.Type == One || branch.Type == Multi ? branch : null;
+                }
+            }
         }
 
         /// <summary>
@@ -1238,20 +1449,21 @@ namespace System.Text.RegularExpressions
 
         public void AddChild(RegexNode newChild)
         {
-            RegexNode reducedChild = newChild.Reduce();
-            reducedChild.Next = this;
+            newChild.Next = this; // so that the child can see its parent while being reduced
+            newChild = newChild.Reduce();
+            newChild.Next = this; // in case Reduce returns a different node that needs to be reparented
 
             if (Children is null)
             {
-                Children = reducedChild;
+                Children = newChild;
             }
             else if (Children is RegexNode currentChild)
             {
-                Children = new List<RegexNode>() { currentChild, reducedChild };
+                Children = new List<RegexNode>() { currentChild, newChild };
             }
             else
             {
-                ((List<RegexNode>)Children).Add(reducedChild);
+                ((List<RegexNode>)Children).Add(newChild);
             }
         }
 
@@ -1301,7 +1513,6 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage]
         public string Description()
         {
-
             string typeStr = Type switch
             {
                 Oneloop => nameof(Oneloop),
@@ -1344,17 +1555,15 @@ namespace System.Text.RegularExpressions
                 _ => $"(unknown {Type})"
             };
 
-            var argSb = new StringBuilder().Append(typeStr);
+            var sb = new StringBuilder(typeStr);
 
-            if ((Options & RegexOptions.ExplicitCapture) != 0) argSb.Append("-C");
-            if ((Options & RegexOptions.IgnoreCase) != 0) argSb.Append("-I");
-            if ((Options & RegexOptions.RightToLeft) != 0) argSb.Append("-L");
-            if ((Options & RegexOptions.Multiline) != 0) argSb.Append("-M");
-            if ((Options & RegexOptions.Singleline) != 0) argSb.Append("-S");
-            if ((Options & RegexOptions.IgnorePatternWhitespace) != 0) argSb.Append("-X");
-            if ((Options & RegexOptions.ECMAScript) != 0) argSb.Append("-E");
-
-            argSb.Append(Indent());
+            if ((Options & RegexOptions.ExplicitCapture) != 0) sb.Append("-C");
+            if ((Options & RegexOptions.IgnoreCase) != 0) sb.Append("-I");
+            if ((Options & RegexOptions.RightToLeft) != 0) sb.Append("-L");
+            if ((Options & RegexOptions.Multiline) != 0) sb.Append("-M");
+            if ((Options & RegexOptions.Singleline) != 0) sb.Append("-S");
+            if ((Options & RegexOptions.IgnorePatternWhitespace) != 0) sb.Append("-X");
+            if ((Options & RegexOptions.ECMAScript) != 0) sb.Append("-E");
 
             switch (Type)
             {
@@ -1366,25 +1575,27 @@ namespace System.Text.RegularExpressions
                 case Notonelazy:
                 case One:
                 case Notone:
-                    argSb.Append(RegexCharClass.CharDescription(Ch));
+                    sb.Append(" '").Append(RegexCharClass.CharDescription(Ch)).Append('\'');
                     break;
                 case Capture:
-                    argSb.Append("index = " + M);
+                    sb.Append(' ').Append($"index = {M}");
                     if (N != -1)
-                        argSb.Append(", unindex = " + N);
+                    {
+                        sb.Append($", unindex = {N}");
+                    }
                     break;
                 case Ref:
                 case Testref:
-                    argSb.Append("index = " + M);
+                    sb.Append(' ').Append($"index = {M}");
                     break;
                 case Multi:
-                    argSb.Append(Str);
+                    sb.Append(" \"").Append(Str).Append('"');
                     break;
                 case Set:
                 case Setloop:
                 case Setloopatomic:
                 case Setlazy:
-                    argSb.Append(RegexCharClass.SetDescription(Str!));
+                    sb.Append(' ').Append(RegexCharClass.SetDescription(Str!));
                     break;
             }
 
@@ -1401,19 +1612,16 @@ namespace System.Text.RegularExpressions
                 case Setlazy:
                 case Loop:
                 case Lazyloop:
-                    if (argSb[^1] != ' ')
-                        argSb.Append(", ");
-                    argSb.Append("min = " + M + ", max = ");
-                    if (N == int.MaxValue)
-                        argSb.Append("inf");
-                    else
-                        argSb.Append(N);
+                    sb.Append(
+                        (M == 0 && N == int.MaxValue) ? "*" :
+                        (M == 0 && N == 1) ? "?" :
+                        (M == 1 && N == int.MaxValue) ? "+" :
+                        (N == int.MaxValue) ? $"{{{M}, *}}" :
+                        $"{{{M}, {N}}}");
                     break;
             }
 
-            string Indent() => new string(' ', Math.Max(1, 25 - argSb.Length));
-
-            return argSb.ToString();
+            return sb.ToString();
         }
 
         [ExcludeFromCodeCoverage]

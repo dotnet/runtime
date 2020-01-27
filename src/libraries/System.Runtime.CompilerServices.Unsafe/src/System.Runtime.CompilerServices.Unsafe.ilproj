@@ -11,7 +11,7 @@
     <IncludePath Condition="'$(TargetsNetCoreApp)' == 'true' or '$(OriginalTargetFramework)' == ''">include\netcoreapp</IncludePath>
     <IncludePath Condition="'$(TargetsNetFx)' == 'true'">include\netfx</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
-    <TargetFrameworks>netcoreapp5.0;netstandard2.0;netstandard1.0;net45;net472</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard1.0;net45;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
 

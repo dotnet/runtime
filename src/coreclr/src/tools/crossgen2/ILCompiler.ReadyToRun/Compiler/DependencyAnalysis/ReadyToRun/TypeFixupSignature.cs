@@ -68,5 +68,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
         }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = new DependencyList();
+
+            if (_typeDesc.HasInstantiation && !_typeDesc.IsGenericDefinition)
+            {
+                dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
+            }
+            return dependencies;
+        }
     }
 }

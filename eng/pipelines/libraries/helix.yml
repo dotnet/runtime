@@ -10,6 +10,7 @@ parameters:
   testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
   condition: always()
+  extraHelixArguments: ''
 
 steps:
   - script: ${{ parameters.msbuildScript }}
@@ -17,13 +18,14 @@ steps:
             /t:test
             /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
             /p:ArchGroup=${{ parameters.archGroup }}
-            /p:ConfigurationGroup=${{ parameters.configuration }}
+            /p:Configuration=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
             /p:TestScope=${{ parameters.testScope }}
             /p:BuildTargetFramework=${{ parameters.framework }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
             /p:Creator=${{ parameters.creator }}
+            ${{ parameters.extraHelixArguments }}
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: Send to Helix
     condition: and(succeeded(), ${{ parameters.condition }})

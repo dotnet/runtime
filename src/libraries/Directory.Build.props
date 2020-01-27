@@ -310,8 +310,6 @@
     <!-- Paths to binplace package content -->
     <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
-    <NetFxPackageRefPath>$(ArtifactsBinDir)pkg\$(NetFrameworkCurrent)\ref</NetFxPackageRefPath>
-    <NetFxPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetFrameworkCurrent)\lib</NetFxPackageRuntimePath>
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildConfiguration)'))</TestHostRootPath>
 

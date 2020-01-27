@@ -4,7 +4,7 @@ parameters:
   osSubgroup: ''
   archType: ''
   crossrootfsDir: ''
-  framework: netcoreapp
+  framework: ''
   isOfficialBuild: false
   isOfficialAllConfigurations: false
 
@@ -120,8 +120,8 @@ jobs:
           - task: CopyFiles@2
             displayName: Prepare shared framework runtime folder to publish
             inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg/netcoreapp5.0/runtime # The hardcoded target framework should be removed when we drop the support for versionless targetframeworks from ci.
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg/netcoreapp5.0/runtime
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg
 
           - task: CopyFiles@2
             displayName: Prepare docs folder to publish
@@ -184,3 +184,4 @@ jobs:
               testScope: ${{ parameters.testScope }}
               creator: dotnet-bot
               helixToken: ''
+              extraHelixArguments: $(_extraHelixArguments)

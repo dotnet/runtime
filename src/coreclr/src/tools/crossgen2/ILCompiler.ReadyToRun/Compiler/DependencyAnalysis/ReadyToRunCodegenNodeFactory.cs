@@ -82,6 +82,12 @@ namespace ILCompiler.DependencyAnalysis
         private void CreateNodeCaches()
         {
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
+
+            _allMethodsOnType = new NodeCache<TypeDesc, AllMethodsOnTypeNode>(type =>
+            {
+                return new AllMethodsOnTypeNode(type);
+            });
+
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromDictionaryNode);
             _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromTypeNode);
 
@@ -105,6 +111,13 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode MethodEntrypoint(MethodDesc method)
         {
             return _methodEntrypoints.GetOrAdd(method);
+        }
+
+        private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
+
+        public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)
+        {
+            return _allMethodsOnType.GetOrAdd(type);
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
