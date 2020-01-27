@@ -1778,7 +1778,7 @@ namespace System.Text.RegularExpressions
                         // Its children must all also be supported.
                         case RegexNode.Alternate:
                             if (node.Next != null &&
-                                (node.Next.Type == RegexNode.Atomic || // atomic alternate
+                                (node.IsAtomicByParent() || // atomic alternate
                                 (node.Next.Type == RegexNode.Capture && node.Next.Next is null))) // root alternate
                             {
                                 goto case RegexNode.Concatenate;

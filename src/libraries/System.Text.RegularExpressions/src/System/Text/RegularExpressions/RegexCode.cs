@@ -285,7 +285,7 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage]
         public string OpcodeDescription(int offset)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             int opcode = Codes[offset];
 
             sb.AppendFormat("{0:D6} ", offset);
@@ -307,7 +307,7 @@ namespace System.Text.RegularExpressions
                 case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
-                    sb.Append(RegexCharClass.CharDescription((char)Codes[offset + 1]));
+                    sb.Append("'").Append(RegexCharClass.CharDescription((char)Codes[offset + 1])).Append("'");
                     break;
 
                 case Set:
@@ -319,7 +319,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case Multi:
-                    sb.Append(Strings[Codes[offset + 1]]);
+                    sb.Append('"').Append(Strings[Codes[offset + 1]]).Append('"');
                     break;
 
                 case Ref:

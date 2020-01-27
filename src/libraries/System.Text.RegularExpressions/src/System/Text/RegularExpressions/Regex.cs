@@ -105,16 +105,7 @@ namespace System.Text.RegularExpressions
 #if DEBUG
             if (IsDebug)
             {
-                Debug.Write($"Pattern:     {pattern}");
-                RegexOptions displayOptions = options & ~RegexOptions.Debug;
-                if (displayOptions != RegexOptions.None)
-                {
-                    Debug.Write($"Options:     {displayOptions}");
-                }
-                if (matchTimeout != InfiniteMatchTimeout)
-                {
-                    Debug.Write($"Timeout:     {matchTimeout}");
-                }
+                Debug.WriteLine($"Pattern: {pattern}    Options: {options & ~RegexOptions.Debug}    Timeout: {(matchTimeout == InfiniteMatchTimeout ? "infinite" : matchTimeout.ToString())}");
             }
 #endif
 
