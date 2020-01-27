@@ -29,6 +29,10 @@ namespace System.Text.RegularExpressions
         public readonly bool CaseInsensitive;
         private readonly CultureInfo _culture;
 
+        /// <summary>The maximum pattern length for which we'll attempt to create a Boyer-Moore table.</summary>
+        /// <remarks>This is limited in order to minimize the overhead of constructing a Regex.</remarks>
+        public const int MaxLimit = 50_000; // must be <= char.MaxValue for RegexCompiler to compile Boyer-Moore correctly
+
         /// <summary>
         /// Constructs a Boyer-Moore state machine for searching for the string
         /// pattern. The string must not be zero-length.
@@ -38,6 +42,7 @@ namespace System.Text.RegularExpressions
             // Sorry, you just can't use Boyer-Moore to find an empty pattern.
             // We're doing this for your own protection. (Really, for speed.)
             Debug.Assert(pattern.Length != 0, "RegexBoyerMoore called with an empty string. This is bad for perf");
+            Debug.Assert(pattern.Length <= MaxLimit, "RegexBoyerMoore can take a long time for large patterns");
             Debug.Assert(!caseInsensitive || pattern.ToLower(culture) == pattern, "RegexBoyerMoore called with a pattern which is not lowercased with caseInsensitive true.");
 
             Pattern = pattern;

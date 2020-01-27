@@ -105,13 +105,13 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Oneloopatomic:
                     case RegexNode.Onelazy:
 
-                        // In release, cutoff at a length to which we can still reasonably construct a string
+                        // In release, cutoff at a length to which we can still reasonably construct a string and Boyer-Moore search.
                         // In debug, use a smaller cutoff to exercise the cutoff path in tests
                         const int Cutoff =
 #if DEBUG
                             50;
 #else
-                            1_000_000;
+                            RegexBoyerMoore.MaxLimit;
 #endif
 
                         if (curNode.M > 0 && curNode.M < Cutoff)
