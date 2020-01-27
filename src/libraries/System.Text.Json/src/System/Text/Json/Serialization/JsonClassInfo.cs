@@ -138,7 +138,10 @@ namespace System.Text.Json
                     {
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
 
-                        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        BindingFlags bindingFlags = options.AllowPrivateProperties
+                            ? BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+                            : BindingFlags.Instance | BindingFlags.Public;
+                        PropertyInfo[] properties = type.GetProperties(bindingFlags);
 
                         Dictionary<string, JsonPropertyInfo> cache = CreatePropertyCache(properties.Length);
 

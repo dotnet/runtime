@@ -12,6 +12,30 @@ namespace System.Text.Json.Serialization.Tests
     public static class PropertyVisibilityTests
     {
         [Fact]
+        public static void Serialize_NonPublicProperty_RequiresOptIn()
+        {
+            var obj = new ClassWithPrivateProperty { PrivateProperty = true };
+            var allowNonPublic = new JsonSerializerOptions { AllowPrivateProperties = true };
+
+            string jsonDefault = JsonSerializer.Serialize(obj);
+            string jsonNonPublic = JsonSerializer.Serialize(obj, allowNonPublic);
+
+            Assert.Equal(@"{}", jsonDefault);
+            Assert.Equal(@"{""PrivateProperty"":true}", jsonNonPublic);
+
+            var objDefault = JsonSerializer.Deserialize<ClassWithPrivateProperty>(jsonDefault);
+            var objNonPublic = JsonSerializer.Deserialize<ClassWithPrivateProperty>(jsonNonPublic, allowNonPublic);
+
+            Assert.False(objDefault.PrivateProperty);
+            Assert.True(objNonPublic.PrivateProperty);
+        }
+
+        public class ClassWithPrivateProperty
+        {
+            internal bool PrivateProperty { get; set; }
+        }
+
+        [Fact]
         public static void NoSetter()
         {
             var obj = new ClassWithNoSetter();

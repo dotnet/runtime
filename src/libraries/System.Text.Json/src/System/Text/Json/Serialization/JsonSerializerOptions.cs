@@ -29,6 +29,7 @@ namespace System.Text.Json
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
+        private bool _allowPrivateProperties;
         private bool _haveTypesBeenCreated;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
@@ -63,6 +64,26 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _allowTrailingCommas = value;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether non-public properties should be serialized and deserialized.
+        /// The default value is false.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public bool AllowPrivateProperties
+        {
+            get
+            {
+                return _allowPrivateProperties;
+            }
+            set
+            {
+                VerifyMutable();
+                _allowPrivateProperties = value;
             }
         }
 
