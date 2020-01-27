@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Net.Test.Common
 {
-    public static class QPackEncoder
+    public static class QPackTestEncoder
     {
         public const int MaxVarIntLength = 6;
         public const int MaxPrefixLength = MaxVarIntLength * 2;
