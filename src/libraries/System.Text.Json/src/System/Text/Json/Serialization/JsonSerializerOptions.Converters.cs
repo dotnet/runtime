@@ -20,7 +20,17 @@ namespace System.Text.Json
         private static readonly Dictionary<Type, JsonConverter> s_defaultSimpleConverters = GetDefaultSimpleConverters();
 
         // The global list of built-in converters that override CanConvert().
-        private static readonly JsonConverter[] s_defaultFactoryConverters = GetDefaultConverters();
+        private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
+        {
+            // Nullable converter should always be first since it forwards to any nullable type.
+            new NullableConverterFactory(),
+            new EnumConverterFactory(),
+            new KeyValuePairConverterFactory(),
+            // IEnumerable should always be last since they can convert any IEnumerable.
+            new IEnumerableConverterFactory(),
+            // Object should always be last since it converts any type.
+            new ObjectConverterFactory()
+        };
 
         // The cached converters (custom or built-in).
         private readonly ConcurrentDictionary<Type, JsonConverter?> _converters = new ConcurrentDictionary<Type, JsonConverter?>();
@@ -36,27 +46,6 @@ namespace System.Text.Json
             }
 
             Debug.Assert(NumberOfSimpleConverters == converters.Count);
-
-            return converters;
-        }
-
-        // Get the list for converters that implement CanConvert().
-        private static JsonConverter[] GetDefaultConverters()
-        {
-            const int NumberOfConverters = 5;
-            var converters = new JsonConverter[]
-            {
-                // Nullable converter should always be first since it forwards to any nullable type.
-                new NullableConverterFactory(),
-                new EnumConverterFactory(),
-                new KeyValuePairConverterFactory(),
-                // IEnumerable should always be last since they can convert any IEnumerable.
-                new IEnumerableConverterFactory(),
-                // Object should always be last since it converts any type.
-                new ObjectConverterFactory()
-            };
-
-            Debug.Assert(NumberOfConverters == converters.Length);
 
             return converters;
         }
