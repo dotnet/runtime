@@ -169,11 +169,6 @@ namespace ILCompiler
                 IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
                 _rootAdder(methodEntryPoint, reason);
             }
-
-            public void AddCompilationRoot(TypeDesc type, string reason)
-            {
-                _rootAdder(_factory.ConstructedTypeSymbol(type), reason);
-            }
         }
     }
 
