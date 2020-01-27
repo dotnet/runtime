@@ -1612,13 +1612,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 // plus they are not marked as blittable.
                 if (!th.IsEnum())
                 {
-                    // It should be blittable
-                    if (!th.IsBlittable())
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_PTRNONBLITTABLE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-
                     // Check for Copy Constructor Modifier
                     if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
                         sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
@@ -1632,17 +1625,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         fNeedsCopyCtor = TRUE;
                         m_byref = FALSE;
                     }
-                }
-            }
-            else
-            {
-                if (!(mtype2 != ELEMENT_TYPE_CLASS &&
-                    mtype2 != ELEMENT_TYPE_STRING &&
-                    mtype2 != ELEMENT_TYPE_OBJECT &&
-                    mtype2 != ELEMENT_TYPE_SZARRAY))
-                {
-                    m_resID = IDS_EE_BADMARSHAL_PTRSUBTYPE;
-                    IfFailGoto(E_FAIL, lFail);
                 }
             }
         }

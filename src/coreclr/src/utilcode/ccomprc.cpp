@@ -18,116 +18,8 @@ __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATI
 
 #include <stdlib.h>
 
-#ifdef USE_FORMATMESSAGE_WRAPPER
-// we implement the wrapper for FormatMessageW.
-// Need access to the original
-#undef WszFormatMessage
-#define WszFormatMessage ::FormatMessageW
-#endif
-
-#define MAX_VERSION_STRING 30
-
 // External prototypes.
 extern HINSTANCE GetModuleInst();
-
-#ifndef FEATURE_PAL
-
-//*****************************************************************************
-// Get the MUI ID, on downlevel platforms where MUI is not supported it
-// returns the default system ID.
-
-typedef LANGID (WINAPI *PFNGETUSERDEFAULTUILANGUAGE)(void);  // kernel32!GetUserDefaultUILanguage
-
-int GetMUILanguageID(LocaleIDValue* pResult)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-#ifdef      MODE_PREEMPTIVE
-        MODE_PREEMPTIVE;
-#endif
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(sizeof(LocaleID)/sizeof(WCHAR) >=LOCALE_NAME_MAX_LENGTH);
-    return ::GetSystemDefaultLocaleName(*pResult, LOCALE_NAME_MAX_LENGTH);
-}
-
-static void BuildMUIDirectory(int langid, __out SString* pResult)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pResult));
-    }
-    CONTRACTL_END;
-
-    pResult->Printf(W("MUI\\%04x\\"), langid);
-}
-
-void GetMUILanguageName(__out SString* pResult)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pResult));
-    }
-    CONTRACTL_END;
-
-    LocaleIDValue langid;
-    GetMUILanguageID(&langid);
-
-    int lcid = ::LocaleNameToLCID(langid,0);
-    return BuildMUIDirectory(lcid, pResult);
-}
-
-void GetMUIParentLanguageName(SString* pResult)
-{
-    WRAPPER_NO_CONTRACT;
-    int langid = 1033;
-
-    BuildMUIDirectory(langid, pResult);
-}
-#ifndef DACCESS_COMPILE
-HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pCultureNames));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr=S_OK;
-    EX_TRY
-    {
-        SString result;
-        GetMUILanguageName(&result);
-
-        if(!result.IsEmpty())
-        {
-            pCultureNames->Append(result);
-        }
-
-        GetMUIParentLanguageName(&result);
-
-        _ASSERTE(!result.IsEmpty());
-        pCultureNames->Append(result);
-        pCultureNames->Append(SString::Empty());
-    }
-    EX_CATCH_HRESULT(hr)
-    return hr;
-
-}
-#endif // DACCESS_COMPILE
-
-#endif // !FEATURE_PAL
-
-BOOL CCompRC::s_bIsMscoree = FALSE;
 
 //*****************************************************************************
 // Do the mapping from an langId to an hinstance node
@@ -807,27 +699,6 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT CCompRC::LoadMUILibrary(HRESOURCEDLL * pHInst)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(pHInst != NULL);
-    LocaleID langId;
-    LocaleIDValue langIdValue;
-    // Must resolve current thread's langId to a dll.
-    if(m_fpGetThreadUICultureId) {
-        int ret = (*m_fpGetThreadUICultureId)(&langIdValue);
-
-        // Callback can't return 0, since that indicates empty.
-        // To indicate empty, callback should return UICULTUREID_DONTCARE
-        _ASSERTE(ret != 0);
-        langId=langIdValue;
-    }
-    else
-        langId = UICULTUREID_DONTCARE;
-
-    HRESULT hr = GetLibrary(langId, pHInst);
-    return hr;
-}
 
 HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 {
@@ -1004,37 +875,3 @@ HRESULT CCompRC::LoadLibrary(HRESOURCEDLL * pHInst)
     return hr;
 }
 #endif // DACCESS_COMPILE
-
-
-
-#ifdef USE_FORMATMESSAGE_WRAPPER
-DWORD
-PALAPI
-CCompRC::FormatMessage(
-           IN DWORD dwFlags,
-           IN LPCVOID lpSource,
-           IN DWORD dwMessageId,
-           IN DWORD dwLanguageId,
-           OUT LPWSTR lpBuffer,
-           IN DWORD nSize,
-           IN va_list *Arguments)
-{
-    STATIC_CONTRACT_NOTHROW;
-    StackSString str;
-    if (dwFlags & FORMAT_MESSAGE_FROM_SYSTEM)
-    {
-        dwFlags&=~FORMAT_MESSAGE_FROM_SYSTEM;
-        dwFlags|=FORMAT_MESSAGE_FROM_STRING;
-        str.LoadResourceAndReturnHR(NULL,CCompRC::Error,dwMessageId);
-        lpSource=str.GetUnicode();
-    }
-    return WszFormatMessage(dwFlags,
-                            lpSource,
-                            dwMessageId,
-                            dwLanguageId,
-                            lpBuffer,
-                            nSize,
-                            Arguments);
-}
-#endif // USE_FORMATMESSAGE_WRAPPER
-

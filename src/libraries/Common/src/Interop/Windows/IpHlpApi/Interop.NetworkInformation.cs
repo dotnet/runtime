@@ -15,8 +15,6 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
-        // TODO: #3562 - Replace names with the ones from the Windows SDK.
-
         [Flags]
         internal enum AdapterFlags
         {
@@ -516,7 +514,7 @@ internal static partial class Interop
             AddressFamily family,
             uint flags,
             IntPtr pReserved,
-            SafeLocalAllocHandle adapterAddresses,
+            IntPtr adapterAddresses,
             ref uint outBufLen);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
@@ -541,21 +539,21 @@ internal static partial class Interop
         internal static extern uint GetIcmpStatisticsEx(out MibIcmpInfoEx statistics, AddressFamily family);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetTcpTable(SafeLocalAllocHandle pTcpTable, ref uint dwOutBufLen, bool order);
+        internal static extern uint GetTcpTable(IntPtr pTcpTable, ref uint dwOutBufLen, bool order);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetExtendedTcpTable(SafeLocalAllocHandle pTcpTable, ref uint dwOutBufLen, bool order,
+        internal static extern uint GetExtendedTcpTable(IntPtr pTcpTable, ref uint dwOutBufLen, bool order,
                                                         uint IPVersion, TcpTableClass tableClass, uint reserved);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetUdpTable(SafeLocalAllocHandle pUdpTable, ref uint dwOutBufLen, bool order);
+        internal static extern uint GetUdpTable(IntPtr pUdpTable, ref uint dwOutBufLen, bool order);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetExtendedUdpTable(SafeLocalAllocHandle pUdpTable, ref uint dwOutBufLen, bool order,
+        internal static extern uint GetExtendedUdpTable(IntPtr pUdpTable, ref uint dwOutBufLen, bool order,
                                                         uint IPVersion, UdpTableClass tableClass, uint reserved);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetPerAdapterInfo(uint IfIndex, SafeLocalAllocHandle pPerAdapterInfo, ref uint pOutBufLen);
+        internal static extern uint GetPerAdapterInfo(uint IfIndex, IntPtr pPerAdapterInfo, ref uint pOutBufLen);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
         internal static extern void FreeMibTable(IntPtr handle);
@@ -565,13 +563,10 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.IpHlpApi)]
         internal static extern uint NotifyStableUnicastIpAddressTable(
-            [In] AddressFamily addressFamily,
-            [Out] out SafeFreeMibTable table,
-            [MarshalAs(UnmanagedType.FunctionPtr)][In] StableUnicastIpAddressTableDelegate callback,
-            [In] IntPtr context,
-            [Out] out SafeCancelMibChangeNotify notificationHandle);
-
-        [DllImport(Interop.Libraries.IpHlpApi, ExactSpelling = true)]
-        internal static extern uint GetNetworkParams(SafeLocalAllocHandle pFixedInfo, ref uint pOutBufLen);
+            AddressFamily addressFamily,
+            out SafeFreeMibTable table,
+            StableUnicastIpAddressTableDelegate callback,
+            IntPtr context,
+            out SafeCancelMibChangeNotify notificationHandle);
     }
 }

@@ -1911,12 +1911,12 @@ namespace System
         private T value;
         private int _dummyPrimitive;
         public Nullable(T value) { throw null; }
-        public bool HasValue { get { throw null; } }
-        public T Value { get { throw null; } }
+        public readonly bool HasValue { get { throw null; } }
+        public readonly T Value { get { throw null; } }
         public override bool Equals(object? other) { throw null; }
         public override int GetHashCode() { throw null; }
-        public T GetValueOrDefault() { throw null; }
-        public T GetValueOrDefault(T defaultValue) { throw null; }
+        public readonly T GetValueOrDefault() { throw null; }
+        public readonly T GetValueOrDefault(T defaultValue) { throw null; }
         public static explicit operator T (T? value) { throw null; }
         public static implicit operator T? (T value) { throw null; }
         public override string? ToString() { throw null; }

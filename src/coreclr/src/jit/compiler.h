@@ -1001,8 +1001,8 @@ public:
     TempDsc(int _tdNum, unsigned _tdSize, var_types _tdType) : tdNum(_tdNum), tdSize((BYTE)_tdSize), tdType(_tdType)
     {
 #ifdef DEBUG
-        assert(tdNum <
-               0); // temps must have a negative number (so they have a different number from all local variables)
+        // temps must have a negative number (so they have a different number from all local variables)
+        assert(tdNum < 0);
         tdOffs = BAD_TEMP_OFFSET;
 #endif // DEBUG
         if (tdNum != _tdNum)
@@ -4021,7 +4021,7 @@ private:
     }
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
-    bool impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& opcode);
+    bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
 
 #ifdef _TARGET_ARM_
     void impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* op, CORINFO_CLASS_HANDLE hClass);
@@ -4442,8 +4442,6 @@ public:
     void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
-
-    void fgMorph();
 
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
@@ -6144,8 +6142,8 @@ protected:
 
         unsigned csdHashKey; // the orginal hashkey
 
-        unsigned csdIndex;          // 1..optCSECandidateCount
-        char     csdLiveAcrossCall; // 0 or 1
+        unsigned csdIndex; // 1..optCSECandidateCount
+        bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count
         unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
@@ -6153,9 +6151,9 @@ protected:
         unsigned csdDefWtCnt; // weighted def count
         unsigned csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
-        GenTree*    csdTree;  // treenode containing the 1st occurance
-        Statement*  csdStmt;  // stmt containing the 1st occurance
-        BasicBlock* csdBlock; // block containing the 1st occurance
+        GenTree*    csdTree;  // treenode containing the 1st occurrence
+        Statement*  csdStmt;  // stmt containing the 1st occurrence
+        BasicBlock* csdBlock; // block containing the 1st occurrence
 
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
@@ -6242,7 +6240,7 @@ protected:
     unsigned optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
     unsigned optCSEstart;          // The first local variable number that is a CSE
     unsigned optCSEcount;          // The total count of CSE's introduced.
-    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCS
+    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
 
@@ -6301,8 +6299,8 @@ public:
     INDEBUG(void optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName));
 
     /**************************************************************************
-    *               Early value propagation
-    *************************************************************************/
+     *               Early value propagation
+     *************************************************************************/
     struct SSAName
     {
         unsigned m_lvNum;
@@ -6396,17 +6394,27 @@ public:
         OPK_NULLCHECK
     };
 
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
+
     bool gtIsVtableRef(GenTree* tree);
     GenTree* getArrayLengthFromAllocation(GenTree* tree);
     GenTree* getObjectHandleNodeFromAllocation(GenTree* tree);
     GenTree* optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree* optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
-    GenTree* optEarlyPropRewriteTree(GenTree* tree);
+    GenTree* optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
     bool optDoEarlyPropForBlock(BasicBlock* block);
     bool optDoEarlyPropForFunc();
     void optEarlyProp();
-    void optFoldNullCheck(GenTree* tree);
-    bool optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry);
+    void optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
+    GenTree* optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
+    bool optIsNullCheckFoldingLegal(GenTree*    tree,
+                                    GenTree*    nullCheckTree,
+                                    GenTree**   nullCheckParent,
+                                    Statement** nullCheckStmt);
+    bool optCanMoveNullCheckPastTree(GenTree* tree,
+                                     unsigned nullCheckLclNum,
+                                     bool     isInsideTry,
+                                     bool     checkSideEffectSummary);
 
 #if ASSERTION_PROP
     /**************************************************************************
@@ -6482,6 +6490,7 @@ public:
             struct IntVal
             {
                 ssize_t  iconVal;   // integer
+                unsigned padding;   // unused; ensures iconFlags does not overlap lconVal
                 unsigned iconFlags; // gtFlags
             };
             struct Range // integer subrange

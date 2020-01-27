@@ -187,36 +187,6 @@ EXTERN_C FCDECL1(void*, JIT_GetSharedGCStaticBaseNoCtor_Portable, DomainLocalMod
 EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor, DomainLocalModule *pLocalModule);
 EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule);
 
-#ifndef JIT_ChkCastClass
-#define JIT_ChkCastClass JIT_ChkCastClass_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_ChkCastClass, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_ChkCastClass_Portable, MethodTable* pMT, Object* pObject);
-
-#ifndef JIT_ChkCastClassSpecial
-#define JIT_ChkCastClassSpecial JIT_ChkCastClassSpecial_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_ChkCastClassSpecial, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_ChkCastClassSpecial_Portable, MethodTable* pMT, Object* pObject);
-
-#ifndef JIT_IsInstanceOfClass
-#define JIT_IsInstanceOfClass JIT_IsInstanceOfClass_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfClass, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfClass_Portable, MethodTable* pMT, Object* pObject);
-
-#ifndef JIT_ChkCastInterface
-#define JIT_ChkCastInterface JIT_ChkCastInterface_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_ChkCastInterface, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_ChkCastInterface_Portable, MethodTable* pMT, Object* pObject);
-
-#ifndef JIT_IsInstanceOfInterface
-#define JIT_IsInstanceOfInterface JIT_IsInstanceOfInterface_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfInterface, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfInterface_Portable, MethodTable* pMT, Object* pObject);
-
 extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_);
 extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 
@@ -272,18 +242,10 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 #endif
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
-
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
-extern "C" FCDECL2(Object*, JIT_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *pObject);   // JITInterfaceX86.cpp, etc.
-extern "C" FCDECL2(Object*, JIT_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object *pObject);
-
-extern "C" FCDECL2(Object*, JITutil_ChkCastInterface, MethodTable *pInterfaceMT, Object *obj);
-extern "C" FCDECL2(Object*, JITutil_IsInstanceOfInterface, MethodTable *pInterfaceMT, Object *obj);
-extern "C" FCDECL2(Object*, JITutil_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *obj);
-extern "C" FCDECL2(Object*, JITutil_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object *obj);
-extern "C" FCDECL2(Object*, JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(Object*, JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
+extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
+extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 
 extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
 extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);

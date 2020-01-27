@@ -4442,17 +4442,33 @@ void emitter::emitComputeCodeSizes()
 #endif
 }
 
-/*****************************************************************************
- *
- *  Called at the end of code generation, this method creates the code, data
- *  and GC info blocks for the method.  Returns the size of the method (which must fit in an unsigned).
- */
-
+//------------------------------------------------------------------------
+// emitEndCodeGen: called at end of code generation to create code, data, and gc info
+//
+// Arguments:
+//    comp - compiler instance
+//    contTrkPtrLcls - true if tracked stack pointers are contiguous on the stack
+//    fullInt - true if method has fully interruptible gc reporting
+//    fullPtrMap - true if gc reporting should use full register pointer map
+//    xcptnsCount - number of EH clauses to report for the method
+//    prologSize [OUT] - prolog size in bytes
+//    epilogSize [OUT] - epilog size in bytes (see notes)
+//    codeAddr [OUT] - address of the code buffer
+//    coldCodeAddr [OUT] - address of the cold code buffer (if any)
+//    consAddr [OUT] - address of the read only constant buffer (if any)
+//
+// Notes:
+//    Currently, in methods with multiple epilogs, all epilogs must have the same
+//    size. epilogSize is the size of just one of these epilogs, not the cumulative
+//    size of all of the method's epilogs.
+//
+// Returns:
+//    size of the method code, in bytes
+//
 unsigned emitter::emitEndCodeGen(Compiler* comp,
                                  bool      contTrkPtrLcls,
                                  bool      fullyInt,
                                  bool      fullPtrMap,
-                                 bool      returnsGCr,
                                  unsigned  xcptnsCount,
                                  unsigned* prologSize,
                                  unsigned* epilogSize,

@@ -187,9 +187,6 @@ namespace System.Net.Sockets
             return ReceiveAsync((Memory<byte>)buffer, socketFlags, fromNetworkStream, default).AsTask();
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/24430:
-        // Fully plumb cancellation down into socket operations.
-
         internal ValueTask<int> ReceiveAsync(Memory<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)

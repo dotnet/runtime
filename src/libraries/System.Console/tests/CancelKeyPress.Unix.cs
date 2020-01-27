@@ -13,7 +13,7 @@ using Xunit;
 public partial class CancelKeyPressTests
 {
     [Fact]
-    [ActiveIssue(39172)]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/39172")]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
     public void HandlerInvokedForSigInt()
     {
@@ -21,7 +21,7 @@ public partial class CancelKeyPressTests
     }
 
     [Fact]
-    [ActiveIssue(39172)]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/39172")]
     [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)] // Jenkins blocks SIGQUIT on OS X, causing the test to fail in CI
     public void HandlerInvokedForSigQuit()
     {
@@ -29,7 +29,7 @@ public partial class CancelKeyPressTests
     }
 
     [Fact]
-    [ActiveIssue(39172)]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/39172")]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // events are triggered by Unix signals (SIGINT, SIGQUIT, SIGCHLD).
     public void ExitDetectionNotBlockedByHandler()
     {

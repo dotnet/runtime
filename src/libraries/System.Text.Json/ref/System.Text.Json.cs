@@ -463,6 +463,7 @@ namespace System.Text.Json
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.ReferenceHandling ReferenceHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonConverter? GetConverter(System.Type typeToConvert) { throw null; }
     }
@@ -774,5 +775,11 @@ namespace System.Text.Json.Serialization
         public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
         public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+    }
+    public sealed partial class ReferenceHandling
+    {
+        internal ReferenceHandling() { }
+        public static System.Text.Json.Serialization.ReferenceHandling Default { get { throw null; } }
+        public static System.Text.Json.Serialization.ReferenceHandling Preserve { get { throw null; } }
     }
 }

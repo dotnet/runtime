@@ -139,13 +139,13 @@ namespace Internal.Cryptography
                 }
             }
 
-            AsnReader reader = new AsnReader(normalizedValue, AsnEncodingRules.DER);
-            AsnReader setReader = reader.ReadSetOf();
+            AsnValueReader reader = new AsnValueReader(normalizedValue, AsnEncodingRules.DER);
+            AsnValueReader setReader = reader.ReadSetOf();
             AttributeAsn[] decodedSet = new AttributeAsn[setItems.Length];
             int i = 0;
             while (setReader.HasData)
             {
-                AttributeAsn.Decode(setReader, out AttributeAsn item);
+                AttributeAsn.Decode(ref setReader, normalizedValue, out AttributeAsn item);
                 decodedSet[i] = item;
                 i++;
             }
@@ -204,7 +204,7 @@ namespace Internal.Cryptography
         public static string OctetStringToUnicode(this byte[] octets)
         {
             if (octets.Length < 2)
-                return string.Empty;   // Desktop compat: 0-length byte array maps to string.empty. 1-length byte array gets passed to Marshal.PtrToStringUni() with who knows what outcome.
+                return string.Empty;   // .NET Framework compat: 0-length byte array maps to string.empty. 1-length byte array gets passed to Marshal.PtrToStringUni() with who knows what outcome.
 
             string s = Encoding.Unicode.GetString(octets, 0, octets.Length - 2);
             return s;
@@ -225,7 +225,7 @@ namespace Internal.Cryptography
         }
 
         /// <summary>
-        /// Desktop compat: We do not complain about multiple matches. Just take the first one and ignore the rest.
+        /// .NET Framework compat: We do not complain about multiple matches. Just take the first one and ignore the rest.
         /// </summary>
         public static X509Certificate2 TryFindMatchingCertificate(this X509Certificate2Collection certs, SubjectIdentifier recipientIdentifier)
         {

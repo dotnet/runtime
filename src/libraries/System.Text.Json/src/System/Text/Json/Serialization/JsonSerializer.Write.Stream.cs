@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -70,6 +71,10 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                {
+                    state.ReferenceResolver = new DefaultReferenceResolver(writing: true);
+                }
                 state.Current.Initialize(inputType, options);
                 state.Current.CurrentValue = value;
 

@@ -10,7 +10,7 @@ endif()
 
 add_compile_options($<$<CXX_COMPILER_ID:MSVC>:-W4>)
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_PLATFORM_UNIX))
+if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_HOST_UNIX))
   add_definitions(-DFEATURE_SIMD)
   add_definitions(-DFEATURE_HW_INTRINSICS)
 endif ()
@@ -331,7 +331,7 @@ set(JIT_ARCH_LINK_LIBRARIES
    gcinfo
 )
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
        mscorrc_debug
        coreclrpal
@@ -353,7 +353,7 @@ else()
        crypt32.lib
        RuntimeObject.lib
     )
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
 function(add_jit jitName)
@@ -395,18 +395,18 @@ endif (FEATURE_MERGE_JIT_AND_ENGINE)
 
 add_subdirectory(standalone)
 
-if (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64)
+if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
     # On x86, build RyuJIT/ARM32 cross-compiling altjit.
     # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
     add_subdirectory(protononjit)
 endif ()
 
-if (CLR_CMAKE_PLATFORM_ARCH_I386)
+if (CLR_CMAKE_HOST_ARCH_I386)
      # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
     add_subdirectory(armelnonjit)
 endif ()
 
-if ((CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64) AND WIN32)
+if ((CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64) AND WIN32)
     # On Windows, build altjit that targets the Linux ABI:
     #   On x86, build Linux/x86 altjit. This enables UNIX_X86_ABI.
     #   On amd64, build Linux/AMD64 altjit. This enables UNIX_AMD64_ABI.

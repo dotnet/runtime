@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(38180)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/38180")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         public static void PerformanceCounter_NextValue_ProcessorCounter()
         {
@@ -222,7 +222,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(25349)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25349")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         public static void PerformanceCounter_IncrementBy_IncrementByReadOnly()
         {

@@ -32,7 +32,7 @@ jobs:
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.1804.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-a45aeeb-20190620155855
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - (Debian.9.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-74c9941-20190620155840
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Debian.9.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-74c9941-20190620155840
@@ -56,9 +56,9 @@ jobs:
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Ubuntu.1804.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Debian.9.Amd64.Open
         - Ubuntu.1604.Amd64.Open
         - Ubuntu.1804.Amd64.Open
@@ -74,9 +74,9 @@ jobs:
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - OSX.1013.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - OSX.1013.Amd64.Open
         - OSX.1014.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -85,9 +85,9 @@ jobs:
 
     # Windows_NT x64
     - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.10.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-61052b7-20190723211353
         - Windows.7.Amd64.Open
         - Windows.81.Amd64.Open
@@ -101,9 +101,9 @@ jobs:
 
     # Windows_NT x86
     - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.10.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.7.Amd64.Open
         - Windows.81.Amd64.Open
         - Windows.10.Amd64.Open
@@ -115,8 +115,12 @@ jobs:
 
     # Windows_NT arm
     - ${{ if eq(parameters.platform, 'Windows_NT_arm') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'corefx')) }}:
-        - Windows.10.Arm64.Open
+    # Currently down as there's no suitable ARM32 pool at the moment, tracked under
+    #   https://github.com/dotnet/runtime/issues/1097
+    #   https://github.com/dotnet/runtime/issues/1663
+    #   https://github.com/dotnet/core-eng/issues/8490
+    #  - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+    #    - Windows.10.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Arm64
 

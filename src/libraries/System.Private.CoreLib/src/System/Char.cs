@@ -259,7 +259,8 @@ namespace System
             {
                 return IsWhiteSpaceLatin1(c);
             }
-            return CheckSeparator(CharUnicodeInfo.GetUnicodeCategory(c));
+
+            return CharUnicodeInfo.GetIsWhiteSpace(c);
         }
 
         /*===================================IsUpper====================================
@@ -471,11 +472,10 @@ namespace System
 
         public static bool IsControl(char c)
         {
-            if (IsLatin1(c))
-            {
-                return GetLatin1UnicodeCategory(c) == UnicodeCategory.Control;
-            }
-            return CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.Control;
+            // This works because 'c' can never be -1.
+            // See comments in Rune.IsControl for more information.
+
+            return (((uint)c + 1) & ~0x80u) <= 0x20u;
         }
 
         public static bool IsControl(string s, int index)
@@ -486,12 +486,9 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
-            char c = s[index];
-            if (IsLatin1(c))
-            {
-                return GetLatin1UnicodeCategory(c) == UnicodeCategory.Control;
-            }
-            return CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.Control;
+
+            // Control chars are always in the BMP, so don't need to worry about surrogate handling.
+            return IsControl(s[index]);
         }
 
         public static bool IsDigit(string s, int index)
@@ -745,14 +742,10 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            char ch = s[index];
+            // All white space code points are within the BMP,
+            // so we don't need to handle surrogate pairs here.
 
-            if (IsLatin1(ch))
-            {
-                return IsWhiteSpaceLatin1(ch);
-            }
-
-            return CheckSeparator(CharUnicodeInfo.GetUnicodeCategory(s, index));
+            return IsWhiteSpace(s[index]);
         }
 
         public static UnicodeCategory GetUnicodeCategory(char c)
@@ -776,7 +769,7 @@ namespace System
             {
                 return GetLatin1UnicodeCategory(s[index]);
             }
-            return CharUnicodeInfo.InternalGetUnicodeCategory(s, index);
+            return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index);
         }
 
         public static double GetNumericValue(char c)

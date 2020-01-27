@@ -165,7 +165,7 @@ Namespace Microsoft.VisualBasic
         '               arguments.  The value is returned.  The function
         '               Raises an expection if params are invalid. This function
         '               calls FV and PMT. It calculates value of annuity (FV) at the
-        '               begining of period for which IPMT is desired. Since interest
+        '               beginning of period for which IPMT is desired. Since interest
         '               rate is constant FV*rate would give IPMT.
         '
         '               if type = 1 and per = 1 then IPMT = 0.

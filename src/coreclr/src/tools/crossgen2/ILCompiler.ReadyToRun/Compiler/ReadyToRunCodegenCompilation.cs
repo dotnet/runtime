@@ -186,11 +186,6 @@ namespace ILCompiler
     public sealed class ReadyToRunCodegenCompilation : Compilation
     {
         /// <summary>
-        /// JIT configuration provider.
-        /// </summary>
-        private readonly JitConfigProvider _jitConfigProvider;
-
-        /// <summary>
         /// We only need one CorInfoImpl per thread, and we don't want to unnecessarily construct them
         /// because their construction takes a significant amount of time.
         /// </summary>
@@ -218,7 +213,6 @@ namespace ILCompiler
             ILProvider ilProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
-            JitConfigProvider configProvider,
             string inputFilePath,
             IEnumerable<ModuleDesc> modulesBeingInstrumented,
             bool resilient,
@@ -231,12 +225,10 @@ namespace ILCompiler
             _generateMapFile = generateMapFile;
             NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
-            _jitConfigProvider = configProvider;
 
             _inputFilePath = inputFilePath;
 
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
-            CorInfoImpl.RegisterJITModule(configProvider);
         }
 
         public override void Compile(string outputFile)

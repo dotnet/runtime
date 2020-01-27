@@ -205,7 +205,7 @@ the certificate being expired (or not yet valid).
 Returns 1 on match, 0 on mismatch, any other value indicates an invalid state.
 */
 DLLEXPORT int32_t
-AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore);
+AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus);
 
 /*
 Generate a TLS Close alert to terminate the session.

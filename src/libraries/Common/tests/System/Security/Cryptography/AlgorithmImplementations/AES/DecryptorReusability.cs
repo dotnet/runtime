@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         private static bool ShouldDecryptorBeReusable()
         {
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
                 return true;
 
             bool doNotResetDecryptor;

@@ -20,7 +20,7 @@ namespace System.Text.RegularExpressions
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
                 }
 
                 RegexCache.MaxCacheSize = value;

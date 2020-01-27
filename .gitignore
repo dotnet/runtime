@@ -338,3 +338,15 @@ sandbox
 
 #IL linker for testing
 linker
+
+# Symbolic link for the shared portion of CoreLib to make grep/findstr work for runtime devs
+#
+# On Windows, make your own by running these commands from the repo root:
+# mklink /D src\coreclr\src\System.Private.CoreLib\shared %CD%\src\libraries\System.Private.CoreLib\src
+# mklink /D src\coreclr\src\System.Private.CoreLib\common %CD%\src\libraries\Common\src
+#
+# On Unix, make your own by running these commands from the repo root:
+# ln -s $(pwd)/src/libraries/System.Private.CoreLib/src src/coreclr/src/System.Private.CoreLib/shared
+# ln -s $(pwd)/src/libraries/Common/src src/coreclr/src/System.Private.CoreLib/common
+src/coreclr/src/System.Private.CoreLib/shared
+src/coreclr/src/System.Private.CoreLib/common

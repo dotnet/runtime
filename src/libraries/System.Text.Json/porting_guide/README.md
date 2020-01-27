@@ -5,7 +5,7 @@
 * The `System.Text.Json` APIs that are included in .NET Core 3.0 are designed primarily for performance critical scenarios and hence emphasize runtime performance and reducing allocations over high usability and convenience. Furthermore, the in-box JSON stack does not aim to provide feature parity with `Newtonsoft.Json`, especially since it is in its infancy. That said, we still want to make it easier for those whose needs can be fulfilled by the new APIs and those who are looking for better performance. This guide captures some of the common pitfalls and programming patterns that are useful to note when trying to use the new in-box APIs.
   - Please help contribute to this porting guide to help others onboard to the new APIs.
   - For an overview on the objectives, constraints, and design requirements of the new APIs, please see the [roadmap](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Text.Json/roadmap/README.md).
-  - If you have any feedback or feature requests, feel free to submit issues: https://github.com/dotnet/corefx/issues
+  - If you have any feedback or feature requests, feel free to submit issues: https://github.com/dotnet/runtime/issues
 
 ## Common Pitfalls, Patterns, and Tips
 

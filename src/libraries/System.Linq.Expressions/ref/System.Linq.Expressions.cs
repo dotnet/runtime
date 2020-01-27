@@ -248,7 +248,7 @@ namespace System.Linq
     {
         System.Linq.IQueryable CreateQuery(System.Linq.Expressions.Expression expression);
         System.Linq.IQueryable<TElement> CreateQuery<TElement>(System.Linq.Expressions.Expression expression);
-        object Execute(System.Linq.Expressions.Expression expression);
+        object? Execute(System.Linq.Expressions.Expression expression);
         TResult Execute<TResult>(System.Linq.Expressions.Expression expression);
     }
 }

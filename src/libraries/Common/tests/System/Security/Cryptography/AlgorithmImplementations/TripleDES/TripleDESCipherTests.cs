@@ -337,7 +337,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 
                 // TripleDESCryptoServiceProvider doesn't throw the ArgumentOutOfRangeException,
                 // giving a CryptographicException when CAPI reports the destination too small.
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     exceptionType = typeof(CryptographicException);
                 }

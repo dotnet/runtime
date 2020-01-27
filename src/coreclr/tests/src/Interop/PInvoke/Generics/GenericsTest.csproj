@@ -4,7 +4,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>exe</OutputType>
-    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

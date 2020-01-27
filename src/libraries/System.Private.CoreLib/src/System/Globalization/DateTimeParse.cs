@@ -2524,7 +2524,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
             //
             // The string to be parsed. Use a __DTString wrapper so that we can trace the index which
-            // indicates the begining of next token.
+            // indicates the beginning of next token.
             //
             __DTString str = new __DTString(s, dtfi);
 

@@ -131,20 +131,11 @@
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Windows.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalFree.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs">
       <Link>Common\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs</Link>

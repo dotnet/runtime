@@ -1,4 +1,5 @@
 parameters:
+  runtimeFlavor: ''
   archGroup: ''
   configuration: ''
   creator: ''
@@ -6,6 +7,7 @@ parameters:
   helixQueues: ''
   msbuildScript: ''
   targetOS: ''
+  testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
   condition: always()
 
@@ -13,12 +15,13 @@ steps:
   - script: ${{ parameters.msbuildScript }}
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
             /t:test
+            /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
             /p:ArchGroup=${{ parameters.archGroup }}
             /p:ConfigurationGroup=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TargetGroup=${{ parameters.framework }}
-            /p:HelixTargetQueues=${{ parameters.helixQueues }}
+            /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
             /p:Creator=${{ parameters.creator }}
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
@@ -26,3 +29,4 @@ steps:
     condition: and(succeeded(), ${{ parameters.condition }})
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
+      HelixTargetQueues: ${{ parameters.helixQueues }} # Pass queues to MSBuild as env var to avoid need of escaping them

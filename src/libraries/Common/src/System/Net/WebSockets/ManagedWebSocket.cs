@@ -666,9 +666,10 @@ namespace System.Net.WebSockets
                             }
                         }
 
-                        if (!TryParseMessageHeaderFromReceiveBuffer(out header))
+                        string headerErrorMessage = TryParseMessageHeaderFromReceiveBuffer(out header);
+                        if (headerErrorMessage != null)
                         {
-                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted).ConfigureAwait(false);
+                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, headerErrorMessage).ConfigureAwait(false);
                         }
                         _receivedMaskOffsetOffset = 0;
                     }
@@ -770,6 +771,12 @@ namespace System.Net.WebSockets
                     throw new OperationCanceledException(nameof(WebSocketState.Aborted), exc);
                 }
                 _abortSource.Cancel();
+
+                if (exc is WebSocketException)
+                {
+                    throw;
+                }
+
                 throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
             }
             finally
@@ -831,7 +838,7 @@ namespace System.Net.WebSockets
                     }
                     catch (DecoderFallbackException exc)
                     {
-                        await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, exc).ConfigureAwait(false);
+                        await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, innerException: exc).ConfigureAwait(false);
                     }
                 }
                 ConsumeFromBuffer((int)header.PayloadLength);
@@ -868,7 +875,6 @@ namespace System.Net.WebSockets
                     catch
                     {
                         // Eat any resulting exceptions.  We were going to close the connection, anyway.
-                        // TODO #24057: Log the exception to NetEventSource.
                     }
                 }
             }
@@ -948,9 +954,10 @@ namespace System.Net.WebSockets
         /// <summary>Send a close message to the server and throw an exception, in response to getting bad data from the server.</summary>
         /// <param name="closeStatus">The close status code to use.</param>
         /// <param name="error">The error reason.</param>
+        /// <param name="errorMessage">An optional error message to include in the thrown exception.</param>
         /// <param name="innerException">An optional inner exception to include in the thrown exception.</param>
         private async ValueTask CloseWithReceiveErrorAndThrowAsync(
-            WebSocketCloseStatus closeStatus, WebSocketError error, Exception innerException = null)
+            WebSocketCloseStatus closeStatus, WebSocketError error, string errorMessage = null, Exception innerException = null)
         {
             // Close the connection if it hasn't already been closed
             if (!_sentCloseFrame)
@@ -962,13 +969,15 @@ namespace System.Net.WebSockets
             _receiveBufferCount = 0;
 
             // Let the caller know we've failed
-            throw new WebSocketException(error, innerException);
+            throw errorMessage != null ?
+                new WebSocketException(error, errorMessage, innerException) :
+                new WebSocketException(error, innerException);
         }
 
         /// <summary>Parses a message header from the buffer.  This assumes the header is in the buffer.</summary>
         /// <param name="resultHeader">The read header.</param>
-        /// <returns>true if a header was read; false if the header was invalid.</returns>
-        private bool TryParseMessageHeaderFromReceiveBuffer(out MessageHeader resultHeader)
+        /// <returns>null if a valid header was read; non-null containing the string error message to use if the header was invalid.</returns>
+        private string TryParseMessageHeaderFromReceiveBuffer(out MessageHeader resultHeader)
         {
             Debug.Assert(_receiveBufferCount >= 2, $"Expected to at least have the first two bytes of the header.");
 
@@ -1002,12 +1011,18 @@ namespace System.Net.WebSockets
                 ConsumeFromBuffer(8);
             }
 
-            bool shouldFail = reservedSet;
+            if (reservedSet)
+            {
+                resultHeader = default;
+                return SR.net_Websockets_ReservedBitsSet;
+            }
+
             if (masked)
             {
                 if (!_isServer)
                 {
-                    shouldFail = true;
+                    resultHeader = default;
+                    return SR.net_Websockets_ClientReceivedMaskedFrame;
                 }
                 header.Mask = CombineMaskBytes(receiveBufferSpan, _receiveBufferOffset);
 
@@ -1022,7 +1037,8 @@ namespace System.Net.WebSockets
                     if (_lastReceiveHeader.Fin)
                     {
                         // Can't continue from a final message
-                        shouldFail = true;
+                        resultHeader = default;
+                        return SR.net_Websockets_ContinuationFromFinalFrame;
                     }
                     break;
 
@@ -1031,7 +1047,8 @@ namespace System.Net.WebSockets
                     if (!_lastReceiveHeader.Fin)
                     {
                         // Must continue from a non-final message
-                        shouldFail = true;
+                        resultHeader = default;
+                        return SR.net_Websockets_NonContinuationAfterNonFinalFrame;
                     }
                     break;
 
@@ -1041,19 +1058,20 @@ namespace System.Net.WebSockets
                     if (header.PayloadLength > MaxControlPayloadLength || !header.Fin)
                     {
                         // Invalid control messgae
-                        shouldFail = true;
+                        resultHeader = default;
+                        return SR.net_Websockets_InvalidControlMessage;
                     }
                     break;
 
                 default:
                     // Unknown opcode
-                    shouldFail = true;
-                    break;
+                    resultHeader = default;
+                    return SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode);
             }
 
             // Return the read header
             resultHeader = header;
-            return !shouldFail;
+            return null;
         }
 
         /// <summary>Send a close message, then receive until we get a close response message.</summary>

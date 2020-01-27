@@ -1,0 +1,10 @@
+/make_type_visibility_test.sh -crlf
+/unverifiable_ldobj_with_generic_type_definition.il -crlf
+/unverifiable_throw_with_unboxed_generic_argument.il -crlf
+/invalid_argument_type.il -crlf
+/invalid_ldtoken_field.il -crlf
+/invalid_ldtoken_method.il -crlf
+/invalid_ldtoken_type.il -crlf
+/invalid_ldtoken_type_2.il -crlf
+/invalid_ldtoken_type_3.il -crlf
+/invalid_local_variable.il -crlf

@@ -620,7 +620,7 @@ public:
         return(GetMethodTable()->IsMultiDimArray());
     }
 
-        // Get pointer to the begining of the bounds (counts for each dim)
+        // Get pointer to the beginning of the bounds (counts for each dim)
         // Works for any array type
     PTR_INT32 GetBoundsPtr() const {
         WRAPPER_NO_CONTRACT;

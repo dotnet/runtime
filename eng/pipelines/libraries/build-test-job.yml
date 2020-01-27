@@ -5,7 +5,7 @@ parameters:
   archType: ''
   framework: netcoreapp
   isOfficialBuild: false
-  liveCoreClrBuildConfig: ''
+  liveRuntimeBuildConfig: ''
   timeoutInMinutes: 150
   container: ''
   publishTestArtifacs: true
@@ -25,7 +25,7 @@ jobs:
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       condition: ${{ parameters.condition }}
-      liveCoreClrBuildConfig: ${{ parameters.liveCoreClrBuildConfig }}
+      liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: ${{ parameters.container }}
       pool: ${{ parameters.pool }}
@@ -37,6 +37,7 @@ jobs:
       - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
       variables:
+        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
         - _skipTestRestoreArg: /p:SkipTestRestore=false
         
