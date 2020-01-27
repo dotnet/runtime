@@ -3759,37 +3759,14 @@ BOOL CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 
 /*********************************************************************/
 // Decides how the JIT should do the optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
-//     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
+//     GetTypeFromHandle(handle) == obj.GetType()
+//     GetTypeFromHandle(X) == GetTypeFromHandle(Y)
 //
 // This will enable to use directly the typehandle instead of going through getClassByHandle
 CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, CorInfoInlineTypeCheckSource source)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoInlineTypeCheck ret;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    if (source == CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
-    {
-        // It's always okay to compare type handles coming from IL tokens
-        ret = CORINFO_INLINE_TYPECHECK_PASS;
-    }
-    else
-    {
-        _ASSERTE(source == CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
-        ret = canInlineTypeCheckWithObjectVTable(clsHnd) ?
-            CORINFO_INLINE_TYPECHECK_PASS : CORINFO_INLINE_TYPECHECK_NONE;
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return(ret);
+    LIMITED_METHOD_CONTRACT;
+    return CORINFO_INLINE_TYPECHECK_PASS;
 }
 
 /*********************************************************************/
@@ -3799,37 +3776,8 @@ CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, 
 // This will enable to use directly the typehandle instead of going through getClassByHandle
 BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    BOOL ret = FALSE;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    _ASSERTE(clsHnd);
-
-    TypeHandle VMClsHnd(clsHnd);
-    if (VMClsHnd == TypeHandle(g_pCanonMethodTableClass))
-    {
-        // We can't do this optimization in shared generics code because of we do not know what the actual type is going to be.
-        // (It can be array, marshalbyref, etc.)
-        ret = FALSE;
-    }
-    else
-    {
-        // It is safe to perform this optimization
-        // NOTE: clsHnd could be a TypeDesc with shared MethodTable (ex: typeof(int*) == o.GetType()), but that is still optimizable.
-        //       That is because optimized version compares literally a handle to a methodtable and that will be not equal,
-        //       which is valid since none of MethodDesc types can have heap instances.
-        ret = TRUE;
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return(ret);
+    LIMITED_METHOD_CONTRACT;
+    return TRUE;
 }
 
 /*********************************************************************/
