@@ -1868,8 +1868,10 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     // Sync managed exception state, for the managed thread, based upon any active exception tracker
     pThread->SyncManagedExceptionState(fIsDebuggerHelperThread);
 
-    if (InlinedCallFrame::FrameHasActiveCall(pThread->m_pFrame))
+    if ((pThread->m_pFrame < esp) && InlinedCallFrame::FrameHasActiveCall(pThread->m_pFrame))
     {
+        // The current explicit frame is below the resume esp and it is an inlined call frame with an active call.
+        //
         // When unwinding an exception in ReadyToRun, the JIT_PInvokeEnd helper which unlinks the ICF from
         // the thread will be skipped. This is because unlike jitted code, each pinvoke is wrapped by calls
         // to the JIT_PInvokeBegin and JIT_PInvokeEnd helpers, which push and pop the ICF on the thread. The
