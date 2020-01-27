@@ -199,7 +199,7 @@ FUNCTIONS
     CorInfoCanSkipVerificationResult canSkipVerification(CORINFO_MODULE_HANDLE module)
     BOOL isValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     BOOL isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
-    LPCWSTR getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+    const char* getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
     BOOL shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassName(CORINFO_CLASS_HANDLE cls)

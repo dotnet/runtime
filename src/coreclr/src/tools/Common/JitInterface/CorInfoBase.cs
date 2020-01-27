@@ -84,7 +84,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isValidStringRef(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        [return: MarshalAs(UnmanagedType.LPWStr)]delegate string __getStringLiteral(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length);
+        delegate byte* __getStringLiteral(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __shouldEnforceCallvirtRestriction(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* scope);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -862,7 +862,7 @@ namespace Internal.JitInterface
             }
         }
 
-        [return: MarshalAs(UnmanagedType.LPWStr)]static string _getStringLiteral(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
+        static byte* _getStringLiteral(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
             var _this = GetThis(thisHandle);
             try
@@ -872,7 +872,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(string);
+                return default(byte*);
             }
         }
 

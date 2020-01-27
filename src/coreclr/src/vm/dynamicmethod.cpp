@@ -1208,15 +1208,12 @@ LCGMethodResolver::GetStringLiteral(mdToken metaTok, int* length)
     if (str == NULL)
     {
         *length = -1;
-        return NULL;
     }
     else
     {
         *length = str->GetStringLength();
-        SString sstr;
-        str->GetSString(sstr);
-        return sstr.GetUnicode();
     }
+    return NULL;
 }
 
 //---------------------------------------------------------------------------------------
