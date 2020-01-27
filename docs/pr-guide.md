@@ -7,7 +7,7 @@ To merge pull requests, you must have write permissions in the repository. If yo
 
 ## Quick Code Review Rules
 
-* Do not mix unrelated changes in one pull request. For example, a code style changes should never be mixed with a bug fix.
+* Do not mix unrelated changes in one pull request. For example, a code style change should never be mixed with a bug fix.
 * All changes should follow the existing code style. You can read more about different code styles at [docs/coding-guidelines](coding-guidelines/).
 * Use Draft pull request for changes you are still working on but want early CI loop feedback. When you think your changes are ready for review [change status](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/changing-the-stage-of-a-pull-request) of your pull request.
 * Avoid rebasing your changes. If you are asked to make changes during the review process do them as a new commit.
@@ -24,11 +24,11 @@ Anyone with write access can merge a pull request manually or by setting the [au
 * The PR has been approved by at least one reviewer and any other objections are addressed.
  * You can request another review from the original reviewer.
 * The PR successfully builds and passes all tests in the Continuous Integration (CI) system.
- * You can trigger a rebuild by commenting `/arp run` or manually re-run only the failing lanes in Azure DevOps tab.
- * Reach out to the infrastructure team for assistance on Teams [channel](https://teams.microsoft.com/l/channel/19%3ab27b36ecd10a46398da76b02f0411de7%40thread.skype/Infrastructure?groupId=014ca51d-be57-47fa-9628-a15efcc3c376&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) in other cases.
+ * You can trigger a rebuild by commenting `/azp run <pipeline name>` or manually re-run only the failing lanes in Azure DevOps tab.
+ * Reach out to the infrastructure team for assistance on [Teams channel](https://teams.microsoft.com/l/channel/19%3ab27b36ecd10a46398da76b02f0411de7%40thread.skype/Infrastructure?groupId=014ca51d-be57-47fa-9628-a15efcc3c376&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) (for corpnet users) or on [Gitter](https://gitter.im/dotnet/community) in other cases.
  * In rare cases the pull request can be merged with failing tests if the person merging it also creates tracking issue for flaky tests.
 
-Please always squash the pull request unless explicitly requested by the PR author, even if the PR contains only one commit. It creates a simpler history than a Merge Commit.
+Please always **squash** the pull request unless there are special circumstances. Do so, even if the PR contains only one commit. It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to bisect them.
 
 ## Blocking Pull Request Merging
 

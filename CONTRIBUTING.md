@@ -60,9 +60,9 @@ We use and recommend the following workflow:
 7. Create a pull request (PR) against the dotnet/runtime repository's **master** branch.
     - State in the description what issue or improvement your change is addressing.
     - Check if all the Continuous Integration checks are passing.
-8. Wait for feedback or approval of your changes from the area owners.
-    - Details about the pull request [review procedure](doc/pr-guide.md)
-9. You change is in!
+8. Wait for feedback or approval of your changes from the [area owners](docs/area-owners.md).
+    - Details about the pull request [review procedure](docs/pr-guide.md).
+9. When area owners have signed off, and all checks are green, your PR will be merged.
     - The next official build will automatically include your change.
     - You can delete the branch you used for making the change.
 
