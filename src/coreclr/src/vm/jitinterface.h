@@ -662,6 +662,7 @@ public:
             CORINFO_MODULE_HANDLE       module,
             mdToken                    metaTOK);
 
+    // Get string length and content (can be null) for given metaTOK
     LPCWSTR getStringLiteral (
             CORINFO_MODULE_HANDLE       module,
             mdToken                    metaTOK,

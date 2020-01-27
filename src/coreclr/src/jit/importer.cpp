@@ -3641,8 +3641,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                                                      op1->AsStrCon()->gtSconCPX, &length);
                     if (length >= 0)
                     {
-                        JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length);
                         retNode = gtNewIconNode(length);
+                        JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", (str == nullptr ? "n/a" : str), length);
                         break;
                     }
                 }
