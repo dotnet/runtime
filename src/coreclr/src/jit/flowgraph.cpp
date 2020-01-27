@@ -22928,13 +22928,13 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
             {
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
-
-                // Copy inlinee bbFlags to caller bbFlags.
-                const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
-                noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
-                noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
-                iciBlock->bbFlags |= inlineeBlockFlags;
             }
+
+            // Copy inlinee bbFlags to caller bbFlags.
+            const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
+            noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
+            noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
+            iciBlock->bbFlags |= inlineeBlockFlags;
 
 #ifdef DEBUG
             if (verbose)
@@ -23184,6 +23184,11 @@ _Done:
 #endif // DEBUG
         // Replace the call with the return expression
         iciCall->ReplaceWith(pInlineInfo->retExpr, this);
+
+        if (bottomBlock != nullptr)
+        {
+            bottomBlock->bbFlags |= InlineeCompiler->fgLastBB->bbFlags & BBF_SPLIT_GAINED;
+        }
     }
 
     //

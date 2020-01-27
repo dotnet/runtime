@@ -465,7 +465,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_COMPACT_UPD                                                                                                \
     (BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_NEEDS_GCPOLL | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP |          \
-     BBF_HAS_NEWARRAY | BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK)
+     BBF_HAS_NEWARRAY | BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_VTABREF)
 
 // Flags a block should not have had before it is split.
 
@@ -488,7 +488,8 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_SPLIT_GAINED                                                                                               \
     (BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY |          \
-     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK)
+     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK |             \
+     BBF_HAS_VTABREF)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);

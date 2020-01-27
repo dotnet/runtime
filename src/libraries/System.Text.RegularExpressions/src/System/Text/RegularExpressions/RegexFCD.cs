@@ -105,13 +105,13 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Oneloopatomic:
                     case RegexNode.Onelazy:
 
-                        // In release, cutoff at a length to which we can still reasonably construct a string
+                        // In release, cutoff at a length to which we can still reasonably construct a string and Boyer-Moore search.
                         // In debug, use a smaller cutoff to exercise the cutoff path in tests
                         const int Cutoff =
 #if DEBUG
                             50;
 #else
-                            1_000_000;
+                            RegexBoyerMoore.MaxLimit;
 #endif
 
                         if (curNode.M > 0 && curNode.M < Cutoff)
@@ -227,29 +227,20 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage]
         public static string AnchorDescription(int anchors)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
-            if (0 != (anchors & Beginning))
-                sb.Append(", Beginning");
-            if (0 != (anchors & Start))
-                sb.Append(", Start");
-            if (0 != (anchors & Bol))
-                sb.Append(", Bol");
-            if (0 != (anchors & Boundary))
-                sb.Append(", Boundary");
-            if (0 != (anchors & ECMABoundary))
-                sb.Append(", ECMABoundary");
-            if (0 != (anchors & Eol))
-                sb.Append(", Eol");
-            if (0 != (anchors & End))
-                sb.Append(", End");
-            if (0 != (anchors & EndZ))
-                sb.Append(", EndZ");
+            if ((anchors & Beginning) != 0) sb.Append(", Beginning");
+            if ((anchors & Start) != 0) sb.Append(", Start");
+            if ((anchors & Bol) != 0) sb.Append(", Bol");
+            if ((anchors & Boundary) != 0) sb.Append(", Boundary");
+            if ((anchors & ECMABoundary) != 0) sb.Append(", ECMABoundary");
+            if ((anchors & Eol) != 0) sb.Append(", Eol");
+            if ((anchors & End) != 0) sb.Append(", End");
+            if ((anchors & EndZ) != 0) sb.Append(", EndZ");
 
-            if (sb.Length >= 2)
-                return (sb.ToString(2, sb.Length - 2));
-
-            return "None";
+            return sb.Length >= 2 ?
+                sb.ToString(2, sb.Length - 2) :
+                "None";
         }
 #endif
 

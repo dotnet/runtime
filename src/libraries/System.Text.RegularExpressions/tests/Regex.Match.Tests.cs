@@ -905,19 +905,33 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/corefx/issues/26484")]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeStressTestModes.JitMinOpts)]
-        public void Match_ExcessPrefix()
+        public void Match_ExcessPrefix(RegexOptions options)
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(optionsString =>
             {
-                // Should not throw out of memory
-                Assert.False(Regex.IsMatch("a", @"a{2147483647,}"));
-                Assert.False(Regex.IsMatch("a", @"a{1000001,}")); // 1 over the cutoff for Boyer-Moore prefix
+                var options = (RegexOptions)Enum.Parse(typeof(RegexOptions), optionsString);
 
-                Assert.False(Regex.IsMatch("a", @"a{50000}")); // creates string for Boyer-Moore but not so large that tests fail and start paging
-            }).Dispose();
+                // Should not throw out of memory
+
+                // Repeaters
+                Assert.False(Regex.IsMatch("a", @"a{2147483647,}", options));
+                Assert.False(Regex.IsMatch("a", @"a{50,}", options)); // cutoff for Boyer-Moore prefix in debug
+                Assert.False(Regex.IsMatch("a", @"a{51,}", options));
+                Assert.False(Regex.IsMatch("a", @"a{50_000,}", options)); // cutoff for Boyer-Moore prefix in release
+                Assert.False(Regex.IsMatch("a", @"a{50_001,}", options));
+
+                // Multis
+                foreach (int length in new[] { 50, 51, 50_000, 50_001, char.MaxValue + 1 }) // based on knowledge of cut-offs used in Boyer-Moore
+                {
+                    string s = "bcd" + new string('a', length) + "efg";
+                    Assert.True(Regex.IsMatch(s, @$"a{{{length}}}", options));
+                }
+            }, options.ToString()).Dispose();
         }
 
         [Fact]

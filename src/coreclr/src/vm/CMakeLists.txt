@@ -589,7 +589,6 @@ list(APPEND VM_SOURCES_WKS
     dispparammarshaler.cpp
     dwreport.cpp
     eventreporter.cpp
-    extensibleclassfactory.cpp
     mngstdinterfaces.cpp
     notifyexternals.cpp
     olecontexthelpers.cpp
@@ -618,7 +617,6 @@ list(APPEND VM_HEADERS_WKS
     dispparammarshaler.h
     dwreport.h
     eventreporter.h
-    extensibleclassfactory.h
     mngstdinterfaces.h
     notifyexternals.h
     olecontexthelpers.h

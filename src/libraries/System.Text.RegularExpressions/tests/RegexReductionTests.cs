@@ -277,8 +277,31 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:a+){4}", "a{4,}")]
         [InlineData("(?:a{1,2}){4}", "a{4,8}")]
         // Alternation reduction
+        [InlineData("a|b", "[ab]")]
         [InlineData("a|b|c|d|e|g|h|z", "[a-eghz]")]
         [InlineData("a|b|c|def|g|h", "[a-c]|def|[gh]")]
+        [InlineData("this|that|there|then|those", "th(?:is|at|ere|en|ose)")]
+        [InlineData("it's (?>this|that|there|then|those)", "it's (?>th(?:is|at|ere|en|ose))")]
+        [InlineData("it's (?>this|that|there|then|those)!", "it's (?>th(?:is|at|ere|en|ose))!")]
+        [InlineData("abcd|abce", "abc[de]")]
+        [InlineData("abcd|abef", "ab(?:cd|ef)")]
+        [InlineData("abcd|aefg", "a(?:bcd|efg)")]
+        [InlineData("abcd|abc|ab|a", "a(?:bcd|bc|b|)")]
+        [InlineData("abcde|abcdef", "abcde(?:|f)")]
+        [InlineData("abcdef|abcde", "abcde(?:f|)")]
+        [InlineData("abcdef|abcdeg|abcdeh|abcdei|abcdej|abcdek|abcdel", "abcde[f-l]")]
+        [InlineData("(ab|ab*)bc", "(a(?:b|b*))bc")]
+        [InlineData("abc(?:defgh|defij)klmn", "abcdef(?:gh|ij)klmn")]
+        [InlineData("abc(defgh|defij)klmn", "abc(def(?:gh|ij))klmn")]
+        [InlineData("a[b-f]|a[g-k]", "a[b-k]")]
+        [InlineData("this|this", "this")]
+        [InlineData("this|this|this", "this")]
+        [InlineData("hello there|hello again|hello|hello|hello|hello", "hello(?: there| again|)")]
+        [InlineData("hello there|hello again|hello|hello|hello|hello|hello world", "hello(?: there| again|| world)")]
+        [InlineData("hello there|hello again|hello|hello|hello|hello|hello world|hello", "hello(?: there| again|| world)")]
+        [InlineData("abcd(?:(?i:e)|(?i:f))", "abcd(?i:[ef])")]
+        [InlineData("(?i:abcde)|(?i:abcdf)", "(?i:abcd[ef])")]
+        [InlineData("xyz(?:(?i:abcde)|(?i:abcdf))", "xyz(?i:abcd[ef])")]
         // Auto-atomicity
         [InlineData("a*b", "(?>a*)b")]
         [InlineData("a*b+", "(?>a*)b+")]
@@ -294,11 +317,16 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:abc*|def*)g", "(?:ab(?>c*)|de(?>f*))g")]
         [InlineData("(?:a[ce]*|b*)g", "(?:a(?>[ce]*)|(?>b*))g")]
         [InlineData("(?:a[ce]*|b*)c", "(?:a[ce]*|(?>b*))c")]
+        [InlineData("apple|(?:orange|pear)|grape", "apple|orange|pear|grape")]
+        [InlineData("(?>(?>(?>(?:abc)*)))", "(?:abc)*")]
         public void PatternsReduceIdentically(string pattern1, string pattern2)
         {
             AssertExtensions.Equal(GetRegexCodes(new Regex(pattern1)), GetRegexCodes(new Regex(pattern2)));
-            Assert.NotEqual<int>(GetRegexCodes(new Regex(pattern1, RegexOptions.IgnoreCase)), GetRegexCodes(new Regex(pattern2)));
             Assert.NotEqual<int>(GetRegexCodes(new Regex(pattern1, RegexOptions.RightToLeft)), GetRegexCodes(new Regex(pattern2)));
+            if (!pattern1.Contains("?i:") && !pattern2.Contains("?i:"))
+            {
+                Assert.NotEqual<int>(GetRegexCodes(new Regex(pattern1, RegexOptions.IgnoreCase)), GetRegexCodes(new Regex(pattern2)));
+            }
         }
 
         [Theory]
@@ -341,6 +369,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[ace][ace]{0,2147483646}", "[ace]{0,2147483647}")]
         [InlineData("[ace]{2147482647}[ace]{1000}", "[ace]{2147483647}")]
         [InlineData("[ace]{0,2147482647}[ace]{0,1000}", "[ace]{0,2147483647}")]
+        // Not reducing branches of alternations with different casing
+        [InlineData("(?i:abcd)|abcd", "abcd|abcd")]
+        [InlineData("abcd|(?i:abcd)", "abcd|abcd")]
+        [InlineData("abc(?:(?i:e)|f)", "abc[ef]")]
         // Not applying auto-atomicity
         [InlineData("a*b*", "(?>a*)b*")]
         [InlineData("[^\n]*\n*", "(?>[^\n]*)\n")]

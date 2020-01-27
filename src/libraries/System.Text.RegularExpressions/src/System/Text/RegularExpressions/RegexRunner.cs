@@ -680,14 +680,18 @@ namespace System.Text.RegularExpressions
             sb.Append(a.Length);
 
             if (sb.Length < 8)
+            {
                 sb.Append(' ', 8 - sb.Length);
+            }
 
             sb.Append('(');
 
             for (int i = index; i < a.Length; i++)
             {
                 if (i > index)
+                {
                     sb.Append(' ');
+                }
                 sb.Append(a[i]);
             }
 
@@ -704,12 +708,18 @@ namespace System.Text.RegularExpressions
             sb.Append(runtextpos);
 
             if (sb.Length < 8)
+            {
                 sb.Append(' ', 8 - sb.Length);
+            }
 
             if (runtextpos > runtextbeg)
+            {
                 sb.Append(RegexCharClass.CharDescription(runtext![runtextpos - 1]));
+            }
             else
+            {
                 sb.Append('^');
+            }
 
             sb.Append('>');
 

@@ -293,7 +293,6 @@ jobs:
     - ${{ if eq(variables['isFullMatrix'], false) }}:
       - Windows_NT_x86
     jobParameters:
-      framework: netcoreapp
       liveRuntimeBuildConfig: release
       condition: >-
         or(
@@ -311,7 +310,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netfx
+      framework: net472
       runTests: true
       testScope: innerloop
       condition: >-
@@ -509,7 +508,6 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -534,7 +532,6 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -567,7 +564,6 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -591,7 +587,6 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -612,7 +607,6 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -635,7 +629,6 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}

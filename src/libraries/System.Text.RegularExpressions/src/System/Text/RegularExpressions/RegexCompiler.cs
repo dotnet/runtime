@@ -355,6 +355,9 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Sub) or _ilg.Emit(OpCodes.Add).</summary>
         private void Sub(bool negate) => _ilg!.Emit(negate ? OpCodes.Add : OpCodes.Sub);
 
+        /// <summary>A macro for _ilg.Emit(OpCodes.Neg).</summary>
+        private void Neg() => _ilg!.Emit(OpCodes.Neg);
+
         /// <summary>A macro for _ilg.Emit(OpCodes.Mul).</summary>
         private void Mul() => _ilg!.Emit(OpCodes.Mul);
 
@@ -1183,17 +1186,14 @@ namespace System.Text.RegularExpressions
                 Br(lStart);
 
                 MarkLabel(lDefaultAdvance);
-
                 Ldc(_code.RightToLeft ? -_bmPrefix.Pattern.Length : _bmPrefix.Pattern.Length);
 
                 MarkLabel(lAdvance);
-
                 Ldloc(_runtextposLocal);
                 Add();
                 Stloc(_runtextposLocal);
 
                 MarkLabel(lStart);
-
                 Ldloc(_runtextposLocal);
                 Ldloc(limitLocal);
                 if (!_code.RightToLeft)
@@ -1224,47 +1224,53 @@ namespace System.Text.RegularExpressions
                 Ldc(_bmPrefix.HighASCII - _bmPrefix.LowASCII);
                 Bgtun(lDefaultAdvance);
 
-                var table = new Label[_bmPrefix.HighASCII - _bmPrefix.LowASCII + 1];
-
-                // Mapping from negative ASCII value to the label that loads it.
-                // As we create labels, we check to see if the table already has
-                // the value, and only create the label if it doesn't.  Then when
-                // spitting out the code for each label, we try to remove the entry
-                // from the dictionary, and only if we're successful (because it
-                // wasn't already removed) do we spit the code.
-                var labelMap = new Dictionary<int, Label>();
-
-                for (int i = _bmPrefix.LowASCII; i <= _bmPrefix.HighASCII; i++)
+                int negativeRange = _bmPrefix.HighASCII - _bmPrefix.LowASCII + 1;
+                if (negativeRange > 1)
                 {
-                    Label label;
-                    if (_bmPrefix.NegativeASCII[i] == beforefirst)
+                    // Create a string to store the lookup table we use to find the offset.
+                    Debug.Assert(_bmPrefix.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
+                    string negativeLookup = string.Create(negativeRange, (thisRef: this, beforefirst), (span, state) =>
                     {
-                        label = lDefaultAdvance;
-                    }
-                    else if (!labelMap.TryGetValue(_bmPrefix.NegativeASCII[i], out label))
+                        // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
+                        // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
+                        for (int i = 0; i < span.Length; i++)
+                        {
+                            int offset = state.thisRef._bmPrefix!.NegativeASCII[i + state.thisRef._bmPrefix.LowASCII];
+                            if (offset == state.beforefirst)
+                            {
+                                offset = state.thisRef._bmPrefix.Pattern.Length;
+                            }
+                            else if (state.thisRef._code!.RightToLeft)
+                            {
+                                offset = -offset;
+                            }
+                            Debug.Assert(offset >= 0 && offset <= char.MaxValue);
+                            span[i] = (char)offset;
+                        }
+                    });
+
+                    // offset = lookupString[ch];
+                    // goto Advance;
+                    Ldstr(negativeLookup);
+                    Ldloc(chLocal);
+                    Callvirt(s_stringGetCharsMethod);
+                    if (_code.RightToLeft)
                     {
-                        label = DefineLabel();
-                        labelMap.Add(_bmPrefix.NegativeASCII[i], label);
+                        Neg();
                     }
-                    table[i - _bmPrefix.LowASCII] = label;
                 }
-
-                Ldloc(chLocal);
-                Switch(table);
-
-                for (int i = _bmPrefix.LowASCII; i <= _bmPrefix.HighASCII; i++)
+                else
                 {
-                    if (_bmPrefix.NegativeASCII[i] == beforefirst ||
-                        !labelMap.Remove(_bmPrefix.NegativeASCII[i]))
+                    // offset = value;
+                    Debug.Assert(negativeRange == 1);
+                    int offset = _bmPrefix.NegativeASCII[_bmPrefix.LowASCII];
+                    if (offset == beforefirst)
                     {
-                        continue;
+                        offset = _code.RightToLeft ? -_bmPrefix.Pattern.Length : _bmPrefix.Pattern.Length;
                     }
-
-                    MarkLabel(table[i - _bmPrefix.LowASCII]);
-
-                    Ldc(_bmPrefix.NegativeASCII[i]);
-                    BrFar(lAdvance);
+                    Ldc(offset);
                 }
+                BrFar(lAdvance);
 
                 MarkLabel(lPartialMatch);
 
@@ -1772,7 +1778,7 @@ namespace System.Text.RegularExpressions
                         // Its children must all also be supported.
                         case RegexNode.Alternate:
                             if (node.Next != null &&
-                                (node.Next.Type == RegexNode.Atomic || // atomic alternate
+                                (node.IsAtomicByParent() || // atomic alternate
                                 (node.Next.Type == RegexNode.Capture && node.Next.Next is null))) // root alternate
                             {
                                 goto case RegexNode.Concatenate;
@@ -2698,7 +2704,6 @@ namespace System.Text.RegularExpressions
                     node.Type == RegexNode.Oneloopatomic ||
                     node.Type == RegexNode.Notoneloopatomic ||
                     node.Type == RegexNode.Setloopatomic);
-                Debug.Assert(node.M < int.MaxValue);
 
                 // If this is actually a repeater, emit that instead.
                 if (node.M == node.N)

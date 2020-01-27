@@ -115,9 +115,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedStrongNameSignatureNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ExternalTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AvailableType.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ByteArrayComparer.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs" />
