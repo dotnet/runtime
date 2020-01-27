@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Reflection;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
@@ -21,34 +22,42 @@ namespace System.Net.Http.Functional.Tests
     {
         public readonly ITestOutputHelper _output;
 
-        protected virtual bool UseHttp2 => false;
+        protected virtual Version UseVersion => HttpVersion.Version11;
 
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {
             _output = output;
         }
 
-        protected Version VersionFromUseHttp2 => GetVersion(UseHttp2);
-
-        protected static Version GetVersion(bool http2) => http2 ? new Version(2, 0) : HttpVersion.Version11;
-
         protected virtual HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
         protected HttpClient CreateHttpClient(HttpMessageHandler handler) =>
-            new HttpClient(handler) { DefaultRequestVersion = VersionFromUseHttp2 };
+            new HttpClient(handler) { DefaultRequestVersion = UseVersion };
 
         protected static HttpClient CreateHttpClient(string useHttp2String) =>
             CreateHttpClient(CreateHttpClientHandler(useHttp2String), useHttp2String);
 
-        protected static HttpClient CreateHttpClient(HttpMessageHandler handler, string useHttp2String) =>
-            new HttpClient(handler) { DefaultRequestVersion = GetVersion(bool.Parse(useHttp2String)) };
+        protected static HttpClient CreateHttpClient(HttpMessageHandler handler, string useVersionString) =>
+            new HttpClient(handler) { DefaultRequestVersion = Version.Parse(useVersionString) };
 
-        protected LoopbackServerFactory LoopbackServerFactory =>
+        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion);
+
+        protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
+            CreateHttpClientHandler(Version.Parse(useVersionString));
+
+        protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion);
+
+        protected static LoopbackServerFactory GetFactoryForVersion(Version useVersion)
+        {
+            return useVersion.Major switch
+            {
 #if NETCOREAPP
-            UseHttp2 ?
-                (LoopbackServerFactory)Http2LoopbackServerFactory.Singleton :
+                3 => Http3LoopbackServerFactory.Singleton,
+                2 => Http2LoopbackServerFactory.Singleton,
 #endif
-                Http11LoopbackServerFactory.Singleton;
+                _ => Http11LoopbackServerFactory.Singleton
+            };
+        }
 
         // For use by remote server tests
 

@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
                     // expires, the content will start to be serialized and will signal the server to
                     // close the connection; then once the connection is closed, the send will be allowed
                     // to continue and will fail.
-                    var request = new HttpRequestMessage(HttpMethod.Post, url) { Version = VersionFromUseHttp2 };
+                    var request = new HttpRequestMessage(HttpMethod.Post, url) { Version = UseVersion };
                     request.Headers.ExpectContinue = true;
                     request.Content = new SynchronizedSendContent(contentSending, connectionClosed.Task);
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
