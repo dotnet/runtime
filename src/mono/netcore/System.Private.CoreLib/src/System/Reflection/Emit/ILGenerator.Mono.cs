@@ -645,6 +645,9 @@ namespace System.Reflection.Emit {
 				throw new ArgumentException ("Trying to emit a local from a different ILGenerator.");
 
 			uint pos = local.position;
+			if ((opcode == OpCodes.Ldloca_S || opcode == OpCodes.Ldloc_S || opcode == OpCodes.Stloc_S) && pos > 255)
+				throw new InvalidOperationException ("Opcodes using a short-form index cannot address a local position over 255.");
+
 			bool load_addr = false;
 			bool is_store = false;
 			bool is_load = false;
