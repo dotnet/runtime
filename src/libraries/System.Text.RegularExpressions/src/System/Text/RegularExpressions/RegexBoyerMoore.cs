@@ -348,7 +348,7 @@ namespace System.Text.RegularExpressions
             sb.Append($"{indent}Positive: ");
             foreach (int i in Positive)
             {
-                sb.Append(i);
+                sb.Append($"{i} ");
             }
             sb.AppendLine();
 
