@@ -655,7 +655,6 @@ if defined __DoCrossgen (
     set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath!
 )
 
-echo %__CrossgenCmd%
 %__CrossgenCmd%
 set /a __exitCode = !errorlevel!
 
@@ -667,7 +666,7 @@ if "%__exitCode%" == "-2146230517" (
 )
 
 if %__exitCode% neq 0 (
-    echo Unable to precompile %AssemblyPath%, exit code is %__exitCode%
+    echo Unable to precompile %AssemblyPath%, exit code is %__exitCode%: %__CrossgenCmd%
     set /a "%~4+=1"
     set "%~5=!%~5!,!AssemblyName!"
     exit /b 0
