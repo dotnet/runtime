@@ -1154,8 +1154,10 @@ namespace Internal.JitInterface
 
         private byte* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
-            length = -1;
-            return null;
+            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            string s = (string)methodIL.GetObject((int)metaTOK);
+            length = (int)s.Length;
+            return (byte*)GetPin(s);
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)

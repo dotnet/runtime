@@ -818,7 +818,7 @@ LPCWSTR CEEInfo::getStringLiteral (
 
     if (IsDynamicScope(moduleHnd))
     {
-        result = GetDynamicResolver(moduleHnd)->GetStringLiteral(metaTOK, length);
+        *length = GetDynamicResolver(moduleHnd)->GetStringLiteralLength(metaTOK);
     }
     else
     {
