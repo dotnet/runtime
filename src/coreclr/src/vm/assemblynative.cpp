@@ -45,6 +45,9 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 
     GCX_COOP();
 
+    // Workaround for https://github.com/dotnet/runtime/issues/2240
+    FrameWithCookie<ProtectValueClassFrame> workaround;
+
     if (assemblyName.Get() == NULL)
     {
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_AssemblyName"));
@@ -126,6 +129,8 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
     {
         retAssembly.Set(pAssembly->GetExposedObject());
     }
+
+    workaround.Pop();
 
     END_QCALL;
 }
